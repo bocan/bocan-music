@@ -87,6 +87,10 @@ targets:
         TEST_TARGET_NAME: Bocan
         PRODUCT_MODULE_NAME: BocanUITests
         BUNDLE_LOADER: ""
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_ENTITLEMENTS: ""
+        ENABLE_APP_SANDBOX: NO
+        ENABLE_HARDENED_RUNTIME: NO
 
 packages:
   Observability:
