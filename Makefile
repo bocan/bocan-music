@@ -46,7 +46,8 @@ build:
 
 ## test: Run unit + integration tests (excludes UITests)
 test:
-	xcodebuild \
+	rm -rf build/TestResults.xcresult
+	set -o pipefail && xcodebuild \
 		-project Bocan.xcodeproj \
 		-scheme Bocan \
 		-configuration Debug \
@@ -58,7 +59,8 @@ test:
 
 ## test-coverage: Run tests and fail if coverage < 80%
 test-coverage:
-	xcodebuild \
+	rm -rf build/TestResults.xcresult
+	set -o pipefail && xcodebuild \
 		-project Bocan.xcodeproj \
 		-scheme Bocan \
 		-configuration Debug \
