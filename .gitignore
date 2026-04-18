@@ -1,0 +1,63 @@
+# Xcode
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Build outputs
+build/
+.build/
+*.o
+*.d
+*.a
+
+# Coverage
+coverage.xml
+*.lcov
+*.gcov
+
+# Xcode Workspace SPM (keep root Package.resolved, ignore nested)
+Modules/**/Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+
+# Homebrew
+Brewfile.lock.json
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# SwiftPM
+.swiftpm/xcode/
+
+# Carthage (not used)
+Carthage/
+
+# CocoaPods (not used)
+Pods/
+
+# Test results
+*.xcresult
+
+# XcodeGen (keep project.yml, ignore generated project)
+# (we commit Bocan.xcodeproj - it's generated but part of the repo)
+
+# Editor
+.idea/
+*.swp
+*.swo
+*~
