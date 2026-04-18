@@ -59,6 +59,7 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.music"
     dependencies:
       - package: Observability
+      - package: AudioEngine
     scheme:
       testTargets:
         - BocanTests
@@ -95,3 +96,5 @@ targets:
 packages:
   Observability:
     path: Modules/Observability
+  AudioEngine:
+    path: Modules/AudioEngine

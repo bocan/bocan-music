@@ -35,6 +35,9 @@ jobs:
       - name: Install Brewfile dependencies
         run: brew bundle
 
+      - name: Set pkg-config path for FFmpeg
+        run: echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig" >> $GITHUB_ENV
+
       - name: Doctor (print tool versions)
         run: make doctor
 
@@ -46,6 +49,9 @@ jobs:
 
       - name: Build & Test with coverage
         run: make test-coverage 2>&1 | xcbeautify
+
+      - name: Test AudioEngine package
+        run: make test-audio-engine
 
       - name: Upload test results
         uses: actions/upload-artifact@v7

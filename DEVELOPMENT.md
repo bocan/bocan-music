@@ -31,6 +31,7 @@ make doctor
 | `make build` | Debug build |
 | `make test` | Run all tests |
 | `make test-coverage` | Tests + coverage report (≥ 80% required) |
+| `make test-audio-engine` | Run AudioEngine SPM package tests via `swift test` |
 | `make lint` | SwiftLint + SwiftFormat lint |
 | `make format` | Auto-format all Swift files |
 | `make clean` | Remove build artefacts |
@@ -70,6 +71,46 @@ Never commit these to the repo.
 
 Implementation phases are documented in [`phases/`](phases/README.md).
 Start with `phases/_standards.md`, then tackle one phase at a time.
+
+## FFmpeg (AudioEngine module)
+
+The `AudioEngine` module decodes non-AVFoundation formats (OGG/Vorbis, Opus, DSD, APE, WavPack)
+via FFmpeg using **Option B: system module + Homebrew dynamic linking**.
+
+### Rationale
+
+| Option | Pros | Cons |
+|--------|------|------|
+| A — vendored static libs | No runtime dep | 100+ MB repo weight, GPL concerns |
+| **B — system module (chosen)** | ~0 repo weight, easy updates | Homebrew required on dev + CI |
+| C — SPM binary target | Clean SPM | Complex packaging |
+
+### Setup
+
+```bash
+brew install ffmpeg           # installed automatically by make bootstrap
+make doctor                   # verifies pkg-config finds libavformat etc.
+```
+
+### Building AudioEngine outside Xcode
+
+```bash
+cd Modules/AudioEngine
+PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig swift build
+PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig swift test
+# or simply:
+make test-audio-engine        # (PKG_CONFIG_PATH already in $GITHUB_ENV on CI)
+```
+
+### Key Swift concurrency decisions
+
+| Pattern | Reason |
+|---------|--------|
+| `@preconcurrency import AVFoundation` | `AVAudioPCMBuffer` lacks `Sendable`; suppress cascade errors |
+| `EngineGraph: @unchecked Sendable` class (not actor) | `AVAudioPlayerNode` can't cross actor boundaries; safety ensured by owning `AudioEngine` actor |
+| `nonisolated public let state` | `AsyncStream` is `Sendable`; `let` is immutable so `nonisolated` is safe |
+
+
 
 ## Debugging in Console.app
 
