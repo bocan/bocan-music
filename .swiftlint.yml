@@ -32,7 +32,7 @@ opt_in_rules:
   - literal_expression_end_indentation
   - lower_acl_than_parent
   - missing_docs
-  - modifier_order
+  # modifier_order disabled — SwiftFormat owns modifier ordering; the two tools conflict on nonisolated placement
   - multiline_arguments
   - multiline_function_chains
   - multiline_literal_brackets
@@ -108,21 +108,6 @@ missing_docs:
   excludes_extensions: false
   excludes_inherited_types: true
   excludes_trivial_init: true
-
-modifier_order:
-  preferred_modifier_order:
-    - override
-    - isolation
-    - acl
-    - setterACL
-    - dynamic
-    - mutators
-    - lazy
-    - final
-    - required
-    - convenience
-    - typeMethods
-    - owned
 
 excluded:
   - .build
