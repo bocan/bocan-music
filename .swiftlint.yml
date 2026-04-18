@@ -1,0 +1,131 @@
+disabled_rules:
+  - trailing_comma        # SwiftFormat handles this
+
+opt_in_rules:
+  - force_cast
+  - force_try
+  - force_unwrapping
+  - implicit_return
+  - implicit_optional_initialization
+  - explicit_init
+  - first_where
+  - last_where
+  - contains_over_filter_is_empty
+  - empty_count
+  - array_init
+  - closure_end_indentation
+  - closure_spacing
+  - collection_alignment
+  - discouraged_none_name
+  - empty_collection_literal
+  - empty_string
+  - enum_case_associated_values_count
+  - expiring_todo
+  - fallthrough
+  - fatal_error_message
+  - file_name_no_space
+  - function_default_parameter_at_end
+  - ibinspectable_in_extension
+  - identical_operands
+  - joined_default_parameter
+  - let_var_whitespace
+  - literal_expression_end_indentation
+  - lower_acl_than_parent
+  - missing_docs
+  - modifier_order
+  - multiline_arguments
+  - multiline_function_chains
+  - multiline_literal_brackets
+  - multiline_parameters
+  - operator_usage_whitespace
+  - overridden_super_call
+  - override_in_extension
+  - pattern_matching_keywords
+  - prefer_self_in_static_references
+  - prefer_self_type_over_type_of_self
+  - prohibited_super_call
+  - reduce_into
+  - redundant_nil_coalescing
+  - return_value_from_void_function
+  - self_binding
+  - shorthand_optional_binding
+  - single_test_class
+  - sorted_first_last
+  - static_operator
+  - switch_case_on_newline
+  - toggle_bool
+  - trailing_closure
+  - type_contents_order
+  - unavailable_function
+  - unneeded_parentheses_in_closure_argument
+  - untyped_error_in_catch
+  - vertical_parameter_alignment_on_call
+  - vertical_whitespace_between_cases
+  - vertical_whitespace_closing_braces
+  - vertical_whitespace_opening_braces
+  - weak_delegate
+  - xct_specific_matcher
+  - yoda_condition
+
+analyzer_rules:
+  - unused_import
+  - unused_declaration
+
+line_length:
+  warning: 140
+  error: 180
+
+type_name:
+  min_length: 2
+  max_length: 60
+
+identifier_name:
+  min_length: 2
+  max_length: 60
+  excluded:
+    - id
+    - db
+    - ok
+    - x
+    - y
+    - z
+    - dx
+    - dy
+
+function_body_length:
+  warning: 50
+  error: 100
+
+file_length:
+  warning: 400
+  error: 600
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+
+missing_docs:
+  excludes_extensions: false
+  excludes_inherited_types: true
+  excludes_trivial_init: true
+
+modifier_order:
+  preferred_modifier_order:
+    - override
+    - isolation
+    - acl
+    - setterACL
+    - dynamic
+    - mutators
+    - lazy
+    - final
+    - required
+    - convenience
+    - typeMethods
+    - owned
+
+excluded:
+  - .build
+  - DerivedData
+  - Tests/Fixtures
+  - Modules/.build
