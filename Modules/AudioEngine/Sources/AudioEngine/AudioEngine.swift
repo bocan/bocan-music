@@ -1,6 +1,6 @@
 // @preconcurrency: AVFoundation node types (AVAudioPlayerNode etc.) lack Sendable;
 // thread-safety is provided by AudioEngine's actor isolation.
-// TODO: Remove once AVFoundation adopts Sendable annotations.
+// Remove once AVFoundation adopts Sendable annotations (FB13119463).
 @preconcurrency import AVFoundation
 import Foundation
 import Observability
@@ -35,6 +35,24 @@ public actor AudioEngine: Transport {
     // MARK: - Transport: state stream
 
     public nonisolated let state: AsyncStream<PlaybackState>
+
+    // MARK: - Computed properties
+
+    public var currentTime: TimeInterval {
+        get async {
+            let playerNode = self.graph.playerNode
+            guard self._state == .playing,
+                  let renderTime = playerNode.lastRenderTime,
+                  let playerTime = playerNode.playerTime(forNodeTime: renderTime) else { return self._currentTime }
+
+            let rate = playerNode.outputFormat(forBus: 0).sampleRate
+            return self._currentTime + AudioTime.timeInterval(for: playerTime.sampleTime, sampleRate: rate)
+        }
+    }
+
+    public var duration: TimeInterval {
+        get async { self._duration }
+    }
 
     // MARK: - Init
 
@@ -94,6 +112,7 @@ public actor AudioEngine: Transport {
 
         // Build canonical output format.
         let sampleRate = self.graph.outputSampleRate
+        // swiftlint:disable:next force_unwrapping
         let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
         let outputFmt = AVAudioFormat(
             standardFormatWithSampleRate: sampleRate,
@@ -123,8 +142,7 @@ public actor AudioEngine: Transport {
         self.log.debug("engine.pause")
         let playerNode = self.graph.playerNode
         if let time = playerNode.lastRenderTime,
-           let playerTime = playerNode.playerTime(forNodeTime: time)
-        {
+           let playerTime = playerNode.playerTime(forNodeTime: time) {
             let rate = playerNode.outputFormat(forBus: 0).sampleRate
             self._currentTime += AudioTime.timeInterval(for: playerTime.sampleTime, sampleRate: rate)
         }
@@ -164,22 +182,6 @@ public actor AudioEngine: Transport {
         if wasPlaying {
             try await self.play()
         }
-    }
-
-    public var currentTime: TimeInterval {
-        get async {
-            let playerNode = self.graph.playerNode
-            guard self._state == .playing,
-                  let renderTime = playerNode.lastRenderTime,
-                  let playerTime = playerNode.playerTime(forNodeTime: renderTime) else { return self._currentTime }
-
-            let rate = playerNode.outputFormat(forBus: 0).sampleRate
-            return self._currentTime + AudioTime.timeInterval(for: playerTime.sampleTime, sampleRate: rate)
-        }
-    }
-
-    public var duration: TimeInterval {
-        get async { self._duration }
     }
 
     // MARK: - Private helpers

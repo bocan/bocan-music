@@ -6,6 +6,16 @@ import Foundation
 /// appropriate synchronisation). All mutating operations are `async` so callers
 /// can `await` completion/confirmation without blocking.
 public protocol Transport: Sendable {
+    /// Current playback position in seconds.
+    var currentTime: TimeInterval { get async }
+
+    /// Duration of the loaded file in seconds. 0 if no file is loaded.
+    var duration: TimeInterval { get async }
+
+    /// Asynchronous stream of `PlaybackState` transitions.
+    /// Duplicate consecutive states are suppressed.
+    var state: AsyncStream<PlaybackState> { get }
+
     /// Load a local audio file. Transitions state to `.loading` then `.ready`.
     func load(_ url: URL) async throws
 
@@ -21,14 +31,4 @@ public protocol Transport: Sendable {
     /// Seek to an approximate time within the loaded file.
     /// Throws `AudioEngineError.seekOutOfRange` if `time` exceeds `duration`.
     func seek(to time: TimeInterval) async throws
-
-    /// Current playback position in seconds.
-    var currentTime: TimeInterval { get async }
-
-    /// Duration of the loaded file in seconds. 0 if no file is loaded.
-    var duration: TimeInterval { get async }
-
-    /// Asynchronous stream of `PlaybackState` transitions.
-    /// Duplicate consecutive states are suppressed.
-    var state: AsyncStream<PlaybackState> { get }
 }

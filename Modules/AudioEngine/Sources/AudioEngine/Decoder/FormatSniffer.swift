@@ -37,8 +37,7 @@ public struct FormatSniffer: Sendable {
             handle = try FileHandle(forReadingFrom: url)
         } catch {
             if (error as NSError).code == NSFileNoSuchFileError ||
-                (error as NSError).code == NSFileReadNoSuchFileError
-            {
+                (error as NSError).code == NSFileReadNoSuchFileError {
                 throw AudioEngineError.fileNotFound(url)
             }
             throw AudioEngineError.accessDenied(url, underlying: error)
@@ -53,9 +52,14 @@ public struct FormatSniffer: Sendable {
     /// - Parameter bytes: At least the first 16 bytes of the file.
     public func sniff(bytes: Data, url: URL = URL(fileURLWithPath: "")) -> Codec {
         guard bytes.count >= 4 else { return .unknown(bytes) }
+        return detectContainerCodec(from: bytes) ?? .unknown(bytes.prefix(16))
+    }
+}
 
-        let b = bytes
+// MARK: - Private helpers
 
+private extension FormatSniffer {
+    func detectContainerCodec(from b: Data) -> Codec? {
         // WAV: "RIFF" at offset 0
         if b.hasPrefix("RIFF") { return .wav }
 
@@ -67,8 +71,12 @@ public struct FormatSniffer: Sendable {
         if b[0] == 0xFF, (b[1] & 0xE0) == 0xE0 { return .mp3 }
 
         // M4A / MP4: "ftyp" at offset 4
-        if bytes.count >= 8, b[4 ..< 8] == Data([0x66, 0x74, 0x79, 0x70]) { return .m4a }
+        if b.count >= 8, b[4 ..< 8] == Data([0x66, 0x74, 0x79, 0x70]) { return .m4a }
 
+        return self.detectDsdCodec(from: b)
+    }
+
+    func detectDsdCodec(from b: Data) -> Codec? {
         // OGG: "OggS" at offset 0
         if b.hasPrefix("OggS") { return .ogg }
 
@@ -84,8 +92,7 @@ public struct FormatSniffer: Sendable {
         // WavPack: "wvpk" at offset 0
         if b.hasPrefix("wvpk") { return .wavpack }
 
-        // Unrecognised — let FFmpeg try
-        return .unknown(b.prefix(16))
+        return nil
     }
 }
 

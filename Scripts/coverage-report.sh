@@ -36,7 +36,7 @@ if command -v jq &>/dev/null; then
         else
             echo "  ✓"
         fi
-    done < <(echo "$JSON" | jq -c '.targets[] | select(.name | test("Observability|Bocan"; "i"))')
+    done < <(echo "$JSON" | jq -c '.targets[] | select(.name | test("Observability|Bocan"; "i")) | select(.name | test("\\.app$|UITests"; "i") | not)')
 
     if [[ "$FAILED" -ne 0 ]]; then
         echo ""

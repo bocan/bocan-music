@@ -18,14 +18,16 @@ public enum PlaybackState: Sendable, Equatable {
     case ended
     case failed(AudioEngineError)
 
-    public static func == (lhs: PlaybackState, rhs: PlaybackState) -> Bool {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.idle, .idle), (.loading, .loading), (.ready, .ready),
              (.playing, .playing), (.paused, .paused), (.stopped, .stopped),
              (.ended, .ended):
             true
+
         case let (.failed(l), .failed(r)):
             l.description == r.description
+
         default:
             false
         }

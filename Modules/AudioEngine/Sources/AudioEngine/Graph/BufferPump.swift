@@ -1,6 +1,6 @@
 // @preconcurrency: AVAudioPlayerNode/AVAudioPCMBuffer lack Sendable; safe because
 // BufferPump is the sole owner of its scheduling context.
-// TODO: Remove once AVFoundation adopts Sendable annotations.
+// Remove once AVFoundation adopts Sendable annotations (FB13119463).
 @preconcurrency import AVFoundation
 import Foundation
 import Observability
