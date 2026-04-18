@@ -72,7 +72,10 @@ test-coverage:
 		| xcbeautify
 	Scripts/coverage-report.sh build/TestResults.xcresult 80
 
-## uitest: Run UI smoke tests (requires app to be built)
+## test-audio-engine: Run AudioEngine SPM package tests (requires FFmpeg via Homebrew)
+test-audio-engine:
+	cd Modules/AudioEngine && swift test
+
 uitest:
 	xcodebuild \
 		-project Bocan.xcodeproj \
