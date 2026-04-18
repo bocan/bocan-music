@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# pre-commit hook — Runs swiftformat (lint) and swiftlint on staged Swift files.
+# Installed by `make install-hooks` to .git/hooks/pre-commit.
+#
+# Bypass with `git commit --no-verify` (discouraged; reviewers should reject
+# commits with --no-verify unless a justification is in the PR description).
+set -euo pipefail
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
+
+if [[ -z "$STAGED" ]]; then
+    exit 0
+fi
+
+echo "=== Pre-commit: swiftformat lint ==="
+echo "$STAGED" | xargs swiftformat --lint --quiet && echo "✓ swiftformat clean" || {
+    echo "✗ swiftformat found issues. Run 'make format' to fix."
+    exit 1
+}
+
+echo "=== Pre-commit: swiftlint ==="
+echo "$STAGED" | xargs swiftlint lint --use-stdin --strict 2>/dev/null || \
+    swiftlint lint --strict && echo "✓ swiftlint clean" || {
+    echo "✗ swiftlint found issues. Fix them before committing."
+    exit 1
+}
+
+exit 0
