@@ -1,0 +1,290 @@
+# Phase 16 — Distribution, Updates & Beyond
+
+> Prerequisites: All prior phases complete. The app builds, tests pass, and it runs nicely in Debug and Release.
+>
+> Read `phases/_standards.md` first.
+
+## Goal
+
+Ship it. Developer ID signed, notarised, stapled. Nicely packaged DMG. Sparkle 2 updates with EdDSA signing. MetricKit-based crash & hang reporting routed to an opt-in endpoint (or file-on-disk only). Website. Homebrew cask. Documentation. Launch hygiene (single-instance, crash recovery, version pinning).
+
+## Non-goals
+
+- Mac App Store distribution — out of scope (would conflict with FFmpeg GPL-friendly flags, entitlement differences). Noted for future consideration.
+- Paid licensing — this is an OSS app.
+- Auto-reporting of play stats to any server — privacy.
+
+## Outcome shape
+
+```
+.github/workflows/
+├── release.yml                # Already present from Phase 0 — now ships the whole pipeline
+└── website.yml                # Builds & deploys the website on tag
+
+Scripts/
+├── build-release.sh           # Uses xcodebuild, archives, exports
+├── sign-and-notarize.sh       # codesign + notarytool + stapler
+├── make-dmg.sh                # create-dmg invocation
+├── sparkle-update.sh          # Generates appcast.xml, signs with EdDSA
+└── release-notes.sh           # Reads CHANGELOG between tags
+
+Resources/
+├── Distribution/
+│   ├── dmg-background.png
+│   ├── dmg-background@2x.png
+│   ├── AppIcon.icns           # generated from PNGs at sizes 16-1024
+│   └── VolumeIcon.icns
+├── Sparkle/
+│   └── ed25519_public.pem     # public key shipped in bundle
+└── Website/                   # static site source (11ty/Zola/raw HTML — pick one)
+    ├── src/
+    └── build/
+
+Modules/App/Sources/App/Updates/
+├── UpdateController.swift     # Wraps SparkleUpdater
+├── AppcastFeed.swift          # Constants + channel picker
+└── CrashReporter.swift        # MetricKit integration
+
+Modules/App/Sources/App/SingleInstance.swift
+Modules/App/Sources/App/LaunchSanity.swift
+```
+
+## Implementation plan
+
+### Code signing, notarisation, distribution
+
+1. **Apple Developer ID** — you must have a Developer ID Application certificate. Store its identity in CI as encrypted secrets (`KEYCHAIN_P12`, `KEYCHAIN_PASSWORD`). Import into an ephemeral keychain in CI before signing.
+
+2. **Build**: `xcodebuild -scheme Bocan -configuration Release -destination 'platform=macOS' -archivePath ./build/Bocan.xcarchive archive` with:
+   - `CODE_SIGN_IDENTITY=Developer ID Application: <Team>`
+   - `CODE_SIGN_STYLE=Manual`
+   - `DEVELOPMENT_TEAM=<TEAMID>`
+   - `OTHER_CODE_SIGN_FLAGS=--timestamp --options=runtime`
+   - Hardened runtime: `ENABLE_HARDENED_RUNTIME=YES`.
+
+3. **Export**: `xcodebuild -exportArchive -archivePath build/Bocan.xcarchive -exportPath build/Export -exportOptionsPlist Scripts/ExportOptions.plist`.
+
+4. **Deep sign**: all frameworks and helper tools inside `.app/Contents/Frameworks/**` need to be signed individually. `codesign --force --deep` is **deprecated**; use per-framework signing:
+   ```bash
+   find "$APP/Contents/Frameworks" -type d -name "*.framework" \
+     -exec codesign --force --sign "$IDENTITY" --options=runtime --timestamp {} \;
+   codesign --force --sign "$IDENTITY" --options=runtime --timestamp --entitlements Bocan.entitlements "$APP"
+   ```
+
+5. **Notarisation** with `notarytool`:
+   ```bash
+   xcrun notarytool submit "Bocan.zip" \
+     --apple-id "$APPLE_ID" --team-id "$TEAMID" --password "$APP_SPECIFIC_PASSWORD" \
+     --wait
+   xcrun stapler staple "Bocan.app"
+   ```
+   Use app-specific passwords only; never a real Apple ID password.
+
+6. **DMG**: `create-dmg` via Homebrew or vendored binary:
+   ```bash
+   create-dmg --volname "Bòcan" --background "dmg-background.png" \
+     --window-size 540 380 --icon-size 96 \
+     --icon "Bòcan.app" 140 200 --app-drop-link 400 200 \
+     "Bocan-${VERSION}.dmg" "build/Export/"
+   ```
+   Sign the DMG too:
+   ```bash
+   codesign --force --sign "$IDENTITY" --timestamp "Bocan-${VERSION}.dmg"
+   xcrun notarytool submit "Bocan-${VERSION}.dmg" --wait
+   xcrun stapler staple "Bocan-${VERSION}.dmg"
+   ```
+   Notarising both the app (inside) and the DMG container is belt-and-braces; Gatekeeper checks either works but both is common practice.
+
+### Sparkle 2
+
+7. **SPM dependency**: `https://github.com/sparkle-project/Sparkle` pinned to 2.x.
+
+8. **Public key** generated with Sparkle's `generate_keys` tool. Public `.pem` bundled in the app. Private key stored in 1Password / CI secrets only.
+
+9. **Info.plist**:
+   - `SUFeedURL`: `https://bocan.app/appcast.xml`.
+   - `SUPublicEDKey`: the public key base64.
+   - `SUAutomaticallyUpdate`: `NO` by default.
+   - `SUEnableAutomaticChecks`: `YES`.
+
+10. **`UpdateController`** — wraps `SPUStandardUpdaterController`. Exposes:
+    - "Check for Updates…" menu command.
+    - Channel picker setting (Stable / Beta) bound to `SUAllowedSystemProfileKey` or a custom feed selector.
+    - Update-available UI flow with release notes HTML.
+
+11. **`appcast.xml`** generated by `Scripts/sparkle-update.sh` on release:
+    - Loops over `./releases/*.zip` and produces `<item>` blocks.
+    - Signs each with the EdDSA private key via `sign_update` tool.
+    - Includes `<sparkle:releaseNotesLink>` to a hosted HTML file.
+    - Two feeds: `appcast.xml` (stable) and `appcast-beta.xml`.
+
+### Update channels
+
+12. Channel setting in `General` preferences: Stable / Beta. Changing it repoints the feed URL and re-fetches.
+
+### Crash & hang reporting
+
+13. **`CrashReporter`** subscribes to `MXMetricManager.shared`:
+    - `didReceive(_ payloads: [MXMetricPayload])` → route to structured log file (not sent automatically).
+    - `didReceive(_ payloads: [MXDiagnosticPayload])` → crash, hang, CPU-exception, disk-write-exception. Write to `~/Library/Logs/Bocan/diagnostics/<date>.json`.
+    - Show a one-time consent dialog before the first post-launch: "Send a crash report to help fix this?" with a visible preview of what's sent. **Opt-in**, default off.
+    - Uploader is optional — v1 can stop at "open in Finder" and "attach to GitHub issue".
+
+14. **Redact before export** — redact file paths (replace user home with `~`), MBIDs are fine, keep session duration.
+
+### Launch hygiene
+
+15. **Single instance** — when the app is already running, activate it and reject the second launch:
+    - Use a distributed notification via `DistributedNotificationCenter` with a unique name; the new process posts, the existing one consumes and brings itself forward; the new one terminates quickly.
+    - Alternatively, an exclusive file lock in `Application Support`.
+    - If Bòcan is launched with documents (e.g. from drag-drop onto the Dock icon), the arguments are passed via `NSWorkspace`/`NSAppleEventDescriptor`. The existing instance handles the open event.
+
+16. **Crash recovery** — on launch, if the last shutdown was unclean (a `.running` marker file exists), show a banner: "Bòcan quit unexpectedly. Recover previous session?" — restores queue + window state.
+
+17. **Privacy policy** — short, truthful: "Bòcan does not send any data about you, your music, or your usage to us. Scrobbling goes to Last.fm/ListenBrainz only when you authorise it. Crash reports are opt-in and you approve each one."
+
+### Website
+
+18. Static site in `Resources/Website`. Pages:
+    - Home: tagline, screenshot, download button (latest DMG + version), changelog link.
+    - Download: previous releases, sha256 sums.
+    - Blog: release notes.
+    - Docs: keybindings, FAQ, troubleshooting.
+    - Privacy.
+    - Credits: includes FFmpeg/TagLib LGPL acknowledgments, SPM dep list, artists who inspired the name.
+
+19. Deploy via GitHub Pages or Cloudflare Pages on release tag.
+
+### Homebrew cask (optional)
+
+20. Maintain a tap: `github.com/<you>/homebrew-bocan`. On release, open a PR to the cask:
+    ```ruby
+    cask "bocan" do
+      version "X.Y.Z"
+      sha256 "..."
+      url "https://bocan.app/releases/Bocan-#{version}.dmg"
+      name "Bòcan"
+      desc "Native macOS music player"
+      homepage "https://bocan.app"
+      livecheck do
+        url :homepage
+        strategy :sparkle
+      end
+      app "Bòcan.app"
+      zap trash: ["~/Library/Application Support/Bocan",
+                  "~/Library/Logs/Bocan",
+                  "~/Library/Preferences/io.cloudcauldron.bocan.plist"]
+    end
+    ```
+
+### Release pipeline
+
+21. **`release.yml`** (expand from Phase 0):
+    - Trigger on tag `v*`.
+    - Build + run tests + archive.
+    - Import signing certificate into ephemeral keychain.
+    - Sign, notarise, staple app + DMG.
+    - Generate appcast entry, commit to `gh-pages` / Cloudflare Pages.
+    - Attach DMG to GitHub Release with auto-generated notes (from `CHANGELOG.md` between tags).
+    - Fail loudly if any stage fails; never publish a partially-signed artifact.
+
+22. **Reproducible builds**: pin Xcode version via `.xcode-version` and check in `Package.resolved`. Commit Homebrew `Brewfile.lock.json` to pin tool versions.
+
+## Context7 lookups
+
+- `use context7 xcodebuild archive export macOS Developer ID`
+- `use context7 codesign hardened runtime entitlements timestamp`
+- `use context7 notarytool submit wait stapler macOS`
+- `use context7 create-dmg macOS volume background signing`
+- `use context7 Sparkle 2 SPM EdDSA generate_keys sign_update`
+- `use context7 MetricKit MXMetricManager MXDiagnosticPayload Swift`
+- `use context7 macOS distributed notification single instance`
+
+## Dependencies
+
+- Sparkle 2 (SPM).
+- `create-dmg` (Homebrew).
+- Developer tools: `notarytool`, `stapler`, `codesign`.
+
+## Test plan
+
+### Signing & notarisation
+
+- Local run of `Scripts/sign-and-notarize.sh` on a clean build produces a stapled DMG that passes `spctl --assess --type execute -vv Bocan.app`.
+- `codesign --verify --deep --strict --verbose=2 Bocan.app` emits no warnings.
+- All embedded frameworks are signed individually.
+
+### Sparkle
+
+- `appcast.xml` passes `sparkle validate` in CI.
+- EdDSA signatures on each item are verifiable with the bundled public key.
+- Update flow: with a test feed, the app detects an update, downloads, verifies, relaunches into the new version.
+- Switching channel flips the feed URL and re-checks.
+- Denied update (bad signature) aborts with a clear error; user data untouched.
+
+### MetricKit
+
+- On a test build that deliberately raises `NSException`, the next launch collects a diagnostic payload and writes it to disk. Consent dialog appears; declining skips submission.
+- No diagnostic is ever sent without consent; verify via a network mock.
+
+### Single instance
+
+- Launching twice → second process exits, first is activated.
+- Opening a file while running → file is handled by the existing instance.
+
+### Crash recovery
+
+- Kill the app with `SIGKILL` during playback. Relaunch → banner offers recovery; accepting restores queue + window.
+
+### Website
+
+- Download page shows the latest version automatically after release.
+- SHA256 sums match the DMG.
+- All links valid (broken-link check in CI).
+
+### Gatekeeper
+
+- Fresh macOS VM: download DMG over HTTPS, open, drag to Applications, launch. No Gatekeeper warning beyond the first-open confirmation.
+
+## Acceptance criteria
+
+- [ ] Signed, notarised, stapled DMG with app + drag-target.
+- [ ] Sparkle 2 updates round-trip end-to-end with real HTTPS feed.
+- [ ] Website live with download + changelog + privacy + docs.
+- [ ] GitHub Actions release pipeline is one-click from `git tag vX.Y.Z && git push --tags`.
+- [ ] MetricKit crash reports land on disk; upload is opt-in.
+- [ ] Single instance enforced; crash recovery works.
+- [ ] Homebrew cask (optional but encouraged) installs and upgrades cleanly.
+- [ ] All third-party licence notices shown in the About window or a Credits window.
+- [ ] `make lint && make test-coverage` green.
+
+## Gotchas
+
+- **Deep signing order**: sign inside-out. Nested frameworks first, then the outer app. Otherwise signing the outer fails when nested contents change.
+- **Sparkle 2 + sandbox**: Sparkle 2 supports sandboxed apps via the `SparkleUpdater` XPC helpers. Include them in `Contents/XPCServices` per the docs; don't strip them accidentally.
+- **Hardened runtime + FFmpeg**: if you allow JIT or DYLD interposing by accident, notarisation fails. Review the entitlements and keep them minimal.
+- **`com.apple.security.cs.disable-library-validation`**: needed only if you load unsigned dylibs (you shouldn't). Avoid setting.
+- **Quarantine** extended attribute: after download, macOS sets `com.apple.quarantine`. Stapled notarisation bypasses Gatekeeper's online check, but tester machines may have old caches — clear with `xattr -dr com.apple.quarantine` if odd behaviour.
+- **App-specific password** for `notarytool` must be created in Apple ID settings; it's not the developer account password. Rotate quarterly.
+- **Sparkle public key bundle path**: wrong path → Sparkle silently skips verification. Verify on first build by deliberately corrupting the signature and confirming the update is rejected.
+- **DMG layout**: the background image needs to be installed via `SetFile` / AppleScript under the hood. `create-dmg` handles it but timing is flaky on CI runners. Retry once on failure.
+- **Universal binary**: decide on `arm64` only vs `arm64 + x86_64`. macOS 14+ ships on both architectures; intel Macs still exist. Building universal is easy via `ARCHS=arm64 x86_64`. Slightly larger binary; acceptable.
+- **MetricKit on macOS** lags iOS in fidelity; some events aren't delivered. Don't rely on MetricKit as the sole crash reporter — keep a simple signal handler that writes a stack trace to disk as backup.
+- **Crash consent dialogs** shouldn't appear on every launch. Track "last diagnostic timestamp" and show consent once per diagnostic.
+- **License compatibility**: FFmpeg's default LGPL build is fine; if you enable any GPL-only features, the whole app becomes GPL. Keep FFmpeg configured LGPL-only; explicitly pass `--disable-gpl --disable-nonfree` when building. Document in `NOTICES.md`.
+- **Apple Silicon provenance**: pinning Xcode version matters — changes in the linker or Swift runtime can break notarised builds subtly. Bump deliberately, test thoroughly.
+- **Release notes**: keep them human. Auto-generated from commits are fine if commits are well-written; otherwise hand-write a small section per release.
+- **Version numbers**: `CFBundleShortVersionString` = user-visible (`1.2.0`), `CFBundleVersion` = build number (monotonic integer). CI sets both. Sparkle compares `CFBundleVersion`; ensure it always increases.
+- **App icon**: PNG→ICNS via `iconutil`. Include 16, 32, 64, 128, 256, 512, 1024 and their @2x. Test at all sizes (Dock, Spotlight, Finder).
+- **Privacy manifest**: macOS app privacy manifest (`PrivacyInfo.xcprivacy`) isn't mandatory for non–App Store distribution but is good form. Declare the APIs used (file timestamps, user defaults, etc.).
+- **Sandbox + Downloads folder access**: the DMG drops the app to Applications; no issue. If users run from Downloads, no special flag needed beyond standard entitlements.
+- **Beta channel leakage**: don't ship a beta build with `SUFeedURL` pointing at stable or users will downgrade. Use distinct bundle IDs for beta if necessary (`io.cloudcauldron.bocan.beta`) or different feed URLs only.
+- **Homebrew cask `zap`** removes user data; document clearly and keep the paths accurate.
+
+## Handoff
+
+There is no phase 17. Post-1.0, routine work: CVE monitoring of FFmpeg/TagLib, macOS version compatibility each autumn, feature requests, community contributions.
+
+Keep the CHANGELOG, keep signing certificates rotating, keep the app running fast, keep the icon sharp.
+
+Done.
