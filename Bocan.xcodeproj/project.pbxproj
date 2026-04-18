@@ -1,0 +1,549 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0F2FCA653E60B83CF8AA8469 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 8F629E8B78D37805428363DA /* Observability */; };
+		171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
+		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
+		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
+		CF662F890AEBEE98A2B06936 /* AppLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */; };
+		DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8E8EC191BDB21827F3BBAE /* RootView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0BA06444E0E71CD641790EEF /* Bocan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bocan.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D8E8EC191BDB21827F3BBAE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		7D0D4EFCB376B3DF15EEC533 /* BocanTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLoggerTests.swift; sourceTree = "<group>"; };
+		8C85F460580B049360716FE5 /* Observability */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Observability; path = Modules/Observability; sourceTree = SOURCE_ROOT; };
+		B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BocanApp.swift; sourceTree = "<group>"; };
+		BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2EA58E03C6A26F8E2B491726 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2F914A7E293300346A70862B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F2FCA653E60B83CF8AA8469 /* Observability in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D95A2CB58951EF13BCFC1DB /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				8A6EBFBDE9871CAA33430EC6 /* Observability */,
+			);
+			path = Modules;
+			sourceTree = "<group>";
+		};
+		13C2660B7453561F1366516C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0BA06444E0E71CD641790EEF /* Bocan.app */,
+				7D0D4EFCB376B3DF15EEC533 /* BocanTests.xctest */,
+				EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		52CE35085C7C0EC9FA44F7DB /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C2CF6EB7F9228E98B840DE93 /* ObservabilityTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		5D04F17B59F05CEBF50A5476 = {
+			isa = PBXGroup;
+			children = (
+				B087DD42CE6797CF29123E28 /* App */,
+				0D95A2CB58951EF13BCFC1DB /* Modules */,
+				8BF57F4CB14DAF0B974A3D88 /* Packages */,
+				A9C0239AEA134BDEE9F90258 /* UITests */,
+				13C2660B7453561F1366516C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		8A6EBFBDE9871CAA33430EC6 /* Observability */ = {
+			isa = PBXGroup;
+			children = (
+				52CE35085C7C0EC9FA44F7DB /* Tests */,
+			);
+			path = Observability;
+			sourceTree = "<group>";
+		};
+		8BF57F4CB14DAF0B974A3D88 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				8C85F460580B049360716FE5 /* Observability */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		A9C0239AEA134BDEE9F90258 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		B087DD42CE6797CF29123E28 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */,
+				3D8E8EC191BDB21827F3BBAE /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C2CF6EB7F9228E98B840DE93 /* ObservabilityTests */ = {
+			isa = PBXGroup;
+			children = (
+				8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */,
+			);
+			path = ObservabilityTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A0B4B021CE6EED7390E85E12 /* Bocan */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 215193F3C85CF7D6A68AEC6C /* Build configuration list for PBXNativeTarget "Bocan" */;
+			buildPhases = (
+				428BDF1EC190C6BB2C2652D6 /* Sources */,
+				2EA58E03C6A26F8E2B491726 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Bocan;
+			packageProductDependencies = (
+				4471527EBD815A0F4817C396 /* Observability */,
+			);
+			productName = Bocan;
+			productReference = 0BA06444E0E71CD641790EEF /* Bocan.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AA04E90B83F0999C792EC217 /* BocanUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 676EAFBEB657EB9275F1B30A /* Build configuration list for PBXNativeTarget "BocanUITests" */;
+			buildPhases = (
+				AD93F5013898F14C57F32CD0 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BocanUITests;
+			packageProductDependencies = (
+			);
+			productName = BocanUITests;
+			productReference = EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		B7FEE840BECC122A6CC41E10 /* BocanTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F84F38D8574066831E4B2C14 /* Build configuration list for PBXNativeTarget "BocanTests" */;
+			buildPhases = (
+				1ED7F30C67656A463D4AA900 /* Sources */,
+				2F914A7E293300346A70862B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BocanTests;
+			packageProductDependencies = (
+				8F629E8B78D37805428363DA /* Observability */,
+			);
+			productName = BocanTests;
+			productReference = 7D0D4EFCB376B3DF15EEC533 /* BocanTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		88D818C6C82ED904B269B377 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					AA04E90B83F0999C792EC217 = {
+						TestTargetID = A0B4B021CE6EED7390E85E12;
+					};
+				};
+			};
+			buildConfigurationList = 9A8D325D36AD402573FFEA0D /* Build configuration list for PBXProject "Bocan" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5D04F17B59F05CEBF50A5476;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 13C2660B7453561F1366516C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A0B4B021CE6EED7390E85E12 /* Bocan */,
+				B7FEE840BECC122A6CC41E10 /* BocanTests */,
+				AA04E90B83F0999C792EC217 /* BocanUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1ED7F30C67656A463D4AA900 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CF662F890AEBEE98A2B06936 /* AppLoggerTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		428BDF1EC190C6BB2C2652D6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */,
+				DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AD93F5013898F14C57F32CD0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0D829C779065DF873966545B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_MODULE_NAME = BocanTests;
+				SDKROOT = macosx;
+				TEST_HOST = "";
+			};
+			name = Release;
+		};
+		27BBF2D64293F4FEE4DBF538 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_MODULE_NAME = BocanTests;
+				SDKROOT = macosx;
+				TEST_HOST = "";
+			};
+			name = Debug;
+		};
+		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = Resources/Bocan.entitlements;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.cloudcauldron.bocan;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		68E609CE6F127920313B59E4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_MODULE_NAME = BocanUITests;
+				SDKROOT = macosx;
+				TEST_TARGET_NAME = Bocan;
+			};
+			name = Debug;
+		};
+		9ECFFB1CC9C68C9AEC1A24FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "";
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_MODULE_NAME = BocanUITests;
+				SDKROOT = macosx;
+				TEST_TARGET_NAME = Bocan;
+			};
+			name = Release;
+		};
+		BB4F8B20D3698E28BA4CB09B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Bòcan";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_MODULE_NAME = Bocan;
+				PRODUCT_NAME = Bocan;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		D3B7E2D650BF9AC5F77082BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = Resources/Bocan.entitlements;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_TREAT_WARNINGS_AS_ERRORS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = io.cloudcauldron.bocan;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		E3603F682609D5D7ECDDFFC7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Bòcan";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_MODULE_NAME = Bocan;
+				PRODUCT_NAME = Bocan;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		215193F3C85CF7D6A68AEC6C /* Build configuration list for PBXNativeTarget "Bocan" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E3603F682609D5D7ECDDFFC7 /* Debug */,
+				BB4F8B20D3698E28BA4CB09B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		676EAFBEB657EB9275F1B30A /* Build configuration list for PBXNativeTarget "BocanUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				68E609CE6F127920313B59E4 /* Debug */,
+				9ECFFB1CC9C68C9AEC1A24FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9A8D325D36AD402573FFEA0D /* Build configuration list for PBXProject "Bocan" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E79DA1DC07FE3812FB54C0A /* Debug */,
+				D3B7E2D650BF9AC5F77082BA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F84F38D8574066831E4B2C14 /* Build configuration list for PBXNativeTarget "BocanTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				27BBF2D64293F4FEE4DBF538 /* Debug */,
+				0D829C779065DF873966545B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Observability;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4471527EBD815A0F4817C396 /* Observability */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Observability;
+		};
+		8F629E8B78D37805428363DA /* Observability */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Observability;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 88D818C6C82ED904B269B377 /* Project object */;
+}
