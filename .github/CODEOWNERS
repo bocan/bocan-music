@@ -1,0 +1,7 @@
+# CODEOWNERS
+# Global owner — all files require review from @cloudcauldron/core
+* @cloudcauldron/core
+
+# Modules get reviewed by the team too
+Modules/ @cloudcauldron/core
+.github/ @cloudcauldron/core
