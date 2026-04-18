@@ -24,8 +24,10 @@ public struct DecoderFactory: Sendable {
         switch codec {
         case .wav, .flac, .mp3, .m4a:
             return try AVFoundationDecoder(url: url)
+
         case .ogg, .opus, .dsf, .dff, .ape, .wavpack:
             return try FFmpegDecoder(url: url)
+
         case let .unknown(magic):
             // Last resort: try FFmpeg — it may recognise formats we don't.
             if let decoder = try? FFmpegDecoder(url: url) {

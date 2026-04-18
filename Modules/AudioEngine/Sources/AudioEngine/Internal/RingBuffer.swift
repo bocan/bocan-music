@@ -17,6 +17,18 @@ public final class RingBuffer: @unchecked Sendable {
     private var writeHead = 0
     private var readHead = 0
 
+    // MARK: - Computed properties
+
+    /// Number of samples currently available to read.
+    public var availableToRead: Int {
+        (self.writeHead - self.readHead + self.capacity) & (self.capacity - 1)
+    }
+
+    /// Number of additional samples that can be written.
+    public var availableToWrite: Int {
+        self.capacity - 1 - self.availableToRead
+    }
+
     // MARK: - Init / deinit
 
     public init(capacity: Int) {
@@ -30,21 +42,12 @@ public final class RingBuffer: @unchecked Sendable {
         self.storage.initialize(repeating: 0)
     }
 
+    // swiftlint:disable:next type_contents_order
     deinit {
         storage.deallocate()
     }
 
     // MARK: - API
-
-    /// Number of samples currently available to read.
-    public var availableToRead: Int {
-        (self.writeHead - self.readHead + self.capacity) & (self.capacity - 1)
-    }
-
-    /// Number of additional samples that can be written.
-    public var availableToWrite: Int {
-        self.capacity - 1 - self.availableToRead
-    }
 
     /// Write `count` floats from `source`. Returns number actually written.
     @discardableResult

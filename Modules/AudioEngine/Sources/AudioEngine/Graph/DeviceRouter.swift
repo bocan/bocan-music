@@ -34,7 +34,8 @@ public actor DeviceRouter {
         guard AudioObjectGetPropertyDataSize(
             AudioObjectID(kAudioObjectSystemObject),
             &address,
-            0, nil,
+            0,
+            nil,
             &dataSize
         ) == noErr, dataSize > 0 else { return [] }
 
@@ -43,7 +44,8 @@ public actor DeviceRouter {
         guard AudioObjectGetPropertyData(
             AudioObjectID(kAudioObjectSystemObject),
             &address,
-            0, nil,
+            0,
+            nil,
             &dataSize,
             &deviceIDs
         ) == noErr else { return [] }
@@ -68,7 +70,8 @@ public actor DeviceRouter {
         guard AudioObjectGetPropertyData(
             AudioObjectID(kAudioObjectSystemObject),
             &address,
-            0, nil,
+            0,
+            nil,
             &size,
             &deviceID
         ) == noErr, deviceID != kAudioDeviceUnknown else { return nil }
@@ -77,6 +80,61 @@ public actor DeviceRouter {
         let uid = self.stringProperty(deviceID, kAudioDevicePropertyDeviceUID) ?? "\(deviceID)"
         return DeviceInfo(id: deviceID, name: name, uid: uid)
     }
+
+    // MARK: - Private helpers
+
+    private static func isOutputDevice(_ deviceID: AudioDeviceID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyStreamConfiguration,
+            mScope: kAudioDevicePropertyScopeOutput,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var dataSize: UInt32 = 0
+        guard AudioObjectGetPropertyDataSize(
+            deviceID,
+            &address,
+            0,
+            nil,
+            &dataSize
+        ) == noErr, dataSize > 0 else { return false }
+
+        let bufferList = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: Int(dataSize))
+        defer { bufferList.deallocate() }
+        guard AudioObjectGetPropertyData(
+            deviceID,
+            &address,
+            0,
+            nil,
+            &dataSize,
+            bufferList
+        ) == noErr else { return false }
+
+        return bufferList.pointee.mNumberBuffers > 0
+    }
+
+    private static func stringProperty(
+        _ deviceID: AudioDeviceID,
+        _ selector: AudioObjectPropertySelector
+    ) -> String? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: selector,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var dataSize = UInt32(MemoryLayout<CFString>.size)
+        var result: Unmanaged<CFString>?
+        guard AudioObjectGetPropertyData(
+            deviceID,
+            &address,
+            0,
+            nil,
+            &dataSize,
+            &result
+        ) == noErr else { return nil }
+        return result?.takeRetainedValue() as String?
+    }
+
+    // MARK: - Instance methods
 
     /// Observe default-device changes, invoking `handler` on each change.
     /// Returns the prior listener registration (call `stopObserving()` to cancel).
@@ -118,55 +176,5 @@ public actor DeviceRouter {
             block
         )
         self.listenerBlock = nil
-    }
-
-    // MARK: - Private helpers
-
-    private static func isOutputDevice(_ deviceID: AudioDeviceID) -> Bool {
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyStreamConfiguration,
-            mScope: kAudioDevicePropertyScopeOutput,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var dataSize: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(
-            deviceID,
-            &address,
-            0, nil,
-            &dataSize
-        ) == noErr, dataSize > 0 else { return false }
-
-        let bufferList = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: Int(dataSize))
-        defer { bufferList.deallocate() }
-        guard AudioObjectGetPropertyData(
-            deviceID,
-            &address,
-            0, nil,
-            &dataSize,
-            bufferList
-        ) == noErr else { return false }
-
-        return bufferList.pointee.mNumberBuffers > 0
-    }
-
-    private static func stringProperty(
-        _ deviceID: AudioDeviceID,
-        _ selector: AudioObjectPropertySelector
-    ) -> String? {
-        var address = AudioObjectPropertyAddress(
-            mSelector: selector,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var dataSize = UInt32(MemoryLayout<CFString>.size)
-        var result: Unmanaged<CFString>?
-        guard AudioObjectGetPropertyData(
-            deviceID,
-            &address,
-            0, nil,
-            &dataSize,
-            &result
-        ) == noErr else { return nil }
-        return result?.takeRetainedValue() as String?
     }
 }

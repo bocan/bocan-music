@@ -1,5 +1,5 @@
 // @preconcurrency: AVAudioPCMBuffer lacks Sendable; callers own the buffer exclusively.
-// TODO: Remove once AVFoundation adopts Sendable annotations.
+// Remove once AVFoundation adopts Sendable annotations (FB13119463).
 @preconcurrency import AVFoundation
 import Foundation
 
@@ -9,11 +9,6 @@ import Foundation
 /// and must be reference types (`AnyObject`) because they own expensive OS resources.
 /// All mutating operations are `async` to allow actors to serialise access.
 public protocol Decoder: Sendable, AnyObject {
-    /// Opens `url` for reading. The caller must have already granted security-scoped
-    /// access where required (via `SecurityScope` — Phase 3). Throws on any I/O or
-    /// format error.
-    init(url: URL) throws
-
     /// The native sample format produced by this decoder **before** any conversion.
     var sourceFormat: AVAudioFormat { get }
 
@@ -22,6 +17,9 @@ public protocol Decoder: Sendable, AnyObject {
 
     /// Current read position in seconds.
     var position: TimeInterval { get async }
+
+    /// Opens `url` for reading. Throws on any I/O or format error.
+    init(url: URL) throws
 
     /// Fill `buffer` with up to `buffer.frameCapacity` decoded frames.
     ///

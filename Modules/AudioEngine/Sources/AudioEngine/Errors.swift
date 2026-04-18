@@ -20,22 +20,30 @@ public enum AudioEngineError: Error, Sendable, CustomStringConvertible {
         switch self {
         case let .fileNotFound(url):
             return "File not found: \(url.path)"
+
         case let .accessDenied(url, err):
             let reason = err.map { ": \($0.localizedDescription)" } ?? ""
             return "Access denied to \(url.path)\(reason)"
+
         case let .unsupportedFormat(magic, url):
             let hex = magic.map { String(format: "%02x", $0) }.joined(separator: " ")
             return "Unsupported audio format at \(url.lastPathComponent) (magic bytes: \(hex))"
+
         case let .decoderFailure(codec, err):
             return "Decoder failure [\(codec)]: \(err.localizedDescription)"
+
         case let .formatConversionFailure(from, to):
             return "Format conversion failed: \(from) → \(to)"
+
         case let .engineStartFailed(err):
             return "Audio engine failed to start: \(err.localizedDescription)"
+
         case .outputDeviceUnavailable:
             return "Output audio device is unavailable"
+
         case let .seekOutOfRange(requested, duration):
             return "Seek \(String(format: "%.2f", requested))s is out of range (duration: \(String(format: "%.2f", duration))s)"
+
         case .cancelled:
             return "Operation was cancelled"
         }

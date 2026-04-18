@@ -15,8 +15,8 @@ import Observability
 /// Thread-safety: all mutations are serialised by the owning `AudioEngine` actor.
 /// `@unchecked Sendable`: AVFoundation node types are not annotated Sendable;
 /// safety is guaranteed because only `AudioEngine` ever mutates this object.
-// TODO: Remove @unchecked once AVFoundation adopts Sendable annotations.
 public final class EngineGraph: @unchecked Sendable {
+    // Remove @unchecked once AVFoundation adopts Sendable annotations (FB13119463).
     // MARK: - Properties
 
     public let engine: AVAudioEngine
@@ -26,6 +26,13 @@ public final class EngineGraph: @unchecked Sendable {
 
     private let log = AppLogger.make(.audio)
     private var isRunning = false
+
+    // MARK: - Computed properties
+
+    /// The output sample rate as reported by the hardware (after `prepare()`).
+    public var outputSampleRate: Double {
+        self.engine.outputNode.outputFormat(forBus: 0).sampleRate
+    }
 
     // MARK: - Init
 
@@ -46,11 +53,6 @@ public final class EngineGraph: @unchecked Sendable {
     }
 
     // MARK: - Public API
-
-    /// The output sample rate as reported by the hardware (after `prepare()`).
-    public var outputSampleRate: Double {
-        self.engine.outputNode.outputFormat(forBus: 0).sampleRate
-    }
 
     /// Prepare and start the engine.
     public func start() throws {

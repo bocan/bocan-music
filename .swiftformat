@@ -28,3 +28,4 @@
 --redundanttype inferred
 --patternlet hoist
 --acronyms ID,URL,UUID,API,HTTP,HTTPS,SQL,UI,OS
+--disable wrapMultilineStatementBraces

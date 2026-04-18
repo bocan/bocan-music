@@ -1,5 +1,5 @@
 // @preconcurrency: AVAudioPCMBuffer lacks Sendable; callers own the buffer exclusively.
-// TODO: Remove once AVFoundation adopts Sendable annotations.
+// Remove once AVFoundation adopts Sendable annotations (FB13119463).
 @preconcurrency import AVFoundation
 import Foundation
 import Observability
@@ -17,17 +17,6 @@ public final class AVFoundationDecoder: Decoder {
     private let log = AppLogger.make(.audio)
 
     // MARK: - Public interface
-
-    public required init(url: URL) throws {
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw AudioEngineError.fileNotFound(url)
-        }
-        do {
-            self.file = try AVAudioFile(forReading: url)
-        } catch {
-            throw AudioEngineError.accessDenied(url, underlying: error)
-        }
-    }
 
     /// The processing format (`Float32`, non-interleaved) used by `AVAudioFile`.
     public var sourceFormat: AVAudioFormat {
@@ -47,6 +36,17 @@ public final class AVFoundationDecoder: Decoder {
             let rate = self.file.processingFormat.sampleRate
             guard rate > 0 else { return 0 }
             return TimeInterval(self.file.framePosition) / rate
+        }
+    }
+
+    public required init(url: URL) throws {
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            throw AudioEngineError.fileNotFound(url)
+        }
+        do {
+            self.file = try AVAudioFile(forReading: url)
+        } catch {
+            throw AudioEngineError.accessDenied(url, underlying: error)
         }
     }
 
