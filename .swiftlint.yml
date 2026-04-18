@@ -1,5 +1,5 @@
 disabled_rules:
-  - trailing_comma        # SwiftFormat handles this
+  - trailing_comma # SwiftFormat handles this
 
 opt_in_rules:
   - force_cast
@@ -55,7 +55,6 @@ opt_in_rules:
   - switch_case_on_newline
   - toggle_bool
   - trailing_closure
-  - type_contents_order
   - unavailable_function
   - unneeded_parentheses_in_closure_argument
   - untyped_error_in_catch
@@ -89,17 +88,17 @@ identifier_name:
     - x
     - y
     - z
-    - n          # frame count in audio/DSP code
-    - s          # state in async streams
-    - t          # time value in audio code
-    - i          # channel / loop index
-    - c          # channel pointer
-    - f          # frequency / frame variable
-    - b          # buffer variable
-    - j          # inner loop index (DFT)
-    - k          # frequency bin index (DFT)
-    - l          # left channel / lhs pattern
-    - r          # right channel / rhs pattern
+    - n # frame count in audio/DSP code
+    - s # state in async streams
+    - t # time value in audio code
+    - i # channel / loop index
+    - c # channel pointer
+    - f # frequency / frame variable
+    - b # buffer variable
+    - j # inner loop index (DFT)
+    - k # frequency bin index (DFT)
+    - l # left channel / lhs pattern
+    - r # right channel / rhs pattern
     - dx
     - dy
 
@@ -126,3 +125,4 @@ excluded:
   - Tests/Fixtures
   - Modules/.build
   - Modules/AudioEngine/.build
+  - Modules/Persistence/.build
