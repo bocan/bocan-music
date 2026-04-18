@@ -1,4 +1,4 @@
-.PHONY: help bootstrap doctor open build test test-coverage lint format install-hooks clean
+.PHONY: help bootstrap doctor open build test test-coverage test-audio-engine test-persistence lint format install-hooks clean
 
 ## help: Print all available targets
 help:
@@ -75,6 +75,10 @@ test-coverage:
 ## test-audio-engine: Run AudioEngine SPM package tests (requires FFmpeg via Homebrew)
 test-audio-engine:
 	cd Modules/AudioEngine && swift test
+
+## test-persistence: Run Persistence SPM package tests
+test-persistence:
+	cd Modules/Persistence && swift test --enable-code-coverage
 
 uitest:
 	xcodebuild \
