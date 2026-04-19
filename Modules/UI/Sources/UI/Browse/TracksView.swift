@@ -174,15 +174,20 @@ public struct TracksView: View {
     private func trackContextMenu(ids: Set<Track.ID>) -> some View {
         let selected = self.vm.tracks.filter { ids.contains($0.id) }
         let first = selected.first
+        self.trackContextMenuQueue(first: first, selected: selected)
+        Divider()
+        self.trackContextMenuLibrary(first: first, selected: selected)
+        Divider()
+        self.trackContextMenuEdit(first: first, selected: selected)
+    }
 
+    @ViewBuilder
+    private func trackContextMenuQueue(first: Track?, selected: [Track]) -> some View {
         if let track = first {
             Button("Play Now") {
                 Task { await self.library.play(track: track) }
             }
         }
-
-        Divider()
-
         Button("Play Next") {
             Task { await self.library.playNext(tracks: selected) }
         }
@@ -192,31 +197,54 @@ public struct TracksView: View {
         }
         .disabled(selected.isEmpty)
         Button("Add to Playlist ▸") {}.disabled(true) // TODO(phase-6)
-
-        Divider()
-
         if let first {
+            Divider()
             Button(first.loved ? "Unlove" : "Love") {
                 // TODO(phase-8): persist loved state
             }
         }
+    }
 
-        Divider()
-
-        Button("Reveal in Finder") {
-            for track in selected {
-                if let url = URL(string: track.fileURL) {
+    @ViewBuilder
+    private func trackContextMenuLibrary(first: Track?, selected: [Track]) -> some View {
+        if let first {
+            Button("Show in Finder") {
+                if let url = URL(string: first.fileURL) {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
             }
+            .keyboardShortcut(KeyBindings.revealInFinder)
+            Button("Re-scan File") {
+                if let id = first.id {
+                    Task { await self.library.rescanTrack(id: id) }
+                }
+            }
         }
-        .keyboardShortcut(KeyBindings.revealInFinder)
+        Button("Get Info") {
+            self.library.showInspector(tracks: selected)
+        }
+        .keyboardShortcut(KeyBindings.getInfo)
+        .disabled(selected.isEmpty)
+    }
 
-        Button("Get Info") {}.disabled(true) // TODO(phase-8)
-            .keyboardShortcut(KeyBindings.getInfo)
-
+    @ViewBuilder
+    private func trackContextMenuEdit(first: Track?, selected: [Track]) -> some View {
+        Button("Remove from Library") {
+            for track in selected {
+                if let id = track.id {
+                    Task { await self.library.removeTrack(id: id) }
+                }
+            }
+        }
+        .disabled(selected.isEmpty)
+        if let first {
+            Button("Delete from Disk", role: .destructive) {
+                if let id = first.id {
+                    Task { await self.library.deleteTrackFromDisk(id: id) }
+                }
+            }
+        }
         Divider()
-
         Button("Copy") {
             let tsv = selected.map { [$0.title ?? "", $0.genre ?? ""].joined(separator: "\t") }.joined(separator: "\n")
             NSPasteboard.general.clearContents()

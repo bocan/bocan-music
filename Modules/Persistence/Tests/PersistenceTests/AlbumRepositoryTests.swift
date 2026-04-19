@@ -76,4 +76,34 @@ struct AlbumRepositoryTests {
         let fetched = try await repo.fetch(id: id)
         #expect(fetched.year == 1969)
     }
+
+    @Test("setForceGapless persists true flag")
+    func setForceGaplessTrue() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let id = try await repo.insert(self.makeAlbum())
+        try await repo.setForceGapless(albumID: id, forced: true)
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.forceGapless == true)
+    }
+
+    @Test("setForceGapless can toggle back to false")
+    func setForceGaplessToggle() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let id = try await repo.insert(self.makeAlbum())
+        try await repo.setForceGapless(albumID: id, forced: true)
+        try await repo.setForceGapless(albumID: id, forced: false)
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.forceGapless == false)
+    }
+
+    @Test("forceGapless defaults to false on new album")
+    func forceGaplessDefaultsFalse() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let id = try await repo.insert(self.makeAlbum())
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.forceGapless == false)
+    }
 }

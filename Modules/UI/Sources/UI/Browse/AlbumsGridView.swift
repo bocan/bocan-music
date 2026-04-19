@@ -96,6 +96,15 @@ public struct AlbumsGridView: View {
                                 }
                             }
                             Divider()
+                            Toggle("Force Gapless Playback", isOn: Binding(
+                                get: { album.forceGapless },
+                                set: { forced in
+                                    if let id = album.id {
+                                        Task { await self.library.setAlbumForceGapless(albumID: id, forced: forced) }
+                                    }
+                                }
+                            ))
+                            Divider()
                             Button("Get Info") {}.disabled(true) // TODO(phase-8)
                         }
                 }

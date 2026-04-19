@@ -8,7 +8,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 2)
+        #expect(version == 3)
     }
 
     @Test("Integrity check passes after migration")
@@ -63,9 +63,9 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports two migrations")
+    @Test("Migrator reports three migrations")
     func migratorReportsTwoMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 2)
+        #expect(migrator.migrations.count == 3)
     }
 }

@@ -128,6 +128,14 @@ public actor LibraryScanner {
         }
     }
 
+    /// Rescans a single file, refreshing its tags, bookmark, and DB row.
+    ///
+    /// The caller must ensure `url` is already security-scoped and accessible.
+    /// Returns a `ScanProgress.Summary` describing the outcome.
+    public func scanSingleFile(url: URL) async throws -> ScanProgress.Summary {
+        try await self.coordinator.scanSingleFile(url: url)
+    }
+
     // MARK: - FSWatcher
 
     /// Starts watching all current library roots for file-system changes.

@@ -172,4 +172,65 @@ public extension LibraryViewModel {
             break
         }
     }
+
+    // MARK: - Track management
+
+    /// Soft-deletes `tracks` from the library (sets `disabled = true`).
+    func removeTrack(id: Int64) async {
+        let trackRepo = TrackRepository(database: self.database)
+        do {
+            var track = try await trackRepo.fetch(id: id)
+            track.disabled = true
+            try await trackRepo.update(track)
+            await self.tracks.load()
+            self.log.debug("library.removeTrack", ["id": id])
+        } catch {
+            self.log.error("library.removeTrack.failed", ["id": id, "error": String(reflecting: error)])
+        }
+    }
+
+    /// Re-scans a single file to refresh its tags.
+    func rescanTrack(id: Int64) async {
+        guard let scanner else { return }
+        let trackRepo = TrackRepository(database: self.database)
+        do {
+            let track = try await trackRepo.fetch(id: id)
+            guard let url = URL(string: track.fileURL) else { return }
+            _ = try await scanner.scanSingleFile(url: url)
+            await self.tracks.load()
+            self.log.debug("library.rescanTrack", ["id": id])
+        } catch {
+            self.log.error("library.rescanTrack.failed", ["id": id, "error": String(reflecting: error)])
+        }
+    }
+
+    /// Moves a track's backing file to Trash and soft-deletes the library row.
+    func deleteTrackFromDisk(id: Int64) async {
+        let trackRepo = TrackRepository(database: self.database)
+        do {
+            var track = try await trackRepo.fetch(id: id)
+            if let url = URL(string: track.fileURL) {
+                try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+            }
+            track.disabled = true
+            try await trackRepo.update(track)
+            await self.tracks.load()
+            self.log.debug("library.deleteFromDisk", ["id": id])
+        } catch {
+            self.log.error("library.deleteFromDisk.failed", ["id": id, "error": String(reflecting: error)])
+        }
+    }
+
+    // MARK: - Album settings
+
+    /// Toggles the `force_gapless` flag for an album.
+    func setAlbumForceGapless(albumID: Int64, forced: Bool) async {
+        do {
+            try await self.albumRepo.setForceGapless(albumID: albumID, forced: forced)
+            await self.albums.load()
+            self.log.debug("library.setForceGapless", ["albumID": albumID, "forced": forced])
+        } catch {
+            self.log.error("library.setForceGapless.failed", ["albumID": albumID, "error": String(reflecting: error)])
+        }
+    }
 }

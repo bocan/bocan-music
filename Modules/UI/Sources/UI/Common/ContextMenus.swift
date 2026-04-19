@@ -44,6 +44,15 @@ public struct TrackActions {
     /// TODO(phase-8): Open the tag editor.
     public var getInfo: @MainActor ([Track]) -> Void
 
+    /// Remove the track(s) from the library (soft-delete).
+    public var removeFromLibrary: @MainActor ([Track]) -> Void
+
+    /// Re-scan the track's file to refresh tags.
+    public var rescanFile: @MainActor (Track) -> Void
+
+    /// Move the track's backing file to Trash and remove from library.
+    public var deleteFromDisk: @MainActor (Track) -> Void
+
     /// Copy track metadata as TSV to the pasteboard.
     public var copy: @MainActor ([Track]) -> Void
 
@@ -60,6 +69,9 @@ public struct TrackActions {
         setRating: @escaping @MainActor (Track, Int) async -> Void,
         revealInFinder: @escaping @MainActor (Track) -> Void,
         getInfo: @escaping @MainActor ([Track]) -> Void = { _ in },
+        removeFromLibrary: @escaping @MainActor ([Track]) -> Void = { _ in },
+        rescanFile: @escaping @MainActor (Track) -> Void = { _ in },
+        deleteFromDisk: @escaping @MainActor (Track) -> Void = { _ in },
         copy: @escaping @MainActor ([Track]) -> Void
     ) {
         self.playNow = playNow
@@ -73,6 +85,9 @@ public struct TrackActions {
         self.setRating = setRating
         self.revealInFinder = revealInFinder
         self.getInfo = getInfo
+        self.removeFromLibrary = removeFromLibrary
+        self.rescanFile = rescanFile
+        self.deleteFromDisk = deleteFromDisk
         self.copy = copy
     }
 }
@@ -158,13 +173,30 @@ public struct TrackContextMenu: View {
                 self.actions.revealInFinder(track)
             }
             .keyboardShortcut("r", modifiers: .command)
+
+            Button("Re-scan File") {
+                self.actions.rescanFile(track)
+            }
         }
 
         Button("Get Info") {
             self.actions.getInfo(self.tracks)
         }
-        .disabled(true) // TODO(phase-8): enable when tag editor lands
         .keyboardShortcut("i", modifiers: .command)
+        .disabled(self.tracks.isEmpty)
+
+        Divider()
+
+        Button("Remove from Library") {
+            self.actions.removeFromLibrary(self.tracks)
+        }
+        .disabled(self.tracks.isEmpty)
+
+        if let track {
+            Button("Delete from Disk", role: .destructive) {
+                self.actions.deleteFromDisk(track)
+            }
+        }
 
         Divider()
 

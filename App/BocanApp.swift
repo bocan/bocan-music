@@ -48,9 +48,11 @@ struct BocanApp: App {
             }
 
             CommandMenu("Track") {
-                Button("Get Info") {}
-                    .keyboardShortcut(KeyBindings.getInfo)
-                    .disabled(true) // TODO(phase-8)
+                Button("Get Info") {
+                    self.libraryViewModel.openInspectorWindow?()
+                }
+                .keyboardShortcut(KeyBindings.getInfo)
+                .disabled(self.libraryViewModel.inspectorTrack == nil)
 
                 Button("Reveal in Finder") {
                     // Forwarded to TracksView selection
@@ -65,6 +67,20 @@ struct BocanApp: App {
                     .disabled(true) // TODO(phase-8)
             }
         }
+
+        Window("Track Info", id: "track-inspector") {
+            Group {
+                if let track = self.libraryViewModel.inspectorTrack {
+                    TrackInspectorPanel(track: track)
+                } else {
+                    Text("No track selected")
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 380, minHeight: 340)
+                }
+            }
+        }
+        .windowResizability(.contentMinSize)
+        .windowStyle(.titleBar)
     }
 
     init() {

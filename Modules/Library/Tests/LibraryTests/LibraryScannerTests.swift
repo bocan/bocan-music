@@ -192,6 +192,39 @@ struct LibraryScannerTests {
         // Drain the first scan
         while await iter1.next() != nil {}
     }
+
+    // MARK: - scanSingleFile
+
+    @Test("scanSingleFile inserts a single audio file into the database")
+    func scanSingleFileInserts() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+        let dir = try sampleLibraryURL
+
+        // Pick the first audio file from the fixture directory
+        let audioFile = try FileManager.default
+            .enumerator(at: dir, includingPropertiesForKeys: nil)?
+            .compactMap { $0 as? URL }
+            .first { url in
+                let ext = url.pathExtension.lowercased()
+                return ["flac", "mp3", "aac", "m4a", "wav", "ogg", "opus"].contains(ext)
+            }
+        let url = try #require(audioFile, "No audio file found in fixture directory")
+
+        let summary = try await scanner.scanSingleFile(url: url)
+        #expect(summary.inserted + summary.updated == 1)
+        #expect(summary.errors == 0)
+    }
+
+    @Test("scanSingleFile on a non-existent file records an error")
+    func scanSingleFileNonExistent() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+        let url = URL(fileURLWithPath: "/tmp/does_not_exist_bocan_test.flac")
+
+        let summary = try await scanner.scanSingleFile(url: url)
+        #expect(summary.errors >= 1)
+    }
 }
 
 // MARK: - LibraryLocation tests

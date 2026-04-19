@@ -42,6 +42,10 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Cached cover-art file path (may differ from `cover_art.path` if unlinked).
     public var coverArtPath: String?
 
+    /// When `true`, `QueuePlayer` invokes `GaplessScheduler` for consecutive
+    /// tracks on this album even when padding tags are absent.
+    public var forceGapless: Bool
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -57,7 +61,8 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         releaseType: String? = nil,
         totalTracks: Int? = nil,
         totalDiscs: Int? = nil,
-        coverArtPath: String? = nil
+        coverArtPath: String? = nil,
+        forceGapless: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -70,6 +75,7 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.totalTracks = totalTracks
         self.totalDiscs = totalDiscs
         self.coverArtPath = coverArtPath
+        self.forceGapless = forceGapless
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -95,5 +101,6 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case totalTracks = "total_tracks"
         case totalDiscs = "total_discs"
         case coverArtPath = "cover_art_path"
+        case forceGapless = "force_gapless"
     }
 }
