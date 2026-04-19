@@ -1,4 +1,4 @@
-.PHONY: help bootstrap doctor open build test test-coverage test-audio-engine test-persistence lint format install-hooks clean
+.PHONY: help bootstrap doctor open build test test-coverage test-audio-engine test-persistence test-metadata test-library lint format install-hooks clean
 
 ## help: Print all available targets
 help:
@@ -79,6 +79,14 @@ test-audio-engine:
 ## test-persistence: Run Persistence SPM package tests
 test-persistence:
 	cd Modules/Persistence && swift test --enable-code-coverage
+
+## test-metadata: Run Metadata SPM package tests
+test-metadata:
+	cd Modules/Metadata && swift test --enable-code-coverage
+
+## test-library: Run Library SPM package tests
+test-library:
+	cd Modules/Library && swift test --enable-code-coverage
 
 uitest:
 	xcodebuild \
