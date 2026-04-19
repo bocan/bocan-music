@@ -85,6 +85,17 @@ public struct TrackRepository: Sendable {
     /// Fetches all tracks, newest first.
     public func fetchAll() async throws -> [Track] {
         try await self.database.read { db in
+            try Track
+                .filter(Column("disabled") == false)
+                .order(Column("added_at").desc)
+                .fetchAll(db)
+        }
+    }
+
+    /// Fetches all tracks including disabled ones. Used internally by the scanner
+    /// for change-detection seeding and by tests that verify removal behaviour.
+    public func fetchAllIncludingDisabled() async throws -> [Track] {
+        try await self.database.read { db in
             try Track.order(Column("added_at").desc).fetchAll(db)
         }
     }
@@ -94,6 +105,7 @@ public struct TrackRepository: Sendable {
         try await self.database.read { db in
             try Track
                 .filter(Column("album_id") == albumID)
+                .filter(Column("disabled") == false)
                 .order(Column("disc_number"), Column("track_number"))
                 .fetchAll(db)
         }
@@ -134,6 +146,7 @@ public struct TrackRepository: Sendable {
         let cutoff = Int64(Date().timeIntervalSince1970) - Int64(days * 86400)
         return try await self.database.read { db in
             try Track
+                .filter(Column("disabled") == false)
                 .filter(Column("added_at") >= cutoff)
                 .order(Column("added_at").desc)
                 .fetchAll(db)
@@ -145,6 +158,7 @@ public struct TrackRepository: Sendable {
         let cutoff = Int64(Date().timeIntervalSince1970) - Int64(days * 86400)
         return try await self.database.read { db in
             try Track
+                .filter(Column("disabled") == false)
                 .filter(Column("last_played_at") >= cutoff)
                 .order(Column("last_played_at").desc)
                 .fetchAll(db)
@@ -155,6 +169,7 @@ public struct TrackRepository: Sendable {
     public func mostPlayed(limit: Int = 100) async throws -> [Track] {
         try await self.database.read { db in
             try Track
+                .filter(Column("disabled") == false)
                 .filter(Column("play_count") > 0)
                 .order(Column("play_count").desc)
                 .limit(limit)
@@ -167,6 +182,7 @@ public struct TrackRepository: Sendable {
         try await self.database.read { db in
             try Track
                 .filter(Column("artist_id") == artistID)
+                .filter(Column("disabled") == false)
                 .order(Column("album_track_sort_key"), Column("title"))
                 .fetchAll(db)
         }
@@ -177,6 +193,7 @@ public struct TrackRepository: Sendable {
         try await self.database.read { db in
             try Track
                 .filter(Column("genre") == genre)
+                .filter(Column("disabled") == false)
                 .order(Column("title"))
                 .fetchAll(db)
         }
@@ -187,6 +204,7 @@ public struct TrackRepository: Sendable {
         try await self.database.read { db in
             try Track
                 .filter(Column("composer") == composer)
+                .filter(Column("disabled") == false)
                 .order(Column("title"))
                 .fetchAll(db)
         }
@@ -195,7 +213,8 @@ public struct TrackRepository: Sendable {
     /// Returns all distinct genre strings, sorted alphabetically.
     public func allGenres() async throws -> [String] {
         try await self.database.read { db in
-            let rows = try Row.fetchAll(db, sql: "SELECT DISTINCT genre FROM tracks WHERE genre IS NOT NULL ORDER BY genre")
+            let sql = "SELECT DISTINCT genre FROM tracks WHERE genre IS NOT NULL AND disabled = 0 ORDER BY genre"
+            let rows = try Row.fetchAll(db, sql: sql)
             return rows.compactMap { $0["genre"] as? String }
         }
     }
@@ -203,7 +222,8 @@ public struct TrackRepository: Sendable {
     /// Returns all distinct composer strings, sorted alphabetically.
     public func allComposers() async throws -> [String] {
         try await self.database.read { db in
-            let rows = try Row.fetchAll(db, sql: "SELECT DISTINCT composer FROM tracks WHERE composer IS NOT NULL ORDER BY composer")
+            let sql = "SELECT DISTINCT composer FROM tracks WHERE composer IS NOT NULL AND disabled = 0 ORDER BY composer"
+            let rows = try Row.fetchAll(db, sql: sql)
             return rows.compactMap { $0["composer"] as? String }
         }
     }

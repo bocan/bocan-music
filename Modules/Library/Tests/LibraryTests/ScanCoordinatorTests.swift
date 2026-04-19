@@ -187,8 +187,8 @@ struct ScanCoordinatorTests {
         }
 
         #expect(removedEvents.count == 1, "Expected one removed event, got \(removedEvents.count)")
-        // Row should still exist but be disabled
-        let allTracks = try await trackRepo.fetchAll()
+        // Row should still exist but be marked disabled
+        let allTracks = try await trackRepo.fetchAllIncludingDisabled()
         let disabledTrack = allTracks.first { $0.disabled }
         #expect(disabledTrack != nil, "Expected the removed track to be marked disabled in the DB")
     }

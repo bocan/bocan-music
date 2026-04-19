@@ -130,10 +130,23 @@ public actor LibraryScanner {
 
     /// Rescans a single file, refreshing its tags, bookmark, and DB row.
     ///
-    /// The caller must ensure `url` is already security-scoped and accessible.
-    /// Returns a `ScanProgress.Summary` describing the outcome.
+    /// Finds the library root that covers `url`, activates its security scope,
+    /// then delegates to the coordinator.  Returns a `ScanProgress.Summary`
+    /// describing the outcome.
     public func scanSingleFile(url: URL) async throws -> ScanProgress.Summary {
-        try await self.coordinator.scanSingleFile(url: url)
+        let roots = try await self.rootRepo.fetchAll()
+        let filePath = url.path
+        // Find the root whose path is a prefix of the file path so we can
+        // activate its security scope before reading tags / creating a bookmark.
+        if let root = roots.first(where: { filePath.hasPrefix($0.path) }) {
+            let coordinator = self.coordinator
+            return try await SecurityScope.withAccess(root.bookmark) { _ in
+                try await coordinator.scanSingleFile(url: url)
+            }
+        }
+        // No matching root found — try without a scope (development builds /
+        // files added directly without a root).
+        return try await self.coordinator.scanSingleFile(url: url)
     }
 
     // MARK: - FSWatcher

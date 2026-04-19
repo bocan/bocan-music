@@ -395,7 +395,8 @@ public actor QueuePlayer: Transport {
 
     private func resolveNextGaplessItem() async -> (url: URL, item: QueueItem, forceGapless: Bool)? {
         guard let item = await queue.peekNext() else { return nil }
-        let url = URL(fileURLWithPath: item.fileURL)
+        // item.fileURL is stored as a file:// URL string (url.absoluteString), not a raw path.
+        guard let url = URL(string: item.fileURL) else { return nil }
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 
         // Determine whether the next item's album has `force_gapless` set and
