@@ -15,7 +15,6 @@ import SwiftUI
 /// passing it manually through every level.
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @FocusState private var searchFocused: Bool
 
     public init(vm: LibraryViewModel) {
@@ -24,7 +23,7 @@ public struct BocanRootView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            NavigationSplitView(columnVisibility: self.$columnVisibility) {
+            NavigationSplitView {
                 Sidebar(vm: self.vm)
             } detail: {
                 ContentPane(vm: self.vm)
@@ -49,18 +48,6 @@ public struct BocanRootView: View {
 
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
-        ToolbarItem(placement: .navigation) {
-            Button {
-                withAnimation(Theme.Animation.default) {
-                    self.columnVisibility = self.columnVisibility == .all ? .detailOnly : .all
-                }
-            } label: {
-                Image(systemName: "sidebar.left")
-            }
-            .help("Toggle Sidebar")
-            .accessibilityLabel("Toggle Sidebar")
-        }
-
         ToolbarItem(placement: .primaryAction) {
             SearchField(vm: self.vm.search)
                 .frame(minWidth: 180, maxWidth: 280)
