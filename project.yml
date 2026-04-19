@@ -72,7 +72,7 @@ targets:
     platform: macOS
     sources:
       - path: Modules/Observability/Tests/ObservabilityTests
-      - path: Modules/UI/Tests/UITests
+      - path: Modules/UI/Tests/UITests/ViewModelTests
     settings:
       base:
         PRODUCT_MODULE_NAME: BocanTests
