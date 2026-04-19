@@ -31,7 +31,7 @@ public final class LibraryViewModel: ObservableObject {
     // MARK: - Error state
 
     /// Set when playback fails; cleared when the user dismisses the alert.
-    @Published public var playbackErrorMessage: String? = nil
+    @Published public var playbackErrorMessage: String?
 
     // MARK: - Scan state
 
@@ -160,6 +160,28 @@ public final class LibraryViewModel: ObservableObject {
             try await qp.addToQueue(ids)
         } catch {
             self.log.error("library.addToQueue.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Plays all tracks from the album of `track`.
+    public func playAlbum(track: Track, shuffle: Bool = false) async {
+        guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
+        do {
+            try await qp.playAlbum(albumID, shuffle: shuffle)
+        } catch {
+            self.log.error("library.playAlbum.failed", ["error": String(reflecting: error)])
+            self.playbackErrorMessage = "Could not play album."
+        }
+    }
+
+    /// Plays all tracks by the artist of `track`.
+    public func playArtist(track: Track) async {
+        guard let qp = engine as? QueuePlayer, let artistID = track.artistID else { return }
+        do {
+            try await qp.playArtist(artistID)
+        } catch {
+            self.log.error("library.playArtist.failed", ["error": String(reflecting: error)])
+            self.playbackErrorMessage = "Could not play artist."
         }
     }
 

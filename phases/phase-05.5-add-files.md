@@ -31,6 +31,9 @@ Cancel button.  It auto-dismisses 3 seconds after the scan finishes.
 ```
 Modules/UI/Sources/UI/Import/
 └── ScanBanner.swift           # Progress overlay shown during scanning
+
+Modules/UI/Sources/UI/Inspector/
+└── TrackInspectorPanel.swift  # Read-only ⌘I info panel; Phase 8 replaces it with the full editor
 ```
 
 ### Modified files
@@ -72,6 +75,10 @@ New public methods:
 | `removeRoot(id: Int64) async` | Sidebar right-click context menu |
 | `refreshRoots() async` | Called at startup and after each add |
 | `dismissScanSummary()` | Manual dismiss of the finished banner |
+| `removeTrack(id: Int64) async` | Track context menu "Remove from Library" |
+| `rescanTrack(id: Int64) async` | Track context menu "Re-scan File" |
+| `deleteTrackFromDisk(id: Int64) async throws` | Track context menu "Delete from Disk" |
+| `setAlbumForceGapless(albumID: Int64, forced: Bool) async` | Album context menu "Force Gapless Playback" |
 
 ---
 
@@ -112,6 +119,53 @@ A collapsible "Folders" section at the bottom of the sidebar above Playlists:
   files from disk.
 - The `+` button triggers `addFolderByPicker()`.
 
+### Per-track context-menu additions (TracksView / AlbumsView)
+
+Add two new items to the existing `ContextMenus.swift` track menu:
+
+| Item | Behaviour |
+|---|---|
+| **Remove from Library** | Sets `tracks.disabled = 1` (soft delete); does not touch the file on disk. Confirmation alert with "Don't ask again" suppression stored in `settings`. Removes the row from every visible list immediately via `@Published` reload. |
+| **Re-scan File** | Calls `ScanCoordinator.scanSingleFile(url:)` — resolves the file URL via the per-file bookmark or the root bookmark fallback, re-reads tags, refreshes the `fileBookmark`, updates the DB row. Shows an inline toast on success or a sheet error on failure. |
+
+`ScanCoordinator.scanSingleFile(url:)` is a new thin method that reuses the existing `processFile` internals; it should complete in < 200 ms for normal files.
+
+### Track Inspector (`⌘I`)
+
+A read-only info panel showing all available metadata and file properties. Invoked via `⌘I`, the "Get Info" context-menu item, or the toolbar button on a selected track. Implemented as a non-modal `Window` with `.windowStyle(.inspector)` so it floats alongside the main window.
+
+| Tab | Fields |
+|---|---|
+| **Details** | Title, Artist, Album, Album Artist, Year, Genre, Composer, Track №, Disc №, BPM, Rating (read-only stars), Loved |
+| **File** | File path (with "Show in Finder" link), Format, Sample rate, Bit depth, Bitrate, File size, Duration |
+| **History** | Date added, Date modified, Play count, Skip count, Last played |
+
+Phase 8 converts this into a writable editor using the same `⌘I` shortcut.
+
+### Delete from Disk
+
+"Delete from Disk" in `ContextMenus.swift`, below "Remove from Library":
+
+- Uses `FileManager.default.trashItem(at:resultingItemURL:)` to move to Trash. Falls back to `removeItem(at:)` only if trashing fails, with an additional explicit confirmation.
+- **Two-step confirmation**: alert — “Move «Title» to Trash and remove from Bòcan?” (Move to Trash / Cancel).
+- On success: calls `removeTrack(id:)` (soft-delete) then removes the file. DB row is not hard-deleted so play history is preserved; the file path is cleared.
+- On failure: shows an error sheet; does **not** touch the DB row.
+- Requires the security-scoped URL resolved from the per-file or root bookmark.
+
+### Force Gapless per Album
+
+Some albums are gapless by production intent but lack iTunSMPB / Vorbis padding tags — common with rips from certain tools. Bòcan allows forcing gapless at the album level regardless of tag presence.
+
+**Schema** — add a column to `albums` via a new migration (numbered to slot before Phase 7’s smart-playlist migration):
+
+```sql
+ALTER TABLE albums ADD COLUMN force_gapless INTEGER NOT NULL DEFAULT 0;
+```
+
+**UI** — right-click an album in AlbumsGridView or AlbumDetailView → "Force Gapless Playback" (checked/unchecked toggle).
+
+**Playback** — `QueuePlayer.loadAndPlay` checks `album.force_gapless` for the current and next queued item. When both share the same `album_id` and `force_gapless = 1`, `GaplessScheduler` is invoked even when it would otherwise skip gapless due to missing padding tags. Different sample rates still require `FormatBridge`; the flag only overrides the “no padding tags → skip gapless” short-circuit, not the hardware sample-rate constraint.
+
 ---
 
 ## Acceptance criteria
@@ -123,6 +177,11 @@ A collapsible "Folders" section at the bottom of the sidebar above Playlists:
 - [ ] Cancelling a scan mid-way stops progress and hides the banner.
 - [ ] The Songs empty state shows "Add Music Folder" with a working CTA button.
 - [ ] The Sidebar shows added folders; right-click allows removal.
+- [ ] Right-click a track → "Remove from Library" soft-deletes it; the row disappears from all views immediately.
+- [ ] Right-click a track → "Re-scan File" refreshes its tags and bookmark without a full scan; success shown via toast.
+- [ ] `⌘I` opens the Track Inspector showing correct metadata, file info, and play history.
+- [ ] Right-click a track → "Delete from Disk" moves the file to Trash and removes it from every view.
+- [ ] Right-click an album → "Force Gapless Playback" toggle persists and is honoured during playback.
 - [ ] `make lint` is clean; `make test-ui` is green.
 
 ---
@@ -133,3 +192,4 @@ A collapsible "Folders" section at the bottom of the sidebar above Playlists:
 - Editing tags (Phase 8).
 - Watching folders for live changes (FSWatcher wired in Phase 4).
 - Showing per-file errors in detail (noted in banner, expanded in Phase 8).
+- Editing tags in the inspector (Phase 8 full editor).

@@ -75,6 +75,7 @@ public enum QueueChange: Sendable {
     case currentChanged(newIndex: Int?, previousIndex: Int?)
     case repeatChanged(RepeatMode)
     case shuffleChanged(ShuffleState)
+    case stopAfterCurrentChanged(Bool)
 }
 
 // MARK: - QueueItem

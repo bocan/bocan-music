@@ -177,6 +177,54 @@ public actor QueuePlayer: Transport {
         await queue.append(items)
     }
 
+    /// Replace the queue with all tracks from `albumID` and start playing.
+    /// Pass `shuffle: true` to shuffle before playback begins.
+    public func playAlbum(_ albumID: Int64, shuffle: Bool = false) async throws {
+        let tracks = try await trackRepo.fetchAll(albumID: albumID)
+        guard !tracks.isEmpty else {
+            throw PlaybackError.queueEmpty
+        }
+        let ids = tracks.compactMap(\.id)
+        let items = try await buildItems(for: ids)
+        let ordered: [QueueItem]
+        if shuffle {
+            let seed = UInt64.random(in: .min ... .max)
+            ordered = FisherYatesShuffle().shuffled(items, seed: seed)
+        } else {
+            ordered = items
+        }
+        await self.queue.replace(with: ordered, startAt: 0)
+        if shuffle {
+            await self.queue.setShuffle(true)
+        }
+        try await self.loadCurrentItem()
+        try await self.play()
+    }
+
+    /// Replace the queue with all tracks by `artistID` and start playing.
+    /// Pass `shuffle: true` to shuffle before playback begins.
+    public func playArtist(_ artistID: Int64, shuffle: Bool = false) async throws {
+        let tracks = try await trackRepo.fetchAll(artistID: artistID)
+        guard !tracks.isEmpty else {
+            throw PlaybackError.queueEmpty
+        }
+        let ids = tracks.compactMap(\.id)
+        let items = try await buildItems(for: ids)
+        let ordered: [QueueItem]
+        if shuffle {
+            let seed = UInt64.random(in: .min ... .max)
+            ordered = FisherYatesShuffle().shuffled(items, seed: seed)
+        } else {
+            ordered = items
+        }
+        await self.queue.replace(with: ordered, startAt: 0)
+        if shuffle {
+            await self.queue.setShuffle(true)
+        }
+        try await self.loadCurrentItem()
+        try await self.play()
+    }
+
     /// Advance to the next item.
     public func next() async throws {
         await self.gaplessScheduler.reset()
@@ -211,6 +259,15 @@ public actor QueuePlayer: Transport {
     /// Change the repeat mode.
     public func setRepeat(_ mode: RepeatMode) async {
         await self.queue.setRepeatMode(mode)
+    }
+
+    /// Enable or disable stop-after-current.
+    ///
+    /// When enabled, playback halts at the end of the current track, the flag
+    /// auto-resets, and the queue position is preserved. If repeat-one is also
+    /// active, stop-after-current wins.
+    public func setStopAfterCurrent(_ enabled: Bool) async {
+        await self.queue.setStopAfterCurrent(enabled)
     }
 
     // MARK: Private helpers
@@ -305,6 +362,15 @@ public actor QueuePlayer: Transport {
     private func handleTrackEnded() async {
         let elapsed = await engine.duration // track played fully
         await self.historyRecorder.trackDidEnd(elapsed: elapsed)
+
+        // Stop-after-current wins over repeat modes. Reset the flag then stop.
+        if await self.queue.stopAfterCurrent {
+            await self.queue.setStopAfterCurrent(false)
+            self.stateContinuation?.yield(.ended)
+            await self.nowPlayingCentre?.setPlaying(false)
+            await self.nowPlayingCentre?.clear()
+            return
+        }
 
         guard let next = await queue.advance() else {
             self.stateContinuation?.yield(.ended)

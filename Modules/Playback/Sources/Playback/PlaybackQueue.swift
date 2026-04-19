@@ -24,6 +24,7 @@ public actor PlaybackQueue {
     public private(set) var currentIndex: Int?
     public private(set) var repeatMode: RepeatMode = .off
     public private(set) var shuffleState: ShuffleState = .off
+    public private(set) var stopAfterCurrent = false
 
     /// The original (un-shuffled) source order, used to restore on shuffle-off.
     private var sourceOrder: [QueueItem] = []
@@ -238,6 +239,12 @@ public actor PlaybackQueue {
         self.repeatMode = mode
         self.emit(.repeatChanged(mode))
         self.log.debug("queue.repeat", ["mode": mode.rawValue])
+    }
+
+    public func setStopAfterCurrent(_ enabled: Bool) {
+        self.stopAfterCurrent = enabled
+        self.emit(.stopAfterCurrentChanged(enabled))
+        self.log.debug("queue.stopAfterCurrent", ["enabled": enabled])
     }
 
     /// Enable or disable shuffle.

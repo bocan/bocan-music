@@ -227,4 +227,23 @@ struct PlaybackQueueTests {
         let count = await queue.items.count
         #expect(count == 1)
     }
+
+    // MARK: - Stop After Current
+
+    @Test("setStopAfterCurrent sets the flag")
+    func setStopAfterCurrentSetsFlag() async {
+        let queue = PlaybackQueue()
+        await queue.setStopAfterCurrent(true)
+        let flag = await queue.stopAfterCurrent
+        #expect(flag == true)
+    }
+
+    @Test("setStopAfterCurrent false clears the flag")
+    func setStopAfterCurrentClearsFlag() async {
+        let queue = PlaybackQueue()
+        await queue.setStopAfterCurrent(true)
+        await queue.setStopAfterCurrent(false)
+        let flag = await queue.stopAfterCurrent
+        #expect(flag == false)
+    }
 }

@@ -6,7 +6,7 @@
 
 ## Goal
 
-A proper DSP chain: 10-band EQ, bass boost, headphone crossfeed, stereo expansion, soft limiter. ReplayGain computation for tracks missing tags, applied correctly at playback. Presets (built-in + user). A/B compare. Per-track / per-album / global EQ assignment.
+A proper DSP chain: 10-band EQ, bass boost, headphone crossfeed, stereo expansion, soft limiter. ReplayGain computation for tracks missing tags, applied correctly at playback. Presets (built-in + user). A/B compare. Per-track / per-album / global EQ assignment. Configurable crossfade between consecutive tracks.
 
 ## Non-goals
 
@@ -14,6 +14,7 @@ A proper DSP chain: 10-band EQ, bass boost, headphone crossfeed, stereo expansio
 - Parametric EQ beyond 10 bands — stretch goal only.
 - Per-output-device EQ profiles — noted as a future enhancement, not v1.
 - DSP plug-ins (AU, VST) — out of scope.
+- Time-stretch crossfade (beat-matching, DJ-style) — out of scope.
 
 ## Outcome shape
 
@@ -41,6 +42,9 @@ Modules/UI/Sources/UI/DSP/
 ├── DSPView.swift                    # Crossfeed, expansion, bass boost toggles
 ├── PresetManagerView.swift
 └── ReplayGainSettingsView.swift
+
+Modules/Playback/Sources/Playback/Gapless/   # Extended from Phase 5
+└── CrossfadeScheduler.swift         # Volume-ramp transition; replaces hard handoff when crossfade > 0
 ```
 
 ## Implementation plan
@@ -129,6 +133,18 @@ All nodes exist in the graph at all times; each can be bypassed without rebuildi
 
 15. **`ReplayGainSettingsView`** — pick mode, pre-amp, enable write-back-to-file toggle, "Compute missing" action, "Recompute all" (with confirm).
 
+### Crossfade
+
+16. **`CrossfadeScheduler`** — extends the `GaplessScheduler` handoff (Phase 5) with a volume-ramp transition when crossfade is enabled. Lives in `Modules/Playback`.
+    - Setting: `playback.crossfade.durationSeconds` (0.0 = off, 1.0–10.0 s). Stored in `settings` table (no schema migration needed).
+    - **“Keep gapless within albums”** option (`playback.crossfade.albumGapless`, default `true`): tracks from the same album use the existing Phase 5 gapless path (sample-accurate handoff); crossfade only applies at album boundaries.
+    - When `durationSeconds > 0`: at the pre-decode handoff point, begin a linear volume fade-out on the outgoing player node over `durationSeconds × 0.5` seconds, and schedule the incoming track to start `durationSeconds × 0.5` seconds before the outgoing track’s scheduled end with a matching fade-in ramp. Both ramps use `AVAudioTime`-anchored scheduling on a background `Task` (no `Timer`).
+    - When `durationSeconds = 0`: code path is identical to Phase 5’s hard handoff — no regression.
+
+17. **Crossfade UI** — add a “Transitions” subsection to `DSPView`:
+    - Toggle to enable crossfade + slider 1–10 s (0.5 s increments); shown as “0 (Gapless)” when off.
+    - Checkbox “Keep gapless within albums”.
+
 ## Built-in presets
 
 Name, per-band dB array (31.5 → 16k), overall gain, notes:
@@ -169,6 +185,8 @@ public struct DSPState: Sendable, Codable, Hashable {
     public var stereoWidth: Double        // 0.5...2.0
     public var replayGainMode: ReplayGainMode
     public var preAmpDB: Double
+    public var crossfadeSeconds: Double       // 0 = off; 1–10 = crossfade duration in seconds
+    public var crossfadeAlbumGapless: Bool    // true = keep gapless within albums when crossfade > 0
 }
 ```
 
@@ -179,6 +197,7 @@ public struct DSPState: Sendable, Codable, Hashable {
 - `use context7 vDSP biquad IIR filter`
 - `use context7 ITU-R BS.1770 K-weighting EBU R128 Swift`
 - `use context7 Swift Accelerate true peak oversampling`
+- `use context7 AVAudioPlayerNode volume ramp AVAudioTime crossfade`
 
 ## Dependencies
 
@@ -224,6 +243,12 @@ None new at Swift level. Uses `Accelerate` (system).
 - Scope switcher: setting a per-track assignment writes to DB, reverts to global after track change when on "Global".
 - A/B toggle flips EQ + gain path cleanly; no audible pop.
 
+### Crossfade
+
+- At `crossfadeSeconds > 0`, audio from two consecutive tracks overlaps without a click at the ramp start or end.
+- At `crossfadeSeconds = 0`, output is bit-identical to Phase 5 gapless fixture test.
+- With `crossfadeAlbumGapless = true`, two tracks from the same album use gapless (no overlap); two tracks from different albums crossfade.
+
 ### Performance
 
 - EQ adds < 2% CPU on a typical M-series Mac during playback.
@@ -233,6 +258,9 @@ None new at Swift level. Uses `Accelerate` (system).
 
 - [ ] 10-band EQ with instantly-responsive sliders.
 - [ ] Bypass is truly transparent.
+- [ ] Crossfade between tracks: smooth overlap at the configured duration; no pops or clicks.
+- [ ] `crossfadeAlbumGapless = true` preserves sample-accurate gapless within albums while crossfading at album boundaries.
+- [ ] `crossfadeSeconds = 0` is bit-identical to Phase 5 gapless behaviour.
 - [ ] Presets save and load; per-track and per-album assignments persist.
 - [ ] Replay Gain prevents loudness whiplash between tracks.
 - [ ] Clipping guard triggers when it should.
@@ -253,6 +281,8 @@ None new at Swift level. Uses `Accelerate` (system).
 - **Sample rate**: filter coefficients depend on sample rate. On device change (Phase 1 already reconfigures the engine), recompute all filter coefficients.
 - **UI sliders → parameters**: avoid writing on every `onChange`; debounce at ~30 Hz (enough for smooth response) to save CPU.
 - **Per-album assignments** interact with smart shuffle: a track played out of its album context may or may not use the album preset — decide and document. Suggested: album preset wins when queued as part of an album span.
+- **Crossfade + gapless co-existence**: crossfade and gapless are mutually exclusive for a given track boundary. When `crossfadeAlbumGapless = true`, the boundary type is decided per-pair at schedule time. Commit to this decision before the audio thread runs; don’t re-evaluate it on the render thread.
+- **Volume automation on `AVAudioPlayerNode`**: setting `.volume` is thread-safe but not sample-accurate (~10 ms jitter). This is acceptable for crossfade. Document in source; don’t try to compensate via manual `AVAudioTime` offsets.
 
 ## Handoff
 

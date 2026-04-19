@@ -13,7 +13,7 @@ Turn the single-file player into a real music player: a queue you can manipulate
 - Playlists as persistent entities — Phase 6.
 - Smart playlists — Phase 7.
 - EQ / ReplayGain on output — Phase 9 (but the engine must already have the insertion point from Phase 1).
-- Crossfade as a separate feature — optional, sketched at the end; only ship if trivial.
+- Crossfade between tracks — Phase 9.
 
 ## Outcome shape
 
@@ -116,6 +116,7 @@ Add a new sidebar item "Up Next" showing the current queue, with drag-reorder an
      public func previous() async throws
      public func setRepeat(_ mode: RepeatMode) async
      public func setShuffle(_ on: Bool) async
+     public func setStopAfterCurrent(_ enabled: Bool) async
      ```
 
 6. **`GaplessScheduler`** — the heart of the phase.
@@ -147,7 +148,7 @@ Add a new sidebar item "Up Next" showing the current queue, with drag-reorder an
 11. **UI wiring** (in `Modules/UI`):
     - Enable the stubbed context menu items.
     - Add **Up Next** sidebar row that opens a `QueueView` with drag-reorder and remove.
-    - Transport strip: hook prev/next buttons, show "Shuffle" and "Repeat" toggles.
+    - Transport strip: hook prev/next buttons, show "Shuffle", "Repeat", and "Stop After Current" toggles. Stop After Current is a one-shot flag: when enabled and the current track ends, playback stops and the flag resets.
     - Double-clicking a track in a list now: **play that track, enqueue the rest of the current view after it** (iTunes/Music behaviour). Option-double-click → play just this one.
     - Drag a track onto the Up Next sidebar row to enqueue.
 
@@ -179,6 +180,7 @@ public enum QueueChange: Sendable {
     case currentChanged(newIndex: Int?, previousIndex: Int?)
     case repeatChanged(RepeatMode)
     case shuffleChanged(ShuffleState)
+    case stopAfterCurrentChanged(Bool)
 }
 ```
 
@@ -268,6 +270,7 @@ None new. (MediaPlayer is a system framework.)
 - [ ] Media keys / AirPods / Control Centre all drive transport and next/previous.
 - [ ] Shuffle respects exclusion; smart shuffle feels "musical" (subjective but not obviously broken).
 - [ ] Repeat modes behave correctly.
+- [ ] "Stop after current" halts playback at the end of the current track; the flag auto-resets and the queue position is preserved.
 - [ ] Queue persists across launches.
 - [ ] Play counts and history roll up correctly.
 - [ ] 80%+ coverage on `Modules/Playback`.
@@ -282,6 +285,7 @@ None new. (MediaPlayer is a system framework.)
 - **Cover art in `MPMediaItemArtwork`**: must be an `NSImage`; supply a bounds-handler that returns an image at requested size. Don't ship a 4k image to the Dynamic Island.
 - **MPRemoteCommandCenter** handlers return `MPRemoteCommandHandlerStatus`. Always return a value; returning success when the op failed confuses Control Centre.
 - **Mixed gapless**: honest truth — if the formats differ you cannot be perfectly sample-accurate without a pre-rendered crossfade. Accept a tiny crossfade; put it behind a setting if audiophiles grumble.
+- **Stop-after-current + repeat-one**: if both are enabled simultaneously, stop-after-current wins — the track plays once then stops and the flag resets.
 - **Shuffle + replay**: if the user disables shuffle mid-playback, the remaining queue should become the un-shuffled rest of the album/source — not just "the same random order with shuffle label off". Store the original source order so you can reconstruct.
 - **History double-writes**: if the app crashes after the half-way mark but before the `.ended` event, you'll lose the play. A heuristic is to write the row immediately when the rule becomes true (≥ 50% OR ≥ 4 min), then mark "ended cleanly" only on the true end. Tune to avoid duplicates on seek-backs.
 - **`excluded_from_shuffle`** only applies to random/shuffle selection. Manually adding such a track to the queue still plays it — don't filter in the queue itself.
