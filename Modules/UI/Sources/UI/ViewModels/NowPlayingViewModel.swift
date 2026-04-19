@@ -111,9 +111,14 @@ public final class NowPlayingViewModel: ObservableObject {
     public func cycleRepeat() async {
         guard let qp = engine as? QueuePlayer else { return }
         let next: RepeatMode = switch self.repeatMode {
-        case .off: .all
-        case .all: .one
-        case .one: .off
+        case .off:
+            .all
+
+        case .all:
+            .one
+
+        case .one:
+            .off
         }
         await qp.setRepeat(next)
         self.repeatMode = next

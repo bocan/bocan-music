@@ -22,7 +22,7 @@ public struct QueueView: View {
 private struct QueueContentView: View {
     @ObservedObject var vm: LibraryViewModel
     @State private var items: [QueueItem] = []
-    @State private var currentIndex: Int? = nil
+    @State private var currentIndex: Int?
 
     var body: some View {
         Group {
@@ -76,7 +76,7 @@ private struct QueueContentView: View {
         newItems.move(fromOffsets: source, toOffset: destination)
         // Replace queue with reordered items, preserve currentIndex into new order.
         let currentID = self.currentIndex.map { self.items[$0].id }
-        await queue.replace(with: newItems, startAt: newItems.firstIndex(where: { $0.id == currentID }) ?? self.currentIndex ?? 0)
+        await queue.replace(with: newItems, startAt: newItems.firstIndex { $0.id == currentID } ?? self.currentIndex ?? 0)
         await self.refreshQueue()
     }
 }
