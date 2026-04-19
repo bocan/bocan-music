@@ -372,7 +372,7 @@ private extension FFmpegDecoder {
 private func ffError(_ code: Int32) -> Error {
     var buf = [CChar](repeating: 0, count: 256)
     av_strerror(code, &buf, buf.count)
-    return FFmpegInternalError.code(code, String(cString: buf))
+    return FFmpegInternalError.code(code, String(decoding: buf.prefix(while: { $0 != 0 }).map(UInt8.init), as: UTF8.self))
 }
 
 private enum FFmpegInternalError: Error, LocalizedError {
