@@ -9,14 +9,21 @@ updates:
       prefix: "build(deps)"
 
   - package-ecosystem: swift
-    directory: /
+    directory: /Modules/Observability
     schedule:
       interval: weekly
     commit-message:
       prefix: "build(deps)"
 
   - package-ecosystem: swift
-    directory: /Modules/Observability
+    directory: /Modules/AudioEngine
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Persistence
     schedule:
       interval: weekly
     commit-message:
