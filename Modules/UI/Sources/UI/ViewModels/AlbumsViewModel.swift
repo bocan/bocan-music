@@ -1,0 +1,57 @@
+import Foundation
+import Observability
+import Persistence
+
+// MARK: - AlbumsViewModel
+
+/// Manages the sorted list of albums shown in `AlbumsGridView`.
+@MainActor
+public final class AlbumsViewModel: ObservableObject {
+    // MARK: - Published state
+
+    @Published public private(set) var albums: [Album] = []
+    @Published public private(set) var isLoading = false
+    @Published public var selectedAlbumID: Int64?
+
+    // MARK: - Internal
+
+    private let repository: AlbumRepository
+    private let log = AppLogger.make(.ui)
+
+    // MARK: - Init
+
+    public init(repository: AlbumRepository) {
+        self.repository = repository
+    }
+
+    // MARK: - Public API
+
+    /// Loads all albums sorted alphabetically.
+    public func load() async {
+        self.isLoading = true
+        self.log.debug("albums.load.start", [:])
+        do {
+            self.albums = try await self.repository.fetchAll()
+            self.log.debug("albums.load.end", ["count": self.albums.count])
+        } catch {
+            self.log.error("albums.load.failed", ["error": String(reflecting: error)])
+        }
+        self.isLoading = false
+    }
+
+    /// Loads albums for a specific artist.
+    public func load(albumArtistID: Int64) async {
+        self.isLoading = true
+        do {
+            self.albums = try await self.repository.fetchAll(albumArtistID: albumArtistID)
+        } catch {
+            self.log.error("albums.load(artistID).failed", ["error": String(reflecting: error)])
+        }
+        self.isLoading = false
+    }
+
+    /// Replaces the album list with a pre-fetched result (search results).
+    public func setAlbums(_ items: [Album]) {
+        self.albums = items
+    }
+}

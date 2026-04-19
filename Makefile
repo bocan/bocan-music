@@ -1,4 +1,4 @@
-.PHONY: help bootstrap doctor open build test test-coverage test-audio-engine test-persistence test-metadata test-library lint format install-hooks clean
+.PHONY: help bootstrap doctor open build test test-coverage test-audio-engine test-persistence test-metadata test-library test-ui lint format install-hooks clean
 
 ## help: Print all available targets
 help:
@@ -87,6 +87,10 @@ test-metadata:
 ## test-library: Run Library SPM package tests
 test-library:
 	cd Modules/Library && swift test --enable-code-coverage
+
+## test-ui: Run UI SPM package tests
+test-ui:
+	cd Modules/UI && swift test --enable-code-coverage
 
 uitest:
 	xcodebuild \
