@@ -60,6 +60,8 @@ targets:
     dependencies:
       - package: Observability
       - package: AudioEngine
+      - package: Persistence
+      - package: UI
     scheme:
       testTargets:
         - BocanTests
@@ -70,6 +72,7 @@ targets:
     platform: macOS
     sources:
       - path: Modules/Observability/Tests/ObservabilityTests
+      - path: Modules/UI/Tests/UITests
     settings:
       base:
         PRODUCT_MODULE_NAME: BocanTests
@@ -77,6 +80,9 @@ targets:
         TEST_HOST: ""
     dependencies:
       - package: Observability
+      - package: Persistence
+      - package: AudioEngine
+      - package: UI
 
   BocanUITests:
     type: bundle.ui-testing
@@ -98,3 +104,7 @@ packages:
     path: Modules/Observability
   AudioEngine:
     path: Modules/AudioEngine
+  Persistence:
+    path: Modules/Persistence
+  UI:
+    path: Modules/UI
