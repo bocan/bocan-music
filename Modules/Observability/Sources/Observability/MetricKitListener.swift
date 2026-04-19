@@ -30,15 +30,7 @@ import os
 
         // MARK: - MXMetricManagerSubscriber
 
-        public nonisolated func didReceive(_ payloads: [MXMetricPayload]) {
-            for payload in payloads {
-                let data = payload.jsonRepresentation()
-                let json = String(data: data, encoding: .utf8) ?? "<binary>"
-                let log = AppLogger.make(.app)
-                log.notice("metrickit.payload.metrics", ["json": json])
-            }
-        }
-
+        /// MXMetricPayload is unavailable on macOS; only diagnostics are supported.
         public nonisolated func didReceive(_ payloads: [MXDiagnosticPayload]) {
             for payload in payloads {
                 let data = payload.jsonRepresentation()
