@@ -69,15 +69,7 @@ struct BocanApp: App {
         }
 
         Window("Track Info", id: "track-inspector") {
-            Group {
-                if let track = self.libraryViewModel.inspectorTrack {
-                    TrackInspectorPanel(track: track)
-                } else {
-                    Text("No track selected")
-                        .foregroundStyle(.secondary)
-                        .frame(minWidth: 380, minHeight: 340)
-                }
-            }
+            InspectorWindowContent(vm: self.libraryViewModel)
         }
         .windowResizability(.contentMinSize)
         .windowStyle(.titleBar)
@@ -114,5 +106,24 @@ struct BocanApp: App {
         self.database = db
         self.engine = eng
         self.libraryViewModel = LibraryViewModel(database: db, engine: player, scanner: scanner)
+    }
+}
+
+// MARK: - InspectorWindowContent
+
+/// Private wrapper that observes `LibraryViewModel` so the Track Info window
+/// reacts to `inspectorTrack` changes at runtime (the `Window` scene builder
+/// itself does not re-evaluate on `@Published` changes without this helper).
+private struct InspectorWindowContent: View {
+    @ObservedObject var vm: LibraryViewModel
+
+    var body: some View {
+        if let track = vm.inspectorTrack {
+            TrackInspectorPanel(track: track)
+        } else {
+            Text("No track selected")
+                .foregroundStyle(.secondary)
+                .frame(minWidth: 380, minHeight: 340)
+        }
     }
 }
