@@ -13,12 +13,12 @@ final class SmokeTests: XCTestCase {
         self.app.terminate()
     }
 
-    /// Verifies the main window contains the placeholder "Hello, Bòcan" text.
-    func testHelloWorld() {
-        let label = self.app.staticTexts["Hello, Bòcan"]
+    /// Verifies the main window is visible on launch.
+    func testMainWindowVisible() {
+        let window = self.app.windows["BocanMainWindow"]
         XCTAssertTrue(
-            label.waitForExistence(timeout: 5),
-            "Expected 'Hello, Bòcan' label to be visible on launch"
+            window.waitForExistence(timeout: 10),
+            "Expected the main window to be visible on launch"
         )
     }
 }

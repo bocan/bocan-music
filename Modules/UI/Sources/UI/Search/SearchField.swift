@@ -27,7 +27,7 @@ public struct SearchField: View {
                 .font(Typography.body)
                 .focused(self.$isFocused)
                 .onChange(of: self.vm.query) { _, _ in
-                    self.vm.queryChanged()
+                    Task { @MainActor in self.vm.queryChanged() }
                 }
                 .onSubmit { self.vm.queryChanged() }
                 .accessibilityIdentifier(A11y.Search.field)

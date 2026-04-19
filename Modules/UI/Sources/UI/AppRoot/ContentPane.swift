@@ -77,7 +77,7 @@ public struct ContentPane: View {
 
         case let .search(searchQuery):
             SearchResultsView(vm: self.vm.search, library: self.vm)
-                .onAppear {
+                .task {
                     self.vm.search.query = searchQuery
                     self.vm.search.queryChanged()
                 }

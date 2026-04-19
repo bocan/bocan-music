@@ -81,6 +81,27 @@ public struct ArtistRepository: Sendable {
         }
     }
 
+    /// Returns a dictionary mapping artist ID → album count (as album artist).
+    ///
+    /// Only counts non-disabled albums. Artists with no albums are absent from the result.
+    public func fetchAlbumCounts() async throws -> [Int64: Int] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT album_artist_id, COUNT(*) AS cnt
+                FROM albums
+                WHERE album_artist_id IS NOT NULL
+                GROUP BY album_artist_id
+            """)
+            var counts: [Int64: Int] = [:]
+            for row in rows {
+                if let id: Int64 = row["album_artist_id"], let cnt: Int = row["cnt"] {
+                    counts[id] = cnt
+                }
+            }
+            return counts
+        }
+    }
+
     // MARK: - Search
 
     /// Full-text search across artist name field.

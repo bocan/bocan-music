@@ -71,7 +71,6 @@ public struct AlbumsGridView: View {
             }
         }
         .navigationTitle("Albums")
-        .task { await self.vm.load() }
     }
 
     // MARK: - Grid

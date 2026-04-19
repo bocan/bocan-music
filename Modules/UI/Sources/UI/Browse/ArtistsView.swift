@@ -9,6 +9,8 @@ public struct ArtistDetailView: View {
     public var library: LibraryViewModel
 
     @State private var artist: Artist?
+    @State private var albumCount = 0
+    @State private var trackCount = 0
 
     public init(artistID: Int64, library: LibraryViewModel) {
         self.artistID = artistID
@@ -19,10 +21,41 @@ public struct ArtistDetailView: View {
         VStack(spacing: 0) {
             // Artist header
             if let artist {
-                HStack {
-                    Text(artist.name)
-                        .font(Typography.largeTitle)
-                        .foregroundStyle(Color.textPrimary)
+                HStack(spacing: 16) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.accentColor.opacity(0.15))
+                            .frame(width: 64, height: 64)
+                        Image(systemName: "music.mic")
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(artist.name)
+                            .font(Typography.largeTitle)
+                            .foregroundStyle(Color.textPrimary)
+
+                        HStack(spacing: 8) {
+                            if self.albumCount > 0 {
+                                Text(self.albumCount == 1 ? "1 album" : "\(self.albumCount) albums")
+                                    .font(Typography.caption)
+                                    .foregroundStyle(Color.textSecondary)
+                            }
+                            if self.albumCount > 0, self.trackCount > 0 {
+                                Text("·")
+                                    .font(Typography.caption)
+                                    .foregroundStyle(Color.textTertiary)
+                            }
+                            if self.trackCount > 0 {
+                                Text(self.trackCount == 1 ? "1 song" : "\(self.trackCount) songs")
+                                    .font(Typography.caption)
+                                    .foregroundStyle(Color.textSecondary)
+                            }
+                        }
+                    }
+
                     Spacer()
                 }
                 .padding(20)
@@ -41,8 +74,14 @@ public struct ArtistDetailView: View {
 
     private func load() async {
         await self.library.albums.load(albumArtistID: self.artistID)
+        self.albumCount = self.library.albums.albums.count
         if let artist = try? await ArtistRepository(database: library.database).fetch(id: artistID) {
             self.artist = artist
+        }
+        // Count tracks for this artist
+        let trackRepo = TrackRepository(database: library.database)
+        if let tracks = try? await trackRepo.fetchAll(artistID: self.artistID) {
+            self.trackCount = tracks.count
         }
     }
 }
@@ -75,15 +114,33 @@ public struct ArtistsView: View {
             }
         }
         .navigationTitle("Artists")
-        .task { await self.vm.load() }
     }
 
     private var artistList: some View {
         List(self.vm.artists, id: \.id, selection: self.$vm.selectedArtistID) { artist in
-            HStack {
-                Text(artist.name)
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textPrimary)
+            HStack(spacing: 10) {
+                // Avatar circle
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "music.mic")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(artist.name)
+                        .font(Typography.body)
+                        .foregroundStyle(Color.textPrimary)
+
+                    if let id = artist.id, let count = self.vm.albumCounts[id], count > 0 {
+                        Text(count == 1 ? "1 album" : "\(count) albums")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
 
                 Spacer()
 
