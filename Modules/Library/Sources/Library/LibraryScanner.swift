@@ -37,7 +37,11 @@ public actor LibraryScanner {
     /// Adds a new library root from a user-chosen URL.
     ///
     /// Creates a security-scoped bookmark and persists it to the DB.
+    /// If a root with the same path already exists this is a no-op.
     public func addRoot(_ url: URL) async throws {
+        let existing = try await self.rootRepo.fetchAll()
+        guard !existing.contains(where: { $0.path == url.path }) else { return }
+
         let bookmark = try url.bookmarkData(
             options: .withSecurityScope,
             includingResourceValuesForKeys: nil,
