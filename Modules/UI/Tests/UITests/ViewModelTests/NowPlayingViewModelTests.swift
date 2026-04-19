@@ -10,19 +10,19 @@ import Testing
 /// Minimal in-memory Transport for ViewModel tests.
 final class MockTransport: Transport, @unchecked Sendable {
     var currentTime: TimeInterval {
-        self._currentTime
+        self.storedCurrentTime
     }
 
     var duration: TimeInterval {
-        self._duration
+        self.storedDuration
     }
 
     var state: AsyncStream<PlaybackState> {
         self._stream
     }
 
-    var _currentTime: TimeInterval = 0
-    var _duration: TimeInterval = 0
+    var storedCurrentTime: TimeInterval = 0
+    var storedDuration: TimeInterval = 0
     var loadedURL: URL?
     var playCallCount = 0
     var pauseCallCount = 0
@@ -80,7 +80,7 @@ struct NowPlayingViewModelTests {
         let engine = MockTransport()
         let db = try await makeDatabase()
         let vm = NowPlayingViewModel(engine: engine, database: db)
-        #expect(vm.title == "")
+        #expect(vm.title.isEmpty)
         #expect(!vm.isPlaying)
         #expect(vm.volume == 1.0)
         #expect(vm.position == 0)
@@ -123,11 +123,16 @@ struct NowPlayingViewModelTests {
         let engine = MockTransport()
         let db = try await makeDatabase()
         let vm = NowPlayingViewModel(engine: engine, database: db)
-        // Transition to playing state
-        try await engine.play()
-        // Give state subscription a moment to process
-        try await Task.sleep(nanoseconds: 100_000_000)
-        #expect(vm.isPlaying)
+        // Emit playing state directly (synchronous, no scheduling ambiguity).
+        engine.emit(.playing)
+        // Yield until the @MainActor stateTask processes the event.
+        // A sleep is unreliable: under --enable-code-coverage, concurrent @MainActor
+        // snapshot tests can hold the main actor beyond the sleep window.
+        for _ in 0 ..< 100 {
+            if vm.isPlaying { break }
+            await Task.yield()
+        }
+        try #require(vm.isPlaying)
         await vm.playPause()
         #expect(engine.pauseCallCount == 1)
     }

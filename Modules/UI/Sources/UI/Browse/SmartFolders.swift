@@ -26,10 +26,13 @@ public struct SmartFolderView: View {
                     switch self.destination {
                     case .recentlyAdded:
                         result = try await repo.recentlyAdded(days: 30)
+
                     case .recentlyPlayed:
                         result = try await repo.recentlyPlayed(days: 90)
+
                     case .mostPlayed:
                         result = try await repo.mostPlayed(limit: 100)
+
                     default:
                         result = []
                     }
@@ -44,21 +47,50 @@ public struct SmartFolderView: View {
 extension SidebarDestination {
     var displayTitle: String {
         switch self {
-        case .songs: "Songs"
-        case .albums: "Albums"
-        case .artists: "Artists"
-        case .genres: "Genres"
-        case .composers: "Composers"
-        case .recentlyAdded: "Recently Added"
-        case .recentlyPlayed: "Recently Played"
-        case .mostPlayed: "Most Played"
-        case .artist: "Artist"
-        case .album: "Album"
-        case let .genre(g): g
-        case let .composer(c): c
-        case .playlist: "Playlist"
-        case .smartPlaylist: "Smart Playlist"
-        case let .search(q): "Search: \(q)"
+        case .songs:
+            "Songs"
+
+        case .albums:
+            "Albums"
+
+        case .artists:
+            "Artists"
+
+        case .genres:
+            "Genres"
+
+        case .composers:
+            "Composers"
+
+        case .recentlyAdded:
+            "Recently Added"
+
+        case .recentlyPlayed:
+            "Recently Played"
+
+        case .mostPlayed:
+            "Most Played"
+
+        case .artist:
+            "Artist"
+
+        case .album:
+            "Album"
+
+        case let .genre(genre):
+            genre
+
+        case let .composer(composer):
+            composer
+
+        case .playlist:
+            "Playlist"
+
+        case .smartPlaylist:
+            "Smart Playlist"
+
+        case let .search(searchQuery):
+            "Search: \(searchQuery)"
         }
     }
 }

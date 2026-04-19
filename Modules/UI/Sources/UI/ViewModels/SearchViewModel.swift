@@ -15,7 +15,7 @@ public struct SearchResults: Sendable {
         self.tracks.isEmpty && self.albums.isEmpty && self.artists.isEmpty
     }
 
-    public static let empty = SearchResults(tracks: [], albums: [], artists: [])
+    public static let empty = Self(tracks: [], albums: [], artists: [])
 }
 
 // MARK: - SearchViewModel
@@ -57,8 +57,8 @@ public final class SearchViewModel: ObservableObject {
     /// Call whenever `query` changes to trigger a debounced search.
     public func queryChanged() {
         self.debounceTask?.cancel()
-        let q = self.query.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else {
+        let trimmed = self.query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
             self.results = .empty
             self.isSearching = false
             return
@@ -68,7 +68,7 @@ public final class SearchViewModel: ObservableObject {
             // 250ms debounce
             try? await Task.sleep(nanoseconds: 250_000_000)
             guard !Task.isCancelled else { return }
-            await self.runSearch(query: q)
+            await self.runSearch(query: trimmed)
         }
     }
 

@@ -184,7 +184,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
 
     // MARK: - Init
 
-    // swiftlint:disable function_default_parameter_at_end
+    // swiftlint:disable function_default_parameter_at_end function_body_length
     public init(
         id: Int64? = nil,
         fileURL: String,
@@ -291,7 +291,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.updatedAt = updatedAt
     }
 
-    // swiftlint:enable function_default_parameter_at_end
+    // swiftlint:enable function_default_parameter_at_end function_body_length
 
     // MARK: - GRDB
 

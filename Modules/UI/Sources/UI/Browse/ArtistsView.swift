@@ -41,8 +41,8 @@ public struct ArtistDetailView: View {
 
     private func load() async {
         await self.library.albums.load(albumArtistID: self.artistID)
-        if let a = try? await ArtistRepository(database: library.database).fetch(id: artistID) {
-            self.artist = a
+        if let artist = try? await ArtistRepository(database: library.database).fetch(id: artistID) {
+            self.artist = artist
         }
     }
 }

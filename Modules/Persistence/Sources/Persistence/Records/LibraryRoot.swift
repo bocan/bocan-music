@@ -29,6 +29,7 @@ public struct LibraryRoot: Codable, FetchableRecord, MutablePersistableRecord, S
 
     // MARK: - Init
 
+    // swiftlint:disable function_default_parameter_at_end
     public init(
         id: Int64? = nil,
         path: String,
@@ -42,6 +43,8 @@ public struct LibraryRoot: Codable, FetchableRecord, MutablePersistableRecord, S
         self.addedAt = addedAt
         self.isInaccessible = isInaccessible
     }
+
+    // swiftlint:enable function_default_parameter_at_end
 
     // MARK: - GRDB
 

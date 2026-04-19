@@ -52,8 +52,8 @@ public struct ContentPane: View {
         case let .album(id):
             AlbumDetailView(albumID: id, library: self.vm)
 
-        case let .genre(g):
-            TracksView(vm: self.vm.tracks, library: self.vm, title: g)
+        case let .genre(genre):
+            TracksView(vm: self.vm.tracks, library: self.vm, title: genre)
 
         case let .composer(c):
             TracksView(vm: self.vm.tracks, library: self.vm, title: c)
@@ -72,10 +72,10 @@ public struct ContentPane: View {
                 message: "Smart Playlists arrive in Phase 7."
             )
 
-        case let .search(q):
+        case let .search(searchQuery):
             SearchResultsView(vm: self.vm.search, library: self.vm)
                 .onAppear {
-                    self.vm.search.query = q
+                    self.vm.search.query = searchQuery
                     self.vm.search.queryChanged()
                 }
         }

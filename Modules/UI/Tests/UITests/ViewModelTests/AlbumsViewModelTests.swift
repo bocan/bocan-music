@@ -60,7 +60,7 @@ struct AlbumsViewModelTests {
             var a2 = Artist(name: "Artist B")
             try a1.insert(db)
             try a2.insert(db)
-            return (a1.id!, a2.id!)
+            return try (#require(a1.id), #require(a2.id))
         }
         try await db.write { db in
             var a1 = Album(title: "Album A", albumArtistID: artist1ID)

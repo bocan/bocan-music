@@ -1,5 +1,6 @@
 disabled_rules:
   - trailing_comma # SwiftFormat handles this
+  - todo # Phase markers (phase-5, phase-6, etc.) are intentional
 
 opt_in_rules:
   - force_cast
@@ -113,11 +114,21 @@ file_length:
 cyclomatic_complexity:
   warning: 10
   error: 20
+  ignores_case_statements: true
 
 missing_docs:
   excludes_extensions: false
   excludes_inherited_types: true
   excludes_trivial_init: true
+
+included:
+  - App
+  - Modules/AudioEngine/Sources
+  - Modules/AudioEngine/Tests
+  - Modules/Persistence/Sources
+  - Modules/Persistence/Tests
+  - Modules/UI/Sources
+  - Modules/UI/Tests
 
 excluded:
   - .build
@@ -126,3 +137,4 @@ excluded:
   - Modules/.build
   - Modules/AudioEngine/.build
   - Modules/Persistence/.build
+  - Modules/UI/.build

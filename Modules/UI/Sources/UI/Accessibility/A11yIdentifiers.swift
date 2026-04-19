@@ -1,5 +1,7 @@
 import Foundation
 
+// swiftlint:disable missing_docs
+
 /// Accessibility identifier constants for Bòcan's UI.
 ///
 /// Using nested enums avoids typo-prone string literals and keeps
@@ -76,3 +78,5 @@ public enum A11y {
 /// Legacy flat alias — retained so any UITest code written before the
 /// nested structure works without modification.
 public typealias A11yIdentifiers = A11y
+
+// swiftlint:enable missing_docs
