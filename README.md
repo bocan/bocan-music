@@ -1,6 +1,6 @@
 # Bòcan
 
-[![CI](https://github.com/cloudcauldron/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/cloudcauldron/bocan-music/actions/workflows/ci.yml)
+[![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
 
 A native macOS music player. Built with Swift 6, SwiftUI, and AVFoundation.
 
@@ -23,12 +23,30 @@ A native macOS music player. Built with Swift 6, SwiftUI, and AVFoundation.
 ## Quick start
 
 ```bash
-git clone https://github.com/cloudcauldron/bocan-music.git
+git clone https://github.com/bocan/bocan-music.git
 cd bocan-music
 make bootstrap
 make generate
 make open          # opens Bocan.xcodeproj
 ```
+
+Run the test suite:
+
+```bash
+make test          # Xcode unit tests (view models + observability)
+make test-ui       # UI module: snapshot + view-model tests via swift test
+```
+
+## Modules
+
+| Module | Description |
+|--------|-------------|
+| `Observability` | Structured logging (`AppLogger`), telemetry, MetricKit |
+| `AudioEngine` | AVFoundation + FFmpeg decoder graph, playback actor |
+| `Persistence` | GRDB schema, repositories, async observation |
+| `Metadata` | TagLib tag reading/writing, cover art extraction, LRC parser |
+| `Library` | Folder scanner, FSEvents watcher, library index |
+| `UI` | SwiftUI views, view models, snapshot tests |
 
 ## Development
 
