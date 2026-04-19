@@ -4,11 +4,11 @@ import Testing
 
 @Suite("Migration Tests")
 struct MigrationTests {
-    @Test("M001 applies cleanly to an empty database")
-    func m001AppliesToEmptyDatabase() async throws {
+    @Test("Migrations apply cleanly to an empty database")
+    func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 1)
+        #expect(version == 2)
     }
 
     @Test("Integrity check passes after migration")
@@ -63,9 +63,9 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports one migration")
-    func migratorReportsOneMigration() {
+    @Test("Migrator reports two migrations")
+    func migratorReportsTwoMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 1)
+        #expect(migrator.migrations.count == 2)
     }
 }
