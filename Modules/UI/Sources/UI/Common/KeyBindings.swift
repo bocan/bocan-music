@@ -27,10 +27,15 @@ public enum KeyBindings {
 
     // MARK: - Rating (⌘1…5)
 
+    /// `⌘1` — Rate 1 star.
     public static let rate1 = KeyboardShortcut("1", modifiers: .command)
+    /// `⌘2` — Rate 2 stars.
     public static let rate2 = KeyboardShortcut("2", modifiers: .command)
+    /// `⌘3` — Rate 3 stars.
     public static let rate3 = KeyboardShortcut("3", modifiers: .command)
+    /// `⌘4` — Rate 4 stars.
     public static let rate4 = KeyboardShortcut("4", modifiers: .command)
+    /// `⌘5` — Rate 5 stars.
     public static let rate5 = KeyboardShortcut("5", modifiers: .command)
 
     // MARK: - Navigation

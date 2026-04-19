@@ -36,10 +36,7 @@ extension Color {
     // MARK: - Interactive
 
     /// Separator / hairline border.  Low-opacity overlay.
-    static let separatorAdaptive = Color(
-        adaptiveLight: 0, 0, 0, alpha: 0.10,
-        dark: 1, 1, 1, alpha: 0.10
-    )
+    static let separatorAdaptive = Color(adaptiveLight: 0, 0, 0, alpha: 0.10, dark: 1, 1, 1, alpha: 0.10)
 
     /// Star / rating fill.  Light: #FF9500  Dark: #FF9F0A
     static let ratingFill = Color(adaptiveLight: 1.000, 0.584, 0.000, dark: 1.000, 0.624, 0.039)
@@ -53,8 +50,12 @@ extension Color {
 private extension Color {
     /// Creates an adaptive `Color` from normalised RGB components.
     init(
-        adaptiveLight lr: Double, _ lg: Double, _ lb: Double,
-        dark dr: Double, _ dg: Double, _ db: Double
+        adaptiveLight lr: Double,
+        _ lg: Double,
+        _ lb: Double,
+        dark dr: Double,
+        _ dg: Double,
+        _ db: Double
     ) {
         self = Color(
             nsColor: NSColor(name: nil) { appearance in
@@ -73,8 +74,14 @@ private extension Color {
 
     /// Creates an adaptive `Color` with a custom alpha for each mode.
     init(
-        adaptiveLight lr: Double, _ lg: Double, _ lb: Double, alpha la: Double,
-        dark dr: Double, _ dg: Double, _ db: Double, alpha da: Double = 0.10
+        adaptiveLight lr: Double,
+        _ lg: Double,
+        _ lb: Double,
+        alpha la: Double,
+        dark dr: Double,
+        _ dg: Double,
+        _ db: Double,
+        alpha da: Double = 0.10
     ) {
         self = Color(
             nsColor: NSColor(name: nil) { appearance in

@@ -157,8 +157,8 @@ public final class LibraryViewModel: ObservableObject {
         case let .album(id):
             await self.tracks.load(albumID: id)
 
-        case let .genre(g):
-            await self.tracks.load(genre: g)
+        case let .genre(genre):
+            await self.tracks.load(genre: genre)
 
         case let .composer(c):
             await self.tracks.load(composer: c)
@@ -167,8 +167,8 @@ public final class LibraryViewModel: ObservableObject {
             // TODO(phase-6): wire playlist loading
             break
 
-        case let .search(q):
-            self.search.query = q
+        case let .search(searchQuery):
+            self.search.query = searchQuery
             self.search.queryChanged()
         }
     }

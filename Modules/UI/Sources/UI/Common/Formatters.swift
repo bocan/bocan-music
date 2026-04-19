@@ -11,13 +11,13 @@ public enum Formatters {
     public static func duration(_ seconds: Double) -> String {
         guard seconds.isFinite, seconds >= 0 else { return "-:--" }
         let total = Int(seconds)
-        let h = total / 3600
-        let m = (total % 3600) / 60
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
         let s = total % 60
-        if h > 0 {
-            return String(format: "%d:%02d:%02d", h, m, s)
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, s)
         } else {
-            return String(format: "%d:%02d", m, s)
+            return String(format: "%d:%02d", minutes, s)
         }
     }
 

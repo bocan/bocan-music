@@ -80,9 +80,9 @@ public final class NowPlayingViewModel: ObservableObject {
     }
 
     /// Clamps and applies the volume to the engine.
-    public func setVolume(_ v: Float) async {
+    public func setVolume(_ newVolume: Float) async {
         // Volume is clamped [0, 1].
-        self.volume = min(1, max(0, v))
+        self.volume = min(1, max(0, newVolume))
         // NOTE: Transport protocol does not yet expose a volume property.
         // TODO(phase-5): route through QueuePlayer's volume when available.
     }
@@ -98,12 +98,15 @@ public final class NowPlayingViewModel: ObservableObject {
                 case .playing:
                     self.isPlaying = true
                     self.startPollingPosition()
+
                 case .paused, .stopped, .idle, .ended:
                     self.isPlaying = false
                     self.stopPollingPosition()
                     if state == .ended { self.position = 0 }
+
                 case .ready:
                     self.isPlaying = false
+
                 case .loading, .failed:
                     break
                 }

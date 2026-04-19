@@ -60,7 +60,11 @@ struct BocanApp: App {
         let semaphore = DispatchSemaphore(value: 0)
         var db: Database!
         Task {
-            db = try! await Database(location: .application)
+            do {
+                db = try await Database(location: .application)
+            } catch {
+                fatalError("Failed to open application database: \(error)")
+            }
             semaphore.signal()
         }
         semaphore.wait()

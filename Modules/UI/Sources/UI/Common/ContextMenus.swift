@@ -38,6 +38,7 @@ public struct TrackActions {
     /// Copy track metadata as TSV to the pasteboard.
     public var copy: @MainActor ([Track]) -> Void
 
+    /// Creates a new ``TrackActions`` with the provided action closures.
     public init(
         playNow: @escaping @MainActor (Track) async -> Void,
         playNext: @escaping @MainActor ([Track]) -> Void = { _ in },

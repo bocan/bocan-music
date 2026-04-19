@@ -47,8 +47,11 @@ public enum Theme {
 
     // MARK: - Corner radii
 
+    /// Tight corner radius — tags, badges.
     public static let cornerRadiusSmall: CGFloat = 4
+    /// Standard corner radius — cards, rows.
     public static let cornerRadiusMedium: CGFloat = 8
+    /// Large corner radius — panels.
     public static let cornerRadiusLarge: CGFloat = 10
 
     // MARK: - Animations

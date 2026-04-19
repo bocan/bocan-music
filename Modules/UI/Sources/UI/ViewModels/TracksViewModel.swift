@@ -22,16 +22,35 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
 
     public var displayName: String {
         switch self {
-        case .title: "Title"
-        case .artist: "Artist"
-        case .album: "Album"
-        case .year: "Year"
-        case .genre: "Genre"
-        case .duration: "Time"
-        case .playCount: "Plays"
-        case .rating: "Rating"
-        case .addedAt: "Date Added"
-        case .trackNumber: "#"
+        case .title:
+            "Title"
+
+        case .artist:
+            "Artist"
+
+        case .album:
+            "Album"
+
+        case .year:
+            "Year"
+
+        case .genre:
+            "Genre"
+
+        case .duration:
+            "Time"
+
+        case .playCount:
+            "Plays"
+
+        case .rating:
+            "Rating"
+
+        case .addedAt:
+            "Date Added"
+
+        case .trackNumber:
+            "#"
         }
     }
 }
@@ -153,25 +172,44 @@ public final class TracksViewModel: ObservableObject {
 
         // Client-side text filter for local display
         if !self.filterText.isEmpty {
-            let q = self.filterText.lowercased()
+            let lowercasedFilter = self.filterText.lowercased()
             result = result.filter {
-                ($0.title ?? "").lowercased().contains(q)
+                ($0.title ?? "").lowercased().contains(lowercasedFilter)
             }
         }
 
-        result.sort { a, b in
+        result.sort { lhs, rhs in
             let asc = self.sortAscending
             switch self.sortColumn {
-            case .title: return self.compare(a.title, b.title, ascending: asc)
-            case .album: return self.compare(a.albumID, b.albumID, ascending: asc)
-            case .artist: return self.compare(a.artistID, b.artistID, ascending: asc)
-            case .year: return self.compare(a.year, b.year, ascending: asc)
-            case .genre: return self.compare(a.genre, b.genre, ascending: asc)
-            case .duration: return asc ? a.duration < b.duration : a.duration > b.duration
-            case .playCount: return asc ? a.playCount < b.playCount : a.playCount > b.playCount
-            case .rating: return asc ? a.rating < b.rating : a.rating > b.rating
-            case .addedAt: return asc ? a.addedAt < b.addedAt : a.addedAt > b.addedAt
-            case .trackNumber: return self.compare(a.trackNumber, b.trackNumber, ascending: asc)
+            case .title:
+                return self.compare(lhs.title, rhs.title, ascending: asc)
+
+            case .album:
+                return self.compare(lhs.albumID, rhs.albumID, ascending: asc)
+
+            case .artist:
+                return self.compare(lhs.artistID, rhs.artistID, ascending: asc)
+
+            case .year:
+                return self.compare(lhs.year, rhs.year, ascending: asc)
+
+            case .genre:
+                return self.compare(lhs.genre, rhs.genre, ascending: asc)
+
+            case .duration:
+                return asc ? lhs.duration < rhs.duration : lhs.duration > rhs.duration
+
+            case .playCount:
+                return asc ? lhs.playCount < rhs.playCount : lhs.playCount > rhs.playCount
+
+            case .rating:
+                return asc ? lhs.rating < rhs.rating : lhs.rating > rhs.rating
+
+            case .addedAt:
+                return asc ? lhs.addedAt < rhs.addedAt : lhs.addedAt > rhs.addedAt
+
+            case .trackNumber:
+                return self.compare(lhs.trackNumber, rhs.trackNumber, ascending: asc)
             }
         }
 
@@ -180,18 +218,25 @@ public final class TracksViewModel: ObservableObject {
 
     // MARK: - Sort helpers
 
-    private func compare<T: Comparable>(_ a: T?, _ b: T?, ascending: Bool) -> Bool {
-        switch (a, b) {
-        case let (a?, b?): ascending ? a < b : a > b
-        case (.some, .none): ascending
-        case (.none, .some): !ascending
-        case (.none, .none): false
+    private func compare<T: Comparable>(_ lhs: T?, _ rhs: T?, ascending: Bool) -> Bool {
+        switch (lhs, rhs) {
+        case let (lhs?, rhs?):
+            ascending ? lhs < rhs : lhs > rhs
+
+        case (.some, .none):
+            ascending
+
+        case (.none, .some):
+            !ascending
+
+        case (.none, .none):
+            false
         }
     }
 
-    private func compare(_ a: String?, _ b: String?, ascending: Bool) -> Bool {
-        let la = (a ?? "").localizedCaseInsensitiveCompare(b ?? "")
-        if ascending { return la == .orderedAscending }
-        return la == .orderedDescending
+    private func compare(_ lhs: String?, _ rhs: String?, ascending: Bool) -> Bool {
+        let result = (lhs ?? "").localizedCaseInsensitiveCompare(rhs ?? "")
+        if ascending { return result == .orderedAscending }
+        return result == .orderedDescending
     }
 }
