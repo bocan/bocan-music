@@ -32,6 +32,17 @@ public actor AudioEngine: Transport {
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
     private let log = AppLogger.make(.audio)
 
+    // MARK: - Gapless state
+
+    /// The pre-loaded pump for the next track. Non-nil while a gapless preload is in progress.
+    private var pendingNextPump: BufferPump?
+    /// Duration of the pending next track (read from its decoder).
+    private var pendingNextDuration: TimeInterval = 0
+    /// Decoder for the pending next track (becomes `decoder` on transition).
+    private var pendingNextDecoder: (any Decoder)?
+    /// Caller-supplied callback fired when the engine seamlessly transitions to the next track.
+    private var pendingNextTransition: (@Sendable () -> Void)?
+
     // MARK: - Transport: state stream
 
     public nonisolated let state: AsyncStream<PlaybackState>
@@ -54,6 +65,76 @@ public actor AudioEngine: Transport {
         get async { self._duration }
     }
 
+    // MARK: - Gapless public API
+
+    /// The native source format of the currently loaded track.
+    ///
+    /// Used by `GaplessScheduler` to determine format compatibility before scheduling
+    /// the next track onto the same `AVAudioPlayerNode`.
+    public var sourceFormat: AVAudioFormat? {
+        get async { self.decoder?.sourceFormat }
+    }
+
+    /// Pre-schedule the next track's audio buffers onto the current player node.
+    ///
+    /// Call this ~5 s before the current track ends. The engine will NOT stop the player
+    /// when the current track's decoder hits EOF; instead it calls `onTransition`, resets
+    /// timing, and continues playing seamlessly.
+    ///
+    /// - Parameters:
+    ///   - url: File URL of the next track. Must be the same sample rate and channel count
+    ///          as the current track (check `sourceFormat` first via `FormatBridge`).
+    ///   - onTransition: Invoked on the `AudioEngine` actor when the transition occurs.
+    /// - Throws: Any decoder error (file not found, unsupported format, etc.).
+    public func enableGaplessNext(url: URL, onTransition: @Sendable @escaping () -> Void) async throws {
+        // Cancel any previous pending-next setup.
+        await self.pendingNextPump?.stop()
+        if let prev = pendingNextDecoder { await prev.close() }
+        self.pendingNextPump = nil
+        self.pendingNextDecoder = nil
+        self.pendingNextTransition = nil
+
+        let dec = try DecoderFactory.make(for: url)
+        let nextDuration = dec.duration
+
+        let sampleRate = self.graph.outputSampleRate
+        // swiftlint:disable:next force_unwrapping
+        let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
+        let outputFmt = AVAudioFormat(
+            standardFormatWithSampleRate: sampleRate,
+            channelLayout: layout
+        )
+
+        let playerNode = self.graph.playerNode
+        let nextPump = BufferPump(
+            decoder: dec,
+            playerNode: playerNode,
+            outputFormat: outputFmt
+        )
+
+        self.pendingNextPump = nextPump
+        self.pendingNextDuration = nextDuration
+        self.pendingNextDecoder = dec
+        self.pendingNextTransition = onTransition
+
+        let selfCapture = self
+        await nextPump.start {
+            Task { await selfCapture.handleEnded() }
+        }
+
+        self.log.debug("engine.gapless.prefetch", ["url": url.lastPathComponent])
+    }
+
+    /// Cancel any active gapless preload without stopping the player.
+    public func cancelGaplessNext() async {
+        await self.pendingNextPump?.stop()
+        if let prev = pendingNextDecoder { await prev.close() }
+        self.pendingNextPump = nil
+        self.pendingNextDecoder = nil
+        self.pendingNextTransition = nil
+        self.log.debug("engine.gapless.cancelled")
+    }
+
     // MARK: - Init
 
     public init() {
@@ -71,6 +152,9 @@ public actor AudioEngine: Transport {
         let start = Date()
         self.log.debug("engine.load.start", ["url": url.lastPathComponent])
         self.emit(.loading)
+
+        // Cancel any gapless preload.
+        await self.cancelGaplessNext()
 
         // Close previous decoder if any.
         if let prev = decoder { await prev.close() }
@@ -152,6 +236,7 @@ public actor AudioEngine: Transport {
 
     public func stop() async {
         self.log.debug("engine.stop")
+        await self.cancelGaplessNext()
         self.graph.playerNode.stop()
         await self.pump?.stop()
         self.pump = nil
@@ -194,9 +279,47 @@ public actor AudioEngine: Transport {
     }
 
     private func handleEnded() {
-        // The `.dataPlayedBack` callback in BufferPump already means playback finished.
-        self.graph.playerNode.stop()
-        self.emit(.ended)
-        self.log.debug("engine.playback.ended")
+        if let next = pendingNextPump, next !== pump {
+            // Gapless transition: the next track's buffers are already queued on the
+            // player node — do NOT call playerNode.stop() here.
+            let prevPump = self.pump
+            self.pump = next
+            self.pendingNextPump = nil
+            self._currentTime = 0
+            self._duration = self.pendingNextDuration
+            // The pending decoder becomes the active decoder.
+            self.decoder = self.pendingNextDecoder
+            self.pendingNextDecoder = nil
+
+            let transition = self.pendingNextTransition
+            self.pendingNextTransition = nil
+
+            // Force re-emit .playing for the new track's timeline.
+            self.lastState = nil
+            self.emit(.playing)
+            transition?()
+
+            // Stop (clean up) the old pump; it has already finished scheduling.
+            let oldPump = prevPump
+            Task { await oldPump?.stop() }
+
+            self.log.debug("engine.gapless.transition")
+        } else {
+            // No gapless next, or degenerate case (new pump finished before old).
+            // Clean up any stale pending state.
+            let staleNext = self.pendingNextPump
+            let staleDecoder = self.pendingNextDecoder
+            self.pendingNextPump = nil
+            self.pendingNextDecoder = nil
+            self.pendingNextTransition = nil
+            Task {
+                await staleNext?.stop()
+                await staleDecoder?.close()
+            }
+
+            self.graph.playerNode.stop()
+            self.emit(.ended)
+            self.log.debug("engine.playback.ended")
+        }
     }
 }

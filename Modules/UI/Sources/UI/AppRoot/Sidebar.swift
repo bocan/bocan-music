@@ -35,6 +35,10 @@ public struct Sidebar: View {
                 self.sidebarRow(.mostPlayed, symbol: "chart.bar", label: "Most Played")
             }
 
+            Section("Queue") {
+                self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
+            }
+
             Section("Playlists") {
                 // TODO(phase-6): Populate from PlaylistRepository
                 Text("No playlists yet")

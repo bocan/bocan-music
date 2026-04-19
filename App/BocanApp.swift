@@ -1,6 +1,7 @@
 import AudioEngine
 import Observability
 import Persistence
+import Playback
 import SwiftUI
 import UI
 
@@ -80,8 +81,9 @@ struct BocanApp: App {
         let db = box.value!
 
         let eng = AudioEngine()
+        let player = QueuePlayer(engine: eng, database: db)
         self.database = db
         self.engine = eng
-        self.libraryViewModel = LibraryViewModel(database: db, engine: eng)
+        self.libraryViewModel = LibraryViewModel(database: db, engine: player)
     }
 }

@@ -3,45 +3,39 @@
 import PackageDescription
 
 let package = Package(
-    name: "UI",
+    name: "Playback",
     platforms: [
         .macOS(.v14),
     ],
     products: [
-        .library(name: "UI", targets: ["UI"]),
+        .library(name: "Playback", targets: ["Playback"]),
     ],
     dependencies: [
         .package(path: "../Observability"),
         .package(path: "../Persistence"),
         .package(path: "../AudioEngine"),
-        .package(path: "../Playback"),
-        .package(
-            url: "https://github.com/pointfreeco/swift-snapshot-testing",
-            from: "1.17.0"
-        ),
     ],
     targets: [
         .target(
-            name: "UI",
+            name: "Playback",
             dependencies: [
                 .product(name: "Observability", package: "Observability"),
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "AudioEngine", package: "AudioEngine"),
-                .product(name: "Playback", package: "Playback"),
-            ],
-            resources: [
-                .process("Resources"),
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("MediaPlayer"),
             ]
         ),
         .testTarget(
-            name: "UITests",
+            name: "PlaybackTests",
             dependencies: [
-                "UI",
+                "Playback",
+                .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "Persistence", package: "Persistence"),
-                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),

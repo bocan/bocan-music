@@ -76,14 +76,13 @@ public struct NowPlayingStrip: View {
     private var transport: some View {
         HStack(spacing: 20) {
             Button {
-                // TODO(phase-5): previous track
+                Task { await self.vm.previous() }
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.system(size: 18, weight: .semibold))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.textTertiary)
-            .disabled(true)
+            .foregroundStyle(Color.textPrimary)
             .accessibilityLabel("Previous")
             .accessibilityIdentifier(A11y.NowPlaying.prevButton)
 
@@ -100,16 +99,35 @@ public struct NowPlayingStrip: View {
             .accessibilityIdentifier(A11y.NowPlaying.playPauseButton)
 
             Button {
-                // TODO(phase-5): next track
+                Task { await self.vm.next() }
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.system(size: 18, weight: .semibold))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.textTertiary)
-            .disabled(true)
+            .foregroundStyle(Color.textPrimary)
             .accessibilityLabel("Next")
             .accessibilityIdentifier(A11y.NowPlaying.nextButton)
+
+            Button {
+                Task { await self.vm.toggleShuffle() }
+            } label: {
+                Image(systemName: "shuffle")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.vm.shuffleOn ? Color.accentColor : Color.textTertiary)
+            .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
+
+            Button {
+                Task { await self.vm.cycleRepeat() }
+            } label: {
+                Image(systemName: self.vm.repeatMode == .one ? "repeat.1" : "repeat")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : Color.accentColor)
+            .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
         }
     }
 

@@ -2,6 +2,7 @@ import AudioEngine
 import Foundation
 import Observability
 import Persistence
+import Playback
 
 // MARK: - UIStateV1
 
@@ -77,8 +78,16 @@ public final class LibraryViewModel: ObservableObject {
     /// Plays `track` immediately via the engine.
     ///
     /// Called by TracksView / AlbumDetailView on double-click or Return key.
-    /// Phase 5 will replace this with `QueuePlayer.playNow(_:)`.
     public func play(track: Track) async {
+        // Prefer QueuePlayer's proper queue-based playback if available.
+        if let qp = engine as? QueuePlayer, let id = track.id {
+            do {
+                try await qp.play(trackIDs: [id], startingAt: 0)
+            } catch {
+                self.log.error("library.play.failed", ["error": String(reflecting: error)])
+            }
+            return
+        }
         guard let url = URL(string: track.fileURL) else {
             self.log.error("library.play.badURL", ["url": track.fileURL])
             return
@@ -91,6 +100,56 @@ public final class LibraryViewModel: ObservableObject {
         } catch {
             self.log.error("library.play.failed", ["error": String(reflecting: error)])
         }
+    }
+
+    /// Plays `tracks` starting at `index`, replacing the queue.
+    public func play(tracks: [Track], startingAt index: Int = 0) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let ids = tracks.compactMap(\.id)
+        do {
+            try await qp.play(trackIDs: ids, startingAt: index)
+        } catch {
+            self.log.error("library.playAll.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Inserts `tracks` to play immediately after the current item.
+    public func playNext(tracks: [Track]) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let ids = tracks.compactMap(\.id)
+        do {
+            try await qp.playNext(ids)
+        } catch {
+            self.log.error("library.playNext.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Appends `tracks` to the end of the queue.
+    public func addToQueue(tracks: [Track]) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let ids = tracks.compactMap(\.id)
+        do {
+            try await qp.addToQueue(ids)
+        } catch {
+            self.log.error("library.addToQueue.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Toggles shuffle on the queue player.
+    public func setShuffle(_ on: Bool) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.setShuffle(on)
+    }
+
+    /// Changes the repeat mode on the queue player.
+    public func setRepeat(_ mode: RepeatMode) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.setRepeat(mode)
+    }
+
+    /// The underlying `QueuePlayer` if the engine is one; otherwise `nil`.
+    public var queuePlayer: QueuePlayer? {
+        self.engine as? QueuePlayer
     }
 
     /// Persists current UI state to settings.
@@ -166,6 +225,9 @@ public final class LibraryViewModel: ObservableObject {
         case .playlist, .smartPlaylist:
             // TODO(phase-6): wire playlist loading
             break
+
+        case .upNext:
+            break // QueueView reads directly from QueuePlayer.queue
 
         case let .search(searchQuery):
             self.search.query = searchQuery

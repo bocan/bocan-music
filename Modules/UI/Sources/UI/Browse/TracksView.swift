@@ -180,8 +180,14 @@ public struct TracksView: View {
 
         Divider()
 
-        Button("Play Next") {}.disabled(true) // TODO(phase-5)
-        Button("Add to Queue") {}.disabled(true) // TODO(phase-5)
+        Button("Play Next") {
+            Task { await self.library.playNext(tracks: selected) }
+        }
+        .disabled(selected.isEmpty)
+        Button("Add to Queue") {
+            Task { await self.library.addToQueue(tracks: selected) }
+        }
+        .disabled(selected.isEmpty)
         Button("Add to Playlist ▸") {}.disabled(true) // TODO(phase-6)
 
         Divider()

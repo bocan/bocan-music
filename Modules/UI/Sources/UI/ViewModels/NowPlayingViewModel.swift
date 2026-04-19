@@ -3,6 +3,7 @@ import AudioEngine
 import Foundation
 import Observability
 import Persistence
+import Playback
 
 // MARK: - NowPlayingViewModel
 
@@ -23,6 +24,8 @@ public final class NowPlayingViewModel: ObservableObject {
     @Published public private(set) var position: TimeInterval = 0
     @Published public private(set) var isPlaying = false
     @Published public var volume: Float = 1.0
+    @Published public private(set) var shuffleOn = false
+    @Published public private(set) var repeatMode: RepeatMode = .off
 
     // MARK: - Internal
 
@@ -81,10 +84,39 @@ public final class NowPlayingViewModel: ObservableObject {
 
     /// Clamps and applies the volume to the engine.
     public func setVolume(_ newVolume: Float) async {
-        // Volume is clamped [0, 1].
         self.volume = min(1, max(0, newVolume))
-        // NOTE: Transport protocol does not yet expose a volume property.
-        // TODO(phase-5): route through QueuePlayer's volume when available.
+    }
+
+    /// Skips to the previous track (no-op if engine is not a QueuePlayer).
+    public func previous() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        do { try await qp.previous() } catch {}
+    }
+
+    /// Skips to the next track (no-op if engine is not a QueuePlayer).
+    public func next() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        do { try await qp.next() } catch {}
+    }
+
+    /// Toggles shuffle on the queue player.
+    public func toggleShuffle() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let new = !self.shuffleOn
+        await qp.setShuffle(new)
+        self.shuffleOn = new
+    }
+
+    /// Cycles to the next repeat mode (off → all → one → off).
+    public func cycleRepeat() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let next: RepeatMode = switch self.repeatMode {
+        case .off: .all
+        case .all: .one
+        case .one: .off
+        }
+        await qp.setRepeat(next)
+        self.repeatMode = next
     }
 
     // MARK: - Private
