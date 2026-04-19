@@ -38,7 +38,8 @@ public actor GaplessScheduler {
 
     /// Called when the scheduler wants the next item's resolved URL and format.
     /// Return `nil` to indicate no next item is available.
-    var nextItemProvider: (@Sendable () async -> (url: URL, item: QueueItem)?)?
+    /// The `forceGapless` flag bypasses the format-compatibility check when `true`.
+    var nextItemProvider: (@Sendable () async -> (url: URL, item: QueueItem, forceGapless: Bool)?)?
 
     /// Called when the gapless transition actually fires (old track's decoder hits EOF).
     /// Receives the queue item that has just become active.
@@ -57,7 +58,7 @@ public actor GaplessScheduler {
 
     /// Set all callbacks in a single actor hop.
     public func configure(
-        nextItemProvider: (@Sendable () async -> (url: URL, item: QueueItem)?)?,
+        nextItemProvider: (@Sendable () async -> (url: URL, item: QueueItem, forceGapless: Bool)?)?,
         onGaplessTransition: (@Sendable (QueueItem) async -> Void)?,
         onPrefetchFailed: (@Sendable (Error) -> Void)?
     ) {
@@ -105,21 +106,37 @@ public actor GaplessScheduler {
 
         // Already armed for this item?
         guard let provider = nextItemProvider else { return }
-        guard let (url, nextItem) = await provider() else { return }
+        guard let (url, nextItem, forceGapless) = await provider() else { return }
         guard self.armedForItemID != nextItem.id else { return }
 
-        // Check format compatibility.
-        guard let currentFmt = await engine.sourceFormat else { return }
-        guard self.bridge.isCompatible(
-            currentFmt,
-            self.toAVAudioFormat(nextItem.sourceFormat)
-        ) else {
-            self.log.debug("gapless.incompatible", [
-                "next": nextItem.trackID,
-                "currentRate": currentFmt.sampleRate,
-                "nextRate": nextItem.sourceFormat.sampleRate,
-            ])
-            return // QueuePlayer will do a normal stop/load/play on .ended.
+        // Check format compatibility — skipped when forceGapless is set and formats
+        // would otherwise only fail the padding-tag gate (not the sample-rate gate).
+        if !forceGapless {
+            guard let currentFmt = await engine.sourceFormat else { return }
+            guard self.bridge.isCompatible(
+                currentFmt,
+                self.toAVAudioFormat(nextItem.sourceFormat)
+            ) else {
+                self.log.debug("gapless.incompatible", [
+                    "next": nextItem.trackID,
+                    "currentRate": currentFmt.sampleRate,
+                    "nextRate": nextItem.sourceFormat.sampleRate,
+                ])
+                return // QueuePlayer will do a normal stop/load/play on .ended.
+            }
+        } else {
+            // force_gapless: still honour the hardware sample-rate constraint.
+            guard let currentFmt = await engine.sourceFormat else { return }
+            let nextFmt = self.toAVAudioFormat(nextItem.sourceFormat)
+            guard currentFmt.sampleRate == nextFmt.sampleRate,
+                  currentFmt.channelCount == nextFmt.channelCount else {
+                self.log.debug("gapless.forced.incompatible", [
+                    "next": nextItem.trackID,
+                    "currentRate": currentFmt.sampleRate,
+                    "nextRate": nextItem.sourceFormat.sampleRate,
+                ])
+                return
+            }
         }
 
         // Arm the gapless preload.

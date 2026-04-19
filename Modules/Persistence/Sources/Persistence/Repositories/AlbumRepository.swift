@@ -41,6 +41,17 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.update", ["id": id])
     }
 
+    /// Toggles the `force_gapless` flag for an album.
+    public func setForceGapless(albumID: Int64, forced: Bool) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE albums SET force_gapless = ? WHERE id = ?",
+                arguments: [forced ? 1 : 0, albumID]
+            )
+        }
+        self.log.debug("album.forceGapless", ["id": albumID, "forced": forced])
+    }
+
     // MARK: - Read
 
     /// Fetches the album with `id`, or throws `.notFound` if absent.

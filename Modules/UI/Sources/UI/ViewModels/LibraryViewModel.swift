@@ -28,6 +28,12 @@ public final class LibraryViewModel: ObservableObject {
     @Published public var selectedDestination: SidebarDestination = .songs
     @Published public var searchQuery = ""
 
+    // MARK: - Inspector state
+
+    /// The track currently shown in the Inspector panel (`⌘I`).
+    /// `nil` when the panel is closed or no selection exists.
+    @Published public var inspectorTrack: Track?
+
     // MARK: - Error state
 
     /// Set when playback fails; cleared when the user dismisses the alert.
@@ -57,6 +63,7 @@ public final class LibraryViewModel: ObservableObject {
     public let database: Database
     private let engine: any Transport
     private let settingsRepo: SettingsRepository
+    let albumRepo: AlbumRepository
     let scanner: LibraryScanner?
     var scanTask: Task<Void, Never>?
     let log = AppLogger.make(.ui)
@@ -72,6 +79,7 @@ public final class LibraryViewModel: ObservableObject {
         let trackRepo = TrackRepository(database: database)
         let albumRepo = AlbumRepository(database: database)
         let artistRepo = ArtistRepository(database: database)
+        self.albumRepo = albumRepo
 
         self.tracks = TracksViewModel(
             repository: trackRepo,
@@ -226,4 +234,17 @@ public final class LibraryViewModel: ObservableObject {
             self.log.error("library.restoreState.failed", ["error": String(reflecting: error)])
         }
     }
+
+    // MARK: - Inspector
+
+    /// Sets `inspectorTrack` to the first track in `tracks` and triggers the
+    /// inspector window to open (via the `@Environment(\.openWindow)` binding
+    /// set by `RootView`).
+    public func showInspector(tracks: [Track]) {
+        self.inspectorTrack = tracks.first
+        self.openInspectorWindow?()
+    }
+
+    /// Injected by `RootView` after `@Environment(\.openWindow)` is available.
+    public var openInspectorWindow: (() -> Void)?
 }

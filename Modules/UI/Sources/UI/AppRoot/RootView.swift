@@ -17,6 +17,7 @@ import UniformTypeIdentifiers
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
     @FocusState private var searchFocused: Bool
+    @Environment(\.openWindow) private var openWindow
 
     public init(vm: LibraryViewModel) {
         _vm = StateObject(wrappedValue: vm)
@@ -38,6 +39,8 @@ public struct BocanRootView: View {
         }
         .environmentObject(self.vm)
         .task {
+            // Wire the inspector window opener before any UI loads.
+            self.vm.openInspectorWindow = { self.openWindow(id: "track-inspector") }
             await self.vm.restoreUIState()
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()

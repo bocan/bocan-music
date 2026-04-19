@@ -30,6 +30,7 @@ public struct Migrator {
         #endif
         M001InitialSchema.register(in: &dm)
         M002PhaseThree.register(in: &dm)
+        M003ForceGapless.register(in: &dm)
         return Self(inner: dm)
     }
 

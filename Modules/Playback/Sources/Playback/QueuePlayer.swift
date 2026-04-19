@@ -51,6 +51,7 @@ public actor QueuePlayer: Transport {
 
     private var currentTrack: Track?
     private var trackRepo: TrackRepository
+    private var albumRepo: AlbumRepository
     private var rootRepo: LibraryRootRepository
     private var lastEmittedState: PlaybackState = .idle
 
@@ -66,6 +67,7 @@ public actor QueuePlayer: Transport {
         self.persistence = QueuePersistence(database: database)
         self.gaplessScheduler = GaplessScheduler(engine: engine)
         self.trackRepo = TrackRepository(database: database)
+        self.albumRepo = AlbumRepository(database: database)
         self.rootRepo = LibraryRootRepository(database: database)
 
         var continuation: AsyncStream<PlaybackState>.Continuation?
@@ -391,14 +393,23 @@ public actor QueuePlayer: Transport {
 
     // MARK: Gapless next URL resolution
 
-    private func resolveNextGaplessItem() async -> (url: URL, item: QueueItem)? {
+    private func resolveNextGaplessItem() async -> (url: URL, item: QueueItem, forceGapless: Bool)? {
         guard let item = await queue.peekNext() else { return nil }
-        // Use fileURL directly (no security scope for gapless preload).
-        // If the file requires a security scope, the decoder will throw and gapless
-        // won't fire — QueuePlayer will fall back to normal stop/load/play.
         let url = URL(fileURLWithPath: item.fileURL)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        return (url: url, item: item)
+
+        // Determine whether the next item's album has `force_gapless` set and
+        // the current item belongs to the same album.
+        var forceGapless = false
+        if let nextAlbumID = item.albumID,
+           let currentItem = await queue.currentItem,
+           let currentAlbumID = currentItem.albumID,
+           currentAlbumID == nextAlbumID,
+           let album = try? await albumRepo.fetch(id: nextAlbumID) {
+            forceGapless = album.forceGapless
+        }
+
+        return (url: url, item: item, forceGapless: forceGapless)
     }
 
     private func handleGaplessTransition(to item: QueueItem) async {
