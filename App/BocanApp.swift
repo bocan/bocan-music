@@ -4,6 +4,13 @@ import Persistence
 import SwiftUI
 import UI
 
+/// Sendable wrapper used only during synchronous app init to transfer the
+/// Database actor across the Task.detached boundary.  The semaphore enforces
+/// strict single-writer / single-reader ordering, so @unchecked is safe here.
+private final class _InitBox<T: Sendable>: @unchecked Sendable {
+    var value: T?
+}
+
 @main
 struct BocanApp: App {
     private let log = AppLogger.make(.app)
@@ -55,19 +62,22 @@ struct BocanApp: App {
             MetricKitListener.shared.start()
         #endif
 
-        // Initialise the database synchronously on the calling thread
-        // (Database.init is async so we use a Task + semaphore here)
+        // Initialise the database synchronously on the calling thread.
+        // Task.detached runs off the MainActor so the semaphore can be signalled
+        // while the main thread waits.  _InitBox transfers the result safely across
+        // the Task boundary without triggering Swift 6 data-race diagnostics.
         let semaphore = DispatchSemaphore(value: 0)
-        var db: Database!
-        Task {
+        let box = _InitBox<Database>()
+        Task.detached {
             do {
-                db = try await Database(location: .application)
+                box.value = try await Database(location: .application)
             } catch {
                 fatalError("Failed to open application database: \(error)")
             }
             semaphore.signal()
         }
         semaphore.wait()
+        let db = box.value!
 
         let eng = AudioEngine()
         self.database = db
