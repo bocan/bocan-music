@@ -78,7 +78,9 @@ struct BocanApp: App {
             semaphore.signal()
         }
         semaphore.wait()
-        let db = box.value!
+        guard let db = box.value else {
+            fatalError("Database initialisation completed without a value")
+        }
 
         let eng = AudioEngine()
         let player = QueuePlayer(engine: eng, database: db)
