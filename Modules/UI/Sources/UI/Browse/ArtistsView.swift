@@ -78,11 +78,9 @@ public struct ArtistDetailView: View {
         if let artist = try? await ArtistRepository(database: library.database).fetch(id: artistID) {
             self.artist = artist
         }
-        // Count tracks for this artist
+        // Use a cheap COUNT(*) — no need to load all track rows just for the number.
         let trackRepo = TrackRepository(database: library.database)
-        if let tracks = try? await trackRepo.fetchAll(artistID: self.artistID) {
-            self.trackCount = tracks.count
-        }
+        self.trackCount = await (try? trackRepo.count(artistID: self.artistID)) ?? 0
     }
 }
 
@@ -152,8 +150,10 @@ public struct ArtistsView: View {
             .contentShape(Rectangle())
             .accessibilityLabel(artist.name)
         }
+        // Reset to nil so the same artist can be re-selected on the next tap.
         .onChange(of: self.vm.selectedArtistID) { _, id in
             if let id {
+                self.vm.selectedArtistID = nil
                 Task { await self.library.selectDestination(.artist(id)) }
             }
         }
