@@ -29,6 +29,7 @@ public struct Migrator {
             dm.eraseDatabaseOnSchemaChange = false
         #endif
         M001InitialSchema.register(in: &dm)
+        M002PhaseThree.register(in: &dm)
         return Self(inner: dm)
     }
 

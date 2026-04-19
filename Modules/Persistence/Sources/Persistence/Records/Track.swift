@@ -72,8 +72,14 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Track number within the disc.
     public var trackNumber: Int?
 
+    /// Total tracks on the disc (added in M002).
+    public var trackTotal: Int?
+
     /// Disc number within the album.
     public var discNumber: Int?
+
+    /// Total discs in the release (added in M002).
+    public var discTotal: Int?
 
     /// Release year.
     public var year: Int?
@@ -100,6 +106,15 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
 
     /// MusicBrainz recording identifier.
     public var musicbrainzRecordingID: String?
+
+    /// MusicBrainz album-artist identifier (added in M002).
+    public var musicbrainzAlbumArtistID: String?
+
+    /// MusicBrainz release identifier (added in M002).
+    public var musicbrainzReleaseID: String?
+
+    /// MusicBrainz release-group identifier (added in M002).
+    public var musicbrainzReleaseGroupID: String?
 
     /// ReplayGain track gain in dB.
     public var replaygainTrackGain: Double?
@@ -150,6 +165,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Soft-delete flag; preserves play counts for missing files.
     public var disabled: Bool
 
+    /// Set to `true` when the user has manually edited tags; prevents rescan from overwriting.
+    public var userEdited: Bool
+
     /// Stable sort key: `printf('%02d.%04d', disc_number, track_number)`.
     public var albumTrackSortKey: String?
 
@@ -185,7 +203,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         albumArtistID: Int64? = nil,
         albumID: Int64? = nil,
         trackNumber: Int? = nil,
+        trackTotal: Int? = nil,
         discNumber: Int? = nil,
+        discTotal: Int? = nil,
         year: Int? = nil,
         genre: String? = nil,
         composer: String? = nil,
@@ -194,6 +214,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         isrc: String? = nil,
         musicbrainzTrackID: String? = nil,
         musicbrainzRecordingID: String? = nil,
+        musicbrainzAlbumArtistID: String? = nil,
+        musicbrainzReleaseID: String? = nil,
+        musicbrainzReleaseGroupID: String? = nil,
         replaygainTrackGain: Double? = nil,
         replaygainTrackPeak: Double? = nil,
         replaygainAlbumGain: Double? = nil,
@@ -209,6 +232,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         filePathDisplay: String? = nil,
         contentHash: String? = nil,
         disabled: Bool = false,
+        userEdited: Bool = false,
         albumTrackSortKey: String? = nil,
         coverArtHash: String? = nil,
         addedAt: Int64,
@@ -231,7 +255,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.albumArtistID = albumArtistID
         self.albumID = albumID
         self.trackNumber = trackNumber
+        self.trackTotal = trackTotal
         self.discNumber = discNumber
+        self.discTotal = discTotal
         self.year = year
         self.genre = genre
         self.composer = composer
@@ -240,6 +266,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.isrc = isrc
         self.musicbrainzTrackID = musicbrainzTrackID
         self.musicbrainzRecordingID = musicbrainzRecordingID
+        self.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
+        self.musicbrainzReleaseID = musicbrainzReleaseID
+        self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
         self.replaygainTrackGain = replaygainTrackGain
         self.replaygainTrackPeak = replaygainTrackPeak
         self.replaygainAlbumGain = replaygainAlbumGain
@@ -255,6 +284,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.filePathDisplay = filePathDisplay
         self.contentHash = contentHash
         self.disabled = disabled
+        self.userEdited = userEdited
         self.albumTrackSortKey = albumTrackSortKey
         self.coverArtHash = coverArtHash
         self.addedAt = addedAt
@@ -290,7 +320,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case albumArtistID = "album_artist_id"
         case albumID = "album_id"
         case trackNumber = "track_number"
+        case trackTotal = "track_total"
         case discNumber = "disc_number"
+        case discTotal = "disc_total"
         case year
         case genre
         case composer
@@ -299,6 +331,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case isrc
         case musicbrainzTrackID = "musicbrainz_track_id"
         case musicbrainzRecordingID = "musicbrainz_recording_id"
+        case musicbrainzAlbumArtistID = "musicbrainz_album_artist_id"
+        case musicbrainzReleaseID = "musicbrainz_release_id"
+        case musicbrainzReleaseGroupID = "musicbrainz_release_group_id"
         case replaygainTrackGain = "replaygain_track_gain"
         case replaygainTrackPeak = "replaygain_track_peak"
         case replaygainAlbumGain = "replaygain_album_gain"
@@ -314,6 +349,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case filePathDisplay = "file_path_display"
         case contentHash = "content_hash"
         case disabled
+        case userEdited = "user_edited"
         case albumTrackSortKey = "album_track_sort_key"
         case coverArtHash = "cover_art_hash"
         case addedAt = "added_at"
