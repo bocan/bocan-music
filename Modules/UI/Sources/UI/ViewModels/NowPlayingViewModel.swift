@@ -42,6 +42,9 @@ public final class NowPlayingViewModel: ObservableObject {
         self.engine = engine
         self.database = database
         self.startObservingState()
+        if let qp = engine as? QueuePlayer {
+            self.startObservingCurrentTrack(qp)
+        }
     }
 
     // MARK: - Public API
@@ -124,7 +127,21 @@ public final class NowPlayingViewModel: ObservableObject {
         self.repeatMode = next
     }
 
-    // MARK: - Private
+    private func startObservingCurrentTrack(_ qp: QueuePlayer) {
+        Task { [weak self] in
+            guard let self else { return }
+            for await track in qp.currentTrackChanges {
+                if let track {
+                    self.setCurrentTrack(track)
+                } else {
+                    self.title = ""
+                    self.artist = ""
+                    self.album = ""
+                    self.artwork = nil
+                }
+            }
+        }
+    }
 
     private func startObservingState() {
         self.stateTask = Task { [weak self] in
