@@ -5,6 +5,14 @@ import SwiftUI
 /// Bind these via `.keyboardShortcut(KeyBindings.focusSearch)` on buttons,
 /// or via `CommandMenu` / `.commands { }` in the `App` body for global shortcuts.
 public enum KeyBindings {
+    // MARK: - Library import
+
+    /// `⌘⇧O` — Add Folder to Library.
+    public static let addFolder = KeyboardShortcut("o", modifiers: [.command, .shift])
+
+    /// `⌘O` — Add Files to Library.
+    public static let addFiles = KeyboardShortcut("o", modifiers: .command)
+
     // MARK: - Global
 
     /// `⌘F` — Focus the search field.

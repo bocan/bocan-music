@@ -15,6 +15,7 @@ let package = Package(
         .package(path: "../Persistence"),
         .package(path: "../AudioEngine"),
         .package(path: "../Playback"),
+        .package(path: "../Library"),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
             from: "1.17.0"
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "Playback", package: "Playback"),
+                .product(name: "Library", package: "Library"),
             ],
             resources: [
                 .process("Resources"),
