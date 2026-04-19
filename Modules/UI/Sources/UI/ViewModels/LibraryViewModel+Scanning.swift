@@ -134,6 +134,11 @@ public extension LibraryViewModel {
             for await event in stream {
                 self.handleScanEvent(event)
             }
+            // Safety net: if the stream ends without a .finished event, reset state.
+            if self.isScanning {
+                self.isScanning = false
+                self.scanCurrentPath = ""
+            }
         }
     }
 

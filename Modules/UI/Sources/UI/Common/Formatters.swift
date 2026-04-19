@@ -65,7 +65,7 @@ public enum Formatters {
         return f
     }()
 
-    private nonisolated(unsafe) static let shortDateFormatter: DateFormatter = {
+    private static let shortDateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateStyle = .medium
         f.timeStyle = .none

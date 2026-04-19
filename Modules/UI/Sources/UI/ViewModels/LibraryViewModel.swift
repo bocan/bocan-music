@@ -54,7 +54,7 @@ public final class LibraryViewModel: ObservableObject {
     private let settingsRepo: SettingsRepository
     let scanner: LibraryScanner?
     var scanTask: Task<Void, Never>?
-    private let log = AppLogger.make(.ui)
+    let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
