@@ -112,6 +112,10 @@ public actor LibraryScanner {
                 }
 
                 guard !resolved.isEmpty else {
+                    continuation.yield(.finished(ScanProgress.Summary(
+                        inserted: 0, updated: 0, removed: 0,
+                        skipped: 0, errors: 0, duration: .zero
+                    )))
                     continuation.finish()
                     return
                 }
