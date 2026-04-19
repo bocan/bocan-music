@@ -400,7 +400,10 @@ public actor QueuePlayer: Transport {
     /// cannot be resolved.
     private func startRootScope(for fileURLString: String) async throws -> URL? {
         let roots = await (try? self.rootRepo.fetchAll()) ?? []
-        guard let root = roots.first(where: { fileURLString.hasPrefix($0.path) }) else {
+        // fileURLString is stored as url.absoluteString ("file:///path/to/file.mp3")
+        // while root.path is url.path ("/path/to/folder") — compare via the path component.
+        guard let filePath = URL(string: fileURLString)?.path,
+              let root = roots.first(where: { filePath.hasPrefix($0.path) }) else {
             return nil
         }
         var isStale = false
