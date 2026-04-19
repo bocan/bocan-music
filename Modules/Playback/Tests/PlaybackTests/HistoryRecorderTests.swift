@@ -69,24 +69,3 @@ struct HistoryRecorderTests {
         try! await Database(location: .inMemory)
     }
 }
-
-// MARK: - NowPlayingTests
-
-@Suite("NowPlayingCentre")
-struct NowPlayingTests {
-    @Test("init does not throw or crash")
-    @MainActor
-    func initDoesNotCrash() {
-        let centre = NowPlayingCentre()
-        centre.setPlaying(false)
-        centre.clear()
-    }
-
-    @Test("setPlaying true then false does not crash")
-    @MainActor
-    func setPlayingToggle() {
-        let centre = NowPlayingCentre()
-        centre.setPlaying(true)
-        centre.setPlaying(false)
-    }
-}

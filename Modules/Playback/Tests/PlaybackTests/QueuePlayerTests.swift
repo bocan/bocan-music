@@ -89,6 +89,43 @@ struct QueuePlayerTests {
         #expect(state2 == .off)
     }
 
+    @Test("setStopAfterCurrent sets flag on queue")
+    func setStopAfterCurrentSetsFlag() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+
+        await player.setStopAfterCurrent(true)
+        let flag = await player.queue.stopAfterCurrent
+        #expect(flag == true)
+
+        await player.setStopAfterCurrent(false)
+        let flag2 = await player.queue.stopAfterCurrent
+        #expect(flag2 == false)
+    }
+
+    @Test("setStopAfterCurrent emits stopAfterCurrentChanged change")
+    func setStopAfterCurrentEmitsChange() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+
+        // Collect the first stopAfterCurrentChanged event using a checked continuation.
+        let flag = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
+            let queue = player.queue
+            Task {
+                for await change in await queue.changes {
+                    if case let .stopAfterCurrentChanged(enabled) = change {
+                        cont.resume(returning: enabled)
+                        break
+                    }
+                }
+            }
+            Task { await player.setStopAfterCurrent(true) }
+        }
+        #expect(flag == true)
+    }
+
     // MARK: - Helpers
 
     private func makeTrack(n: Int) -> Track {

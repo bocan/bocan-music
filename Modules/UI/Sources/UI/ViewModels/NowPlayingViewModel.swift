@@ -26,6 +26,7 @@ public final class NowPlayingViewModel: ObservableObject {
     @Published public var volume: Float = 1.0
     @Published public private(set) var shuffleOn = false
     @Published public private(set) var repeatMode: RepeatMode = .off
+    @Published public private(set) var stopAfterCurrent = false
 
     // MARK: - Internal
 
@@ -127,6 +128,14 @@ public final class NowPlayingViewModel: ObservableObject {
         self.repeatMode = next
     }
 
+    /// Toggles the stop-after-current flag on the queue player.
+    public func toggleStopAfterCurrent() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let new = !self.stopAfterCurrent
+        await qp.setStopAfterCurrent(new)
+        self.stopAfterCurrent = new
+    }
+
     private func startObservingCurrentTrack(_ qp: QueuePlayer) {
         Task { [weak self] in
             guard let self else { return }
@@ -138,6 +147,15 @@ public final class NowPlayingViewModel: ObservableObject {
                     self.artist = ""
                     self.album = ""
                     self.artwork = nil
+                }
+            }
+        }
+        // Observe queue changes to sync stop-after-current flag resets.
+        Task { [weak self] in
+            guard let self else { return }
+            for await change in qp.queue.changes {
+                if case let .stopAfterCurrentChanged(enabled) = change {
+                    self.stopAfterCurrent = enabled
                 }
             }
         }

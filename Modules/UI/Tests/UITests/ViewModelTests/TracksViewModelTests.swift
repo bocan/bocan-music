@@ -169,8 +169,13 @@ struct TracksViewModelTests {
 
         var track = Track(
             fileURL: "file:///tmp/cometogethertrack.flac",
-            fileSize: 1024, fileMtime: 0, fileFormat: "flac",
-            duration: 259, title: "Come Together", addedAt: 0, updatedAt: 0
+            fileSize: 1024,
+            fileMtime: 0,
+            fileFormat: "flac",
+            duration: 259,
+            title: "Come Together",
+            addedAt: 0,
+            updatedAt: 0
         )
         track.artistID = artistID
         track.albumID = albumID

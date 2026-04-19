@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 
 // MARK: - LibraryViewModel + Scanning
 
+/// Scanning-related actions for ``LibraryViewModel``.
 public extension LibraryViewModel {
     // MARK: - Library roots
 

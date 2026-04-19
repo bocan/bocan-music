@@ -128,6 +128,16 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : Color.accentColor)
             .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
+
+            Button {
+                Task { await self.vm.toggleStopAfterCurrent() }
+            } label: {
+                Image(systemName: "stop.circle\(self.vm.stopAfterCurrent ? ".fill" : "")")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.vm.stopAfterCurrent ? Color.accentColor : Color.textTertiary)
+            .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
         }
     }
 

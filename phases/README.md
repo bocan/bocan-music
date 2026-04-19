@@ -23,7 +23,8 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 6 | [phase-06-manual-playlists.md](phase-06-manual-playlists.md) | CRUD playlists |
 | 7 | [phase-07-smart-playlists.md](phase-07-smart-playlists.md) | Rule builder, SQL compiler |
 | 8 | [phase-08-metadata-editor.md](phase-08-metadata-editor.md) | Tag editor + cover art fetch |
-| 9 | [phase-09-eq-effects.md](phase-09-eq-effects.md) | 10-band EQ, ReplayGain, crossfeed |
+| 8.5 | [phase-08.5-acoustid-fingerprinting.md](phase-08.5-acoustid-fingerprinting.md) | AcoustID + MusicBrainz auto-tagging |
+| 9 | [phase-09-eq-effects.md](phase-09-eq-effects.md) | 10-band EQ, ReplayGain, crossfeed, crossfade |
 | 10 | [phase-10-mini-player-polish.md](phase-10-mini-player-polish.md) | Mini player, themes, dock tile |
 | 11 | [phase-11-lyrics.md](phase-11-lyrics.md) | LRC + embedded lyrics |
 | 12 | [phase-12-visualizers.md](phase-12-visualizers.md) | FFT + Metal/Canvas visualizers |

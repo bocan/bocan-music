@@ -6,7 +6,7 @@
 
 ## Goal
 
-A second, slick, resizable mini-player window; clean toggle between full and mini modes; refined light/dark themes audited across every view; Dock tile with now-playing thumbnail; optional menu-bar extra and on-track-change notifications; proper preferences/settings window.
+A second, slick, resizable mini-player window; clean toggle between full and mini modes; refined light/dark themes audited across every view; Dock tile with now-playing thumbnail; optional menu-bar extra and on-track-change notifications; proper preferences/settings window. Sleep timer. Playback speed control.
 
 ## Non-goals
 
@@ -17,6 +17,13 @@ A second, slick, resizable mini-player window; clean toggle between full and min
 ## Outcome shape
 
 ```
+Modules/Playback/Sources/Playback/    # Extended from Phase 5
+└── SleepTimer.swift                  # Countdown actor; fires stop command to QueuePlayer on expiry
+
+Modules/UI/Sources/UI/Transport/
+├── SleepTimerMenu.swift              # Playback > Sleep Timer submenu + NowPlayingStrip countdown badge
+└── SpeedPickerView.swift             # Transport speed control (0.5×–2.0×)
+
 Modules/UI/Sources/UI/MiniPlayer/
 ├── MiniPlayerWindow.swift           # Scene
 ├── MiniPlayerView.swift             # Root layout
@@ -105,7 +112,7 @@ Modules/UI/Sources/UI/Theme/
 8. **Settings window** — standard `Settings` scene with sidebar tabs. Each panel wires to existing settings keys. Add missing ones:
    - General: startup behaviour, window restoration, notifications, menu bar extra.
    - Library: root folders (with "Add…" and "Remove"), quick vs full scan defaults, watch for changes toggle.
-   - Playback: gapless preroll seconds, shuffle mode preferences, repeat default, cross-album gapless tolerance.
+   - Playback: gapless preroll seconds, shuffle mode preferences, repeat default, cross-album gapless tolerance, default speed (reset to 1× button), sleep timer default duration, fade-out toggle.
    - DSP: wraps Phase 9 panels.
    - Appearance: theme mode (System / Light / Dark / Match macOS), accent colour picker, row density, reduce motion override.
    - Advanced: logging level, "Reveal DB in Finder", "Export Diagnostics" (writes a sysdiagnose-like bundle), "Reset Preferences", "Rebuild FTS Index".
@@ -139,6 +146,19 @@ Modules/UI/Sources/UI/Theme/
     - `applicationShouldTerminateAfterLastWindowClosed` returns `false`.
     - `⌘Q` quits with confirm if a background scan or RG analysis is in progress.
 
+16. **`SleepTimer`** actor in `Modules/Playback`:
+    - Countdown in minutes; preset durations: Off, 15, 30, 45, 60, 90, 120, Custom (text-field entry).
+    - Optional “Fade out in last 30 s” setting: ramps `QueuePlayer` volume from 1.0 → 0 over the final 30 s, then calls `stop()`.
+    - Timer state persisted in `settings` (`playback.sleepTimer.expiresAt`, `playback.sleepTimer.fadeOut`). On relaunch, if `expiresAt` is in the future the timer resumes from the remaining duration.
+    - UI: `Playback > Sleep Timer` submenu in the menu bar. NowPlayingStrip shows a moon icon + remaining time (e.g. “☽ 28 m”) when active.
+    - Cancellation: selecting “Off” or tapping the active preset again cancels the timer.
+
+17. **Playback speed control**:
+    - `QueuePlayer.setRate(_ rate: Float) async` — sets `AVAudioPlayerNode.rate` with `AVAudioTimePitchAlgorithm.spectral` for pitch-correction (no chipmunk effect at high speeds).
+    - Range: 0.5×–2.0×, default 1.0×, step 0.05×.
+    - UI: `SpeedPickerView` in the NowPlayingStrip — a popover triggered by a “1.0×” label, showing a slider + quick-pick buttons (0.75, 1.0, 1.25, 1.5, 2.0). Hidden when at 1.0× to reduce visual noise; revealed on hover or via Settings.
+    - Persisted to `settings` as `playback.rate` (default `1.0`). A “Reset to 1×” button in `PlaybackSettingsView`.
+
 ## Context7 lookups
 
 - `use context7 SwiftUI multiple windows Scene macOS`
@@ -147,6 +167,8 @@ Modules/UI/Sources/UI/Theme/
 - `use context7 UserNotifications macOS authorization`
 - `use context7 NSApp applicationShouldTerminateAfterLastWindowClosed SwiftUI`
 - `use context7 SwiftUI Settings scene tabs sidebar`
+- `use context7 AVAudioPlayerNode rate timePitchAlgorithm spectral pitch correction`
+- `use context7 NSWorkspace didWakeNotification macOS sleep timer`
 
 ## Dependencies
 
@@ -172,6 +194,8 @@ None new.
 - [ ] Mini player looks good at any reasonable size and both themes.
 - [ ] Switching modes is instant and remembers positions.
 - [ ] Dock tile artwork + progress visible and not distracting.
+- [ ] Sleep timer stops playback at the configured time; the fade-out is audible when enabled.
+- [ ] Playback speed changes are immediate; pitch is preserved across the full 0.5×–2.0× range.
 - [ ] Menu bar extra usable without opening the main window.
 - [ ] Settings window has every runtime-toggleable preference.
 - [ ] Every view passes contrast checks and snapshot tests in both themes.
@@ -191,8 +215,9 @@ None new.
 - **`@SceneStorage`** for per-window small state, `@AppStorage` for app-wide booleans. Don't abuse `@AppStorage` for complex types.
 - **Marquee**: measuring text for overflow requires the rendered width; use `TimelineView` + `.drawingGroup()` trick or a `GeometryReader` with a measured overlay.
 - **Window restoration and sandbox**: SwiftUI's default frame autosave works under sandbox; verify on clean account.
-- **Dark mode + custom colours**: don't hardcode. Every colour is a semantic asset in the catalogue.
-
+- **Dark mode + custom colours**: don't hardcode. Every colour is a semantic asset in the catalogue.- **Sleep timer + system sleep**: macOS may sleep the machine before the timer fires. Listen for `NSWorkspace.didWakeNotification`; if `expiresAt` is now in the past, stop playback immediately.
+- **Pitch algorithm at rate changes**: switching `timePitchAlgorithm` while audio is playing causes a dropout. Set it once at engine init; don’t change it dynamically.
+- **Speed + gapless timing**: `AVAudioPlayerNode` handles rate-adjusted scheduling internally against the output device’s fixed sample rate. Don’t try to adjust pre-scheduled `AVAudioTime` values manually.
 ## Handoff
 
 Phase 11 (Lyrics) expects:

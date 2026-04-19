@@ -8,17 +8,26 @@ import SwiftUI
 
 /// Actions that context menus can trigger.
 ///
-/// Phase 5, 6, 8 stubs are marked `TODO(phase-NN)` and perform no-ops until
+/// Phase 6, 8 stubs are marked `TODO(phase-NN)` and perform no-ops until
 /// wired by the respective phase.
 public struct TrackActions {
     /// Play a single track immediately.
     public var playNow: @MainActor (Track) async -> Void
 
-    /// TODO(phase-5): Enqueue as next.
+    /// Enqueue tracks to play immediately after the current item.
     public var playNext: @MainActor ([Track]) -> Void
 
-    /// TODO(phase-5): Append to queue.
+    /// Append tracks to the end of the queue.
     public var addToQueue: @MainActor ([Track]) -> Void
+
+    /// Play all tracks from the album of the given track.
+    public var playAlbum: @MainActor (Track) -> Void
+
+    /// Shuffle all tracks from the album of the given track.
+    public var shuffleAlbum: @MainActor (Track) -> Void
+
+    /// Play all tracks by the artist of the given track.
+    public var playArtist: @MainActor (Track) -> Void
 
     /// TODO(phase-6): Add to playlist.
     public var addToPlaylist: @MainActor ([Track]) -> Void
@@ -43,6 +52,9 @@ public struct TrackActions {
         playNow: @escaping @MainActor (Track) async -> Void,
         playNext: @escaping @MainActor ([Track]) -> Void = { _ in },
         addToQueue: @escaping @MainActor ([Track]) -> Void = { _ in },
+        playAlbum: @escaping @MainActor (Track) -> Void = { _ in },
+        shuffleAlbum: @escaping @MainActor (Track) -> Void = { _ in },
+        playArtist: @escaping @MainActor (Track) -> Void = { _ in },
         addToPlaylist: @escaping @MainActor ([Track]) -> Void = { _ in },
         toggleLoved: @escaping @MainActor (Track) async -> Void,
         setRating: @escaping @MainActor (Track, Int) async -> Void,
@@ -53,6 +65,9 @@ public struct TrackActions {
         self.playNow = playNow
         self.playNext = playNext
         self.addToQueue = addToQueue
+        self.playAlbum = playAlbum
+        self.shuffleAlbum = shuffleAlbum
+        self.playArtist = playArtist
         self.addToPlaylist = addToPlaylist
         self.toggleLoved = toggleLoved
         self.setRating = setRating
@@ -86,16 +101,27 @@ public struct TrackContextMenu: View {
             Divider()
         }
 
-        // Phase 5 stubs
         Button("Play Next") {
             self.actions.playNext(self.tracks)
         }
-        .disabled(true) // TODO(phase-5): enable when QueuePlayer lands
+        .disabled(self.tracks.isEmpty)
 
         Button("Add to Queue") {
             self.actions.addToQueue(self.tracks)
         }
-        .disabled(true) // TODO(phase-5): enable when QueuePlayer lands
+        .disabled(self.tracks.isEmpty)
+
+        if let track {
+            Button("Play Album") {
+                self.actions.playAlbum(track)
+            }
+            Button("Shuffle Album") {
+                self.actions.shuffleAlbum(track)
+            }
+            Button("Play Artist") {
+                self.actions.playArtist(track)
+            }
+        }
 
         // Phase 6 stub
         Menu("Add to Playlist") {
