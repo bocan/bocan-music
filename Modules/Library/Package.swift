@@ -39,6 +39,9 @@ let package = Package(
                 .product(name: "Metadata", package: "Metadata"),
             ],
             path: "Tests/LibraryTests",
+            resources: [
+                .copy("Fixtures"),
+            ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
                 .swiftLanguageMode(.v6),
