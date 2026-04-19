@@ -31,6 +31,20 @@ public enum FileWalker {
         continuation: AsyncStream<URL>.Continuation
     ) {
         let fm = FileManager.default
+
+        // If the root itself is a supported audio file, yield it directly.
+        var isDir: ObjCBool = false
+        let exists = fm.fileExists(atPath: url.path, isDirectory: &isDir)
+        guard exists else { return }
+
+        if !isDir.boolValue {
+            let ext = url.pathExtension.lowercased()
+            if supportedExtensions.contains(ext) {
+                continuation.yield(url)
+            }
+            return
+        }
+
         guard let enumerator = fm.enumerator(
             at: url,
             includingPropertiesForKeys: [

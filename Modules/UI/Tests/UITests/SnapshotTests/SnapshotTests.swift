@@ -113,7 +113,11 @@ struct UISnapshotTests {
     @MainActor
     struct TracksViewSnapshotTests {
         private func makeVM(db: Database) -> TracksViewModel {
-            TracksViewModel(repository: TrackRepository(database: db))
+            TracksViewModel(
+                repository: TrackRepository(database: db),
+                artistRepository: ArtistRepository(database: db),
+                albumRepository: AlbumRepository(database: db)
+            )
         }
 
         private func makeLibraryVM(db: Database) -> LibraryViewModel {
