@@ -1,6 +1,7 @@
 // @preconcurrency: AVAudioPCMBuffer/AVAudioFormat lack Sendable; safe because
 // FFmpegDecoder is the sole owner of its buffers.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
+// swiftlint:disable file_length
 @preconcurrency import AVFoundation
 import CFFmpeg
 import Foundation
@@ -372,7 +373,12 @@ private extension FFmpegDecoder {
 private func ffError(_ code: Int32) -> Error {
     var buf = [CChar](repeating: 0, count: 256)
     av_strerror(code, &buf, buf.count)
-    return FFmpegInternalError.code(code, String(decoding: buf.prefix(while: { $0 != 0 }).map(UInt8.init), as: UTF8.self))
+    let message = buf.withUnsafeBufferPointer { ptr in
+        ptr.baseAddress.flatMap {
+            String(bytes: UnsafeRawBufferPointer(start: $0, count: strnlen($0, buf.count)), encoding: .utf8)
+        } ?? "error \(code)"
+    }
+    return FFmpegInternalError.code(code, message)
 }
 
 private enum FFmpegInternalError: Error, LocalizedError {
