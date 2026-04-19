@@ -114,9 +114,12 @@ public struct AlbumsGridView: View {
             AlbumDetailView(albumID: albumID, library: self.library)
         }
         .accessibilityIdentifier(A11y.AlbumsGrid.grid)
-        // Navigate to selected album
+        // Navigate to selected album.
+        // Reset to nil after each navigation so that tapping the same
+        // album a second time always fires (onChange fires on *change* only).
         .onChange(of: self.vm.selectedAlbumID) { _, newID in
             if let id = newID {
+                self.vm.selectedAlbumID = nil
                 Task { await self.library.selectDestination(.album(id)) }
             }
         }

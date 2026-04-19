@@ -188,6 +188,26 @@ public struct TrackRepository: Sendable {
         }
     }
 
+    /// Returns the track count for an artist (no row data loaded).
+    public func count(artistID: Int64) async throws -> Int {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("artist_id") == artistID)
+                .filter(Column("disabled") == false)
+                .fetchCount(db)
+        }
+    }
+
+    /// Returns the track count for an album (no row data loaded).
+    public func count(albumID: Int64) async throws -> Int {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("album_id") == albumID)
+                .filter(Column("disabled") == false)
+                .fetchCount(db)
+        }
+    }
+
     /// Fetches all tracks for a given genre string.
     public func fetchAll(genre: String) async throws -> [Track] {
         try await self.database.read { db in
