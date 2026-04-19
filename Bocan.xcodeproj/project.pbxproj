@@ -11,6 +11,7 @@
 		171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
 		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
 		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
+		8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = EE0BAD633E96C7812391D0FE /* AudioEngine */; };
 		CF662F890AEBEE98A2B06936 /* AppLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */; };
 		DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8E8EC191BDB21827F3BBAE /* RootView.swift */; };
 /* End PBXBuildFile section */
@@ -23,6 +24,7 @@
 		8C85F460580B049360716FE5 /* Observability */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Observability; path = Modules/Observability; sourceTree = SOURCE_ROOT; };
 		B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BocanApp.swift; sourceTree = "<group>"; };
 		BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		D2389E70DB249B9953B85CD4 /* AudioEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AudioEngine; path = Modules/AudioEngine; sourceTree = SOURCE_ROOT; };
 		EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -32,6 +34,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */,
+				8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +97,7 @@
 		8BF57F4CB14DAF0B974A3D88 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				D2389E70DB249B9953B85CD4 /* AudioEngine */,
 				8C85F460580B049360716FE5 /* Observability */,
 			);
 			name = Packages;
@@ -141,6 +145,7 @@
 			name = Bocan;
 			packageProductDependencies = (
 				4471527EBD815A0F4817C396 /* Observability */,
+				EE0BAD633E96C7812391D0FE /* AudioEngine */,
 			);
 			productName = Bocan;
 			productReference = 0BA06444E0E71CD641790EEF /* Bocan.app */;
@@ -206,6 +211,7 @@
 			mainGroup = 5D04F17B59F05CEBF50A5476;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				A17D0542DA503F381C619312 /* XCLocalSwiftPackageReference "Modules/AudioEngine" */,
 				DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -536,6 +542,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		A17D0542DA503F381C619312 /* XCLocalSwiftPackageReference "Modules/AudioEngine" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/AudioEngine;
+		};
 		DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Observability;
@@ -550,6 +560,10 @@
 		8F629E8B78D37805428363DA /* Observability */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Observability;
+		};
+		EE0BAD633E96C7812391D0FE /* AudioEngine */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AudioEngine;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
