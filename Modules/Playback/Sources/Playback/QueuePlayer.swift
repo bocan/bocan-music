@@ -40,6 +40,13 @@ public actor QueuePlayer: Transport {
     public nonisolated let state: AsyncStream<PlaybackState>
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
 
+    // MARK: - Current track stream
+
+    /// Emits the currently-playing `Track` whenever it changes (including gapless
+    /// transitions).  Emits `nil` when playback stops.
+    public nonisolated let currentTrackChanges: AsyncStream<Track?>
+    private var currentTrackContinuation: AsyncStream<Track?>.Continuation?
+
     // MARK: - Internal state
 
     private var currentTrack: Track?
@@ -64,6 +71,10 @@ public actor QueuePlayer: Transport {
         var continuation: AsyncStream<PlaybackState>.Continuation?
         self.state = AsyncStream { continuation = $0 }
         self.stateContinuation = continuation
+
+        var trackContinuation: AsyncStream<Track?>.Continuation?
+        self.currentTrackChanges = AsyncStream { trackContinuation = $0 }
+        self.currentTrackContinuation = trackContinuation
 
         // Kick off async activation after init completes.
         Task { await self.activate() }
@@ -129,6 +140,7 @@ public actor QueuePlayer: Transport {
         await self.engine.stop()
         await self.gaplessScheduler.stop()
         await self.nowPlayingCentre?.setPlaying(false)
+        self.emitCurrentTrack(nil)
     }
 
     public func seek(to time: TimeInterval) async throws {
@@ -240,7 +252,7 @@ public actor QueuePlayer: Transport {
 
         // Fetch track metadata (for NowPlaying).
         let track = try? await trackRepo.fetch(id: item.trackID)
-        self.currentTrack = track
+        self.emitCurrentTrack(track)
 
         try await self.engine.load(url)
         // Release whichever scope was started — AVAudioFile already holds an open
@@ -329,7 +341,7 @@ public actor QueuePlayer: Transport {
 
         // Update metadata for the new track.
         if let track = try? await trackRepo.fetch(id: item.trackID) {
-            self.currentTrack = track
+            self.emitCurrentTrack(track)
             let capturedEngine = self.engine
             await self.nowPlayingCentre?.update(
                 track: track,
@@ -372,6 +384,12 @@ public actor QueuePlayer: Transport {
     }
 
     // MARK: Root-scope fallback
+
+    /// Updates `currentTrack` and broadcasts the change on `currentTrackChanges`.
+    private func emitCurrentTrack(_ track: Track?) {
+        self.currentTrack = track
+        self.currentTrackContinuation?.yield(track)
+    }
 
     /// Finds the library root that contains `fileURLString`, resolves its
     /// security-scoped bookmark, starts accessing the scope, and returns the
