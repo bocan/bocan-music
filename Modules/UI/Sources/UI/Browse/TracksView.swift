@@ -38,8 +38,11 @@ public struct TracksView: View {
                 EmptyState(
                     symbol: "music.note",
                     title: "No Songs",
-                    message: "Your library doesn't contain any songs yet."
-                )
+                    message: "Add a music folder to start building your library.",
+                    actionLabel: "Add Music Folder"
+                ) {
+                    Task { await self.libraryEnv.addFolderByPicker() }
+                }
             } else {
                 self.trackTable
             }

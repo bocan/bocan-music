@@ -110,5 +110,7 @@ packages:
     path: Modules/Persistence
   Playback:
     path: Modules/Playback
+  Library:
+    path: Modules/Library
   UI:
     path: Modules/UI

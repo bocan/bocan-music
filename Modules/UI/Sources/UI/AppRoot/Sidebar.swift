@@ -1,3 +1,4 @@
+import Persistence
 import SwiftUI
 
 // MARK: - Sidebar
@@ -39,6 +40,32 @@ public struct Sidebar: View {
                 self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
             }
 
+            Section {
+                if self.vm.libraryRoots.isEmpty {
+                    Text("No folders added")
+                        .font(Typography.footnote)
+                        .foregroundStyle(Color.textTertiary)
+                        .padding(.vertical, 2)
+                } else {
+                    ForEach(self.vm.libraryRoots, id: \.id) { root in
+                        self.folderRow(root)
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Folders")
+                    Spacer()
+                    Button {
+                        Task { await self.vm.addFolderByPicker() }
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(Typography.footnote)
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Add music folder")
+                }
+            }
+
             Section("Playlists") {
                 // TODO(phase-6): Populate from PlaylistRepository
                 Text("No playlists yet")
@@ -59,5 +86,23 @@ public struct Sidebar: View {
             .font(Typography.body)
             .tag(dest)
             .accessibilityLabel(label)
+    }
+
+    private func folderRow(_ root: LibraryRoot) -> some View {
+        Label {
+            Text(URL(fileURLWithPath: root.path).lastPathComponent)
+                .font(Typography.body)
+                .lineLimit(1)
+        } icon: {
+            Image(systemName: "folder")
+        }
+        .help(root.path)
+        .contextMenu {
+            Button("Remove from Library", role: .destructive) {
+                if let id = root.id {
+                    Task { await self.vm.removeRoot(id: id) }
+                }
+            }
+        }
     }
 }

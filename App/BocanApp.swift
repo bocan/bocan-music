@@ -1,4 +1,5 @@
 import AudioEngine
+import Library
 import Observability
 import Persistence
 import Playback
@@ -28,8 +29,17 @@ struct BocanApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .newItem) {
+                Button("Add Folder to Library…") {
+                    Task { await self.libraryViewModel.addFolderByPicker() }
+                }
+                .keyboardShortcut(KeyBindings.addFolder)
 
+                Button("Add Files to Library…") {
+                    Task { await self.libraryViewModel.addFilesByPicker() }
+                }
+                .keyboardShortcut(KeyBindings.addFiles)
+            }
             CommandMenu("Playback") {
                 Button("Play / Pause") {
                     Task { await self.libraryViewModel.nowPlaying.playPause() }
@@ -84,8 +94,9 @@ struct BocanApp: App {
 
         let eng = AudioEngine()
         let player = QueuePlayer(engine: eng, database: db)
+        let scanner = LibraryScanner(database: db)
         self.database = db
         self.engine = eng
-        self.libraryViewModel = LibraryViewModel(database: db, engine: player)
+        self.libraryViewModel = LibraryViewModel(database: db, engine: player, scanner: scanner)
     }
 }

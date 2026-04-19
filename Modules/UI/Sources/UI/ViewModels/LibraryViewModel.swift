@@ -1,8 +1,11 @@
+import AppKit
 import AudioEngine
 import Foundation
+import Library
 import Observability
 import Persistence
 import Playback
+import UniformTypeIdentifiers
 
 // MARK: - UIStateV1
 
@@ -25,6 +28,17 @@ public final class LibraryViewModel: ObservableObject {
     @Published public var selectedDestination: SidebarDestination = .songs
     @Published public var searchQuery = ""
 
+    // MARK: - Scan state
+
+    @Published public var isScanning = false
+    @Published public var scanWalked = 0
+    @Published public var scanInserted = 0
+    @Published public var scanUpdated = 0
+    @Published public var scanCurrentPath = ""
+    @Published public var scanSummary: ScanProgress.Summary?
+    @Published public var libraryRoots: [LibraryRoot] = []
+    @Published public var isDragTargeted = false
+
     // MARK: - Child view-models
 
     public let tracks: TracksViewModel
@@ -38,13 +52,16 @@ public final class LibraryViewModel: ObservableObject {
     public let database: Database
     private let engine: any Transport
     private let settingsRepo: SettingsRepository
+    let scanner: LibraryScanner?
+    var scanTask: Task<Void, Never>?
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
-    public init(database: Database, engine: any Transport) {
+    public init(database: Database, engine: any Transport, scanner: LibraryScanner? = nil) {
         self.database = database
         self.engine = engine
+        self.scanner = scanner
         self.settingsRepo = SettingsRepository(database: database)
 
         let trackRepo = TrackRepository(database: database)
@@ -174,64 +191,6 @@ public final class LibraryViewModel: ObservableObject {
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
         } catch {
             self.log.error("library.restoreState.failed", ["error": String(reflecting: error)])
-        }
-    }
-
-    // MARK: - Private
-
-    private func loadDestination(_ destination: SidebarDestination) async {
-        switch destination {
-        case .songs:
-            await self.tracks.load()
-
-        case .albums:
-            await self.albums.load()
-
-        case .artists:
-            await self.artists.load()
-
-        case .genres, .composers:
-            await self.tracks.load()
-
-        case .recentlyAdded:
-            let trackRepo = TrackRepository(database: database)
-            let result = await (try? trackRepo.recentlyAdded()) ?? []
-            self.tracks.setTracks(result)
-
-        case .recentlyPlayed:
-            let trackRepo = TrackRepository(database: database)
-            let result = await (try? trackRepo.recentlyPlayed()) ?? []
-            self.tracks.setTracks(result)
-
-        case .mostPlayed:
-            let trackRepo = TrackRepository(database: database)
-            let result = await (try? trackRepo.mostPlayed()) ?? []
-            self.tracks.setTracks(result)
-
-        case let .artist(id):
-            await self.artists.load()
-            await self.tracks.load(artistID: id)
-            await self.albums.load(albumArtistID: id)
-
-        case let .album(id):
-            await self.tracks.load(albumID: id)
-
-        case let .genre(genre):
-            await self.tracks.load(genre: genre)
-
-        case let .composer(c):
-            await self.tracks.load(composer: c)
-
-        case .playlist, .smartPlaylist:
-            // TODO(phase-6): wire playlist loading
-            break
-
-        case .upNext:
-            break // QueueView reads directly from QueuePlayer.queue
-
-        case let .search(searchQuery):
-            self.search.query = searchQuery
-            self.search.queryChanged()
         }
     }
 }

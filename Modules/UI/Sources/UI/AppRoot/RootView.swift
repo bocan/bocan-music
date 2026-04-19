@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - BocanRootView
 
@@ -27,6 +28,9 @@ public struct BocanRootView: View {
                 Sidebar(vm: self.vm)
             } detail: {
                 ContentPane(vm: self.vm)
+                    .safeAreaInset(edge: .top, spacing: 0) {
+                        ScanBanner(vm: self.vm)
+                    }
                     .toolbar { self.toolbarItems }
             }
 
@@ -35,10 +39,37 @@ public struct BocanRootView: View {
         .environmentObject(self.vm)
         .task {
             await self.vm.restoreUIState()
+            await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
         }
         .onDisappear {
             Task { await self.vm.saveUIState() }
+        }
+        .overlay {
+            // Drop-target highlight border
+            if self.vm.isDragTargeted {
+                RoundedRectangle(cornerRadius: 8)
+                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                    .padding(4)
+                    .allowsHitTesting(false)
+            }
+        }
+        .onDrop(
+            of: [UTType.fileURL, UTType.folder],
+            isTargeted: self.$vm.isDragTargeted
+        ) { providers in
+            Task { @MainActor in
+                var urls: [URL] = []
+                for provider in providers {
+                    if let url = await Self.loadURL(from: provider) {
+                        urls.append(url)
+                    }
+                }
+                if !urls.isEmpty {
+                    await self.vm.addDroppedURLs(urls)
+                }
+            }
+            return true
         }
         .frame(minWidth: 900, minHeight: 550)
         .accessibilityIdentifier("BocanMainWindow")
@@ -51,6 +82,16 @@ public struct BocanRootView: View {
         ToolbarItem(placement: .primaryAction) {
             SearchField(vm: self.vm.search)
                 .frame(minWidth: 180, maxWidth: 280)
+        }
+    }
+
+    // MARK: - Drop helper
+
+    private static func loadURL(from provider: NSItemProvider) async -> URL? {
+        await withCheckedContinuation { continuation in
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                continuation.resume(returning: url)
+            }
         }
     }
 }
