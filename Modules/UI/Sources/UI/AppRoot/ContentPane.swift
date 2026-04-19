@@ -58,6 +58,9 @@ public struct ContentPane: View {
         case let .composer(c):
             TracksView(vm: self.vm.tracks, library: self.vm, title: c)
 
+        case .upNext:
+            QueueView(vm: self.vm)
+
         case .playlist:
             EmptyState(
                 symbol: "music.note.list",

@@ -26,6 +26,10 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case genre(String)
     case composer(String)
 
+    // MARK: - Queue (Phase 5)
+
+    case upNext
+
     // MARK: - Phase 6+
 
     /// Stub — populated by Phase 6.

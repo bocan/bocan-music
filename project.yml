@@ -61,6 +61,7 @@ targets:
       - package: Observability
       - package: AudioEngine
       - package: Persistence
+      - package: Playback
       - package: UI
     scheme:
       testTargets:
@@ -82,6 +83,7 @@ targets:
       - package: Observability
       - package: Persistence
       - package: AudioEngine
+      - package: Playback
       - package: UI
 
   BocanUITests:
@@ -106,5 +108,7 @@ packages:
     path: Modules/AudioEngine
   Persistence:
     path: Modules/Persistence
+  Playback:
+    path: Modules/Playback
   UI:
     path: Modules/UI

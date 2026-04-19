@@ -89,6 +89,9 @@ extension SidebarDestination {
         case .smartPlaylist:
             "Smart Playlist"
 
+        case .upNext:
+            "Up Next"
+
         case let .search(searchQuery):
             "Search: \(searchQuery)"
         }
