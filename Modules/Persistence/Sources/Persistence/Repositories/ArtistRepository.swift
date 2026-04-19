@@ -80,4 +80,17 @@ public struct ArtistRepository: Sendable {
             try Artist.order(Column("sort_name"), Column("name")).fetchAll(db)
         }
     }
+
+    // MARK: - Search
+
+    /// Full-text search across artist name field.
+    ///
+    /// Returns artists ranked by FTS5 relevance. Returns an empty array for blank queries.
+    public func search(query: String) async throws -> [Artist] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return [] }
+        return try await self.database.read { db in
+            try SQL.artistsFTSQuery(trimmed).fetchAll(db)
+        }
+    }
 }

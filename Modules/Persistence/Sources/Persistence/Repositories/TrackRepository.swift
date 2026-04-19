@@ -113,4 +113,98 @@ public struct TrackRepository: Sendable {
             try Track.fetchCount(db)
         }
     }
+
+    // MARK: - Search
+
+    /// Full-text search across title, artist, album, genre, and composer fields.
+    ///
+    /// Returns tracks ranked by FTS5 relevance. Returns an empty array for blank queries.
+    public func search(query: String) async throws -> [Track] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return [] }
+        return try await self.database.read { db in
+            try SQL.tracksFTSQuery(trimmed).fetchAll(db)
+        }
+    }
+
+    // MARK: - Smart folders
+
+    /// Fetches tracks added within the last `days` days, newest first.
+    public func recentlyAdded(days: Int = 30) async throws -> [Track] {
+        let cutoff = Int64(Date().timeIntervalSince1970) - Int64(days * 86400)
+        return try await self.database.read { db in
+            try Track
+                .filter(Column("added_at") >= cutoff)
+                .order(Column("added_at").desc)
+                .fetchAll(db)
+        }
+    }
+
+    /// Fetches tracks played within the last `days` days, most-recently-played first.
+    public func recentlyPlayed(days: Int = 90) async throws -> [Track] {
+        let cutoff = Int64(Date().timeIntervalSince1970) - Int64(days * 86400)
+        return try await self.database.read { db in
+            try Track
+                .filter(Column("last_played_at") >= cutoff)
+                .order(Column("last_played_at").desc)
+                .fetchAll(db)
+        }
+    }
+
+    /// Fetches the top `limit` most-played tracks, highest play count first.
+    public func mostPlayed(limit: Int = 100) async throws -> [Track] {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("play_count") > 0)
+                .order(Column("play_count").desc)
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
+    /// Fetches all tracks for a given artist ID.
+    public func fetchAll(artistID: Int64) async throws -> [Track] {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("artist_id") == artistID)
+                .order(Column("album_track_sort_key"), Column("title"))
+                .fetchAll(db)
+        }
+    }
+
+    /// Fetches all tracks for a given genre string.
+    public func fetchAll(genre: String) async throws -> [Track] {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("genre") == genre)
+                .order(Column("title"))
+                .fetchAll(db)
+        }
+    }
+
+    /// Fetches all tracks for a given composer string.
+    public func fetchAll(composer: String) async throws -> [Track] {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("composer") == composer)
+                .order(Column("title"))
+                .fetchAll(db)
+        }
+    }
+
+    /// Returns all distinct genre strings, sorted alphabetically.
+    public func allGenres() async throws -> [String] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT DISTINCT genre FROM tracks WHERE genre IS NOT NULL ORDER BY genre")
+            return rows.compactMap { $0["genre"] as? String }
+        }
+    }
+
+    /// Returns all distinct composer strings, sorted alphabetically.
+    public func allComposers() async throws -> [String] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT DISTINCT composer FROM tracks WHERE composer IS NOT NULL ORDER BY composer")
+            return rows.compactMap { $0["composer"] as? String }
+        }
+    }
 }

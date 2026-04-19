@@ -83,4 +83,27 @@ public struct AlbumRepository: Sendable {
             try Album.fetchCount(db)
         }
     }
+
+    // MARK: - Search
+
+    /// Full-text search across album title field.
+    ///
+    /// Returns albums ranked by FTS5 relevance. Returns an empty array for blank queries.
+    public func search(query: String) async throws -> [Album] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return [] }
+        return try await self.database.read { db in
+            try SQL.albumsFTSQuery(trimmed).fetchAll(db)
+        }
+    }
+
+    /// Fetches all albums for a given artist ID (as album artist).
+    public func fetchAll(albumArtistID: Int64) async throws -> [Album] {
+        try await self.database.read { db in
+            try Album
+                .filter(Column("album_artist_id") == albumArtistID)
+                .order(Column("year").desc, Column("title"))
+                .fetchAll(db)
+        }
+    }
 }
