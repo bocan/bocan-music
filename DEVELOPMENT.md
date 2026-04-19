@@ -29,11 +29,16 @@ make doctor
 | Command | Description |
 |---------|-------------|
 | `make build` | Debug build |
-| `make test` | Run all tests |
+| `make test` | Xcode unit tests — view models + observability (excludes snapshot tests) |
 | `make test-coverage` | Tests + coverage report (≥ 80% required) |
-| `make test-audio-engine` | Run AudioEngine SPM package tests via `swift test` |
+| `make test-ui` | UI module: snapshot + view-model tests via `swift test` |
+| `make test-audio-engine` | AudioEngine SPM package tests (requires FFmpeg via Homebrew) |
+| `make test-persistence` | Persistence SPM package tests |
+| `make test-metadata` | Metadata SPM package tests |
+| `make test-library` | Library SPM package tests |
 | `make lint` | SwiftLint + SwiftFormat lint |
 | `make format` | Auto-format all Swift files |
+| `make format-check` | SwiftFormat lint mode (used in CI) |
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
 | `make generate` | Regenerate Xcode project from `project.yml` |
@@ -45,6 +50,8 @@ The project is generated from `project.yml` using [XcodeGen](https://github.com/
 
 ## Module layout
 
+All modules live under `Modules/` as independent Swift packages.
+
 ```
 Modules/<Name>/
 ├── Package.swift
@@ -52,7 +59,28 @@ Modules/<Name>/
 └── Tests/<Name>Tests/
 ```
 
-Dependency order (bottom → top): `Observability → Persistence → AudioEngine → Metadata → Library → Playback → UI → App`
+| Module | Key contents |
+|--------|--------------|
+| `Observability` | `AppLogger`, `Telemetry`, `MetricKitListener`, `Redaction` |
+| `AudioEngine` | `AudioEngine` actor, `EngineGraph`, `BufferPump`, FFmpeg bridge |
+| `Persistence` | GRDB database, migrations, repositories, `AsyncObservation` |
+| `Metadata` | `TagReader`/`TagWriter` (TagLib), `CoverArtExtractor`, `LRCParser` |
+| `Library` | `LibraryScanner`, FSEvents watcher, `ScanProgress` |
+| `UI` | SwiftUI views, `LibraryViewModel`, `NowPlayingViewModel`, `TracksViewModel`, `AlbumsViewModel`, `SearchViewModel` |
+
+Dependency order (bottom → top):
+```
+Observability → Persistence → AudioEngine → Metadata → Library → UI → App
+```
+
+### Test split: Xcode vs SPM
+
+The `BocanTests` Xcode target runs in a **standalone** process (no host app, `TEST_HOST = ""`), which means AppKit rendering — and therefore snapshot tests — is not available. Snapshot tests are part of the `UI` Swift package and run via `make test-ui` instead.
+
+| Target | Command | Includes |
+|--------|---------|----------|
+| `BocanTests` (Xcode) | `make test` | View model tests, Observability tests |
+| `UI` package | `make test-ui` | View model tests + snapshot tests |
 
 ## Secrets (for release builds)
 
