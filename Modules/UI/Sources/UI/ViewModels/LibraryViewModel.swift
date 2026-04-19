@@ -68,7 +68,11 @@ public final class LibraryViewModel: ObservableObject {
         let albumRepo = AlbumRepository(database: database)
         let artistRepo = ArtistRepository(database: database)
 
-        self.tracks = TracksViewModel(repository: trackRepo)
+        self.tracks = TracksViewModel(
+            repository: trackRepo,
+            artistRepository: artistRepo,
+            albumRepository: albumRepo
+        )
         self.albums = AlbumsViewModel(repository: albumRepo)
         self.artists = ArtistsViewModel(repository: artistRepo)
         self.search = SearchViewModel(

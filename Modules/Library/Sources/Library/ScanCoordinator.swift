@@ -210,7 +210,7 @@ actor ScanCoordinator {
         )
 
         let bookmark = try? url.bookmarkData(
-            options: [],
+            options: .withSecurityScope,
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )

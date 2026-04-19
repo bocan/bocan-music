@@ -33,8 +33,8 @@ public extension LibraryViewModel {
 
     /// Opens an NSOpenPanel for the user to pick individual audio files.
     ///
-    /// The parent directory of each chosen file is added as a library root
-    /// (deduped), so the full folder is indexed rather than just that file.
+    /// Each chosen file is added as its own library root so that only the
+    /// selected file is indexed (not the whole folder).
     func addFilesByPicker() async {
         guard scanner != nil else { return }
         let panel = NSOpenPanel()
@@ -45,28 +45,18 @@ public extension LibraryViewModel {
         panel.message = "Choose audio files to add to your library."
         panel.prompt = "Add Files"
         guard panel.runModal() == .OK else { return }
-        // Use parent directories to avoid per-file root explosion.
-        let dirs = Set(panel.urls.map { $0.deletingLastPathComponent() })
-        await self.addURLs(Array(dirs))
+        // Add each file directly — the sandbox grants access to the selected URLs,
+        // not their parent directories.
+        await self.addURLs(panel.urls)
     }
 
     /// Handles a drag-and-drop of URLs onto the main window.
     ///
-    /// Directories are added directly.  Audio files contribute their parent
-    /// directory (deduped).
+    /// Directories are added directly.  Audio files are added as individual roots
+    /// so the sandbox grant for each file is preserved.
     func addDroppedURLs(_ urls: [URL]) async {
         guard scanner != nil else { return }
-        var dirs: Set<URL> = []
-        for url in urls {
-            var isDir: ObjCBool = false
-            FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
-            if isDir.boolValue {
-                dirs.insert(url)
-            } else {
-                dirs.insert(url.deletingLastPathComponent())
-            }
-        }
-        await self.addURLs(Array(dirs))
+        await self.addURLs(urls)
     }
 
     /// Removes a library root by its database ID.
@@ -169,7 +159,11 @@ public extension LibraryViewModel {
             self.scanCurrentPath = ""
             Task { [weak self] in
                 guard let self else { return }
-                await self.loadCurrentDestination()
+                // Reload all views — the user may have navigated away from Songs
+                // before the scan completed, leaving Albums/Artists stale.
+                await self.tracks.load()
+                await self.albums.load()
+                await self.artists.load()
                 await self.refreshRoots()
             }
 

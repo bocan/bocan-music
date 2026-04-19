@@ -76,16 +76,30 @@ public final class TracksViewModel: ObservableObject {
     /// Free-text filter (operates client-side for in-memory arrays).
     @Published public var filterText = ""
 
+    /// Maps `artistID → artist name` for column display.  Refreshed on every load.
+    @Published public private(set) var artistNames: [Int64: String] = [:]
+
+    /// Maps `albumID → album title` for column display.  Refreshed on every load.
+    @Published public private(set) var albumNames: [Int64: String] = [:]
+
     // MARK: - Internal
 
     private let repository: TrackRepository
+    private let artistRepository: ArtistRepository
+    private let albumRepository: AlbumRepository
     private var allTracks: [Track] = []
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
-    public init(repository: TrackRepository) {
+    public init(
+        repository: TrackRepository,
+        artistRepository: ArtistRepository,
+        albumRepository: AlbumRepository
+    ) {
         self.repository = repository
+        self.artistRepository = artistRepository
+        self.albumRepository = albumRepository
     }
 
     // MARK: - Public API
@@ -96,6 +110,7 @@ public final class TracksViewModel: ObservableObject {
         self.log.debug("tracks.load.start", [:])
         do {
             self.allTracks = try await self.repository.fetchAll()
+            await self.refreshNameLookups()
             self.applyFilter()
             self.log.debug("tracks.load.end", ["count": self.allTracks.count])
         } catch {
@@ -109,6 +124,7 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = true
         do {
             self.allTracks = try await self.repository.fetchAll(albumID: albumID)
+            await self.refreshNameLookups()
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(albumID).failed", ["error": String(reflecting: error)])
@@ -121,6 +137,7 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = true
         do {
             self.allTracks = try await self.repository.fetchAll(artistID: artistID)
+            await self.refreshNameLookups()
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(artistID).failed", ["error": String(reflecting: error)])
@@ -133,6 +150,7 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = true
         do {
             self.allTracks = try await self.repository.fetchAll(genre: genre)
+            await self.refreshNameLookups()
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(genre).failed", ["error": String(reflecting: error)])
@@ -145,6 +163,7 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = true
         do {
             self.allTracks = try await self.repository.fetchAll(composer: composer)
+            await self.refreshNameLookups()
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(composer).failed", ["error": String(reflecting: error)])
@@ -166,6 +185,21 @@ public final class TracksViewModel: ObservableObject {
     }
 
     // MARK: - Private
+
+    private func refreshNameLookups() async {
+        let artists = await (try? self.artistRepository.fetchAll()) ?? []
+        let albums = await (try? self.albumRepository.fetchAll()) ?? []
+        self.artistNames = Dictionary(
+            uniqueKeysWithValues: artists.compactMap { artist in
+                artist.id.map { id in (id, artist.name) }
+            }
+        )
+        self.albumNames = Dictionary(
+            uniqueKeysWithValues: albums.compactMap { album in
+                album.id.map { id in (id, album.title) }
+            }
+        )
+    }
 
     private func applyFilter() {
         var result = self.allTracks

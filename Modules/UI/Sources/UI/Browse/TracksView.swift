@@ -76,7 +76,7 @@ public struct TracksView: View {
             .customizationID("title")
 
             TableColumn("Artist") { (track: Track) in
-                Text(track.title != nil ? "" : "") // resolved below
+                Text(track.artistID.flatMap { self.vm.artistNames[$0] } ?? "")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
@@ -84,8 +84,8 @@ public struct TracksView: View {
             .width(min: 100, ideal: 160)
             .customizationID("artist")
 
-            TableColumn("Album") { (_: Track) in
-                Text("")
+            TableColumn("Album") { (track: Track) in
+                Text(track.albumID.flatMap { self.vm.albumNames[$0] } ?? "")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)

@@ -123,4 +123,35 @@ struct FileWalkerTests {
         #expect(found.count == 1)
         #expect(found[0].lastPathComponent == "real.mp3")
     }
+
+    @Test("yields a single audio file when given a file URL directly")
+    func walksSingleFile() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let fileURL = dir.appendingPathComponent("single.mp3")
+        try Data("test".utf8).write(to: fileURL)
+
+        var found: [URL] = []
+        for await url in FileWalker.walk(fileURL, supportedExtensions: ["mp3"]) {
+            found.append(url)
+        }
+        #expect(found.count == 1)
+        #expect(found[0].lastPathComponent == "single.mp3")
+    }
+
+    @Test("yields nothing for unsupported single file")
+    func walksSingleFileUnsupported() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let fileURL = dir.appendingPathComponent("image.jpg")
+        try Data("test".utf8).write(to: fileURL)
+
+        var found: [URL] = []
+        for await url in FileWalker.walk(fileURL, supportedExtensions: ["mp3"]) {
+            found.append(url)
+        }
+        #expect(found.isEmpty)
+    }
 }
