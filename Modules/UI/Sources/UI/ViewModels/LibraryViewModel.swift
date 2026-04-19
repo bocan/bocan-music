@@ -28,6 +28,11 @@ public final class LibraryViewModel: ObservableObject {
     @Published public var selectedDestination: SidebarDestination = .songs
     @Published public var searchQuery = ""
 
+    // MARK: - Error state
+
+    /// Set when playback fails; cleared when the user dismisses the alert.
+    @Published public var playbackErrorMessage: String? = nil
+
     // MARK: - Scan state
 
     @Published public var isScanning = false
@@ -106,6 +111,7 @@ public final class LibraryViewModel: ObservableObject {
                 try await qp.play(trackIDs: [id], startingAt: 0)
             } catch {
                 self.log.error("library.play.failed", ["error": String(reflecting: error)])
+                self.playbackErrorMessage = "Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library."
             }
             return
         }
@@ -131,6 +137,7 @@ public final class LibraryViewModel: ObservableObject {
             try await qp.play(trackIDs: ids, startingAt: index)
         } catch {
             self.log.error("library.playAll.failed", ["error": String(reflecting: error)])
+            self.playbackErrorMessage = "Could not play tracks. Try re-scanning your library."
         }
     }
 

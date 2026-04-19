@@ -44,6 +44,7 @@ public actor QueuePlayer: Transport {
 
     private var currentTrack: Track?
     private var trackRepo: TrackRepository
+    private var rootRepo: LibraryRootRepository
     private var lastEmittedState: PlaybackState = .idle
 
     private let log = AppLogger.make(.playback)
@@ -58,6 +59,7 @@ public actor QueuePlayer: Transport {
         self.persistence = QueuePersistence(database: database)
         self.gaplessScheduler = GaplessScheduler(engine: engine)
         self.trackRepo = TrackRepository(database: database)
+        self.rootRepo = LibraryRootRepository(database: database)
 
         var continuation: AsyncStream<PlaybackState>.Continuation?
         self.state = AsyncStream { continuation = $0 }
@@ -209,12 +211,31 @@ public actor QueuePlayer: Transport {
     }
 
     private func loadAndPlay(item: QueueItem, autoPlay: Bool = true) async throws {
+        // Resolve a playable URL, preferring the per-file bookmark but falling
+        // back to the root folder's security scope when the per-file bookmark is
+        // absent or was created without the withSecurityScope option (old records).
+        var resolvedFromPerFileBookmark = false
+        var scopedRootURL: URL? = nil
         let url: URL
         do {
             url = try item.resolvedURL()
+            resolvedFromPerFileBookmark = true
         } catch {
-            self.log.error("queueplayer.url.failed", ["trackID": item.trackID, "error": String(reflecting: error)])
-            throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+            self.log.warning(
+                "queueplayer.url.bookmark_failed",
+                ["trackID": item.trackID, "error": String(reflecting: error)]
+            )
+            // Fall back to the library root bookmark that covers this file.
+            guard let rawURL = URL(string: item.fileURL) else {
+                self.log.error("queueplayer.url.bad_file_url", ["trackID": item.trackID, "url": item.fileURL])
+                throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+            }
+            guard let rootURL = try await self.startRootScope(for: item.fileURL) else {
+                self.log.error("queueplayer.url.no_root", ["trackID": item.trackID])
+                throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+            }
+            scopedRootURL = rootURL
+            url = rawURL
         }
 
         // Fetch track metadata (for NowPlaying).
@@ -222,7 +243,12 @@ public actor QueuePlayer: Transport {
         self.currentTrack = track
 
         try await self.engine.load(url)
-        url.stopAccessingSecurityScopedResource()
+        // Release whichever scope was started — AVAudioFile already holds an open
+        // file descriptor so the scope is no longer needed.
+        if resolvedFromPerFileBookmark {
+            url.stopAccessingSecurityScopedResource()
+        }
+        scopedRootURL?.stopAccessingSecurityScopedResource()
 
         if let track {
             let capturedEngine = self.engine
@@ -343,6 +369,31 @@ public actor QueuePlayer: Transport {
             await self.queue.setShuffle(true, seed: seed)
         }
         self.log.debug("queueplayer.queue.restored", ["count": saved.items.count])
+    }
+
+    // MARK: Root-scope fallback
+
+    /// Finds the library root that contains `fileURLString`, resolves its
+    /// security-scoped bookmark, starts accessing the scope, and returns the
+    /// scoped root URL.  The caller is responsible for calling
+    /// `stopAccessingSecurityScopedResource()` on the returned URL.
+    ///
+    /// Returns `nil` when no matching root is found or when the root bookmark
+    /// cannot be resolved.
+    private func startRootScope(for fileURLString: String) async throws -> URL? {
+        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        guard let root = roots.first(where: { fileURLString.hasPrefix($0.path) }) else {
+            return nil
+        }
+        var isStale = false
+        guard let rootURL = try? URL(
+            resolvingBookmarkData: root.bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) else { return nil }
+        guard rootURL.startAccessingSecurityScopedResource() else { return nil }
+        return rootURL
     }
 
     // MARK: Item building

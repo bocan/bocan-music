@@ -73,6 +73,17 @@ public struct BocanRootView: View {
         }
         .frame(minWidth: 900, minHeight: 550)
         .accessibilityIdentifier("BocanMainWindow")
+        .alert(
+            "Playback Error",
+            isPresented: Binding(
+                get: { self.vm.playbackErrorMessage != nil },
+                set: { if !$0 { self.vm.playbackErrorMessage = nil } }
+            )
+        ) {
+            Button("OK") { self.vm.playbackErrorMessage = nil }
+        } message: {
+            Text(self.vm.playbackErrorMessage ?? "")
+        }
     }
 
     // MARK: - Toolbar
