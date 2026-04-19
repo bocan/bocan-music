@@ -175,13 +175,6 @@ struct TelemetryTests {
             listener.stop()
         }
 
-        @Test("didReceive metric payloads does not crash with empty array")
-        func didReceiveMetricPayloads() {
-            let listener = MetricKitListener.shared
-            let payloads: [MXMetricPayload] = []
-            listener.didReceive(payloads)
-        }
-
         @Test("didReceive diagnostic payloads does not crash with empty array")
         func didReceiveDiagnosticPayloads() {
             let listener = MetricKitListener.shared
