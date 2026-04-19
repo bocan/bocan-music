@@ -33,10 +33,10 @@ actor CoverArtCache {
 
     /// Persists `arts` to disk (if absent) and to the DB.
     ///
-    /// Returns the hash of the first front-cover art, or `nil`.
-    func persist(_ arts: [ExtractedCoverArt]) async throws -> String? {
+    /// Returns the hash and file-system path of the first art item, or `nil` when `arts` is empty.
+    func persist(_ arts: [ExtractedCoverArt]) async throws -> (hash: String, path: String)? {
         guard !arts.isEmpty else { return nil }
-        var firstHash: String?
+        var first: (hash: String, path: String)?
         for art in arts {
             let hash = art.sha256
             let prefix = String(hash.prefix(2))
@@ -59,8 +59,8 @@ actor CoverArtCache {
                 format: art.fileExtension == "jpg" ? "jpeg" : art.fileExtension
             )
             try await self.repo.save(record)
-            if firstHash == nil { firstHash = hash }
+            if first == nil { first = (hash: hash, path: fileURL.path) }
         }
-        return firstHash
+        return first
     }
 }

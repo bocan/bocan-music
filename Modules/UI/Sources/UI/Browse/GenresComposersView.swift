@@ -8,6 +8,7 @@ public struct GenresView: View {
     public var library: LibraryViewModel
 
     @State private var genres: [String] = []
+    @State private var trackCounts: [String: Int] = [:]
     @State private var isLoading = true
 
     public init(library: LibraryViewModel) {
@@ -31,19 +32,39 @@ public struct GenresView: View {
         }
         .navigationTitle("Genres")
         .task {
-            do {
-                self.genres = try await TrackRepository(database: self.library.database).allGenres()
-            } catch {}
+            let repo = TrackRepository(database: self.library.database)
+            async let genresFetch = try? repo.allGenres()
+            async let countsFetch = try? repo.genreTrackCounts()
+            self.genres = await genresFetch ?? []
+            self.trackCounts = await countsFetch ?? [:]
             self.isLoading = false
         }
     }
 
     private var genreList: some View {
         List(self.genres, id: \.self) { genre in
-            HStack {
-                Label(genre, systemImage: "tag")
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textPrimary)
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "tag.fill")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(genre)
+                        .font(Typography.body)
+                        .foregroundStyle(Color.textPrimary)
+
+                    if let count = self.trackCounts[genre], count > 0 {
+                        Text(count == 1 ? "1 song" : "\(count) songs")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
 
                 Spacer()
 
@@ -69,6 +90,7 @@ public struct ComposersView: View {
     public var library: LibraryViewModel
 
     @State private var composers: [String] = []
+    @State private var trackCounts: [String: Int] = [:]
     @State private var isLoading = true
 
     public init(library: LibraryViewModel) {
@@ -92,19 +114,39 @@ public struct ComposersView: View {
         }
         .navigationTitle("Composers")
         .task {
-            do {
-                self.composers = try await TrackRepository(database: self.library.database).allComposers()
-            } catch {}
+            let repo = TrackRepository(database: self.library.database)
+            async let composersFetch = try? repo.allComposers()
+            async let countsFetch = try? repo.composerTrackCounts()
+            self.composers = await composersFetch ?? []
+            self.trackCounts = await countsFetch ?? [:]
             self.isLoading = false
         }
     }
 
     private var composerList: some View {
         List(self.composers, id: \.self) { composer in
-            HStack {
-                Label(composer, systemImage: "music.note.list")
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textPrimary)
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.accentColor)
+                }
+                .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(composer)
+                        .font(Typography.body)
+                        .foregroundStyle(Color.textPrimary)
+
+                    if let count = self.trackCounts[composer], count > 0 {
+                        Text(count == 1 ? "1 song" : "\(count) songs")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
 
                 Spacer()
 

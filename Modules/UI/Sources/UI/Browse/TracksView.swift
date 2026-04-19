@@ -48,7 +48,6 @@ public struct TracksView: View {
             }
         }
         .navigationTitle(self.title ?? "Songs")
-        .task { await self.vm.load() }
     }
 
     // MARK: - Table

@@ -219,6 +219,44 @@ public struct TrackRepository: Sendable {
         }
     }
 
+    /// Returns a dictionary mapping genre → track count.
+    public func genreTrackCounts() async throws -> [String: Int] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT genre, COUNT(*) AS cnt
+                FROM tracks
+                WHERE genre IS NOT NULL AND disabled = 0
+                GROUP BY genre
+            """)
+            var counts: [String: Int] = [:]
+            for row in rows {
+                if let genre: String = row["genre"], let cnt: Int = row["cnt"] {
+                    counts[genre] = cnt
+                }
+            }
+            return counts
+        }
+    }
+
+    /// Returns a dictionary mapping composer → track count.
+    public func composerTrackCounts() async throws -> [String: Int] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT composer, COUNT(*) AS cnt
+                FROM tracks
+                WHERE composer IS NOT NULL AND disabled = 0
+                GROUP BY composer
+            """)
+            var counts: [String: Int] = [:]
+            for row in rows {
+                if let composer: String = row["composer"], let cnt: Int = row["cnt"] {
+                    counts[composer] = cnt
+                }
+            }
+            return counts
+        }
+    }
+
     /// Returns all distinct composer strings, sorted alphabetically.
     public func allComposers() async throws -> [String] {
         try await self.database.read { db in

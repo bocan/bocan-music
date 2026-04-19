@@ -63,7 +63,15 @@ actor TrackImporter {
         )
 
         // Cover art
-        let coverHash = try await coverArtCache.persist(tags.coverArt)
+        let coverArt = try await coverArtCache.persist(tags.coverArt)
+
+        // Link cover art to the album if not already set
+        if album.coverArtPath == nil, let art = coverArt {
+            var updated = album
+            updated.coverArtHash = art.hash
+            updated.coverArtPath = art.path
+            try await self.albumRepo.update(updated)
+        }
 
         // Normalised file URL string
         let fileURLString = url.absoluteString
@@ -140,7 +148,7 @@ actor TrackImporter {
             disabled: false,
             userEdited: false,
             albumTrackSortKey: sortKey,
-            coverArtHash: coverHash,
+            coverArtHash: coverArt?.hash,
             addedAt: existing?.addedAt ?? now,
             updatedAt: now
         )
