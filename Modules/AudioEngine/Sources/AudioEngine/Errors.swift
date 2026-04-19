@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 
 /// All errors produced by the `AudioEngine` module.
 ///
