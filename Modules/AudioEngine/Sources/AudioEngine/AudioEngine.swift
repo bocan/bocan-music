@@ -122,11 +122,13 @@ public actor AudioEngine: Transport {
         self.pendingNextDecoder = dec
         self.pendingNextTransition = onTransition
 
-        let selfCapture = self
-        let pumpID = nextPump.id
-        await nextPump.start {
-            Task { await selfCapture.handleEnded(firedBy: pumpID) }
-        }
+        // DO NOT start the pump's task here.  Both pumps scheduling to the same
+        // AVAudioPlayerNode simultaneously causes their buffers to interleave in
+        // the node's FIFO queue — the listener hears old/new/old/new in ~800 ms
+        // chunks.  The pump is started in `performGaplessTransition` when the
+        // outgoing pump's decoder has hit EOF, which guarantees the outgoing
+        // pump has already scheduled its entire tail.  The incoming pump's
+        // buffers then land strictly after them in the queue.
 
         self.log.debug("engine.gapless.prefetch", ["url": url.lastPathComponent])
     }
@@ -325,8 +327,12 @@ public actor AudioEngine: Transport {
     }
 
     private func performGaplessTransition(to next: BufferPump) {
-        // The next track's buffers are already queued on the player node —
-        // do NOT call playerNode.stop() here.
+        // At this moment the outgoing pump has scheduled its complete tail on
+        // the player node (that's what its EOF means); ~4 buffers are still
+        // in flight and will play out over ~800 ms.  Start the incoming pump
+        // NOW — its scheduleBuffer calls land strictly after the outgoing
+        // buffers in the node's queue, which is what makes the transition
+        // gapless without audio interleaving.
         let prevPump = self.pump
         self.pump = next
         self.pendingNextPump = nil
@@ -343,6 +349,17 @@ public actor AudioEngine: Transport {
         self.lastState = nil
         self.emit(.playing)
         transition?()
+
+        // Start the deferred pump task.  Its first scheduleBuffer runs a few
+        // milliseconds from now, well within the ~800 ms tail left on the
+        // player node.
+        let selfCapture = self
+        let newPumpID = next.id
+        Task {
+            await next.start {
+                Task { await selfCapture.handleEnded(firedBy: newPumpID) }
+            }
+        }
 
         // Stop (clean up) the old pump; it has already finished scheduling.
         let oldPump = prevPump
