@@ -84,6 +84,7 @@ public struct SearchResultsView: View {
         let track = hit.track
         return HStack(spacing: 8) {
             Artwork(artPath: hit.coverArtPath, seed: Int(track.id ?? 0), size: 32)
+                .frame(width: 32, height: 32)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -119,6 +120,7 @@ public struct SearchResultsView: View {
         HStack(spacing: 8) {
             if let path = album.coverArtPath {
                 Artwork(artPath: path, seed: Int(album.id ?? 0), size: 32)
+                    .frame(width: 32, height: 32)
                     .accessibilityHidden(true)
             } else {
                 GradientPlaceholder(seed: Int(album.id ?? 0))

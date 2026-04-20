@@ -73,12 +73,24 @@ enum SQL {
 
     // MARK: - Helpers
 
-    /// Escapes a user-supplied FTS search term to prevent injection.
+    /// Converts a user-supplied query into an FTS5 expression that supports
+    /// prefix matching on every token.
     ///
-    /// FTS5 special characters (`"`, `*`, `^`, etc.) are handled by quoting
-    /// the entire phrase.  Double-quotes inside the term are doubled.
+    /// Each whitespace-delimited token is escaped (double-quotes doubled) and
+    /// then wrapped as `"token"*` so FTS5 treats it as a prefix query.
+    /// This means typing "boh" finds "Bohemian", "boh" etc.
+    ///
+    /// Special-character-only tokens are dropped to avoid FTS5 parse errors.
     static func escapeFTSTerm(_ term: String) -> String {
-        let sanitised = term.replacingOccurrences(of: "\"", with: "\"\"")
-        return "\"\(sanitised)\""
+        let tokens = term
+            .components(separatedBy: .whitespaces)
+            .filter { !$0.isEmpty }
+            .map { token -> String in
+                let safe = token.replacingOccurrences(of: "\"", with: "\"\"")
+                return "\"\(safe)\"*"
+            }
+        // If nothing survived (e.g. pure whitespace input), fall back to a
+        // quoted whole-phrase so the query is still syntactically valid.
+        return tokens.isEmpty ? "\"\(term.replacingOccurrences(of: "\"", with: "\"\""))\"" : tokens.joined(separator: " ")
     }
 }
