@@ -8,10 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186F049CE6669E44D287954A /* SearchViewModelTests.swift */; };
+		0930C3F6FA5F345B5A26F234 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
+		0AAC9D550A9EDA832050335F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3AB7C159C37D262541974E75 /* Assets.xcassets */; };
 		0F2FCA653E60B83CF8AA8469 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 8F629E8B78D37805428363DA /* Observability */; };
 		171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
 		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
-		2F10190EBC449B79B6806730 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
+		2F10190EBC449B79B6806730 /* Library in Frameworks */ = {isa = PBXBuildFile; productRef = D12DF4C04E3DB095C79E72AA /* Library */; };
+		497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */; };
 		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
 		53AE8C17F55F8BDC0BCD4BDD /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 441F05155B692DC6D6F30264 /* AudioEngine */; };
 		77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */; };
@@ -31,6 +34,8 @@
 		0BA06444E0E71CD641790EEF /* Bocan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bocan.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TracksViewModelTests.swift; sourceTree = "<group>"; };
 		186F049CE6669E44D287954A /* SearchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModelTests.swift; sourceTree = "<group>"; };
+		3AB7C159C37D262541974E75 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		3D8E8EC191BDB21827F3BBAE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingViewModelTests.swift; sourceTree = "<group>"; };
 		6E014B4987A60B08F6DE299A /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Modules/Persistence; sourceTree = SOURCE_ROOT; };
@@ -56,7 +61,8 @@
 				8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */,
 				9C385BADF495477668F1AA60 /* Persistence in Frameworks */,
 				905B83A145C60C115F496A91 /* Playback in Frameworks */,
-				2F10190EBC449B79B6806730 /* UI in Frameworks */,
+				2F10190EBC449B79B6806730 /* Library in Frameworks */,
+				0930C3F6FA5F345B5A26F234 /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,6 +122,7 @@
 				B087DD42CE6797CF29123E28 /* App */,
 				0D95A2CB58951EF13BCFC1DB /* Modules */,
 				8BF57F4CB14DAF0B974A3D88 /* Packages */,
+				8D4843DBE6F26EDA773846C8 /* Resources */,
 				A9C0239AEA134BDEE9F90258 /* UITests */,
 				13C2660B7453561F1366516C /* Products */,
 			);
@@ -161,6 +168,15 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		8D4843DBE6F26EDA773846C8 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */,
+				3AB7C159C37D262541974E75 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		A9C0239AEA134BDEE9F90258 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
@@ -202,6 +218,7 @@
 			buildConfigurationList = 215193F3C85CF7D6A68AEC6C /* Build configuration list for PBXNativeTarget "Bocan" */;
 			buildPhases = (
 				428BDF1EC190C6BB2C2652D6 /* Sources */,
+				0B57795DC3D65C37EB221A3D /* Resources */,
 				2EA58E03C6A26F8E2B491726 /* Frameworks */,
 			);
 			buildRules = (
@@ -214,6 +231,7 @@
 				EE0BAD633E96C7812391D0FE /* AudioEngine */,
 				EFCF37422883F3C0CF718D56 /* Persistence */,
 				E05BB587A6FC66933F79D585 /* Playback */,
+				D12DF4C04E3DB095C79E72AA /* Library */,
 				D1ABAB928B628AE14B24A3B8 /* UI */,
 			);
 			productName = Bocan;
@@ -302,6 +320,18 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		0B57795DC3D65C37EB221A3D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */,
+				0AAC9D550A9EDA832050335F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1ED7F30C67656A463D4AA900 /* Sources */ = {
@@ -485,6 +515,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Bòcan";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -569,6 +600,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Bòcan";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -673,6 +705,10 @@
 		A162527B2B2B56BFB7154789 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = UI;
+		};
+		D12DF4C04E3DB095C79E72AA /* Library */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Library;
 		};
 		D1ABAB928B628AE14B24A3B8 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
