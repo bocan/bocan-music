@@ -180,15 +180,14 @@ public struct NowPlayingStrip: View {
                         self.scrubDragFraction = fraction
                     }
                 ),
-                in: 0 ... 1,
-                onEditingChanged: { editing in
-                    if !editing, let fraction = self.scrubDragFraction {
-                        let target = fraction * self.vm.duration
-                        self.scrubDragFraction = nil
-                        Task { await self.vm.scrub(to: target) }
-                    }
+                in: 0 ... 1
+            ) { editing in
+                if !editing, let fraction = self.scrubDragFraction {
+                    let target = fraction * self.vm.duration
+                    self.scrubDragFraction = nil
+                    Task { await self.vm.scrub(to: target) }
                 }
-            )
+            }
             .controlSize(.mini)
             .disabled(self.vm.duration == 0)
             .help("Scrub to position")
