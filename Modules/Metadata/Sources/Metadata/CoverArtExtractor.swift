@@ -68,4 +68,10 @@ public struct RawCoverArt: Sendable {
     public let data: Data
     public let mimeType: String
     public let pictureType: Int
+
+    public init(data: Data, mimeType: String, pictureType: Int) {
+        self.data = data
+        self.mimeType = mimeType
+        self.pictureType = pictureType
+    }
 }

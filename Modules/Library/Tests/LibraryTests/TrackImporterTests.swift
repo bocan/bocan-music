@@ -161,4 +161,37 @@ struct TrackImporterTests {
         let updated = try await trackRepo.fetch(id: id)
         #expect(updated.title == "User's title")
     }
+
+    @Test("embedded cover art is linked to the album")
+    func coverArtLinkedToAlbum() async throws {
+        let db = try await makeDB()
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+
+        var tags = self.makeTags(title: "With Art")
+        tags.coverArt = CoverArtExtractor.extract(from: [
+            RawCoverArt(data: Data([0x01, 0x02, 0x03]), mimeType: "image/jpeg", pictureType: 3),
+        ])
+
+        let url = URL(fileURLWithPath: "/tmp/with-art.mp3")
+        let id = try await importer.importTrack(
+            url: url, bookmark: nil, tags: tags,
+            fileMtime: 1000, fileSize: 4567
+        )
+
+        let trackRepo = TrackRepository(database: db)
+        let track = try await trackRepo.fetch(id: id)
+        #expect(track.coverArtHash != nil)
+
+        let albumRepo = AlbumRepository(database: db)
+        let albums = try await albumRepo.fetchAll()
+        #expect(albums.count == 1)
+        #expect(albums[0].coverArtHash == track.coverArtHash)
+        #expect(albums[0].coverArtPath != nil)
+    }
 }
