@@ -47,8 +47,8 @@ public struct SearchResultsView: View {
         List {
             if !self.vm.results.tracks.isEmpty {
                 Section {
-                    ForEach(self.vm.results.tracks, id: \.id) { track in
-                        self.trackRow(track)
+                    ForEach(self.vm.results.tracks, id: \.track.id) { hit in
+                        self.trackRow(hit)
                     }
                 } header: {
                     self.sectionHeader("Songs", count: self.vm.results.tracks.count)
@@ -80,11 +80,10 @@ public struct SearchResultsView: View {
 
     // MARK: - Row helpers
 
-    private func trackRow(_ track: Track) -> some View {
-        HStack(spacing: 8) {
-            GradientPlaceholder(seed: Int(track.id ?? 0))
-                .frame(width: 32, height: 32)
-                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+    private func trackRow(_ hit: TrackSearchHit) -> some View {
+        let track = hit.track
+        return HStack(spacing: 8) {
+            Artwork(artPath: hit.coverArtPath, seed: Int(track.id ?? 0), size: 32)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -93,10 +92,11 @@ public struct SearchResultsView: View {
                     .foregroundStyle(Color.textPrimary)
                     .lineLimit(1)
 
-                if let genre = track.genre {
-                    Text(genre)
+                if let artist = hit.artistName {
+                    Text(artist)
                         .font(Typography.caption)
                         .foregroundStyle(Color.textSecondary)
+                        .lineLimit(1)
                 }
             }
 
@@ -111,7 +111,7 @@ public struct SearchResultsView: View {
         .onTapGesture {
             Task { await self.library.play(track: track) }
         }
-        .accessibilityLabel("\(track.title ?? "Unknown"), \(Formatters.duration(track.duration))")
+        .accessibilityLabel("\(track.title ?? "Unknown"), \(hit.artistName ?? ""), \(Formatters.duration(track.duration))")
         .accessibilityAddTraits(.isButton)
     }
 

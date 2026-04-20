@@ -18,15 +18,18 @@ public struct ContentPane: View {
     }
 
     public var body: some View {
-        Group {
-            // If there is an active search query, show search results
-            if !self.search.query.isEmpty {
-                SearchResultsView(vm: self.search, library: self.vm)
-            } else {
-                self.destinationContent
+        // Keep destinationContent permanently in the tree and overlay search results
+        // on top when a query is active.  Replacing the detail column content
+        // structurally causes macOS to disconnect the TextInputUIMacHelper ViewBridge,
+        // killing focus on the toolbar search field after the first keystroke.
+        self.destinationContent
+            .overlay {
+                if !self.search.query.isEmpty {
+                    SearchResultsView(vm: self.search, library: self.vm)
+                        .background(Color(nsColor: .windowBackgroundColor))
+                }
             }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -80,7 +83,9 @@ public struct ContentPane: View {
             )
 
         case let .search(searchQuery):
-            SearchResultsView(vm: self.vm.search, library: self.vm)
+            // Search is shown via overlay above destinationContent; this case just
+            // ensures the background destination is sensible.
+            TracksView(vm: self.vm.tracks, library: self.vm)
                 .task {
                     self.vm.search.query = searchQuery
                     self.vm.search.queryChanged()

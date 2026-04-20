@@ -139,6 +139,18 @@ public struct TrackRepository: Sendable {
         }
     }
 
+    /// Full-text search that also JOIN-fetches artist name and album cover-art path.
+    ///
+    /// Prefer this over `search(query:)` when rendering search-result rows so that
+    /// artist names and artwork are available without additional lookups.
+    public func searchRich(query: String) async throws -> [TrackSearchHit] {
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return [] }
+        return try await self.database.read { db in
+            try SQL.tracksFTSRichQuery(trimmed).fetchAll(db)
+        }
+    }
+
     // MARK: - Smart folders
 
     /// Fetches tracks added within the last `days` days, newest first.
