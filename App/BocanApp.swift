@@ -119,11 +119,11 @@ private struct InspectorWindowContent: View {
 
     var body: some View {
         if let track = vm.inspectorTrack {
-            TrackInspectorPanel(track: track)
+            TrackInspectorPanel(track: track, database: self.vm.database)
         } else {
             Text("No track selected")
                 .foregroundStyle(.secondary)
-                .frame(minWidth: 380, minHeight: 340)
+                .frame(minWidth: 360, minHeight: 420)
         }
     }
 }

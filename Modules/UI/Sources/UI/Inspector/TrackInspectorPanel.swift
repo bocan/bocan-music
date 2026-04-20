@@ -12,24 +12,97 @@ import SwiftUI
 /// Uses SwiftUI `TabView` with three tabs: Details, File, History.
 public struct TrackInspectorPanel: View {
     let track: Track
+    let database: Database
 
-    public init(track: Track) {
+    @State private var coverArtPath: String?
+    @State private var artistName: String?
+    @State private var albumName: String?
+
+    public init(track: Track, database: Database) {
         self.track = track
+        self.database = database
     }
 
     public var body: some View {
-        TabView {
-            DetailsTab(track: self.track)
-                .tabItem { Label("Details", systemImage: "music.note") }
+        VStack(spacing: 0) {
+            // Header — cover art, title, artist — all centred.  The art
+            // fills the available width (up to a maximum so it doesn't
+            // swallow the whole window on a tall resize) and uses its own
+            // 1:1 aspect ratio for the height.
+            VStack(spacing: 10) {
+                Artwork(
+                    artPath: self.coverArtPath,
+                    seed: Int(self.track.id ?? 0),
+                    size: 320
+                )
+                .frame(maxWidth: 360, maxHeight: 360)
 
-            FileTab(track: self.track)
-                .tabItem { Label("File", systemImage: "doc") }
+                Text(self.track.title ?? "—")
+                    .font(.title3.bold())
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .textSelection(.enabled)
 
-            HistoryTab(track: self.track)
-                .tabItem { Label("History", systemImage: "clock") }
+                if let artist = artistName, !artist.isEmpty {
+                    Text(artist)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(1)
+                        .textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+
+            // Small gap before the tab strip / data.
+            Spacer().frame(height: 12)
+
+            TabView {
+                DetailsTab(track: self.track, albumName: self.albumName)
+                    .tabItem { Label("Details", systemImage: "music.note") }
+
+                FileTab(track: self.track)
+                    .tabItem { Label("File", systemImage: "doc") }
+
+                HistoryTab(track: self.track)
+                    .tabItem { Label("History", systemImage: "clock") }
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
-        .frame(minWidth: 380, idealWidth: 420, minHeight: 340, idealHeight: 400)
-        .padding(.vertical, 8)
+        .frame(minWidth: 360, idealWidth: 420, minHeight: 560, idealHeight: 600)
+        .task(id: self.track.id) {
+            await self.load()
+        }
+    }
+
+    private func load() async {
+        self.coverArtPath = nil
+        self.artistName = nil
+        self.albumName = nil
+
+        if let hash = track.coverArtHash {
+            let repo = CoverArtRepository(database: self.database)
+            if let art = try? await repo.fetch(hash: hash) {
+                self.coverArtPath = art.path
+            }
+        }
+
+        if let artistID = track.artistID {
+            let repo = ArtistRepository(database: self.database)
+            if let artist = try? await repo.fetch(id: artistID) {
+                self.artistName = artist.name
+            }
+        }
+
+        if let albumID = track.albumID {
+            let repo = AlbumRepository(database: self.database)
+            if let album = try? await repo.fetch(id: albumID) {
+                self.albumName = album.title
+            }
+        }
     }
 }
 
@@ -37,12 +110,13 @@ public struct TrackInspectorPanel: View {
 
 private struct DetailsTab: View {
     let track: Track
+    let albumName: String?
 
     var body: some View {
         Form {
             InspectorRow("Title", value: self.track.title)
             InspectorRow("Album", value: self.albumName)
-            InspectorRow("Year", value: self.track.year.map(String.init))
+            InspectorRow("Year", value: self.yearDisplay)
             InspectorRow("Genre", value: self.track.genre)
             InspectorRow("Composer", value: self.track.composer)
             InspectorRow("Track #", value: self.trackNumberString)
@@ -51,15 +125,16 @@ private struct DetailsTab: View {
             InspectorRow("Rating", value: self.ratingString)
             InspectorRow("Loved", value: self.track.loved ? "Yes" : "No")
         }
-        .formStyle(.grouped)
-        .padding(.top, 4)
+        .formStyle(.columns)
+        .padding(12)
     }
 
     // MARK: Computed display values
 
-    private var albumName: String? {
-        nil
-    } // joined elsewhere if needed
+    private var yearDisplay: String? {
+        if let text = track.yearText, !text.isEmpty { return text }
+        return self.track.year.map(String.init)
+    }
 
     private var trackNumberString: String? {
         guard let n = track.trackNumber else { return nil }
@@ -106,8 +181,8 @@ private struct FileTab: View {
             InspectorRow("Duration", value: self.formattedDuration)
             InspectorRow("Lossless", value: self.track.isLossless.map { $0 ? "Yes" : "No" })
         }
-        .formStyle(.grouped)
-        .padding(.top, 4)
+        .formStyle(.columns)
+        .padding(12)
     }
 
     private var formattedFileSize: String? {
@@ -142,8 +217,8 @@ private struct HistoryTab: View {
             InspectorRow("Skip Count", value: "\(self.track.skipCount)")
             InspectorRow("Last Played", value: self.track.lastPlayedAt.flatMap { self.formattedDate($0) })
         }
-        .formStyle(.grouped)
-        .padding(.top, 4)
+        .formStyle(.columns)
+        .padding(12)
     }
 
     private func formattedDate(_ epoch: Int64?) -> String? {
