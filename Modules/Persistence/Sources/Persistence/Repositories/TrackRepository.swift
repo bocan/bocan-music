@@ -42,6 +42,17 @@ public struct TrackRepository: Sendable {
         self.log.debug("track.update", ["id": id])
     }
 
+    /// Toggles the `excluded_from_shuffle` flag for a single track.
+    public func setExcludedFromShuffle(trackID: Int64, excluded: Bool) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE tracks SET excluded_from_shuffle = ? WHERE id = ?",
+                arguments: [excluded, trackID]
+            )
+        }
+        self.log.debug("track.excludedFromShuffle", ["id": trackID, "excluded": excluded])
+    }
+
     /// Inserts or replaces `track` keyed on `file_url`.
     ///
     /// Returns the `id` of the inserted or updated row (used by Phase 3 scanning).
