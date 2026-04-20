@@ -14,6 +14,10 @@ public struct TracksView: View {
     public var library: LibraryViewModel
     public var title: String?
 
+    /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
+    /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
+    @ObservedObject private var nowPlaying: NowPlayingViewModel
+
     /// Controls Table column visibility/order.
     @State private var columnCustomization = TableColumnCustomization<Track>()
 
@@ -26,6 +30,7 @@ public struct TracksView: View {
     public init(vm: TracksViewModel, library: LibraryViewModel, title: String? = nil) {
         self.vm = vm
         self.library = library
+        self.nowPlaying = library.nowPlaying
         self.title = title
     }
 
@@ -64,12 +69,14 @@ public struct TracksView: View {
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 28, ideal: 32, max: 40)
             .customizationID("trackNumber")
 
             TableColumn("Title") { (track: Track) in
                 self.titleCell(for: track)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 140, ideal: 220)
             .customizationID("title")
@@ -79,6 +86,7 @@ public struct TracksView: View {
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 100, ideal: 160)
             .customizationID("artist")
@@ -88,6 +96,7 @@ public struct TracksView: View {
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 100, ideal: 160)
             .customizationID("album")
@@ -96,6 +105,7 @@ public struct TracksView: View {
                 Text(track.year.map { "\($0)" } ?? "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 36, ideal: 48, max: 56)
             .customizationID("year")
@@ -105,6 +115,7 @@ public struct TracksView: View {
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 80, ideal: 120)
             .customizationID("genre")
@@ -114,6 +125,7 @@ public struct TracksView: View {
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 40, ideal: 52, max: 60)
             .customizationID("duration")
@@ -123,6 +135,7 @@ public struct TracksView: View {
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 36, ideal: 48, max: 56)
             .customizationID("playCount")
@@ -132,6 +145,7 @@ public struct TracksView: View {
                 Text(stars > 0 ? String(repeating: "★", count: stars) : "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.ratingFill)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 52, ideal: 64, max: 72)
             .customizationID("rating")
@@ -140,6 +154,7 @@ public struct TracksView: View {
                 Text(Formatters.shortDate(epochSeconds: track.addedAt))
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
+                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 72, ideal: 88)
             .customizationID("addedAt")
@@ -160,26 +175,18 @@ public struct TracksView: View {
 
     // MARK: - Cells
 
+    private func isPlaying(_ track: Track) -> Bool {
+        track.id != nil && track.id == self.nowPlaying.nowPlayingTrackID
+    }
+
     private func titleCell(for track: Track) -> some View {
-        let isPlaying = track.id != nil && track.id == self.library.nowPlaying.nowPlayingTrackID
-        return HStack(spacing: 4) {
-            if isPlaying {
-                Image(systemName: "waveform")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(Color.accentColor)
-                    .symbolEffect(
-                        .variableColor.iterative,
-                        options: .repeating,
-                        isActive: self.library.nowPlaying.isPlaying
-                    )
-            }
-            Text(track.title ?? "Unknown")
-                .font(isPlaying ? Typography.body.weight(.semibold) : Typography.body)
-                .foregroundStyle(
-                    isPlaying ? Color.accentColor : (track.loved ? Color.lovedTint : Color.textPrimary)
-                )
-                .lineLimit(1)
-        }
+        let playing = self.isPlaying(track)
+        return Text(track.title ?? "Unknown")
+            .font(playing ? Typography.body.weight(.semibold) : Typography.body)
+            .foregroundStyle(
+                playing ? Color.accentColor : (track.loved ? Color.lovedTint : Color.textPrimary)
+            )
+            .lineLimit(1)
     }
 
     // MARK: - Context menu
@@ -264,5 +271,20 @@ public struct TracksView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(tsv, forType: .string)
         }
+    }
+}
+
+// MARK: - PlayingRowTint
+
+/// Paints the accent-tinted background across a Table cell when the row is the
+/// currently playing track.  Applied to every cell in the row so the tint spans
+/// the full row width regardless of column layout.
+private struct PlayingRowTint: ViewModifier {
+    let isPlaying: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background(self.isPlaying ? Color.accentColor.opacity(0.18) : Color.clear)
     }
 }
