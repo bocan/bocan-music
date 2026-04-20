@@ -40,6 +40,13 @@ actor BufferPump {
     /// Continuation for slot release signalling.
     private var slotContinuation: CheckedContinuation<Void, Never>?
 
+    /// 4-character identifier used in log output to distinguish multiple pumps
+    /// that coexist briefly during a gapless transition.
+    nonisolated let id: String
+
+    /// Running count of successfully scheduled buffers (for diagnostics).
+    private var scheduledCount = 0
+
     // MARK: - Init
 
     init(
@@ -51,6 +58,7 @@ actor BufferPump {
         self.playerNode = playerNode
         self.outputFormat = outputFormat
         self.availableSlots = BufferPump.windowSize
+        self.id = String(UUID().uuidString.prefix(4))
     }
 
     // MARK: - Lifecycle
@@ -59,6 +67,7 @@ actor BufferPump {
     func start(onEnded: @Sendable @escaping () -> Void) {
         self.onEnded = onEnded
         self.availableSlots = BufferPump.windowSize
+        self.log.debug("pump.start", ["id": self.id])
         self.task = Task { [weak self] in
             try await self?.run()
         }
@@ -66,6 +75,7 @@ actor BufferPump {
 
     /// Stop the pump and wait for the background task to finish.
     func stop() async {
+        self.log.debug("pump.stop", ["id": self.id, "scheduled": self.scheduledCount])
         self.task?.cancel()
         _ = await self.task?.result // drain
         self.task = nil
@@ -96,14 +106,25 @@ actor BufferPump {
                 pcmFormat: outputFormat,
                 frameCapacity: frameCapacity
             ) else {
-                self.log.error("buffer.alloc.failed")
+                self.log.error("buffer.alloc.failed", ["id": self.id])
                 break
             }
 
-            let framesRead = try await decoder.read(into: buffer)
+            let framesRead: AVAudioFrameCount
+            do {
+                framesRead = try await self.decoder.read(into: buffer)
+            } catch {
+                self.log.error("pump.read.failed", [
+                    "id": self.id,
+                    "afterScheduled": self.scheduledCount,
+                    "error": String(reflecting: error),
+                ])
+                throw error
+            }
 
             if framesRead == 0 {
                 // EOF — signal the engine.
+                self.log.debug("pump.eof", ["id": self.id, "scheduled": self.scheduledCount])
                 let cb = self.onEnded
                 Task { @MainActor in cb?() }
                 break
@@ -111,6 +132,7 @@ actor BufferPump {
 
             // Claim a slot and schedule.
             self.availableSlots -= 1
+            self.scheduledCount += 1
             let selfCapture = self
             self.playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
                 Task { await selfCapture.releaseSlot() }

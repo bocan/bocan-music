@@ -301,6 +301,9 @@ public actor AudioEngine: Transport {
     }
 
     private func handleEnded() {
+        let currentID = self.pump?.id ?? "nil"
+        let pendingID = self.pendingNextPump?.id ?? "nil"
+        self.log.debug("engine.handleEnded.entry", ["current": currentID, "pending": pendingID])
         if let next = pendingNextPump, next !== pump {
             // Gapless transition: the next track's buffers are already queued on the
             // player node — do NOT call playerNode.stop() here.
@@ -326,14 +329,19 @@ public actor AudioEngine: Transport {
             Task { await oldPump?.stop() }
 
             self.lastGaplessTransitionAt = Date()
-            self.log.debug("engine.gapless.transition")
+            self.log.debug("engine.gapless.transition", [
+                "old": prevPump?.id ?? "nil",
+                "new": next.id,
+            ])
         } else {
             // Suppress a spurious second `.ended` arriving within the gapless
             // settle window: the just-activated pump can report EOF before its
             // first buffer has rendered, which would tear down the player node
             // and silently stop playback of a track that just started.
             if let t = self.lastGaplessTransitionAt, Date().timeIntervalSince(t) < 1.5 {
-                self.log.debug("engine.ended.spurious.afterGapless.ignored")
+                self.log.debug("engine.ended.spurious.afterGapless.ignored", [
+                    "firedBy": currentID,
+                ])
                 return
             }
             // No gapless next, or degenerate case (new pump finished before old).
