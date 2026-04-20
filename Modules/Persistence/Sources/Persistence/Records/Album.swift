@@ -46,6 +46,9 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// tracks on this album even when padding tags are absent.
     public var forceGapless: Bool
 
+    /// When `true`, tracks from this album are excluded from shuffle playback.
+    public var excludedFromShuffle: Bool
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -62,7 +65,8 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         totalTracks: Int? = nil,
         totalDiscs: Int? = nil,
         coverArtPath: String? = nil,
-        forceGapless: Bool = false
+        forceGapless: Bool = false,
+        excludedFromShuffle: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -76,6 +80,7 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.totalDiscs = totalDiscs
         self.coverArtPath = coverArtPath
         self.forceGapless = forceGapless
+        self.excludedFromShuffle = excludedFromShuffle
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -102,5 +107,6 @@ public struct Album: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case totalDiscs = "total_discs"
         case coverArtPath = "cover_art_path"
         case forceGapless = "force_gapless"
+        case excludedFromShuffle = "excluded_from_shuffle"
     }
 }

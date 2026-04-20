@@ -71,6 +71,22 @@ enum SQL {
         )
     }
 
+    /// Returns albums whose album-artist name contains `term` (case-insensitive).
+    ///
+    /// Used to supplement FTS title search so artist-name queries surface relevant albums.
+    static func albumsByArtistQuery(_ term: String) -> SQLRequest<Album> {
+        SQLRequest(
+            sql: """
+            SELECT albums.*
+            FROM albums
+            LEFT JOIN artists ON artists.id = albums.album_artist_id
+            WHERE artists.name LIKE ?
+            ORDER BY albums.title
+            """,
+            arguments: ["%\(term)%"]
+        )
+    }
+
     // MARK: - Helpers
 
     /// Converts a user-supplied query into an FTS5 expression that supports

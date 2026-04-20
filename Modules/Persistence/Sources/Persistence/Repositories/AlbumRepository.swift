@@ -52,6 +52,21 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.forceGapless", ["id": albumID, "forced": forced])
     }
 
+    /// Toggles the `excluded_from_shuffle` flag for an album and all its tracks.
+    public func setExcludedFromShuffle(albumID: Int64, excluded: Bool) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE albums SET excluded_from_shuffle = ? WHERE id = ?",
+                arguments: [excluded ? 1 : 0, albumID]
+            )
+            try db.execute(
+                sql: "UPDATE tracks SET excluded_from_shuffle = ? WHERE album_id = ?",
+                arguments: [excluded ? 1 : 0, albumID]
+            )
+        }
+        self.log.debug("album.excludedFromShuffle", ["id": albumID, "excluded": excluded])
+    }
+
     // MARK: - Read
 
     /// Fetches the album with `id`, or throws `.notFound` if absent.
@@ -95,16 +110,55 @@ public struct AlbumRepository: Sendable {
         }
     }
 
+    /// Returns a dictionary mapping album ID → non-disabled track count.
+    public func fetchTrackCounts() async throws -> [Int64: Int] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT album_id, COUNT(*) AS cnt
+                FROM tracks
+                WHERE disabled = 0 AND album_id IS NOT NULL
+                GROUP BY album_id
+            """)
+            var result: [Int64: Int] = [:]
+            for row in rows {
+                if let albumID: Int64 = row["album_id"] {
+                    result[albumID] = row["cnt"]
+                }
+            }
+            return result
+        }
+    }
+
+    /// Returns a dictionary mapping artist ID → artist name.
+    public func fetchArtistNameMap() async throws -> [Int64: String] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: "SELECT id, name FROM artists")
+            var result: [Int64: String] = [:]
+            for row in rows {
+                if let id: Int64 = row["id"], let name: String = row["name"] {
+                    result[id] = name
+                }
+            }
+            return result
+        }
+    }
+
     // MARK: - Search
 
-    /// Full-text search across album title field.
+    /// Full-text search across album title and artist name.
     ///
-    /// Returns albums ranked by FTS5 relevance. Returns an empty array for blank queries.
+    /// Returns albums ranked by FTS5 relevance first, followed by any additional
+    /// albums whose artist name matches the query (case-insensitive prefix).
+    /// Returns an empty array for blank queries.
     public func search(query: String) async throws -> [Album] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
         return try await self.database.read { db in
-            try SQL.albumsFTSQuery(trimmed).fetchAll(db)
+            var results = try SQL.albumsFTSQuery(trimmed).fetchAll(db)
+            let seenIDs = Set(results.compactMap(\.id))
+            let artistMatches = try SQL.albumsByArtistQuery(trimmed).fetchAll(db)
+            results += artistMatches.filter { $0.id.map { !seenIDs.contains($0) } ?? true }
+            return results
         }
     }
 
