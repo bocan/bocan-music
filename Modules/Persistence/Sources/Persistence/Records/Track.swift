@@ -84,6 +84,10 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Release year.
     public var year: Int?
 
+    /// Raw year/date string from the file tag (preserves ranges, dates,
+    /// and other values TagLib's numeric `year()` strips).
+    public var yearText: String?
+
     /// Genre string.
     public var genre: String?
 
@@ -207,6 +211,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         discNumber: Int? = nil,
         discTotal: Int? = nil,
         year: Int? = nil,
+        yearText: String? = nil,
         genre: String? = nil,
         composer: String? = nil,
         bpm: Double? = nil,
@@ -259,6 +264,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.discNumber = discNumber
         self.discTotal = discTotal
         self.year = year
+        self.yearText = yearText
         self.genre = genre
         self.composer = composer
         self.bpm = bpm
@@ -324,6 +330,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case discNumber = "disc_number"
         case discTotal = "disc_total"
         case year
+        case yearText = "year_text"
         case genre
         case composer
         case bpm

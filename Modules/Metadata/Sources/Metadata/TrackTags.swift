@@ -12,6 +12,7 @@ public struct TrackTags: Sendable {
     public var composer: String?
     public var comment: String?
     public var year: Int?
+    public var dateText: String?
     public var trackNumber: Int?
     public var trackTotal: Int?
     public var discNumber: Int?

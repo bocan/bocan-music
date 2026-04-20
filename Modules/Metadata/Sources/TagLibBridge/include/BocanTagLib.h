@@ -33,6 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *composer;
 @property (nonatomic, copy, nullable) NSString *comment;
 @property (nonatomic, assign) NSInteger year;
+@property (nonatomic, copy, nullable) NSString *dateText;
 @property (nonatomic, assign) NSInteger trackNumber;
 @property (nonatomic, assign) NSInteger trackTotal;
 @property (nonatomic, assign) NSInteger discNumber;

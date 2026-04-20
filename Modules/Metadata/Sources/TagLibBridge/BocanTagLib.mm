@@ -138,6 +138,14 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     tags.genre  = tagStringToNS(tag->genre());
     tags.comment = tagStringToNS(tag->comment());
     tags.year   = (NSInteger)tag->year();
+    // Raw date/year string (preserves values TagLib's numeric year() strips,
+    // e.g. "1979-1980", "1974-05", ISO timestamps).
+    {
+        NSString *d = firstValue(fileRef.properties(), "DATE");
+        if (!d) d = firstValue(fileRef.properties(), "ORIGINALDATE");
+        if (!d) d = firstValue(fileRef.properties(), "YEAR");
+        tags.dateText = d;
+    }
     tags.trackNumber = (NSInteger)tag->track();
 
     // -----------------------------------------------------------------------

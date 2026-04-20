@@ -32,6 +32,8 @@ public struct Migrator {
         M002PhaseThree.register(in: &dm)
         M003ForceGapless.register(in: &dm)
         M004AlbumExcludedFromShuffle.register(in: &dm)
+        M005TrackYearText.register(in: &dm)
+        M006BackfillAlbumCoverArt.register(in: &dm)
         return Self(inner: dm)
     }
 

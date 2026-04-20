@@ -65,12 +65,18 @@ actor TrackImporter {
         // Cover art
         let coverArt = try await coverArtCache.persist(tags.coverArt)
 
-        // Link cover art to the album if not already set
-        if album.coverArtPath == nil, let art = coverArt {
-            var updated = album
-            updated.coverArtHash = art.hash
-            updated.coverArtPath = art.path
-            try await self.albumRepo.update(updated)
+        // Link cover art to the album. We always write if the album is
+        // missing the link (hash or path) so previously-unlinked albums heal
+        // on the next scan.  We skip when the album already points to the
+        // same hash to avoid needless writes.
+        if let art = coverArt, album.coverArtHash != art.hash || album.coverArtPath == nil {
+            if let albumID = album.id {
+                try await self.albumRepo.setCoverArt(
+                    albumID: albumID,
+                    hash: art.hash,
+                    path: art.path
+                )
+            }
         }
 
         // Normalised file URL string
@@ -123,6 +129,7 @@ actor TrackImporter {
             discNumber: tags.discNumber,
             discTotal: tags.discTotal,
             year: tags.year,
+            yearText: tags.dateText,
             genre: tags.genre,
             composer: tags.composer,
             bpm: tags.bpm,
