@@ -177,6 +177,19 @@ public final class TracksViewModel: ObservableObject {
         self.applyFilter()
     }
 
+    /// FTS search: replaces the visible list with results matching `query`.
+    public func search(query: String) async {
+        self.isLoading = true
+        do {
+            let results = try await self.repository.search(query: query)
+            await self.refreshNameLookups()
+            self.setTracks(results)
+        } catch {
+            self.log.error("tracks.search.failed", ["error": String(reflecting: error)])
+        }
+        self.isLoading = false
+    }
+
     /// Updates the sort and re-sorts the visible array.
     public func setSort(column: TrackSortColumn, ascending: Bool) {
         self.sortColumn = column

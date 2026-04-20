@@ -1,5 +1,6 @@
 import AppKit
 import AudioEngine
+import Combine
 import Foundation
 import Library
 import Observability
@@ -66,6 +67,7 @@ public final class LibraryViewModel: ObservableObject {
     let albumRepo: AlbumRepository
     let scanner: LibraryScanner?
     var scanTask: Task<Void, Never>?
+    private var searchQueryCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -88,12 +90,19 @@ public final class LibraryViewModel: ObservableObject {
         )
         self.albums = AlbumsViewModel(repository: albumRepo)
         self.artists = ArtistsViewModel(repository: artistRepo)
-        self.search = SearchViewModel(
-            trackRepo: trackRepo,
-            albumRepo: albumRepo,
-            artistRepo: artistRepo
-        )
+        self.search = SearchViewModel()
         self.nowPlaying = NowPlayingViewModel(engine: engine, database: database)
+
+        // React to search query changes: debounce and reload the current destination.
+        // Each top-level view (Songs/Albums/Artists) fetches filtered data when a
+        // query is active; clearing the query restores the full list.
+        self.searchQueryCancellable = self.search.$query
+            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task { await self.loadCurrentDestination() }
+            }
     }
 
     // MARK: - Public API
@@ -105,9 +114,14 @@ public final class LibraryViewModel: ObservableObject {
 
     /// Responds to a sidebar selection change.
     public func selectDestination(_ destination: SidebarDestination) async {
-        // Clear an active search whenever the user navigates to a real destination.
-        if case .search = destination {} else {
+        // Clear search when drilling into a detail page (album or artist).
+        // For top-level browse views (songs/albums/artists/etc) keep the active
+        // query so the new view shows filtered results immediately.
+        switch destination {
+        case .album, .artist:
             self.search.clear()
+        default:
+            break
         }
         self.selectedDestination = destination
         await self.loadDestination(destination)

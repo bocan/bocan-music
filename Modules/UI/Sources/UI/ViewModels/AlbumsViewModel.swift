@@ -54,4 +54,15 @@ public final class AlbumsViewModel: ObservableObject {
     public func setAlbums(_ items: [Album]) {
         self.albums = items
     }
+
+    /// FTS search: replaces the visible list with albums matching `query`.
+    public func search(query: String) async {
+        self.isLoading = true
+        do {
+            self.albums = try await self.repository.search(query: query)
+        } catch {
+            self.log.error("albums.search.failed", ["error": String(reflecting: error)])
+        }
+        self.isLoading = false
+    }
 }

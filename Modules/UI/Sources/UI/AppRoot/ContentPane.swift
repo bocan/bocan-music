@@ -4,31 +4,18 @@ import SwiftUI
 
 /// Switches the main content area based on the active `SidebarDestination`.
 ///
-/// Passed a `LibraryViewModel` from the environment; uses child VMs for each
-/// view.  Search results bypass the normal routing when a query is active.
+/// Search is handled at the view-model layer: when a query is active,
+/// `LibraryViewModel` loads filtered data into the same VMs that each view
+/// already observes.  No separate search panel is needed.
 public struct ContentPane: View {
     @ObservedObject public var vm: LibraryViewModel
-    /// Observed separately so the search-active branch reacts to query changes
-    /// without depending on LibraryViewModel firing objectWillChange.
-    @ObservedObject private var search: SearchViewModel
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
-        self.search = vm.search
     }
 
     public var body: some View {
-        // Keep destinationContent permanently in the tree and overlay search results
-        // on top when a query is active.  Replacing the detail column content
-        // structurally causes macOS to disconnect the TextInputUIMacHelper ViewBridge,
-        // killing focus on the toolbar search field after the first keystroke.
         self.destinationContent
-            .overlay {
-                if !self.search.query.isEmpty {
-                    SearchResultsView(vm: self.search, library: self.vm)
-                        .background(Color(nsColor: .windowBackgroundColor))
-                }
-            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -82,14 +69,9 @@ public struct ContentPane: View {
                 message: "Smart Playlists arrive in Phase 7."
             )
 
-        case let .search(searchQuery):
-            // Search is shown via overlay above destinationContent; this case just
-            // ensures the background destination is sensible.
+        case .search:
+            // Treat as Songs view; LibraryViewModel filters by the active query.
             TracksView(vm: self.vm.tracks, library: self.vm)
-                .task {
-                    self.vm.search.query = searchQuery
-                    self.vm.search.queryChanged()
-                }
         }
     }
 }

@@ -6,7 +6,7 @@ import SwiftUI
 ///
 /// - Focuses when `⌘F` is pressed.
 /// - Clears on `Escape`.
-/// - Debounces via `SearchViewModel.queryChanged()` (250 ms).
+/// - Debounce is handled by the Combine subscription in `LibraryViewModel`.
 public struct SearchField: View {
     @ObservedObject public var vm: SearchViewModel
     @FocusState private var isFocused: Bool
@@ -26,10 +26,7 @@ public struct SearchField: View {
                 .textFieldStyle(.plain)
                 .font(Typography.body)
                 .focused(self.$isFocused)
-                .onChange(of: self.vm.query) { _, _ in
-                    Task { @MainActor in self.vm.queryChanged() }
-                }
-                .onSubmit { self.vm.queryChanged() }
+                .onSubmit {}
                 .accessibilityIdentifier(A11y.Search.field)
                 .accessibilityLabel("Search library")
 
@@ -43,12 +40,6 @@ public struct SearchField: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear search")
-            }
-
-            if self.vm.isSearching {
-                ProgressView()
-                    .controlSize(.mini)
-                    .padding(.trailing, 2)
             }
         }
         .padding(.horizontal, 8)
