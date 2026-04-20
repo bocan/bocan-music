@@ -13,6 +13,12 @@ public final class AlbumsViewModel: ObservableObject {
     @Published public private(set) var isLoading = false
     @Published public var selectedAlbumID: Int64?
 
+    /// Maps artist ID → artist name, loaded alongside albums.
+    @Published public private(set) var artistNames: [Int64: String] = [:]
+
+    /// Maps album ID → non-disabled track count, loaded alongside albums.
+    @Published public private(set) var trackCounts: [Int64: Int] = [:]
+
     // MARK: - Internal
 
     private let repository: AlbumRepository
@@ -31,7 +37,12 @@ public final class AlbumsViewModel: ObservableObject {
         self.isLoading = true
         self.log.debug("albums.load.start", [:])
         do {
-            self.albums = try await self.repository.fetchAll()
+            async let albums = self.repository.fetchAll()
+            async let artistNames = self.repository.fetchArtistNameMap()
+            async let trackCounts = self.repository.fetchTrackCounts()
+            self.albums = try await albums
+            self.artistNames = await (try? artistNames) ?? [:]
+            self.trackCounts = await (try? trackCounts) ?? [:]
             self.log.debug("albums.load.end", ["count": self.albums.count])
         } catch {
             self.log.error("albums.load.failed", ["error": String(reflecting: error)])
@@ -43,7 +54,12 @@ public final class AlbumsViewModel: ObservableObject {
     public func load(albumArtistID: Int64) async {
         self.isLoading = true
         do {
-            self.albums = try await self.repository.fetchAll(albumArtistID: albumArtistID)
+            async let albums = self.repository.fetchAll(albumArtistID: albumArtistID)
+            async let artistNames = self.repository.fetchArtistNameMap()
+            async let trackCounts = self.repository.fetchTrackCounts()
+            self.albums = try await albums
+            self.artistNames = await (try? artistNames) ?? [:]
+            self.trackCounts = await (try? trackCounts) ?? [:]
         } catch {
             self.log.error("albums.load(artistID).failed", ["error": String(reflecting: error)])
         }

@@ -31,6 +31,7 @@ public struct Migrator {
         M001InitialSchema.register(in: &dm)
         M002PhaseThree.register(in: &dm)
         M003ForceGapless.register(in: &dm)
+        M004AlbumExcludedFromShuffle.register(in: &dm)
         return Self(inner: dm)
     }
 

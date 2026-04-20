@@ -233,4 +233,15 @@ public extension LibraryViewModel {
             self.log.error("library.setForceGapless.failed", ["albumID": albumID, "error": String(reflecting: error)])
         }
     }
+
+    /// Toggles the `excluded_from_shuffle` flag for an album and all its tracks.
+    func setAlbumExcludedFromShuffle(albumID: Int64, excluded: Bool) async {
+        do {
+            try await self.albumRepo.setExcludedFromShuffle(albumID: albumID, excluded: excluded)
+            await self.albums.load()
+            self.log.debug("library.setAlbumExcludedFromShuffle", ["albumID": albumID, "excluded": excluded])
+        } catch {
+            self.log.error("library.setAlbumExcludedFromShuffle.failed", ["albumID": albumID, "error": String(reflecting: error)])
+        }
+    }
 }

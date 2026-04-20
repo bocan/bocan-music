@@ -6,8 +6,11 @@ import SwiftUI
 /// A single album cell in the grid: cover art + title + artist name + track count.
 private struct AlbumCell: View {
     let album: Album
+    let artistName: String?
+    let trackCount: Int?
 
     var body: some View {
+        let displayArtist = self.artistName ?? "Various Artists"
         VStack(alignment: .leading, spacing: 4) {
             // Artwork
             if let path = album.coverArtPath {
@@ -26,16 +29,26 @@ private struct AlbumCell: View {
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
 
-            // Year
-            if let year = album.year {
-                Text(verbatim: String(year))
+            // Artist name (or "Various Artists" when no album artist is set)
+            Text(displayArtist)
+                .font(Typography.caption)
+                .foregroundStyle(Color.textSecondary)
+                .lineLimit(1)
+
+            // Year · track count
+            let yearString = self.album.year.map { String($0) }
+            let countString = self.trackCount.map { "\($0) \($0 == 1 ? "song" : "songs")" }
+            let subtitle = [yearString, countString].compactMap(\.self).joined(separator: " · ")
+            if !subtitle.isEmpty {
+                Text(subtitle)
                     .font(Typography.caption)
-                    .foregroundStyle(Color.textSecondary)
+                    .foregroundStyle(Color.textTertiary)
+                    .lineLimit(1)
             }
         }
         .frame(width: Theme.albumGridMinWidth)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.album.title), \(self.album.year.map { "\($0)" } ?? "")")
+        .accessibilityLabel("\(self.album.title), \(displayArtist)")
     }
 }
 
@@ -79,7 +92,9 @@ public struct AlbumsGridView: View {
         ScrollView {
             LazyVGrid(columns: self.columns, spacing: Theme.albumGridSpacing) {
                 ForEach(self.vm.albums, id: \.id) { album in
-                    AlbumCell(album: album)
+                    let artistName = album.albumArtistID.flatMap { self.vm.artistNames[$0] }
+                    let trackCount = album.id.flatMap { self.vm.trackCounts[$0] }
+                    AlbumCell(album: album, artistName: artistName, trackCount: trackCount)
                         .contentShape(Rectangle())
                         .onTapGesture {
                             if let id = album.id {
@@ -100,6 +115,14 @@ public struct AlbumsGridView: View {
                                 set: { forced in
                                     if let id = album.id {
                                         Task { await self.library.setAlbumForceGapless(albumID: id, forced: forced) }
+                                    }
+                                }
+                            ))
+                            Toggle("Exclude from Shuffle", isOn: Binding(
+                                get: { album.excludedFromShuffle },
+                                set: { excluded in
+                                    if let id = album.id {
+                                        Task { await self.library.setAlbumExcludedFromShuffle(albumID: id, excluded: excluded) }
                                     }
                                 }
                             ))
