@@ -52,6 +52,7 @@ public actor QueuePlayer: Transport {
     private var currentTrack: Track?
     private var trackRepo: TrackRepository
     private var albumRepo: AlbumRepository
+    private var artistRepo: ArtistRepository
     private var rootRepo: LibraryRootRepository
     private var lastEmittedState: PlaybackState = .idle
 
@@ -68,6 +69,7 @@ public actor QueuePlayer: Transport {
         self.gaplessScheduler = GaplessScheduler(engine: engine)
         self.trackRepo = TrackRepository(database: database)
         self.albumRepo = AlbumRepository(database: database)
+        self.artistRepo = ArtistRepository(database: database)
         self.rootRepo = LibraryRootRepository(database: database)
 
         var continuation: AsyncStream<PlaybackState>.Continuation?
@@ -544,7 +546,12 @@ public actor QueuePlayer: Transport {
         var items: [QueueItem] = []
         for id in trackIDs {
             let track = try await trackRepo.fetch(id: id)
-            items.append(QueueItem.make(from: track))
+            let name: String? = if let aid = track.artistID {
+                try? await self.artistRepo.fetch(id: aid).name
+            } else {
+                nil
+            }
+            items.append(QueueItem.make(from: track, artistName: name))
         }
         return items
     }

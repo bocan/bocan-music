@@ -88,28 +88,60 @@ private struct QueueRow: View {
     let isCurrent: Bool
     let position: Int
 
+    /// Best-effort display title: metadata title → decoded filename stem → raw last path component.
+    private var displayTitle: String {
+        if let t = item.title, !t.isEmpty { return t }
+        let raw = self.item.fileURL.split(separator: "/").last.map(String.init) ?? self.item.fileURL
+        return raw.removingPercentEncoding.map { url in
+            // Strip extension for cleaner display.
+            if let dot = url.lastIndex(of: ".") { return String(url[url.startIndex ..< dot]) }
+            return url
+        } ?? raw
+    }
+
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 0) {
+            // Playing indicator
             Image(systemName: "speaker.wave.2.fill")
-                .font(.system(size: 12))
+                .font(.system(size: 11))
                 .foregroundStyle(Color.accentColor)
-                .frame(width: 16)
+                .frame(width: 20)
                 .opacity(self.isCurrent ? 1 : 0)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(self.item.fileURL.split(separator: "/").last.map(String.init) ?? "Unknown")
-                    .font(Typography.body)
+            // Title + artist
+            VStack(alignment: .leading, spacing: 1) {
+                Text(self.displayTitle)
+                    .font(self.isCurrent ? Typography.body.weight(.semibold) : Typography.body)
                     .foregroundStyle(self.isCurrent ? Color.accentColor : Color.textPrimary)
                     .lineLimit(1)
+                if let artist = item.artistName, !artist.isEmpty {
+                    Text(artist)
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.textSecondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 4)
 
-                Text(Formatters.duration(self.item.duration))
+            // Genre
+            if let genre = item.genre, !genre.isEmpty {
+                Text(genre)
                     .font(Typography.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .lineLimit(1)
+                    .frame(width: 80, alignment: .leading)
+            } else {
+                Spacer().frame(width: 80)
             }
 
-            Spacer()
+            // Duration
+            Text(Formatters.duration(self.item.duration))
+                .font(Typography.caption.monospacedDigit())
+                .foregroundStyle(Color.textSecondary)
+                .frame(width: 44, alignment: .trailing)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
         .contentShape(Rectangle())
     }
 }
