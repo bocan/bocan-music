@@ -149,6 +149,12 @@ public actor AudioEngine: Transport {
     // MARK: - Transport conformance
 
     public func load(_ url: URL) async throws {
+        // Stop the player node FIRST, before any await-suspension points.  This
+        // gives the fastest possible audio cut-off; otherwise buffers queued by
+        // the previous pump (or a gapless preload) keep playing for up to ~200 ms
+        // while we await cancelGaplessNext / decoder close.
+        self.graph.playerNode.stop()
+
         let start = Date()
         self.log.debug("engine.load.start", ["url": url.lastPathComponent])
         self.emit(.loading)
@@ -160,15 +166,13 @@ public actor AudioEngine: Transport {
         if let prev = decoder { await prev.close() }
         self.decoder = nil
 
-        // Stop the player node first — this flushes ALL queued buffers including any
-        // gapless-preloaded next-track buffers.  Without this, stale audio from the
-        // previous song (or its preloaded successor) plays out before the new song's
-        // buffers arrive, causing the "two songs at once" symptom.
-        self.graph.playerNode.stop()
-
-        // Stop any running pump/engine.
+        // Stop any running pump.
         await self.pump?.stop()
         self.pump = nil
+
+        // Defensive: re-stop the player node in case the pump scheduled any
+        // buffers between our initial stop() and the pump's task being cancelled.
+        self.graph.playerNode.stop()
 
         do {
             let dec = try DecoderFactory.make(for: url)

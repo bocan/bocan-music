@@ -203,6 +203,31 @@ public actor PlaybackQueue {
         }
     }
 
+    /// Advance as if the user pressed Next manually.
+    ///
+    /// Differs from `advance()` in that `repeatMode == .one` is treated as `.all`:
+    /// repeat-one only governs automatic end-of-track advance, not explicit user
+    /// skips.  This matches standard transport-bar UX (Apple Music, Spotify, etc.).
+    public func advanceManual() -> QueueItem? {
+        switch self.repeatMode {
+        case .one, .all:
+            guard !self.items.isEmpty else { return nil }
+            let next = ((currentIndex ?? -1) + 1) % self.items.count
+            return self.advance(to: next)
+
+        case .off:
+            guard let ci = currentIndex else { return nil }
+            let next = ci + 1
+            guard next < self.items.count else {
+                let prev = self.currentIndex
+                self.currentIndex = nil
+                self.emit(.currentChanged(newIndex: nil, previousIndex: prev))
+                return nil
+            }
+            return self.advance(to: next)
+        }
+    }
+
     /// Navigate backwards. If near the start of the current item, go to previous; otherwise stays.
     public func retreat() -> QueueItem? {
         // Pop from history if available, otherwise go to start of current
