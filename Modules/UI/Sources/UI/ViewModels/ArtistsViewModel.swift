@@ -47,4 +47,15 @@ public final class ArtistsViewModel: ObservableObject {
     public func setArtists(_ items: [Artist]) {
         self.artists = items
     }
+
+    /// FTS search: replaces the visible list with artists matching `query`.
+    public func search(query: String) async {
+        self.isLoading = true
+        do {
+            self.artists = try await self.repository.search(query: query)
+        } catch {
+            self.log.error("artists.search.failed", ["error": String(reflecting: error)])
+        }
+        self.isLoading = false
+    }
 }

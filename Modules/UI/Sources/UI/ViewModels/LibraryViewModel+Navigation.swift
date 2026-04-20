@@ -4,15 +4,28 @@ import Persistence
 
 extension LibraryViewModel {
     func loadDestination(_ destination: SidebarDestination) async {
+        let query = self.search.query.trimmingCharacters(in: .whitespaces)
         switch destination {
         case .songs:
-            await self.tracks.load()
+            if query.isEmpty {
+                await self.tracks.load()
+            } else {
+                await self.tracks.search(query: query)
+            }
 
         case .albums:
-            await self.albums.load()
+            if query.isEmpty {
+                await self.albums.load()
+            } else {
+                await self.albums.search(query: query)
+            }
 
         case .artists:
-            await self.artists.load()
+            if query.isEmpty {
+                await self.artists.load()
+            } else {
+                await self.artists.search(query: query)
+            }
 
         case .genres, .composers:
             await self.tracks.load()
@@ -54,8 +67,15 @@ extension LibraryViewModel {
             break // QueueView reads directly from QueuePlayer.queue
 
         case let .search(searchQuery):
+            // Set the query; the Combine subscription will trigger a reload.
+            // Directly load filtered songs here so the result is immediate.
             self.search.query = searchQuery
-            self.search.queryChanged()
+            let trimmed = searchQuery.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty {
+                await self.tracks.load()
+            } else {
+                await self.tracks.search(query: trimmed)
+            }
         }
     }
 }
