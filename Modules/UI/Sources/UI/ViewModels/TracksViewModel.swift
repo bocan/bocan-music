@@ -57,6 +57,12 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
 
 // MARK: - TracksViewModel
 
+/// Bundled artist/album name lookups passed into the sort routine.
+struct NameLookups {
+    let artists: [Int64: String]
+    let albums: [Int64: String]
+}
+
 /// Manages the sorted, filtered list of tracks shown in `TracksView`.
 ///
 /// Owned by `LibraryViewModel` and injected into `TracksView` as an
@@ -223,8 +229,7 @@ public final class TracksViewModel: ObservableObject {
             filter: self.filterText,
             column: self.sortColumn,
             ascending: self.sortAscending,
-            artistNames: self.artistNames,
-            albumNames: self.albumNames
+            names: NameLookups(artists: self.artistNames, albums: self.albumNames)
         )
     }
 
@@ -234,9 +239,10 @@ public final class TracksViewModel: ObservableObject {
         filter: String,
         column: TrackSortColumn,
         ascending: Bool,
-        artistNames: [Int64: String],
-        albumNames: [Int64: String]
+        names: NameLookups
     ) -> [Track] {
+        let artistNames = names.artists
+        let albumNames = names.albums
         var result = source
         if !filter.isEmpty {
             let lowered = filter.lowercased()
