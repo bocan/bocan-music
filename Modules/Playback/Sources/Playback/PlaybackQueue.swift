@@ -167,6 +167,16 @@ public actor PlaybackQueue {
 
     // MARK: - Navigation
 
+    /// Move the current position to `index` without replacing items.
+    /// Used to restart a exhausted queue from the beginning.
+    public func seekToIndex(_ index: Int) {
+        guard self.items.indices.contains(index) else { return }
+        let prev = self.currentIndex
+        self.currentIndex = index
+        self.emit(.currentChanged(newIndex: index, previousIndex: prev))
+        self.log.debug("queue.seekToIndex", ["index": index])
+    }
+
     /// Advance to the next item according to repeatMode, returning it or nil if stopped.
     public func advance() -> QueueItem? {
         switch self.repeatMode {

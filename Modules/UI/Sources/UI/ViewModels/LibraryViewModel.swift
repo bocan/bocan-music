@@ -175,6 +175,11 @@ public final class LibraryViewModel: ObservableObject {
     /// honouring the current sort order.  Called when the play button is pressed
     /// with an empty queue (nothing ever loaded, or queue exhausted).
     public func playCurrentLibrary() async {
+        // Ensure the track list is populated — it may be empty on fast startup
+        // if the view's .task hasn't completed before the play button is pressed.
+        if self.tracks.tracks.isEmpty {
+            await self.loadCurrentDestination()
+        }
         guard !self.tracks.tracks.isEmpty else { return }
         await self.play(tracks: self.tracks.tracks, startingAt: 0)
     }

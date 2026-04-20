@@ -132,6 +132,11 @@ public actor QueuePlayer: Transport {
         // If the engine hasn't loaded anything yet (idle or stopped state), try to
         // load the current queue item first so the play button always does something.
         if self.lastEmittedState == .idle || self.lastEmittedState == .stopped {
+            // If the queue was exhausted (currentIndex became nil after reaching the
+            // end) but still has items, restart from the beginning.
+            if await self.queue.currentItem == nil, await !(self.queue.items.isEmpty) {
+                await self.queue.seekToIndex(0)
+            }
             if await (self.queue.currentItem) != nil {
                 try await self.loadCurrentItem()
             }
