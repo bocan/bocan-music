@@ -27,8 +27,15 @@ public struct TracksView: View {
     /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
     @ObservedObject private var nowPlaying: NowPlayingViewModel
 
-    /// Controls Table column visibility/order.
+    /// Controls Table column visibility/order.  Persisted across launches
+    /// via `@AppStorage` on a Codable JSON blob below.
     @State var columnCustomization = TableColumnCustomization<TrackRow>()
+
+    /// Raw storage for `columnCustomization`.  `TableColumnCustomization`
+    /// is `Codable`; we round-trip it through JSON so SwiftUI's Table
+    /// column picker, reordering, and width drags stick across runs.
+    @AppStorage("tracksView.columnCustomization.v1")
+    private var columnCustomizationData: Data = .init()
 
     /// Local sort state.  Owned by the View (not the VM) so that
     /// Table's per-frame binding writes never fire `objectWillChange`
@@ -83,10 +90,23 @@ public struct TracksView: View {
         .onChange(of: self.sortOrder) { _, newOrder in
             self.vm.applySort(newOrder)
         }
+        .onChange(of: self.columnCustomization) { _, newValue in
+            if let data = try? JSONEncoder().encode(newValue) {
+                self.columnCustomizationData = data
+            }
+        }
         .onAppear {
             // Seed local sort state from the VM (e.g. restored UIStateV1).
             if self.sortOrder != self.vm.sortOrder {
                 self.sortOrder = self.vm.sortOrder
+            }
+            // Restore persisted column visibility / order / widths.
+            if !self.columnCustomizationData.isEmpty,
+               let decoded = try? JSONDecoder().decode(
+                   TableColumnCustomization<TrackRow>.self,
+                   from: self.columnCustomizationData
+               ) {
+                self.columnCustomization = decoded
             }
         }
     }
