@@ -101,7 +101,7 @@ public struct TracksView: View {
             .customizationID("album")
 
             TableColumn("Year") { (track: Track) in
-                Text(track.year.map { "\($0)" } ?? "")
+                Text(verbatim: track.year.map { String($0) } ?? "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
             }

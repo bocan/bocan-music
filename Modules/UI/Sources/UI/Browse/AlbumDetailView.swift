@@ -43,7 +43,7 @@ public struct AlbumDetailView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 if let year = album?.year {
-                    Text("\(year)")
+                    Text(verbatim: String(year))
                         .font(Typography.caption)
                         .foregroundStyle(Color.textSecondary)
                         .textCase(.uppercase)
