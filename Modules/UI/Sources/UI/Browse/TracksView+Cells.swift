@@ -86,6 +86,22 @@ extension TracksView {
             .monospacedDigit()
     }
 
+    func sampleRateCell(_ row: TrackRow) -> some View {
+        Text(Self.formatSampleRate(row.sampleRate))
+            .font(Typography.footnote)
+            .foregroundStyle(Color.textSecondary)
+            .monospacedDigit()
+    }
+
+    private static func formatSampleRate(_ hz: Int) -> String {
+        guard hz > 0 else { return "" }
+        let khz = Double(hz) / 1000.0
+        if khz == khz.rounded() {
+            return String(format: "%.0f kHz", khz)
+        }
+        return String(format: "%.1f kHz", khz)
+    }
+
     func shuffleExcludedCell(_ row: TrackRow) -> some View {
         Toggle("", isOn: Binding(
             get: { row.excludedFromShuffle },
