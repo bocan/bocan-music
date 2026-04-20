@@ -145,8 +145,16 @@ public final class LibraryViewModel: ObservableObject {
         let startIndex = contextTracks.firstIndex(where: { $0.id == track.id }) ?? 0
         if let qp = engine as? QueuePlayer {
             do {
-                let ids = contextTracks.compactMap(\.id)
-                try await qp.play(trackIDs: ids, startingAt: startIndex)
+                // Build items in-memory from the already-loaded Track objects and
+                // artistNames dictionary.  This avoids the per-track DB round-trips
+                // inside QueuePlayer.buildItems (32k queries for a 16k library) which
+                // otherwise cause a multi-second stall before playback begins.
+                let names = self.tracks.artistNames
+                let items: [QueueItem] = contextTracks.map { t in
+                    let name = t.artistID.flatMap { names[$0] }
+                    return QueueItem.make(from: t, artistName: name)
+                }
+                try await qp.play(items: items, startingAt: startIndex)
             } catch {
                 self.log.error("library.play.failed", ["error": String(reflecting: error)])
                 self.playbackErrorMessage = "Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library."
@@ -170,9 +178,13 @@ public final class LibraryViewModel: ObservableObject {
     /// Plays `tracks` starting at `index`, replacing the queue.
     public func play(tracks: [Track], startingAt index: Int = 0) async {
         guard let qp = engine as? QueuePlayer else { return }
-        let ids = tracks.compactMap(\.id)
+        let names = self.tracks.artistNames
+        let items: [QueueItem] = tracks.map { t in
+            let name = t.artistID.flatMap { names[$0] }
+            return QueueItem.make(from: t, artistName: name)
+        }
         do {
-            try await qp.play(trackIDs: ids, startingAt: index)
+            try await qp.play(items: items, startingAt: index)
         } catch {
             self.log.error("library.playAll.failed", ["error": String(reflecting: error)])
             self.playbackErrorMessage = "Could not play tracks. Try re-scanning your library."

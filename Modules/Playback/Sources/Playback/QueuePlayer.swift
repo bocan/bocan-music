@@ -185,6 +185,20 @@ public actor QueuePlayer: Transport {
         await self.nowPlayingCentre?.setPlaying(true)
     }
 
+    /// Replace the queue with pre-built `items` and begin playing at `index`.
+    ///
+    /// Prefer this over `play(trackIDs:)` when the caller already has the `Track`
+    /// objects in memory (e.g. the current browse view).  Avoids the per-track DB
+    /// round-trips inside `buildItems(for:)`, which become the dominant latency
+    /// when queueing a large library (~32 queries/track, seconds for 10k+ tracks).
+    public func play(items: [QueueItem], startingAt index: Int = 0) async throws {
+        guard !items.isEmpty else { throw PlaybackError.queueEmpty }
+        await self.queue.replace(with: items, startAt: index)
+        try await self.loadCurrentItem()
+        try await self.engine.play()
+        await self.nowPlayingCentre?.setPlaying(true)
+    }
+
     /// Insert `trackIDs` immediately after the current item.
     public func playNext(_ trackIDs: [Int64]) async throws {
         let items = try await buildItems(for: trackIDs)
@@ -547,14 +561,20 @@ public actor QueuePlayer: Transport {
     // MARK: Item building
 
     private func buildItems(for trackIDs: [Int64]) async throws -> [QueueItem] {
+        // Fetch all artist names once up front rather than per-track. For a
+        // 16k-track queue this collapses ~16,000 DB round-trips into one, which
+        // is the difference between a sub-second replace and a multi-second stall.
+        let artists = await (try? self.artistRepo.fetchAll()) ?? []
+        var artistNames: [Int64: String] = [:]
+        artistNames.reserveCapacity(artists.count)
+        for a in artists {
+            if let aid = a.id { artistNames[aid] = a.name }
+        }
         var items: [QueueItem] = []
+        items.reserveCapacity(trackIDs.count)
         for id in trackIDs {
             let track = try await trackRepo.fetch(id: id)
-            let name: String? = if let aid = track.artistID {
-                try? await self.artistRepo.fetch(id: aid).name
-            } else {
-                nil
-            }
+            let name = track.artistID.flatMap { artistNames[$0] }
             items.append(QueueItem.make(from: track, artistName: name))
         }
         return items
