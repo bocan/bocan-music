@@ -255,6 +255,20 @@ public final class LibraryViewModel: ObservableObject {
         await qp.setShuffle(on)
     }
 
+    /// Reorders the playback queue to match the current track-list sort order,
+    /// keeping the currently-playing track in place.
+    public func reorderQueue() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let contextTracks = self.tracks.tracks
+        guard !contextTracks.isEmpty else { return }
+        let names = self.tracks.artistNames
+        let items: [QueueItem] = contextTracks.map { t in
+            let name = t.artistID.flatMap { names[$0] }
+            return QueueItem.make(from: t, artistName: name)
+        }
+        await qp.queue.reorder(to: items)
+    }
+
     /// Changes the repeat mode on the queue player.
     public func setRepeat(_ mode: RepeatMode) async {
         guard let qp = engine as? QueuePlayer else { return }
