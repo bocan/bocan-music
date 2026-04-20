@@ -209,12 +209,13 @@ public struct TracksView: View {
             guard let first = newOrder.first else { return }
             let ascending = first.order == .forward
             let column = sortColumn(from: first)
-            self.vm.setSort(column: column, ascending: ascending)
-            // Cancel any previous pending reorder so rapid header-clicks don't
-            // pile up 20k-track queue rebuilds.
+            // Cancel any previous pending sort/reorder so rapid header-clicks
+            // don't pile up 20k-track work on the main actor.
             self.reorderTask?.cancel()
-            self.reorderTask = Task { [library] in
+            self.reorderTask = Task { [vm, library] in
                 try? await Task.sleep(nanoseconds: 150_000_000) // 150ms debounce
+                guard !Task.isCancelled else { return }
+                await vm.setSortAsync(column: column, ascending: ascending)
                 guard !Task.isCancelled else { return }
                 await library.reorderQueue()
             }
