@@ -122,14 +122,9 @@ public actor AudioEngine: Transport {
         self.pendingNextDecoder = dec
         self.pendingNextTransition = onTransition
 
-        // DO NOT start the pump's task here.  Both pumps scheduling to the same
-        // AVAudioPlayerNode simultaneously causes their buffers to interleave in
-        // the node's FIFO queue — the listener hears old/new/old/new in ~800 ms
-        // chunks.  The pump is started in `performGaplessTransition` when the
-        // outgoing pump's decoder has hit EOF, which guarantees the outgoing
-        // pump has already scheduled its entire tail.  The incoming pump's
-        // buffers then land strictly after them in the queue.
-
+        // Pump is started in `performGaplessTransition` (not here) so its
+        // scheduleBuffer calls land strictly after the outgoing pump's tail in
+        // the shared AVAudioPlayerNode FIFO — otherwise they interleave.
         self.log.debug("engine.gapless.prefetch", ["url": url.lastPathComponent])
     }
 
