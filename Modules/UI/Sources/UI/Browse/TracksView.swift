@@ -161,10 +161,25 @@ public struct TracksView: View {
     // MARK: - Cells
 
     private func titleCell(for track: Track) -> some View {
-        Text(track.title ?? "Unknown")
-            .font(Typography.body)
-            .foregroundStyle(track.loved ? Color.lovedTint : Color.textPrimary)
-            .lineLimit(1)
+        let isPlaying = track.id != nil && track.id == self.library.nowPlaying.nowPlayingTrackID
+        return HStack(spacing: 4) {
+            if isPlaying {
+                Image(systemName: "waveform")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.accentColor)
+                    .symbolEffect(
+                        .variableColor.iterative,
+                        options: .repeating,
+                        isActive: self.library.nowPlaying.isPlaying
+                    )
+            }
+            Text(track.title ?? "Unknown")
+                .font(isPlaying ? Typography.body.weight(.semibold) : Typography.body)
+                .foregroundStyle(
+                    isPlaying ? Color.accentColor : (track.loved ? Color.lovedTint : Color.textPrimary)
+                )
+                .lineLimit(1)
+        }
     }
 
     // MARK: - Context menu
