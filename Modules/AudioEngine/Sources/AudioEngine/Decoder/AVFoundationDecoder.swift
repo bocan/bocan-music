@@ -64,7 +64,11 @@ public final class AVFoundationDecoder: Decoder {
             if nsError.code == 0 { return 0 }
             throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: error)
         }
-        return AVAudioFrameCount(self.file.framePosition - before)
+        // `framePosition` can, in rare EOF/seek-corner cases, fail to advance or
+        // even regress.  Clamp the delta to 0 so we never trap on the UInt32
+        // bridge below (AVAudioFrameCount init from a negative value crashes).
+        let delta = self.file.framePosition - before
+        return delta > 0 ? AVAudioFrameCount(delta) : 0
     }
 
     /// Seek to the nearest sample frame for `time`.
