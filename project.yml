@@ -47,8 +47,11 @@ targets:
       - path: App
         excludes:
           - "**/*.md"
-    resources:
       - path: Resources
+        buildPhase: resources
+        excludes:
+          - Info.plist
+          - Bocan.entitlements
     settings:
       base:
         PRODUCT_NAME: Bocan
@@ -61,6 +64,7 @@ targets:
       - package: AudioEngine
       - package: Persistence
       - package: Playback
+      - package: Library
       - package: UI
     scheme:
       testTargets:
