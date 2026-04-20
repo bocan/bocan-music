@@ -160,6 +160,12 @@ public actor AudioEngine: Transport {
         if let prev = decoder { await prev.close() }
         self.decoder = nil
 
+        // Stop the player node first — this flushes ALL queued buffers including any
+        // gapless-preloaded next-track buffers.  Without this, stale audio from the
+        // previous song (or its preloaded successor) plays out before the new song's
+        // buffers arrive, causing the "two songs at once" symptom.
+        self.graph.playerNode.stop()
+
         // Stop any running pump/engine.
         await self.pump?.stop()
         self.pump = nil
