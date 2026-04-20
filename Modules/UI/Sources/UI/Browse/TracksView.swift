@@ -1,36 +1,6 @@
 import Persistence
 import SwiftUI
 
-// MARK: - Sort-key helpers
-
-/// Non-optional wrappers so that `TableColumn(value:)` can bind a `Comparable` keypath,
-/// enabling clickable column headers.  The actual sort is handled by the ViewModel.
-extension Track {
-    var sortTitle: String {
-        self.title ?? ""
-    }
-
-    var sortArtistID: Int64 {
-        self.artistID ?? 0
-    }
-
-    var sortAlbumID: Int64 {
-        self.albumID ?? 0
-    }
-
-    var sortYear: Int {
-        self.year ?? 0
-    }
-
-    var sortGenre: String {
-        self.genre ?? ""
-    }
-
-    var sortTrackNumber: Int {
-        self.trackNumber ?? 0
-    }
-}
-
 // MARK: - TracksView
 
 /// Full-width table of tracks with sortable, reorderable, persistable columns.
@@ -50,14 +20,6 @@ public struct TracksView: View {
 
     /// Controls Table column visibility/order.
     @State private var columnCustomization = TableColumnCustomization<Track>()
-
-    /// Sort descriptors driven by column-header clicks.
-    /// We only use this to forward sort requests to the ViewModel.
-    @State private var sortOrder: [KeyPathComparator<Track>] = []
-
-    /// Pending queue-reorder task; cancelled and replaced on rapid header clicks
-    /// so only the last sort request actually runs.
-    @State private var reorderTask: Task<Void, Never>?
 
     @EnvironmentObject private var libraryEnv: LibraryViewModel
 
@@ -95,10 +57,9 @@ public struct TracksView: View {
         Table(
             self.vm.tracks,
             selection: self.$vm.selection,
-            sortOrder: self.$sortOrder,
             columnCustomization: self.$columnCustomization
         ) {
-            TableColumn("#", value: \Track.sortTrackNumber) { (track: Track) in
+            TableColumn("#") { (track: Track) in
                 Text(track.trackNumber.map { "\($0)" } ?? "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
@@ -107,7 +68,7 @@ public struct TracksView: View {
             .width(min: 28, ideal: 32, max: 40)
             .customizationID("trackNumber")
 
-            TableColumn("Title", value: \Track.sortTitle) { (track: Track) in
+            TableColumn("Title") { (track: Track) in
                 Text(track.title ?? "Unknown")
                     .font(Typography.body)
                     .foregroundStyle(track.loved ? Color.lovedTint : Color.textPrimary)
@@ -116,7 +77,7 @@ public struct TracksView: View {
             .width(min: 140, ideal: 220)
             .customizationID("title")
 
-            TableColumn("Artist", value: \Track.sortArtistID) { (track: Track) in
+            TableColumn("Artist") { (track: Track) in
                 Text(track.artistID.flatMap { self.vm.artistNames[$0] } ?? "")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
@@ -125,7 +86,7 @@ public struct TracksView: View {
             .width(min: 100, ideal: 160)
             .customizationID("artist")
 
-            TableColumn("Album", value: \Track.sortAlbumID) { (track: Track) in
+            TableColumn("Album") { (track: Track) in
                 Text(track.albumID.flatMap { self.vm.albumNames[$0] } ?? "")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
@@ -134,7 +95,7 @@ public struct TracksView: View {
             .width(min: 100, ideal: 160)
             .customizationID("album")
 
-            TableColumn("Year", value: \Track.sortYear) { (track: Track) in
+            TableColumn("Year") { (track: Track) in
                 Text(verbatim: track.year.map { String($0) } ?? "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
@@ -142,7 +103,7 @@ public struct TracksView: View {
             .width(min: 36, ideal: 48, max: 56)
             .customizationID("year")
 
-            TableColumn("Genre", value: \Track.sortGenre) { (track: Track) in
+            TableColumn("Genre") { (track: Track) in
                 Text(track.genre ?? "")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
@@ -151,7 +112,7 @@ public struct TracksView: View {
             .width(min: 80, ideal: 120)
             .customizationID("genre")
 
-            TableColumn("Time", value: \Track.duration) { (track: Track) in
+            TableColumn("Time") { (track: Track) in
                 Text(Formatters.duration(track.duration))
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
@@ -160,7 +121,7 @@ public struct TracksView: View {
             .width(min: 40, ideal: 52, max: 60)
             .customizationID("duration")
 
-            TableColumn("Plays", value: \Track.playCount) { (track: Track) in
+            TableColumn("Plays") { (track: Track) in
                 Text("\(track.playCount)")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
@@ -169,7 +130,7 @@ public struct TracksView: View {
             .width(min: 36, ideal: 48, max: 56)
             .customizationID("playCount")
 
-            TableColumn("Rating", value: \Track.rating) { (track: Track) in
+            TableColumn("Rating") { (track: Track) in
                 let stars = Formatters.stars(from: track.rating)
                 Text(stars > 0 ? String(repeating: "★", count: stars) : "")
                     .font(Typography.footnote)
@@ -178,7 +139,7 @@ public struct TracksView: View {
             .width(min: 52, ideal: 64, max: 72)
             .customizationID("rating")
 
-            TableColumn("Date Added", value: \Track.addedAt) { (track: Track) in
+            TableColumn("Date Added") { (track: Track) in
                 Text(Formatters.shortDate(epochSeconds: track.addedAt))
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
@@ -204,21 +165,6 @@ public struct TracksView: View {
         .onAppear { self.syncSelectionToNowPlaying() }
         .onChange(of: self.nowPlaying.nowPlayingTrackID) { _, _ in
             self.syncSelectionToNowPlaying()
-        }
-        .onChange(of: self.sortOrder) { _, newOrder in
-            guard let first = newOrder.first else { return }
-            let ascending = first.order == .forward
-            let column = sortColumn(from: first)
-            // Sort synchronously — fast Swift `<` on 20k items is well under
-            // a frame.  Only the queue reorder (which has to notify the
-            // player) needs the 150 ms debounce.
-            self.vm.setSort(column: column, ascending: ascending)
-            self.reorderTask?.cancel()
-            self.reorderTask = Task { [library] in
-                try? await Task.sleep(nanoseconds: 150_000_000)
-                guard !Task.isCancelled else { return }
-                await library.reorderQueue()
-            }
         }
     }
 
@@ -312,46 +258,5 @@ public struct TracksView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(tsv, forType: .string)
         }
-    }
-}
-
-// MARK: - Sort column mapping
-
-/// Maps a `KeyPathComparator` produced by `Table` column-header clicks back to
-/// the `TrackSortColumn` enum consumed by the ViewModel.
-private func sortColumn(from comparator: KeyPathComparator<Track>) -> TrackSortColumn {
-    switch comparator.keyPath {
-    case \Track.sortTrackNumber:
-        .trackNumber
-
-    case \Track.sortTitle:
-        .title
-
-    case \Track.sortArtistID:
-        .artist
-
-    case \Track.sortAlbumID:
-        .album
-
-    case \Track.sortYear:
-        .year
-
-    case \Track.sortGenre:
-        .genre
-
-    case \Track.duration:
-        .duration
-
-    case \Track.playCount:
-        .playCount
-
-    case \Track.rating:
-        .rating
-
-    case \Track.addedAt:
-        .addedAt
-
-    default:
-        .title
     }
 }
