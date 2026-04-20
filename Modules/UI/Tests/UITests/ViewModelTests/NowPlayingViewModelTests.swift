@@ -110,14 +110,35 @@ struct NowPlayingViewModelTests {
         #expect(vm.duration == 240)
     }
 
-    @Test("playPause calls play when paused")
+    @Test("playPause resumes when paused")
     func playPauseCallsPlay() async throws {
         let engine = MockTransport()
         let db = try await makeDatabase()
         let vm = NowPlayingViewModel(engine: engine, database: db)
         #expect(!vm.isPlaying)
+        // Put the VM into a paused state so playPause triggers resume.
+        engine.emit(.paused)
+        for _ in 0 ..< 100 {
+            if vm.isPaused { break }
+            await Task.yield()
+        }
+        try #require(vm.isPaused)
         await vm.playPause()
         #expect(engine.playCallCount == 1)
+    }
+
+    @Test("playPause invokes onPlayFromEmptyQueue when idle")
+    func playPauseCallsEmptyQueueCallback() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        var callbackFired = false
+        vm.onPlayFromEmptyQueue = { callbackFired = true }
+        #expect(!vm.isPlaying)
+        #expect(!vm.isPaused)
+        await vm.playPause()
+        #expect(callbackFired)
+        #expect(engine.playCallCount == 0)
     }
 
     @Test("playPause calls pause when playing")
