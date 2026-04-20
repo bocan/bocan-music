@@ -34,6 +34,11 @@ public actor GaplessScheduler {
     private var task: Task<Void, Never>?
     private var armedForItemID: QueueItem.ID?
 
+    /// Item ID we've already logged a `gapless.(forced.)?incompatible` warning
+    /// for during the current approach to EOT.  Avoids 10+ identical log lines
+    /// spewed by the 500 ms poll loop while waiting for the track to end.
+    private var incompatibleLoggedForItemID: QueueItem.ID?
+
     // MARK: - Callbacks
 
     /// Called when the scheduler wants to know the next item and whether the
@@ -89,12 +94,14 @@ public actor GaplessScheduler {
         self.task?.cancel()
         self.task = nil
         self.armedForItemID = nil
+        self.incompatibleLoggedForItemID = nil
         await self.engine.cancelGaplessNext()
     }
 
     /// Reset armed state (e.g. when user skips manually).
     public func reset() async {
         self.armedForItemID = nil
+        self.incompatibleLoggedForItemID = nil
         await self.engine.cancelGaplessNext()
     }
 
@@ -124,11 +131,14 @@ public actor GaplessScheduler {
                 currentFmt,
                 self.toAVAudioFormat(nextItem.sourceFormat)
             ) else {
-                self.log.debug("gapless.incompatible", [
-                    "next": nextItem.trackID,
-                    "currentRate": currentFmt.sampleRate,
-                    "nextRate": nextItem.sourceFormat.sampleRate,
-                ])
+                if self.incompatibleLoggedForItemID != nextItem.id {
+                    self.incompatibleLoggedForItemID = nextItem.id
+                    self.log.debug("gapless.incompatible", [
+                        "next": nextItem.trackID,
+                        "currentRate": currentFmt.sampleRate,
+                        "nextRate": nextItem.sourceFormat.sampleRate,
+                    ])
+                }
                 return // QueuePlayer will do a normal stop/load/play on .ended.
             }
         } else {
@@ -137,11 +147,14 @@ public actor GaplessScheduler {
             let nextFmt = self.toAVAudioFormat(nextItem.sourceFormat)
             guard currentFmt.sampleRate == nextFmt.sampleRate,
                   currentFmt.channelCount == nextFmt.channelCount else {
-                self.log.debug("gapless.forced.incompatible", [
-                    "next": nextItem.trackID,
-                    "currentRate": currentFmt.sampleRate,
-                    "nextRate": nextItem.sourceFormat.sampleRate,
-                ])
+                if self.incompatibleLoggedForItemID != nextItem.id {
+                    self.incompatibleLoggedForItemID = nextItem.id
+                    self.log.debug("gapless.forced.incompatible", [
+                        "next": nextItem.trackID,
+                        "currentRate": currentFmt.sampleRate,
+                        "nextRate": nextItem.sourceFormat.sampleRate,
+                    ])
+                }
                 return
             }
         }
