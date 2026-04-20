@@ -200,36 +200,6 @@ public final class TracksViewModel: ObservableObject {
         self.applyFilter()
     }
 
-    /// Async variant that performs the heavy sort off the main actor.
-    ///
-    /// Sorting 20k+ tracks with `localizedCaseInsensitiveCompare` on the
-    /// main actor can stall the UI long enough for SwiftUI's `Table` to
-    /// re-enter layout, which manifests as runaway CPU/memory when the
-    /// user clicks headers rapidly or toggles direction.
-    public func setSortAsync(column: TrackSortColumn, ascending: Bool) async {
-        guard column != self.sortColumn || ascending != self.sortAscending else { return }
-
-        let source = self.allTracks
-        let filter = self.filterText
-        let artists = self.artistNames
-        let albums = self.albumNames
-
-        let sorted = await Task.detached(priority: .userInitiated) {
-            Self.sortedAndFiltered(
-                source,
-                filter: filter,
-                column: column,
-                ascending: ascending,
-                artistNames: artists,
-                albumNames: albums
-            )
-        }.value
-
-        self.sortColumn = column
-        self.sortAscending = ascending
-        self.tracks = sorted
-    }
-
     // MARK: - Private
 
     private func refreshNameLookups() async {
@@ -337,8 +307,12 @@ public final class TracksViewModel: ObservableObject {
     }
 
     private nonisolated static func compare(_ lhs: String?, _ rhs: String?, ascending: Bool) -> Bool {
-        let result = (lhs ?? "").localizedCaseInsensitiveCompare(rhs ?? "")
-        if ascending { return result == .orderedAscending }
-        return result == .orderedDescending
+        // Use default String `<` (not localized).  This is ~10x faster than
+        // localizedCaseInsensitiveCompare, matches the comparator SwiftUI's
+        // KeyPathComparator uses on String keypaths, and keeps the sort
+        // strictly on the main thread without race-prone async indirection.
+        let lhs = lhs ?? ""
+        let rhs = rhs ?? ""
+        return ascending ? lhs < rhs : lhs > rhs
     }
 }
