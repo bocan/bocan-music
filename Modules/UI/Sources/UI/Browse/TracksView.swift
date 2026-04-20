@@ -55,6 +55,10 @@ public struct TracksView: View {
     /// We only use this to forward sort requests to the ViewModel.
     @State private var sortOrder: [KeyPathComparator<Track>] = []
 
+    /// Pending queue-reorder task; cancelled and replaced on rapid header clicks
+    /// so only the last sort request actually runs.
+    @State private var reorderTask: Task<Void, Never>?
+
     @EnvironmentObject private var libraryEnv: LibraryViewModel
 
     public init(vm: TracksViewModel, library: LibraryViewModel, title: String? = nil) {
@@ -206,7 +210,14 @@ public struct TracksView: View {
             let ascending = first.order == .forward
             let column = sortColumn(from: first)
             self.vm.setSort(column: column, ascending: ascending)
-            Task { await self.library.reorderQueue() }
+            // Cancel any previous pending reorder so rapid header-clicks don't
+            // pile up 20k-track queue rebuilds.
+            self.reorderTask?.cancel()
+            self.reorderTask = Task { [library] in
+                try? await Task.sleep(nanoseconds: 150_000_000) // 150ms debounce
+                guard !Task.isCancelled else { return }
+                await library.reorderQueue()
+            }
         }
     }
 

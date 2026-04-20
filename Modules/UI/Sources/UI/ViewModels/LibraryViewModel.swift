@@ -257,15 +257,30 @@ public final class LibraryViewModel: ObservableObject {
 
     /// Reorders the playback queue to match the current track-list sort order,
     /// keeping the currently-playing track in place.
+    ///
+    /// No-op when nothing is playing or when the currently-playing track isn't
+    /// in the view's current track list — sorting an unrelated browse view
+    /// should not silently replace the playback queue.  The heavy QueueItem
+    /// construction runs off the main actor so large libraries don't stall the UI.
     public func reorderQueue() async {
         guard let qp = engine as? QueuePlayer else { return }
         let contextTracks = self.tracks.tracks
         guard !contextTracks.isEmpty else { return }
+
+        // Only reorder when the currently-playing track is actually in the
+        // view's list; otherwise the user is sorting an unrelated context.
+        let currentTrackID = self.nowPlaying.nowPlayingTrackID
+        guard let currentTrackID,
+              contextTracks.contains(where: { $0.id == currentTrackID }) else { return }
+
         let names = self.tracks.artistNames
-        let items: [QueueItem] = contextTracks.map { t in
-            let name = t.artistID.flatMap { names[$0] }
-            return QueueItem.make(from: t, artistName: name)
-        }
+        // Build QueueItems off the main actor so 20k-track libraries don't stall the UI.
+        let items = await Task.detached(priority: .userInitiated) {
+            contextTracks.map { t -> QueueItem in
+                let name = t.artistID.flatMap { names[$0] }
+                return QueueItem.make(from: t, artistName: name)
+            }
+        }.value
         await qp.queue.reorder(to: items)
     }
 
