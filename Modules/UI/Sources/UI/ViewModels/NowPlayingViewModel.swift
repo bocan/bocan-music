@@ -27,6 +27,8 @@ public final class NowPlayingViewModel: ObservableObject {
     @Published public private(set) var shuffleOn = false
     @Published public private(set) var repeatMode: RepeatMode = .off
     @Published public private(set) var stopAfterCurrent = false
+    /// The database ID of the track currently loaded into the engine, or `nil`.
+    @Published public private(set) var nowPlayingTrackID: Int64?
 
     // MARK: - Callbacks
 
@@ -59,6 +61,7 @@ public final class NowPlayingViewModel: ObservableObject {
     /// Set by the TracksView/AlbumsView when a track is selected and played.
     public func setCurrentTrack(_ track: Track) {
         self.currentTrack = track
+        self.nowPlayingTrackID = track.id
         self.title = track.title ?? "Unknown Track"
         self.artist = ""
         self.album = ""
@@ -160,6 +163,7 @@ public final class NowPlayingViewModel: ObservableObject {
                 if let track {
                     self.setCurrentTrack(track)
                 } else {
+                    self.nowPlayingTrackID = nil
                     self.title = ""
                     self.artist = ""
                     self.album = ""

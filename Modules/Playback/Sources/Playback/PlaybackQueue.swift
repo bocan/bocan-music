@@ -180,7 +180,9 @@ public actor PlaybackQueue {
             return self.advance(to: next)
 
         case .off:
-            let next = (currentIndex ?? -1) + 1
+            // When currentIndex is nil the queue is already exhausted; don't wrap.
+            guard let ci = currentIndex else { return nil }
+            let next = ci + 1
             guard next < self.items.count else {
                 let prev = self.currentIndex
                 self.currentIndex = nil
