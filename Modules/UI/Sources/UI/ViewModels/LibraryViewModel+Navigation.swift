@@ -7,43 +7,25 @@ extension LibraryViewModel {
         let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
         switch destination {
         case .songs:
-            if query.isEmpty {
-                await self.tracks.load()
-            } else {
-                await self.tracks.search(query: query)
-            }
+            await self.loadSongsDestination(query: query)
 
         case .albums:
-            if query.isEmpty {
-                await self.albums.load()
-            } else {
-                await self.albums.search(query: query)
-            }
+            await self.loadAlbumsDestination(query: query)
 
         case .artists:
-            if query.isEmpty {
-                await self.artists.load()
-            } else {
-                await self.artists.search(query: query)
-            }
+            await self.loadArtistsDestination(query: query)
 
         case .genres, .composers:
             await self.tracks.load()
 
         case .recentlyAdded:
-            let trackRepo = TrackRepository(database: database)
-            let result = await (try? trackRepo.recentlyAdded()) ?? []
-            self.tracks.setTracks(result)
+            await self.loadSmartFolder { try await $0.recentlyAdded() }
 
         case .recentlyPlayed:
-            let trackRepo = TrackRepository(database: database)
-            let result = await (try? trackRepo.recentlyPlayed()) ?? []
-            self.tracks.setTracks(result)
+            await self.loadSmartFolder { try await $0.recentlyPlayed() }
 
         case .mostPlayed:
-            let trackRepo = TrackRepository(database: database)
-            let result = await (try? trackRepo.mostPlayed()) ?? []
-            self.tracks.setTracks(result)
+            await self.loadSmartFolder { try await $0.mostPlayed() }
 
         case let .artist(id):
             await self.artists.load()
@@ -67,8 +49,6 @@ extension LibraryViewModel {
             break // QueueView reads directly from QueuePlayer.queue
 
         case let .search(searchQuery):
-            // Set the query; the Combine subscription will trigger a reload.
-            // Directly load filtered songs here so the result is immediate.
             self.searchQuery = searchQuery
             let trimmed = searchQuery.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty {
@@ -77,5 +57,37 @@ extension LibraryViewModel {
                 await self.tracks.search(query: trimmed)
             }
         }
+    }
+
+    // MARK: - Destination helpers
+
+    private func loadSongsDestination(query: String) async {
+        if query.isEmpty {
+            await self.tracks.load()
+        } else {
+            await self.tracks.search(query: query)
+        }
+    }
+
+    private func loadAlbumsDestination(query: String) async {
+        if query.isEmpty {
+            await self.albums.load()
+        } else {
+            await self.albums.search(query: query)
+        }
+    }
+
+    private func loadArtistsDestination(query: String) async {
+        if query.isEmpty {
+            await self.artists.load()
+        } else {
+            await self.artists.search(query: query)
+        }
+    }
+
+    private func loadSmartFolder(_ fetch: (TrackRepository) async throws -> [Track]) async {
+        let trackRepo = TrackRepository(database: database)
+        let result = await (try? fetch(trackRepo)) ?? []
+        self.tracks.setTracks(result)
     }
 }

@@ -124,6 +124,7 @@ public final class LibraryViewModel: ObservableObject {
         switch destination {
         case .album, .artist:
             self.searchQuery = ""
+
         default:
             break
         }
@@ -142,7 +143,7 @@ public final class LibraryViewModel: ObservableObject {
         }
         // Build the full context list.  Fall back to just this track if context is empty.
         let contextTracks = self.tracks.tracks.isEmpty ? [track] : self.tracks.tracks
-        let startIndex = contextTracks.firstIndex(where: { $0.id == track.id }) ?? 0
+        let startIndex = contextTracks.firstIndex { $0.id == track.id } ?? 0
         if let qp = engine as? QueuePlayer {
             do {
                 // Build items in-memory from the already-loaded Track objects and
