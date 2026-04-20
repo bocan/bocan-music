@@ -100,6 +100,13 @@ public final class LibraryViewModel: ObservableObject {
                 guard let self else { return }
                 Task { await self.loadCurrentDestination() }
             }
+
+        // Wire the NowPlayingStrip play button to start from the library when the
+        // queue is empty.
+        self.nowPlaying.onPlayFromEmptyQueue = { [weak self] in
+            guard let self else { return }
+            Task { await self.playCurrentLibrary() }
+        }
     }
 
     // MARK: - Public API
@@ -162,6 +169,14 @@ public final class LibraryViewModel: ObservableObject {
             self.log.error("library.playAll.failed", ["error": String(reflecting: error)])
             self.playbackErrorMessage = "Could not play tracks. Try re-scanning your library."
         }
+    }
+
+    /// Starts playing all tracks in the current Songs view from the beginning,
+    /// honouring the current sort order.  Called when the play button is pressed
+    /// with an empty queue (nothing ever loaded, or queue exhausted).
+    public func playCurrentLibrary() async {
+        guard !self.tracks.tracks.isEmpty else { return }
+        await self.play(tracks: self.tracks.tracks, startingAt: 0)
     }
 
     /// Inserts `tracks` to play immediately after the current item.

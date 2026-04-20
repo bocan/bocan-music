@@ -28,6 +28,12 @@ public final class NowPlayingViewModel: ObservableObject {
     @Published public private(set) var repeatMode: RepeatMode = .off
     @Published public private(set) var stopAfterCurrent = false
 
+    // MARK: - Callbacks
+
+    /// Called when play is pressed but the queue is empty and nothing is loaded.
+    /// Set by `LibraryViewModel` to start playing the current library view.
+    public var onPlayFromEmptyQueue: (@MainActor () -> Void)?
+
     // MARK: - Internal
 
     private let engine: any Transport
@@ -70,7 +76,18 @@ public final class NowPlayingViewModel: ObservableObject {
             if self.isPlaying {
                 await self.engine.pause()
             } else {
-                try await self.engine.play()
+                // Check whether the queue has anything to play.
+                // If the queue is empty we hand off to the library callback so
+                // it can start the current browse view from the beginning.
+                var queueHasItems = true
+                if let qp = engine as? QueuePlayer {
+                    queueHasItems = await qp.queue.items.isEmpty == false
+                }
+                if queueHasItems {
+                    try await self.engine.play()
+                } else {
+                    self.onPlayFromEmptyQueue?()
+                }
             }
         } catch {
             self.log.error("transport.playPause.failed", ["error": String(reflecting: error)])

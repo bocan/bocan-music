@@ -129,6 +129,13 @@ public actor QueuePlayer: Transport {
     }
 
     public func play() async throws {
+        // If the engine hasn't loaded anything yet (idle or stopped state), try to
+        // load the current queue item first so the play button always does something.
+        if self.lastEmittedState == .idle || self.lastEmittedState == .stopped {
+            if await (self.queue.currentItem) != nil {
+                try await self.loadCurrentItem()
+            }
+        }
         try await self.engine.play()
         await self.nowPlayingCentre?.setPlaying(true)
     }
@@ -282,30 +289,56 @@ public actor QueuePlayer: Transport {
     }
 
     private func loadAndPlay(item: QueueItem, autoPlay: Bool = true) async throws {
-        // Resolve a playable URL, preferring the per-file bookmark but falling
-        // back to the root folder's security scope when the per-file bookmark is
-        // absent or was created without the withSecurityScope option (old records).
+        // Resolve a playable URL.
+        //
+        // Priority order:
+        //  1. Per-file security-scoped bookmark (stored at scan time).
+        //  2. Root-folder security-scoped bookmark (covers all files under the root).
+        //
+        // We go directly to the root scope when the per-file bookmark is absent (nil)
+        // because the raw file:// URL is inaccessible in the sandbox without a scope.
         var resolvedFromPerFileBookmark = false
         var scopedRootURL: URL? = nil
         let url: URL
-        do {
-            url = try item.resolvedURL()
-            resolvedFromPerFileBookmark = true
-        } catch {
-            self.log.warning(
-                "queueplayer.url.bookmark_failed",
-                ["trackID": item.trackID, "error": String(reflecting: error)]
-            )
-            // Fall back to the library root bookmark that covers this file.
+
+        if item.bookmark != nil {
+            // Attempt per-file bookmark first.
+            do {
+                url = try item.resolvedURL()
+                resolvedFromPerFileBookmark = true
+            } catch {
+                self.log.warning(
+                    "queueplayer.url.bookmark_failed",
+                    ["trackID": item.trackID, "error": String(reflecting: error)]
+                )
+                // Per-file bookmark stale/invalid — fall back to root scope.
+                guard let rawURL = URL(string: item.fileURL) else {
+                    self.log.error("queueplayer.url.bad_file_url", ["trackID": item.trackID, "url": item.fileURL])
+                    throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                }
+                guard let rootURL = try await self.startRootScope(for: item.fileURL) else {
+                    self.log.error("queueplayer.url.no_root", ["trackID": item.trackID])
+                    throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                }
+                scopedRootURL = rootURL
+                url = rawURL
+            }
+        } else {
+            // No per-file bookmark — use root scope directly to stay within sandbox.
+            self.log.debug("queueplayer.url.no_per_file_bookmark", ["trackID": item.trackID])
             guard let rawURL = URL(string: item.fileURL) else {
                 self.log.error("queueplayer.url.bad_file_url", ["trackID": item.trackID, "url": item.fileURL])
-                throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                throw PlaybackError.bookmarkResolutionFailed(
+                    trackID: item.trackID,
+                    underlying: URLError(.badURL)
+                )
             }
-            guard let rootURL = try await self.startRootScope(for: item.fileURL) else {
-                self.log.error("queueplayer.url.no_root", ["trackID": item.trackID])
-                throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+            if let rootURL = try await self.startRootScope(for: item.fileURL) {
+                scopedRootURL = rootURL
+            } else {
+                // No root scope found — attempt raw URL anyway (works outside sandbox).
+                self.log.warning("queueplayer.url.no_root_scope", ["trackID": item.trackID])
             }
-            scopedRootURL = rootURL
             url = rawURL
         }
 
