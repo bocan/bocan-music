@@ -177,8 +177,12 @@ public actor QueuePlayer: Transport {
     public func play(trackIDs: [Int64], startingAt index: Int = 0) async throws {
         let items = try await buildItems(for: trackIDs)
         await queue.replace(with: items, startAt: index)
+        // Load then play directly — do NOT call self.play() here because that method
+        // contains an extra loadCurrentItem() guard for the "press Play on idle engine"
+        // path, which would cause a redundant double-load of the same URL.
         try await self.loadCurrentItem()
-        try await self.play()
+        try await self.engine.play()
+        await self.nowPlayingCentre?.setPlaying(true)
     }
 
     /// Insert `trackIDs` immediately after the current item.

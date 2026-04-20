@@ -29,6 +29,9 @@ public final class NowPlayingViewModel: ObservableObject {
     @Published public private(set) var stopAfterCurrent = false
     /// The database ID of the track currently loaded into the engine, or `nil`.
     @Published public private(set) var nowPlayingTrackID: Int64?
+    /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
+    /// Used by `playPause()` to decide whether to resume or reload the library.
+    @Published public private(set) var isPaused = false
 
     // MARK: - Callbacks
 
@@ -78,19 +81,14 @@ public final class NowPlayingViewModel: ObservableObject {
         do {
             if self.isPlaying {
                 await self.engine.pause()
+            } else if self.isPaused {
+                // Resume a song that was explicitly paused mid-playback.
+                try await self.engine.play()
             } else {
-                // Check whether the queue has anything to play.
-                // If the queue is empty we hand off to the library callback so
-                // it can start the current browse view from the beginning.
-                var queueHasItems = true
-                if let qp = engine as? QueuePlayer {
-                    queueHasItems = await qp.queue.items.isEmpty == false
-                }
-                if queueHasItems {
-                    try await self.engine.play()
-                } else {
-                    self.onPlayFromEmptyQueue?()
-                }
+                // Nothing is playing and nothing was paused — hand off to the
+                // library callback so it queues the full current browse view.
+                // This covers: first launch, queue exhausted, stale persisted queue.
+                self.onPlayFromEmptyQueue?()
             }
         } catch {
             self.log.error("transport.playPause.failed", ["error": String(reflecting: error)])
@@ -191,10 +189,17 @@ public final class NowPlayingViewModel: ObservableObject {
                 switch state {
                 case .playing:
                     self.isPlaying = true
+                    self.isPaused = false
                     self.startPollingPosition()
 
-                case .paused, .stopped, .idle, .ended:
+                case .paused:
                     self.isPlaying = false
+                    self.isPaused = true
+                    self.stopPollingPosition()
+
+                case .stopped, .idle, .ended:
+                    self.isPlaying = false
+                    self.isPaused = false
                     self.stopPollingPosition()
                     if state == .ended { self.position = 0 }
 
