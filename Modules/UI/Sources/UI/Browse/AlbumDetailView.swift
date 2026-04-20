@@ -97,28 +97,29 @@ public struct AlbumDetailView: View {
         .background(Color.bgSecondary)
     }
 
-    @ViewBuilder
     private var artworkView: some View {
-        if let img = artwork {
-            Image(nsImage: img)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 140, height: 140)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
-                .shadow(radius: 8, y: 4)
-                .accessibilityLabel("\(self.album?.title ?? "Album") artwork")
-        } else if let path = album?.coverArtPath {
-            Artwork(artPath: path, seed: Int(self.albumID), size: 140)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
-                .shadow(radius: 8, y: 4)
-                .accessibilityLabel("\(self.album?.title ?? "Album") artwork")
-        } else {
-            GradientPlaceholder(seed: Int(self.albumID))
-                .frame(width: 140, height: 140)
-                .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
-                .shadow(radius: 8, y: 4)
-                .accessibilityLabel("\(self.album?.title ?? "Album") artwork placeholder")
+        Group {
+            if let img = artwork {
+                // Base colour drives layout; the image is an overlay so a
+                // non-square source can't stretch the 180×180 frame.
+                Color.bgTertiary
+                    .overlay {
+                        Image(nsImage: img)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .accessibilityLabel("\(self.album?.title ?? "Album") artwork")
+            } else if let path = album?.coverArtPath {
+                Artwork(artPath: path, seed: Int(self.albumID), size: 180)
+                    .accessibilityLabel("\(self.album?.title ?? "Album") artwork")
+            } else {
+                GradientPlaceholder(seed: Int(self.albumID))
+                    .accessibilityLabel("\(self.album?.title ?? "Album") artwork placeholder")
+            }
         }
+        .frame(width: 180, height: 180)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius * 2, style: .continuous))
+        .shadow(radius: 8, y: 4)
     }
 
     // MARK: - Data loading
