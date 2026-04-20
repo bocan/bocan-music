@@ -41,6 +41,21 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.update", ["id": id])
     }
 
+    /// Links an album row to a cover-art `hash` and its on-disk `path`.
+    ///
+    /// Uses a direct `UPDATE` (rather than the record-level `update`) so a
+    /// single failing column doesn't block the write, and so it's obvious at
+    /// the SQL layer what's being changed.
+    public func setCoverArt(albumID: Int64, hash: String, path: String) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE albums SET cover_art_hash = ?, cover_art_path = ? WHERE id = ?",
+                arguments: [hash, path, albumID]
+            )
+        }
+        self.log.debug("album.cover_art", ["id": albumID, "hash": hash])
+    }
+
     /// Toggles the `force_gapless` flag for an album.
     public func setForceGapless(albumID: Int64, forced: Bool) async throws {
         try await self.database.write { db in

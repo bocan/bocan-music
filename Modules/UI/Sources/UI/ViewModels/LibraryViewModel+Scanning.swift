@@ -244,4 +244,16 @@ public extension LibraryViewModel {
             self.log.error("library.setAlbumExcludedFromShuffle.failed", ["albumID": albumID, "error": String(reflecting: error)])
         }
     }
+
+    /// Toggles the `excluded_from_shuffle` flag for a single track.
+    func setTrackExcludedFromShuffle(trackID: Int64, excluded: Bool) async {
+        let trackRepo = TrackRepository(database: self.database)
+        do {
+            try await trackRepo.setExcludedFromShuffle(trackID: trackID, excluded: excluded)
+            await self.tracks.load()
+            self.log.debug("library.setTrackExcludedFromShuffle", ["trackID": trackID, "excluded": excluded])
+        } catch {
+            self.log.error("library.setTrackExcludedFromShuffle.failed", ["trackID": trackID, "error": String(reflecting: error)])
+        }
+    }
 }
