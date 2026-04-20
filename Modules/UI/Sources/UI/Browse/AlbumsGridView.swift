@@ -28,7 +28,7 @@ private struct AlbumCell: View {
 
             // Year
             if let year = album.year {
-                Text("\(year)")
+                Text(verbatim: String(year))
                     .font(Typography.caption)
                     .foregroundStyle(Color.textSecondary)
             }
