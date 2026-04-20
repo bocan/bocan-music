@@ -8,16 +8,20 @@ import SwiftUI
 /// view.  Search results bypass the normal routing when a query is active.
 public struct ContentPane: View {
     @ObservedObject public var vm: LibraryViewModel
+    /// Observed separately so the search-active branch reacts to query changes
+    /// without depending on LibraryViewModel firing objectWillChange.
+    @ObservedObject private var search: SearchViewModel
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
+        self.search = vm.search
     }
 
     public var body: some View {
         Group {
             // If there is an active search query, show search results
-            if !self.vm.search.query.isEmpty {
-                SearchResultsView(vm: self.vm.search, library: self.vm)
+            if !self.search.query.isEmpty {
+                SearchResultsView(vm: self.search, library: self.vm)
             } else {
                 self.destinationContent
             }

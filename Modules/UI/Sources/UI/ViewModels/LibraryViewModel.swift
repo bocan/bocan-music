@@ -105,6 +105,10 @@ public final class LibraryViewModel: ObservableObject {
 
     /// Responds to a sidebar selection change.
     public func selectDestination(_ destination: SidebarDestination) async {
+        // Clear an active search whenever the user navigates to a real destination.
+        if case .search = destination {} else {
+            self.search.clear()
+        }
         self.selectedDestination = destination
         await self.loadDestination(destination)
     }
