@@ -165,6 +165,24 @@ public actor PlaybackQueue {
         self.log.debug("queue.replace", ["count": newItems.count, "startAt": index])
     }
 
+    /// Reorder the queue to match `newItems` while keeping the currently-playing
+    /// track at the correct position.  If the current track isn't in the new list,
+    /// currentIndex is set to 0.  Does nothing if the queue is empty.
+    public func reorder(to newItems: [QueueItem]) {
+        guard !newItems.isEmpty else { return }
+        let currentTrackID = self.currentItem?.trackID
+        self.items = newItems
+        self.sourceOrder = newItems
+        if let trackID = currentTrackID,
+           let idx = newItems.firstIndex(where: { $0.trackID == trackID }) {
+            self.currentIndex = idx
+        } else {
+            self.currentIndex = 0
+        }
+        self.emit(.reset(items: self.items, currentIndex: self.currentIndex))
+        self.log.debug("queue.reorder", ["count": newItems.count])
+    }
+
     // MARK: - Navigation
 
     /// Move the current position to `index` without replacing items.

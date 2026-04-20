@@ -232,10 +232,14 @@ public final class TracksViewModel: ObservableObject {
                 return self.compare(lhs.title, rhs.title, ascending: asc)
 
             case .album:
-                return self.compare(lhs.albumID, rhs.albumID, ascending: asc)
+                let lName = lhs.albumID.flatMap { self.albumNames[$0] }
+                let rName = rhs.albumID.flatMap { self.albumNames[$0] }
+                return self.compare(lName, rName, ascending: asc)
 
             case .artist:
-                return self.compare(lhs.artistID, rhs.artistID, ascending: asc)
+                let lName = lhs.artistID.flatMap { self.artistNames[$0] }
+                let rName = rhs.artistID.flatMap { self.artistNames[$0] }
+                return self.compare(lName, rName, ascending: asc)
 
             case .year:
                 return self.compare(lhs.year, rhs.year, ascending: asc)
