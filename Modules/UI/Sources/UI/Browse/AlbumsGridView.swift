@@ -12,16 +12,21 @@ private struct AlbumCell: View {
     var body: some View {
         let displayArtist = self.artistName ?? "Various Artists"
         VStack(alignment: .leading, spacing: 4) {
-            // Artwork
-            if let path = album.coverArtPath {
-                Artwork(artPath: path, seed: Int(self.album.id ?? 0), size: Theme.albumGridMinWidth)
-                    .accessibilityLabel("\(self.album.title) artwork")
-            } else {
-                GradientPlaceholder(seed: Int(self.album.id ?? 0))
-                    .frame(width: Theme.albumGridMinWidth, height: Theme.albumGridMinWidth)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                    .accessibilityLabel("\(self.album.title) artwork placeholder")
+            // Artwork — always a 1:1 square that fills the grid cell's width.
+            // `Artwork` self-applies an aspect-ratio constraint so the loaded
+            // image and the gradient placeholder lay out identically.
+            Group {
+                if let path = album.coverArtPath {
+                    Artwork(artPath: path, seed: Int(self.album.id ?? 0), size: Theme.albumGridMinWidth)
+                        .accessibilityLabel("\(self.album.title) artwork")
+                } else {
+                    GradientPlaceholder(seed: Int(self.album.id ?? 0))
+                        .aspectRatio(1, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                        .accessibilityLabel("\(self.album.title) artwork placeholder")
+                }
             }
+            .frame(maxWidth: .infinity)
 
             // Title
             Text(self.album.title)
@@ -46,7 +51,7 @@ private struct AlbumCell: View {
                     .lineLimit(1)
             }
         }
-        .frame(width: Theme.albumGridMinWidth)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(self.album.title), \(displayArtist)")
     }

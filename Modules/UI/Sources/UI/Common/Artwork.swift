@@ -68,29 +68,38 @@ public struct Artwork: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public var body: some View {
-        ZStack {
-            if let image = loadedImage {
-                Image(nsImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .opacity(self.isLoaded ? 1 : 0)
-                    .animation(self.reduceMotion ? .none : Theme.animationNormal, value: self.isLoaded)
-            } else {
+        // Layout is driven by a fixed-aspect base shape; the image and the
+        // placeholder sit in overlays so the container's size is not affected
+        // by the image's native aspect ratio (some embedded covers are far
+        // from square).  `.clipped()` keeps the fill-scaled image from
+        // leaking into adjacent views.
+        Color.bgTertiary
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
                 GradientPlaceholder(seed: self.seed)
+                    .opacity(self.loadedImage == nil ? 1 : 0)
             }
-        }
-        .clipShape(
-            RoundedRectangle(cornerRadius: self.size > 60 ? Theme.cornerRadiusMedium : Theme.cornerRadiusSmall)
-        )
-        .task(id: self.artPath) {
-            self.isLoaded = false
-            self.loadedImage = nil
-            guard let path = artPath else { return }
-            let img = await ArtworkLoader.shared.image(at: path)
-            guard !Task.isCancelled else { return }
-            self.loadedImage = img
-            self.isLoaded = img != nil
-        }
+            .overlay {
+                if let image = loadedImage {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .opacity(self.isLoaded ? 1 : 0)
+                        .animation(self.reduceMotion ? .none : Theme.animationNormal, value: self.isLoaded)
+                }
+            }
+            .clipShape(
+                RoundedRectangle(cornerRadius: self.size > 60 ? Theme.cornerRadiusMedium : Theme.cornerRadiusSmall)
+            )
+            .task(id: self.artPath) {
+                self.isLoaded = false
+                self.loadedImage = nil
+                guard let path = artPath else { return }
+                let img = await ArtworkLoader.shared.image(at: path)
+                guard !Task.isCancelled else { return }
+                self.loadedImage = img
+                self.isLoaded = img != nil
+            }
     }
 }
 
