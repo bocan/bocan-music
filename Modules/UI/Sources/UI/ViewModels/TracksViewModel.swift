@@ -57,27 +57,33 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
 
 // MARK: - TracksViewModel
 
-/// Bundled artist/album name lookups passed into the sort routine.
-struct NameLookups {
-    let artists: [Int64: String]
-    let albums: [Int64: String]
-}
-
 /// Manages the sorted, filtered list of tracks shown in `TracksView`.
 ///
 /// Owned by `LibraryViewModel` and injected into `TracksView` as an
 /// `@ObservedObject`.  All mutation happens on `@MainActor`.
+///
+/// ## Sorting
+///
+/// Sort state is a single source of truth: `sortOrder`, an array of
+/// `KeyPathComparator<TrackRow>` bound directly to `Table(sortOrder:)`.
+/// When it changes — whether by a column-header click or programmatic
+/// `setSort(column:ascending:)` — `rows` is resorted in place.  Nothing
+/// else re-sorts the array behind the Table's back.
 @MainActor
 public final class TracksViewModel: ObservableObject {
     // MARK: - Published state
 
-    @Published public private(set) var tracks: [Track] = []
+    /// Decorated, already-sorted rows rendered by `Table`.
+    @Published public private(set) var rows: [TrackRow] = []
     @Published public private(set) var isLoading = false
     @Published public var selection: Set<Track.ID> = []
 
-    /// Active sort: column + ascending flag.
-    @Published public var sortColumn: TrackSortColumn = .addedAt
-    @Published public var sortAscending = false
+    /// Full stack of active comparators.  Owned by `TracksView` as
+    /// `@State` and pushed in via `applySort(_:)` — keeping the Table's
+    /// binding writes out of `@Published` is what prevents the
+    /// SwiftUI-reentrant update cycle that otherwise runs CPU to 100%
+    /// and allocates ~1 GB every few seconds.
+    public private(set) var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
     /// Free-text filter (operates client-side for in-memory arrays).
     @Published public var filterText = ""
@@ -88,12 +94,48 @@ public final class TracksViewModel: ObservableObject {
     /// Maps `albumID → album title` for column display.  Refreshed on every load.
     @Published public private(set) var albumNames: [Int64: String] = [:]
 
+    // MARK: - Computed back-compat accessors
+
+    /// The raw tracks, in their current display order.  Preserved for
+    /// call sites (playback, context menus, tests) that don't need the
+    /// decorated row values.
+    public var tracks: [Track] {
+        self.rows.map(\.track)
+    }
+
+    /// The primary sort column, derived from `sortOrder.first`.  Used
+    /// by `LibraryViewModel` when serialising `UIStateV1`.
+    public var sortColumn: TrackSortColumn {
+        guard let first = sortOrder.first else { return .addedAt }
+        return Self.column(for: first) ?? .addedAt
+    }
+
+    /// `true` when the primary comparator sorts ascending.
+    public var sortAscending: Bool {
+        self.sortOrder.first?.order == .forward
+    }
+
+    /// `true` while the default sort (Date Added, descending) is active.
+    /// The toolbar uses this to dim the "Reset Sort" affordance.
+    public var isDefaultSortOrder: Bool {
+        self.sortOrder == Self.defaultSortOrder
+    }
+
+    // MARK: - Default sort
+
+    /// Default sort: most-recently added first.  Matches the order rows
+    /// naturally arrive in from `TrackRepository.fetchAll()` and so
+    /// serves as a sensible "revert to library order" option.
+    public static let defaultSortOrder: [KeyPathComparator<TrackRow>] = [
+        KeyPathComparator(\TrackRow.addedAt, order: .reverse),
+    ]
+
     // MARK: - Internal
 
     private let repository: TrackRepository
     private let artistRepository: ArtistRepository
     private let albumRepository: AlbumRepository
-    private var allTracks: [Track] = []
+    private var allRows: [TrackRow] = []
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -115,10 +157,11 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = true
         self.log.debug("tracks.load.start", [:])
         do {
-            self.allTracks = try await self.repository.fetchAll()
+            let fetched = try await self.repository.fetchAll()
             await self.refreshNameLookups()
+            self.rebuildAllRows(from: fetched)
             self.applyFilter()
-            self.log.debug("tracks.load.end", ["count": self.allTracks.count])
+            self.log.debug("tracks.load.end", ["count": fetched.count])
         } catch {
             self.log.error("tracks.load.failed", ["error": String(reflecting: error)])
         }
@@ -129,8 +172,9 @@ public final class TracksViewModel: ObservableObject {
     public func load(albumID: Int64) async {
         self.isLoading = true
         do {
-            self.allTracks = try await self.repository.fetchAll(albumID: albumID)
+            let fetched = try await self.repository.fetchAll(albumID: albumID)
             await self.refreshNameLookups()
+            self.rebuildAllRows(from: fetched)
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(albumID).failed", ["error": String(reflecting: error)])
@@ -142,8 +186,9 @@ public final class TracksViewModel: ObservableObject {
     public func load(artistID: Int64) async {
         self.isLoading = true
         do {
-            self.allTracks = try await self.repository.fetchAll(artistID: artistID)
+            let fetched = try await self.repository.fetchAll(artistID: artistID)
             await self.refreshNameLookups()
+            self.rebuildAllRows(from: fetched)
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(artistID).failed", ["error": String(reflecting: error)])
@@ -155,8 +200,9 @@ public final class TracksViewModel: ObservableObject {
     public func load(genre: String) async {
         self.isLoading = true
         do {
-            self.allTracks = try await self.repository.fetchAll(genre: genre)
+            let fetched = try await self.repository.fetchAll(genre: genre)
             await self.refreshNameLookups()
+            self.rebuildAllRows(from: fetched)
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(genre).failed", ["error": String(reflecting: error)])
@@ -168,8 +214,9 @@ public final class TracksViewModel: ObservableObject {
     public func load(composer: String) async {
         self.isLoading = true
         do {
-            self.allTracks = try await self.repository.fetchAll(composer: composer)
+            let fetched = try await self.repository.fetchAll(composer: composer)
             await self.refreshNameLookups()
+            self.rebuildAllRows(from: fetched)
             self.applyFilter()
         } catch {
             self.log.error("tracks.load(composer).failed", ["error": String(reflecting: error)])
@@ -179,7 +226,7 @@ public final class TracksViewModel: ObservableObject {
 
     /// Sets a pre-fetched track list directly (used by smart folders / search results).
     public func setTracks(_ items: [Track]) {
-        self.allTracks = items
+        self.rebuildAllRows(from: items)
         self.applyFilter()
     }
 
@@ -196,14 +243,28 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = false
     }
 
-    /// Updates the sort and re-sorts the visible array.
+    /// Programmatic shim that maps a `(column, ascending)` pair onto
+    /// `sortOrder`.  Kept so persisted `UIStateV1` values restore cleanly
+    /// and the existing view-model tests remain green.
     public func setSort(column: TrackSortColumn, ascending: Bool) {
-        // Skip redundant work to avoid thrashing @Published subscribers
-        // when callers re-apply the existing sort state.
-        guard column != self.sortColumn || ascending != self.sortAscending else { return }
-        self.sortColumn = column
-        self.sortAscending = ascending
-        self.applyFilter()
+        let order: SortOrder = ascending ? .forward : .reverse
+        self.applySort([Self.comparator(for: column, order: order)])
+    }
+
+    /// Reverts to the default (Date Added, descending) sort order.
+    public func resetSort() {
+        self.applySort(Self.defaultSortOrder)
+    }
+
+    /// Called by `TracksView` whenever the Table's `@State sortOrder`
+    /// changes.  Deduplicates identical writes and resorts `rows` in
+    /// place.  `objectWillChange` only fires for the `rows` reassignment,
+    /// never for `sortOrder` — so Table's per-frame binding writes
+    /// cannot trigger a SwiftUI update cycle.
+    public func applySort(_ order: [KeyPathComparator<TrackRow>]) {
+        guard order != self.sortOrder else { return }
+        self.sortOrder = order
+        self.rows.sort(using: order)
     }
 
     // MARK: - Private
@@ -223,102 +284,87 @@ public final class TracksViewModel: ObservableObject {
         )
     }
 
+    /// Rebuilds the unfiltered `allRows` backing array from `source`
+    /// using the current artist/album name lookups.
+    private func rebuildAllRows(from source: [Track]) {
+        let artists = self.artistNames
+        let albums = self.albumNames
+        self.allRows = source.map { track in
+            TrackRow(
+                track: track,
+                artistName: track.artistID.flatMap { artists[$0] },
+                albumName: track.albumID.flatMap { albums[$0] }
+            )
+        }
+    }
+
     private func applyFilter() {
-        self.tracks = Self.sortedAndFiltered(
-            self.allTracks,
-            filter: self.filterText,
-            column: self.sortColumn,
-            ascending: self.sortAscending,
-            names: NameLookups(artists: self.artistNames, albums: self.albumNames)
-        )
+        var result = self.allRows
+        if !self.filterText.isEmpty {
+            let lowered = self.filterText.lowercased()
+            result = result.filter { $0.title.lowercased().contains(lowered) }
+        }
+        result.sort(using: self.sortOrder)
+        self.rows = result
     }
 
-    /// Pure, Sendable sort-and-filter.  Safe to call from a detached task.
-    nonisolated static func sortedAndFiltered(
-        _ source: [Track],
-        filter: String,
-        column: TrackSortColumn,
-        ascending: Bool,
-        names: NameLookups
-    ) -> [Track] {
-        let artistNames = names.artists
-        let albumNames = names.albums
-        var result = source
-        if !filter.isEmpty {
-            let lowered = filter.lowercased()
-            result = result.filter { ($0.title ?? "").lowercased().contains(lowered) }
-        }
+    // MARK: - Sort column mapping
 
-        result.sort { lhs, rhs in
-            switch column {
-            case .title:
-                Self.compare(lhs.title, rhs.title, ascending: ascending)
+    /// Builds the `KeyPathComparator` that matches a persisted
+    /// `(column, order)` pair.  Strings use `.localizedStandard` so
+    /// "Allman Brothers" sorts before "älfheim" the way users expect.
+    private static func comparator(
+        for column: TrackSortColumn,
+        order: SortOrder
+    ) -> KeyPathComparator<TrackRow> {
+        switch column {
+        case .title:
+            KeyPathComparator(\TrackRow.title, comparator: .localizedStandard, order: order)
 
-            case .album:
-                Self.compare(
-                    lhs.albumID.flatMap { albumNames[$0] },
-                    rhs.albumID.flatMap { albumNames[$0] },
-                    ascending: ascending
-                )
+        case .artist:
+            KeyPathComparator(\TrackRow.artistName, comparator: .localizedStandard, order: order)
 
-            case .artist:
-                Self.compare(
-                    lhs.artistID.flatMap { artistNames[$0] },
-                    rhs.artistID.flatMap { artistNames[$0] },
-                    ascending: ascending
-                )
+        case .album:
+            KeyPathComparator(\TrackRow.albumName, comparator: .localizedStandard, order: order)
 
-            case .year:
-                Self.compare(lhs.year, rhs.year, ascending: ascending)
+        case .genre:
+            KeyPathComparator(\TrackRow.genre, comparator: .localizedStandard, order: order)
 
-            case .genre:
-                Self.compare(lhs.genre, rhs.genre, ascending: ascending)
+        case .year:
+            KeyPathComparator(\TrackRow.year, order: order)
 
-            case .duration:
-                ascending ? lhs.duration < rhs.duration : lhs.duration > rhs.duration
+        case .duration:
+            KeyPathComparator(\TrackRow.duration, order: order)
 
-            case .playCount:
-                ascending ? lhs.playCount < rhs.playCount : lhs.playCount > rhs.playCount
+        case .playCount:
+            KeyPathComparator(\TrackRow.playCount, order: order)
 
-            case .rating:
-                ascending ? lhs.rating < rhs.rating : lhs.rating > rhs.rating
+        case .rating:
+            KeyPathComparator(\TrackRow.rating, order: order)
 
-            case .addedAt:
-                ascending ? lhs.addedAt < rhs.addedAt : lhs.addedAt > rhs.addedAt
+        case .addedAt:
+            KeyPathComparator(\TrackRow.addedAt, order: order)
 
-            case .trackNumber:
-                Self.compare(lhs.trackNumber, rhs.trackNumber, ascending: ascending)
-            }
-        }
-
-        return result
-    }
-
-    // MARK: - Sort helpers
-
-    private nonisolated static func compare<T: Comparable>(_ lhs: T?, _ rhs: T?, ascending: Bool) -> Bool {
-        switch (lhs, rhs) {
-        case let (lhs?, rhs?):
-            ascending ? lhs < rhs : lhs > rhs
-
-        case (.some, .none):
-            ascending
-
-        case (.none, .some):
-            !ascending
-
-        case (.none, .none):
-            false
+        case .trackNumber:
+            KeyPathComparator(\TrackRow.trackNumber, order: order)
         }
     }
 
-    private nonisolated static func compare(_ lhs: String?, _ rhs: String?, ascending: Bool) -> Bool {
-        // Use default String `<` (not localized).  This is ~10x faster than
-        // localizedCaseInsensitiveCompare, matches the comparator SwiftUI's
-        // KeyPathComparator uses on String keypaths, and keeps the sort
-        // strictly on the main thread without race-prone async indirection.
-        let lhs = lhs ?? ""
-        let rhs = rhs ?? ""
-        return ascending ? lhs < rhs : lhs > rhs
+    /// Reverse of `comparator(for:order:)` — recovers the persisted
+    /// column identifier from a live comparator so `LibraryViewModel`
+    /// can serialise `UIStateV1` without a parallel source of truth.
+    private static func column(for comparator: KeyPathComparator<TrackRow>) -> TrackSortColumn? {
+        let keyPath = comparator.keyPath
+        if keyPath == \TrackRow.title { return .title }
+        if keyPath == \TrackRow.artistName { return .artist }
+        if keyPath == \TrackRow.albumName { return .album }
+        if keyPath == \TrackRow.genre { return .genre }
+        if keyPath == \TrackRow.year { return .year }
+        if keyPath == \TrackRow.duration { return .duration }
+        if keyPath == \TrackRow.playCount { return .playCount }
+        if keyPath == \TrackRow.rating { return .rating }
+        if keyPath == \TrackRow.addedAt { return .addedAt }
+        if keyPath == \TrackRow.trackNumber { return .trackNumber }
+        return nil
     }
 }

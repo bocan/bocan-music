@@ -3,31 +3,51 @@ import SwiftUI
 
 // MARK: - TracksView
 
-/// Full-width table of tracks with sortable, reorderable, persistable columns.
+/// Full-width table of tracks.
 ///
 /// - Selection is a `Set<Track.ID>` (multi-select with shift-range, ⌘-toggle).
 /// - Double-click or `Return` triggers the play action.
 /// - `Space` toggles play/pause via the now-playing strip.
 /// - Right-click opens the standard context menu.
+///
+/// Column-header sorting is only enabled when `sortable == true`.
+/// With tens of thousands of rows, sorting via header click is an
+/// expensive operation that also fights SwiftUI's update cycle, so the
+/// full-library "Songs" view disables it and relies on load-time
+/// ordering instead.  Filtered contexts (album, artist, genre,
+/// composer, smart folder, active search) are small enough that
+/// header sort is both useful and performant.
 public struct TracksView: View {
     @ObservedObject public var vm: TracksViewModel
     public var library: LibraryViewModel
     public var title: String?
+    public var sortable: Bool
 
     /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
     /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
     @ObservedObject private var nowPlaying: NowPlayingViewModel
 
     /// Controls Table column visibility/order.
-    @State private var columnCustomization = TableColumnCustomization<Track>()
+    @State var columnCustomization = TableColumnCustomization<TrackRow>()
+
+    /// Local sort state.  Owned by the View (not the VM) so that
+    /// Table's per-frame binding writes never fire `objectWillChange`
+    /// on `TracksViewModel`.  Pushed into the VM via `.onChange` below.
+    @State var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
     @EnvironmentObject private var libraryEnv: LibraryViewModel
 
-    public init(vm: TracksViewModel, library: LibraryViewModel, title: String? = nil) {
+    public init(
+        vm: TracksViewModel,
+        library: LibraryViewModel,
+        title: String? = nil,
+        sortable: Bool = true
+    ) {
         self.vm = vm
         self.library = library
         self.nowPlaying = library.nowPlaying
         self.title = title
+        self.sortable = sortable
     }
 
     public var body: some View {
@@ -35,7 +55,7 @@ public struct TracksView: View {
             if self.vm.isLoading {
                 ProgressView("Loading…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.vm.tracks.isEmpty {
+            } else if self.vm.rows.isEmpty {
                 EmptyState(
                     symbol: "music.note",
                     title: "No Songs",
@@ -49,214 +69,90 @@ public struct TracksView: View {
             }
         }
         .navigationTitle(self.title ?? "Songs")
+        .toolbar {
+            if self.sortable, self.sortOrder != TracksViewModel.defaultSortOrder {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Clear Sort") {
+                        self.sortOrder = TracksViewModel.defaultSortOrder
+                    }
+                    .help("Reset to default sort order")
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                }
+            }
+        }
+        .onChange(of: self.sortOrder) { _, newOrder in
+            self.vm.applySort(newOrder)
+        }
+        .onAppear {
+            // Seed local sort state from the VM (e.g. restored UIStateV1).
+            if self.sortOrder != self.vm.sortOrder {
+                self.sortOrder = self.vm.sortOrder
+            }
+        }
     }
 
     // MARK: - Table
 
+    @ViewBuilder
     private var trackTable: some View {
-        Table(
-            self.vm.tracks,
-            selection: self.$vm.selection,
-            columnCustomization: self.$columnCustomization
-        ) {
-            TableColumn("#") { (track: Track) in
-                Text(track.trackNumber.map { "\($0)" } ?? "")
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textSecondary)
-                    .monospacedDigit()
-            }
-            .width(min: 28, ideal: 32, max: 40)
-            .customizationID("trackNumber")
-
-            TableColumn("Title") { (track: Track) in
-                Text(track.title ?? "Unknown")
-                    .font(Typography.body)
-                    .foregroundStyle(track.loved ? Color.lovedTint : Color.textPrimary)
-                    .lineLimit(1)
-            }
-            .width(min: 140, ideal: 220)
-            .customizationID("title")
-
-            TableColumn("Artist") { (track: Track) in
-                Text(track.artistID.flatMap { self.vm.artistNames[$0] } ?? "")
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textSecondary)
-                    .lineLimit(1)
-            }
-            .width(min: 100, ideal: 160)
-            .customizationID("artist")
-
-            TableColumn("Album") { (track: Track) in
-                Text(track.albumID.flatMap { self.vm.albumNames[$0] } ?? "")
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textSecondary)
-                    .lineLimit(1)
-            }
-            .width(min: 100, ideal: 160)
-            .customizationID("album")
-
-            TableColumn("Year") { (track: Track) in
-                Text(verbatim: track.year.map { String($0) } ?? "")
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textSecondary)
-            }
-            .width(min: 36, ideal: 48, max: 56)
-            .customizationID("year")
-
-            TableColumn("Genre") { (track: Track) in
-                Text(track.genre ?? "")
-                    .font(Typography.body)
-                    .foregroundStyle(Color.textSecondary)
-                    .lineLimit(1)
-            }
-            .width(min: 80, ideal: 120)
-            .customizationID("genre")
-
-            TableColumn("Time") { (track: Track) in
-                Text(Formatters.duration(track.duration))
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textSecondary)
-                    .monospacedDigit()
-            }
-            .width(min: 40, ideal: 52, max: 60)
-            .customizationID("duration")
-
-            TableColumn("Plays") { (track: Track) in
-                Text("\(track.playCount)")
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textSecondary)
-                    .monospacedDigit()
-            }
-            .width(min: 36, ideal: 48, max: 56)
-            .customizationID("playCount")
-
-            TableColumn("Rating") { (track: Track) in
-                let stars = Formatters.stars(from: track.rating)
-                Text(stars > 0 ? String(repeating: "★", count: stars) : "")
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.ratingFill)
-            }
-            .width(min: 52, ideal: 64, max: 72)
-            .customizationID("rating")
-
-            TableColumn("Date Added") { (track: Track) in
-                Text(Formatters.shortDate(epochSeconds: track.addedAt))
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textSecondary)
-            }
-            .width(min: 72, ideal: 88)
-            .customizationID("addedAt")
+        if self.sortable {
+            self.sortableTable
+        } else {
+            self.plainTable
         }
-        .contextMenu(forSelectionType: Track.ID.self) { ids in
-            self.trackContextMenu(ids: ids)
-        } primaryAction: { ids in
-            // Double-click or Return: play the first selected track.
-            if let trackID = ids.first,
-               let track = vm.tracks.first(where: { $0.id == trackID }) {
-                Task { await self.library.play(track: track) }
-            }
-        }
-        .tableStyle(.inset(alternatesRowBackgrounds: true))
-        .scrollContentBackground(.hidden)
-        .accessibilityIdentifier(A11y.TracksTable.table)
-        // Mirror the playing track into the table's native selection so the
-        // row shows the standard blue highlight — same visual the user gets
-        // when they click a row themselves.
-        .onAppear { self.syncSelectionToNowPlaying() }
-        .onChange(of: self.nowPlaying.nowPlayingTrackID) { _, _ in
-            self.syncSelectionToNowPlaying()
-        }
+    }
+
+    /// Shared context menu, selection, and appearance modifiers applied
+    /// to both the sortable and non-sortable Table variants.
+    var tableChromeModifier: TableChromeModifier {
+        TableChromeModifier(
+            vm: self.vm,
+            library: self.library,
+            nowPlaying: self.nowPlaying,
+            contextMenu: { ids in AnyView(self.trackContextMenu(ids: ids)) },
+            syncSelectionToNowPlaying: { self.syncSelectionToNowPlaying() }
+        )
     }
 
     private func syncSelectionToNowPlaying() {
         guard let id = self.nowPlaying.nowPlayingTrackID else { return }
-        guard self.vm.tracks.contains(where: { $0.id == id }) else { return }
+        guard self.vm.rows.contains(where: { $0.id == id }) else { return }
         if self.vm.selection != [id] {
             self.vm.selection = [id]
         }
     }
+}
 
-    // MARK: - Context menu
+// MARK: - TableChromeModifier
 
-    @ViewBuilder
-    private func trackContextMenu(ids: Set<Track.ID>) -> some View {
-        let selected = self.vm.tracks.filter { ids.contains($0.id) }
-        let first = selected.first
-        self.trackContextMenuQueue(first: first, selected: selected)
-        Divider()
-        self.trackContextMenuLibrary(first: first, selected: selected)
-        Divider()
-        self.trackContextMenuEdit(first: first, selected: selected)
-    }
+/// Shared selection, context-menu, and `nowPlaying` sync chrome applied
+/// to both the sortable and non-sortable `Table` variants in
+/// `TracksView`.  Kept as a single modifier so the two Table bodies
+/// stay in sync and the Swift 6 result builders can still infer
+/// column-builder generics.
+struct TableChromeModifier: ViewModifier {
+    let vm: TracksViewModel
+    let library: LibraryViewModel
+    let nowPlaying: NowPlayingViewModel
+    let contextMenu: (Set<Track.ID>) -> AnyView
+    let syncSelectionToNowPlaying: () -> Void
 
-    @ViewBuilder
-    private func trackContextMenuQueue(first: Track?, selected: [Track]) -> some View {
-        if let track = first {
-            Button("Play Now") {
-                Task { await self.library.play(track: track) }
-            }
-        }
-        Button("Play Next") {
-            Task { await self.library.playNext(tracks: selected) }
-        }
-        .disabled(selected.isEmpty)
-        Button("Add to Queue") {
-            Task { await self.library.addToQueue(tracks: selected) }
-        }
-        .disabled(selected.isEmpty)
-        Button("Add to Playlist ▸") {}.disabled(true) // TODO(phase-6)
-        if let first {
-            Divider()
-            Button(first.loved ? "Unlove" : "Love") {
-                // TODO(phase-8): persist loved state
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func trackContextMenuLibrary(first: Track?, selected: [Track]) -> some View {
-        if let first {
-            Button("Show in Finder") {
-                if let url = URL(string: first.fileURL) {
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
+    func body(content: Content) -> some View {
+        content
+            .contextMenu(forSelectionType: Track.ID.self) { ids in
+                self.contextMenu(ids)
+            } primaryAction: { ids in
+                if let trackID = ids.first,
+                   let track = vm.rows.first(where: { $0.id == trackID })?.track {
+                    Task { await self.library.play(track: track) }
                 }
             }
-            .keyboardShortcut(KeyBindings.revealInFinder)
-            Button("Re-scan File") {
-                if let id = first.id {
-                    Task { await self.library.rescanTrack(id: id) }
-                }
+            .tableStyle(.inset(alternatesRowBackgrounds: true))
+            .scrollContentBackground(.hidden)
+            .accessibilityIdentifier(A11y.TracksTable.table)
+            .onAppear { self.syncSelectionToNowPlaying() }
+            .onChange(of: self.nowPlaying.nowPlayingTrackID) { _, _ in
+                self.syncSelectionToNowPlaying()
             }
-        }
-        Button("Get Info") {
-            self.library.showInspector(tracks: selected)
-        }
-        .keyboardShortcut(KeyBindings.getInfo)
-        .disabled(selected.isEmpty)
-    }
-
-    @ViewBuilder
-    private func trackContextMenuEdit(first: Track?, selected: [Track]) -> some View {
-        Button("Remove from Library") {
-            for track in selected {
-                if let id = track.id {
-                    Task { await self.library.removeTrack(id: id) }
-                }
-            }
-        }
-        .disabled(selected.isEmpty)
-        if let first {
-            Button("Delete from Disk", role: .destructive) {
-                if let id = first.id {
-                    Task { await self.library.deleteTrackFromDisk(id: id) }
-                }
-            }
-        }
-        Divider()
-        Button("Copy") {
-            let tsv = selected.map { [$0.title ?? "", $0.genre ?? ""].joined(separator: "\t") }.joined(separator: "\n")
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(tsv, forType: .string)
-        }
     }
 }
