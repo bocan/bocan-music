@@ -90,7 +90,7 @@ private struct QueueRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: self.isCurrent ? "speaker.wave.2.fill" : "")
+            Image(systemName: "speaker.wave.2.fill")
                 .font(.system(size: 12))
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 16)
