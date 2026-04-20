@@ -33,6 +33,7 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
     public let trackNumber: Int
     public let fileFormat: String
     public let bitrate: Int
+    public let sampleRate: Int
     public let excludedFromShuffle: Bool
 
     // MARK: - Identifiable
@@ -67,6 +68,7 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.trackNumber = track.trackNumber ?? 0
         self.fileFormat = track.fileFormat.uppercased()
         self.bitrate = track.bitrate ?? 0
+        self.sampleRate = track.sampleRate ?? 0
         self.excludedFromShuffle = track.excludedFromShuffle
     }
 

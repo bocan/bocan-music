@@ -108,6 +108,13 @@ extension TracksView {
         .width(min: 64, ideal: 80, max: 96)
         .customizationID("bitrate")
 
+        TableColumn("Sample Rate", value: \TrackRow.sampleRate) { (row: TrackRow) in
+            self.sampleRateCell(row)
+        }
+        .width(min: 64, ideal: 80, max: 96)
+        .customizationID("sampleRate")
+        .defaultVisibility(.hidden)
+
         TableColumn("Shuffle Exclude", value: \TrackRow.shuffleSortKey) { (row: TrackRow) in
             self.shuffleExcludedCell(row)
         }
@@ -170,6 +177,11 @@ extension TracksView {
         TableColumn("Bitrate") { (row: TrackRow) in self.bitrateCell(row) }
             .width(min: 64, ideal: 80, max: 96)
             .customizationID("bitrate")
+
+        TableColumn("Sample Rate") { (row: TrackRow) in self.sampleRateCell(row) }
+            .width(min: 64, ideal: 80, max: 96)
+            .customizationID("sampleRate")
+            .defaultVisibility(.hidden)
 
         TableColumn("Shuffle Exclude") { (row: TrackRow) in self.shuffleExcludedCell(row) }
             .width(min: 48, ideal: 56, max: 64)
