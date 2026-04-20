@@ -32,8 +32,8 @@ public struct BocanRootView: View {
                     .safeAreaInset(edge: .top, spacing: 0) {
                         ScanBanner(vm: self.vm)
                     }
-                    .toolbar { self.toolbarItems }
             }
+            .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
 
             NowPlayingStrip(vm: self.vm.nowPlaying)
         }
@@ -86,16 +86,6 @@ public struct BocanRootView: View {
             Button("OK") { self.vm.playbackErrorMessage = nil }
         } message: {
             Text(self.vm.playbackErrorMessage ?? "")
-        }
-    }
-
-    // MARK: - Toolbar
-
-    @ToolbarContentBuilder
-    private var toolbarItems: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            SearchField(vm: self.vm.search)
-                .frame(minWidth: 180, maxWidth: 280)
         }
     }
 
