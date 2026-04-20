@@ -10,6 +10,11 @@ import SwiftUI
 public struct NowPlayingStrip: View {
     @ObservedObject public var vm: NowPlayingViewModel
 
+    /// While the user is actively dragging the scrubber, we hold the drag
+    /// fraction locally so the Slider doesn't fight the live `vm.position`
+    /// updates coming from the engine.  Seeking happens once on release.
+    @State private var scrubDragFraction: Double?
+
     public init(vm: NowPlayingViewModel) {
         self.vm = vm
     }
@@ -157,7 +162,7 @@ public struct NowPlayingStrip: View {
 
     private var scrubber: some View {
         HStack(spacing: 6) {
-            Text(Formatters.duration(self.vm.position))
+            Text(Formatters.duration(self.displayPosition))
                 .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .monospacedDigit()
@@ -165,12 +170,24 @@ public struct NowPlayingStrip: View {
 
             Slider(
                 value: Binding(
-                    get: { self.vm.duration > 0 ? self.vm.position / self.vm.duration : 0 },
+                    get: {
+                        if let drag = self.scrubDragFraction { return drag }
+                        return self.vm.duration > 0 ? self.vm.position / self.vm.duration : 0
+                    },
                     set: { fraction in
-                        Task { await self.vm.scrub(to: fraction * self.vm.duration) }
+                        // Update only the local drag value while the user is
+                        // dragging; don't spawn a seek task per mouse move.
+                        self.scrubDragFraction = fraction
                     }
                 ),
-                in: 0 ... 1
+                in: 0 ... 1,
+                onEditingChanged: { editing in
+                    if !editing, let fraction = self.scrubDragFraction {
+                        let target = fraction * self.vm.duration
+                        self.scrubDragFraction = nil
+                        Task { await self.vm.scrub(to: target) }
+                    }
+                }
             )
             .controlSize(.mini)
             .disabled(self.vm.duration == 0)
@@ -208,5 +225,17 @@ public struct NowPlayingStrip: View {
                 .foregroundStyle(Color.textTertiary)
                 .accessibilityHidden(true)
         }
+    }
+
+    // MARK: - Helpers
+
+    /// Position shown under the scrubber — live engine position normally,
+    /// but tracks the drag fraction while the user is scrubbing so the
+    /// time readout mirrors where the thumb currently sits.
+    private var displayPosition: TimeInterval {
+        if let drag = self.scrubDragFraction {
+            return drag * self.vm.duration
+        }
+        return self.vm.position
     }
 }
