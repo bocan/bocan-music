@@ -69,14 +69,15 @@ public struct TracksView: View {
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 28, ideal: 32, max: 40)
             .customizationID("trackNumber")
 
             TableColumn("Title") { (track: Track) in
-                self.titleCell(for: track)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
+                Text(track.title ?? "Unknown")
+                    .font(Typography.body)
+                    .foregroundStyle(track.loved ? Color.lovedTint : Color.textPrimary)
+                    .lineLimit(1)
             }
             .width(min: 140, ideal: 220)
             .customizationID("title")
@@ -86,7 +87,6 @@ public struct TracksView: View {
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 100, ideal: 160)
             .customizationID("artist")
@@ -96,7 +96,6 @@ public struct TracksView: View {
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 100, ideal: 160)
             .customizationID("album")
@@ -105,7 +104,6 @@ public struct TracksView: View {
                 Text(track.year.map { "\($0)" } ?? "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 36, ideal: 48, max: 56)
             .customizationID("year")
@@ -115,7 +113,6 @@ public struct TracksView: View {
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 80, ideal: 120)
             .customizationID("genre")
@@ -125,7 +122,6 @@ public struct TracksView: View {
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 40, ideal: 52, max: 60)
             .customizationID("duration")
@@ -135,7 +131,6 @@ public struct TracksView: View {
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
                     .monospacedDigit()
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 36, ideal: 48, max: 56)
             .customizationID("playCount")
@@ -145,7 +140,6 @@ public struct TracksView: View {
                 Text(stars > 0 ? String(repeating: "★", count: stars) : "")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.ratingFill)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 52, ideal: 64, max: 72)
             .customizationID("rating")
@@ -154,7 +148,6 @@ public struct TracksView: View {
                 Text(Formatters.shortDate(epochSeconds: track.addedAt))
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textSecondary)
-                    .modifier(PlayingRowTint(isPlaying: self.isPlaying(track)))
             }
             .width(min: 72, ideal: 88)
             .customizationID("addedAt")
@@ -171,22 +164,21 @@ public struct TracksView: View {
         .tableStyle(.inset(alternatesRowBackgrounds: true))
         .scrollContentBackground(.hidden)
         .accessibilityIdentifier(A11y.TracksTable.table)
+        // Mirror the playing track into the table's native selection so the
+        // row shows the standard blue highlight — same visual the user gets
+        // when they click a row themselves.
+        .onAppear { self.syncSelectionToNowPlaying() }
+        .onChange(of: self.nowPlaying.nowPlayingTrackID) { _, _ in
+            self.syncSelectionToNowPlaying()
+        }
     }
 
-    // MARK: - Cells
-
-    private func isPlaying(_ track: Track) -> Bool {
-        track.id != nil && track.id == self.nowPlaying.nowPlayingTrackID
-    }
-
-    private func titleCell(for track: Track) -> some View {
-        let playing = self.isPlaying(track)
-        return Text(track.title ?? "Unknown")
-            .font(playing ? Typography.body.weight(.semibold) : Typography.body)
-            .foregroundStyle(
-                playing ? Color.accentColor : (track.loved ? Color.lovedTint : Color.textPrimary)
-            )
-            .lineLimit(1)
+    private func syncSelectionToNowPlaying() {
+        guard let id = self.nowPlaying.nowPlayingTrackID else { return }
+        guard self.vm.tracks.contains(where: { $0.id == id }) else { return }
+        if self.vm.selection != [id] {
+            self.vm.selection = [id]
+        }
     }
 
     // MARK: - Context menu
@@ -271,20 +263,5 @@ public struct TracksView: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(tsv, forType: .string)
         }
-    }
-}
-
-// MARK: - PlayingRowTint
-
-/// Paints the accent-tinted background across a Table cell when the row is the
-/// currently playing track.  Applied to every cell in the row so the tint spans
-/// the full row width regardless of column layout.
-private struct PlayingRowTint: ViewModifier {
-    let isPlaying: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(self.isPlaying ? Color.accentColor.opacity(0.18) : Color.clear)
     }
 }
