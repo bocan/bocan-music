@@ -192,9 +192,42 @@ public final class TracksViewModel: ObservableObject {
 
     /// Updates the sort and re-sorts the visible array.
     public func setSort(column: TrackSortColumn, ascending: Bool) {
+        // Skip redundant work to avoid thrashing @Published subscribers
+        // when callers re-apply the existing sort state.
+        guard column != self.sortColumn || ascending != self.sortAscending else { return }
         self.sortColumn = column
         self.sortAscending = ascending
         self.applyFilter()
+    }
+
+    /// Async variant that performs the heavy sort off the main actor.
+    ///
+    /// Sorting 20k+ tracks with `localizedCaseInsensitiveCompare` on the
+    /// main actor can stall the UI long enough for SwiftUI's `Table` to
+    /// re-enter layout, which manifests as runaway CPU/memory when the
+    /// user clicks headers rapidly or toggles direction.
+    public func setSortAsync(column: TrackSortColumn, ascending: Bool) async {
+        guard column != self.sortColumn || ascending != self.sortAscending else { return }
+
+        let source = self.allTracks
+        let filter = self.filterText
+        let artists = self.artistNames
+        let albums = self.albumNames
+
+        let sorted = await Task.detached(priority: .userInitiated) {
+            Self.sortedAndFiltered(
+                source,
+                filter: filter,
+                column: column,
+                ascending: ascending,
+                artistNames: artists,
+                albumNames: albums
+            )
+        }.value
+
+        self.sortColumn = column
+        self.sortAscending = ascending
+        self.tracks = sorted
     }
 
     // MARK: - Private
@@ -215,61 +248,79 @@ public final class TracksViewModel: ObservableObject {
     }
 
     private func applyFilter() {
-        var result = self.allTracks
+        self.tracks = Self.sortedAndFiltered(
+            self.allTracks,
+            filter: self.filterText,
+            column: self.sortColumn,
+            ascending: self.sortAscending,
+            artistNames: self.artistNames,
+            albumNames: self.albumNames
+        )
+    }
 
-        // Client-side text filter for local display
-        if !self.filterText.isEmpty {
-            let lowercasedFilter = self.filterText.lowercased()
-            result = result.filter {
-                ($0.title ?? "").lowercased().contains(lowercasedFilter)
-            }
+    /// Pure, Sendable sort-and-filter.  Safe to call from a detached task.
+    nonisolated static func sortedAndFiltered(
+        _ source: [Track],
+        filter: String,
+        column: TrackSortColumn,
+        ascending: Bool,
+        artistNames: [Int64: String],
+        albumNames: [Int64: String]
+    ) -> [Track] {
+        var result = source
+        if !filter.isEmpty {
+            let lowered = filter.lowercased()
+            result = result.filter { ($0.title ?? "").lowercased().contains(lowered) }
         }
 
         result.sort { lhs, rhs in
-            let asc = self.sortAscending
-            switch self.sortColumn {
+            switch column {
             case .title:
-                return self.compare(lhs.title, rhs.title, ascending: asc)
+                Self.compare(lhs.title, rhs.title, ascending: ascending)
 
             case .album:
-                let lName = lhs.albumID.flatMap { self.albumNames[$0] }
-                let rName = rhs.albumID.flatMap { self.albumNames[$0] }
-                return self.compare(lName, rName, ascending: asc)
+                Self.compare(
+                    lhs.albumID.flatMap { albumNames[$0] },
+                    rhs.albumID.flatMap { albumNames[$0] },
+                    ascending: ascending
+                )
 
             case .artist:
-                let lName = lhs.artistID.flatMap { self.artistNames[$0] }
-                let rName = rhs.artistID.flatMap { self.artistNames[$0] }
-                return self.compare(lName, rName, ascending: asc)
+                Self.compare(
+                    lhs.artistID.flatMap { artistNames[$0] },
+                    rhs.artistID.flatMap { artistNames[$0] },
+                    ascending: ascending
+                )
 
             case .year:
-                return self.compare(lhs.year, rhs.year, ascending: asc)
+                Self.compare(lhs.year, rhs.year, ascending: ascending)
 
             case .genre:
-                return self.compare(lhs.genre, rhs.genre, ascending: asc)
+                Self.compare(lhs.genre, rhs.genre, ascending: ascending)
 
             case .duration:
-                return asc ? lhs.duration < rhs.duration : lhs.duration > rhs.duration
+                ascending ? lhs.duration < rhs.duration : lhs.duration > rhs.duration
 
             case .playCount:
-                return asc ? lhs.playCount < rhs.playCount : lhs.playCount > rhs.playCount
+                ascending ? lhs.playCount < rhs.playCount : lhs.playCount > rhs.playCount
 
             case .rating:
-                return asc ? lhs.rating < rhs.rating : lhs.rating > rhs.rating
+                ascending ? lhs.rating < rhs.rating : lhs.rating > rhs.rating
 
             case .addedAt:
-                return asc ? lhs.addedAt < rhs.addedAt : lhs.addedAt > rhs.addedAt
+                ascending ? lhs.addedAt < rhs.addedAt : lhs.addedAt > rhs.addedAt
 
             case .trackNumber:
-                return self.compare(lhs.trackNumber, rhs.trackNumber, ascending: asc)
+                Self.compare(lhs.trackNumber, rhs.trackNumber, ascending: ascending)
             }
         }
 
-        self.tracks = result
+        return result
     }
 
     // MARK: - Sort helpers
 
-    private func compare<T: Comparable>(_ lhs: T?, _ rhs: T?, ascending: Bool) -> Bool {
+    private nonisolated static func compare<T: Comparable>(_ lhs: T?, _ rhs: T?, ascending: Bool) -> Bool {
         switch (lhs, rhs) {
         case let (lhs?, rhs?):
             ascending ? lhs < rhs : lhs > rhs
@@ -285,7 +336,7 @@ public final class TracksViewModel: ObservableObject {
         }
     }
 
-    private func compare(_ lhs: String?, _ rhs: String?, ascending: Bool) -> Bool {
+    private nonisolated static func compare(_ lhs: String?, _ rhs: String?, ascending: Bool) -> Bool {
         let result = (lhs ?? "").localizedCaseInsensitiveCompare(rhs ?? "")
         if ascending { return result == .orderedAscending }
         return result == .orderedDescending
