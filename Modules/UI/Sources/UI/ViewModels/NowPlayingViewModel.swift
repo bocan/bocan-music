@@ -109,6 +109,7 @@ public final class NowPlayingViewModel: ObservableObject {
     /// Clamps and applies the volume to the engine.
     public func setVolume(_ newVolume: Float) async {
         self.volume = min(1, max(0, newVolume))
+        await self.engine.setVolume(self.volume)
     }
 
     /// Skips to the previous track (no-op if engine is not a QueuePlayer).

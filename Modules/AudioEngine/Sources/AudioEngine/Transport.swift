@@ -31,4 +31,7 @@ public protocol Transport: Sendable {
     /// Seek to an approximate time within the loaded file.
     /// Throws `AudioEngineError.seekOutOfRange` if `time` exceeds `duration`.
     func seek(to time: TimeInterval) async throws
+
+    /// Set the playback volume in the range [0, 1].
+    func setVolume(_ volume: Float) async
 }
