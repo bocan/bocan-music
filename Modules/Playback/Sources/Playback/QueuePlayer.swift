@@ -270,6 +270,11 @@ public actor QueuePlayer: Transport {
         await self.queue.setShuffle(on)
     }
 
+    /// Set the playback volume [0–1], forwarded to the audio engine.
+    public func setVolume(_ volume: Float) async {
+        await self.engine.setVolume(volume)
+    }
+
     /// Change the repeat mode.
     public func setRepeat(_ mode: RepeatMode) async {
         await self.queue.setRepeatMode(mode)

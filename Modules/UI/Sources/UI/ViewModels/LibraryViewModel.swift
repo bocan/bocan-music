@@ -131,14 +131,22 @@ public final class LibraryViewModel: ObservableObject {
         await self.loadDestination(destination)
     }
 
-    /// Plays `track` immediately via the engine.
+    /// Plays `track` immediately, replacing the queue with the full current track
+    /// list so that auto-advance, shuffle, and the forward button all work as expected.
     ///
     /// Called by TracksView / AlbumDetailView on double-click or Return key.
     public func play(track: Track) async {
-        // Prefer QueuePlayer's proper queue-based playback if available.
-        if let qp = engine as? QueuePlayer, let id = track.id {
+        // Ensure the track list is populated.
+        if self.tracks.tracks.isEmpty {
+            await self.loadCurrentDestination()
+        }
+        // Build the full context list.  Fall back to just this track if context is empty.
+        let contextTracks = self.tracks.tracks.isEmpty ? [track] : self.tracks.tracks
+        let startIndex = contextTracks.firstIndex(where: { $0.id == track.id }) ?? 0
+        if let qp = engine as? QueuePlayer {
             do {
-                try await qp.play(trackIDs: [id], startingAt: 0)
+                let ids = contextTracks.compactMap(\.id)
+                try await qp.play(trackIDs: ids, startingAt: startIndex)
             } catch {
                 self.log.error("library.play.failed", ["error": String(reflecting: error)])
                 self.playbackErrorMessage = "Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library."

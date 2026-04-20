@@ -234,6 +234,10 @@ public actor AudioEngine: Transport {
         self.emit(.paused)
     }
 
+    public func setVolume(_ volume: Float) async {
+        self.graph.mixer.outputVolume = max(0, min(1, volume))
+    }
+
     public func stop() async {
         self.log.debug("engine.stop")
         await self.cancelGaplessNext()

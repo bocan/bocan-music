@@ -64,6 +64,8 @@ final class MockTransport: Transport, @unchecked Sendable {
     func seek(to time: TimeInterval) async throws {
         self.seekTarget = time
     }
+
+    func setVolume(_: Float) async {}
 }
 
 // MARK: - NowPlayingViewModelTests
