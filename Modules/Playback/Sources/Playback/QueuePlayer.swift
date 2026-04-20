@@ -101,6 +101,9 @@ public actor QueuePlayer: Transport {
             nextItemProvider: { [weak self] in
                 await self?.resolveNextGaplessItem()
             },
+            performPrefetch: { [weak self] item in
+                try await self?.performGaplessPrefetch(item: item)
+            },
             onGaplessTransition: { [weak self] item in
                 await self?.handleGaplessTransition(to: item)
             },
@@ -264,7 +267,9 @@ public actor QueuePlayer: Transport {
         await self.gaplessScheduler.reset()
         await self.historyRecorder.trackSkipped(elapsed: self.engine.currentTime)
 
-        guard let next = await queue.advance() else {
+        // Use advanceManual so repeat-one is treated as repeat-all for user skips.
+        // Repeat-one should only govern automatic end-of-track advance.
+        guard let next = await queue.advanceManual() else {
             await self.stop()
             return
         }
@@ -456,11 +461,8 @@ public actor QueuePlayer: Transport {
 
     // MARK: Gapless next URL resolution
 
-    private func resolveNextGaplessItem() async -> (url: URL, item: QueueItem, forceGapless: Bool)? {
+    private func resolveNextGaplessItem() async -> (item: QueueItem, forceGapless: Bool)? {
         guard let item = await queue.peekNext() else { return nil }
-        // item.fileURL is stored as a file:// URL string (url.absoluteString), not a raw path.
-        guard let url = URL(string: item.fileURL) else { return nil }
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
 
         // Determine whether the next item's album has `force_gapless` set and
         // the current item belongs to the same album.
@@ -473,7 +475,85 @@ public actor QueuePlayer: Transport {
             forceGapless = album.forceGapless
         }
 
-        return (url: url, item: item, forceGapless: forceGapless)
+        return (item: item, forceGapless: forceGapless)
+    }
+
+    /// Resolve the next item's URL into a security-scoped URL, call
+    /// `engine.enableGaplessNext`, and release the scope once the decoder has
+    /// opened the file.  Mirrors the scope-handling pattern in `loadAndPlay`.
+    ///
+    /// Without this, gapless prefetch fails outside the sandbox with
+    /// "Access denied" because the raw `file://` URL has no permission grant.
+    private func performGaplessPrefetch(item: QueueItem) async throws {
+        // Resolve the URL the same way we would for a normal load.
+        var resolvedFromPerFileBookmark = false
+        var scopedRootURL: URL? = nil
+        let url: URL
+
+        if item.bookmark != nil {
+            do {
+                url = try item.resolvedURL()
+                resolvedFromPerFileBookmark = true
+            } catch {
+                // Per-file bookmark stale/invalid — fall back to root scope.
+                guard let rawURL = URL(string: item.fileURL) else {
+                    throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                }
+                guard let rootURL = try await self.startRootScope(for: item.fileURL) else {
+                    throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                }
+                scopedRootURL = rootURL
+                url = rawURL
+            }
+        } else {
+            guard let rawURL = URL(string: item.fileURL) else {
+                throw PlaybackError.bookmarkResolutionFailed(
+                    trackID: item.trackID,
+                    underlying: URLError(.badURL)
+                )
+            }
+            if let rootURL = try await self.startRootScope(for: item.fileURL) {
+                scopedRootURL = rootURL
+            }
+            url = rawURL
+        }
+
+        // Fail early if the file is unreachable — avoids opaque AVAudioFile errors.
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
+            scopedRootURL?.stopAccessingSecurityScopedResource()
+            throw PlaybackError.bookmarkResolutionFailed(
+                trackID: item.trackID,
+                underlying: URLError(.fileDoesNotExist)
+            )
+        }
+
+        let capturedItem = item
+        let onTransitionCallback = self.onGaplessTransitionCaptured
+
+        do {
+            try await self.engine.enableGaplessNext(url: url) {
+                Task { @Sendable in
+                    await onTransitionCallback?(capturedItem)
+                }
+            }
+        } catch {
+            if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
+            scopedRootURL?.stopAccessingSecurityScopedResource()
+            throw error
+        }
+
+        // The decoder has opened the file; release scope.
+        if resolvedFromPerFileBookmark {
+            url.stopAccessingSecurityScopedResource()
+        }
+        scopedRootURL?.stopAccessingSecurityScopedResource()
+    }
+
+    /// Captured reference to the transition handler so `performGaplessPrefetch`
+    /// can invoke it from a `@Sendable` closure without re-capturing `self`.
+    private var onGaplessTransitionCaptured: (@Sendable (QueueItem) async -> Void)? {
+        { [weak self] item in await self?.handleGaplessTransition(to: item) }
     }
 
     private func handleGaplessTransition(to item: QueueItem) async {

@@ -36,16 +36,21 @@ public actor GaplessScheduler {
 
     // MARK: - Callbacks
 
-    /// Called when the scheduler wants the next item's resolved URL and format.
-    /// Return `nil` to indicate no next item is available.
-    /// The `forceGapless` flag bypasses the format-compatibility check when `true`.
-    var nextItemProvider: (@Sendable () async -> (url: URL, item: QueueItem, forceGapless: Bool)?)?
+    /// Called when the scheduler wants to know the next item and whether the
+    /// containing album opts into force-gapless.  Returns `nil` for no next item.
+    var nextItemProvider: (@Sendable () async -> (item: QueueItem, forceGapless: Bool)?)?
+
+    /// Called when the scheduler has decided to arm the next track.  The caller
+    /// (QueuePlayer) is responsible for resolving security scope, calling
+    /// `engine.enableGaplessNext`, and releasing scope afterwards.
+    /// Throws propagate back into the scheduler so `onPrefetchFailed` fires.
+    var performPrefetch: (@Sendable (QueueItem) async throws -> Void)?
 
     /// Called when the gapless transition actually fires (old track's decoder hits EOF).
     /// Receives the queue item that has just become active.
     var onGaplessTransition: (@Sendable (QueueItem) async -> Void)?
 
-    /// Called when `enableGaplessNext` fails (for logging/metrics only; caller falls back).
+    /// Called when `performPrefetch` throws (for logging/metrics only; caller falls back).
     var onPrefetchFailed: (@Sendable (Error) -> Void)?
 
     // MARK: - Init
@@ -58,11 +63,13 @@ public actor GaplessScheduler {
 
     /// Set all callbacks in a single actor hop.
     public func configure(
-        nextItemProvider: (@Sendable () async -> (url: URL, item: QueueItem, forceGapless: Bool)?)?,
+        nextItemProvider: (@Sendable () async -> (item: QueueItem, forceGapless: Bool)?)?,
+        performPrefetch: (@Sendable (QueueItem) async throws -> Void)?,
         onGaplessTransition: (@Sendable (QueueItem) async -> Void)?,
         onPrefetchFailed: (@Sendable (Error) -> Void)?
     ) {
         self.nextItemProvider = nextItemProvider
+        self.performPrefetch = performPrefetch
         self.onGaplessTransition = onGaplessTransition
         self.onPrefetchFailed = onPrefetchFailed
     }
@@ -106,7 +113,7 @@ public actor GaplessScheduler {
 
         // Already armed for this item?
         guard let provider = nextItemProvider else { return }
-        guard let (url, nextItem, forceGapless) = await provider() else { return }
+        guard let (nextItem, forceGapless) = await provider() else { return }
         guard self.armedForItemID != nextItem.id else { return }
 
         // Check format compatibility — skipped when forceGapless is set and formats
@@ -139,23 +146,16 @@ public actor GaplessScheduler {
             }
         }
 
-        // Arm the gapless preload.
-        let itemID = nextItem.id
-        let onTransitionCallback = self.onGaplessTransition
-        let capturedItem = nextItem
-        let onFailed = self.onPrefetchFailed
-
+        // Arm the gapless preload. QueuePlayer's performPrefetch does the
+        // security-scope dance and calls engine.enableGaplessNext internally.
+        guard let prefetch = performPrefetch else { return }
         do {
-            try await self.engine.enableGaplessNext(url: url) {
-                Task { @Sendable in
-                    await onTransitionCallback?(capturedItem)
-                }
-            }
-            self.armedForItemID = itemID
+            try await prefetch(nextItem)
+            self.armedForItemID = nextItem.id
             self.log.debug("gapless.armed", ["nextTrack": nextItem.trackID, "remaining": remaining])
         } catch {
             self.log.error("gapless.prefetch.failed", ["error": String(reflecting: error)])
-            onFailed?(error)
+            self.onPrefetchFailed?(error)
         }
     }
 

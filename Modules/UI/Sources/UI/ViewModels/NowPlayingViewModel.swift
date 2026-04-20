@@ -170,12 +170,33 @@ public final class NowPlayingViewModel: ObservableObject {
                 }
             }
         }
-        // Observe queue changes to sync stop-after-current flag resets.
+        // Observe queue changes to keep UI button state (shuffle, repeat,
+        // stop-after-current) in sync with the actor's authoritative state.
+        // Critical after restoreQueue() applies persisted values at launch — the
+        // user should see the real repeat/shuffle mode, not the default.
         Task { [weak self] in
             guard let self else { return }
+            // Seed from the actor's current state before listening for changes.
+            let initialRepeat = await qp.queue.repeatMode
+            let initialShuffle = await qp.queue.shuffleState
+            let initialStopAfter = await qp.queue.stopAfterCurrent
+            self.repeatMode = initialRepeat
+            self.shuffleOn = initialShuffle != .off
+            self.stopAfterCurrent = initialStopAfter
+
             for await change in qp.queue.changes {
-                if case let .stopAfterCurrentChanged(enabled) = change {
+                switch change {
+                case let .stopAfterCurrentChanged(enabled):
                     self.stopAfterCurrent = enabled
+
+                case let .repeatChanged(mode):
+                    self.repeatMode = mode
+
+                case let .shuffleChanged(state):
+                    self.shuffleOn = state != .off
+
+                default:
+                    break
                 }
             }
         }
