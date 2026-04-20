@@ -98,6 +98,12 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
     public let duration: TimeInterval
     public let sourceFormat: AudioSourceFormat
 
+    // MARK: - Display metadata (snapshot at enqueue time)
+
+    public let title: String?
+    public let artistName: String?
+    public let genre: String?
+
     // MARK: - Smart-shuffle hints (snapshot of track state at enqueue time)
 
     public let rating: Int
@@ -117,6 +123,9 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         fileURL: String,
         duration: TimeInterval,
         sourceFormat: AudioSourceFormat,
+        title: String? = nil,
+        artistName: String? = nil,
+        genre: String? = nil,
         rating: Int = 0,
         loved: Bool = false,
         playCount: Int = 0,
@@ -131,6 +140,9 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         self.fileURL = fileURL
         self.duration = duration
         self.sourceFormat = sourceFormat
+        self.title = title
+        self.artistName = artistName
+        self.genre = genre
         self.rating = rating
         self.loved = loved
         self.playCount = playCount
@@ -172,7 +184,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
 public extension QueueItem {
     /// Build a `QueueItem` from a `Track` row.
-    static func make(from track: Track) -> QueueItem {
+    static func make(from track: Track, artistName: String? = nil) -> QueueItem {
         let fmt = AudioSourceFormat(
             sampleRate: Double(track.sampleRate ?? 44100),
             bitDepth: track.bitDepth ?? 16,
@@ -187,6 +199,9 @@ public extension QueueItem {
             fileURL: track.fileURL,
             duration: track.duration,
             sourceFormat: fmt,
+            title: track.title,
+            artistName: artistName,
+            genre: track.genre,
             rating: track.rating,
             loved: track.loved,
             playCount: track.playCount,
