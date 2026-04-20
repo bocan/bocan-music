@@ -42,6 +42,11 @@ public actor AudioEngine: Transport {
     private var pendingNextDecoder: (any Decoder)?
     /// Caller-supplied callback fired when the engine seamlessly transitions to the next track.
     private var pendingNextTransition: (@Sendable () -> Void)?
+    /// Timestamp of the most recent gapless transition.  Used to suppress a
+    /// spurious second `.ended` that can fire when the just-swapped-in pump
+    /// reports EOF before its first buffer has rendered (e.g. a race where the
+    /// pump's decoder sees an empty read at activation time).
+    private var lastGaplessTransitionAt: Date?
 
     // MARK: - Transport: state stream
 
@@ -158,6 +163,9 @@ public actor AudioEngine: Transport {
         let start = Date()
         self.log.debug("engine.load.start", ["url": url.lastPathComponent])
         self.emit(.loading)
+
+        // Fresh load — any gapless-settle cooldown from a prior transition is moot.
+        self.lastGaplessTransitionAt = nil
 
         // Cancel any gapless preload.
         await self.cancelGaplessNext()
@@ -317,8 +325,17 @@ public actor AudioEngine: Transport {
             let oldPump = prevPump
             Task { await oldPump?.stop() }
 
+            self.lastGaplessTransitionAt = Date()
             self.log.debug("engine.gapless.transition")
         } else {
+            // Suppress a spurious second `.ended` arriving within the gapless
+            // settle window: the just-activated pump can report EOF before its
+            // first buffer has rendered, which would tear down the player node
+            // and silently stop playback of a track that just started.
+            if let t = self.lastGaplessTransitionAt, Date().timeIntervalSince(t) < 1.5 {
+                self.log.debug("engine.ended.spurious.afterGapless.ignored")
+                return
+            }
             // No gapless next, or degenerate case (new pump finished before old).
             // Clean up any stale pending state.
             let staleNext = self.pendingNextPump
