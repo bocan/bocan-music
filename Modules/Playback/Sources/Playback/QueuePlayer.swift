@@ -56,6 +56,15 @@ public actor QueuePlayer: Transport {
     private var rootRepo: LibraryRootRepository
     private var lastEmittedState: PlaybackState = .idle
 
+    /// Item ID that `handleGaplessTransition` most recently advanced to.
+    /// If `handleTrackEnded` fires while the queue's current item still
+    /// matches this ID, a redundant `.ended` has been emitted for the old
+    /// pump after the gapless transition already advanced the queue — in
+    /// that case we swallow the event instead of advancing again.
+    /// Cleared when the user manually skips, restarts, or a new track
+    /// starts via the non-gapless path.
+    private var lastGaplessAdvanceItemID: QueueItem.ID?
+
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
@@ -324,6 +333,11 @@ public actor QueuePlayer: Transport {
     }
 
     private func loadAndPlay(item: QueueItem, autoPlay: Bool = true) async throws {
+        // A non-gapless load means no prior gapless transition is "pending",
+        // so clear the guard.  (Handles manual skips, repeat-one replays,
+        // and the normal-fallback path when gapless prefetch failed.)
+        self.lastGaplessAdvanceItemID = nil
+
         // Resolve a playable URL.
         //
         // Priority order:
@@ -432,6 +446,17 @@ public actor QueuePlayer: Transport {
     private func handleTrackEnded() async {
         let elapsed = await engine.duration // track played fully
         await self.historyRecorder.trackDidEnd(elapsed: elapsed)
+
+        // If a gapless transition has already advanced the queue to the
+        // currently active item, a late `.ended` from the previous pump
+        // must not trigger another advance.  Swallow and clear the flag.
+        if let lastID = self.lastGaplessAdvanceItemID,
+           let current = await queue.currentItem,
+           current.id == lastID {
+            self.lastGaplessAdvanceItemID = nil
+            self.log.debug("queueplayer.ended.swallowed.afterGapless", ["itemID": lastID])
+            return
+        }
 
         // Stop-after-current wins over repeat modes. Reset the flag then stop.
         if await self.queue.stopAfterCurrent {
@@ -559,6 +584,7 @@ public actor QueuePlayer: Transport {
     private func handleGaplessTransition(to item: QueueItem) async {
         // The engine has seamlessly transitioned to `item`. Advance queue state.
         _ = await self.queue.advance()
+        self.lastGaplessAdvanceItemID = item.id
 
         // Update metadata for the new track.
         if let track = try? await trackRepo.fetch(id: item.trackID) {
