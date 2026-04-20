@@ -28,3 +28,31 @@ updates:
       interval: weekly
     commit-message:
       prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Metadata
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Playback
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Library
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/UI
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
