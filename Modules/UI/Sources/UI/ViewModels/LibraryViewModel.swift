@@ -56,7 +56,6 @@ public final class LibraryViewModel: ObservableObject {
     public let tracks: TracksViewModel
     public let albums: AlbumsViewModel
     public let artists: ArtistsViewModel
-    public let search: SearchViewModel
     public let nowPlaying: NowPlayingViewModel
 
     // MARK: - Dependencies
@@ -90,13 +89,11 @@ public final class LibraryViewModel: ObservableObject {
         )
         self.albums = AlbumsViewModel(repository: albumRepo)
         self.artists = ArtistsViewModel(repository: artistRepo)
-        self.search = SearchViewModel()
         self.nowPlaying = NowPlayingViewModel(engine: engine, database: database)
 
-        // React to search query changes: debounce and reload the current destination.
-        // Each top-level view (Songs/Albums/Artists) fetches filtered data when a
-        // query is active; clearing the query restores the full list.
-        self.searchQueryCancellable = self.search.$query
+        // React to search query changes: debounce 250 ms, then reload the current
+        // destination with filtered data.  Clearing the query restores the full list.
+        self.searchQueryCancellable = self.$searchQuery
             .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
             .removeDuplicates()
             .sink { [weak self] _ in
@@ -119,7 +116,7 @@ public final class LibraryViewModel: ObservableObject {
         // query so the new view shows filtered results immediately.
         switch destination {
         case .album, .artist:
-            self.search.clear()
+            self.searchQuery = ""
         default:
             break
         }

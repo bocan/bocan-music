@@ -4,7 +4,7 @@ import Persistence
 
 extension LibraryViewModel {
     func loadDestination(_ destination: SidebarDestination) async {
-        let query = self.search.query.trimmingCharacters(in: .whitespaces)
+        let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
         switch destination {
         case .songs:
             if query.isEmpty {
@@ -69,7 +69,7 @@ extension LibraryViewModel {
         case let .search(searchQuery):
             // Set the query; the Combine subscription will trigger a reload.
             // Directly load filtered songs here so the result is immediate.
-            self.search.query = searchQuery
+            self.searchQuery = searchQuery
             let trimmed = searchQuery.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty {
                 await self.tracks.load()
