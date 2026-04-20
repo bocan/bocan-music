@@ -83,6 +83,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
+            .help("Previous track (or restart current)")
             .accessibilityLabel("Previous")
             .accessibilityIdentifier(A11y.NowPlaying.prevButton)
 
@@ -95,6 +96,7 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
             .keyboardShortcut(KeyBindings.playPause)
+            .help(self.vm.isPlaying ? "Pause" : "Play")
             .accessibilityLabel(self.vm.isPlaying ? "Pause" : "Play")
             .accessibilityIdentifier(A11y.NowPlaying.playPauseButton)
 
@@ -106,6 +108,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
+            .help("Next track")
             .accessibilityLabel("Next")
             .accessibilityIdentifier(A11y.NowPlaying.nextButton)
 
@@ -117,6 +120,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.shuffleOn ? Color.accentColor : Color.textTertiary)
+            .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
             .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
 
             Button {
@@ -127,6 +131,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : Color.accentColor)
+            .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
             .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
 
             Button {
@@ -137,6 +142,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.stopAfterCurrent ? Color.accentColor : Color.textTertiary)
+            .help(self.vm.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
             .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
         }
     }
@@ -168,6 +174,7 @@ public struct NowPlayingStrip: View {
             )
             .controlSize(.mini)
             .disabled(self.vm.duration == 0)
+            .help("Scrub to position")
             .accessibilityLabel("Playback position")
             .accessibilityIdentifier(A11y.NowPlaying.scrubber)
 
@@ -192,6 +199,7 @@ public struct NowPlayingStrip: View {
             ), in: 0 ... 1)
                 .controlSize(.mini)
                 .frame(maxWidth: 100)
+                .help("Volume: \(Int(self.vm.volume * 100))%")
                 .accessibilityLabel("Volume")
                 .accessibilityIdentifier(A11y.NowPlaying.volumeSlider)
 
