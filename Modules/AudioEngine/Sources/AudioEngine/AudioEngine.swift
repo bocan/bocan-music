@@ -123,8 +123,9 @@ public actor AudioEngine: Transport {
         self.pendingNextTransition = onTransition
 
         let selfCapture = self
+        let pumpID = nextPump.id
         await nextPump.start {
-            Task { await selfCapture.handleEnded() }
+            Task { await selfCapture.handleEnded(firedBy: pumpID) }
         }
 
         self.log.debug("engine.gapless.prefetch", ["url": url.lastPathComponent])
@@ -231,8 +232,9 @@ public actor AudioEngine: Transport {
         self.pump = newPump
 
         let selfCapture = self
+        let pumpID = newPump.id
         await newPump.start {
-            Task { await selfCapture.handleEnded() }
+            Task { await selfCapture.handleEnded(firedBy: pumpID) }
         }
 
         playerNode.play()
@@ -300,10 +302,25 @@ public actor AudioEngine: Transport {
         self.stateContinuation?.yield(newState)
     }
 
-    private func handleEnded() {
+    private func handleEnded(firedBy pumpID: String) {
         let currentID = self.pump?.id ?? "nil"
         let pendingID = self.pendingNextPump?.id ?? "nil"
-        self.log.debug("engine.handleEnded.entry", ["current": currentID, "pending": pendingID])
+        // Ignore EOF signals from pumps that are neither the active nor the
+        // pending-next pump.  Stale signals arise after a seek (which replaces
+        // the pump) or after the user triggers a rapid load/skip.
+        guard pumpID == currentID || pumpID == pendingID else {
+            self.log.debug("engine.handleEnded.stale", [
+                "firedBy": pumpID,
+                "current": currentID,
+                "pending": pendingID,
+            ])
+            return
+        }
+        self.log.debug("engine.handleEnded.entry", [
+            "firedBy": pumpID,
+            "current": currentID,
+            "pending": pendingID,
+        ])
         if let next = pendingNextPump, next !== pump {
             // Gapless transition: the next track's buffers are already queued on the
             // player node — do NOT call playerNode.stop() here.
