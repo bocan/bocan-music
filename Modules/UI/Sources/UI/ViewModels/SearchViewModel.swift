@@ -7,7 +7,7 @@ import Persistence
 
 /// Grouped search results returned by `SearchViewModel`.
 public struct SearchResults: Sendable {
-    public var tracks: [Track]
+    public var tracks: [TrackSearchHit]
     public var albums: [Album]
     public var artists: [Artist]
 
@@ -85,7 +85,7 @@ public final class SearchViewModel: ObservableObject {
     private func runSearch(query: String) async {
         self.log.debug("search.start", ["query": query])
         do {
-            async let tracksFetch = self.trackRepo.search(query: query)
+            async let tracksFetch = self.trackRepo.searchRich(query: query)
             async let albumsFetch = self.albumRepo.search(query: query)
             async let artistsFetch = self.artistRepo.search(query: query)
             let (tracks, albums, artists) = try await (tracksFetch, albumsFetch, artistsFetch)

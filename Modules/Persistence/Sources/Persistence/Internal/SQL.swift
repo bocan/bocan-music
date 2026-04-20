@@ -21,6 +21,26 @@ enum SQL {
         )
     }
 
+    /// Like `tracksFTSQuery` but JOINs `artists` and `albums` to return a
+    /// `TrackSearchHit` with denormalised artist name and album cover-art path.
+    static func tracksFTSRichQuery(_ term: String) -> SQLRequest<TrackSearchHit> {
+        let escaped = Self.escapeFTSTerm(term)
+        return SQLRequest(
+            sql: """
+            SELECT tracks.*,
+                   artists.name       AS srch_artist_name,
+                   albums.cover_art_path AS srch_cover_art_path
+            FROM tracks
+            JOIN tracks_fts ON tracks_fts.rowid = tracks.id
+            LEFT JOIN artists ON artists.id = tracks.artist_id
+            LEFT JOIN albums  ON albums.id  = tracks.album_id
+            WHERE tracks_fts MATCH ?
+            ORDER BY rank
+            """,
+            arguments: [escaped]
+        )
+    }
+
     /// Returns an FTS5 MATCH expression that queries `artists_fts`.
     static func artistsFTSQuery(_ term: String) -> SQLRequest<Artist> {
         let escaped = Self.escapeFTSTerm(term)

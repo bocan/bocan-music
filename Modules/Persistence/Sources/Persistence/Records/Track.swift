@@ -356,3 +356,23 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case updatedAt = "updated_at"
     }
 }
+
+// MARK: - TrackSearchHit
+
+/// A search result that combines a `Track` with the denormalised artist name
+/// and album cover-art path obtained via a JOIN, so search result rows can
+/// display artist info and artwork without additional round-trips.
+public struct TrackSearchHit: FetchableRecord, Sendable {
+    public let track: Track
+    /// Performing-artist name, or `nil` if the track has no artist link.
+    public let artistName: String?
+    /// Absolute path to the album cover art, or `nil` if none is stored.
+    public let coverArtPath: String?
+
+    public init(row: Row) throws {
+        self.track = try Track(row: row)
+        // Aliased columns from the JOIN (prefix `srch_` avoids column-name clashes).
+        self.artistName = row["srch_artist_name"]
+        self.coverArtPath = row["srch_cover_art_path"]
+    }
+}
