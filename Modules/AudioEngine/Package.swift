@@ -31,6 +31,16 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
+                // Homebrew's pkg-config (now pkgconf) no longer feeds system
+                // include paths through Xcode's SPM clang module scanner, so
+                // the CFFmpeg module fails to resolve <libavcodec/avcodec.h>
+                // under `xcodebuild`. Inject the Homebrew prefix explicitly
+                // (ARM64 Homebrew is assumed — both local dev Macs and the
+                // GitHub macos-26 runners use /opt/homebrew).
+                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
+            ],
+            linkerSettings: [
+                .unsafeFlags(["-L/opt/homebrew/lib"]),
             ]
         ),
 
@@ -42,6 +52,10 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
+                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
+            ],
+            linkerSettings: [
+                .unsafeFlags(["-L/opt/homebrew/lib"]),
             ]
         ),
     ]
