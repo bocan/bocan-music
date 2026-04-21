@@ -65,6 +65,15 @@ public actor QueuePlayer: Transport {
     /// starts via the non-gapless path.
     private var lastGaplessAdvanceItemID: QueueItem.ID?
 
+    /// Number of in-flight `play(…)` calls that are currently replacing the queue.
+    ///
+    /// `handleTrackEnded` and `handleGaplessTransition` check this counter and bail
+    /// out when it is non-zero.  Without this guard those callbacks can interleave
+    /// with a `queue.replace` suspension and advance (or further mutate) the queue
+    /// that `play(…)` is in the middle of replacing, causing the wrong track to load
+    /// and — in the worst case — two pumps running simultaneously.
+    private var activeReplaceCount = 0
+
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
@@ -188,7 +197,12 @@ public actor QueuePlayer: Transport {
     /// Replace the queue with `trackIDs` and begin playing at `index`.
     public func play(trackIDs: [Int64], startingAt index: Int = 0) async throws {
         let items = try await buildItems(for: trackIDs)
-        await queue.replace(with: items, startAt: index)
+        // Increment before the first queue mutation so handleTrackEnded /
+        // handleGaplessTransition defer to this call during suspension points.
+        self.activeReplaceCount += 1
+        defer { activeReplaceCount -= 1 }
+        await self.gaplessScheduler.reset()
+        await self.queue.replace(with: items, startAt: index)
         // Load then play directly — do NOT call self.play() here because that method
         // contains an extra loadCurrentItem() guard for the "press Play on idle engine"
         // path, which would cause a redundant double-load of the same URL.
@@ -205,6 +219,11 @@ public actor QueuePlayer: Transport {
     /// when queueing a large library (~32 queries/track, seconds for 10k+ tracks).
     public func play(items: [QueueItem], startingAt index: Int = 0) async throws {
         guard !items.isEmpty else { throw PlaybackError.queueEmpty }
+        // Increment before the first queue mutation so handleTrackEnded /
+        // handleGaplessTransition defer to this call during suspension points.
+        self.activeReplaceCount += 1
+        defer { activeReplaceCount -= 1 }
+        await self.gaplessScheduler.reset()
         await self.queue.replace(with: items, startAt: index)
         try await self.loadCurrentItem()
         try await self.engine.play()
@@ -239,12 +258,16 @@ public actor QueuePlayer: Transport {
         } else {
             ordered = items
         }
+        self.activeReplaceCount += 1
+        defer { activeReplaceCount -= 1 }
+        await self.gaplessScheduler.reset()
         await self.queue.replace(with: ordered, startAt: 0)
         if shuffle {
             await self.queue.setShuffle(true)
         }
         try await self.loadCurrentItem()
-        try await self.play()
+        try await self.engine.play()
+        await self.nowPlayingCentre?.setPlaying(true)
     }
 
     /// Replace the queue with all tracks by `artistID` and start playing.
@@ -263,12 +286,16 @@ public actor QueuePlayer: Transport {
         } else {
             ordered = items
         }
+        self.activeReplaceCount += 1
+        defer { activeReplaceCount -= 1 }
+        await self.gaplessScheduler.reset()
         await self.queue.replace(with: ordered, startAt: 0)
         if shuffle {
             await self.queue.setShuffle(true)
         }
         try await self.loadCurrentItem()
-        try await self.play()
+        try await self.engine.play()
+        await self.nowPlayingCentre?.setPlaying(true)
     }
 
     /// Advance to the next item.
@@ -444,6 +471,12 @@ public actor QueuePlayer: Transport {
     }
 
     private func handleTrackEnded() async {
+        // A play(…) call is in the middle of replacing the queue — it will load and
+        // start the new track itself.  Advancing here would corrupt the new queue.
+        guard self.activeReplaceCount == 0 else {
+            self.log.debug("queueplayer.ended.deferredToPlay", [:])
+            return
+        }
         let elapsed = await engine.duration // track played fully
         await self.historyRecorder.trackDidEnd(elapsed: elapsed)
 
@@ -582,6 +615,11 @@ public actor QueuePlayer: Transport {
     }
 
     private func handleGaplessTransition(to item: QueueItem) async {
+        // A play(…) call is replacing the queue — ignore the stale gapless event.
+        guard self.activeReplaceCount == 0 else {
+            self.log.debug("queueplayer.gapless.deferredToPlay", [:])
+            return
+        }
         // The engine has seamlessly transitioned to `item`. Advance queue state.
         _ = await self.queue.advance()
         self.lastGaplessAdvanceItemID = item.id
