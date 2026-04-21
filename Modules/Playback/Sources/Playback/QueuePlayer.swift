@@ -392,11 +392,13 @@ public actor QueuePlayer: Transport {
                     self.log.error("queueplayer.url.bad_file_url", ["trackID": item.trackID, "url": item.fileURL])
                     throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
                 }
-                guard let rootURL = try await self.startRootScope(for: item.fileURL) else {
-                    self.log.error("queueplayer.url.no_root", ["trackID": item.trackID])
-                    throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                if let rootURL = try await self.startRootScope(for: item.fileURL) {
+                    scopedRootURL = rootURL
+                } else {
+                    // No root scope found — attempt raw URL anyway, matching the
+                    // behaviour of the no-per-file-bookmark path (works in dev / non-sandboxed).
+                    self.log.warning("queueplayer.url.no_root", ["trackID": item.trackID])
                 }
-                scopedRootURL = rootURL
                 url = rawURL
             }
         } else {
@@ -557,10 +559,10 @@ public actor QueuePlayer: Transport {
                 guard let rawURL = URL(string: item.fileURL) else {
                     throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
                 }
-                guard let rootURL = try await self.startRootScope(for: item.fileURL) else {
-                    throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+                if let rootURL = try await self.startRootScope(for: item.fileURL) {
+                    scopedRootURL = rootURL
                 }
-                scopedRootURL = rootURL
+                // No root scope — attempt raw URL anyway (mirrors loadAndPlay behaviour).
                 url = rawURL
             }
         } else {
@@ -687,8 +689,16 @@ public actor QueuePlayer: Transport {
         let roots = await (try? self.rootRepo.fetchAll()) ?? []
         // fileURLString is stored as url.absoluteString ("file:///path/to/file.mp3")
         // while root.path is url.path ("/path/to/folder") — compare via the path component.
-        guard let filePath = URL(string: fileURLString)?.path,
-              let root = roots.first(where: { filePath.hasPrefix($0.path) }) else {
+        guard let filePath = URL(string: fileURLString)?.path else {
+            return nil
+        }
+        // Use a directory-boundary-safe prefix check: append "/" so that a root at
+        // "/Users/chris/Music" does NOT falsely match "/Users/chris/Music2/song.mp3".
+        guard let root = roots.first(where: {
+            let prefix = $0.path == "/" ? "/" : $0.path + "/"
+            return filePath.hasPrefix(prefix)
+        }) else {
+            self.log.warning("queueplayer.root.no_match", ["filePath": filePath])
             return nil
         }
         var isStale = false
@@ -697,8 +707,28 @@ public actor QueuePlayer: Transport {
             options: .withSecurityScope,
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
-        ) else { return nil }
-        guard rootURL.startAccessingSecurityScopedResource() else { return nil }
+        ) else {
+            self.log.error("queueplayer.root.bookmark_unresolvable", ["rootPath": root.path])
+            return nil
+        }
+        guard rootURL.startAccessingSecurityScopedResource() else {
+            self.log.error("queueplayer.root.scope_denied", ["rootPath": root.path])
+            return nil
+        }
+        if isStale, let rootID = root.id {
+            // Bookmark data was valid but stale — refresh it while we hold an active scope
+            // so that future launches don't need to fall back to this recovery path.
+            if let freshData = try? rootURL.bookmarkData(
+                options: .withSecurityScope,
+                includingResourceValuesForKeys: nil,
+                relativeTo: nil
+            ) {
+                var updated = root
+                updated.bookmark = freshData
+                try? await self.rootRepo.upsert(updated)
+                self.log.info("queueplayer.root.bookmark_refreshed", ["rootID": rootID])
+            }
+        }
         return rootURL
     }
 
