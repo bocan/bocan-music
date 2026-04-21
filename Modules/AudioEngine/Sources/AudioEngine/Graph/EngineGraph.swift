@@ -70,8 +70,13 @@ public final class EngineGraph: @unchecked Sendable {
             // swiftlint:disable:next force_unwrapping
             let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
             let fmt = AVAudioFormat(standardFormatWithSampleRate: hwRate, channelLayout: layout)
+            // Reconnect the entire signal chain with the confirmed hardware rate.
+            // Leaving eq→mixer at its stale format while only fixing playerNode→eq
+            // causes kAudioUnitErr_FormatNotSupported (-10868) on engine start.
             self.engine.disconnectNodeOutput(self.playerNode)
+            self.engine.disconnectNodeOutput(self.eq)
             self.engine.connect(self.playerNode, to: self.eq, format: fmt)
+            self.engine.connect(self.eq, to: self.mixer, format: fmt)
         }
 
         self.engine.prepare()
