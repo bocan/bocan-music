@@ -48,16 +48,6 @@ public final class AVFoundationDecoder: Decoder {
         } catch {
             throw AudioEngineError.accessDenied(url, underlying: error)
         }
-        let procFmt = self.file.processingFormat
-        let fileFmt = self.file.fileFormat
-        AppLogger.make(.audio).debug("avfoundation.decoder.opened", [
-            "file": url.lastPathComponent,
-            "processingHz": procFmt.sampleRate,
-            "processingInterleaved": procFmt.isInterleaved,
-            "processingChannels": procFmt.channelCount,
-            "fileHz": fileFmt.sampleRate,
-            "fileChannels": fileFmt.channelCount,
-        ])
     }
 
     /// Read frames into `buffer`. Returns 0 at end-of-file.
