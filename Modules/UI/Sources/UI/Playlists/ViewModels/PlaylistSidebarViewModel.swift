@@ -1,0 +1,182 @@
+import Foundation
+import Library
+import Observability
+import Persistence
+
+// MARK: - PlaylistSidebarViewModel
+
+/// Drives the playlist section of the sidebar.  Owns a snapshot of the
+/// folder tree and publishes changes as mutations complete.
+@MainActor
+public final class PlaylistSidebarViewModel: ObservableObject {
+    // MARK: - Published state
+
+    @Published public private(set) var nodes: [PlaylistNode] = []
+    @Published public var expandedFolders: Set<Int64> = []
+    @Published public var renameTarget: PlaylistNode?
+    @Published public var deleteTarget: PlaylistNode?
+    @Published public var newPlaylistParent: Int64?
+    @Published public var isPresentingNewPlaylist = false
+    @Published public var isPresentingNewFolder = false
+    @Published public var lastError: String?
+
+    // MARK: - Dependencies
+
+    public let service: PlaylistService
+    private let log = AppLogger.make(.ui)
+
+    // MARK: - Init
+
+    public init(service: PlaylistService) {
+        self.service = service
+    }
+
+    // MARK: - Public API
+
+    /// Reloads the sidebar tree.
+    public func reload() async {
+        do {
+            self.nodes = try await self.service.list()
+        } catch {
+            self.log.error("playlist.sidebar.reload.failed", ["error": String(reflecting: error)])
+            self.lastError = "Could not load playlists."
+        }
+    }
+
+    public func toggle(folderID: Int64) {
+        if self.expandedFolders.contains(folderID) {
+            self.expandedFolders.remove(folderID)
+        } else {
+            self.expandedFolders.insert(folderID)
+        }
+    }
+
+    public func beginNewPlaylist(parent: Int64? = nil) {
+        self.newPlaylistParent = parent
+        self.isPresentingNewPlaylist = true
+    }
+
+    public func beginNewFolder(parent: Int64? = nil) {
+        self.newPlaylistParent = parent
+        self.isPresentingNewFolder = true
+    }
+
+    public func createPlaylist(name: String) async -> Int64? {
+        do {
+            let p = try await self.service.create(name: name, parentID: self.newPlaylistParent)
+            await self.reload()
+            return p.id
+        } catch {
+            self.lastError = self.describe(error)
+            return nil
+        }
+    }
+
+    public func createFolder(name: String) async -> Int64? {
+        do {
+            let f = try await self.service.createFolder(name: name, parentID: self.newPlaylistParent)
+            await self.reload()
+            return f.id
+        } catch {
+            self.lastError = self.describe(error)
+            return nil
+        }
+    }
+
+    public func rename(_ node: PlaylistNode, to newName: String) async {
+        do {
+            try await self.service.rename(node.id, to: newName)
+            await self.reload()
+        } catch {
+            self.lastError = self.describe(error)
+        }
+    }
+
+    public func delete(_ node: PlaylistNode, recursive: Bool = false) async {
+        do {
+            if recursive {
+                try await self.service.deleteRecursively(node.id)
+            } else {
+                try await self.service.delete(node.id)
+            }
+            await self.reload()
+        } catch {
+            self.lastError = self.describe(error)
+        }
+    }
+
+    public func duplicate(_ node: PlaylistNode) async -> Int64? {
+        do {
+            let copy = try await self.service.duplicate(node.id)
+            await self.reload()
+            return copy.id
+        } catch {
+            self.lastError = self.describe(error)
+            return nil
+        }
+    }
+
+    public func move(_ node: PlaylistNode, toParent parent: Int64?) async {
+        do {
+            try await self.service.move(node.id, toParent: parent)
+            await self.reload()
+        } catch {
+            self.lastError = self.describe(error)
+        }
+    }
+
+    public func addTracks(_ trackIDs: [Int64], to playlistID: Int64) async {
+        do {
+            try await self.service.addTracks(trackIDs, to: playlistID)
+            await self.reload()
+        } catch {
+            self.lastError = self.describe(error)
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Returns `true` when `node` is visible given the current expansion state.
+    public func isVisible(_ node: PlaylistNode) -> Bool {
+        // Walk the tree finding the node and checking all its ancestors are expanded.
+        self.isVisible(node.id, in: self.nodes, ancestorsExpanded: true)
+    }
+
+    private func isVisible(_ id: Int64, in nodes: [PlaylistNode], ancestorsExpanded: Bool) -> Bool {
+        for node in nodes {
+            if node.id == id { return ancestorsExpanded }
+            let nextExpanded = ancestorsExpanded && self.expandedFolders.contains(node.id)
+            if self.isVisible(id, in: node.children, ancestorsExpanded: nextExpanded) {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Flattens visible nodes in depth-first render order with an accompanying depth.
+    public func flattened() -> [(node: PlaylistNode, depth: Int)] {
+        var result: [(node: PlaylistNode, depth: Int)] = []
+        self.appendFlattened(self.nodes, depth: 0, into: &result)
+        return result
+    }
+
+    private func appendFlattened(
+        _ nodes: [PlaylistNode],
+        depth: Int,
+        into result: inout [(node: PlaylistNode, depth: Int)]
+    ) {
+        for node in nodes {
+            result.append((node, depth))
+            if node.kind == .folder, self.expandedFolders.contains(node.id) {
+                self.appendFlattened(node.children, depth: depth + 1, into: &result)
+            }
+        }
+    }
+
+    private func describe(_ error: Error) -> String {
+        if let pe = error as? PlaylistError {
+            return String(describing: pe)
+        }
+        return error.localizedDescription
+    }
+}

@@ -57,6 +57,8 @@ public final class LibraryViewModel: ObservableObject {
     public let albums: AlbumsViewModel
     public let artists: ArtistsViewModel
     public let nowPlaying: NowPlayingViewModel
+    public let playlistSidebar: PlaylistSidebarViewModel
+    public let playlistService: PlaylistService
 
     // MARK: - Dependencies
 
@@ -88,6 +90,9 @@ public final class LibraryViewModel: ObservableObject {
             albumRepository: albumRepo
         )
         self.albums = AlbumsViewModel(repository: albumRepo)
+        let playlistService = PlaylistService(database: database)
+        self.playlistService = playlistService
+        self.playlistSidebar = PlaylistSidebarViewModel(service: playlistService)
         self.artists = ArtistsViewModel(repository: artistRepo)
         self.nowPlaying = NowPlayingViewModel(engine: engine, database: database)
 
