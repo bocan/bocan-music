@@ -222,7 +222,10 @@ public actor AudioEngine: Transport {
             channelLayout: layout
         )
 
-        // Wire up a BufferPump.
+        // Wire up a BufferPump. Stop the current pump before creating a replacement
+        // so it can't race the new one on the shared decoder when resuming from pause.
+        await self.pump?.stop()
+        self.pump = nil
         let playerNode = self.graph.playerNode
         let newPump = BufferPump(
             decoder: dec,
@@ -231,10 +234,9 @@ public actor AudioEngine: Transport {
         )
         self.pump = newPump
 
-        let selfCapture = self
         let pumpID = newPump.id
-        await newPump.start {
-            Task { await selfCapture.handleEnded(firedBy: pumpID) }
+        await newPump.start { [self] in
+            Task { await self.handleEnded(firedBy: pumpID) }
         }
 
         playerNode.play()
@@ -348,14 +350,11 @@ public actor AudioEngine: Transport {
         self.emit(.playing)
         transition?()
 
-        // Start the deferred pump task.  Its first scheduleBuffer runs a few
-        // milliseconds from now, well within the ~800 ms tail left on the
-        // player node.
-        let selfCapture = self
+        // Start the deferred pump task; its buffers queue after the outgoing pump's tail.
         let newPumpID = next.id
-        Task {
+        Task { [self] in
             await next.start {
-                Task { await selfCapture.handleEnded(firedBy: newPumpID) }
+                Task { await self.handleEnded(firedBy: newPumpID) }
             }
         }
 
