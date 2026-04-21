@@ -27,18 +27,8 @@ public struct TracksView: View {
     /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
     @ObservedObject private var nowPlaying: NowPlayingViewModel
 
-    /// Controls Table column visibility/order.  Persisted across launches
-    /// via `@AppStorage` on a Codable JSON blob below.
-    @State var columnCustomization = TableColumnCustomization<TrackRow>()
-
-    /// Raw storage for `columnCustomization`.  `TableColumnCustomization`
-    /// is `Codable`; we round-trip it through JSON so SwiftUI's Table
-    /// column picker, reordering, and width drags stick across runs.
-    @AppStorage("tracksView.columnCustomization.v1")
-    private var columnCustomizationData: Data = .init()
-
     /// Local sort state.  Owned by the View (not the VM) so that
-    /// Table's per-frame binding writes never fire `objectWillChange`
+    /// NSTableView sort-descriptor writes never fire `objectWillChange`
     /// on `TracksViewModel`.  Pushed into the VM via `.onChange` below.
     @State var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
@@ -90,24 +80,15 @@ public struct TracksView: View {
         .onChange(of: self.sortOrder) { _, newOrder in
             self.vm.applySort(newOrder)
         }
-        .onChange(of: self.columnCustomization) { _, newValue in
-            if let data = try? JSONEncoder().encode(newValue) {
-                self.columnCustomizationData = data
-            }
-        }
         .onAppear {
             // Seed local sort state from the VM (e.g. restored UIStateV1).
             if self.sortOrder != self.vm.sortOrder {
                 self.sortOrder = self.vm.sortOrder
             }
-            // Restore persisted column visibility / order / widths.
-            if !self.columnCustomizationData.isEmpty,
-               let decoded = try? JSONDecoder().decode(
-                   TableColumnCustomization<TrackRow>.self,
-                   from: self.columnCustomizationData
-               ) {
-                self.columnCustomization = decoded
-            }
+            self.syncSelectionToNowPlaying()
+        }
+        .onChange(of: self.nowPlaying.nowPlayingTrackID) { _, _ in
+            self.syncSelectionToNowPlaying()
         }
     }
 
@@ -122,57 +103,11 @@ public struct TracksView: View {
         }
     }
 
-    /// Shared context menu, selection, and appearance modifiers applied
-    /// to both the sortable and non-sortable Table variants.
-    var tableChromeModifier: TableChromeModifier {
-        TableChromeModifier(
-            vm: self.vm,
-            library: self.library,
-            nowPlaying: self.nowPlaying,
-            contextMenu: { ids in AnyView(self.trackContextMenu(ids: ids)) },
-            syncSelectionToNowPlaying: { self.syncSelectionToNowPlaying() }
-        )
-    }
-
-    private func syncSelectionToNowPlaying() {
+    func syncSelectionToNowPlaying() {
         guard let id = self.nowPlaying.nowPlayingTrackID else { return }
         guard self.vm.rows.contains(where: { $0.id == id }) else { return }
         if self.vm.selection != [id] {
             self.vm.selection = [id]
         }
-    }
-}
-
-// MARK: - TableChromeModifier
-
-/// Shared selection, context-menu, and `nowPlaying` sync chrome applied
-/// to both the sortable and non-sortable `Table` variants in
-/// `TracksView`.  Kept as a single modifier so the two Table bodies
-/// stay in sync and the Swift 6 result builders can still infer
-/// column-builder generics.
-struct TableChromeModifier: ViewModifier {
-    let vm: TracksViewModel
-    let library: LibraryViewModel
-    let nowPlaying: NowPlayingViewModel
-    let contextMenu: (Set<Track.ID>) -> AnyView
-    let syncSelectionToNowPlaying: () -> Void
-
-    func body(content: Content) -> some View {
-        content
-            .contextMenu(forSelectionType: Track.ID.self) { ids in
-                self.contextMenu(ids)
-            } primaryAction: { ids in
-                if let trackID = ids.first,
-                   let track = vm.rows.first(where: { $0.id == trackID })?.track {
-                    Task { await self.library.play(track: track) }
-                }
-            }
-            .tableStyle(.inset(alternatesRowBackgrounds: true))
-            .scrollContentBackground(.hidden)
-            .accessibilityIdentifier(A11y.TracksTable.table)
-            .onAppear { self.syncSelectionToNowPlaying() }
-            .onChange(of: self.nowPlaying.nowPlayingTrackID) { _, _ in
-                self.syncSelectionToNowPlaying()
-            }
     }
 }
