@@ -103,6 +103,23 @@ public struct PlaylistSidebarSection: View {
         } message: { target in
             Text("Delete \"\(target.name)\"? Tracks remain in your library.")
         }
+        .confirmationDialog(
+            "Delete Folder and Contents",
+            isPresented: Binding(
+                get: { self.vm.deleteRecursiveTarget != nil },
+                set: { newValue in if !newValue { self.vm.deleteRecursiveTarget = nil } }
+            ),
+            presenting: self.vm.deleteRecursiveTarget
+        ) { target in
+            Button("Delete Folder and Contents", role: .destructive) {
+                Task { await self.vm.delete(target, recursive: true) }
+            }
+            Button("Cancel", role: .cancel) {
+                self.vm.deleteRecursiveTarget = nil
+            }
+        } message: { target in
+            Text("Delete \"\(target.name)\" and all playlists inside it? This cannot be undone. Tracks remain in your library.")
+        }
     }
 
     // MARK: - Rows

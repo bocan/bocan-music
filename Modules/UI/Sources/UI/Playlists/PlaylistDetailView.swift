@@ -1,6 +1,8 @@
+import AppKit
 import Library
 import Persistence
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - PlaylistDetailView
 
@@ -36,6 +38,10 @@ public struct PlaylistDetailView: View {
                     title: "Empty Playlist",
                     message: "Drag tracks here, or use \"Add to Playlist\" from the Songs view."
                 )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .onDrop(of: [.plainText], isTargeted: nil) { providers in
+                    self.handleDrop(providers: providers)
+                }
             } else {
                 self.trackList
             }
@@ -71,7 +77,26 @@ public struct PlaylistDetailView: View {
         }
         .listStyle(.inset)
         .onDeleteCommand { Task { await self.vm.removeSelected() } }
+        .onDrop(of: [.plainText], isTargeted: nil) { providers in
+            self.handleDrop(providers: providers)
+        }
         .accessibilityIdentifier(A11y.PlaylistDetail.list)
+    }
+
+    // MARK: - Drop
+
+    @discardableResult
+    private func handleDrop(providers: [NSItemProvider]) -> Bool {
+        for provider in providers {
+            provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
+                guard let data = item as? Data,
+                      let string = String(data: data, encoding: .utf8) else { return }
+                let ids = string.split(separator: ",").compactMap { Int64($0) }
+                guard !ids.isEmpty else { return }
+                Task { @MainActor in await self.vm.addTracks(ids) }
+            }
+        }
+        return true
     }
 
     // MARK: - Actions
