@@ -15,6 +15,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     @Published public var expandedFolders: Set<Int64> = []
     @Published public var renameTarget: PlaylistNode?
     @Published public var deleteTarget: PlaylistNode?
+    @Published public var deleteRecursiveTarget: PlaylistNode?
     @Published public var newPlaylistParent: Int64?
     @Published public var isPresentingNewPlaylist = false
     @Published public var isPresentingNewFolder = false
@@ -170,6 +171,20 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             if node.kind == .folder, self.expandedFolders.contains(node.id) {
                 self.appendFlattened(node.children, depth: depth + 1, into: &result)
             }
+        }
+    }
+
+    /// Returns a flat list of all folder nodes in tree order, for the Move to Folder menu.
+    public func allFolders() -> [PlaylistNode] {
+        var result: [PlaylistNode] = []
+        self.collectFolders(self.nodes, into: &result)
+        return result
+    }
+
+    private func collectFolders(_ nodes: [PlaylistNode], into result: inout [PlaylistNode]) {
+        for node in nodes where node.kind == .folder {
+            result.append(node)
+            self.collectFolders(node.children, into: &result)
         }
     }
 

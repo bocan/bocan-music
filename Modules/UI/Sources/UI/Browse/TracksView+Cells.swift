@@ -1,3 +1,4 @@
+import AppKit
 import Persistence
 import SwiftUI
 
@@ -16,6 +17,17 @@ extension TracksView {
             .font(Typography.body)
             .foregroundStyle(row.track.loved ? Color.lovedTint : Color.textPrimary)
             .lineLimit(1)
+            .onDrag {
+                // Drag the full selection when the row is part of it;
+                // otherwise just this single row.
+                let dragIDs: [Int64] = if let rowID = row.id, self.vm.selection.contains(rowID) {
+                    self.vm.selection.compactMap(\.self)
+                } else {
+                    [row.id].compactMap(\.self)
+                }
+                let payload = dragIDs.map { "\($0)" }.joined(separator: ",")
+                return NSItemProvider(object: payload as NSString)
+            }
     }
 
     func artistCell(_ row: TrackRow) -> some View {

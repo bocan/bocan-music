@@ -54,10 +54,29 @@ public struct PlaylistFolderRow: View {
         Button("New Subfolder") { self.vm.beginNewFolder(parent: self.node.id) }
         Divider()
         Button("Rename") { self.vm.renameTarget = self.node }
+        self.moveToFolderMenu
         Divider()
         Button("Delete Folder (Keep Contents)") { self.vm.deleteTarget = self.node }
         Button("Delete Folder and Contents", role: .destructive) {
-            Task { await self.vm.delete(self.node, recursive: true) }
+            self.vm.deleteRecursiveTarget = self.node
+        }
+    }
+
+    @ViewBuilder
+    private var moveToFolderMenu: some View {
+        let folders = self.vm.allFolders().filter { $0.id != self.node.id }
+        if !folders.isEmpty {
+            Menu("Move to Folder") {
+                Button("Top Level") {
+                    Task { await self.vm.move(self.node, toParent: nil) }
+                }
+                Divider()
+                ForEach(folders, id: \.id) { folder in
+                    Button(folder.name) {
+                        Task { await self.vm.move(self.node, toParent: folder.id) }
+                    }
+                }
+            }
         }
     }
 }
