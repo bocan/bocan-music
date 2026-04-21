@@ -48,7 +48,7 @@ public actor LibraryScanner {
             relativeTo: nil
         )
         let now = Int64(Date.now.timeIntervalSince1970)
-        var root = LibraryRoot(
+        let root = LibraryRoot(
             id: nil,
             path: url.path,
             bookmark: bookmark,
@@ -57,7 +57,6 @@ public actor LibraryScanner {
         )
         try await self.rootRepo.upsert(root)
         self.log.info("library.root.added", ["path": url.path])
-        _ = root // suppress warning
     }
 
     /// Removes a root by its database ID.
