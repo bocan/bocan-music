@@ -116,7 +116,7 @@ public actor AudioEngine: Transport {
         )
 
         let playerNode = self.graph.playerNode
-        let nextPump = BufferPump(
+        let nextPump = try BufferPump(
             decoder: dec,
             playerNode: playerNode,
             outputFormat: outputFmt
@@ -227,7 +227,7 @@ public actor AudioEngine: Transport {
         await self.pump?.stop()
         self.pump = nil
         let playerNode = self.graph.playerNode
-        let newPump = BufferPump(
+        let newPump = try BufferPump(
             decoder: dec,
             playerNode: playerNode,
             outputFormat: outputFmt
