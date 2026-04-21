@@ -83,14 +83,7 @@ public final class EngineGraph: @unchecked Sendable {
         do {
             try self.engine.start()
             self.isRunning = true
-            let outFmt = self.engine.outputNode.outputFormat(forBus: 0)
-            let playerFmt = self.playerNode.outputFormat(forBus: 0)
-            self.log.debug("engine.started", [
-                "hardwareHz": outFmt.sampleRate,
-                "playerNodeHz": playerFmt.sampleRate,
-                "playerNodeInterleaved": playerFmt.isInterleaved,
-                "playerNodeChannels": playerFmt.channelCount,
-            ])
+            self.log.debug("engine.started", ["sampleRate": self.outputSampleRate])
         } catch {
             throw AudioEngineError.engineStartFailed(underlying: error)
         }
