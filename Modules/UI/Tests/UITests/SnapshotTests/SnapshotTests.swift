@@ -20,7 +20,19 @@ private func host(_ view: some View, size: CGSize) -> NSView {
 
 /// All snapshot suites are nested under a single .serialized parent so they run
 /// sequentially, preventing concurrent @MainActor rendering races.
-@Suite("UI Snapshots", .serialized)
+///
+/// Snapshot tests are disabled on CI because pixel-level SwiftUI/AppKit
+/// rendering differs subtly between developer Macs and GitHub-hosted runners
+/// (font hinting, GPU, color profile), producing false positives even at 98%
+/// precision. They remain a local visual-regression guardrail.
+@Suite(
+    "UI Snapshots",
+    .serialized,
+    .disabled(
+        if: ProcessInfo.processInfo.environment["CI"] != nil,
+        "Snapshot tests are local-only; rendering differs on CI runners."
+    )
+)
 @MainActor
 struct UISnapshotTests {
     @Suite("Sidebar Snapshots")
