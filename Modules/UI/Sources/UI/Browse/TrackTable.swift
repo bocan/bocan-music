@@ -111,6 +111,7 @@ public struct TrackTable: NSViewRepresentable {
             coordinator?.parent.selection ?? []
         }
         coordinator.dataSource = dataSource
+        dataSource.coordinator = coordinator
         coordinator.tableView = tableView
 
         let scrollView = NSScrollView()
