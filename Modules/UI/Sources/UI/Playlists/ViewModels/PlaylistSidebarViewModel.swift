@@ -63,9 +63,9 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     public func createPlaylist(name: String) async -> Int64? {
         do {
-            let p = try await self.service.create(name: name, parentID: self.newPlaylistParent)
+            let playlist = try await self.service.create(name: name, parentID: self.newPlaylistParent)
             await self.reload()
-            return p.id
+            return playlist.id
         } catch {
             self.lastError = self.describe(error)
             return nil
