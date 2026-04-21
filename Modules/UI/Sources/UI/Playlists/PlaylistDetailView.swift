@@ -93,8 +93,8 @@ public struct PlaylistDetailView: View {
 
     private static func formatDuration(_ seconds: TimeInterval) -> String {
         let total = Int(seconds.rounded())
-        let m = total / 60
-        let s = total % 60
-        return String(format: "%d:%02d", m, s)
+        let minutes = total / 60
+        let remainder = total % 60
+        return String(format: "%d:%02d", minutes, remainder)
     }
 }

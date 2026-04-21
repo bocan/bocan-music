@@ -92,8 +92,8 @@ public final class PlaylistDetailViewModel: ObservableObject {
         guard let id = loadedID else { return }
         // Optimistic remove.
         var copy = self.tracks
-        for i in offsets.sorted(by: >) {
-            if i < copy.count { copy.remove(at: i) }
+        for index in offsets.sorted(by: >) where index < copy.count {
+            copy.remove(at: index)
         }
         self.tracks = copy
         do {

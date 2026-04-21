@@ -57,8 +57,11 @@ public struct NewPlaylistSheet: View {
 
     private var title: String {
         switch self.kind {
-        case .playlist: "New Playlist"
-        case .folder: "New Folder"
+        case .playlist:
+            "New Playlist"
+
+        case .folder:
+            "New Folder"
         }
     }
 
