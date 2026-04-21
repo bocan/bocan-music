@@ -19,6 +19,11 @@ import Observability
 /// try await engine.play()
 /// ```
 public actor AudioEngine: Transport {
+    private static let _executor = DispatchSerialQueue(label: "com.bocan.audio-engine", qos: .userInitiated)
+    public nonisolated var unownedExecutor: UnownedSerialExecutor {
+        Self._executor.asUnownedSerialExecutor()
+    }
+
     // MARK: - State
 
     private let graph: EngineGraph
@@ -152,10 +157,8 @@ public actor AudioEngine: Transport {
     // MARK: - Transport conformance
 
     public func load(_ url: URL) async throws {
-        // Stop the player node FIRST, before any await-suspension points.  This
-        // gives the fastest possible audio cut-off; otherwise buffers queued by
-        // the previous pump (or a gapless preload) keep playing for up to ~200 ms
-        // while we await cancelGaplessNext / decoder close.
+        // Stop the player node before any awaits — otherwise queued buffers
+        // keep playing for ~200 ms through the suspension points below.
         self.graph.playerNode.stop()
 
         let start = Date()

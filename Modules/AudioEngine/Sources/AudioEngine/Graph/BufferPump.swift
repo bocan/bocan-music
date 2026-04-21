@@ -17,6 +17,11 @@ import Observability
 /// All cancellation is handled via standard Swift structured concurrency — cancel
 /// the `Task` returned by `start()` to stop the pump cleanly.
 actor BufferPump {
+    private static let _executor = DispatchSerialQueue(label: "com.bocan.buffer-pump", qos: .userInitiated)
+    nonisolated var unownedExecutor: UnownedSerialExecutor {
+        Self._executor.asUnownedSerialExecutor()
+    }
+
     // MARK: - Configuration
 
     private static let windowSize = 4 // number of buffers in flight
