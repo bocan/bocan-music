@@ -202,7 +202,7 @@ struct LibraryScannerTests {
         let dir = try sampleLibraryURL
 
         // Pick the first audio file from the fixture directory
-        let audioFile = try FileManager.default
+        let audioFile = FileManager.default
             .enumerator(at: dir, includingPropertiesForKeys: nil)?
             .compactMap { $0 as? URL }
             .first { url in
