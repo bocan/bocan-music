@@ -63,6 +63,7 @@ public final class NowPlayingViewModel: ObservableObject {
 
     /// Set by the TracksView/AlbumsView when a track is selected and played.
     public func setCurrentTrack(_ track: Track) {
+        self.log.info("playback.track", ["id": track.id ?? -1, "title": track.title ?? "?"])
         self.currentTrack = track
         self.nowPlayingTrackID = track.id
         self.title = track.title ?? "Unknown Track"
@@ -209,16 +210,19 @@ public final class NowPlayingViewModel: ObservableObject {
                 guard !Task.isCancelled else { break }
                 switch state {
                 case .playing:
+                    self.log.info("transport.state", ["state": "playing"])
                     self.isPlaying = true
                     self.isPaused = false
                     self.startPollingPosition()
 
                 case .paused:
+                    self.log.info("transport.state", ["state": "paused"])
                     self.isPlaying = false
                     self.isPaused = true
                     self.stopPollingPosition()
 
                 case .stopped, .idle, .ended:
+                    self.log.info("transport.state", ["state": String(describing: state)])
                     self.isPlaying = false
                     self.isPaused = false
                     self.stopPollingPosition()

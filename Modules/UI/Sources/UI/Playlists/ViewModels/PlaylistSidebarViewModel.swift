@@ -53,11 +53,13 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     }
 
     public func beginNewPlaylist(parent: Int64? = nil) {
+        self.log.debug("playlist.sheet", ["kind": "playlist", "parent": parent ?? -1])
         self.newPlaylistParent = parent
         self.isPresentingNewPlaylist = true
     }
 
     public func beginNewFolder(parent: Int64? = nil) {
+        self.log.debug("playlist.sheet", ["kind": "folder", "parent": parent ?? -1])
         self.newPlaylistParent = parent
         self.isPresentingNewFolder = true
     }
