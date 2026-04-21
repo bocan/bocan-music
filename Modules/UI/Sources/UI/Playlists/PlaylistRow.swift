@@ -1,5 +1,7 @@
+import AppKit
 import Library
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - PlaylistRow
 
@@ -35,6 +37,19 @@ public struct PlaylistRow: View {
         }
         .padding(.leading, CGFloat(self.depth) * 14)
         .contextMenu { self.contextMenuContent }
+        .onDrop(of: [.plainText], isTargeted: nil) { providers in
+            guard self.node.kind == .manual else { return false }
+            for provider in providers {
+                provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
+                    guard let data = item as? Data,
+                          let string = String(data: data, encoding: .utf8) else { return }
+                    let ids = string.split(separator: ",").compactMap { Int64($0) }
+                    guard !ids.isEmpty else { return }
+                    Task { @MainActor in await self.vm.addTracks(ids, to: self.node.id) }
+                }
+            }
+            return true
+        }
         .accessibilityLabel("Playlist: \(self.node.name)")
         .accessibilityIdentifier(A11y.PlaylistSidebar.row(self.node.id))
     }
@@ -48,7 +63,27 @@ public struct PlaylistRow: View {
     private var contextMenuContent: some View {
         Button("Rename") { self.vm.renameTarget = self.node }
         Button("Duplicate") { Task { _ = await self.vm.duplicate(self.node) } }
+        self.moveToFolderMenu
         Divider()
         Button("Delete", role: .destructive) { self.vm.deleteTarget = self.node }
+    }
+
+    @ViewBuilder
+    private var moveToFolderMenu: some View {
+        let folders = self.vm.allFolders()
+        if !folders.isEmpty {
+            Divider()
+            Menu("Move to Folder") {
+                Button("Top Level") {
+                    Task { await self.vm.move(self.node, toParent: nil) }
+                }
+                Divider()
+                ForEach(folders, id: \.id) { folder in
+                    Button(folder.name) {
+                        Task { await self.vm.move(self.node, toParent: folder.id) }
+                    }
+                }
+            }
+        }
     }
 }
