@@ -1,4 +1,5 @@
 import AppKit
+import Library
 import Persistence
 import SwiftUI
 
@@ -47,7 +48,16 @@ extension TracksView {
             Task { await self.library.addToQueue(tracks: selected) }
         }
         .disabled(selected.isEmpty)
-        Button("Add to Playlist ▸") {}.disabled(true) // TODO(phase-6)
+        AddToPlaylistMenu(
+            nodes: self.library.playlistSidebar.nodes,
+            onNewPlaylistFromSelection: {
+                self.library.playlistSidebar.beginNewPlaylist()
+            },
+            onAddToPlaylist: { playlistID in
+                let ids = selected.compactMap(\.id)
+                Task { try? await self.library.playlistService.addTracks(ids, to: playlistID) }
+            }
+        )
         if let first {
             Divider()
             Button(first.loved ? "Unlove" : "Love") {
