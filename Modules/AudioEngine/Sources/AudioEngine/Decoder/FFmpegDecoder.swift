@@ -26,6 +26,14 @@ private let eagainCode: Int32 = 35
 // MARK: - FFmpegDecoder
 
 public actor FFmpegDecoder: Decoder {
+    private static let _executor = DispatchSerialQueue(
+        label: "com.bocan.ffmpeg-decoder",
+        qos: .userInitiated
+    )
+    public nonisolated var unownedExecutor: UnownedSerialExecutor {
+        Self._executor.asUnownedSerialExecutor()
+    }
+
     private final class FFContext {
         var formatCtx: UnsafeMutablePointer<AVFormatContext>?
         var codecCtx: UnsafeMutablePointer<AVCodecContext>?
