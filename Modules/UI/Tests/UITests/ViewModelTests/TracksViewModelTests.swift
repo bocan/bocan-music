@@ -132,7 +132,6 @@ struct TracksViewModelTests {
     @Test("Empty library produces empty tracks array")
     func emptyLibrary() async throws {
         let db = try await makeDatabase()
-        let repo = TrackRepository(database: db)
         let vm = self.makeVM(db: db)
         await vm.load()
         #expect(vm.tracks.isEmpty)
@@ -142,7 +141,6 @@ struct TracksViewModelTests {
     @Test("setTracks replaces backing array")
     func setTracksReplaces() async throws {
         let db = try await makeDatabase()
-        let repo = TrackRepository(database: db)
         let vm = self.makeVM(db: db)
         let tracks = [makeTrack(id: 1, title: "Custom")]
         vm.setTracks(tracks)
