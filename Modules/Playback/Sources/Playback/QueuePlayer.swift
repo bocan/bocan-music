@@ -725,8 +725,12 @@ public actor QueuePlayer: Transport {
             ) {
                 var updated = root
                 updated.bookmark = freshData
-                try? await self.rootRepo.upsert(updated)
-                self.log.info("queueplayer.root.bookmark_refreshed", ["rootID": rootID])
+                do {
+                    try await self.rootRepo.upsert(updated)
+                    self.log.info("queueplayer.root.bookmark_refreshed", ["rootID": rootID])
+                } catch {
+                    self.log.warning("queueplayer.root.bookmark_refresh_failed", ["rootID": rootID, "error": String(reflecting: error)])
+                }
             }
         }
         return rootURL
