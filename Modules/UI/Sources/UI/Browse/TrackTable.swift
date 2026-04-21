@@ -101,10 +101,10 @@ public struct TrackTable: NSViewRepresentable {
         // nonisolated(unsafe) lets the cell-provider closure capture the coordinator
         // without triggering Swift 6 concurrency warnings.  Safe because AppKit
         // always calls the cell-provider on the main thread.
-        nonisolated(unsafe) let cellCoord = coordinator
+        let cellCoord = coordinator
         let dataSource = TrackDiffableDataSource(tableView: tableView) { tv, column, _, itemID in
             MainActor.assumeIsolated {
-                cellCoord.cellView(for: column, trackID: itemID, in: tv)
+                cellCoord.cellView(for: column, trackID: itemID, in: tv) ?? NSTableCellView()
             }
         }
         dataSource.selectionProvider = { [weak coordinator] in
@@ -149,12 +149,12 @@ public struct TrackTable: NSViewRepresentable {
             coordinator.updateRows(self.rows)
             var snapshot = dataSource.snapshot()
             var toReconfigure: [Int64] = []
-            if let old = coordinator.lastNowPlayingID { toReconfigure.append(old) }
-            if let new = nowPlayingTrackID { toReconfigure.append(new) }
+            if let old = coordinator.lastNowPlayingID, let oldID = old { toReconfigure.append(oldID) }
+            if let new = self.nowPlayingTrackID, let newID = new { toReconfigure.append(newID) }
             let existing = Set(snapshot.itemIdentifiers(inSection: 0))
             let valid = toReconfigure.filter { existing.contains($0) }
             if !valid.isEmpty {
-                snapshot.reconfigureItems(valid)
+                snapshot.reloadItems(valid)
                 dataSource.apply(snapshot, animatingDifferences: false)
             }
         }

@@ -10,6 +10,7 @@ import SwiftUI
 /// Owns the `NSTableViewDiffableDataSource` and handles all AppKit delegate
 /// callbacks: cell population, selection changes, sort-descriptor changes,
 /// and context menus.
+@MainActor
 public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var parent: TrackTable
 
@@ -61,7 +62,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         }
 
         let cellID = NSUserInterfaceItemIdentifier("textCell.\(column.identifier.rawValue)")
-        let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: self) as? NSTableCellView {
+        let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
             reused
         } else {
             self.makeTextCell(cellID: cellID)
@@ -92,7 +93,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     private func shuffleCell(for row: TrackRow, in tableView: NSTableView) -> NSView {
         let cellID = NSUserInterfaceItemIdentifier("checkCell.shuffleExclude")
-        let cell = (tableView.makeView(withIdentifier: cellID, owner: self) as? ShuffleCheckCell)
+        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? ShuffleCheckCell)
             ?? ShuffleCheckCell()
         cell.configure(row: row, action: self.parent.actions.toggleShuffle)
         return cell
@@ -217,7 +218,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         Self.fillPlaylistSubmenu(
             sub, nodes: self.parent.playlistNodes, tracks: selected, action: acts.addToPlaylist
         )
-        let playlistItem = NSMenuItem(title: "Add to Playlist")
+        let playlistItem = NSMenuItem(title: "Add to Playlist", action: nil, keyEquivalent: "")
         playlistItem.submenu = sub
         menu.addItem(playlistItem)
     }
@@ -287,7 +288,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             if node.kind == .folder {
                 let sub = NSMenu()
                 self.fillPlaylistSubmenu(sub, nodes: node.children, tracks: tracks, action: action)
-                let item = NSMenuItem(title: node.name)
+                let item = NSMenuItem(title: node.name, action: nil, keyEquivalent: "")
                 item.submenu = sub
                 menu.addItem(item)
             } else {
@@ -368,7 +369,7 @@ final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
     /// Returns the current selection.  Injected by the coordinator.
     var selectionProvider: (() -> Set<Track.ID>)?
 
-    override func tableView(
+    func tableView(
         _ tableView: NSTableView,
         pasteboardWriterForRow row: Int
     ) -> (any NSPasteboardWriting)? {
