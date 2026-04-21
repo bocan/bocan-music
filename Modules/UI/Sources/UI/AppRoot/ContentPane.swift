@@ -23,15 +23,10 @@ public struct ContentPane: View {
     private var destinationContent: some View {
         switch self.vm.selectedDestination {
         case .songs:
-            // Full-library Songs view: disable header sort unless a search
-            // narrows the set down to something sortable in a reasonable
-            // amount of time.  Album/artist/genre/composer and search
-            // destinations below are always filtered contexts, so they
-            // keep header sort enabled.
             TracksView(
                 vm: self.vm.tracks,
                 library: self.vm,
-                sortable: !self.vm.searchQuery.isEmpty
+                sortable: true
             )
 
         case .albums:
