@@ -15,7 +15,11 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// Display name of the playlist.
     public var name: String
 
-    /// Whether this is a smart playlist (criteria-driven).
+    /// Legacy flag; see `kind` for the canonical value.
+    ///
+    /// Preserved so older code paths keep working. New code should read
+    /// `kind` and ignore this boolean. Kept in sync on write by the
+    /// service layer.
     public var isSmart: Bool
 
     /// JSON-encoded smart-playlist criteria (Phase 7 compiler reads this).
@@ -36,6 +40,12 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// User-set or auto-derived cover art path.
     public var coverArtPath: String?
 
+    /// Role this row plays in the UI; see `PlaylistKind`.
+    public var kind: PlaylistKind
+
+    /// Optional accent colour as a `"#RRGGBB"` hex string.
+    public var accentColor: String?
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -49,7 +59,9 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         createdAt: Int64,
         updatedAt: Int64,
         parentID: Int64? = nil,
-        coverArtPath: String? = nil
+        coverArtPath: String? = nil,
+        kind: PlaylistKind = .manual,
+        accentColor: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -60,6 +72,8 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         self.updatedAt = updatedAt
         self.parentID = parentID
         self.coverArtPath = coverArtPath
+        self.kind = kind
+        self.accentColor = accentColor
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -83,5 +97,7 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         case updatedAt = "updated_at"
         case parentID = "parent_id"
         case coverArtPath = "cover_art_path"
+        case kind
+        case accentColor = "accent_color"
     }
 }
