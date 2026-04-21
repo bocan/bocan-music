@@ -25,7 +25,7 @@ public struct TracksView: View {
 
     /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
     /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
-    @ObservedObject private var nowPlaying: NowPlayingViewModel
+    @ObservedObject var nowPlaying: NowPlayingViewModel
 
     /// Local sort state.  Owned by the View (not the VM) so that
     /// NSTableView sort-descriptor writes never fire `objectWillChange`
