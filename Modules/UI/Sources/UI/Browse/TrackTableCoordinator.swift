@@ -109,7 +109,8 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
                 self.dataSource?.itemIdentifier(forRow: idx)
             }
         )
-        self.parent.selection = newIDs
+        // Defer to avoid publishing inside AppKit's table layout (SwiftUI runtime fault).
+        Task { @MainActor [weak self] in self?.parent.selection = newIDs }
     }
 
     func handleSortDescriptorsDidChange(in tableView: NSTableView) {
