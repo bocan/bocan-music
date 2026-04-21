@@ -123,6 +123,7 @@ public final class LibraryViewModel: ObservableObject {
 
     /// Responds to a sidebar selection change.
     public func selectDestination(_ destination: SidebarDestination) async {
+        self.log.info("nav.select", ["destination": String(describing: destination)])
         // Clear search when drilling into a detail page (album or artist).
         // For top-level browse views (songs/albums/artists/etc) keep the active
         // query so the new view shows filtered results immediately.
