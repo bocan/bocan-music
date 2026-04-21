@@ -82,9 +82,9 @@ public struct PlaylistHeader: View {
 
     private static func formatTotal(_ seconds: TimeInterval) -> String {
         let total = Int(seconds.rounded())
-        let h = total / 3600
-        let m = (total % 3600) / 60
-        if h > 0 { return "\(h) hr \(m) min" }
-        return "\(m) min"
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        if hours > 0 { return "\(hours) hr \(minutes) min" }
+        return "\(minutes) min"
     }
 }
