@@ -6,10 +6,6 @@ import SwiftUI
 // MARK: - TrackTableCoordinator
 
 /// NSViewRepresentable coordinator for `TrackTable`.
-///
-/// Owns the `NSTableViewDiffableDataSource` and handles all AppKit delegate
-/// callbacks: cell population, selection changes, sort-descriptor changes,
-/// and context menus.
 @MainActor
 public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var parent: TrackTable
@@ -99,13 +95,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         return cell
     }
 
-    // MARK: NSTableViewDelegate — layout
+    // MARK: NSTableViewDelegate — sort / selection / layout
 
     public func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         22
     }
-
-    // MARK: NSTableViewDelegate — selection
 
     public func tableViewSelectionDidChange(_ notification: Notification) {
         guard !self.isSyncingSelection else { return }
@@ -118,12 +112,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         self.parent.selection = newIDs
     }
 
-    // MARK: NSTableViewDelegate — sort
-
-    public func tableView(
-        _ tableView: NSTableView,
-        sortDescriptorsDidChange _: [NSSortDescriptor]
-    ) {
+    func handleSortDescriptorsDidChange(in tableView: NSTableView) {
         guard self.parent.sortable, !self.isSyncingSort else { return }
         let newOrder = tableView.sortDescriptors.compactMap {
             TrackTable.comparator(from: $0)
@@ -131,8 +120,6 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         guard !newOrder.isEmpty else { return }
         self.parent.sortOrder = newOrder
     }
-
-    // MARK: Sort sync helper
 
     func syncSortIfNeeded(sortOrder: [KeyPathComparator<TrackRow>]) {
         guard let tv = tableView else { return }
@@ -365,9 +352,22 @@ final class ShuffleCheckCell: NSTableCellView {
 /// Subclass of `NSTableViewDiffableDataSource` that adds drag-to-playlist
 /// support by implementing `tableView(_:pasteboardWriterForRow:)`.
 /// The section identifier is a single `Int` (0); item identifiers are `Int64` track IDs.
+@MainActor
 final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
     /// Returns the current selection.  Injected by the coordinator.
     var selectionProvider: (() -> Set<Track.ID>)?
+
+    /// Forwarded to the coordinator so sort-descriptor changes reach SwiftUI.
+    weak var coordinator: TrackTableCoordinator?
+
+    @objc func tableView(
+        _ tableView: NSTableView,
+        sortDescriptorsDidChange _: [NSSortDescriptor]
+    ) {
+        MainActor.assumeIsolated {
+            self.coordinator?.handleSortDescriptorsDidChange(in: tableView)
+        }
+    }
 
     func tableView(
         _ tableView: NSTableView,
