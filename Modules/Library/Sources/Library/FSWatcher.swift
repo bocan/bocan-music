@@ -108,7 +108,8 @@ private let fsEventsCallback: FSEventStreamCallback = {
     guard let info = clientCallBackInfo else { return }
     let watcher = Unmanaged<FSWatcher>.fromOpaque(info).takeUnretainedValue()
 
-    guard let pathsArray = eventPaths as? NSArray as? [String] else { return }
+    // FSEvents delivers eventPaths as a CFArray of CFString; bridge via unsafeBitCast.
+    let pathsArray = unsafeBitCast(eventPaths, to: NSArray.self) as? [String] ?? []
     let paths = Array(pathsArray.prefix(numEvents))
 
     Task {
