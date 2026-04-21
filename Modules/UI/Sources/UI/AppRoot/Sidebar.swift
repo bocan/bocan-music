@@ -1,3 +1,4 @@
+import Library
 import Persistence
 import SwiftUI
 
@@ -66,17 +67,78 @@ public struct Sidebar: View {
                 }
             }
 
-            Section("Playlists") {
-                // TODO(phase-6): Populate from PlaylistRepository
-                Text("No playlists yet")
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textTertiary)
-                    .padding(.vertical, 2)
-            }
+            PlaylistSidebarSection(vm: self.vm.playlistSidebar)
         }
         .listStyle(.sidebar)
         .frame(minWidth: Theme.sidebarMinWidth)
         .accessibilityIdentifier(A11y.Sidebar.list)
+        .sheet(isPresented: self.newPlaylistBinding) {
+            NewPlaylistSheet(
+                kind: .playlist,
+                isPresented: self.newPlaylistBinding,
+                parentID: self.vm.playlistSidebar.newPlaylistParent
+            ) { name in
+                await self.vm.playlistSidebar.createPlaylist(name: name)
+            }
+        }
+        .sheet(isPresented: self.newFolderBinding) {
+            NewPlaylistSheet(
+                kind: .folder,
+                isPresented: self.newFolderBinding,
+                parentID: self.vm.playlistSidebar.newPlaylistParent
+            ) { name in
+                await self.vm.playlistSidebar.createFolder(name: name)
+            }
+        }
+        .sheet(item: self.renameTargetBinding) { _ in
+            RenamePlaylistSheet(target: self.renameTargetBinding) { node, newName in
+                await self.vm.playlistSidebar.rename(node, to: newName)
+            }
+        }
+        .confirmationDialog(
+            "Delete Playlist",
+            isPresented: self.deleteConfirmBinding,
+            presenting: self.vm.playlistSidebar.deleteTarget
+        ) { target in
+            Button("Delete", role: .destructive) {
+                Task { await self.vm.playlistSidebar.delete(target) }
+            }
+            Button("Cancel", role: .cancel) {
+                self.vm.playlistSidebar.deleteTarget = nil
+            }
+        } message: { target in
+            Text("Delete \"\(target.name)\"? Tracks remain in your library.")
+        }
+    }
+
+    private var newPlaylistBinding: Binding<Bool> {
+        Binding(
+            get: { self.vm.playlistSidebar.isPresentingNewPlaylist },
+            set: { self.vm.playlistSidebar.isPresentingNewPlaylist = $0 }
+        )
+    }
+
+    private var newFolderBinding: Binding<Bool> {
+        Binding(
+            get: { self.vm.playlistSidebar.isPresentingNewFolder },
+            set: { self.vm.playlistSidebar.isPresentingNewFolder = $0 }
+        )
+    }
+
+    private var renameTargetBinding: Binding<PlaylistNode?> {
+        Binding(
+            get: { self.vm.playlistSidebar.renameTarget },
+            set: { self.vm.playlistSidebar.renameTarget = $0 }
+        )
+    }
+
+    private var deleteConfirmBinding: Binding<Bool> {
+        Binding(
+            get: { self.vm.playlistSidebar.deleteTarget != nil },
+            set: { newValue in
+                if !newValue { self.vm.playlistSidebar.deleteTarget = nil }
+            }
+        )
     }
 
     // MARK: - Row builder

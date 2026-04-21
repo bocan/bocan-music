@@ -64,11 +64,11 @@ public struct ContentPane: View {
         case .upNext:
             QueueView(vm: self.vm)
 
-        case .playlist:
-            EmptyState(
-                symbol: "music.note.list",
-                title: "No Playlist",
-                message: "Playlist support arrives in Phase 6."
+        case let .playlist(id):
+            PlaylistDetailView(
+                playlistID: id,
+                library: self.vm,
+                service: self.vm.playlistService
             )
 
         case .smartPlaylist:
