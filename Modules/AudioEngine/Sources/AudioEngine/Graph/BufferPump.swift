@@ -32,6 +32,18 @@ actor BufferPump {
     private let decoder: any Decoder
     private let playerNode: AVAudioPlayerNode
     private let outputFormat: AVAudioFormat
+
+    /// Format used to allocate intermediate decode buffers. Equals `outputFormat`
+    /// unless the decoder's native rate differs, in which case it equals `decoder.sourceFormat`
+    /// and `converter` resamples those buffers to `outputFormat` before scheduling.
+    private let pumpFormat: AVAudioFormat
+
+    /// Non-nil only when `decoder.sourceFormat.sampleRate != outputFormat.sampleRate`.
+    /// `AVFoundationDecoder` handles SRC internally via AVAudioFile, but FFmpegDecoder
+    /// does not — without this converter it would fill hardware-rate buffers with
+    /// source-rate samples, causing playback at the wrong speed and pitch.
+    private let converter: FormatConverter?
+
     private let log = AppLogger.make(.audio)
 
     // MARK: - State
@@ -58,12 +70,19 @@ actor BufferPump {
         decoder: any Decoder,
         playerNode: AVAudioPlayerNode,
         outputFormat: AVAudioFormat
-    ) {
+    ) throws {
         self.decoder = decoder
         self.playerNode = playerNode
         self.outputFormat = outputFormat
         self.availableSlots = BufferPump.windowSize
         self.id = String(UUID().uuidString.prefix(4))
+        if decoder.sourceFormat.sampleRate != outputFormat.sampleRate {
+            self.converter = try FormatConverter(sourceFormat: decoder.sourceFormat, targetFormat: outputFormat)
+            self.pumpFormat = decoder.sourceFormat
+        } else {
+            self.converter = nil
+            self.pumpFormat = outputFormat
+        }
     }
 
     // MARK: - Lifecycle
@@ -92,7 +111,7 @@ actor BufferPump {
 
     private func run() async throws {
         let frameCapacity = AVAudioFrameCount(
-            outputFormat.sampleRate * BufferPump.bufferDuration
+            pumpFormat.sampleRate * BufferPump.bufferDuration
         )
 
         while !Task.isCancelled {
@@ -106,9 +125,9 @@ actor BufferPump {
 
             try Task.checkCancellation()
 
-            // Allocate and fill a buffer.
+            // Allocate and fill a buffer at the decoder's native rate.
             guard let buffer = AVAudioPCMBuffer(
-                pcmFormat: outputFormat,
+                pcmFormat: pumpFormat,
                 frameCapacity: frameCapacity
             ) else {
                 self.log.error("buffer.alloc.failed", ["id": self.id])
@@ -135,13 +154,28 @@ actor BufferPump {
                 break
             }
 
+            // Resample if needed, then schedule.
+            guard let scheduleBuffer = try resampledBuffer(buffer) else { continue }
+
             // Claim a slot and schedule.
             self.availableSlots -= 1
             self.scheduledCount += 1
             let selfCapture = self
-            self.playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
+            self.playerNode.scheduleBuffer(scheduleBuffer, completionCallbackType: .dataPlayedBack) { _ in
                 Task { await selfCapture.releaseSlot() }
             }
+        }
+    }
+
+    /// Returns `source` unchanged when no sample-rate conversion is needed;
+    /// otherwise resamples via `FormatConverter`. Returns `nil` for empty input.
+    private func resampledBuffer(_ source: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
+        guard let conv = self.converter else { return source }
+        do {
+            return try conv.convert(source)
+        } catch {
+            self.log.error("pump.convert.failed", ["id": self.id, "error": String(reflecting: error)])
+            throw error
         }
     }
 
