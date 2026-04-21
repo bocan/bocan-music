@@ -57,14 +57,14 @@ public final class EngineGraph: @unchecked Sendable {
     /// Prepare and start the engine.
     public func start() throws {
         guard !self.isRunning else { return }
-        self.engine.prepare()
 
-        // After prepare() the hardware sample rate is finalised. Reconnect playerNode
-        // with an explicit format so its output format matches the hardware rate exactly.
-        // With format:nil the engine can cache a stale rate from a previous run (e.g.
-        // 44100 Hz) even when the hardware is now at a different rate (e.g. 48000 Hz).
-        // Scheduling 48000 Hz buffers onto a 44100 Hz node plays them at 44100/48000×
-        // speed — audibly slower and lower-pitched.
+        // Reconnect playerNode with an explicit format BEFORE prepare(), so the node
+        // format matches the current hardware rate. With format:nil AVAudioEngine can
+        // cache a stale rate from a prior run (e.g. 44100 Hz) even when the device is
+        // now at a different rate (e.g. 48000 Hz). Scheduling 48000 Hz buffers onto a
+        // 44100 Hz node plays them at 44100/48000× speed — audibly slower/lower-pitched.
+        // outputNode.outputFormat is provided by the system device driver and is valid
+        // before prepare(); graph modifications must not happen after prepare().
         let hwRate = self.engine.outputNode.outputFormat(forBus: 0).sampleRate
         if hwRate > 0 {
             // swiftlint:disable:next force_unwrapping
@@ -74,6 +74,7 @@ public final class EngineGraph: @unchecked Sendable {
             self.engine.connect(self.playerNode, to: self.eq, format: fmt)
         }
 
+        self.engine.prepare()
         do {
             try self.engine.start()
             self.isRunning = true
