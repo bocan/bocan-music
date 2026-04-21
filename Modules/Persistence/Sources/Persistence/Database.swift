@@ -74,12 +74,18 @@ public actor Database {
 
     /// Starts a GRDB observation and returns a cancellable.
     /// Used by `AsyncObservation` to bridge from outside the actor.
+    ///
+    /// Passes an explicit `.async(onQueue: .main)` scheduler so we use
+    /// the non-MainActor-isolated overload of `start(in:scheduling:…)`.
+    /// The default scheduler is `.mainActor` which requires the caller
+    /// be on `@MainActor`; we call this from the `Database` actor.
     func startObservation<T: Sendable>(
         observation: ValueObservation<ValueReducers.Fetch<T>>,
         continuation: AsyncThrowingStream<T, Error>.Continuation
     ) -> AnyDatabaseCancellable {
         observation.start(
             in: self.writer,
+            scheduling: .async(onQueue: .main),
             onError: { continuation.finish(throwing: $0) },
             onChange: { continuation.yield($0) }
         )

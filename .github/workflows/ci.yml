@@ -63,6 +63,9 @@ jobs:
       - name: Test Library package
         run: make test-library
 
+      - name: Test UI package
+        run: make test-ui
+
       - name: Upload test results
         uses: actions/upload-artifact@v7
         if: always()
