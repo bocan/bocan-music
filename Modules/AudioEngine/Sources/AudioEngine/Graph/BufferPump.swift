@@ -91,7 +91,12 @@ actor BufferPump {
     func start(onEnded: @Sendable @escaping () -> Void) {
         self.onEnded = onEnded
         self.availableSlots = BufferPump.windowSize
-        self.log.debug("pump.start", ["id": self.id])
+        self.log.debug("pump.start", [
+            "id": self.id,
+            "pumpHz": self.pumpFormat.sampleRate,
+            "outputHz": self.outputFormat.sampleRate,
+            "converterActive": self.converter != nil,
+        ])
         self.task = Task { [weak self] in
             try await self?.run()
         }

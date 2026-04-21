@@ -94,6 +94,11 @@ public actor FFmpegDecoder: Decoder {
             standardFormatWithSampleRate: sampleRate,
             channelLayout: layout
         )
+        AppLogger.make(.audio).debug("ffmpeg.decoder.opened", [
+            "file": url.lastPathComponent,
+            "sampleRateHz": sampleRate,
+            "durationSec": self.duration,
+        ])
     }
 
     // MARK: - Decoder
