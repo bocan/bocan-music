@@ -58,10 +58,33 @@ public final class EngineGraph: @unchecked Sendable {
     public func start() throws {
         guard !self.isRunning else { return }
         self.engine.prepare()
+
+        // After prepare() the hardware sample rate is finalised. Reconnect playerNode
+        // with an explicit format so its output format matches the hardware rate exactly.
+        // With format:nil the engine can cache a stale rate from a previous run (e.g.
+        // 44100 Hz) even when the hardware is now at a different rate (e.g. 48000 Hz).
+        // Scheduling 48000 Hz buffers onto a 44100 Hz node plays them at 44100/48000×
+        // speed — audibly slower and lower-pitched.
+        let hwRate = self.engine.outputNode.outputFormat(forBus: 0).sampleRate
+        if hwRate > 0 {
+            // swiftlint:disable:next force_unwrapping
+            let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
+            let fmt = AVAudioFormat(standardFormatWithSampleRate: hwRate, channelLayout: layout)
+            self.engine.disconnectNodeOutput(self.playerNode)
+            self.engine.connect(self.playerNode, to: self.eq, format: fmt)
+        }
+
         do {
             try self.engine.start()
             self.isRunning = true
-            self.log.debug("engine.started", ["sampleRate": self.outputSampleRate])
+            let outFmt = self.engine.outputNode.outputFormat(forBus: 0)
+            let playerFmt = self.playerNode.outputFormat(forBus: 0)
+            self.log.debug("engine.started", [
+                "hardwareHz": outFmt.sampleRate,
+                "playerNodeHz": playerFmt.sampleRate,
+                "playerNodeInterleaved": playerFmt.isInterleaved,
+                "playerNodeChannels": playerFmt.channelCount,
+            ])
         } catch {
             throw AudioEngineError.engineStartFailed(underlying: error)
         }

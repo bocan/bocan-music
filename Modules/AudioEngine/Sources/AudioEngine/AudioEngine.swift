@@ -215,6 +215,14 @@ public actor AudioEngine: Transport {
 
         // Build canonical output format.
         let sampleRate = self.graph.outputSampleRate
+        let srcRate = dec.sourceFormat.sampleRate
+        let playerNodeHz = self.graph.playerNode.outputFormat(forBus: 0).sampleRate
+        self.log.debug("engine.play.rates", [
+            "hardwareHz": sampleRate,
+            "sourceHz": srcRate,
+            "playerNodeHz": playerNodeHz,
+            "srcNeeded": srcRate != sampleRate,
+        ])
         // swiftlint:disable:next force_unwrapping
         let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
         let outputFmt = AVAudioFormat(
