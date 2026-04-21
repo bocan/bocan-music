@@ -71,6 +71,13 @@ public final class AlbumsViewModel: ObservableObject {
         self.albums = items
     }
 
+    /// Applies a mutation to a single album in the in-memory list without reloading
+    /// the whole array.  Avoids resetting the detail-column navigation stack.
+    public func patch(albumID: Int64, _ mutation: (inout Album) -> Void) {
+        guard let idx = self.albums.firstIndex(where: { $0.id == albumID }) else { return }
+        mutation(&self.albums[idx])
+    }
+
     /// FTS search: replaces the visible list with albums matching `query`.
     public func search(query: String) async {
         self.isLoading = true
