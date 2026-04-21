@@ -2,7 +2,17 @@ import Foundation
 import Testing
 @testable import Persistence
 
-@Suite("Performance Tests")
+/// Performance tests are disabled on CI because GitHub-hosted macOS runners
+/// have significantly more variable I/O and CPU performance than developer
+/// Macs, producing false-positive threshold breaches. They remain a useful
+/// local regression check for performance-sensitive database paths.
+@Suite(
+    "Performance Tests",
+    .disabled(
+        if: ProcessInfo.processInfo.environment["CI"] != nil,
+        "Performance thresholds are tuned for dev Macs; CI runners vary too much."
+    )
+)
 struct PerformanceTests {
     private func makeDatabase() async throws -> Database {
         try await Database(location: .inMemory)
