@@ -50,20 +50,18 @@ public struct FormatConverter: Sendable {
         }
 
         var convError: NSError?
-        // AVAudioConverterInputBlock isn't marked @Sendable, so Swift 6 flags
-        // captured-var mutation. Route the one-shot flag through a pointer to
-        // stack-allocated storage to get reference semantics without capture.
-        var didProvide = false
-        let status = withUnsafeMutablePointer(to: &didProvide) { flag -> AVAudioConverterOutputStatus in
-            self.converter.convert(to: outBuffer, error: &convError) { _, outStatus in
-                if flag.pointee {
-                    outStatus.pointee = .noDataNow
-                    return nil
-                }
-                flag.pointee = true
-                outStatus.pointee = .haveData
-                return sourceBuffer
+        // AVAudioConverterInputBlock is @Sendable, so we box the one-shot flag in a
+        // class to satisfy Swift 6's Sendable requirement without unsafe casts.
+        final class Once: @unchecked Sendable { var fired = false }
+        let once = Once()
+        let status = self.converter.convert(to: outBuffer, error: &convError) { _, outStatus in
+            guard !once.fired else {
+                outStatus.pointee = .noDataNow
+                return nil
             }
+            once.fired = true
+            outStatus.pointee = .haveData
+            return sourceBuffer
         }
 
         if status == .error {
