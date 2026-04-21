@@ -45,6 +45,64 @@ public struct PlaylistSidebarSection: View {
             }
         }
         .task { await self.vm.reload() }
+        .sheet(isPresented: Binding(
+            get: { self.vm.isPresentingNewPlaylist },
+            set: { self.vm.isPresentingNewPlaylist = $0 }
+        )) {
+            NewPlaylistSheet(
+                kind: .playlist,
+                isPresented: Binding(
+                    get: { self.vm.isPresentingNewPlaylist },
+                    set: { self.vm.isPresentingNewPlaylist = $0 }
+                ),
+                parentID: self.vm.newPlaylistParent
+            ) { name in
+                await self.vm.createPlaylist(name: name)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { self.vm.isPresentingNewFolder },
+            set: { self.vm.isPresentingNewFolder = $0 }
+        )) {
+            NewPlaylistSheet(
+                kind: .folder,
+                isPresented: Binding(
+                    get: { self.vm.isPresentingNewFolder },
+                    set: { self.vm.isPresentingNewFolder = $0 }
+                ),
+                parentID: self.vm.newPlaylistParent
+            ) { name in
+                await self.vm.createFolder(name: name)
+            }
+        }
+        .sheet(item: Binding(
+            get: { self.vm.renameTarget },
+            set: { self.vm.renameTarget = $0 }
+        )) { _ in
+            RenamePlaylistSheet(target: Binding(
+                get: { self.vm.renameTarget },
+                set: { self.vm.renameTarget = $0 }
+            )) { node, newName in
+                await self.vm.rename(node, to: newName)
+            }
+        }
+        .confirmationDialog(
+            "Delete Playlist",
+            isPresented: Binding(
+                get: { self.vm.deleteTarget != nil },
+                set: { newValue in if !newValue { self.vm.deleteTarget = nil } }
+            ),
+            presenting: self.vm.deleteTarget
+        ) { target in
+            Button("Delete", role: .destructive) {
+                Task { await self.vm.delete(target) }
+            }
+            Button("Cancel", role: .cancel) {
+                self.vm.deleteTarget = nil
+            }
+        } message: { target in
+            Text("Delete \"\(target.name)\"? Tracks remain in your library.")
+        }
     }
 
     // MARK: - Rows
