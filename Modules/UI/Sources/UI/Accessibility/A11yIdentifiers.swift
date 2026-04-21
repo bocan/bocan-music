@@ -61,6 +61,30 @@ public enum A11y {
         public static let results = "searchResults"
     }
 
+    // MARK: - Playlists
+
+    public enum PlaylistSidebar {
+        public static let section = "playlist.sidebar.section"
+        public static let addButton = "playlist.sidebar.add"
+        public static let newNameField = "playlist.sidebar.newName"
+
+        public static func row(_ id: Int64) -> String {
+            "playlist.sidebar.row.\(id)"
+        }
+
+        public static func folderRow(_ id: Int64) -> String {
+            "playlist.sidebar.folderRow.\(id)"
+        }
+    }
+
+    public enum PlaylistDetail {
+        public static let view = "playlist.detail.view"
+        public static let header = "playlist.detail.header"
+        public static let list = "playlist.detail.list"
+        public static let playButton = "playlist.detail.play"
+        public static let shuffleButton = "playlist.detail.shuffle"
+    }
+
     // MARK: - Search field (alias kept for symmetry)
 
     public enum SearchField {
