@@ -227,7 +227,11 @@ public extension LibraryViewModel {
     func setAlbumForceGapless(albumID: Int64, forced: Bool) async {
         do {
             try await self.albumRepo.setForceGapless(albumID: albumID, forced: forced)
-            await self.albums.load()
+            // Patch the in-memory record rather than reloading the whole albums array.
+            // A full reload replaces the array reference which resets the implicit
+            // NavigationStack in the detail column and causes the view to pop back to
+            // the albums grid.
+            self.albums.patch(albumID: albumID) { $0.forceGapless = forced }
             self.log.debug("library.setForceGapless", ["albumID": albumID, "forced": forced])
         } catch {
             self.log.error("library.setForceGapless.failed", ["albumID": albumID, "error": String(reflecting: error)])
@@ -238,7 +242,7 @@ public extension LibraryViewModel {
     func setAlbumExcludedFromShuffle(albumID: Int64, excluded: Bool) async {
         do {
             try await self.albumRepo.setExcludedFromShuffle(albumID: albumID, excluded: excluded)
-            await self.albums.load()
+            self.albums.patch(albumID: albumID) { $0.excludedFromShuffle = excluded }
             self.log.debug("library.setAlbumExcludedFromShuffle", ["albumID": albumID, "excluded": excluded])
         } catch {
             self.log.error("library.setAlbumExcludedFromShuffle.failed", ["albumID": albumID, "error": String(reflecting: error)])
