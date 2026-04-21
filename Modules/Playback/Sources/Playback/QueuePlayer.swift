@@ -425,7 +425,7 @@ public actor QueuePlayer: Transport {
     // MARK: Engine state subscription
 
     private func subscribeToEngineState() async {
-        for await engineState in await self.engine.state {
+        for await engineState in self.engine.state {
             switch engineState {
             case .ended:
                 await self.handleTrackEnded()
