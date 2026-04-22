@@ -131,6 +131,13 @@ public final class NowPlayingViewModel: ObservableObject {
         self.shuffleOn = new
     }
 
+    /// Sets shuffle to an explicit value on the queue player.
+    public func setShuffle(_ on: Bool) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.setShuffle(on)
+        self.shuffleOn = on
+    }
+
     /// Cycles to the next repeat mode (off → all → one → off).
     public func cycleRepeat() async {
         guard let qp = engine as? QueuePlayer else { return }

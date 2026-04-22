@@ -35,6 +35,7 @@ public struct Migrator {
         M005TrackYearText.register(in: &dm)
         M006BackfillAlbumCoverArt.register(in: &dm)
         M007PlaylistKindAccent.register(in: &dm)
+        M008SmartLimitSort.register(in: &dm)
         return Self(inner: dm)
     }
 
