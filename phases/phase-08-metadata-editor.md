@@ -10,7 +10,7 @@ Edit metadata in-app: single-track and multi-track edit modes, write-back to fil
 
 ## Non-goals
 
-- Acoustic fingerprinting / AcoustID — out of scope for v1.
+- Acoustic fingerprinting / AcoustID — we'll build this in Phase 8.5.
 - Auto-tagging entire libraries from nothing — out of scope.
 - Lyric fetching — Phase 11 (note: keep architecture compatible).
 - Discogs / fanart.tv integration — optional stretch, not required.

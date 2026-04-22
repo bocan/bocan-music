@@ -1,8 +1,6 @@
-import AppKit
 import Library
 import Persistence
 import SwiftUI
-import UniformTypeIdentifiers
 
 // MARK: - PlaylistDetailView
 
@@ -32,19 +30,23 @@ public struct PlaylistDetailView: View {
                 shuffleAction: { Task { await self.playShuffled() } }
             )
 
-            if self.vm.tracks.isEmpty {
-                EmptyState(
-                    symbol: "music.note.list",
-                    title: "Empty Playlist",
-                    message: "Drag tracks here, or use \"Add to Playlist\" from the Songs view."
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .onDrop(of: [.plainText], isTargeted: nil) { providers in
-                    self.handleDrop(providers: providers)
+            Group {
+                if self.vm.tracks.isEmpty {
+                    EmptyState(
+                        symbol: "music.note.list",
+                        title: "Empty Playlist",
+                        message: "Drag tracks here, or use \"Add to Playlist\" from the Songs view."
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    self.trackList
                 }
-            } else {
-                self.trackList
             }
+            .overlay(
+                TrackDropTarget { ids in
+                    Task { await self.vm.addTracks(ids) }
+                }
+            )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(A11y.PlaylistDetail.view)
@@ -55,11 +57,24 @@ public struct PlaylistDetailView: View {
 
     private var trackList: some View {
         List(selection: self.$vm.selection) {
-            ForEach(self.vm.tracks, id: \.id) { track in
+            // Use fileURL (non-optional) as the stable ForEach identity to avoid
+            // SwiftUI diffing faults when the tracks array is replaced after a drop.
+            ForEach(self.vm.tracks, id: \.fileURL) { track in
                 HStack {
-                    Text(track.title ?? URL(fileURLWithPath: track.fileURL).lastPathComponent)
-                        .font(Typography.body)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(track.title ?? URL(fileURLWithPath: track.fileURL).lastPathComponent)
+                            .font(Typography.body)
+                            .lineLimit(1)
+                        let artist = track.artistID.flatMap { self.library.tracks.artistNames[$0] }
+                        let album = track.albumID.flatMap { self.library.tracks.albumNames[$0] }
+                        let subtitle = [artist, album].compactMap(\.self).joined(separator: " · ")
+                        if !subtitle.isEmpty {
+                            Text(subtitle)
+                                .font(Typography.footnote)
+                                .foregroundStyle(Color.textSecondary)
+                                .lineLimit(1)
+                        }
+                    }
                     Spacer()
                     Text(Self.formatDuration(track.duration))
                         .font(Typography.footnote)
@@ -67,6 +82,15 @@ public struct PlaylistDetailView: View {
                 }
                 .padding(.vertical, 2)
                 .tag(track.id)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        if let idx = self.vm.tracks.firstIndex(where: { $0.id == track.id }) {
+                            Task { await self.vm.remove(at: IndexSet([idx])) }
+                        }
+                    } label: {
+                        Label("Remove from Playlist", systemImage: "trash")
+                    }
+                }
             }
             .onMove { source, destination in
                 Task { await self.vm.move(from: source, to: destination) }
@@ -77,26 +101,7 @@ public struct PlaylistDetailView: View {
         }
         .listStyle(.inset)
         .onDeleteCommand { Task { await self.vm.removeSelected() } }
-        .onDrop(of: [.plainText], isTargeted: nil) { providers in
-            self.handleDrop(providers: providers)
-        }
         .accessibilityIdentifier(A11y.PlaylistDetail.list)
-    }
-
-    // MARK: - Drop
-
-    @discardableResult
-    private func handleDrop(providers: [NSItemProvider]) -> Bool {
-        for provider in providers {
-            provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
-                guard let data = item as? Data,
-                      let string = String(data: data, encoding: .utf8) else { return }
-                let ids = string.split(separator: ",").compactMap { Int64($0) }
-                guard !ids.isEmpty else { return }
-                Task { @MainActor in await self.vm.addTracks(ids) }
-            }
-        }
-        return true
     }
 
     // MARK: - Actions
@@ -107,8 +112,8 @@ public struct PlaylistDetailView: View {
 
     private func playShuffled() async {
         guard !self.vm.tracks.isEmpty else { return }
-        await self.library.setShuffle(true)
         await self.library.play(tracks: self.vm.tracks, startingAt: 0)
+        await self.library.setShuffle(true)
     }
 
     private var accentColour: Color? {

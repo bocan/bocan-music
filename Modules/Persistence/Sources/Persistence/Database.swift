@@ -127,15 +127,41 @@ public actor Database {
 
     private static func makeWriter(location: Location) throws -> any DatabaseWriter {
         guard let url = location.url else {
-            return try DatabaseQueue()
+            let queue = try DatabaseQueue()
+            try Self.registerCustomFunctions(in: queue)
+            return queue
         }
         var config = Configuration()
         config.prepareDatabase { db in
             try db.execute(sql: "PRAGMA foreign_keys = ON")
             try db.execute(sql: "PRAGMA busy_timeout = 5000")
             try db.execute(sql: "PRAGMA recursive_triggers = ON")
+            Self.registerREGEXP(in: db)
         }
         return try DatabasePool(path: url.path, configuration: config)
+    }
+
+    /// Registers the `REGEXP` function for in-memory `DatabaseQueue` instances (tests).
+    private static func registerCustomFunctions(in queue: DatabaseQueue) throws {
+        try queue.write { db in Self.registerREGEXP(in: db) }
+    }
+
+    /// Registers the `REGEXP(pattern, value)` SQLite function.
+    ///
+    /// Uses `NSRegularExpression` with unanchored, case-insensitive matching.
+    /// The compiled expression is cached per connection.
+    private static func registerREGEXP(in db: GRDB.Database) {
+        let function = DatabaseFunction("REGEXP", argumentCount: 2, pure: true) { dbValues in
+            guard
+                let pattern = String.fromDatabaseValue(dbValues[0]),
+                let value = String.fromDatabaseValue(dbValues[1]) else { return false }
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {
+                return false
+            }
+            let range = NSRange(value.startIndex..., in: value)
+            return regex.firstMatch(in: value, range: range) != nil
+        }
+        db.add(function: function)
     }
 
     private static func configure(writer: any DatabaseWriter) async throws {

@@ -23,11 +23,19 @@ struct UIStateV1: Codable {
 ///
 /// Injected into `RootView` via the environment and passed down to child views.
 @MainActor
-public final class LibraryViewModel: ObservableObject {
+public final class LibraryViewModel: ObservableObject { // swiftlint:disable:this type_body_length
     // MARK: - Published state
 
     @Published public var selectedDestination: SidebarDestination = .songs
     @Published public var searchQuery = ""
+
+    // MARK: - Navigation history
+
+    @Published public private(set) var canGoBack = false
+    @Published public private(set) var canGoForward = false
+    private var backStack: [SidebarDestination] = []
+    private var forwardStack: [SidebarDestination] = []
+    private static let historyLimit = 50
 
     // MARK: - Inspector state
 
@@ -59,6 +67,7 @@ public final class LibraryViewModel: ObservableObject {
     public let nowPlaying: NowPlayingViewModel
     public let playlistSidebar: PlaylistSidebarViewModel
     public let playlistService: PlaylistService
+    public let smartPlaylistService: SmartPlaylistService
 
     // MARK: - Dependencies
 
@@ -93,6 +102,7 @@ public final class LibraryViewModel: ObservableObject {
         let playlistService = PlaylistService(database: database)
         self.playlistService = playlistService
         self.playlistSidebar = PlaylistSidebarViewModel(service: playlistService)
+        self.smartPlaylistService = SmartPlaylistService(database: database)
         self.artists = ArtistsViewModel(repository: artistRepo)
         self.nowPlaying = NowPlayingViewModel(engine: engine, database: database)
 
@@ -112,6 +122,24 @@ public final class LibraryViewModel: ObservableObject {
             guard let self else { return }
             Task { await self.playCurrentLibrary() }
         }
+
+        self.playlistSidebar.onDidDelete = { [weak self] deletedIDs in
+            guard let self else { return }
+            switch self.selectedDestination {
+            case let .playlist(id) where deletedIDs.contains(id):
+                self.selectedDestination = .songs
+
+            case let .smartPlaylist(id) where deletedIDs.contains(id):
+                self.selectedDestination = .songs
+
+            default:
+                break
+            }
+        }
+
+        // Seed built-in smart presets on first run (idempotent).
+        let sps = self.smartPlaylistService
+        Task { try? await BuiltInSmartPresets.seed(using: sps) }
     }
 
     // MARK: - Public API
@@ -122,13 +150,25 @@ public final class LibraryViewModel: ObservableObject {
     }
 
     /// Responds to a sidebar selection change.
-    public func selectDestination(_ destination: SidebarDestination) async {
+    ///
+    /// - Parameter addToHistory: Pass `false` when navigating via back/forward
+    ///   so the stacks are not double-pushed.
+    public func selectDestination(_ destination: SidebarDestination, addToHistory: Bool = true) async {
         self.log.info("nav.select", ["destination": String(describing: destination)])
+
+        if addToHistory, destination != self.selectedDestination {
+            self.backStack.append(self.selectedDestination)
+            if self.backStack.count > Self.historyLimit { self.backStack.removeFirst() }
+            self.forwardStack.removeAll()
+            self.canGoBack = true
+            self.canGoForward = false
+        }
+
         // Clear search when drilling into a detail page (album or artist).
         // For top-level browse views (songs/albums/artists/etc) keep the active
         // query so the new view shows filtered results immediately.
         switch destination {
-        case .album, .artist:
+        case .album, .artist, .playlist, .smartPlaylist:
             self.searchQuery = ""
 
         default:
@@ -136,6 +176,25 @@ public final class LibraryViewModel: ObservableObject {
         }
         self.selectedDestination = destination
         await self.loadDestination(destination)
+    }
+
+    /// Navigates to the previous destination in history.
+    public func goBack() async {
+        guard let previous = self.backStack.popLast() else { return }
+        self.forwardStack.append(self.selectedDestination)
+        self.canGoBack = !self.backStack.isEmpty
+        self.canGoForward = true
+        await self.selectDestination(previous, addToHistory: false)
+    }
+
+    /// Navigates to the next destination in history.
+    public func goForward() async {
+        guard let next = self.forwardStack.popLast() else { return }
+        self.backStack.append(self.selectedDestination)
+        if self.backStack.count > Self.historyLimit { self.backStack.removeFirst() }
+        self.canGoBack = true
+        self.canGoForward = !self.forwardStack.isEmpty
+        await self.selectDestination(next, addToHistory: false)
     }
 
     /// Plays `track` immediately, replacing the queue with the full current track
@@ -257,8 +316,7 @@ public final class LibraryViewModel: ObservableObject {
 
     /// Toggles shuffle on the queue player.
     public func setShuffle(_ on: Bool) async {
-        guard let qp = engine as? QueuePlayer else { return }
-        await qp.setShuffle(on)
+        await self.nowPlaying.setShuffle(on)
     }
 
     /// Reorders the playback queue to match the current track-list sort order,

@@ -1,7 +1,5 @@
-import AppKit
 import Library
 import SwiftUI
-import UniformTypeIdentifiers
 
 // MARK: - PlaylistRow
 
@@ -37,19 +35,11 @@ public struct PlaylistRow: View {
         }
         .padding(.leading, CGFloat(self.depth) * 14)
         .contextMenu { self.contextMenuContent }
-        .onDrop(of: [.plainText], isTargeted: nil) { providers in
-            guard self.node.kind == .manual else { return false }
-            for provider in providers {
-                provider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
-                    guard let data = item as? Data,
-                          let string = String(data: data, encoding: .utf8) else { return }
-                    let ids = string.split(separator: ",").compactMap { Int64($0) }
-                    guard !ids.isEmpty else { return }
-                    Task { @MainActor in await self.vm.addTracks(ids, to: self.node.id) }
-                }
+        .overlay(
+            TrackDropTarget(isActive: self.node.kind == .manual) { ids in
+                Task { await self.vm.addTracks(ids, to: self.node.id) }
             }
-            return true
-        }
+        )
         .accessibilityLabel("Playlist: \(self.node.name)")
         .accessibilityIdentifier(A11y.PlaylistSidebar.row(self.node.id))
     }

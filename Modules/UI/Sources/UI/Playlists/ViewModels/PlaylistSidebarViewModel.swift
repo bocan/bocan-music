@@ -19,12 +19,18 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     @Published public var newPlaylistParent: Int64?
     @Published public var isPresentingNewPlaylist = false
     @Published public var isPresentingNewFolder = false
+    @Published public var isPresentingNewSmartPlaylist = false
     @Published public var lastError: String?
 
     // MARK: - Dependencies
 
     public let service: PlaylistService
     private let log = AppLogger.make(.ui)
+
+    /// Called after one or more playlists/folders are successfully deleted.
+    /// The set contains all deleted IDs (the target plus any recursive descendants).
+    /// Wire this up externally (e.g. in `LibraryViewModel`) to deselect the content pane.
+    public var onDidDelete: ((Set<Int64>) -> Void)?
 
     // MARK: - Init
 
@@ -64,6 +70,12 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         self.isPresentingNewFolder = true
     }
 
+    public func beginNewSmartPlaylist() {
+        self.log.debug("playlist.sheet", ["kind": "smart"])
+        self.newPlaylistParent = nil
+        self.isPresentingNewSmartPlaylist = true
+    }
+
     public func createPlaylist(name: String) async -> Int64? {
         do {
             let playlist = try await self.service.create(name: name, parentID: self.newPlaylistParent)
@@ -96,6 +108,11 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     }
 
     public func delete(_ node: PlaylistNode, recursive: Bool = false) async {
+        // Collect all IDs that will be deleted *before* the operation so the
+        // callback can clear any active selection for deleted playlists.
+        let deletedIDs: Set<Int64> = recursive
+            ? Self.allIDs(in: [node])
+            : [node.id]
         do {
             if recursive {
                 try await self.service.deleteRecursively(node.id)
@@ -103,6 +120,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
                 try await self.service.delete(node.id)
             }
             await self.reload()
+            self.onDidDelete?(deletedIDs)
         } catch {
             self.lastError = self.describe(error)
         }
@@ -195,5 +213,15 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             return String(describing: pe)
         }
         return error.localizedDescription
+    }
+
+    /// Returns the IDs of `nodes` and all their descendants.
+    private static func allIDs(in nodes: [PlaylistNode]) -> Set<Int64> {
+        var ids = Set<Int64>()
+        for node in nodes {
+            ids.insert(node.id)
+            ids.formUnion(self.allIDs(in: node.children))
+        }
+        return ids
     }
 }

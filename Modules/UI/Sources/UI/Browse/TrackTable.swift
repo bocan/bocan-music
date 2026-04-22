@@ -107,9 +107,6 @@ public struct TrackTable: NSViewRepresentable {
                 cellCoord.cellView(for: column, trackID: itemID, in: tv) ?? NSTableCellView()
             }
         }
-        dataSource.selectionProvider = { [weak coordinator] in
-            coordinator?.parent.selection ?? []
-        }
         coordinator.dataSource = dataSource
         dataSource.coordinator = coordinator
         coordinator.tableView = tableView

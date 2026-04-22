@@ -1,4 +1,6 @@
-.PHONY: help bootstrap doctor open build test test-coverage test-audio-engine test-persistence test-metadata test-library test-ui lint format install-hooks clean
+.PHONY: help bootstrap doctor open build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-ui lint format install-hooks clean
+
+tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-ui
 
 ## help: Print all available targets
 help:
