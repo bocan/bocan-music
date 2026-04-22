@@ -85,6 +85,18 @@ public enum A11y {
         public static let shuffleButton = "playlist.detail.shuffle"
     }
 
+    public enum SmartPlaylistDetail {
+        public static let view = "smartPlaylist.detail.view"
+        public static let header = "smartPlaylist.detail.header"
+        public static let editButton = "smartPlaylist.detail.edit"
+    }
+
+    public enum RuleBuilder {
+        public static let view = "ruleBuilder.view"
+        public static let saveButton = "ruleBuilder.save"
+        public static let addRuleButton = "ruleBuilder.addRule"
+    }
+
     // MARK: - Search field (alias kept for symmetry)
 
     public enum SearchField {

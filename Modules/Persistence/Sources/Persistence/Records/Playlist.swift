@@ -46,6 +46,12 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// Optional accent colour as a `"#RRGGBB"` hex string.
     public var accentColor: String?
 
+    /// JSON-encoded `LimitSort` for smart playlists (Phase 7). `nil` for manual/folder rows.
+    public var smartLimitSort: String?
+
+    /// Key used to identify a built-in smart preset so it is not re-created on relaunch.
+    public var smartPresetKey: String?
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -61,7 +67,9 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         parentID: Int64? = nil,
         coverArtPath: String? = nil,
         kind: PlaylistKind = .manual,
-        accentColor: String? = nil
+        accentColor: String? = nil,
+        smartLimitSort: String? = nil,
+        smartPresetKey: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -74,6 +82,8 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         self.coverArtPath = coverArtPath
         self.kind = kind
         self.accentColor = accentColor
+        self.smartLimitSort = smartLimitSort
+        self.smartPresetKey = smartPresetKey
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -99,5 +109,7 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         case coverArtPath = "cover_art_path"
         case kind
         case accentColor = "accent_color"
+        case smartLimitSort = "smart_limit_sort"
+        case smartPresetKey = "smart_preset_key"
     }
 }

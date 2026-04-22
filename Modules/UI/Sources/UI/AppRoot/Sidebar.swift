@@ -67,7 +67,7 @@ public struct Sidebar: View {
                 }
             }
 
-            PlaylistSidebarSection(vm: self.vm.playlistSidebar)
+            PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)
         }
         .listStyle(.sidebar)
         .frame(minWidth: Theme.sidebarMinWidth)

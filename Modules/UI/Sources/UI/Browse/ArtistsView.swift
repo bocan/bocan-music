@@ -3,14 +3,15 @@ import SwiftUI
 
 // MARK: - ArtistDetailView
 
-/// Album grid for a single artist + drilldown to tracks.
+/// Artist header + optional album grid + full-featured track table.
 public struct ArtistDetailView: View {
     public let artistID: Int64
     public var library: LibraryViewModel
 
     @State private var artist: Artist?
-    @State private var albumCount = 0
-    @State private var trackCount = 0
+    @State private var albums: [Album] = []
+
+    private let albumColumns = [GridItem(.adaptive(minimum: Theme.albumGridMinWidth), spacing: Theme.albumGridSpacing)]
 
     public init(artistID: Int64, library: LibraryViewModel) {
         self.artistID = artistID
@@ -21,66 +22,141 @@ public struct ArtistDetailView: View {
         VStack(spacing: 0) {
             // Artist header
             if let artist {
-                HStack(spacing: 16) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.accentColor.opacity(0.15))
-                            .frame(width: 64, height: 64)
-                        Image(systemName: "music.mic")
-                            .font(.system(size: 28, weight: .medium))
-                            .foregroundStyle(Color.accentColor)
-                    }
-                    .accessibilityHidden(true)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(artist.name)
-                            .font(Typography.largeTitle)
-                            .foregroundStyle(Color.textPrimary)
-
-                        HStack(spacing: 8) {
-                            if self.albumCount > 0 {
-                                Text(self.albumCount == 1 ? "1 album" : "\(self.albumCount) albums")
-                                    .font(Typography.caption)
-                                    .foregroundStyle(Color.textSecondary)
-                            }
-                            if self.albumCount > 0, self.trackCount > 0 {
-                                Text("·")
-                                    .font(Typography.caption)
-                                    .foregroundStyle(Color.textTertiary)
-                            }
-                            if self.trackCount > 0 {
-                                Text(self.trackCount == 1 ? "1 song" : "\(self.trackCount) songs")
-                                    .font(Typography.caption)
-                                    .foregroundStyle(Color.textSecondary)
-                            }
-                        }
-                    }
-
-                    Spacer()
-                }
-                .padding(20)
-                .background(Color.bgSecondary)
-
+                self.artistHeader(artist)
+                    .padding(20)
+                    .background(Color.bgSecondary)
                 Divider()
             }
 
-            // Albums by this artist
-            AlbumsGridView(vm: self.library.albums, library: self.library)
+            // Albums section — scrollable, capped so Songs table gets most of the space
+            if !self.albums.isEmpty {
+                self.sectionLabel("Albums")
+                ScrollView {
+                    LazyVGrid(columns: self.albumColumns, spacing: Theme.albumGridSpacing) {
+                        ForEach(self.albums, id: \.id) { album in
+                            self.albumCell(album)
+                        }
+                    }
+                    .padding(Theme.albumGridSpacing)
+                }
+                .frame(maxHeight: 260)
+                Divider()
+            }
+
+            // Songs — full TracksView with context menus, drag, columns, sorting
+            self.sectionLabel("Songs")
+            TracksView(vm: self.library.tracks, library: self.library, sortable: true)
         }
         .task {
             await self.load()
         }
     }
 
-    private func load() async {
-        await self.library.albums.load(albumArtistID: self.artistID)
-        self.albumCount = self.library.albums.albums.count
-        if let artist = try? await ArtistRepository(database: library.database).fetch(id: artistID) {
-            self.artist = artist
+    // MARK: - Sub-views
+
+    private func artistHeader(_ artist: Artist) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 64, height: 64)
+                Image(systemName: "music.mic")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(artist.name)
+                    .font(Typography.largeTitle)
+                    .foregroundStyle(Color.textPrimary)
+
+                HStack(spacing: 8) {
+                    if !self.albums.isEmpty {
+                        Text(self.albums.count == 1 ? "1 album" : "\(self.albums.count) albums")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                    let trackCount = self.library.tracks.rows.count
+                    if !self.albums.isEmpty, trackCount > 0 {
+                        Text("·")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                    if trackCount > 0 {
+                        Text(trackCount == 1 ? "1 song" : "\(trackCount) songs")
+                            .font(Typography.caption)
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
+            }
+
+            Spacer()
         }
-        // Use a cheap COUNT(*) — no need to load all track rows just for the number.
-        let trackRepo = TrackRepository(database: library.database)
-        self.trackCount = await (try? trackRepo.count(artistID: self.artistID)) ?? 0
+    }
+
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(Typography.title)
+            .foregroundStyle(Color.textPrimary)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color.bgSecondary)
+    }
+
+    private func albumCell(_ album: Album) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Group {
+                if let path = album.coverArtPath {
+                    Artwork(artPath: path, seed: Int(album.id ?? 0), size: Theme.albumGridMinWidth)
+                        .accessibilityLabel("\(album.title) artwork")
+                } else {
+                    GradientPlaceholder(seed: Int(album.id ?? 0))
+                        .aspectRatio(1, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                        .accessibilityLabel("\(album.title) artwork placeholder")
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            Text(album.title)
+                .font(Typography.subheadline)
+                .foregroundStyle(Color.textPrimary)
+                .lineLimit(1)
+
+            if let year = album.year {
+                Text(String(year))
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if let id = album.id {
+                Task { await self.library.selectDestination(.album(id)) }
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(album.title)
+    }
+
+    // MARK: - Data loading
+
+    private func load() async {
+        async let albumsFetch: [Album] = await (try? AlbumRepository(
+            database: self.library.database
+        ).fetchAll(albumArtistID: self.artistID)) ?? []
+        async let artistFetch = try? await ArtistRepository(database: self.library.database).fetch(id: self.artistID)
+        // Load tracks via the shared TracksViewModel so TracksView gets full column data,
+        // context menus, drag-to-playlist, sorting, and selection for free.
+        async let trackLoad: Void = self.library.tracks.load(artistID: self.artistID)
+
+        self.albums = await albumsFetch
+        self.artist = await artistFetch
+        _ = await trackLoad
     }
 }
 

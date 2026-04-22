@@ -41,9 +41,11 @@ extension LibraryViewModel {
         case let .composer(c):
             await self.tracks.load(composer: c)
 
-        case .playlist, .smartPlaylist:
-            // TODO(phase-6): wire playlist loading
-            break
+        case .playlist:
+            break // PlaylistDetailView handles its own loading
+
+        case .smartPlaylist:
+            break // SmartPlaylistDetailView handles its own loading
 
         case .upNext:
             break // QueueView reads directly from QueuePlayer.queue

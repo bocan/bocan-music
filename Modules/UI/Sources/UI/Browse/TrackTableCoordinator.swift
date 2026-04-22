@@ -355,9 +355,6 @@ final class ShuffleCheckCell: NSTableCellView {
 /// The section identifier is a single `Int` (0); item identifiers are `Int64` track IDs.
 @MainActor
 final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
-    /// Returns the current selection.  Injected by the coordinator.
-    var selectionProvider: (() -> Set<Track.ID>)?
-
     /// Forwarded to the coordinator so sort-descriptor changes reach SwiftUI.
     weak var coordinator: TrackTableCoordinator?
 
@@ -370,18 +367,13 @@ final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
         }
     }
 
-    func tableView(
+    @objc func tableView(
         _ tableView: NSTableView,
         pasteboardWriterForRow row: Int
     ) -> (any NSPasteboardWriting)? {
         guard let id = itemIdentifier(forRow: row) else { return nil }
-        let selection = self.selectionProvider?() ?? []
-        let ids: [Int64] = selection.contains(id)
-            ? selection.compactMap(\.self)
-            : [id]
-        let payload = ids.map { String($0) }.joined(separator: ",")
         let item = NSPasteboardItem()
-        item.setString(payload, forType: .string)
+        item.setString(String(id), forType: .string)
         return item
     }
 }

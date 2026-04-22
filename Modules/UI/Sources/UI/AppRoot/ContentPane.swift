@@ -66,11 +66,11 @@ public struct ContentPane: View {
                 service: self.vm.playlistService
             )
 
-        case .smartPlaylist:
-            EmptyState(
-                symbol: "sparkles",
-                title: "No Smart Playlist",
-                message: "Smart Playlists arrive in Phase 7."
+        case let .smartPlaylist(id):
+            SmartPlaylistDetailView(
+                playlistID: id,
+                library: self.vm,
+                service: self.vm.smartPlaylistService
             )
 
         case .search:

@@ -34,6 +34,27 @@ public struct BocanRootView: View {
                     }
             }
             .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigation) {
+                    Button {
+                        Task { await self.vm.goBack() }
+                    } label: {
+                        Image(systemName: "chevron.left")
+                    }
+                    .disabled(!self.vm.canGoBack)
+                    .help("Back")
+                    .keyboardShortcut("[", modifiers: .command)
+
+                    Button {
+                        Task { await self.vm.goForward() }
+                    } label: {
+                        Image(systemName: "chevron.right")
+                    }
+                    .disabled(!self.vm.canGoForward)
+                    .help("Forward")
+                    .keyboardShortcut("]", modifiers: .command)
+                }
+            }
 
             NowPlayingStrip(vm: self.vm.nowPlaying)
         }
