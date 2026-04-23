@@ -25,8 +25,9 @@ extension TracksView {
                 let ids = tracks.compactMap(\.id)
                 Task { try? await lib.playlistService.addTracks(ids, to: playlistID) }
             },
-            newPlaylistFromSelection: { _ in
-                lib.playlistSidebar.beginNewPlaylist()
+            newPlaylistFromSelection: { tracks in
+                let ids = tracks.compactMap(\.id)
+                lib.playlistSidebar.beginNewPlaylist(trackIDs: ids)
             },
             love: { _ in
                 // TODO(phase-8): persist loved state

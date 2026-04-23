@@ -48,13 +48,9 @@ public struct AddToPlaylistMenu: View {
             }
 
         case .smart:
-            Button {
-                // Smart playlists are not writable from Phase 6, but we render
-                // them dimmed so the hierarchy reads correctly.
-            } label: {
-                Label(node.name, systemImage: "sparkles")
-            }
-            .disabled(true)
+            // Smart playlists are read-only — skip them entirely so they
+            // don't appear in the "Add to Playlist" context menu.
+            EmptyView()
 
         case .manual:
             Button {
