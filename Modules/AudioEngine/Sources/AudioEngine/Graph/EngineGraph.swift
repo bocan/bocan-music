@@ -50,13 +50,27 @@ public final class EngineGraph: @unchecked Sendable {
         // Format is nil so AVAudioEngine chooses the hardware format automatically.
         self.engine.connect(self.playerNode, to: self.eq, format: nil)
         self.engine.connect(self.eq, to: self.mixer, format: nil)
+
+        // AVAudioEngine can stop itself when the hardware configuration changes
+        // (device plug/unplug, sample-rate change, etc.). Reset isRunning so the
+        // next call to start() doesn't skip the restart.
+        NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: self.engine,
+            queue: nil
+        ) { [weak self] _ in
+            self?.isRunning = false
+            self?.log.debug("engine.configChange")
+        }
     }
 
     // MARK: - Public API
 
     /// Prepare and start the engine.
     public func start() throws {
-        guard !self.isRunning else { return }
+        guard !self.engine.isRunning else { return }
+        // Sync local flag — could have been stopped externally (interruption / device change).
+        self.isRunning = false
 
         // Reconnect playerNode with an explicit format BEFORE prepare(), so the node
         // format matches the current hardware rate. With format:nil AVAudioEngine can
