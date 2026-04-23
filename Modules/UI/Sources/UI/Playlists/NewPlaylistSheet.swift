@@ -13,6 +13,7 @@ public struct NewPlaylistSheet: View {
     public let onCreate: (String) async -> Int64?
 
     @State private var name = ""
+    @State private var isCommitting = false
     @FocusState private var nameFocused: Bool
 
     public init(
@@ -70,8 +71,13 @@ public struct NewPlaylistSheet: View {
     }
 
     private func commit() async {
+        guard !self.isCommitting else { return }
+        self.isCommitting = true
         let name = self.trimmed
-        guard !name.isEmpty else { return }
+        guard !name.isEmpty else {
+            self.isCommitting = false
+            return
+        }
         _ = await self.onCreate(name)
         self.isPresented = false
     }

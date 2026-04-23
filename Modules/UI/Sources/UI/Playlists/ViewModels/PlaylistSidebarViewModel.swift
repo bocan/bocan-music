@@ -17,6 +17,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     @Published public var deleteTarget: PlaylistNode?
     @Published public var deleteRecursiveTarget: PlaylistNode?
     @Published public var newPlaylistParent: Int64?
+    @Published public private(set) var pendingTrackIDs: [Int64] = []
     @Published public var isPresentingNewPlaylist = false
     @Published public var isPresentingNewFolder = false
     @Published public var isPresentingNewSmartPlaylist = false
@@ -58,9 +59,10 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         }
     }
 
-    public func beginNewPlaylist(parent: Int64? = nil) {
+    public func beginNewPlaylist(parent: Int64? = nil, trackIDs: [Int64] = []) {
         self.log.debug("playlist.sheet", ["kind": "playlist", "parent": parent ?? -1])
         self.newPlaylistParent = parent
+        self.pendingTrackIDs = trackIDs
         self.isPresentingNewPlaylist = true
     }
 
@@ -79,6 +81,11 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     public func createPlaylist(name: String) async -> Int64? {
         do {
             let playlist = try await self.service.create(name: name, parentID: self.newPlaylistParent)
+            let ids = self.pendingTrackIDs
+            self.pendingTrackIDs = []
+            if !ids.isEmpty, let playlistID = playlist.id {
+                try await self.service.addTracks(ids, to: playlistID)
+            }
             await self.reload()
             return playlist.id
         } catch {

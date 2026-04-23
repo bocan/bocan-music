@@ -67,15 +67,22 @@ public struct NowPlayingStrip: View {
                 .lineLimit(1)
                 .accessibilityIdentifier(A11y.NowPlaying.title)
 
-            if !self.vm.artist.isEmpty {
-                Text(self.vm.artist)
+            if let subtitle = self.trackSubtitle, !subtitle.isEmpty {
+                Text(subtitle)
                     .font(Typography.subheadline)
                     .foregroundStyle(Color.textSecondary)
                     .lineLimit(1)
                     .accessibilityIdentifier(A11y.NowPlaying.artist)
             }
         }
-        .frame(minWidth: 120, maxWidth: 220, alignment: .leading)
+        .frame(minWidth: 120, maxWidth: 300, alignment: .leading)
+    }
+
+    private var trackSubtitle: String? {
+        let parts = [self.vm.artist, self.vm.album]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " - ")
     }
 
     private var transport: some View {

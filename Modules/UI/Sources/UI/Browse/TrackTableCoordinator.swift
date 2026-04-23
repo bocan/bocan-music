@@ -279,10 +279,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
                 let item = NSMenuItem(title: node.name, action: nil, keyEquivalent: "")
                 item.submenu = sub
                 menu.addItem(item)
-            } else {
+            } else if node.kind == .manual {
                 let id = node.id
                 menu.addItem(ActionMenuItem(node.name) { action(id, tracks) })
             }
+            // Smart playlists are read-only — skip them entirely.
         }
     }
 }

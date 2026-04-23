@@ -35,15 +35,20 @@ private struct QueueContentView: View {
             } else {
                 List {
                     ForEach(Array(self.items.enumerated()), id: \.element.id) { offset, item in
-                        QueueRow(item: item, isCurrent: offset == self.currentIndex, position: offset)
-                            .contextMenu {
-                                Button("Remove from Queue") {
-                                    Task {
-                                        await self.vm.queuePlayer?.queue.remove(ids: Set([item.id]))
-                                        await self.refreshQueue()
-                                    }
+                        QueueRow(
+                            item: item,
+                            albumName: item.albumID.flatMap { self.vm.tracks.albumNames[$0] },
+                            isCurrent: offset == self.currentIndex,
+                            position: offset
+                        )
+                        .contextMenu {
+                            Button("Remove from Queue") {
+                                Task {
+                                    await self.vm.queuePlayer?.queue.remove(ids: Set([item.id]))
+                                    await self.refreshQueue()
                                 }
                             }
+                        }
                     }
                     .onMove { from, to in
                         Task { await self.moveItems(from: from, to: to) }
@@ -85,6 +90,7 @@ private struct QueueContentView: View {
 
 private struct QueueRow: View {
     let item: QueueItem
+    let albumName: String?
     let isCurrent: Bool
     let position: Int
 
@@ -99,6 +105,13 @@ private struct QueueRow: View {
         } ?? raw
     }
 
+    private var displaySubtitle: String? {
+        let parts = [item.artistName, self.albumName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " - ")
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             // Playing indicator
@@ -108,14 +121,14 @@ private struct QueueRow: View {
                 .frame(width: 20)
                 .opacity(self.isCurrent ? 1 : 0)
 
-            // Title + artist
+            // Title + artist/album
             VStack(alignment: .leading, spacing: 1) {
                 Text(self.displayTitle)
                     .font(self.isCurrent ? Typography.body.weight(.semibold) : Typography.body)
                     .foregroundStyle(self.isCurrent ? Color.accentColor : Color.textPrimary)
                     .lineLimit(1)
-                if let artist = item.artistName, !artist.isEmpty {
-                    Text(artist)
+                if let subtitle = self.displaySubtitle {
+                    Text(subtitle)
                         .font(Typography.caption)
                         .foregroundStyle(Color.textSecondary)
                         .lineLimit(1)
