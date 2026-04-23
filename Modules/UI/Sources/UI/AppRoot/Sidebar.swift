@@ -41,6 +41,8 @@ public struct Sidebar: View {
                 self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
             }
 
+            PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)
+
             Section {
                 if self.vm.libraryRoots.isEmpty {
                     Text("No folders added")
@@ -66,8 +68,6 @@ public struct Sidebar: View {
                     .accessibilityLabel("Add music folder")
                 }
             }
-
-            PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)
         }
         .listStyle(.sidebar)
         .frame(minWidth: Theme.sidebarMinWidth)
