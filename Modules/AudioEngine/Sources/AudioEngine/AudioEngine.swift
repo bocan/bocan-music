@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 // @preconcurrency: AVFoundation node types (AVAudioPlayerNode etc.) lack Sendable;
 // thread-safety is provided by AudioEngine's actor isolation.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
@@ -18,7 +19,7 @@ import Observability
 /// await engine.load(myURL)
 /// try await engine.play()
 /// ```
-public actor AudioEngine: Transport {
+public actor AudioEngine: Transport { // swiftlint:disable:this type_body_length
     private static let _executor = DispatchSerialQueue(label: "com.bocan.audio-engine", qos: .userInitiated)
     public nonisolated var unownedExecutor: UnownedSerialExecutor {
         Self._executor.asUnownedSerialExecutor()
@@ -213,6 +214,20 @@ public actor AudioEngine: Transport {
             throw ae
         }
 
+        // Resuming from pause: the pump is already running and the player node's
+        // buffer FIFO is intact — just restart the node. Recreating the pump here
+        // causes a deadlock (pump.stop() awaits a task blocked in
+        // withCheckedContinuation waiting for dataPlayedBack callbacks that can
+        // never fire on a paused node) and, if multiple play() calls pile up while
+        // suspended, results in several concurrent pumps all writing to the same
+        // AVAudioPlayerNode, producing audible judder.
+        if self._state == .paused {
+            self.graph.playerNode.play()
+            self.emit(.playing)
+            self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
+            return
+        }
+
         // Build canonical output format.
         let sampleRate = self.graph.outputSampleRate
         // swiftlint:disable:next force_unwrapping
@@ -222,8 +237,8 @@ public actor AudioEngine: Transport {
             channelLayout: layout
         )
 
-        // Wire up a BufferPump. Stop the current pump before creating a replacement
-        // so it can't race the new one on the shared decoder when resuming from pause.
+        // Fresh start: stop any existing pump before creating a replacement
+        // so it can't race the new one on the shared decoder.
         await self.pump?.stop()
         self.pump = nil
         let playerNode = self.graph.playerNode

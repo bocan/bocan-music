@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import AppKit
 import AudioEngine
 import Combine
@@ -137,9 +138,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             }
         }
 
-        // Seed built-in smart presets on first run (idempotent).
+        // Seed built-in smart presets on first run (idempotent), then reload
+        // the sidebar so presets appear even if the initial load raced ahead.
         let sps = self.smartPlaylistService
-        Task { try? await BuiltInSmartPresets.seed(using: sps) }
+        Task {
+            try? await BuiltInSmartPresets.seed(using: sps)
+            await self.playlistSidebar.reload()
+        }
     }
 
     // MARK: - Public API
