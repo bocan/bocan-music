@@ -101,10 +101,16 @@ actor BufferPump {
     func stop() async {
         self.log.debug("pump.stop", ["id": self.id, "scheduled": self.scheduledCount])
         self.task?.cancel()
-        _ = await self.task?.result // drain
-        self.task = nil
+        // Resume the slot continuation BEFORE awaiting the task result.
+        // If the pump loop is suspended in withCheckedContinuation waiting for a
+        // free slot (e.g. all 4 slots are in-flight on a paused AVAudioPlayerNode
+        // whose dataPlayedBack callbacks have stopped firing), the task can never
+        // exit on its own — causing a deadlock where stop() waits for the task and
+        // the task waits for stop() to resume the continuation.
         self.slotContinuation?.resume()
         self.slotContinuation = nil
+        _ = await self.task?.result // drain
+        self.task = nil
     }
 
     // MARK: - Private pump loop
