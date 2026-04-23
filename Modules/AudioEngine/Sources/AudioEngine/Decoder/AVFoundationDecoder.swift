@@ -10,21 +10,32 @@ import Observability
 /// AAC and ALAC inside `.m4a` containers. All output is produced in the
 /// decoder's `processingFormat` (Float32, non-interleaved) and then up-
 /// or down-sampled to the canonical format by `FormatConverter` in `EngineGraph`.
-public final class AVFoundationDecoder: Decoder {
+public actor AVFoundationDecoder: Decoder {
+    private static let _executor = DispatchSerialQueue(
+        label: "com.bocan.avf-decoder",
+        qos: .userInitiated
+    )
+    public nonisolated var unownedExecutor: UnownedSerialExecutor {
+        Self._executor.asUnownedSerialExecutor()
+    }
+
     // MARK: - Private state
 
-    private let file: AVAudioFile
+    // nonisolated: AVAudioFile is Sendable; `processingFormat` and `length` are
+    // immutable after init, and `framePosition` is only mutated on the actor's
+    // executor by `read(into:)` and `seek(to:)`.
+    private nonisolated let file: AVAudioFile
     private let log = AppLogger.make(.audio)
 
     // MARK: - Public interface
 
     /// The processing format (`Float32`, non-interleaved) used by `AVAudioFile`.
-    public var sourceFormat: AVAudioFormat {
+    public nonisolated var sourceFormat: AVAudioFormat {
         self.file.processingFormat
     }
 
     /// Duration in seconds derived from frame count and sample rate.
-    public var duration: TimeInterval {
+    public nonisolated var duration: TimeInterval {
         let rate = self.file.processingFormat.sampleRate
         guard rate > 0 else { return 0 }
         return TimeInterval(self.file.length) / rate
@@ -39,7 +50,7 @@ public final class AVFoundationDecoder: Decoder {
         }
     }
 
-    public required init(url: URL) throws {
+    public init(url: URL) throws {
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw AudioEngineError.fileNotFound(url)
         }
