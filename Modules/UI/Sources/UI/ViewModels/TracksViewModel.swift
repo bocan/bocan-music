@@ -225,9 +225,23 @@ public final class TracksViewModel: ObservableObject {
     }
 
     /// Sets a pre-fetched track list directly (used by smart folders / search results).
-    public func setTracks(_ items: [Track]) {
+    ///
+    /// Pass `preserveOrder: true` when the caller owns the canonical ordering
+    /// (e.g. a manual playlist) and the list must **not** be re-sorted by the
+    /// current sort comparator.  Filter text is still applied; only the sort
+    /// step is skipped.
+    public func setTracks(_ items: [Track], preserveOrder: Bool = false) {
         self.rebuildAllRows(from: items)
-        self.applyFilter()
+        if preserveOrder {
+            if self.filterText.isEmpty {
+                self.rows = self.allRows
+            } else {
+                let lowered = self.filterText.lowercased()
+                self.rows = self.allRows.filter { $0.title.lowercased().contains(lowered) }
+            }
+        } else {
+            self.applyFilter()
+        }
     }
 
     /// FTS search: replaces the visible list with results matching `query`.

@@ -254,6 +254,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         menu.addItem(infoItem)
 
         menu.addItem(.separator())
+        if let removeFromPlaylist = acts.removeFromPlaylist {
+            let rp = ActionMenuItem("Remove from Playlist") { removeFromPlaylist(selected) }
+            rp.isEnabled = !selected.isEmpty
+            menu.addItem(rp)
+        }
         let removeItem = ActionMenuItem("Remove from Library") { acts.removeFromLibrary(selected) }
         removeItem.isEnabled = !selected.isEmpty
         menu.addItem(removeItem)
