@@ -39,6 +39,9 @@ public struct TrackContextMenuActions {
     public let copy: ([Track]) -> Void
     /// Set or clear the shuffle-exclusion flag for a track.
     public let toggleShuffle: (Int64, Bool) -> Void
+    /// Remove the selected tracks from the current playlist.
+    /// `nil` means this view is not inside a playlist — the menu item is hidden.
+    public let removeFromPlaylist: (([Track]) -> Void)?
 }
 
 // MARK: - TrackTable

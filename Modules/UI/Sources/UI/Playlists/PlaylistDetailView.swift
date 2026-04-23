@@ -5,7 +5,8 @@ import SwiftUI
 // MARK: - PlaylistDetailView
 
 /// Main content for a selected playlist.  Shows the header, an ordered
-/// list of tracks, reorder and delete affordances.
+/// list of tracks using the shared TracksView component, and a drop target
+/// for adding tracks by drag-and-drop.
 public struct PlaylistDetailView: View {
     @StateObject private var vm: PlaylistDetailViewModel
     @ObservedObject public var library: LibraryViewModel
@@ -31,7 +32,10 @@ public struct PlaylistDetailView: View {
             )
 
             Group {
-                if self.vm.tracks.isEmpty {
+                if self.vm.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if self.vm.tracks.isEmpty {
                     EmptyState(
                         symbol: "music.note.list",
                         title: "Empty Playlist",
@@ -39,7 +43,20 @@ public struct PlaylistDetailView: View {
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    self.trackList
+                    TracksView(
+                        vm: self.library.tracks,
+                        library: self.library,
+                        sortable: false
+                    ) { [weak vm] tracks in
+                        guard let vm else { return }
+                        var offsets = IndexSet()
+                        for (idx, t) in vm.tracks.enumerated()
+                            where tracks.contains(where: { $0.id == t.id && $0.id != nil }) {
+                            offsets.insert(idx)
+                        }
+                        guard !offsets.isEmpty else { return }
+                        Task { await vm.remove(at: offsets) }
+                    }
                 }
             }
             .overlay(
@@ -50,58 +67,13 @@ public struct PlaylistDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(A11y.PlaylistDetail.view)
-        .task(id: self.playlistID) { await self.vm.load(playlistID: self.playlistID) }
-    }
-
-    // MARK: - Track list
-
-    private var trackList: some View {
-        List(selection: self.$vm.selection) {
-            // Use fileURL (non-optional) as the stable ForEach identity to avoid
-            // SwiftUI diffing faults when the tracks array is replaced after a drop.
-            ForEach(self.vm.tracks, id: \.fileURL) { track in
-                HStack {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(track.title ?? URL(fileURLWithPath: track.fileURL).lastPathComponent)
-                            .font(Typography.body)
-                            .lineLimit(1)
-                        let artist = track.artistID.flatMap { self.library.tracks.artistNames[$0] }
-                        let album = track.albumID.flatMap { self.library.tracks.albumNames[$0] }
-                        let subtitle = [artist, album].compactMap(\.self).joined(separator: " · ")
-                        if !subtitle.isEmpty {
-                            Text(subtitle)
-                                .font(Typography.footnote)
-                                .foregroundStyle(Color.textSecondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    Spacer()
-                    Text(Self.formatDuration(track.duration))
-                        .font(Typography.footnote)
-                        .foregroundStyle(Color.textSecondary)
-                }
-                .padding(.vertical, 2)
-                .tag(track.id)
-                .contextMenu {
-                    Button(role: .destructive) {
-                        if let idx = self.vm.tracks.firstIndex(where: { $0.id == track.id }) {
-                            Task { await self.vm.remove(at: IndexSet([idx])) }
-                        }
-                    } label: {
-                        Label("Remove from Playlist", systemImage: "trash")
-                    }
-                }
-            }
-            .onMove { source, destination in
-                Task { await self.vm.move(from: source, to: destination) }
-            }
-            .onDelete { offsets in
-                Task { await self.vm.remove(at: offsets) }
-            }
+        .task(id: self.playlistID) {
+            await self.vm.load(playlistID: self.playlistID)
+            self.library.tracks.setTracks(self.vm.tracks, preserveOrder: true)
         }
-        .listStyle(.inset)
-        .onDeleteCommand { Task { await self.vm.removeSelected() } }
-        .accessibilityIdentifier(A11y.PlaylistDetail.list)
+        .onChange(of: self.vm.tracks.map(\.id)) { _, _ in
+            self.library.tracks.setTracks(self.vm.tracks, preserveOrder: true)
+        }
     }
 
     // MARK: - Actions
@@ -119,12 +91,5 @@ public struct PlaylistDetailView: View {
     private var accentColour: Color? {
         guard let hex = self.vm.playlist?.accentColor else { return nil }
         return Color(hex: hex)
-    }
-
-    private static func formatDuration(_ seconds: TimeInterval) -> String {
-        let total = Int(seconds.rounded())
-        let minutes = total / 60
-        let remainder = total % 60
-        return String(format: "%d:%02d", minutes, remainder)
     }
 }

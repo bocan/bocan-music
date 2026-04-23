@@ -72,7 +72,8 @@ extension TracksView {
             },
             toggleShuffle: { trackID, excluded in
                 Task { await lib.setTrackExcludedFromShuffle(trackID: trackID, excluded: excluded) }
-            }
+            },
+            removeFromPlaylist: self.removeFromPlaylist
         )
     }
 }
