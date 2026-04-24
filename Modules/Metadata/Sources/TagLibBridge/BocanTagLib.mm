@@ -250,3 +250,144 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
 }
 
 @end
+
+// ---------------------------------------------------------------------------
+// BOCTagWriter
+// ---------------------------------------------------------------------------
+
+@implementation BOCTagWriter
+
++ (BOOL)writeTagsToPath:(NSString *)path
+                   tags:(BOCTags *)tags
+                  error:(NSError *__autoreleasing _Nullable *)outError {
+    TagLib::FileRef fileRef([path fileSystemRepresentation]);
+
+    if (fileRef.isNull() || !fileRef.tag()) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:@"io.cloudcauldron.bocan.metadata"
+                                           code:2
+                                       userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    @"TagLib cannot open file for writing: %@", path]
+            }];
+        }
+        return NO;
+    }
+
+    // -----------------------------------------------------------------------
+    // Basic tag fields (TagLib primary tag interface)
+    // -----------------------------------------------------------------------
+    auto *tag = fileRef.tag();
+    if (tags.title)           tag->setTitle(TagLib::String(tags.title.UTF8String, TagLib::String::UTF8));
+    if (tags.artist)          tag->setArtist(TagLib::String(tags.artist.UTF8String, TagLib::String::UTF8));
+    if (tags.album)           tag->setAlbum(TagLib::String(tags.album.UTF8String, TagLib::String::UTF8));
+    if (tags.genre)           tag->setGenre(TagLib::String(tags.genre.UTF8String, TagLib::String::UTF8));
+    if (tags.comment)         tag->setComment(TagLib::String(tags.comment.UTF8String, TagLib::String::UTF8));
+    if (tags.year > 0)        tag->setYear((unsigned int)tags.year);
+    if (tags.trackNumber > 0) tag->setTrack((unsigned int)tags.trackNumber);
+
+    // -----------------------------------------------------------------------
+    // Extended tags via PropertyMap
+    // -----------------------------------------------------------------------
+    TagLib::PropertyMap props = fileRef.properties();
+
+    // Set a property only when value is non-empty.
+    auto setProp = [&](const char *key, NSString *value) {
+        if (value.length > 0) {
+            props[TagLib::String(key)] = TagLib::StringList(
+                TagLib::String(value.UTF8String, TagLib::String::UTF8));
+        }
+    };
+
+    setProp("ALBUMARTIST",      tags.albumArtist);
+    setProp("COMPOSER",         tags.composer);
+    setProp("TITLESORT",        tags.sortTitle);
+    setProp("ARTISTSORT",       tags.sortArtist);
+    setProp("ALBUMARTISTSORT",  tags.sortAlbumArtist);
+    setProp("ALBUMSORT",        tags.sortAlbum);
+    setProp("LYRICS",           tags.lyrics);
+    setProp("INITIALKEY",       tags.key);
+    setProp("ISRC",             tags.isrc);
+
+    if (tags.bpm > 0) {
+        NSString *bpmStr = [NSString stringWithFormat:@"%.0f", tags.bpm];
+        props["BPM"] = TagLib::StringList(TagLib::String(bpmStr.UTF8String));
+    }
+    if (tags.trackTotal > 0) {
+        props["TRACKTOTAL"] = TagLib::StringList(TagLib::String(
+            [NSString stringWithFormat:@"%ld", (long)tags.trackTotal].UTF8String));
+    }
+    if (tags.discNumber > 0) {
+        props["DISCNUMBER"] = TagLib::StringList(TagLib::String(
+            [NSString stringWithFormat:@"%ld", (long)tags.discNumber].UTF8String));
+    }
+    if (tags.discTotal > 0) {
+        props["DISCTOTAL"] = TagLib::StringList(TagLib::String(
+            [NSString stringWithFormat:@"%ld", (long)tags.discTotal].UTF8String));
+    }
+
+    // MusicBrainz
+    setProp("MUSICBRAINZ_TRACKID",        tags.musicbrainzTrackID);
+    setProp("MUSICBRAINZ_RELEASETRACKID", tags.musicbrainzRecordingID);
+    setProp("MUSICBRAINZ_ALBUMARTISTID",  tags.musicbrainzAlbumArtistID);
+    setProp("MUSICBRAINZ_ALBUMID",        tags.musicbrainzReleaseID);
+    setProp("MUSICBRAINZ_RELEASEGROUPID", tags.musicbrainzReleaseGroupID);
+
+    // ReplayGain
+    if (!std::isnan(tags.replaygainTrackGain)) {
+        NSString *v = [NSString stringWithFormat:@"%.2f dB", tags.replaygainTrackGain];
+        props["REPLAYGAIN_TRACK_GAIN"] = TagLib::StringList(TagLib::String(v.UTF8String));
+    }
+    if (!std::isnan(tags.replaygainTrackPeak)) {
+        NSString *v = [NSString stringWithFormat:@"%.8f", tags.replaygainTrackPeak];
+        props["REPLAYGAIN_TRACK_PEAK"] = TagLib::StringList(TagLib::String(v.UTF8String));
+    }
+    if (!std::isnan(tags.replaygainAlbumGain)) {
+        NSString *v = [NSString stringWithFormat:@"%.2f dB", tags.replaygainAlbumGain];
+        props["REPLAYGAIN_ALBUM_GAIN"] = TagLib::StringList(TagLib::String(v.UTF8String));
+    }
+    if (!std::isnan(tags.replaygainAlbumPeak)) {
+        NSString *v = [NSString stringWithFormat:@"%.8f", tags.replaygainAlbumPeak];
+        props["REPLAYGAIN_ALBUM_PEAK"] = TagLib::StringList(TagLib::String(v.UTF8String));
+    }
+
+    fileRef.setProperties(props);
+
+    // -----------------------------------------------------------------------
+    // Cover art via complexProperties (TagLib 2.0+)
+    // -----------------------------------------------------------------------
+    if (tags.coverArt.count > 0) {
+        TagLib::List<TagLib::VariantMap> picList;
+        for (BOCCoverArt *art in tags.coverArt) {
+            const auto *bytes = static_cast<const char *>(art.data.bytes);
+            TagLib::ByteVector bv(bytes, static_cast<unsigned int>(art.data.length));
+            TagLib::VariantMap pic;
+            pic.insert(TagLib::String("data"), TagLib::Variant(bv));
+            pic.insert(TagLib::String("mimeType"),
+                TagLib::Variant(TagLib::String(art.mimeType.UTF8String, TagLib::String::UTF8)));
+            pic.insert(TagLib::String("pictureType"), TagLib::Variant((int)art.pictureType));
+            picList.append(pic);
+        }
+        fileRef.setComplexProperties("PICTURE", picList);
+    }
+
+    // -----------------------------------------------------------------------
+    // Save
+    // -----------------------------------------------------------------------
+    bool saved = fileRef.save();
+    if (!saved) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:@"io.cloudcauldron.bocan.metadata"
+                                           code:3
+                                       userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    @"TagLib save() failed for: %@", path]
+            }];
+        }
+        return NO;
+    }
+
+    return YES;
+}
+
+@end
