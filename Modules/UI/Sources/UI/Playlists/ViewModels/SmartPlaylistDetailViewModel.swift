@@ -88,6 +88,8 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
                 }
             } catch {
                 await MainActor.run {
+                    // Task cancellation is normal when the view dismisses — don't report it as an error.
+                    guard !(error is CancellationError) else { return }
                     self.log.error("smartPlaylist.observe.failed", ["error": String(reflecting: error)])
                     self.lastError = "Live updates unavailable."
                 }

@@ -329,7 +329,9 @@ public actor PlaylistService {
             guard let id = playlist.id else { continue }
             let trackCount: Int
             let totalDuration: TimeInterval
-            if playlist.kind == .manual || playlist.kind == .smart {
+            if playlist.kind == .manual {
+                // Smart playlists never store membership in playlist_tracks,
+                // so trackCount and totalDuration are always 0 for them.
                 trackCount = try await self.repo.trackCount(playlistID: id)
                 totalDuration = try await self.repo.totalDuration(playlistID: id)
             } else {
