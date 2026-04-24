@@ -131,8 +131,12 @@ public struct BocanRootView: View {
             get: { self.tagEditorVM != nil },
             set: {
                 if !$0 {
+                    let needsReload = self.tagEditorVM?.didSave == true
                     self.tagEditorVM = nil
                     self.vm.tagEditorTrackIDs = nil
+                    if needsReload {
+                        Task { await self.vm.loadCurrentDestination() }
+                    }
                 }
             }
         )

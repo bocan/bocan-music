@@ -9,6 +9,7 @@ import SwiftUI
 /// Phase 5 introduces the queue.
 public struct NowPlayingStrip: View {
     @ObservedObject public var vm: NowPlayingViewModel
+    @EnvironmentObject private var library: LibraryViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
@@ -87,6 +88,18 @@ public struct NowPlayingStrip: View {
 
     private var transport: some View {
         HStack(spacing: 20) {
+            Button {
+                self.library.showTagEditorForNowPlaying()
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
+            .disabled(self.vm.nowPlayingTrackID == nil)
+            .help("Get info for current track")
+            .accessibilityLabel("Track Info")
+
             Button {
                 Task { await self.vm.previous() }
             } label: {

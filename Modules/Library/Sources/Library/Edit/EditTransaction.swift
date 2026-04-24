@@ -162,10 +162,40 @@ actor EditTransaction {
             }
         }
 
-        // 8. Build updated Track record (no artist/album normalization here —
-        //    artist/album name changes require separate lookup flow below)
+        // 8. Build updated Track record, normalising artist/album FKs when changed.
         var updated = patch.applying(to: track)
         updated.userEdited = true
+
+        if patch.artist != nil || patch.albumArtist != nil || patch.album != nil {
+            // Fetch current album/albumArtist rows for fallback values (ignore errors).
+            let currentAlbum: Album? = if let id = track.albumID { try? await self.albumRepo.fetch(id: id) }
+            else { nil }
+
+            let currentAlbumArtist: Artist? = if let id = currentAlbum?.albumArtistID { try? await self.artistRepo.fetch(id: id) }
+            else { nil }
+
+            let currentTrackArtist: Artist? = if let id = track.artistID { try? await self.artistRepo.fetch(id: id) }
+            else { nil }
+
+            // Resolve track-artist FK.
+            let artistName: String = if let patched = patch.artist { patched ?? "Unknown Artist" }
+            else { currentTrackArtist?.name ?? "Unknown Artist" }
+            let artist = try await self.artistRepo.findOrCreate(name: artistName)
+            updated.artistID = artist.id
+
+            // Resolve album-artist (may differ from track artist).
+            let albumArtistName: String = if let patched = patch.albumArtist { patched ?? artistName }
+            else { currentAlbumArtist?.name ?? artistName }
+            let albumArtist = albumArtistName == artistName
+                ? artist
+                : try await self.artistRepo.findOrCreate(name: albumArtistName)
+
+            // Resolve album FK.
+            let albumTitle: String = if let patched = patch.album { patched ?? "Unknown Album" }
+            else { currentAlbum?.title ?? "Unknown Album" }
+            let album = try await self.albumRepo.findOrCreate(title: albumTitle, albumArtistID: albumArtist.id)
+            updated.albumID = album.id
+        }
 
         return (updated, coverArtHash)
     }

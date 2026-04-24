@@ -21,9 +21,10 @@ public struct ArtworkEditor: View {
 
     public var body: some View {
         VStack(alignment: .center, spacing: 12) {
-            // Art preview
+            // Art preview — pending change takes priority over the loaded art.
             Group {
-                if let data = self.vm.pendingArtData, let img = NSImage(data: data) {
+                let displayData = self.vm.pendingArtData ?? self.vm.existingArtData
+                if let data = displayData, let img = NSImage(data: data) {
                     Image(nsImage: img)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -54,8 +55,8 @@ public struct ArtworkEditor: View {
                 Button("Paste") { self.pasteFromClipboard() }
                     .disabled(!NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))
                 Button("Fetch…") { self.isPresentingFetchSheet = true }
-                if self.vm.pendingArtData != nil {
-                    Button("Remove") { self.vm.pendingArtData = nil }
+                if self.vm.pendingArtData != nil || self.vm.existingArtData != nil {
+                    Button("Remove") { self.vm.clearArtwork() }
                         .foregroundStyle(.red)
                 }
             }

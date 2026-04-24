@@ -55,10 +55,10 @@ struct BocanApp: App {
                 .disabled(!self.libraryViewModel.hasTrackSelection)
 
                 Button("Reveal in Finder") {
-                    // Forwarded to TracksView selection
+                    self.libraryViewModel.revealSelectedInFinder()
                 }
                 .keyboardShortcut(KeyBindings.revealInFinder)
-                .disabled(true) // handled per-view
+                .disabled(!self.libraryViewModel.hasTrackSelection)
 
                 Divider()
 
