@@ -293,8 +293,8 @@ struct SmartPlaylistServiceTests {
         let all = try await svc.listAll()
         #expect(all.count >= 5, "Expected at least 5 presets, got \(all.count)")
         let keys = all.compactMap(\.smartPresetKey)
-        #expect(keys.contains("loved"))
-        #expect(keys.contains("neverPlayed"))
+        #expect(keys.contains("builtin.loved"))
+        #expect(keys.contains("builtin.never_played"))
     }
 
     @Test func builtInPresetsNotDuplicated() async throws {
