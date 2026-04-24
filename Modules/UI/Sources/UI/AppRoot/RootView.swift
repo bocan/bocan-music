@@ -38,19 +38,15 @@ public struct BocanRootView: View {
             .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
             .toolbar {
                 ToolbarItemGroup(placement: .navigation) {
-                    Button {
+                    Button("Back", systemImage: "chevron.left") {
                         Task { await self.vm.goBack() }
-                    } label: {
-                        Image(systemName: "chevron.left")
                     }
                     .disabled(!self.vm.canGoBack)
                     .help("Back")
                     .keyboardShortcut("[", modifiers: .command)
 
-                    Button {
+                    Button("Forward", systemImage: "chevron.right") {
                         Task { await self.vm.goForward() }
-                    } label: {
-                        Image(systemName: "chevron.right")
                     }
                     .disabled(!self.vm.canGoForward)
                     .help("Forward")
@@ -101,10 +97,7 @@ public struct BocanRootView: View {
         .accessibilityIdentifier("BocanMainWindow")
         .alert(
             "Playback Error",
-            isPresented: Binding(
-                get: { self.vm.playbackErrorMessage != nil },
-                set: { if !$0 { self.vm.playbackErrorMessage = nil } }
-            )
+            isPresented: self.playbackErrorBinding
         ) {
             Button("OK") { self.vm.playbackErrorMessage = nil }
         } message: {
@@ -125,6 +118,13 @@ public struct BocanRootView: View {
     }
 
     // MARK: - Helpers
+
+    private var playbackErrorBinding: Binding<Bool> {
+        Binding(
+            get: { self.vm.playbackErrorMessage != nil },
+            set: { if !$0 { self.vm.playbackErrorMessage = nil } }
+        )
+    }
 
     private var tagEditorBinding: Binding<Bool> {
         Binding(

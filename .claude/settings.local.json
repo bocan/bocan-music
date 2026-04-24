@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(log show *)",
+      "Bash(/usr/bin/log show *)",
+      "Bash(git -C /Users/chris/Play/bocan-music log --oneline -15)",
+      "Bash(swift test *)",
+      "Bash(xcodebuild -project Bocan.xcodeproj -scheme Bocan -configuration Debug -destination 'platform=macOS' build)",
+      "Bash(git -C /Users/chris/Play/bocan-music status)",
+      "Bash(swift build *)",
+      "Bash(make lint *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(make test *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(make format *)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(xargs ls *)"
+    ]
+  },
+  "enabledPlugins": {
+    "swiftui-pro@swiftui-agent-skill": true
+  }
+}
