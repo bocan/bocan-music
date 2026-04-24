@@ -49,10 +49,10 @@ struct BocanApp: App {
 
             CommandMenu("Track") {
                 Button("Get Info") {
-                    self.libraryViewModel.openInspectorWindow?()
+                    self.libraryViewModel.showTagEditorForCurrentSelection()
                 }
                 .keyboardShortcut(KeyBindings.getInfo)
-                .disabled(self.libraryViewModel.inspectorTrack == nil)
+                .disabled(!self.libraryViewModel.hasTrackSelection)
 
                 Button("Reveal in Finder") {
                     // Forwarded to TracksView selection
@@ -64,7 +64,7 @@ struct BocanApp: App {
 
                 Button("Love") {}
                     .keyboardShortcut(KeyBindings.love)
-                    .disabled(true) // TODO(phase-8)
+                    .disabled(true)
             }
         }
 
