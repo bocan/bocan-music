@@ -6,7 +6,7 @@
 
 ## Goal
 
-Edit metadata in-app: single-track and multi-track edit modes, write-back to files, auto-fetch missing cover art from MusicBrainz / Cover Art Archive, and batch operations. Safe, reversible, never destructive without confirmation.
+Edit metadata in-app using id3v2 v2.4 (probably from https://github.com/chicio/ID3TagEditor): single-track and multi-track edit modes, write-back to files, auto-fetch missing cover art from MusicBrainz / Cover Art Archive, and batch operations. Safe, reversible, never destructive without confirmation.
 
 ## Non-goals
 
