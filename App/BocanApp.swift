@@ -18,7 +18,7 @@ struct BocanApp: App {
     private let log = AppLogger.make(.app)
     private let database: Database
     private let engine: AudioEngine
-    private let libraryViewModel: LibraryViewModel
+    @StateObject private var libraryViewModel: LibraryViewModel
 
     var body: some Scene {
         WindowGroup {
@@ -105,7 +105,7 @@ struct BocanApp: App {
         let scanner = LibraryScanner(database: db)
         self.database = db
         self.engine = eng
-        self.libraryViewModel = LibraryViewModel(database: db, engine: player, scanner: scanner)
+        _libraryViewModel = StateObject(wrappedValue: LibraryViewModel(database: db, engine: player, scanner: scanner))
     }
 }
 
