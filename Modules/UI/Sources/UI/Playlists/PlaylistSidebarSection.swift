@@ -104,7 +104,7 @@ public struct PlaylistSidebarSection: View {
             "Delete Playlist",
             isPresented: Binding(
                 get: { self.vm.deleteTarget != nil },
-                set: { newValue in if !newValue { Task { @MainActor in self.vm.deleteTarget = nil } } }
+                set: { newValue in if !newValue { self.vm.deleteTarget = nil } }
             ),
             presenting: self.vm.deleteTarget
         ) { target in
@@ -121,7 +121,7 @@ public struct PlaylistSidebarSection: View {
             "Delete Folder and Contents",
             isPresented: Binding(
                 get: { self.vm.deleteRecursiveTarget != nil },
-                set: { newValue in if !newValue { Task { @MainActor in self.vm.deleteRecursiveTarget = nil } } }
+                set: { newValue in if !newValue { self.vm.deleteRecursiveTarget = nil } }
             ),
             presenting: self.vm.deleteRecursiveTarget
         ) { target in
