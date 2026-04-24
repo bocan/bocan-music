@@ -16,6 +16,7 @@ public actor MetadataEditService {
     private let trackRepo: TrackRepository
     private let artistRepo: ArtistRepository
     private let albumRepo: AlbumRepository
+    private let rootRepo: LibraryRootRepository
     private let backupRing: BackupRing
     private let coverArtCache: CoverArtCache
     private let log = AppLogger.make(.library)
@@ -27,6 +28,7 @@ public actor MetadataEditService {
         self.trackRepo = TrackRepository(database: database)
         self.artistRepo = ArtistRepository(database: database)
         self.albumRepo = AlbumRepository(database: database)
+        self.rootRepo = LibraryRootRepository(database: database)
         self.coverArtCache = CoverArtCache.make(database: database)
         let ringDir = Self.backupRingDirectory()
         self.backupRing = try BackupRing(directory: ringDir)
@@ -61,7 +63,8 @@ public actor MetadataEditService {
             albumRepo: self.albumRepo,
             coverArtRepo: coverArtRepo,
             coverArtCache: self.coverArtCache,
-            backupRing: self.backupRing
+            backupRing: self.backupRing,
+            rootRepo: self.rootRepo
         )
 
         self.log.debug("edit.start", ["count": trackIDs.count])
@@ -119,6 +122,15 @@ public actor MetadataEditService {
         let track = try await self.trackRepo.fetch(id: trackID)
         guard let url = URL(string: track.fileURL) else {
             throw EditError.trackNotFound(trackID)
+        }
+        // Use the per-file security-scoped bookmark when available so that
+        // the sandboxed process can open the file outside its container.
+        if let bookmarkData = track.fileBookmark {
+            return try await SecurityScope.withAccess(bookmarkData) { scopedURL in
+                try await Task.detached(priority: .userInitiated) {
+                    try TagReader().read(from: scopedURL)
+                }.value
+            }
         }
         return try await Task.detached(priority: .userInitiated) {
             try TagReader().read(from: url)
