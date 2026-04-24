@@ -27,6 +27,7 @@ public struct TagEditorSheet: View {
                     Text(tab.label).tag(tab)
                 }
             }
+            .labelsHidden()
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.top, 12)
@@ -147,6 +148,7 @@ public struct TagEditorSheet: View {
                 .foregroundStyle(Color.textTertiary)
                 .padding(.horizontal)
             TextEditor(text: self.fieldBinding(\.lyrics))
+                .font(Typography.body)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(4)
                 .background(Color(.textBackgroundColor))
