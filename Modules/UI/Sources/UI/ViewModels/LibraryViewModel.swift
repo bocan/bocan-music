@@ -44,6 +44,15 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `nil` when the panel is closed or no selection exists.
     @Published public var inspectorTrack: Track?
 
+    // MARK: - Tag editor state
+
+    /// Non-nil when the tag editor sheet should be presented.
+    @Published public var tagEditorTrackIDs: [Int64]?
+    /// `true` when at least one track is selected in the current track table.
+    @Published public var hasTrackSelection = false
+    /// Shared `MetadataEditService` (nil only if the backup directory is unavailable).
+    public let metadataEditService: MetadataEditService?
+
     // MARK: - Error state
 
     /// Set when playback fails; cleared when the user dismisses the alert.
@@ -79,6 +88,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     let scanner: LibraryScanner?
     var scanTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
+    private var selectionCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -88,6 +98,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.engine = engine
         self.scanner = scanner
         self.settingsRepo = SettingsRepository(database: database)
+        self.metadataEditService = try? MetadataEditService(database: database)
 
         let trackRepo = TrackRepository(database: database)
         let albumRepo = AlbumRepository(database: database)
@@ -145,6 +156,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             try? await BuiltInSmartPresets.seed(using: sps)
             await self.playlistSidebar.reload()
         }
+
+        self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
+    }
+
+    // MARK: - Tag editor
+
+    /// Opens the tag editor sheet for the given tracks.
+    public func showTagEditor(tracks: [Track]) {
+        let ids = tracks.compactMap(\.id)
+        guard !ids.isEmpty else { return }
+        self.tagEditorTrackIDs = ids
+    }
+
+    /// Opens the tag editor for whatever is currently selected in the track table.
+    public func showTagEditorForCurrentSelection() {
+        let ids = self.tracks.selection.compactMap(\.self)
+        guard !ids.isEmpty else { return }
+        self.tagEditorTrackIDs = ids
     }
 
     // MARK: - Public API

@@ -49,7 +49,7 @@ extension TracksView {
                 }
             },
             getInfo: { tracks in
-                lib.showInspector(tracks: tracks)
+                lib.showTagEditor(tracks: tracks)
             },
             removeFromLibrary: { tracks in
                 for track in tracks {

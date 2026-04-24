@@ -1,3 +1,4 @@
+import Library
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -18,6 +19,7 @@ public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
+    @State private var tagEditorVM: TagEditorViewModel?
 
     public init(vm: LibraryViewModel) {
         _vm = StateObject(wrappedValue: vm)
@@ -108,6 +110,32 @@ public struct BocanRootView: View {
         } message: {
             Text(self.vm.playbackErrorMessage ?? "")
         }
+        .onChange(of: self.vm.tagEditorTrackIDs) { _, ids in
+            if let ids, !ids.isEmpty, let svc = self.vm.metadataEditService {
+                self.tagEditorVM = TagEditorViewModel(service: svc, trackIDs: ids)
+            } else {
+                self.tagEditorVM = nil
+            }
+        }
+        .sheet(isPresented: self.tagEditorBinding) {
+            if let tagVM = self.tagEditorVM {
+                TagEditorSheet(vm: tagVM, isPresented: self.tagEditorBinding)
+            }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var tagEditorBinding: Binding<Bool> {
+        Binding(
+            get: { self.tagEditorVM != nil },
+            set: {
+                if !$0 {
+                    self.tagEditorVM = nil
+                    self.vm.tagEditorTrackIDs = nil
+                }
+            }
+        )
     }
 
     // MARK: - Drop helper
