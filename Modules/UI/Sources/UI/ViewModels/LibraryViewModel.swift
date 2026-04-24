@@ -169,11 +169,26 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.tagEditorTrackIDs = ids
     }
 
+    /// Opens the tag editor for the track currently loaded in the player.
+    public func showTagEditorForNowPlaying() {
+        guard let id = self.nowPlaying.nowPlayingTrackID else { return }
+        self.tagEditorTrackIDs = [id]
+    }
+
     /// Opens the tag editor for whatever is currently selected in the track table.
     public func showTagEditorForCurrentSelection() {
         let ids = self.tracks.selection.compactMap(\.self)
         guard !ids.isEmpty else { return }
         self.tagEditorTrackIDs = ids
+    }
+
+    /// Reveals all selected tracks in Finder.
+    public func revealSelectedInFinder() {
+        let urls = self.tracks.tracks
+            .filter { self.tracks.selection.contains($0.id) }
+            .compactMap { URL(string: $0.fileURL) }
+        guard !urls.isEmpty else { return }
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
     }
 
     // MARK: - Public API

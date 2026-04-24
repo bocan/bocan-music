@@ -46,7 +46,12 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public var rating: FieldState<Int> = .shared(nil)
     @Published public var loved: FieldState<Bool> = .shared(nil)
     @Published public var excludedFromShuffle: FieldState<Bool> = .shared(nil)
+    /// New art chosen by the user (file/paste/fetch/drop). Nil = no change.
     @Published public var pendingArtData: Data?
+    /// Existing art loaded from the file at open time, shown when `pendingArtData` is nil.
+    @Published public private(set) var existingArtData: Data?
+    /// True when the user explicitly clicked Remove to delete existing art.
+    public private(set) var artworkCleared = false
 
     // MARK: - Status
 
@@ -54,6 +59,8 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public private(set) var isSingleTrack = false
     @Published public var lastError: String?
     @Published public var lastEditID: String?
+    /// `true` once any save has successfully committed (never resets to false).
+    public private(set) var didSave = false
 
     // MARK: - Dependencies
 
@@ -82,6 +89,10 @@ public final class TagEditorViewModel: ObservableObject {
         }
         guard !allTags.isEmpty else { return }
         self.populate(from: allTags)
+        // Load first front-cover for display (picture type 3 = front cover).
+        let art = allTags.first?.coverArt.first(where: { $0.pictureType == 3 })
+            ?? allTags.first?.coverArt.first
+        self.existingArtData = art?.data
     }
 
     // MARK: - Save
@@ -101,6 +112,7 @@ public final class TagEditorViewModel: ObservableObject {
                 patch: patch
             )
             self.lastEditID = editID
+            self.didSave = true
             self.log.debug("tag_editor.saved", ["count": self.trackIDs.count])
         } catch {
             self.lastError = error.localizedDescription
@@ -210,6 +222,13 @@ public final class TagEditorViewModel: ObservableObject {
         self.excludedFromShuffle = .edited(value)
     }
 
+    /// Removes the cover art: clears pending data and marks the art as deleted.
+    public func clearArtwork() {
+        self.pendingArtData = nil
+        self.existingArtData = nil
+        self.artworkCleared = true
+    }
+
     // MARK: - Private helpers
 
     private func populate(from allTags: [TrackTags]) {
@@ -268,7 +287,11 @@ public final class TagEditorViewModel: ObservableObject {
         patch.rating = Self.patchValue(self.rating)
         if let loved = self.loved.editedValue { patch.loved = loved }
         if let efs = self.excludedFromShuffle.editedValue { patch.excludedFromShuffle = efs }
-        if let artData = self.pendingArtData { patch.coverArt = artData }
+        if self.artworkCleared {
+            patch.coverArt = .some(nil) // signals "remove art"
+        } else if let artData = self.pendingArtData {
+            patch.coverArt = artData
+        }
         return patch
     }
 
