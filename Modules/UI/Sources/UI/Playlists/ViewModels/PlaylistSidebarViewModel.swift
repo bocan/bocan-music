@@ -127,7 +127,13 @@ public final class PlaylistSidebarViewModel: ObservableObject {
                 try await self.service.delete(node.id)
             }
             await self.reload()
-            self.onDidDelete?(deletedIDs)
+            // Defer to the next main-actor tick: if onDidDelete swaps the
+            // content pane (e.g. smart playlist → songs) while the confirmation
+            // sheet is still animating closed, SwiftUI's dialog bridge can
+            // crash mid-layout (EXC_BAD_ACCESS in UC::DriverCore).
+            Task { @MainActor [weak self] in
+                self?.onDidDelete?(deletedIDs)
+            }
         } catch {
             self.lastError = self.describe(error)
         }
