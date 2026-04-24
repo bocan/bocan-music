@@ -26,6 +26,7 @@ actor EditTransaction {
     private let coverArtRepo: CoverArtRepository
     private let coverArtCache: CoverArtCache
     private let backupRing: BackupRing
+    private let rootRepo: LibraryRootRepository
     private let writer: TagWriter
     private let reader: TagReader
     private let log = AppLogger.make(.library)
@@ -39,7 +40,8 @@ actor EditTransaction {
         albumRepo: AlbumRepository,
         coverArtRepo: CoverArtRepository,
         coverArtCache: CoverArtCache,
-        backupRing: BackupRing
+        backupRing: BackupRing,
+        rootRepo: LibraryRootRepository
     ) {
         self.database = database
         self.trackRepo = trackRepo
@@ -48,6 +50,7 @@ actor EditTransaction {
         self.coverArtRepo = coverArtRepo
         self.coverArtCache = coverArtCache
         self.backupRing = backupRing
+        self.rootRepo = rootRepo
         self.writer = TagWriter()
         self.reader = TagReader()
     }
@@ -113,6 +116,12 @@ actor EditTransaction {
                 "Invalid file URL"
             )
         }
+
+        // Start the root-folder security scope so TagReader / TagWriter can
+        // access this file and create temp siblings in the same directory.
+        // The scope must remain active for the entire read-write-verify cycle.
+        let rootURL = try await self.startRootScope(for: track.fileURL)
+        defer { rootURL?.stopAccessingSecurityScopedResource() }
 
         // 2. Read current tags from file
         let currentTags = try await Task.detached(priority: .userInitiated) {
@@ -190,5 +199,36 @@ actor EditTransaction {
                 albumPeak: rg.albumPeak
             )
         }
+    }
+
+    // MARK: - Security scope
+
+    /// Finds the library root that contains `fileURLString`, resolves its
+    /// security-scoped bookmark, and starts access.
+    ///
+    /// The caller **must** call `stopAccessingSecurityScopedResource()` on the
+    /// returned URL when the file operation is complete (typically via `defer`).
+    ///
+    /// Returns `nil` when no matching root exists (e.g. in-memory test DBs) or
+    /// when the bookmark cannot be resolved — file I/O is then attempted with
+    /// the raw URL, which works outside the sandbox.
+    private func startRootScope(for fileURLString: String) async throws -> URL? {
+        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        guard let filePath = URL(string: fileURLString)?.path else { return nil }
+        guard let root = roots.first(where: {
+            let prefix = $0.path == "/" ? "/" : $0.path + "/"
+            return filePath.hasPrefix(prefix)
+        }) else { return nil }
+        var isStale = false
+        guard let rootURL = try? URL(
+            resolvingBookmarkData: root.bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ), rootURL.startAccessingSecurityScopedResource() else {
+            self.log.warning("edit.root_scope.failed", ["filePath": filePath])
+            return nil
+        }
+        return rootURL
     }
 }
