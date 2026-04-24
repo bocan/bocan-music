@@ -88,4 +88,24 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+// ---------------------------------------------------------------------------
+
+/// Writes metadata to an audio file via TagLib.
+///
+/// The caller is responsible for atomic-file safety (copy → write to copy →
+/// fsync → rename). This class only performs the TagLib write itself.
+@interface BOCTagWriter : NSObject
+
+/// Writes `tags` to the audio file at `path`.
+///
+/// Only non-nil / non-zero fields in `tags` are written; existing values for
+/// fields that map to nil / zero are left unchanged.
+///
+/// Returns YES on success, NO + sets `error` on failure.
++ (BOOL)writeTagsToPath:(NSString *)path
+                   tags:(BOCTags *)tags
+                  error:(NSError *__autoreleasing _Nullable *)outError;
+
+@end
+
 NS_ASSUME_NONNULL_END
