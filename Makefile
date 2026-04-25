@@ -1,4 +1,4 @@
-.PHONY: help bootstrap doctor open build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui lint format install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc doctor open build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui lint format install-hooks clean
 
 tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui
 
@@ -9,8 +9,12 @@ help:
 		sed 's/## //'
 
 ## bootstrap: Install all tools and git hooks
-bootstrap: brew-bundle install-hooks
+bootstrap: brew-bundle install-hooks bundle-fpcalc
 	@echo "✓ Bootstrap complete. Run 'make doctor' to verify."
+
+## bundle-fpcalc: Copy fpcalc + FFmpeg dylibs from Homebrew into Resources/ and relink
+bundle-fpcalc:
+	bash Scripts/build-fpcalc.sh
 
 ## brew-bundle: Install Brewfile dependencies
 brew-bundle:

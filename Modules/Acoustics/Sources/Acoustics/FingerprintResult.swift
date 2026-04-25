@@ -61,7 +61,7 @@ public struct AcoustIDResult: Decodable, Sendable {
 public struct AcoustIDRecording: Decodable, Sendable {
     public let id: String
     public let title: String?
-    public let duration: Int?
+    public let duration: Double?
     public let artists: [AcoustIDArtist]?
     public let releases: [AcoustIDRelease]?
 }
@@ -105,5 +105,5 @@ public struct AcoustIDTrackPosition: Decodable, Sendable {
 
 struct FpcalcOutput: Decodable {
     let fingerprint: String
-    let duration: Int
+    let duration: Double
 }

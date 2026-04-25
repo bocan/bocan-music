@@ -20,9 +20,9 @@ public struct MBRecording: Decodable, Sendable {
         }.joined() ?? ""
     }
 
-    /// Most prominent genre tag by vote count, if any.
+    /// Most prominent genre tag by vote count, if any.  Title-cased since MB tags are lowercase.
     public var topGenre: String? {
-        self.tags?.max(by: { $0.count < $1.count })?.name
+        self.tags?.max(by: { $0.count < $1.count })?.name.titleCased
     }
 }
 
@@ -107,4 +107,12 @@ public struct MBTrack: Decodable, Sendable {
 public struct MBTag: Decodable, Sendable {
     public let name: String
     public let count: Int
+}
+
+// MARK: - Helpers
+
+private extension String {
+    var titleCased: String {
+        self.capitalized(using: .current)
+    }
 }

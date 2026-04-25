@@ -75,7 +75,7 @@ public actor Fingerprinter {
         let decoder = JSONDecoder()
         do {
             let output = try decoder.decode(FpcalcOutput.self, from: data)
-            return (output.fingerprint, output.duration)
+            return (output.fingerprint, Int(output.duration.rounded()))
         } catch {
             let raw = String(data: data, encoding: .utf8) ?? "<binary>"
             throw AcousticsError.invalidResponse(reason: "fpcalc JSON parse failed: \(raw.prefix(200))")
