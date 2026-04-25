@@ -113,6 +113,6 @@ public struct MBTag: Decodable, Sendable {
 
 private extension String {
     var titleCased: String {
-        self.capitalized(using: .current)
+        self.capitalized(with: .current)
     }
 }
