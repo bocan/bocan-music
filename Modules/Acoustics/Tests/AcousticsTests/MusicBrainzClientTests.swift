@@ -28,7 +28,7 @@ struct MusicBrainzClientTests {
         #expect(recording.releases?.first?.title == "Abbey Road")
         #expect(recording.releases?.first?.year == 1969)
         #expect(recording.releases?.first?.labelInfo?.first?.label?.name == "Apple Records")
-        #expect(recording.topGenre == "rock")
+        #expect(recording.topGenre == "Rock")
     }
 
     // MARK: - User-Agent header
