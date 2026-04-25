@@ -16,6 +16,7 @@ let package = Package(
         .package(path: "../Observability"),
         .package(path: "../Persistence"),
         .package(path: "../Metadata"),
+        .package(path: "../Acoustics"),
     ],
     targets: [
         .target(
@@ -24,6 +25,7 @@ let package = Package(
                 .product(name: "Observability", package: "Observability"),
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "Metadata", package: "Metadata"),
+                .product(name: "Acoustics", package: "Acoustics"),
             ],
             path: "Sources/Library",
             swiftSettings: [

@@ -51,6 +51,9 @@ extension TracksView {
             getInfo: { tracks in
                 lib.showTagEditor(tracks: tracks)
             },
+            identify: { track in
+                lib.showIdentifyTrack(track)
+            },
             removeFromLibrary: { tracks in
                 for track in tracks {
                     if let id = track.id {

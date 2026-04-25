@@ -1,0 +1,53 @@
+{
+  "id": "f76e9be1-bd30-4b26-b0a6-1b8e9c70e4df",
+  "title": "Come Together",
+  "length": 259173,
+  "artist-credit": [
+    {
+      "name": "The Beatles",
+      "joinphrase": "",
+      "artist": {
+        "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+        "name": "The Beatles"
+      }
+    }
+  ],
+  "releases": [
+    {
+      "id": "b3b7e848-dba3-3a72-a9b5-a116b3f1e77c",
+      "title": "Abbey Road",
+      "date": "1969-09-26",
+      "status": "Official",
+      "artist-credit": [
+        {
+          "name": "The Beatles",
+          "joinphrase": "",
+          "artist": {
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles"
+          }
+        }
+      ],
+      "label-info": [
+        {
+          "label": { "id": "46f0f4cd-8aab-4b33-b698-f459faf64190", "name": "Apple Records" },
+          "catalog-number": "PCS 7088"
+        }
+      ],
+      "media": [
+        {
+          "position": 1,
+          "track-count": 17,
+          "tracks": [
+            { "number": "1", "position": 1, "title": "Come Together" }
+          ]
+        }
+      ]
+    }
+  ],
+  "tags": [
+    { "name": "rock", "count": 12 },
+    { "name": "classic rock", "count": 8 },
+    { "name": "british", "count": 3 }
+  ]
+}
