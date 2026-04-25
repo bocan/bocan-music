@@ -20,7 +20,11 @@ import Observability
 /// try await engine.play()
 /// ```
 public actor AudioEngine: Transport { // swiftlint:disable:this type_body_length
-    private static let _executor = DispatchSerialQueue(label: "com.bocan.audio-engine", qos: .userInitiated)
+    // .default QoS: AVAudioPlayerNode.stop() blocks on AVFoundation's internal
+    // default-QoS threads; running the actor at userInitiated caused priority
+    // inversions (FB13119463). Real-time rendering is handled by AVFoundation's
+    // own high-priority threads, not this actor.
+    private static let _executor = DispatchSerialQueue(label: "com.bocan.audio-engine", qos: .default)
     public nonisolated var unownedExecutor: UnownedSerialExecutor {
         Self._executor.asUnownedSerialExecutor()
     }
