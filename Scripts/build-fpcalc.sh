@@ -152,6 +152,37 @@ done < <(otool -L "$CHROMA_PREFIX/bin/fpcalc" 2>/dev/null | awk 'NR>1{print $1}'
 # 4. Rewrite fpcalc's own dep references now that every dep is in Resources/.
 relink_exe "$RESOURCES/fpcalc"
 
+# 5. Final @rpath sweep.
+#
+#    Some Homebrew binaries (notably fpcalc from chromaprint) reference their
+#    own dylibs via @rpath rather than @loader_path.  The steps above only
+#    rewrite Homebrew-absolute paths, so @rpath references are left intact.
+#    Now that every bundled dylib is in Resources/ we can resolve them:
+#    for each binary, replace "@rpath/<name>" with "@loader_path/<name>"
+#    whenever <name> is a file we placed in Resources/.
+#    We also strip the stale LC_RPATH entries so dyld never tries the old path.
+
+echo ""
+echo "--- fixing @rpath references ---"
+for f in "$RESOURCES/fpcalc" "$RESOURCES"/*.dylib; do
+    [[ -f "$f" ]] || continue
+    changed=0
+    while IFS= read -r dep; do
+        [[ "$dep" == @rpath/* ]] || continue
+        dep_name="${dep#@rpath/}"
+        [[ -f "$RESOURCES/$dep_name" ]] || continue
+        install_name_tool -change "$dep" "@loader_path/$dep_name" "$f"
+        echo "  @rpath→@loader_path  $dep_name  in $(basename "$f")"
+        changed=1
+    done < <(otool -L "$f" 2>/dev/null | awk 'NR>1{print $1}')
+
+    # Strip embedded rpaths — they all point into Homebrew and are now stale.
+    while IFS= read -r rp; do
+        install_name_tool -delete_rpath "$rp" "$f" 2>/dev/null || true
+    done < <(otool -l "$f" 2>/dev/null \
+        | awk '/cmd LC_RPATH/{found=1} found && /path /{print $2; found=0}')
+done
+
 # ── signing ───────────────────────────────────────────────────────────────────
 
 echo ""
