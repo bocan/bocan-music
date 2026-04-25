@@ -19,6 +19,7 @@
 		53AE8C17F55F8BDC0BCD4BDD /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 441F05155B692DC6D6F30264 /* AudioEngine */; };
 		5CBE9166A007819CF6F242ED /* PlaylistDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8929B62314FB8D67123CC447 /* PlaylistDetailViewModelTests.swift */; };
 		5F463887C3D0E059B4CDE351 /* fpcalc in Resources */ = {isa = PBXBuildFile; fileRef = A9999948FAD8FF8EE311BC9A /* fpcalc */; };
+		66A006037FB3F8C99B2585CA /* libchromaprint.1.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 4184573B514D5001203CDC8F /* libchromaprint.1.dylib */; };
 		77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */; };
 		7FA36AE37C84A3C2924AFBB2 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = 725067C07C4341529B60581F /* Playback */; };
 		8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = EE0BAD633E96C7812391D0FE /* AudioEngine */; };
@@ -42,6 +43,7 @@
 		3AB7C159C37D262541974E75 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		3D8E8EC191BDB21827F3BBAE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		4184573B514D5001203CDC8F /* libchromaprint.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libchromaprint.1.dylib; sourceTree = "<group>"; };
 		64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingViewModelTests.swift; sourceTree = "<group>"; };
 		6E014B4987A60B08F6DE299A /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Modules/Persistence; sourceTree = SOURCE_ROOT; };
 		7D0D4EFCB376B3DF15EEC533 /* BocanTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -58,7 +60,7 @@
 		D9B5B3110CE7BC30E8122BE8 /* UI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UI; path = Modules/UI; sourceTree = SOURCE_ROOT; };
 		EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_4DB2C062-84F4-4411-A093-D2E855FB2A41" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_A9EC2BDB-D6F6-4B59-9F6B-14007845FA2D" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -187,6 +189,7 @@
 				3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */,
 				3AB7C159C37D262541974E75 /* Assets.xcassets */,
 				A9999948FAD8FF8EE311BC9A /* fpcalc */,
+				4184573B514D5001203CDC8F /* libchromaprint.1.dylib */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -224,10 +227,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_E1E99DA1-D13C-4EFB-87DF-A32D8DF7358A" /* bocan-music */ = {
+		"TEMP_1AC4686E-44DD-4339-B1F2-CCA541AD66F2" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_4DB2C062-84F4-4411-A093-D2E855FB2A41" /* Secrets.xcconfig */,
+				"TEMP_A9EC2BDB-D6F6-4B59-9F6B-14007845FA2D" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -353,6 +356,7 @@
 				497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */,
 				0AAC9D550A9EDA832050335F /* Assets.xcassets in Resources */,
 				5F463887C3D0E059B4CDE351 /* fpcalc in Resources */,
+				66A006037FB3F8C99B2585CA /* libchromaprint.1.dylib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -427,7 +431,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_4DB2C062-84F4-4411-A093-D2E855FB2A41" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A9EC2BDB-D6F6-4B59-9F6B-14007845FA2D" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -558,7 +562,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_4DB2C062-84F4-4411-A093-D2E855FB2A41" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A9EC2BDB-D6F6-4B59-9F6B-14007845FA2D" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
