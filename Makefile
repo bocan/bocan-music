@@ -15,6 +15,7 @@ bootstrap: brew-bundle install-hooks bundle-fpcalc
 ## bundle-fpcalc: Copy fpcalc + FFmpeg dylibs from Homebrew into Resources/ and relink
 bundle-fpcalc:
 	bash Scripts/build-fpcalc.sh
+	xcodegen generate
 
 ## brew-bundle: Install Brewfile dependencies
 brew-bundle:
