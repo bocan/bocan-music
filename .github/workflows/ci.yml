@@ -42,6 +42,9 @@ jobs:
       - name: Doctor (print tool versions)
         run: make doctor
 
+      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+        run: make bundle-fpcalc
+
       - name: Generate Xcode project
         run: make generate
 
