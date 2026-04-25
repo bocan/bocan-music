@@ -65,6 +65,7 @@ targets:
       - package: Persistence
       - package: Playback
       - package: Library
+      - package: Acoustics
       - package: UI
     scheme:
       testTargets:
@@ -113,6 +114,8 @@ packages:
     path: Modules/Persistence
   Playback:
     path: Modules/Playback
+  Acoustics:
+    path: Modules/Acoustics
   Library:
     path: Modules/Library
   UI:

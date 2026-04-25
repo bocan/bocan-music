@@ -2,45 +2,30 @@
 import PackageDescription
 
 let package = Package(
-    name: "Library",
+    name: "Acoustics",
     platforms: [
         .macOS(.v14),
     ],
     products: [
-        .library(
-            name: "Library",
-            targets: ["Library"]
-        ),
+        .library(name: "Acoustics", targets: ["Acoustics"]),
     ],
     dependencies: [
         .package(path: "../Observability"),
-        .package(path: "../Persistence"),
-        .package(path: "../Metadata"),
-        .package(path: "../Acoustics"),
     ],
     targets: [
         .target(
-            name: "Library",
+            name: "Acoustics",
             dependencies: [
                 .product(name: "Observability", package: "Observability"),
-                .product(name: "Persistence", package: "Persistence"),
-                .product(name: "Metadata", package: "Metadata"),
-                .product(name: "Acoustics", package: "Acoustics"),
             ],
-            path: "Sources/Library",
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
                 .swiftLanguageMode(.v6),
             ]
         ),
         .testTarget(
-            name: "LibraryTests",
-            dependencies: [
-                "Library",
-                .product(name: "Persistence", package: "Persistence"),
-                .product(name: "Metadata", package: "Metadata"),
-            ],
-            path: "Tests/LibraryTests",
+            name: "AcousticsTests",
+            dependencies: ["Acoustics"],
             resources: [
                 .copy("Fixtures"),
             ],

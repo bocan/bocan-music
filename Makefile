@@ -1,6 +1,6 @@
-.PHONY: help bootstrap doctor open build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-ui lint format install-hooks clean
+.PHONY: help bootstrap doctor open build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui lint format install-hooks clean
 
-tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-ui
+tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui
 
 ## help: Print all available targets
 help:
@@ -89,6 +89,10 @@ test-metadata:
 ## test-library: Run Library SPM package tests
 test-library:
 	cd Modules/Library && swift test --enable-code-coverage
+
+## test-acoustics: Run Acoustics SPM package tests
+test-acoustics:
+	cd Modules/Acoustics && swift test --enable-code-coverage
 
 ## test-ui: Run UI SPM package tests
 test-ui:

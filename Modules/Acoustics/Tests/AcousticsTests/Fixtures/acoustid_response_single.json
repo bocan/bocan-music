@@ -1,0 +1,45 @@
+{
+  "status": "ok",
+  "results": [
+    {
+      "id": "2dd41a10-3b4c-4bcd-87dc-c49dda6b5660",
+      "score": 0.9474620819091797,
+      "recordings": [
+        {
+          "id": "f76e9be1-bd30-4b26-b0a6-1b8e9c70e4df",
+          "title": "Come Together",
+          "duration": 259,
+          "artists": [
+            {
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles"
+            }
+          ],
+          "releases": [
+            {
+              "id": "b3b7e848-dba3-3a72-a9b5-a116b3f1e77c",
+              "title": "Abbey Road",
+              "date": {
+                "year": 1969,
+                "month": 9,
+                "day": 26
+              },
+              "mediums": [
+                {
+                  "position": 1,
+                  "track_count": 17,
+                  "tracks": [
+                    {
+                      "position": 1,
+                      "title": "Come Together"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

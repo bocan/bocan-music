@@ -253,6 +253,12 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         infoItem.isEnabled = !selected.isEmpty
         menu.addItem(infoItem)
 
+        if let track = first {
+            let identifyItem = ActionMenuItem("Identify Track\u{2026}") { acts.identify(track) }
+            identifyItem.isEnabled = selected.count == 1
+            menu.addItem(identifyItem)
+        }
+
         menu.addItem(.separator())
         if let removeFromPlaylist = acts.removeFromPlaylist {
             let rp = ActionMenuItem("Remove from Playlist") { removeFromPlaylist(selected) }
@@ -381,18 +387,5 @@ final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
         let item = NSPasteboardItem()
         item.setString(String(id), forType: .string)
         return item
-    }
-}
-
-// MARK: - ContextMenuTableView
-
-/// Routes right-click menus through a closure so the coordinator can read
-/// `clickedRow` at the moment the menu is requested.
-final class ContextMenuTableView: NSTableView {
-    /// Called to build the menu each time right-click fires.
-    var menuProvider: (() -> NSMenu)?
-
-    override func menu(for event: NSEvent) -> NSMenu? {
-        self.menuProvider?() ?? super.menu(for: event)
     }
 }
