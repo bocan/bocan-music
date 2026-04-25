@@ -33,6 +33,7 @@ public actor AudioEngine: Transport { // swiftlint:disable:this type_body_length
 
     private let graph: EngineGraph
     private let deviceRouter: DeviceRouter
+    private let presets: PresetStore
     private var decoder: (any Decoder)?
     private var pump: BufferPump?
     private var _currentTime: TimeInterval = 0
@@ -148,11 +149,29 @@ public actor AudioEngine: Transport { // swiftlint:disable:this type_body_length
         self.log.debug("engine.gapless.cancelled")
     }
 
+    // MARK: - DSP public API
+
+    /// The DSP chain for this engine. Use to apply presets, adjust effects, and set gain.
+    public var dsp: DSPChain {
+        self.graph.dsp
+    }
+
+    /// Apply a complete `DSPState` snapshot (EQ, bass boost, crossfeed, width, etc.).
+    public func applyDSPState(_ state: DSPState) {
+        self.graph.dsp.apply(state, presets: self.presets)
+    }
+
+    /// Apply the ReplayGain compensation gain in dB.
+    public func applyReplayGain(db: Double) {
+        self.graph.dsp.applyGain(db: db)
+    }
+
     // MARK: - Init
 
-    public init() {
+    public init(presets: PresetStore = PresetStore()) {
         self.graph = EngineGraph()
         self.deviceRouter = DeviceRouter()
+        self.presets = presets
 
         var continuation: AsyncStream<PlaybackState>.Continuation?
         self.state = AsyncStream { continuation = $0 }

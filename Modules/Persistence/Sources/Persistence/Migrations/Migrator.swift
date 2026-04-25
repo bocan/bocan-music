@@ -37,6 +37,7 @@ public struct Migrator {
         M007PlaylistKindAccent.register(in: &dm)
         M008SmartLimitSort.register(in: &dm)
         M009AcoustID.register(in: &dm)
+        M010DSPAssignments.register(in: &dm)
         return Self(inner: dm)
     }
 
