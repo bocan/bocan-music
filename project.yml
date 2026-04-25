@@ -13,6 +13,10 @@ options:
   settingPresets: app
   defaultConfig: Debug
 
+configFiles:
+  Debug: Secrets.xcconfig
+  Release: Secrets.xcconfig
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
