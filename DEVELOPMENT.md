@@ -140,6 +140,51 @@ make test-audio-engine        # (PKG_CONFIG_PATH already in $GITHUB_ENV on CI)
 
 
 
+## fpcalc / AcoustID fingerprinting
+
+Bòcan uses [Chromaprint](https://acoustid.org/chromaprint) (`fpcalc`) to generate acoustic fingerprints for track identification via the AcoustID API. Because the app runs in the macOS sandbox, `fpcalc` and all of its FFmpeg dylib dependencies must be bundled inside the app bundle with paths rewritten to `@loader_path` — it cannot reach out to Homebrew at runtime.
+
+### Why the binaries are not in the repo
+
+`fpcalc` transitively pulls in ~15 FFmpeg/codec dylibs (~32 MB total: libavcodec, libavformat, libavutil, libswresample, libssl, libcrypto, and several codec libs). Storing those in git would bloat every clone. Instead, `Scripts/build-fpcalc.sh` generates them locally and in CI from the Homebrew installation.
+
+### Setup (done automatically by `make bootstrap`)
+
+```bash
+# Requires: brew install chromaprint ffmpeg  (both are in Brewfile)
+make bundle-fpcalc
+```
+
+This runs `Scripts/build-fpcalc.sh`, which:
+
+1. Copies `fpcalc` from `$(brew --prefix chromaprint)/bin/`.
+2. Recursively walks every Homebrew dylib dependency of `fpcalc` and `libchromaprint`.
+3. Copies each dylib into `Resources/` and rewrites all Homebrew-absolute paths to `@loader_path/<name>`.
+4. Ad-hoc signs every binary (sufficient for Debug builds; release builds use a real Developer ID identity via `$SIGNING_IDENTITY`).
+
+After the script runs, `make generate` picks up the new files in `Resources/` and XcodeGen adds them to the bundle automatically.
+
+### Re-running after an FFmpeg or Chromaprint upgrade
+
+```bash
+make bundle-fpcalc   # re-copies and relinks all dylibs
+make generate        # only needed if dylib filenames changed (e.g. libavcodec.61 → libavcodec.62)
+```
+
+### CI
+
+The CI workflow (`ci.yml`) installs both `ffmpeg` and `chromaprint` via `brew bundle` (both are in the Brewfile). A dedicated step runs `make bundle-fpcalc` before `make generate` so all dylibs are present when XcodeGen scans `Resources/`.
+
+### Signing for distribution
+
+For a notarized release build, pass your Developer ID identity:
+
+```bash
+SIGNING_IDENTITY="Developer ID Application: Your Name (TEAMID)" bash Scripts/build-fpcalc.sh
+```
+
+Or set `$SIGNING_IDENTITY` in the environment before running `make bundle-fpcalc`.
+
 ## Debugging in Console.app
 
 Filter by subsystem `io.cloudcauldron.bocan` to see all Bòcan log output.
