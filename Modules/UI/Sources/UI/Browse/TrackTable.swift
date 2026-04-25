@@ -31,6 +31,8 @@ public struct TrackContextMenuActions {
     public let rescanFile: (Track) -> Void
     /// Show the track inspector for the selected tracks.
     public let getInfo: ([Track]) -> Void
+    /// Open the acoustic identify-track sheet for a single track.
+    public let identify: (Track) -> Void
     /// Remove tracks from the library without deleting files.
     public let removeFromLibrary: ([Track]) -> Void
     /// Delete a track's file from disk and remove it from the library.

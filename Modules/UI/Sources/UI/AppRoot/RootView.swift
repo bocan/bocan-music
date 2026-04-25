@@ -1,3 +1,4 @@
+import Acoustics
 import Library
 import SwiftUI
 import UniformTypeIdentifiers
@@ -20,6 +21,7 @@ public struct BocanRootView: View {
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
     @State private var tagEditorVM: TagEditorViewModel?
+    @State private var identifyVM: IdentifyTrackViewModel?
 
     public init(vm: LibraryViewModel) {
         _vm = StateObject(wrappedValue: vm)
@@ -114,6 +116,30 @@ public struct BocanRootView: View {
             if let tagVM = self.tagEditorVM {
                 TagEditorSheet(vm: tagVM, isPresented: self.tagEditorBinding)
             }
+        }
+        .onChange(of: self.vm.identifyTrack?.id) { _, _ in
+            if let track = self.vm.identifyTrack,
+               let queue = self.vm.fingerprintQueue,
+               let svc = self.vm.metadataEditService {
+                self.identifyVM = IdentifyTrackViewModel(track: track, queue: queue, editService: svc)
+            } else {
+                self.identifyVM = nil
+            }
+        }
+        .sheet(item: self.$identifyVM) { identVM in
+            IdentifyTrackSheet(vm: identVM)
+                .onDisappear {
+                    let needsReload = identVM.didApply
+                    self.vm.identifyTrack = nil
+                    if needsReload {
+                        Task { await self.vm.loadCurrentDestination() }
+                    }
+                }
+        }
+        .onKeyPress(.init("i"), phases: .down) { event in
+            guard event.modifiers == [.command, .option] else { return .ignored }
+            self.vm.showIdentifyTrackForCurrentSelection()
+            return .handled
         }
     }
 

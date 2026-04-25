@@ -1,4 +1,5 @@
 // swiftlint:disable file_length
+import Acoustics
 import AppKit
 import AudioEngine
 import Combine
@@ -53,6 +54,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Shared `MetadataEditService` (nil only if the backup directory is unavailable).
     public let metadataEditService: MetadataEditService?
 
+    // MARK: - Identify track state
+
+    /// Non-nil when the identify-track sheet should be shown.
+    @Published public var identifyTrack: Track?
+    /// Shared queue for acoustic identification requests.
+    public let fingerprintQueue: FingerprintQueue?
+
     // MARK: - Error state
 
     /// Set when playback fails; cleared when the user dismisses the alert.
@@ -99,6 +107,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.scanner = scanner
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
+
+        self.fingerprintQueue = Self.makeFingerprintQueue(database: database)
 
         let trackRepo = TrackRepository(database: database)
         let albumRepo = AlbumRepository(database: database)
@@ -160,6 +170,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
     }
 
+    private static func makeFingerprintQueue(database: Database) -> FingerprintQueue? {
+        let apiKey = Bundle.main.infoDictionary?["AcoustIDAPIKey"] as? String ?? ""
+        guard let fpcalcURL = Bundle.main.url(forResource: "fpcalc", withExtension: nil),
+              !apiKey.isEmpty else { return nil }
+        let service = FingerprintService(database: database, fpcalcURL: fpcalcURL, acoustIDAPIKey: apiKey)
+        return FingerprintQueue(service: service)
+    }
+
     // MARK: - Tag editor
 
     /// Opens the tag editor sheet for the given tracks.
@@ -180,6 +198,19 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         let ids = self.tracks.selection.compactMap(\.self)
         guard !ids.isEmpty else { return }
         self.tagEditorTrackIDs = ids
+    }
+
+    /// Opens the identify-track sheet for a single track.
+    public func showIdentifyTrack(_ track: Track) {
+        self.identifyTrack = track
+    }
+
+    /// Opens the identify-track sheet for the first track in the current selection.
+    public func showIdentifyTrackForCurrentSelection() {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        self.identifyTrack = track
     }
 
     /// Reveals all selected tracks in Finder.

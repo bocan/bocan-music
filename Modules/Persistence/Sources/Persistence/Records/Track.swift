@@ -111,6 +111,12 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// MusicBrainz recording identifier.
     public var musicbrainzRecordingID: String?
 
+    /// Chromaprint acoustic fingerprint string (added in M009).
+    public var acoustidFingerprint: String?
+
+    /// AcoustID lookup result identifier (added in M009).
+    public var acoustidID: String?
+
     /// MusicBrainz album-artist identifier (added in M002).
     public var musicbrainzAlbumArtistID: String?
 
@@ -219,6 +225,8 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         isrc: String? = nil,
         musicbrainzTrackID: String? = nil,
         musicbrainzRecordingID: String? = nil,
+        acoustidFingerprint: String? = nil,
+        acoustidID: String? = nil,
         musicbrainzAlbumArtistID: String? = nil,
         musicbrainzReleaseID: String? = nil,
         musicbrainzReleaseGroupID: String? = nil,
@@ -272,6 +280,8 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.isrc = isrc
         self.musicbrainzTrackID = musicbrainzTrackID
         self.musicbrainzRecordingID = musicbrainzRecordingID
+        self.acoustidFingerprint = acoustidFingerprint
+        self.acoustidID = acoustidID
         self.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         self.musicbrainzReleaseID = musicbrainzReleaseID
         self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
@@ -338,6 +348,8 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case isrc
         case musicbrainzTrackID = "musicbrainz_track_id"
         case musicbrainzRecordingID = "musicbrainz_recording_id"
+        case acoustidFingerprint = "acoustid_fingerprint"
+        case acoustidID = "acoustid_id"
         case musicbrainzAlbumArtistID = "musicbrainz_album_artist_id"
         case musicbrainzReleaseID = "musicbrainz_release_id"
         case musicbrainzReleaseGroupID = "musicbrainz_release_group_id"

@@ -54,6 +54,12 @@ struct BocanApp: App {
                 .keyboardShortcut(KeyBindings.getInfo)
                 .disabled(!self.libraryViewModel.hasTrackSelection)
 
+                Button("Identify Track\u{2026}") {
+                    self.libraryViewModel.showIdentifyTrackForCurrentSelection()
+                }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+                .disabled(!self.libraryViewModel.hasTrackSelection)
+
                 Button("Reveal in Finder") {
                     self.libraryViewModel.revealSelectedInFinder()
                 }

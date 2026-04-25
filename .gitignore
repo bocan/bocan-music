@@ -61,3 +61,4 @@ Pods/
 *.swp
 *.swo
 *~
+Secrets.xcconfig

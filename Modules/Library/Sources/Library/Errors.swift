@@ -17,6 +17,12 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
     /// A root with the given ID was not found.
     case rootNotFound(Int64)
 
+    /// A track has no database ID (not yet persisted).
+    case missingID
+
+    /// A track's `fileURL` string could not be parsed into a valid URL.
+    case invalidFileURL(String)
+
     /// Wraps an underlying system error.
     case underlying(Error)
 
@@ -32,6 +38,10 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
             "Library: a scan is already in progress"
         case let .rootNotFound(id):
             "Library: root \(id) not found"
+        case .missingID:
+            "Library: track has no database ID"
+        case let .invalidFileURL(raw):
+            "Library: invalid file URL '\(raw)'"
         case let .underlying(err):
             "Library: \(err)"
         }

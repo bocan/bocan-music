@@ -90,7 +90,7 @@ public final class TagEditorViewModel: ObservableObject {
         guard !allTags.isEmpty else { return }
         self.populate(from: allTags)
         // Load first front-cover for display (picture type 3 = front cover).
-        let art = allTags.first?.coverArt.first(where: { $0.pictureType == 3 })
+        let art = allTags.first?.coverArt.first { $0.pictureType == 3 }
             ?? allTags.first?.coverArt.first
         self.existingArtData = art?.data
     }
