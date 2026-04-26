@@ -49,6 +49,7 @@ public struct EQView: View {
             Toggle("EQ", isOn: self.$vm.state.eqEnabled)
                 .accessibilityLabel("Enable equaliser")
                 .toggleStyle(.switch)
+                .help("Enable or bypass the 10-band equaliser")
 
             Spacer()
 
@@ -78,6 +79,7 @@ public struct EQView: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
+        .help("Select a built-in or saved EQ preset")
     }
 
     private var abButton: some View {
@@ -122,6 +124,8 @@ public struct EQView: View {
                 step: 0.5
             )
             .accessibilityLabel("EQ output gain")
+            .accessibilityValue(String(format: "%+.1f dB", self.outputGainValue))
+            .help("Output trim after EQ — compensate for loudness change introduced by the curve")
             Text(String(format: "%+.1f dB", self.outputGainValue))
                 .font(.caption.monospacedDigit())
                 .frame(width: 52, alignment: .trailing)
@@ -233,12 +237,16 @@ private struct BandSliderView: View {
             Text(String(format: "%+.0f", self.gain))
                 .font(.system(size: 9).monospacedDigit())
                 .foregroundStyle(.secondary)
-            // Vertical slider using rotation
+            // Pre-size to 140 wide so the track gets full travel, then rotate to
+            // make it vertical; constrain the layout frame to 28×140 after rotation.
             Slider(value: self.$gain, in: -12 ... 12, step: 0.5)
+                .frame(width: 140)
                 .rotationEffect(.degrees(-90))
                 .frame(width: 28, height: 140)
                 .disabled(!self.isEnabled)
+                .help("\(self.label) Hz band: ±12 dB")
                 .accessibilityLabel("\(self.label) Hz EQ band")
+                .accessibilityValue(String(format: "%+.0f dB", self.gain))
             Text(self.label)
                 .font(.system(size: 9))
                 .foregroundStyle(.secondary)

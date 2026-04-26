@@ -129,10 +129,12 @@ public struct BocanRootView: View {
         .sheet(item: self.$identifyVM) { identVM in
             IdentifyTrackSheet(vm: identVM)
                 .onDisappear {
-                    let needsReload = identVM.didApply
+                    let didApply = identVM.didApply
+                    // Capture the track ID before clearing identifyTrack.
+                    let trackID = self.vm.identifyTrack?.id
                     self.vm.identifyTrack = nil
-                    if needsReload {
-                        Task { await self.vm.loadCurrentDestination() }
+                    if didApply, let id = trackID {
+                        Task { await self.vm.refreshTracks(ids: [id]) }
                     }
                 }
         }
@@ -157,11 +159,14 @@ public struct BocanRootView: View {
             get: { self.tagEditorVM != nil },
             set: {
                 if !$0 {
-                    let needsReload = self.tagEditorVM?.didSave == true
+                    let didSave = self.tagEditorVM?.didSave == true
+                    // Capture IDs before clearing state.
+                    let editedIDs = self.vm.tagEditorTrackIDs ?? []
                     self.tagEditorVM = nil
                     self.vm.tagEditorTrackIDs = nil
-                    if needsReload {
-                        Task { await self.vm.loadCurrentDestination() }
+                    if didSave {
+                        // Refresh only the affected rows — preserves scroll position.
+                        Task { await self.vm.refreshTracks(ids: editedIDs) }
                     }
                 }
             }

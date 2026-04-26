@@ -31,6 +31,7 @@ public struct DSPView: View {
                 HStack {
                     Slider(value: self.$vm.state.bassBoostDB, in: 0 ... 12, step: 0.5)
                         .accessibilityLabel("Bass boost gain")
+                        .help("Low-shelf boost at 80 Hz. 0 = off; 12 = maximum bass enhancement.")
                     Text(String(format: "%.1f dB", self.vm.state.bassBoostDB))
                         .font(.caption.monospacedDigit())
                         .frame(width: 48, alignment: .trailing)
@@ -50,6 +51,7 @@ public struct DSPView: View {
                 HStack {
                     Slider(value: self.$vm.state.crossfeedAmount, in: 0 ... 1, step: 0.05)
                         .accessibilityLabel("Crossfeed amount")
+                        .help("Bauer crossfeed level. 0 = off; 100% = full binaural matrix (≈−9.5 dB cross-talk). Best for headphones.")
                     Text(String(format: "%.0f%%", self.vm.state.crossfeedAmount * 100))
                         .font(.caption.monospacedDigit())
                         .frame(width: 36, alignment: .trailing)
@@ -69,6 +71,7 @@ public struct DSPView: View {
                 HStack {
                     Slider(value: self.$vm.state.stereoWidth, in: 0.5 ... 2.0, step: 0.05)
                         .accessibilityLabel("Stereo width")
+                        .help("Mid/side width multiplier. 1.0 = original; below 1 narrows toward mono; above 1 widens the stereo field.")
                     Text(self.widthLabel)
                         .font(.caption.monospacedDigit())
                         .frame(width: 48, alignment: .trailing)
@@ -92,6 +95,7 @@ public struct DSPView: View {
                         step: 0.5
                     )
                     .accessibilityLabel("Crossfade duration")
+                    .help("Duration of the crossfade between tracks. 0 = sample-accurate gapless playback.")
                     Text(self.crossfadeLabel)
                         .font(.caption.monospacedDigit())
                         .frame(width: 72, alignment: .trailing)
@@ -104,6 +108,7 @@ public struct DSPView: View {
                     isOn: self.$vm.state.crossfadeAlbumGapless
                 )
                 .accessibilityLabel("Keep gapless playback within albums when crossfade is active")
+                .help("When on, consecutive album tracks stay gapless; crossfade only applies at album boundaries.")
             }
 
             Text(self.transitionHelp)

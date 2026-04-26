@@ -38,8 +38,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct BocanApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
-    @AppStorage("general.showMenuBarExtra") private var showMenuBarExtra = false
-
     private let log = AppLogger.make(.app)
     private let database: Database
     private let engine: AudioEngine
@@ -136,12 +134,12 @@ struct BocanApp: App {
         .windowResizability(.contentMinSize)
         .windowStyle(.titleBar)
 
-        // MARK: Menu bar extra (opt-in via Settings > General)
-
-        MenuBarExtra("Bòcan", systemImage: "music.note", isInserted: self.$showMenuBarExtra) {
-            MenuBarExtraScene(vm: self.libraryViewModel.nowPlaying)
-        }
-        .menuBarExtraStyle(.window)
+        // MenuBarExtra removed: on macOS 26 beta its `isInserted:` @AppStorage
+        // binding appears to subscribe to the key-agnostic UserDefaults
+        // didChangeNotification, firing on every window-frame autosave and driving
+        // a continuous scenesDidChange → makeMainMenu storm that locks the
+        // MainActor at launch.  If reintroduced, drive the binding through
+        // @State + manual UserDefaults handling, not @AppStorage.
     }
 
     init() {
