@@ -14,8 +14,18 @@ import SwiftUI
 public final class WindowModeController: ObservableObject {
     // MARK: - Persisted state
 
-    @AppStorage("ui.windowMode.miniPlayerOpen") public var miniPlayerOpen = false
-    @AppStorage("ui.windowMode.restoresLastMode") public var restoresLastMode = true
+    /// @Published + manual UserDefaults read/write instead of @AppStorage.
+    /// @AppStorage in an ObservableObject that is a @StateObject in an App struct
+    /// subscribes to UserDefaults.didChangeNotification (key-agnostic), which fires
+    /// whenever macOS autosaves window frames — triggering objectWillChange → infinite
+    /// App body re-evaluation loop at display-refresh rate.
+    @Published public var miniPlayerOpen: Bool {
+        didSet { UserDefaults.standard.set(self.miniPlayerOpen, forKey: "ui.windowMode.miniPlayerOpen") }
+    }
+
+    @Published public var restoresLastMode: Bool {
+        didSet { UserDefaults.standard.set(self.restoresLastMode, forKey: "ui.windowMode.restoresLastMode") }
+    }
 
     // MARK: - Environment
 
@@ -23,7 +33,11 @@ public final class WindowModeController: ObservableObject {
     public var openWindow: ((String) -> Void)?
     public var dismissWindow: ((String) -> Void)?
 
-    public init() {}
+    public init() {
+        self.miniPlayerOpen = UserDefaults.standard.bool(forKey: "ui.windowMode.miniPlayerOpen")
+        let stored = UserDefaults.standard.object(forKey: "ui.windowMode.restoresLastMode") as? Bool
+        self.restoresLastMode = stored ?? true
+    }
 
     // MARK: - Public API
 

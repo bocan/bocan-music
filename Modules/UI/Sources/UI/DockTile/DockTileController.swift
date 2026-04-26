@@ -16,7 +16,9 @@ import SwiftUI
 public final class DockTileController: ObservableObject {
     // MARK: - State
 
-    @AppStorage("general.showDockProgress") private var showProgress = true
+    /// Read directly from UserDefaults in the tick loop instead of @AppStorage —
+    /// see WindowModeController for why @AppStorage in ObservableObject is unsafe here.
+    private static let showProgressKey = "general.showDockProgress"
 
     private weak var vm: NowPlayingViewModel?
     private var observationTask: Task<Void, Never>?
@@ -59,7 +61,8 @@ public final class DockTileController: ObservableObject {
                 let duration = self.vm?.duration ?? 0
                 let progress = duration > 0 ? position / duration : 0
                 self.contentView.progress = progress
-                self.contentView.isVisible = self.showProgress && (self.vm?.isPlaying == true)
+                let showProgress = UserDefaults.standard.object(forKey: Self.showProgressKey) as? Bool ?? true
+                self.contentView.isVisible = showProgress && (self.vm?.isPlaying == true)
                 NSApp.dockTile.display()
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 s
             }

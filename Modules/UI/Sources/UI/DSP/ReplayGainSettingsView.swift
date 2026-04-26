@@ -6,9 +6,10 @@ import SwiftUI
 /// Settings UI for ReplayGain: mode picker, pre-amp, and analysis actions.
 ///
 /// Analysis is run in a background task; the view shows progress and result via
-/// `DSPViewModel.isAnalyzing`.
+/// `LibraryViewModel.replayGainProgress`.
 public struct ReplayGainSettingsView: View {
     @ObservedObject var vm: DSPViewModel
+    @EnvironmentObject private var library: LibraryViewModel
 
     @State private var showRecomputeConfirm = false
 
@@ -29,7 +30,7 @@ public struct ReplayGainSettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Recompute All", role: .destructive) {
-                // TODO(phase-10): trigger full-library ReplayGain recomputation
+                Task { await self.library.recomputeAllReplayGain() }
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -49,6 +50,7 @@ public struct ReplayGainSettingsView: View {
             }
             .pickerStyle(.segmented)
             .accessibilityLabel("ReplayGain mode")
+            .help("Off: none. Track: −18 LUFS. Album: preserves relative dynamics. Auto: album gain within albums, track gain otherwise.")
             Text(self.modeHelp)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -61,6 +63,7 @@ public struct ReplayGainSettingsView: View {
                 HStack {
                     Slider(value: self.$vm.state.preAmpDB, in: -12 ... 12, step: 0.5)
                         .accessibilityLabel("ReplayGain pre-amplifier")
+                        .help("Extra gain on top of the ReplayGain value. A clipping guard prevents the peak from exceeding −0.5 dBFS.")
                     Text(String(format: "%+.1f dB", self.vm.state.preAmpDB))
                         .font(.caption.monospacedDigit())
                         .frame(width: 52, alignment: .trailing)
@@ -74,18 +77,24 @@ public struct ReplayGainSettingsView: View {
 
     private var analysisSection: some View {
         Section("Analysis") {
+            if let progress = self.library.replayGainProgress {
+                self.progressRow(progress)
+            } else {
+                self.analysisButtons
+            }
+        }
+    }
+
+    private var analysisButtons: some View {
+        Group {
             HStack {
-                Text(self.vm.isAnalyzing ? "Analysing…" : "Compute missing ReplayGain values")
+                Text("Compute missing ReplayGain values")
                 Spacer()
-                if self.vm.isAnalyzing {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Button("Compute Missing") {
-                        // TODO(phase-10): trigger compute-missing operation
-                    }
-                    .buttonStyle(.bordered)
+                Button("Compute Missing") {
+                    Task { await self.library.computeMissingReplayGain() }
                 }
+                .buttonStyle(.bordered)
+                .help("Analyse any tracks that don't yet have ReplayGain data")
             }
             .accessibilityElement(children: .combine)
 
@@ -93,10 +102,47 @@ public struct ReplayGainSettingsView: View {
                 self.showRecomputeConfirm = true
             }
             .accessibilityLabel("Recompute ReplayGain for all library tracks")
+            .help("Re-analyse every track in the library. This may take several minutes.")
         }
     }
 
+    private func progressRow(_ progress: ReplayGainBatchProgress) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if progress.isComplete {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text(self.completionMessage(progress))
+                        .font(.callout)
+                }
+                Button("Dismiss") { self.library.replayGainProgress = nil }
+                    .buttonStyle(.bordered)
+            } else {
+                HStack(spacing: 8) {
+                    ProgressView(
+                        value: Double(progress.done),
+                        total: Double(progress.total)
+                    )
+                    Text("\(progress.done) / \(progress.total)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .frame(width: 60, alignment: .trailing)
+                }
+                Text("Analysing\u{2026}")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
     // MARK: - Labels
+
+    private func completionMessage(_ progress: ReplayGainBatchProgress) -> String {
+        let noun = progress.succeeded == 1 ? "track" : "tracks"
+        let base = "Analysis complete — \(progress.succeeded) \(noun) analysed"
+        return progress.failed > 0 ? "\(base), \(progress.failed) failed" : base
+    }
 
     private var modeHelp: String {
         switch self.vm.state.replayGainMode {

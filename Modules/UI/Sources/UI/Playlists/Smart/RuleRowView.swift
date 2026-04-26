@@ -131,6 +131,7 @@ private struct FieldPicker: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -162,6 +163,7 @@ private struct ComparatorMenu: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)

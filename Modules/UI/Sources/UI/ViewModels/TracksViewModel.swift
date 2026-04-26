@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import Observability
 import Persistence
@@ -222,6 +223,36 @@ public final class TracksViewModel: ObservableObject {
             self.log.error("tracks.load(composer).failed", ["error": String(reflecting: error)])
         }
         self.isLoading = false
+    }
+
+    /// Update the displayed data for specific tracks without reloading the full list.
+    ///
+    /// Replaces the matching rows in `allRows` and `rows` in-place so the `Table`
+    /// keeps its scroll position and selection intact.  Artist/album names are
+    /// resolved from the current cached lookup dictionaries — if a name itself
+    /// changed it will be corrected on the next full load.
+    public func updateRows(for updatedTracks: [Track]) {
+        guard !updatedTracks.isEmpty else { return }
+        let artists = self.artistNames
+        let albums = self.albumNames
+        let newRowsByID: [Int64: TrackRow] = updatedTracks.reduce(into: [:]) { dict, track in
+            guard let id = track.id else { return }
+            dict[id] = TrackRow(
+                track: track,
+                artistName: track.artistID.flatMap { artists[$0] },
+                albumName: track.albumID.flatMap { albums[$0] }
+            )
+        }
+        for i in self.allRows.indices {
+            if let id = self.allRows[i].track.id, let updated = newRowsByID[id] {
+                self.allRows[i] = updated
+            }
+        }
+        for i in self.rows.indices {
+            if let id = self.rows[i].track.id, let updated = newRowsByID[id] {
+                self.rows[i] = updated
+            }
+        }
     }
 
     /// Sets a pre-fetched track list directly (used by smart folders / search results).
