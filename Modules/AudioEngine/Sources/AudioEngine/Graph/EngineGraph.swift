@@ -6,7 +6,7 @@ import Observability
 
 /// Owns and configures the `AVAudioEngine` signal chain.
 ///
-/// Chain:  PlayerNode → DSPChain (GainStage → EQ → BassBoost → Crossfeed → StereoExpander → Limiter) → Mixer → Output
+/// Chain:  PlayerNode → DSPChain (TimePitch → GainStage → EQ → BassBoost → Crossfeed → StereoExpander → Limiter) → Mixer → Output
 ///
 /// The canonical internal format is:
 /// - `Float32`, non-interleaved, stereo

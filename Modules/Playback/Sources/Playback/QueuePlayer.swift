@@ -29,6 +29,8 @@ public actor QueuePlayer: Transport {
     private let gaplessScheduler: GaplessScheduler
     private let historyRecorder: PlayHistoryRecorder
     private let persistence: QueuePersistence
+    /// The sleep timer — available for UI observation via `LibraryViewModel`.
+    public nonisolated let sleepTimer: SleepTimer
 
     // MARK: - @MainActor helpers (lazily initialised in activate())
 
@@ -98,6 +100,12 @@ public actor QueuePlayer: Transport {
         self.currentTrackChanges = AsyncStream { trackContinuation = $0 }
         self.currentTrackContinuation = trackContinuation
 
+        // Build sleep timer — captures engine weakly so it can set volume / stop.
+        self.sleepTimer = SleepTimer(
+            onStop: { [weak engine] in await engine?.stop() },
+            onSetVolume: { [weak engine] vol in await engine?.setVolume(vol) }
+        )
+
         // Kick off async activation after init completes.
         Task { await self.activate() }
     }
@@ -140,6 +148,9 @@ public actor QueuePlayer: Transport {
 
         // Restore persisted queue state.
         await self.restoreQueue()
+
+        // Restore sleep timer (resumes countdown if it was set before quit).
+        await self.sleepTimer.restoreIfNeeded()
 
         self.log.debug("queueplayer.activated")
     }
@@ -334,6 +345,11 @@ public actor QueuePlayer: Transport {
     /// Set the playback volume [0–1], forwarded to the audio engine.
     public func setVolume(_ volume: Float) async {
         await self.engine.setVolume(volume)
+    }
+
+    /// Set pitch-preserving playback rate (0.5×–2.0×). Clamped by the DSP chain.
+    public func setRate(_ rate: Float) async {
+        await self.engine.setRate(rate)
     }
 
     /// Change the repeat mode.
