@@ -151,9 +151,13 @@ struct BocanApp: App {
         #endif
 
         // Initialise the database synchronously on the calling thread.
+        // priority: .userInitiated matches the waiting thread (main = .userInteractive)
+        // so the OS doesn't deprioritise this task while we're blocking on it,
+        // which would cause a Thread Performance Checker priority-inversion warning
+        // and a visible startup freeze.
         let semaphore = DispatchSemaphore(value: 0)
         let box = _InitBox<Database>()
-        Task.detached {
+        Task.detached(priority: .userInitiated) {
             do {
                 box.value = try await Database(location: .application)
             } catch {
