@@ -30,6 +30,10 @@ public final class DockTileController: ObservableObject {
     // MARK: - Public API
 
     public func start(observing vm: NowPlayingViewModel) {
+        // Cancel any previous loops — .onAppear can fire more than once.
+        self.observationTask?.cancel()
+        self.tickTask?.cancel()
+
         self.vm = vm
         NSApp.dockTile.contentView = self.contentView
 
