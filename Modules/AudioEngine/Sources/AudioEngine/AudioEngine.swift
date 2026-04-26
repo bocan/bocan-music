@@ -166,6 +166,11 @@ public actor AudioEngine: Transport { // swiftlint:disable:this type_body_length
         self.graph.dsp.applyGain(db: db)
     }
 
+    /// Set the playback rate (0.5×–2.0×). Pitch is preserved via the spectral algorithm.
+    public func setRate(_ rate: Float) {
+        self.graph.dsp.setRate(rate)
+    }
+
     // MARK: - Init
 
     public init(presets: PresetStore = PresetStore()) {
