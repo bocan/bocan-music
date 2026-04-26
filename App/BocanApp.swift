@@ -26,7 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
             // Dock click when no visible windows → reopen main window.
-            sender.windows.first { $0.identifier?.rawValue == "main" }?.makeKeyAndOrderFront(nil)
+            (sender.mainWindow ?? sender.windows.first { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
         }
         return true
     }
@@ -53,7 +53,7 @@ struct BocanApp: App {
     var body: some Scene {
         // MARK: Main window
 
-        WindowGroup("Bòcan", id: "main") {
+        WindowGroup {
             BocanRootView(vm: self.libraryViewModel)
                 .environmentObject(self.dspViewModel)
                 .environmentObject(self.windowMode)
