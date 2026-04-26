@@ -85,10 +85,14 @@ public struct StarRatingRow: View {
         LabeledContent(self.label) {
             HStack(spacing: 2) {
                 ForEach(1 ..< 6) { star in
-                    Image(systemName: self.starImage(for: star))
-                        .foregroundStyle(Color.accentColor)
-                        .onTapGesture { self.tap(star: star) }
-                        .accessibilityLabel("\(star) star\(star == 1 ? "" : "s")")
+                    Button {
+                        self.tap(star: star)
+                    } label: {
+                        Image(systemName: self.starImage(for: star))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(star) \(star == 1 ? "star" : "stars")")
                 }
                 if self.rating != nil {
                     Button(

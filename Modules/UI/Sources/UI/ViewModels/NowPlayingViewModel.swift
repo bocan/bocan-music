@@ -32,6 +32,12 @@ public final class NowPlayingViewModel: ObservableObject {
     /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
     /// Used by `playPause()` to decide whether to resume or reload the library.
     @Published public private(set) var isPaused = false
+    /// Current playback rate (0.5×–2.0×). Default 1.0×.
+    @Published public private(set) var playbackRate: Float = 1.0
+    /// Seconds remaining on the sleep timer, or `nil` when off.
+    @Published public private(set) var sleepTimerRemaining: TimeInterval?
+    /// Whether the sleep timer's fade-out option is active.
+    @Published public private(set) var sleepTimerFadeOut = false
 
     // MARK: - Callbacks
 
@@ -45,6 +51,7 @@ public final class NowPlayingViewModel: ObservableObject {
     private let database: Database
     private var stateTask: Task<Void, Never>?
     private var positionTask: Task<Void, Never>?
+    private var sleepTimerTask: Task<Void, Never>?
     private var currentTrack: Track?
     private let log = AppLogger.make(.ui)
 
@@ -56,6 +63,7 @@ public final class NowPlayingViewModel: ObservableObject {
         self.startObservingState()
         if let qp = engine as? QueuePlayer {
             self.startObservingCurrentTrack(qp)
+            self.startObservingSleepTimer(qp)
         }
     }
 
@@ -163,6 +171,21 @@ public final class NowPlayingViewModel: ObservableObject {
         self.stopAfterCurrent = new
     }
 
+    /// Set playback rate (0.5×–2.0×) with pitch correction.
+    public func setRate(_ rate: Float) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.setRate(rate)
+        self.playbackRate = max(0.5, min(2.0, rate))
+    }
+
+    /// Configure the sleep timer.  Pass `nil` minutes to cancel.
+    public func setSleepTimer(minutes: Int?, fadeOut: Bool = false) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.sleepTimer.set(minutes: minutes, fadeOut: fadeOut)
+        self.sleepTimerFadeOut = fadeOut
+        if minutes == nil { self.sleepTimerRemaining = nil }
+    }
+
     private func startObservingCurrentTrack(_ qp: QueuePlayer) {
         Task { [weak self] in
             guard let self else { return }
@@ -206,6 +229,22 @@ public final class NowPlayingViewModel: ObservableObject {
                 default:
                     break
                 }
+            }
+        }
+    }
+
+    private func startObservingSleepTimer(_ qp: QueuePlayer) {
+        let timer = qp.sleepTimer
+        self.sleepTimerTask = Task { [weak self] in
+            // Poll the actor's remaining value at 1 s intervals to update the badge.
+            while !Task.isCancelled {
+                guard let self else { return }
+                async let rem = timer.remaining
+                async let fade = timer.fadeOut
+                let (remaining, fadeOut) = await (rem, fade)
+                self.sleepTimerRemaining = remaining
+                self.sleepTimerFadeOut = fadeOut
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
     }

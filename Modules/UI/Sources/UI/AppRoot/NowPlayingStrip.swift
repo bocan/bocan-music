@@ -10,11 +10,13 @@ import SwiftUI
 public struct NowPlayingStrip: View {
     @ObservedObject public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
+    @EnvironmentObject private var dsp: DSPViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
     /// updates coming from the engine.  Seeking happens once on release.
     @State private var scrubDragFraction: Double?
+    @State private var showDSP = false
 
     public init(vm: NowPlayingViewModel) {
         self.vm = vm
@@ -28,6 +30,10 @@ public struct NowPlayingStrip: View {
             self.transport
             Spacer(minLength: 16)
             self.volumeAndScrubber
+            Divider()
+                .frame(height: 32)
+                .padding(.horizontal, 4)
+            self.panelButtons
         }
         .frame(height: Theme.nowPlayingStripHeight)
         .padding(.horizontal, 16)
@@ -37,6 +43,9 @@ public struct NowPlayingStrip: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(A11y.NowPlaying.strip)
+        .sheet(isPresented: self.$showDSP) {
+            DSPSheet(vm: self.dsp)
+        }
     }
 
     // MARK: - Sub-views
@@ -147,6 +156,7 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.vm.shuffleOn ? Color.accentColor : Color.textTertiary)
             .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
             .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
+            .accessibilityAddTraits(.isToggle)
 
             Button {
                 Task { await self.vm.cycleRepeat() }
@@ -158,6 +168,7 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : Color.accentColor)
             .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
             .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
+            .accessibilityAddTraits(.isToggle)
 
             Button {
                 Task { await self.vm.toggleStopAfterCurrent() }
@@ -169,6 +180,26 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.vm.stopAfterCurrent ? Color.accentColor : Color.textTertiary)
             .help(self.vm.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
             .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
+            .accessibilityAddTraits(.isToggle)
+        }
+    }
+
+    private var panelButtons: some View {
+        HStack(spacing: 14) {
+            SpeedPickerView(vm: self.vm)
+
+            SleepTimerMenu(vm: self.vm)
+
+            Button {
+                self.showDSP.toggle()
+            } label: {
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.showDSP ? Color.accentColor : Color.textPrimary)
+            .help("Equaliser & DSP")
+            .accessibilityLabel("Equaliser & DSP")
         }
     }
 
