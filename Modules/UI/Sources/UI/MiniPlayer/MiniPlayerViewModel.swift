@@ -12,8 +12,11 @@ import SwiftUI
 public final class MiniPlayerViewModel: ObservableObject {
     // MARK: - Window UI state
 
+    /// @Published instead of @AppStorage — see WindowModeController for why.
     /// Whether the mini player is pinned always-on-top.
-    @AppStorage("ui.miniPlayer.alwaysOnTop") public var alwaysOnTop = false
+    @Published public var alwaysOnTop: Bool {
+        didSet { UserDefaults.standard.set(self.alwaysOnTop, forKey: "ui.miniPlayer.alwaysOnTop") }
+    }
 
     // MARK: - Backing store
 
@@ -22,6 +25,7 @@ public final class MiniPlayerViewModel: ObservableObject {
     // MARK: - Init
 
     public init(nowPlaying: NowPlayingViewModel) {
+        self.alwaysOnTop = UserDefaults.standard.bool(forKey: "ui.miniPlayer.alwaysOnTop")
         self.nowPlaying = nowPlaying
     }
 }

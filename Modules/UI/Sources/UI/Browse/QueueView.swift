@@ -114,12 +114,13 @@ private struct QueueRow: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Playing indicator
+            // Playing indicator — opacity-hidden when not current; always hidden from VoiceOver.
             Image(systemName: "speaker.wave.2.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(Color.accentColor)
                 .frame(width: 20)
                 .opacity(self.isCurrent ? 1 : 0)
+                .accessibilityHidden(true)
 
             // Title + artist/album
             VStack(alignment: .leading, spacing: 1) {
@@ -156,5 +157,16 @@ private struct QueueRow: View {
         }
         .padding(.vertical, 3)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(self.rowLabel)
+        .accessibilityAddTraits(self.isCurrent ? .isSelected : [])
+    }
+
+    private var rowLabel: String {
+        var parts = [self.isCurrent ? "Now playing: \(self.displayTitle)" : self.displayTitle]
+        if let sub = self.displaySubtitle { parts.append(sub) }
+        if let genre = item.genre, !genre.isEmpty { parts.append(genre) }
+        parts.append(Formatters.duration(self.item.duration))
+        return parts.joined(separator: ", ")
     }
 }

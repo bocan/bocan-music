@@ -66,6 +66,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Set when playback fails; cleared when the user dismisses the alert.
     @Published public var playbackErrorMessage: String?
 
+    // MARK: - ReplayGain analysis state
+
+    /// Non-nil while a batch ReplayGain analysis is running.
+    @Published public var replayGainProgress: ReplayGainBatchProgress?
+
     // MARK: - Scan state
 
     @Published public var isScanning = false
@@ -464,6 +469,25 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
+    // MARK: - Targeted track refresh
+
+    /// Fetch only the given tracks from the database and update their rows in-place.
+    ///
+    /// Use this instead of `loadCurrentDestination()` after a tag edit or track
+    /// identification so the table keeps its scroll position and selection.
+    public func refreshTracks(ids: [Int64]) async {
+        guard !ids.isEmpty else { return }
+        let repo = TrackRepository(database: self.database)
+        var updated: [Track] = []
+        for id in ids {
+            if let track = try? await repo.fetch(id: id) {
+                updated.append(track)
+            }
+        }
+        guard !updated.isEmpty else { return }
+        self.tracks.updateRows(for: updated)
+    }
+
     // MARK: - Inspector
 
     /// Sets `inspectorTrack` to the first track in `tracks` and triggers the
@@ -476,4 +500,129 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Injected by `RootView` after `@Environment(\.openWindow)` is available.
     public var openInspectorWindow: (() -> Void)?
+
+    // MARK: - ReplayGain batch analysis
+
+    /// Analyse only tracks that currently have no ReplayGain data.
+    public func computeMissingReplayGain() async {
+        guard self.replayGainProgress == nil else { return } // already running
+        let repo = TrackRepository(database: self.database)
+        do {
+            let all = try await repo.fetchAll()
+            let missing = all.filter { $0.replaygainTrackGain == nil }
+            await self.runReplayGainBatch(tracks: missing, repo: repo)
+        } catch {
+            self.log.error("rg.batch.fetchFailed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Re-analyse every track in the library, replacing existing values.
+    public func recomputeAllReplayGain() async {
+        guard self.replayGainProgress == nil else { return }
+        let repo = TrackRepository(database: self.database)
+        do {
+            let all = try await repo.fetchAll()
+            await self.runReplayGainBatch(tracks: all, repo: repo)
+        } catch {
+            self.log.error("rg.batch.fetchFailed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Runs off the main actor on the cooperative thread pool so multiple tracks
+    /// can be decoded and measured in parallel.
+    private nonisolated static func analyzeTrack(_ track: Track) async -> Result<Track, Error> {
+        let log = AppLogger.make(.audio)
+        do {
+            let url: URL
+            if let bookmarkData = track.fileBookmark {
+                url = try BookmarkBlob(data: bookmarkData).resolve()
+            } else {
+                guard let raw = URL(string: track.fileURL) else { throw URLError(.badURL) }
+                url = raw
+            }
+            defer { url.stopAccessingSecurityScopedResource() }
+            let rg = try await ReplayGainAnalyzer.analyze(url: url)
+            var updated = track
+            updated.replaygainTrackGain = rg.trackGainDB
+            updated.replaygainTrackPeak = rg.trackPeakLinear
+            return .success(updated)
+        } catch {
+            log.error("rg.batch.trackFailed", [
+                "url": track.fileURL,
+                "error": String(reflecting: error),
+            ])
+            return .failure(error)
+        }
+    }
+
+    private func runReplayGainBatch(tracks: [Track], repo: TrackRepository) async {
+        guard !tracks.isEmpty else {
+            self.replayGainProgress = ReplayGainBatchProgress(done: 0, total: 0, failed: 0)
+            return
+        }
+        self.replayGainProgress = ReplayGainBatchProgress(done: 0, total: tracks.count, failed: 0)
+
+        // Keep up to `concurrency` analysis tasks in flight at once.
+        // Cap at 8: each in-flight track holds ~30 MB of Float32 PCM samples.
+        let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 8)
+        var done = 0
+        var failed = 0
+        var nextIndex = 0
+
+        await withTaskGroup(of: Result<Track, Error>.self) { group in
+            // Seed the initial pool.
+            while nextIndex < tracks.count, nextIndex < concurrency {
+                let track = tracks[nextIndex]
+                nextIndex += 1
+                group.addTask { await Self.analyzeTrack(track) }
+            }
+
+            // Drain results on the main actor; refill immediately after each.
+            for await result in group {
+                switch result {
+                case let .success(updatedTrack):
+                    do {
+                        try await repo.update(updatedTrack)
+                    } catch {
+                        self.log.error("rg.batch.updateFailed", ["error": String(reflecting: error)])
+                        failed += 1
+                    }
+                    done += 1
+
+                case .failure:
+                    failed += 1
+                    done += 1
+                }
+
+                self.replayGainProgress = ReplayGainBatchProgress(
+                    done: done,
+                    total: tracks.count,
+                    failed: failed
+                )
+
+                if nextIndex < tracks.count {
+                    let track = tracks[nextIndex]
+                    nextIndex += 1
+                    group.addTask { await Self.analyzeTrack(track) }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - ReplayGainBatchProgress
+
+/// Progress snapshot for a running or completed ReplayGain batch analysis.
+public struct ReplayGainBatchProgress: Sendable {
+    public let done: Int
+    public let total: Int
+    public let failed: Int
+
+    public var isComplete: Bool {
+        self.done == self.total
+    }
+
+    public var succeeded: Int {
+        self.done - self.failed
+    }
 }
