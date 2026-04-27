@@ -15,6 +15,7 @@ public struct NowPlayingStrip: View {
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
     /// updates coming from the engine.  Seeking happens once on release.
+    @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
     @State private var showDSP = false
 
@@ -153,7 +154,7 @@ public struct NowPlayingStrip: View {
                     .font(.system(size: 15, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.shuffleOn ? Color.accentColor : Color.textTertiary)
+            .foregroundStyle(self.vm.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
             .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
             .accessibilityAddTraits(.isToggle)
@@ -165,7 +166,7 @@ public struct NowPlayingStrip: View {
                     .font(.system(size: 15, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : Color.accentColor)
+            .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
             .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
             .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
             .accessibilityAddTraits(.isToggle)
@@ -177,7 +178,7 @@ public struct NowPlayingStrip: View {
                     .font(.system(size: 15, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.stopAfterCurrent ? Color.accentColor : Color.textTertiary)
+            .foregroundStyle(self.vm.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
             .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
             .accessibilityAddTraits(.isToggle)
@@ -241,6 +242,7 @@ public struct NowPlayingStrip: View {
             }
             .controlSize(.mini)
             .disabled(self.vm.duration == 0)
+            .id(self.accentColorKey)
             .help("Scrub to position")
             .accessibilityLabel("Playback position")
             .accessibilityIdentifier(A11y.NowPlaying.scrubber)
@@ -266,6 +268,7 @@ public struct NowPlayingStrip: View {
             ), in: 0 ... 1)
                 .controlSize(.mini)
                 .frame(maxWidth: 100)
+                .id(self.accentColorKey)
                 .help("Volume: \(Int(self.vm.volume * 100))%")
                 .accessibilityLabel("Volume")
                 .accessibilityIdentifier(A11y.NowPlaying.volumeSlider)
