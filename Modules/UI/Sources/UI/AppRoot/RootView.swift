@@ -152,17 +152,24 @@ public struct BocanRootView: View {
             self.vm.showIdentifyTrackForCurrentSelection()
             return .handled
         }
-        .preferredColorScheme(self.preferredColorScheme)
+        .onAppear { self.applyAppearance(self.colorSchemeKey) }
+        .onChange(of: self.colorSchemeKey) { _, newKey in self.applyAppearance(newKey) }
         .tint(AccentPalette.color(for: self.accentColorKey))
     }
 
     // MARK: - Helpers
 
-    private var preferredColorScheme: ColorScheme? {
-        switch self.colorSchemeKey {
-        case "light": .light
-        case "dark": .dark
-        default: nil
+    /// Sets `NSApp.appearance` so the change takes effect immediately for every
+    /// window, avoiding the half-repainted artefact that `.preferredColorScheme`
+    /// can leave when transitioning from a forced scheme back to System.
+    private func applyAppearance(_ key: String) {
+        switch key {
+        case "light":
+            NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark":
+            NSApp.appearance = NSAppearance(named: .darkAqua)
+        default:
+            NSApp.appearance = nil // follow System
         }
     }
 
