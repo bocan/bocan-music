@@ -167,6 +167,7 @@ struct BocanApp: App {
 
         MiniPlayerWindow(vm: self.miniPlayerViewModel)
             .environmentObject(self.windowMode)
+            .environmentObject(self.libraryViewModel)
 
         // MARK: Settings
 
