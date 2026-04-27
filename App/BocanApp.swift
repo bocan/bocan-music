@@ -40,6 +40,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // MARK: UNUserNotificationCenterDelegate
 
     /// Tapping a track-change banner brings the app to the foreground.
+    @MainActor
     func userNotificationCenter(
         _: UNUserNotificationCenter,
         didReceive _: UNNotificationResponse,
@@ -52,6 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     /// Suppress banners while the app is active (belt-and-suspenders;
     /// `NowPlayingViewModel` already gates on `NSApp.isActive` before posting).
+    @MainActor
     func userNotificationCenter(
         _: UNUserNotificationCenter,
         willPresent _: UNNotification,

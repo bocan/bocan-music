@@ -355,14 +355,27 @@ public final class NowPlayingViewModel: ObservableObject {
     /// Posts a `UNNotification` banner when a new track starts, provided
     /// the user has enabled the setting and the app is not frontmost.
     private func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
-        guard UserDefaults.standard.bool(forKey: "general.showNotifications") else { return }
-        guard !NSApp.isActive else { return }
+        let settingOn = UserDefaults.standard.bool(forKey: "general.showNotifications")
+        let appActive = NSApp.isActive
+        self.log.debug("notifications.attempt", ["settingOn": settingOn, "appActive": appActive, "title": title])
+
+        guard settingOn else {
+            self.log.debug("notifications.skipped", ["reason": "setting disabled"])
+            return
+        }
+        guard !appActive else {
+            self.log.debug("notifications.skipped", ["reason": "app is active"])
+            return
+        }
 
         // Bail early if the user hasn't granted permission rather than letting
         // the add() call fail silently.
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         guard settings.authorizationStatus == .authorized else {
-            self.log.warning("notifications.skipped", ["authStatus": String(describing: settings.authorizationStatus)])
+            self.log.warning(
+                "notifications.skipped",
+                ["reason": "not authorized", "authStatus": String(describing: settings.authorizationStatus)]
+            )
             return
         }
 
