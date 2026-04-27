@@ -5,6 +5,7 @@ import SwiftUI
 /// Square artwork-first layout: used when width ≥ 220 and height ≥ 220.
 struct MiniPlayerSquare: View {
     @ObservedObject var vm: MiniPlayerViewModel
+    @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
@@ -130,7 +131,7 @@ struct MiniPlayerSquare: View {
                         .font(.system(size: 13, weight: .medium))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(self.np.shuffleOn ? Color.accentColor : .white.opacity(0.6))
+                .foregroundStyle(self.np.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
                 .help(self.np.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
                 .accessibilityLabel(self.np.shuffleOn ? "Shuffle On" : "Shuffle Off")
                 .accessibilityAddTraits(.isToggle)
@@ -142,7 +143,7 @@ struct MiniPlayerSquare: View {
                         .font(.system(size: 13, weight: .medium))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(self.np.repeatMode == .off ? .white.opacity(0.6) : Color.accentColor)
+                .foregroundStyle(self.np.repeatMode == .off ? .white.opacity(0.6) : AccentPalette.color(for: self.accentColorKey))
                 .help("Repeat: \(self.np.repeatMode == .off ? "Off" : self.np.repeatMode == .all ? "All" : "One") — click to cycle")
                 .accessibilityLabel("Repeat \(self.np.repeatMode == .off ? "Off" : self.np.repeatMode == .all ? "All" : "One")")
                 .accessibilityAddTraits(.isToggle)
@@ -154,7 +155,7 @@ struct MiniPlayerSquare: View {
                         .font(.system(size: 13, weight: .medium))
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(self.np.stopAfterCurrent ? Color.accentColor : .white.opacity(0.6))
+                .foregroundStyle(self.np.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
                 .help(self.np.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
                 .accessibilityLabel(self.np.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
                 .accessibilityAddTraits(.isToggle)
