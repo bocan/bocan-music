@@ -206,7 +206,7 @@ public extension LibraryViewModel {
             var track = try await trackRepo.fetch(id: id)
             track.disabled = true
             try await trackRepo.update(track)
-            await self.tracks.load()
+            await self.loadCurrentDestination()
             self.log.debug("library.removeTrack", ["id": id])
         } catch {
             self.log.error("library.removeTrack.failed", ["id": id, "error": String(reflecting: error)])
