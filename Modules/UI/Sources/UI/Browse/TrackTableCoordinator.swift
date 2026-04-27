@@ -158,6 +158,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         guard let col = sender.representedObject as? NSTableColumn else { return }
         col.isHidden.toggle()
         sender.state = col.isHidden ? .off : .on
+        // Persist visibility so it survives view recreation.
+        // NSTableView.autosaveTableColumns only saves column width and order.
+        if let autosaveName = tableView?.autosaveName {
+            TrackTable.saveColumnVisibility(autosaveName: autosaveName, column: col)
+        }
     }
 
     // MARK: Context menu — main entry

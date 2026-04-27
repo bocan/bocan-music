@@ -19,6 +19,8 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
     case rating
     case addedAt
     case trackNumber
+    case trackTotal
+    case databaseID
 
     public var displayName: String {
         switch self {
@@ -50,7 +52,13 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
             "Date Added"
 
         case .trackNumber:
-            "#"
+            "Track"
+
+        case .trackTotal:
+            "Of"
+
+        case .databaseID:
+            "ID"
         }
     }
 }
@@ -123,11 +131,12 @@ public final class TracksViewModel: ObservableObject {
 
     // MARK: - Default sort
 
-    /// Default sort: most-recently added first.  Matches the order rows
-    /// naturally arrive in from `TrackRepository.fetchAll()` and so
-    /// serves as a sensible "revert to library order" option.
+    /// Default sort: artist → album → track number, matching the natural
+    /// disc order a user expects when browsing the library.
     public static let defaultSortOrder: [KeyPathComparator<TrackRow>] = [
-        KeyPathComparator(\TrackRow.addedAt, order: .reverse),
+        KeyPathComparator(\TrackRow.artistName, comparator: .localizedStandard, order: .forward),
+        KeyPathComparator(\TrackRow.albumName, comparator: .localizedStandard, order: .forward),
+        KeyPathComparator(\TrackRow.trackNumber, order: .forward),
     ]
 
     // MARK: - Internal
@@ -168,14 +177,21 @@ public final class TracksViewModel: ObservableObject {
         self.isLoading = false
     }
 
-    /// Loads tracks for a specific album.
+    /// Loads tracks for a specific album, preserving the disc/track order
+    /// from the database query rather than applying the global sort preference.
     public func load(albumID: Int64) async {
         self.isLoading = true
         do {
             let fetched = try await self.repository.fetchAll(albumID: albumID)
             await self.refreshNameLookups()
             self.rebuildAllRows(from: fetched)
-            self.applyFilter()
+            // Preserve the disc/track ordering returned by the database.
+            if self.filterText.isEmpty {
+                self.rows = self.allRows
+            } else {
+                let lowered = self.filterText.lowercased()
+                self.rows = self.allRows.filter { $0.title.lowercased().contains(lowered) }
+            }
         } catch {
             self.log.error("tracks.load(albumID).failed", ["error": String(reflecting: error)])
         }
@@ -391,6 +407,12 @@ public final class TracksViewModel: ObservableObject {
 
         case .trackNumber:
             KeyPathComparator(\TrackRow.trackNumber, order: order)
+
+        case .trackTotal:
+            KeyPathComparator(\TrackRow.trackTotal, order: order)
+
+        case .databaseID:
+            KeyPathComparator(\TrackRow.databaseID, order: order)
         }
     }
 
@@ -409,6 +431,8 @@ public final class TracksViewModel: ObservableObject {
         if keyPath == \TrackRow.rating { return .rating }
         if keyPath == \TrackRow.addedAt { return .addedAt }
         if keyPath == \TrackRow.trackNumber { return .trackNumber }
+        if keyPath == \TrackRow.trackTotal { return .trackTotal }
+        if keyPath == \TrackRow.databaseID { return .databaseID }
         return nil
     }
 }
