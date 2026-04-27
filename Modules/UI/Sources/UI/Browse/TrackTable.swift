@@ -82,7 +82,6 @@ public struct TrackTable: NSViewRepresentable {
             ? "bocan.tracksTable.sortable.v2"
             : "bocan.tracksTable.plain.v2"
         tableView.autosaveTableColumns = true
-        tableView.rowHeight = self.desiredRowHeight
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.style = .inset
         tableView.allowsMultipleSelection = true
@@ -183,9 +182,10 @@ public struct TrackTable: NSViewRepresentable {
         coordinator.syncSortIfNeeded(sortOrder: self.sortOrder)
 
         // 5 — Row density changed in Appearance settings.
-        let desiredHeight = self.desiredRowHeight
-        if tableView.rowHeight != desiredHeight {
-            tableView.rowHeight = desiredHeight
+        // The coordinator's heightOfRow delegate method reads UserDefaults directly;
+        // noteHeightOfRows triggers NSTableView to re-query it for every row.
+        if coordinator.lastRowDensity != self.rowDensity {
+            coordinator.lastRowDensity = self.rowDensity
             tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
         }
     }
