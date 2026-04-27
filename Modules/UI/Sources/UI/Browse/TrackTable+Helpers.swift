@@ -4,7 +4,9 @@ import Library
 // MARK: - Column identifiers
 
 extension NSUserInterfaceItemIdentifier {
+    static let databaseID = NSUserInterfaceItemIdentifier("col.databaseID")
     static let trackNumber = NSUserInterfaceItemIdentifier("col.trackNumber")
+    static let trackTotal = NSUserInterfaceItemIdentifier("col.trackTotal")
     static let title = NSUserInterfaceItemIdentifier("col.title")
     static let artist = NSUserInterfaceItemIdentifier("col.artist")
     static let album = NSUserInterfaceItemIdentifier("col.album")
@@ -24,18 +26,38 @@ extension NSUserInterfaceItemIdentifier {
 
 extension TrackTable {
     static func addColumns(to tableView: NSTableView, sortable: Bool) {
+        let autosaveName = tableView.autosaveName ?? ""
         for spec in columnSpecs {
             let col = NSTableColumn(identifier: spec.id)
             col.title = spec.title
             col.minWidth = spec.minWidth
             col.width = spec.idealWidth
             col.maxWidth = spec.maxWidth
-            col.isHidden = spec.hidden
+            col.isHidden = self.savedColumnVisibility(autosaveName: autosaveName, id: spec.id) ?? spec.hidden
             if sortable, let key = spec.sortKey {
                 col.sortDescriptorPrototype = NSSortDescriptor(key: key, ascending: true)
             }
             tableView.addTableColumn(col)
         }
+    }
+
+    // MARK: Column visibility persistence
+
+    /// Persists a column's hidden state to UserDefaults so it survives view recreation.
+    /// `NSTableView.autosaveTableColumns` only saves width and order, not visibility.
+    static func saveColumnVisibility(autosaveName: String, column: NSTableColumn) {
+        let key = "bocan.col.hidden.\(autosaveName).\(column.identifier.rawValue)"
+        UserDefaults.standard.set(column.isHidden, forKey: key)
+    }
+
+    /// Returns the persisted hidden state for a column, or `nil` if not yet saved.
+    private static func savedColumnVisibility(
+        autosaveName: String,
+        id: NSUserInterfaceItemIdentifier
+    ) -> Bool? {
+        let key = "bocan.col.hidden.\(autosaveName).\(id.rawValue)"
+        guard UserDefaults.standard.object(forKey: key) != nil else { return nil }
+        return UserDefaults.standard.bool(forKey: key)
     }
 
     static func buildHeaderMenu(for tableView: NSTableView, coordinator: TrackTableCoordinator) {
@@ -61,6 +83,8 @@ extension TrackTable {
     static func sortKey(for comparator: KeyPathComparator<TrackRow>) -> String? {
         let ord = comparator.order
         if comparator == KeyPathComparator(\TrackRow.trackNumber, order: ord) { return "trackNumber" }
+        if comparator == KeyPathComparator(\TrackRow.trackTotal, order: ord) { return "trackTotal" }
+        if comparator == KeyPathComparator(\TrackRow.databaseID, order: ord) { return "databaseID" }
         if comparator == KeyPathComparator(\TrackRow.title, comparator: .localizedStandard, order: ord) { return "title" }
         if comparator == KeyPathComparator(\TrackRow.artistName, comparator: .localizedStandard, order: ord) { return "artistName" }
         if comparator == KeyPathComparator(\TrackRow.albumName, comparator: .localizedStandard, order: ord) { return "albumName" }
@@ -85,6 +109,12 @@ extension TrackTable {
         switch descriptor.key {
         case "trackNumber":
             return KeyPathComparator(\TrackRow.trackNumber, order: order)
+
+        case "trackTotal":
+            return KeyPathComparator(\TrackRow.trackTotal, order: order)
+
+        case "databaseID":
+            return KeyPathComparator(\TrackRow.databaseID, order: order)
 
         case "title":
             return KeyPathComparator(\TrackRow.title, comparator: .localizedStandard, order: order)
@@ -133,8 +163,14 @@ extension TrackTable {
     /// Returns the display string for a column/row combination.
     static func displayValue(for colID: NSUserInterfaceItemIdentifier, row: TrackRow) -> String {
         switch colID {
+        case .databaseID:
+            return row.databaseID == 0 ? "" : String(row.databaseID)
+
         case .trackNumber:
             return row.trackNumber == 0 ? "" : String(row.trackNumber)
+
+        case .trackTotal:
+            return row.trackTotal == 0 ? "" : String(row.trackTotal)
 
         case .title:
             return row.title.isEmpty ? "Unknown" : row.title

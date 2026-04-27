@@ -31,6 +31,8 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
     public let rating: Int
     public let addedAt: Int64
     public let trackNumber: Int
+    public let trackTotal: Int
+    public let databaseID: Int64
     public let fileFormat: String
     public let bitrate: Int
     public let sampleRate: Int
@@ -66,6 +68,8 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.rating = track.rating
         self.addedAt = track.addedAt
         self.trackNumber = track.trackNumber ?? 0
+        self.trackTotal = track.trackTotal ?? 0
+        self.databaseID = track.id ?? 0
         self.fileFormat = track.fileFormat.uppercased()
         self.bitrate = track.bitrate ?? 0
         self.sampleRate = track.sampleRate ?? 0
