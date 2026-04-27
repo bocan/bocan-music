@@ -89,19 +89,7 @@ struct MiniPlayerSquare: View {
             .accessibilityLabel("Playback position")
 
             // Transport
-            HStack(spacing: 20) {
-                Button {
-                    Task { await self.np.toggleShuffle() }
-                } label: {
-                    Image(systemName: "shuffle")
-                        .font(.system(size: 13, weight: .medium))
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.np.shuffleOn ? Color.accentColor : .white.opacity(0.7))
-                .help(self.np.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
-                .accessibilityLabel(self.np.shuffleOn ? "Shuffle On" : "Shuffle Off")
-                .accessibilityAddTraits(.isToggle)
-
+            HStack(spacing: 16) {
                 Button {
                     Task { await self.np.previous() }
                 } label: {
@@ -134,6 +122,42 @@ struct MiniPlayerSquare: View {
                 .foregroundStyle(.white)
                 .help("Next track")
                 .accessibilityLabel("Next")
+
+                Button {
+                    Task { await self.np.toggleShuffle() }
+                } label: {
+                    Image(systemName: "shuffle")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.np.shuffleOn ? Color.accentColor : .white.opacity(0.6))
+                .help(self.np.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
+                .accessibilityLabel(self.np.shuffleOn ? "Shuffle On" : "Shuffle Off")
+                .accessibilityAddTraits(.isToggle)
+
+                Button {
+                    Task { await self.np.cycleRepeat() }
+                } label: {
+                    Image(systemName: self.np.repeatMode == .one ? "repeat.1" : "repeat")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.np.repeatMode == .off ? .white.opacity(0.6) : Color.accentColor)
+                .help("Repeat: \(self.np.repeatMode == .off ? "Off" : self.np.repeatMode == .all ? "All" : "One") — click to cycle")
+                .accessibilityLabel("Repeat \(self.np.repeatMode == .off ? "Off" : self.np.repeatMode == .all ? "All" : "One")")
+                .accessibilityAddTraits(.isToggle)
+
+                Button {
+                    Task { await self.np.toggleStopAfterCurrent() }
+                } label: {
+                    Image(systemName: "stop.circle\(self.np.stopAfterCurrent ? ".fill" : "")")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.np.stopAfterCurrent ? Color.accentColor : .white.opacity(0.6))
+                .help(self.np.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
+                .accessibilityLabel(self.np.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
+                .accessibilityAddTraits(.isToggle)
             }
         }
     }
