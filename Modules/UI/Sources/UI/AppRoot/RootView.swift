@@ -37,9 +37,6 @@ public struct BocanRootView: View {
                 Sidebar(vm: self.vm)
             } detail: {
                 ContentPane(vm: self.vm)
-                    .safeAreaInset(edge: .top, spacing: 0) {
-                        ScanBanner(vm: self.vm)
-                    }
             }
             .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
             .toolbar {
