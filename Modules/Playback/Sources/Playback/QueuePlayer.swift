@@ -58,14 +58,14 @@ public actor QueuePlayer: Transport {
     private var rootRepo: LibraryRootRepository
     private var lastEmittedState: PlaybackState = .idle
 
-    /// Item ID that `handleGaplessTransition` most recently advanced to.
-    /// If `handleTrackEnded` fires while the queue's current item still
-    /// matches this ID, a redundant `.ended` has been emitted for the old
-    /// pump after the gapless transition already advanced the queue — in
-    /// that case we swallow the event instead of advancing again.
-    /// Cleared when the user manually skips, restarts, or a new track
-    /// starts via the non-gapless path.
-    private var lastGaplessAdvanceItemID: QueueItem.ID?
+    /// Timestamp of the most recent gapless transition, used to suppress a
+    /// spurious `.ended` signal that the new pump can emit within milliseconds
+    /// of the transition before its first buffer has rendered.
+    /// Only `.ended` events arriving within `gaplessSettleWindow` of the
+    /// transition are swallowed; all later ones are treated as a genuine
+    /// end-of-track so `handleTrackEnded` can advance the queue normally.
+    private var lastGaplessTransitionAt: Date?
+    private static let gaplessSettleWindow: TimeInterval = 3.0
 
     /// Number of in-flight `play(…)` calls that are currently replacing the queue.
     ///
@@ -376,10 +376,11 @@ public actor QueuePlayer: Transport {
     }
 
     private func loadAndPlay(item: QueueItem, autoPlay: Bool = true) async throws {
-        // A non-gapless load means no prior gapless transition is "pending",
-        // so clear the guard.  (Handles manual skips, repeat-one replays,
-        // and the normal-fallback path when gapless prefetch failed.)
-        self.lastGaplessAdvanceItemID = nil
+        // A non-gapless load means the settle window no longer applies;
+        // clear it so a natural end-of-track is never accidentally swallowed.
+        // (Handles manual skips, repeat-one replays, and the normal-fallback
+        // path when gapless prefetch failed.)
+        self.lastGaplessTransitionAt = nil
 
         // Resolve a playable URL.
         //
@@ -498,14 +499,14 @@ public actor QueuePlayer: Transport {
         let elapsed = await engine.duration // track played fully
         await self.historyRecorder.trackDidEnd(elapsed: elapsed)
 
-        // If a gapless transition has already advanced the queue to the
-        // currently active item, a late `.ended` from the previous pump
-        // must not trigger another advance.  Swallow and clear the flag.
-        if let lastID = self.lastGaplessAdvanceItemID,
-           let current = await queue.currentItem,
-           current.id == lastID {
-            self.lastGaplessAdvanceItemID = nil
-            self.log.debug("queueplayer.ended.swallowed.afterGapless", ["itemID": lastID])
+        // If a gapless transition fired recently the new pump can report a
+        // spurious EOF before its first buffer renders; swallow that event so
+        // we don't double-advance.  The settle window is 3 s — well above the
+        // ~800 ms buffer-drain window used by the engine.
+        if let t = self.lastGaplessTransitionAt,
+           Date().timeIntervalSince(t) < Self.gaplessSettleWindow {
+            self.lastGaplessTransitionAt = nil
+            self.log.debug("queueplayer.ended.swallowed.afterGapless", ["age": Date().timeIntervalSince(t)])
             return
         }
 
@@ -640,7 +641,7 @@ public actor QueuePlayer: Transport {
         }
         // The engine has seamlessly transitioned to `item`. Advance queue state.
         _ = await self.queue.advance()
-        self.lastGaplessAdvanceItemID = item.id
+        self.lastGaplessTransitionAt = Date()
 
         // Update metadata for the new track.
         if let track = try? await trackRepo.fetch(id: item.trackID) {
