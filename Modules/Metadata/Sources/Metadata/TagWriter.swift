@@ -28,9 +28,14 @@ public struct TagWriter: Sendable {
             throw MetadataError.readOnlyFile(url)
         }
 
-        // Temp file lives beside the original so rename(2) is intra-filesystem.
-        let dir = url.deletingLastPathComponent()
-        let tmpURL = dir.appendingPathComponent(".\(UUID().uuidString).\(url.pathExtension)")
+        // Write the temp file to the system temporary directory rather than as a
+        // sibling of the original.  A sibling would require write access to the
+        // parent directory — which the sandbox does NOT grant for files added
+        // individually via "Add Files…" (the security-scoped bookmark covers the
+        // file itself, not its parent folder).  FileManager.replaceItem handles the
+        // cross-filesystem case (e.g. /var/folders → ~/Desktop) gracefully.
+        let tmpURL = fm.temporaryDirectory
+            .appendingPathComponent(".\(UUID().uuidString).\(url.pathExtension)")
 
         // 1. Copy original → temp (preserves audio payload)
         do {
@@ -49,24 +54,26 @@ public struct TagWriter: Sendable {
                 throw MetadataError.writeFailed(url, error.localizedDescription)
             }
 
-            // 3. fsync to flush kernel buffers before the rename
+            // 3. fsync to flush kernel buffers before replacement
             let fd = tmpPath.withCString { Darwin.open($0, O_RDONLY) }
             if fd >= 0 {
                 Darwin.fsync(fd)
                 Darwin.close(fd)
             }
 
-            // 4. Atomic rename – replaces the original
-            let srcPath = tmpURL.path(percentEncoded: false)
-            let dstPath = url.path(percentEncoded: false)
-            let rc = srcPath.withCString { src in
-                dstPath.withCString { dst in
-                    Darwin.rename(src, dst)
-                }
-            }
-            guard rc == 0 else {
-                let reason = String(cString: Darwin.strerror(Darwin.errno))
-                throw MetadataError.writeFailed(url, "rename(2) failed: \(reason)")
+            // 4. Atomically replace the original with the rewritten temp file.
+            //    replaceItem handles same-volume renames efficiently and falls back
+            //    to a copy+delete across volumes.
+            do {
+                try fm.replaceItem(
+                    at: url,
+                    withItemAt: tmpURL,
+                    backupItemName: nil,
+                    options: .usingNewMetadataOnly,
+                    resultingItemURL: nil
+                )
+            } catch {
+                throw MetadataError.writeFailed(url, "Replace failed: \(error.localizedDescription)")
             }
         } catch {
             // Clean up temp file; ignore any secondary error
