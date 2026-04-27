@@ -70,6 +70,46 @@ public final class DSPViewModel: ObservableObject {
         }
     }
 
+    /// Updates a single EQ band gain, persisting the change and pushing it to
+    /// the audio engine immediately.
+    ///
+    /// For built-in presets a new user preset named "Custom" is created so the
+    /// originals are never mutated.  For user presets the existing entry is
+    /// updated in place.
+    public func updateBandGain(index: Int, gain: Double) {
+        guard let id = self.state.eqPresetID,
+              let preset = self.presets.first(where: { $0.id == id }),
+              index < preset.bandGainsDB.count else { return }
+        var newGains = preset.bandGainsDB
+        newGains[index] = gain
+        if preset.isBuiltIn {
+            let customID = "bocan.custom-edit"
+            let custom = EQPreset(
+                id: customID,
+                name: "Custom",
+                bandGainsDB: newGains,
+                isBuiltIn: false,
+                outputGainDB: preset.outputGainDB
+            )
+            self.presetStore.save(custom)
+            self.presets = self.presetStore.allPresets
+            // Assigning eqPresetID triggers state.didSet → pushToEngine().
+            self.state.eqPresetID = customID
+        } else {
+            let updated = EQPreset(
+                id: preset.id,
+                name: preset.name,
+                bandGainsDB: newGains,
+                isBuiltIn: false,
+                outputGainDB: preset.outputGainDB
+            )
+            self.presetStore.save(updated)
+            self.presets = self.presetStore.allPresets
+            // eqPresetID is unchanged so didSet won't fire; push manually.
+            self.pushToEngine()
+        }
+    }
+
     // MARK: - ReplayGain analysis
 
     public func analyzeReplayGain(url: URL) async -> ReplayGainResult? {

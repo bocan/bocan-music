@@ -239,7 +239,8 @@ struct BocanApp: App {
             fatalError("Database initialisation completed without a value")
         }
 
-        let eng = AudioEngine()
+        let presetStore = PresetStore()
+        let eng = AudioEngine(presets: presetStore)
         let qp = QueuePlayer(engine: eng, database: db)
         let scanner = LibraryScanner(database: db)
 
@@ -249,7 +250,7 @@ struct BocanApp: App {
 
         let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
         _libraryViewModel = StateObject(wrappedValue: lvm)
-        _dspViewModel = StateObject(wrappedValue: DSPViewModel(engine: eng))
+        _dspViewModel = StateObject(wrappedValue: DSPViewModel(engine: eng, presetStore: presetStore))
         self.miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
         _windowMode = StateObject(wrappedValue: WindowModeController())
         _dockTile = StateObject(wrappedValue: DockTileController())
