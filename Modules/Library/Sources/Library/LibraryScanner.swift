@@ -97,18 +97,39 @@ public actor LibraryScanner {
                     return
                 }
 
-                // Resolve bookmarks
+                // Resolve bookmarks and keep security scopes active for the entire scan.
+                // SecurityScope.withAccess stops the scope when its closure returns, which
+                // is too early — file tag reading happens later in coordinator.scan().
+                // Instead, start each scope manually and stop them all via defer once
+                // the coordinator finishes.
                 var resolved: [(url: URL, rootID: Int64)] = []
                 for root in allRoots {
                     guard let rootID = root.id else { continue }
+                    var isStale = false
                     do {
-                        try await SecurityScope.withAccess(root.bookmark) { url in
-                            resolved.append((url, rootID))
+                        let url = try URL(
+                            resolvingBookmarkData: root.bookmark,
+                            options: .withSecurityScope,
+                            relativeTo: nil,
+                            bookmarkDataIsStale: &isStale
+                        )
+                        guard url.startAccessingSecurityScopedResource() else {
+                            throw LibraryError.bookmarkStale(url)
                         }
+                        if isStale {
+                            self.log.warning("security_scope.stale", ["url": url.path])
+                        }
+                        resolved.append((url, rootID))
                     } catch {
                         self.log.warning("library.root.inaccessible", ["id": rootID, "path": root.path])
                         try? await self.rootRepo.markInaccessible(id: rootID, true)
                         continuation.yield(.error(url: URL(fileURLWithPath: root.path), error: error))
+                    }
+                }
+                // Stop all scopes once the scan completes (or if we return early below).
+                defer {
+                    for (url, _) in resolved {
+                        url.stopAccessingSecurityScopedResource()
                     }
                 }
 
