@@ -5,9 +5,9 @@ import UserNotifications
 
 public struct GeneralSettingsView: View {
     @AppStorage("general.launchAtLogin") private var launchAtLogin = false
-    @AppStorage("general.showMenuBarExtra") private var showMenuBarExtra = false
     @AppStorage("general.showNotifications") private var showNotifications = false
     @AppStorage("ui.windowMode.restoresLastMode") private var restoresLastMode = true
+    @Environment(\.menuBarExtraEnabled) private var showMenuBarExtra
 
     public init() {}
 
@@ -18,7 +18,7 @@ public struct GeneralSettingsView: View {
             }
 
             Section("Menu Bar") {
-                Toggle("Show Bòcan in menu bar", isOn: self.$showMenuBarExtra)
+                Toggle("Show Bòcan in menu bar", isOn: self.showMenuBarExtra)
             }
 
             Section("Notifications") {

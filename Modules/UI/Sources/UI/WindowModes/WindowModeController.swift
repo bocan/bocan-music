@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - WindowModeController
@@ -46,6 +47,15 @@ public final class WindowModeController: ObservableObject {
         if self.miniPlayerOpen {
             self.dismissWindow?("mini")
             self.miniPlayerOpen = false
+            // Restore main window directly; MiniPlayerView.onDisappear does the
+            // same but SwiftUI's DismissWindowAction may fire it after a delay
+            // or not at all if the main window is currently hidden via orderOut.
+            if let win = MainWindowTracker.shared.window {
+                win.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            } else {
+                self.openWindow?("main")
+            }
         } else {
             self.openWindow?("mini")
             self.miniPlayerOpen = true

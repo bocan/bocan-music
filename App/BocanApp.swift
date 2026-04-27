@@ -120,9 +120,9 @@ struct BocanApp: App {
                     Task { await self.libraryViewModel.nowPlaying.playPause() }
                 }
                 .keyboardShortcut(KeyBindings.playPause)
+            }
 
-                Divider()
-
+            CommandGroup(after: .windowArrangement) {
                 Button("Toggle Miniplayer") {
                     self.windowMode.toggleMiniPlayer()
                 }
