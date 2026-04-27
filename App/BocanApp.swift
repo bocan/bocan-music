@@ -248,6 +248,31 @@ struct BocanApp: App {
         ) { _ in
             Task { await sleepTimer.handleSystemWake() }
         }
+
+        // Persist playback position on quit so it can be restored on next launch.
+        registerTerminationObserver(player: qp)
+    }
+}
+
+// MARK: - Helpers
+
+/// Registers a `willTerminateNotification` observer that saves the current
+/// playback position to `UserDefaults` before the process exits.
+///
+/// A `DispatchSemaphore` is used to block termination briefly while the async
+/// save completes; the 2-second timeout prevents a hang on slow devices.
+private func registerTerminationObserver(player: QueuePlayer) {
+    NotificationCenter.default.addObserver(
+        forName: NSApplication.willTerminateNotification,
+        object: nil,
+        queue: nil
+    ) { _ in
+        let semaphore = DispatchSemaphore(value: 0)
+        Task.detached {
+            await player.savePositionForSuspend()
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + 2)
     }
 }
 

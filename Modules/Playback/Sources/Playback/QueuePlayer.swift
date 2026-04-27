@@ -203,6 +203,18 @@ public actor QueuePlayer: Transport {
         get async { await self.engine.duration }
     }
 
+    /// Captures the current engine position to `UserDefaults` so the next launch
+    /// can seek the restored track to where the user left off.
+    ///
+    /// Call this from `applicationWillTerminate` (or the equivalent notification).
+    /// Safe to call when nothing is playing — it is a no-op when position is zero.
+    public func savePositionForSuspend() async {
+        let position = await self.engine.currentTime
+        guard position > 0 else { return }
+        UserDefaults.standard.set(position, forKey: "playback.resumePosition")
+        self.log.debug("queueplayer.position.saved", ["position": position])
+    }
+
     // MARK: - Queue operations
 
     /// Replace the queue with `trackIDs` and begin playing at `index`.
@@ -539,6 +551,7 @@ public actor QueuePlayer: Transport {
     // MARK: Gapless next URL resolution
 
     private func resolveNextGaplessItem() async -> (item: QueueItem, forceGapless: Bool)? {
+        guard await !self.queue.stopAfterCurrent else { return nil }
         guard let item = await queue.peekNext() else { return nil }
 
         // Determine whether the next item's album has `force_gapless` set and
@@ -685,6 +698,19 @@ public actor QueuePlayer: Transport {
             await self.queue.setShuffle(true, seed: seed)
         }
         self.log.debug("queueplayer.queue.restored", ["count": saved.items.count])
+
+        // If a resume position was saved on last quit, pre-load the current item
+        // and seek to it (without playing) so the user can resume where they left off.
+        let savedPosition = UserDefaults.standard.double(forKey: "playback.resumePosition")
+        guard savedPosition > 0 else { return }
+        UserDefaults.standard.removeObject(forKey: "playback.resumePosition")
+        do {
+            try await self.loadCurrentItem()
+            try await self.engine.seek(to: savedPosition)
+            self.log.debug("queueplayer.position.restored", ["position": savedPosition])
+        } catch {
+            self.log.warning("queueplayer.position.restore.failed", ["error": String(reflecting: error)])
+        }
     }
 
     // MARK: Root-scope fallback
