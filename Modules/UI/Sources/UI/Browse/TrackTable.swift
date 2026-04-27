@@ -63,6 +63,7 @@ public struct TrackTable: NSViewRepresentable {
     let sortable: Bool
     let playlistNodes: [PlaylistNode]
     let actions: TrackContextMenuActions
+    @AppStorage("appearance.rowDensity") private var rowDensity = "regular"
 
     // MARK: NSViewRepresentable
 
@@ -81,6 +82,7 @@ public struct TrackTable: NSViewRepresentable {
             ? "bocan.tracksTable.sortable.v2"
             : "bocan.tracksTable.plain.v2"
         tableView.autosaveTableColumns = true
+        tableView.rowHeight = self.desiredRowHeight
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.style = .inset
         tableView.allowsMultipleSelection = true
@@ -179,6 +181,23 @@ public struct TrackTable: NSViewRepresentable {
 
         // 4 — Sort indicator changed externally (e.g. "Clear Sort" button).
         coordinator.syncSortIfNeeded(sortOrder: self.sortOrder)
+
+        // 5 — Row density changed in Appearance settings.
+        let desiredHeight = self.desiredRowHeight
+        if tableView.rowHeight != desiredHeight {
+            tableView.rowHeight = desiredHeight
+            tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
+        }
+    }
+
+    // MARK: - Row density
+
+    private var desiredRowHeight: CGFloat {
+        switch self.rowDensity {
+        case "compact": 22
+        case "spacious": 36
+        default: 28
+        }
     }
 
     // MARK: - Column spec

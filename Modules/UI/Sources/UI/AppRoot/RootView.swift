@@ -18,10 +18,14 @@ import UniformTypeIdentifiers
 /// passing it manually through every level.
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
+    @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
     @State private var tagEditorVM: TagEditorViewModel?
     @State private var identifyVM: IdentifyTrackViewModel?
+    @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
+    @AppStorage("appearance.accentColor") private var accentColorKey = "system"
 
     public init(vm: LibraryViewModel) {
         _vm = StateObject(wrappedValue: vm)
@@ -60,8 +64,12 @@ public struct BocanRootView: View {
         }
         .environmentObject(self.vm)
         .task {
-            // Wire the inspector window opener before any UI loads.
+            // Wire window openers before any UI loads.
             self.vm.openInspectorWindow = { self.openWindow(id: "track-inspector") }
+            let ow = self.openWindow
+            let dw = self.dismissWindow
+            self.windowMode.openWindow = { id in ow(id: id) }
+            self.windowMode.dismissWindow = { id in dw(id: id) }
             await self.vm.restoreUIState()
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
@@ -97,6 +105,7 @@ public struct BocanRootView: View {
         }
         .frame(minWidth: 900, minHeight: 550)
         .accessibilityIdentifier("BocanMainWindow")
+        .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
         .alert(
             "Playback Error",
             isPresented: self.playbackErrorBinding
@@ -143,9 +152,19 @@ public struct BocanRootView: View {
             self.vm.showIdentifyTrackForCurrentSelection()
             return .handled
         }
+        .preferredColorScheme(self.preferredColorScheme)
+        .tint(AccentPalette.color(for: self.accentColorKey))
     }
 
     // MARK: - Helpers
+
+    private var preferredColorScheme: ColorScheme? {
+        switch self.colorSchemeKey {
+        case "light": .light
+        case "dark": .dark
+        default: nil
+        }
+    }
 
     private var playbackErrorBinding: Binding<Bool> {
         Binding(
