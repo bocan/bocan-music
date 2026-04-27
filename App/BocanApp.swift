@@ -17,8 +17,14 @@ private final class _InitBox<T: Sendable>: @unchecked Sendable {
 
 // MARK: - AppDelegate
 
-/// Handles `applicationShouldTerminateAfterLastWindowClosed` and `⌘W` hiding.
-final class AppDelegate: NSObject, NSApplicationDelegate {
+/// Handles `applicationShouldTerminateAfterLastWindowClosed`, `⌘W` hiding,
+/// and `UNUserNotificationCenter` delegate callbacks.
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    func applicationDidFinishLaunching(_: Notification) {
+        // Register as the notification delegate early so tap-to-foreground works.
+        UNUserNotificationCenter.current().delegate = self
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false // Keep running when all windows are closed; Dock or menubar can reopen.
     }
@@ -30,6 +36,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         return true
     }
+
+    // MARK: UNUserNotificationCenterDelegate
+
+    /// Tapping a track-change banner brings the app to the foreground.
+    func userNotificationCenter(
+        _: UNUserNotificationCenter,
+        didReceive _: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        NSApp.activate(ignoringOtherApps: true)
+        (NSApp.mainWindow ?? NSApp.windows.first { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
+        completionHandler()
+    }
+
+    /// Suppress banners while the app is active (belt-and-suspenders;
+    /// `NowPlayingViewModel` already gates on `NSApp.isActive` before posting).
+    func userNotificationCenter(
+        _: UNUserNotificationCenter,
+        willPresent _: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([])
+    }
 }
 
 // MARK: - BocanApp
@@ -38,20 +67,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct BocanApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    /// @State (not @Published/@AppStorage) for isInserted: — see MenuBarExtraKey.swift.
+    /// SwiftUI calls the isInserted binding's setter during scene updates; if that setter
+    /// fires objectWillChange on an ObservableObject, it re-enters the transaction loop
+    /// and causes a "publishing during view updates" storm.  @State is handled internally
+    /// by SwiftUI without re-entering the graph.  Settings writes to this via the
+    /// menuBarExtraEnabled EnvironmentKey, which propagates as a plain Binding<Bool>.
+    @State private var showMenuBarExtra = UserDefaults.standard.bool(forKey: "general.showMenuBarExtra")
+
     private let log = AppLogger.make(.app)
     private let database: Database
     private let engine: AudioEngine
     private let player: QueuePlayer
     @StateObject private var libraryViewModel: LibraryViewModel
     @StateObject private var dspViewModel: DSPViewModel
-    @StateObject private var miniPlayerViewModel: MiniPlayerViewModel
+    // private let, not @StateObject: MiniPlayerViewModel.objectWillChange fires on every
+    // playback tick (forwarded from NowPlayingViewModel).  @StateObject would subscribe
+    // App.body to those ticks, rebuilding the Window menu 60× per second.  MiniPlayerView
+    // observes the instance directly via @ObservedObject, so the mini player still updates.
+    private let miniPlayerViewModel: MiniPlayerViewModel
     @StateObject private var windowMode: WindowModeController
     @StateObject private var dockTile: DockTileController
 
     var body: some Scene {
         // MARK: Main window
 
-        WindowGroup {
+        WindowGroup("Bòcan", id: "main") {
             BocanRootView(vm: self.libraryViewModel)
                 .environmentObject(self.dspViewModel)
                 .environmentObject(self.windowMode)
@@ -82,7 +123,7 @@ struct BocanApp: App {
 
                 Divider()
 
-                Button("Mini Player") {
+                Button("Toggle Miniplayer") {
                     self.windowMode.toggleMiniPlayer()
                 }
                 .keyboardShortcut("m", modifiers: [.command, .option])
@@ -118,12 +159,14 @@ struct BocanApp: App {
         // MARK: Mini player
 
         MiniPlayerWindow(vm: self.miniPlayerViewModel)
+            .environmentObject(self.windowMode)
 
         // MARK: Settings
 
         Settings {
             SettingsScene()
                 .environmentObject(self.dspViewModel)
+                .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
 
         // MARK: Track inspector
@@ -134,12 +177,15 @@ struct BocanApp: App {
         .windowResizability(.contentMinSize)
         .windowStyle(.titleBar)
 
-        // MenuBarExtra removed: on macOS 26 beta its `isInserted:` @AppStorage
-        // binding appears to subscribe to the key-agnostic UserDefaults
-        // didChangeNotification, firing on every window-frame autosave and driving
-        // a continuous scenesDidChange → makeMainMenu storm that locks the
-        // MainActor at launch.  If reintroduced, drive the binding through
-        // @State + manual UserDefaults handling, not @AppStorage.
+        // MARK: Menu bar widget
+
+        MenuBarExtra("Bòcan", systemImage: "music.note", isInserted: self.$showMenuBarExtra) {
+            MenuBarExtraScene(vm: self.libraryViewModel.nowPlaying)
+        }
+        .menuBarExtraStyle(.window)
+        .onChange(of: self.showMenuBarExtra) { _, newValue in
+            UserDefaults.standard.set(newValue, forKey: "general.showMenuBarExtra")
+        }
     }
 
     init() {
@@ -179,7 +225,7 @@ struct BocanApp: App {
         let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
         _libraryViewModel = StateObject(wrappedValue: lvm)
         _dspViewModel = StateObject(wrappedValue: DSPViewModel(engine: eng))
-        _miniPlayerViewModel = StateObject(wrappedValue: MiniPlayerViewModel(nowPlaying: lvm.nowPlaying))
+        self.miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
         _windowMode = StateObject(wrappedValue: WindowModeController())
         _dockTile = StateObject(wrappedValue: DockTileController())
 

@@ -4,6 +4,7 @@ import Foundation
 import Observability
 import Persistence
 import Playback
+import UserNotifications
 
 // MARK: - NowPlayingViewModel
 
@@ -306,6 +307,8 @@ public final class NowPlayingViewModel: ObservableObject {
     }
 
     private func resolveMetadata(for track: Track) async {
+        let trackID = track.id
+        var artworkPath: String?
         do {
             // Resolve artist name
             if let artistID = track.artistID {
@@ -328,13 +331,51 @@ public final class NowPlayingViewModel: ObservableObject {
                         try CoverArt.fetchOne(db, key: hash)
                     }
                     if let path = artRecord?.path {
+                        artworkPath = path
                         let img = await ArtworkLoader.shared.image(at: path)
                         await MainActor.run { self.artwork = img }
                     }
                 }
             }
+
+            // Post track-change notification if still on the same track.
+            guard self.nowPlayingTrackID == trackID else { return }
+            await self.postTrackChangeNotification(
+                title: self.title,
+                artist: self.artist,
+                artworkPath: artworkPath
+            )
         } catch {
             self.log.error("nowplaying.resolve.failed", ["error": String(reflecting: error)])
         }
+    }
+
+    // MARK: - Track-change notifications
+
+    /// Posts a `UNNotification` banner when a new track starts, provided
+    /// the user has enabled the setting and the app is not frontmost.
+    private func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
+        guard UserDefaults.standard.bool(forKey: "general.showNotifications") else { return }
+        guard !NSApp.isActive else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = title
+        if !artist.isEmpty { content.subtitle = artist }
+        content.sound = nil
+
+        if let path = artworkPath {
+            let url = URL(fileURLWithPath: path)
+            if let attachment = try? UNNotificationAttachment(identifier: "artwork", url: url) {
+                content.attachments = [attachment]
+            }
+        }
+
+        // Re-using the same identifier replaces any still-visible previous banner.
+        let request = UNNotificationRequest(
+            identifier: "bocan.trackChange",
+            content: content,
+            trigger: nil
+        )
+        try? await UNUserNotificationCenter.current().add(request)
     }
 }
