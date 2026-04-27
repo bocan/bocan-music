@@ -380,8 +380,15 @@ private extension NowPlayingViewModel {
         content.sound = nil
 
         if let path = artworkPath {
-            let url = URL(fileURLWithPath: path)
-            if let attachment = try? UNNotificationAttachment(identifier: "artwork", url: url) {
+            let sourceURL = URL(fileURLWithPath: path)
+            // UNNotificationAttachment moves the file into its own data store, which
+            // fails when the source is inside the app sandbox container (daemon
+            // cross-process access is denied). Copy to a world-readable temp location first.
+            let tempURL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension(sourceURL.pathExtension)
+            if (try? FileManager.default.copyItem(at: sourceURL, to: tempURL)) != nil,
+               let attachment = try? UNNotificationAttachment(identifier: "artwork", url: tempURL) {
                 content.attachments = [attachment]
             }
         }
@@ -394,6 +401,7 @@ private extension NowPlayingViewModel {
         )
         do {
             try await UNUserNotificationCenter.current().add(request)
+            self.log.info("notifications.posted", ["title": title])
         } catch {
             self.log.error("notifications.add.failed", ["error": String(reflecting: error)])
         }
