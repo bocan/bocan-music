@@ -68,6 +68,10 @@ public extension LibraryViewModel {
         do {
             try await scanner.removeRoot(id: id)
             await self.refreshRoots()
+            await self.tracks.load()
+            await self.albums.load()
+            await self.artists.load()
+            await self.loadCurrentDestination()
         } catch {
             self.log.error("library.removeRoot.failed", ["error": String(reflecting: error)])
         }
@@ -82,8 +86,17 @@ public extension LibraryViewModel {
     func startOrStopWatcher() async {
         guard let scanner else { return }
         if UserDefaults.standard.bool(forKey: "library.watchForChanges") {
+            // Reload all views whenever FSEvents picks up a new or changed file.
+            await scanner.setOnFileImported { [weak self] in
+                guard let self else { return }
+                await self.tracks.load()
+                await self.albums.load()
+                await self.artists.load()
+                await self.loadCurrentDestination()
+            }
             await scanner.startWatching()
         } else {
+            await scanner.setOnFileImported(nil)
             await scanner.stopWatching()
         }
     }

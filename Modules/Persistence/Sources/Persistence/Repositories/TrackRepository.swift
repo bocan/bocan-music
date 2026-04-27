@@ -73,12 +73,28 @@ public struct TrackRepository: Sendable {
         return id
     }
 
-    /// Deletes the track with `id`.
+    /// Soft-deletes the track with `id`.
     public func delete(id: Int64) async throws {
         let deleted: Bool = try await self.database.write { db in
             try Track.deleteOne(db, key: id)
         }
         self.log.debug("track.delete", ["id": id, "existed": deleted])
+    }
+
+    /// Soft-deletes all tracks whose `file_url` starts with `pathPrefix`.
+    ///
+    /// Used when a library root is removed — tracks that lived under that root
+    /// should no longer appear in the library until re-imported.
+    public func disableAll(underPath pathPrefix: String) async throws {
+        let prefix = pathPrefix.hasSuffix("/") ? pathPrefix : pathPrefix + "/"
+        let count: Int = try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE tracks SET disabled = 1 WHERE file_url LIKE ? ESCAPE '\\'",
+                arguments: [prefix.replacingOccurrences(of: "%", with: "\\%") + "%"]
+            )
+            return db.changesCount
+        }
+        self.log.info("track.disableAll", ["prefix": prefix, "count": count])
     }
 
     // MARK: - Read
