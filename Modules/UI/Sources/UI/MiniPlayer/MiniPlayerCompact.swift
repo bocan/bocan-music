@@ -6,6 +6,8 @@ import SwiftUI
 /// Used when width ≥ 300 and height < 220.
 struct MiniPlayerCompact: View {
     @ObservedObject var vm: MiniPlayerViewModel
+    @AppStorage("appearance.accentColor") private var accentColorKey = "system"
+    @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
@@ -58,6 +60,18 @@ struct MiniPlayerCompact: View {
     private var transport: some View {
         HStack(spacing: 14) {
             Button {
+                Task { await self.np.toggleShuffle() }
+            } label: {
+                Image(systemName: "shuffle")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.np.shuffleOn ? Color.accentColor : Color.textTertiary)
+            .help(self.np.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
+            .accessibilityLabel(self.np.shuffleOn ? "Shuffle On" : "Shuffle Off")
+            .accessibilityAddTraits(.isToggle)
+
+            Button {
                 Task { await self.np.previous() }
             } label: {
                 Image(systemName: "backward.fill")
@@ -65,6 +79,7 @@ struct MiniPlayerCompact: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
+            .help("Previous track")
             .accessibilityLabel("Previous")
 
             Button {
@@ -75,6 +90,7 @@ struct MiniPlayerCompact: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
+            .help(self.np.isPlaying ? "Pause" : "Play")
             .accessibilityLabel(self.np.isPlaying ? "Pause" : "Play")
 
             Button {
@@ -85,6 +101,7 @@ struct MiniPlayerCompact: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
+            .help("Next track")
             .accessibilityLabel("Next")
         }
     }
@@ -93,20 +110,25 @@ struct MiniPlayerCompact: View {
         VStack(spacing: 2) {
             Slider(
                 value: Binding(
-                    get: { self.np.duration > 0 ? self.np.position / self.np.duration : 0 },
-                    set: { fraction in
-                        Task { await self.np.scrub(to: fraction * self.np.duration) }
-                    }
+                    get: { self.dragPosition ?? (self.np.duration > 0 ? self.np.position / self.np.duration : 0) },
+                    set: { self.dragPosition = $0 }
                 ),
                 in: 0 ... 1
-            )
+            ) { editing in
+                if !editing, let fraction = self.dragPosition {
+                    self.dragPosition = nil
+                    Task { await self.np.scrub(to: fraction * self.np.duration) }
+                }
+            }
             .controlSize(.mini)
             .frame(width: 80)
+            .id(self.accentColorKey)
             .disabled(self.np.duration == 0)
+            .help("Scrub to position")
             .accessibilityLabel("Playback position")
 
             HStack {
-                Text(Formatters.duration(self.np.position))
+                Text(Formatters.duration(self.dragPosition.map { $0 * self.np.duration } ?? self.np.position))
                 Spacer()
                 Text(Formatters.duration(self.np.duration))
             }

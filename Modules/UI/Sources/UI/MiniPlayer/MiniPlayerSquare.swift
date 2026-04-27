@@ -5,6 +5,7 @@ import SwiftUI
 /// Square artwork-first layout: used when width ≥ 220 and height ≥ 220.
 struct MiniPlayerSquare: View {
     @ObservedObject var vm: MiniPlayerViewModel
+    @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
@@ -71,20 +72,36 @@ struct MiniPlayerSquare: View {
             // Thin scrubber
             Slider(
                 value: Binding(
-                    get: { self.np.duration > 0 ? self.np.position / self.np.duration : 0 },
-                    set: { fraction in
-                        Task { await self.np.scrub(to: fraction * self.np.duration) }
-                    }
+                    get: { self.dragPosition ?? (self.np.duration > 0 ? self.np.position / self.np.duration : 0) },
+                    set: { self.dragPosition = $0 }
                 ),
                 in: 0 ... 1
-            )
+            ) { editing in
+                if !editing, let fraction = self.dragPosition {
+                    self.dragPosition = nil
+                    Task { await self.np.scrub(to: fraction * self.np.duration) }
+                }
+            }
             .controlSize(.mini)
             .tint(.white)
             .disabled(self.np.duration == 0)
+            .help("Scrub to position")
             .accessibilityLabel("Playback position")
 
             // Transport
             HStack(spacing: 20) {
+                Button {
+                    Task { await self.np.toggleShuffle() }
+                } label: {
+                    Image(systemName: "shuffle")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.np.shuffleOn ? Color.accentColor : .white.opacity(0.7))
+                .help(self.np.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
+                .accessibilityLabel(self.np.shuffleOn ? "Shuffle On" : "Shuffle Off")
+                .accessibilityAddTraits(.isToggle)
+
                 Button {
                     Task { await self.np.previous() }
                 } label: {
@@ -93,6 +110,7 @@ struct MiniPlayerSquare: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
+                .help("Previous track")
                 .accessibilityLabel("Previous")
 
                 Button {
@@ -103,6 +121,7 @@ struct MiniPlayerSquare: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
+                .help(self.np.isPlaying ? "Pause" : "Play")
                 .accessibilityLabel(self.np.isPlaying ? "Pause" : "Play")
 
                 Button {
@@ -113,6 +132,7 @@ struct MiniPlayerSquare: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
+                .help("Next track")
                 .accessibilityLabel("Next")
             }
         }
