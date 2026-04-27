@@ -358,6 +358,14 @@ public final class NowPlayingViewModel: ObservableObject {
         guard UserDefaults.standard.bool(forKey: "general.showNotifications") else { return }
         guard !NSApp.isActive else { return }
 
+        // Bail early if the user hasn't granted permission rather than letting
+        // the add() call fail silently.
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        guard settings.authorizationStatus == .authorized else {
+            self.log.warning("notifications.skipped", ["authStatus": String(describing: settings.authorizationStatus)])
+            return
+        }
+
         let content = UNMutableNotificationContent()
         content.title = title
         if !artist.isEmpty { content.subtitle = artist }
@@ -376,6 +384,10 @@ public final class NowPlayingViewModel: ObservableObject {
             content: content,
             trigger: nil
         )
-        try? await UNUserNotificationCenter.current().add(request)
+        do {
+            try await UNUserNotificationCenter.current().add(request)
+        } catch {
+            self.log.error("notifications.add.failed", ["error": String(reflecting: error)])
+        }
     }
 }

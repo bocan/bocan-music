@@ -23,6 +23,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var isSyncingSelection = false
     var isSyncingSort = false
 
+    /// Tracks the last-applied density so updateNSView can detect changes.
+    var lastRowDensity = UserDefaults.standard.string(forKey: "appearance.rowDensity") ?? "regular"
+
     // Owned AppKit objects — weak/strong to avoid retain cycles.
     weak var tableView: NSTableView?
     var dataSource: TrackDiffableDataSource?
@@ -98,7 +101,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     // MARK: NSTableViewDelegate — sort / selection / layout
 
     public func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
-        22
+        switch UserDefaults.standard.string(forKey: "appearance.rowDensity") {
+        case "compact": 22
+        case "spacious": 36
+        default: 28
+        }
     }
 
     public func tableViewSelectionDidChange(_ notification: Notification) {
