@@ -111,7 +111,7 @@ public struct MiniPlayerView: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlaying.shuffleOn ? Color.accentColor : Color.textTertiary)
+            .foregroundStyle(self.vm.nowPlaying.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.nowPlaying.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
             .accessibilityLabel(self.vm.nowPlaying.shuffleOn ? "Shuffle On" : "Shuffle Off")
             .accessibilityAddTraits(.isToggle)
@@ -123,7 +123,7 @@ public struct MiniPlayerView: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : Color.accentColor)
+            .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
             .help(
                 "Repeat: \(self.vm.nowPlaying.repeatMode == .off ? "Off" : self.vm.nowPlaying.repeatMode == .all ? "All" : "One") — click to cycle"
             )
@@ -139,7 +139,7 @@ public struct MiniPlayerView: View {
                     .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlaying.stopAfterCurrent ? Color.accentColor : Color.textTertiary)
+            .foregroundStyle(self.vm.nowPlaying.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.nowPlaying.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
             .accessibilityLabel(self.vm.nowPlaying.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
             .accessibilityAddTraits(.isToggle)
