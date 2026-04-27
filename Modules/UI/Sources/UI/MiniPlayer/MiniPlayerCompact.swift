@@ -6,6 +6,7 @@ import SwiftUI
 /// Used when width ≥ 300 and height < 220.
 struct MiniPlayerCompact: View {
     @ObservedObject var vm: MiniPlayerViewModel
+    @EnvironmentObject private var library: LibraryViewModel
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var dragPosition: Double?
 
@@ -59,6 +60,18 @@ struct MiniPlayerCompact: View {
 
     private var transport: some View {
         HStack(spacing: 12) {
+            Button {
+                self.library.showTagEditorForNowPlaying()
+            } label: {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 14, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.np.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
+            .disabled(self.np.nowPlayingTrackID == nil)
+            .help("Get info for current track")
+            .accessibilityLabel("Track Info")
+
             Button {
                 Task { await self.np.previous() }
             } label: {
