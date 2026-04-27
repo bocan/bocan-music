@@ -198,6 +198,22 @@ struct BocanApp: App {
     }
 
     init() {
+        // Register UserDefaults defaults for all @AppStorage keys whose default
+        // value is not the UserDefaults zero-value (false/0/"").  Without this,
+        // any code that reads UserDefaults.standard directly (e.g. startOrStopWatcher)
+        // before the user has explicitly set a preference gets the zero-value instead
+        // of the intended default, causing silent no-ops on first launch.
+        UserDefaults.standard.register(defaults: [
+            "library.watchForChanges": true,
+            "ui.windowMode.restoresLastMode": true,
+            "appearance.colorScheme": "system",
+            "appearance.accentColor": "system",
+            "appearance.rowDensity": "regular",
+            "advanced.logLevel": "info",
+            "playback.rate": 1.0,
+            "playback.gaplessPrerollSeconds": 5.0,
+        ])
+
         self.log.info("app.launched", ["version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"])
         #if os(macOS)
             MetricKitListener.shared.start()
