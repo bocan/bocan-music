@@ -117,6 +117,17 @@ public actor MetadataEditService {
         self.log.debug("undo.complete", ["editID": editID])
     }
 
+    /// Fetches the `Track` database records for `ids` (skips any not found).
+    public func readTracks(ids: [Int64]) async throws -> [Track] {
+        var tracks: [Track] = []
+        for id in ids {
+            if let track = try? await self.trackRepo.fetch(id: id) {
+                tracks.append(track)
+            }
+        }
+        return tracks
+    }
+
     /// Reads the current `TrackTags` from disk for `trackID`.
     public func readTags(trackID: Int64) async throws -> TrackTags {
         let track = try await self.trackRepo.fetch(id: trackID)
