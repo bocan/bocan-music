@@ -32,8 +32,6 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - **Repeat** — Off / Repeat All / Repeat One, cycling from a single button.
 - **Stop after current track** — finish the song, then halt. Exactly what it says on the tin.
 - Full **queue** with history; skip forward, skip backward through real playback history.
-- **MPNowPlayingInfoCenter** integration — media keys, Control Centre, and lock-screen artwork all work correctly.
-- Now-playing state is persisted across launches; Bòcan resumes where you left off.
 
 ### Library management
 
