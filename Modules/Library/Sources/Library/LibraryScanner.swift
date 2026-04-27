@@ -57,6 +57,8 @@ public actor LibraryScanner {
         )
         try await self.rootRepo.upsert(root)
         self.log.info("library.root.added", ["path": url.path])
+        // If a watcher is already running, begin watching the new root immediately.
+        await self.watchNewRoot(path: url.path)
     }
 
     /// Removes a root by its database ID.
@@ -151,25 +153,26 @@ public actor LibraryScanner {
     // MARK: - FSWatcher
 
     /// Starts watching all current library roots for file-system changes.
+    ///
+    /// When a supported audio file is created or modified inside a watched root,
+    /// it is re-imported automatically via `scanSingleFile(url:)`.
+    /// Calling this when a watcher is already running is a no-op.
     public func startWatching() async {
         guard self.fsWatcher == nil else { return }
         let allRoots = await (try? self.rootRepo.fetchAll()) ?? []
 
-        let watcher = FSWatcher { [log] urls in
+        let watcher = FSWatcher { [weak self, log] urls in
             log.debug("fsevents.change", ["count": urls.count])
-            // Phase 3 incremental re-import is handled by ScanCoordinator.
-            // For now, events are logged; full incremental handling is Phase 4+.
+            guard let self else { return }
+            Task {
+                await self.handleFSChange(urls: urls)
+            }
         }
 
         for root in allRoots {
-            guard let _ = root.id else { continue }
-            do {
-                try await SecurityScope.withAccess(root.bookmark) { url in
-                    await watcher.watch(url)
-                }
-            } catch {
-                self.log.warning("fsevents.bookmark_stale", ["path": root.path])
-            }
+            guard root.id != nil else { continue }
+            let watchURL = self.watchableURL(for: root.path)
+            await watcher.watch(watchURL)
         }
 
         self.fsWatcher = watcher
@@ -181,5 +184,44 @@ public actor LibraryScanner {
         await self.fsWatcher?.stopAll()
         self.fsWatcher = nil
         self.log.info("fsevents.stopped")
+    }
+
+    /// Adds a newly registered root to an already-running watcher.
+    ///
+    /// Called automatically by `addRoot(_:)` when watching is active.
+    func watchNewRoot(path: String) async {
+        guard let watcher = self.fsWatcher else { return }
+        let url = self.watchableURL(for: path)
+        await watcher.watch(url)
+        self.log.debug("fsevents.root_added", ["path": path])
+    }
+
+    // MARK: - Private helpers
+
+    /// Returns the URL that FSEvents should watch for a given root path.
+    ///
+    /// FSEvents monitors directories. For file-type roots the parent directory
+    /// is watched; the `onChange` handler then filters to just that file.
+    private func watchableURL(for path: String) -> URL {
+        let url = URL(fileURLWithPath: path)
+        var isDir: ObjCBool = false
+        FileManager.default.fileExists(atPath: path, isDirectory: &isDir)
+        return isDir.boolValue ? url : url.deletingLastPathComponent()
+    }
+
+    /// Handles a batch of FS-event URLs: filters to known audio extensions and
+    /// triggers `scanSingleFile` for each matching, non-hidden file.
+    private func handleFSChange(urls: [URL]) async {
+        for url in urls {
+            guard !url.lastPathComponent.hasPrefix(".") else { continue }
+            guard TagReader.isSupported(url) else { continue }
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            do {
+                _ = try await self.scanSingleFile(url: url)
+                self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
+            } catch {
+                self.log.warning("fsevents.rescan_failed", ["path": url.path, "error": "\(error)"])
+            }
+        }
     }
 }
