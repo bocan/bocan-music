@@ -111,9 +111,21 @@ public final class DSPChain: @unchecked Sendable {
     }
 
     /// Set the playback rate (0.5×–2.0×) with pitch correction.
+    ///
+    /// At unity rate the `AVAudioUnitTimePitch` node is bypassed rather than set
+    /// to 1.0.  Setting rate=1.0 on a live phase-vocoder node can leave residual
+    /// stretched samples in its internal buffer, causing audible corruption.
+    /// Bypassing sidesteps the algorithm entirely and produces clean passthrough.
     public func setRate(_ rate: Float) {
-        self.timePitch.rate = rate.clamped(to: 0.5 ... 2.0)
-        self.log.debug("dsp.rate.set", ["rate": rate])
+        let clamped = rate.clamped(to: 0.5 ... 2.0)
+        let isUnity = abs(clamped - 1.0) < 0.001
+        if isUnity {
+            self.timePitch.bypass = true
+        } else {
+            self.timePitch.bypass = false
+            self.timePitch.rate = clamped
+        }
+        self.log.debug("dsp.rate.set", ["rate": rate, "bypass": isUnity])
     }
 
     // MARK: - DSP state application
