@@ -9,8 +9,12 @@ import SwiftUI
 /// a non-unity rate is set.
 public struct SpeedPickerView: View {
     @ObservedObject public var vm: NowPlayingViewModel
+    @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var isPopoverShown = false
     @State private var isHovered = false
+    /// Held locally during a drag; setRate is called only once on release so the
+    /// spectral time-pitch node isn't hammered on every mouse-move event.
+    @State private var dragRate: Double?
 
     public init(vm: NowPlayingViewModel) {
         self.vm = vm
@@ -22,7 +26,7 @@ public struct SpeedPickerView: View {
         } label: {
             Text(self.rateLabel)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(self.isActive ? Color.accentColor : Color.textTertiary)
+                .foregroundStyle(self.isActive ? AccentPalette.color(for: self.accentColorKey) : Color.textPrimary)
                 .frame(width: 36)
         }
         .buttonStyle(.plain)
@@ -44,16 +48,21 @@ public struct SpeedPickerView: View {
 
             Text(self.rateLabel)
                 .font(.system(size: 28, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(AccentPalette.color(for: self.accentColorKey))
 
             Slider(
                 value: Binding(
-                    get: { Double(self.vm.playbackRate) },
-                    set: { newVal in Task { await self.vm.setRate(Float(newVal)) } }
+                    get: { self.dragRate ?? Double(self.vm.playbackRate) },
+                    set: { self.dragRate = $0 }
                 ),
                 in: 0.5 ... 2.0,
                 step: 0.05
-            )
+            ) { editing in
+                if !editing, let rate = self.dragRate {
+                    self.dragRate = nil
+                    Task { await self.vm.setRate(Float(rate)) }
+                }
+            }
             .frame(width: 200)
             .accessibilityLabel("Speed slider")
 

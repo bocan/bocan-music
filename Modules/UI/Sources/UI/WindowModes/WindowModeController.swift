@@ -45,16 +45,25 @@ public final class WindowModeController: ObservableObject {
     /// Toggle the Mini Player window (⌘⌥M).
     public func toggleMiniPlayer() {
         if self.miniPlayerOpen {
+            // Reset window level to .normal before dismissing.  A floating-level
+            // window leaving the screen can prevent a .normal-level main window
+            // from gaining focus in the same run-loop tick.
+            if let miniWin = NSApp.windows.first(where: {
+                $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
+            }) {
+                miniWin.level = .normal
+            }
             self.dismissWindow?("mini")
             self.miniPlayerOpen = false
-            // Restore main window directly; MiniPlayerView.onDisappear does the
-            // same but SwiftUI's DismissWindowAction may fire it after a delay
-            // or not at all if the main window is currently hidden via orderOut.
-            if let win = MainWindowTracker.shared.window {
-                win.makeKeyAndOrderFront(nil)
-                NSApp.activate(ignoringOtherApps: true)
-            } else {
-                self.openWindow?("main")
+            // Defer restore by one tick so dismissWindow's animation completes
+            // before we bring the main window forward.
+            DispatchQueue.main.async {
+                if let win = MainWindowTracker.shared.window {
+                    win.makeKeyAndOrderFront(nil)
+                    NSApp.activate(ignoringOtherApps: true)
+                } else {
+                    self.openWindow?("main")
+                }
             }
         } else {
             self.openWindow?("mini")

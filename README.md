@@ -36,9 +36,10 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 
 ### Library management
 
-- **Folder-based library** rooted at one or more user-chosen directories; security-scoped bookmarks keep the sandbox happy.
-- **Full + incremental scan** — the first scan indexes everything; FSEvents drives a live watcher that re-scans only what changed. Large libraries stay current without a full rescan.
-- **Add Files / Add Folder** pickers for one-off imports outside the managed roots.
+- **Folder-based library** rooted at one or more user-chosen directories or individual files; security-scoped bookmarks keep the sandbox happy.
+- **Full + incremental scan** — the first scan indexes everything; subsequent scans use mtime + file-size change detection so unchanged files are skipped in milliseconds.
+- **Live FSEvents watcher** — after each scan Bòcan watches every library root for file-system changes and automatically re-imports any supported audio file that is created or modified. Toggled by the "Watch folders for new files" preference in Library settings.
+- **Add Files / Add Folder** pickers available from the File menu and from Library settings.
 - **Deduplication** at file-fingerprint level — importing the same file twice doesn't create duplicates.
 - **Tag-aware change detection** — when you edit tags in an external app, the next scan picks up the change. When you edit tags *in* Bòcan, a `user_edited` flag prevents a rescan from overwriting your work.
 - Cover art is cached in a content-addressed store under `~/Library/Application Support` so artwork loads instantly.
@@ -104,6 +105,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 ### Settings
 
 - Full **Preferences window** (⌘,) with tabs: General, Library, Playback, DSP, Appearance, Advanced, About.
+- **Library sources** are managed exclusively in the Library settings tab — add folders or individual files, remove any source, see full paths at a glance.
 - All preferences are persisted via `UserDefaults` / `AppStorage`; changing them takes effect immediately without relaunch.
 
 ### Engineering

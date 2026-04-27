@@ -73,6 +73,7 @@ public struct BocanRootView: View {
             await self.vm.restoreUIState()
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
+            await self.vm.startOrStopWatcher()
         }
         .onDisappear {
             Task { await self.vm.saveUIState() }

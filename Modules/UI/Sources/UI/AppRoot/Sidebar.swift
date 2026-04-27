@@ -42,32 +42,6 @@ public struct Sidebar: View {
             }
 
             PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)
-
-            Section {
-                if self.vm.libraryRoots.isEmpty {
-                    Text("No folders added")
-                        .font(Typography.footnote)
-                        .foregroundStyle(Color.textTertiary)
-                        .padding(.vertical, 2)
-                } else {
-                    ForEach(self.vm.libraryRoots, id: \.id) { root in
-                        self.folderRow(root)
-                    }
-                }
-            } header: {
-                HStack {
-                    Text("Folders")
-                    Spacer()
-                    Button {
-                        Task { await self.vm.addFolderByPicker() }
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(Typography.footnote)
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel("Add music folder")
-                }
-            }
         }
         .listStyle(.sidebar)
         .frame(minWidth: Theme.sidebarMinWidth)

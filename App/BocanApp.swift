@@ -174,6 +174,7 @@ struct BocanApp: App {
         Settings {
             SettingsScene()
                 .environmentObject(self.dspViewModel)
+                .environmentObject(self.libraryViewModel)
                 .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
 
