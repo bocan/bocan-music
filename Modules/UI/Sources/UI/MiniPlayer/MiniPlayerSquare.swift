@@ -5,11 +5,19 @@ import SwiftUI
 /// Square artwork-first layout: used when width ≥ 220 and height ≥ 220.
 struct MiniPlayerSquare: View {
     @ObservedObject var vm: MiniPlayerViewModel
+    @EnvironmentObject private var library: LibraryViewModel
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
+    }
+
+    private var trackSubtitle: String? {
+        let parts = [self.np.artist, self.np.album]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " – ")
     }
 
     var body: some View {
@@ -55,15 +63,15 @@ struct MiniPlayerSquare: View {
 
     private var controls: some View {
         VStack(spacing: 6) {
-            // Title + artist (white text on dark gradient)
+            // Title + artist – album (white text on dark gradient)
             VStack(spacing: 2) {
                 Text(self.np.title.isEmpty ? "Not playing" : self.np.title)
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(1)
                     .foregroundStyle(.white)
 
-                if !self.np.artist.isEmpty {
-                    Text(self.np.artist)
+                if let subtitle = self.trackSubtitle {
+                    Text(subtitle)
                         .font(.system(size: 11))
                         .lineLimit(1)
                         .foregroundStyle(.white.opacity(0.8))
@@ -91,6 +99,18 @@ struct MiniPlayerSquare: View {
 
             // Transport
             HStack(spacing: 16) {
+                Button {
+                    self.library.showTagEditorForNowPlaying()
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.np.nowPlayingTrackID != nil ? .white.opacity(0.85) : .white.opacity(0.35))
+                .disabled(self.np.nowPlayingTrackID == nil)
+                .help("Get info for current track")
+                .accessibilityLabel("Track Info")
+
                 Button {
                     Task { await self.np.previous() }
                 } label: {
