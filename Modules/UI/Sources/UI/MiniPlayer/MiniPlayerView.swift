@@ -29,6 +29,7 @@ public struct MiniPlayerView: View {
             }
         }
         .background(.ultraThinMaterial)
+        .background(MiniPlayerWindowSetup().frame(width: 0, height: 0).allowsHitTesting(false))
         .onAppear {
             self.applyWindowLevel()
             self.windowMode.miniPlayerOpen = true
@@ -64,9 +65,14 @@ public struct MiniPlayerView: View {
 
     private var preferredColorScheme: ColorScheme? {
         switch self.colorSchemeKey {
-        case "light": .light
-        case "dark": .dark
-        default: nil
+        case "light":
+            .light
+
+        case "dark":
+            .dark
+
+        default:
+            nil
         }
     }
 

@@ -305,8 +305,12 @@ public final class NowPlayingViewModel: ObservableObject {
         self.positionTask?.cancel()
         self.positionTask = nil
     }
+}
 
-    private func resolveMetadata(for track: Track) async {
+// MARK: - NowPlayingViewModel private helpers
+
+private extension NowPlayingViewModel {
+    func resolveMetadata(for track: Track) async {
         let trackID = track.id
         var artworkPath: String?
         do {
@@ -350,23 +354,14 @@ public final class NowPlayingViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Track-change notifications
-
     /// Posts a `UNNotification` banner when a new track starts, provided
     /// the user has enabled the setting and the app is not frontmost.
-    private func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
+    func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
         let settingOn = UserDefaults.standard.bool(forKey: "general.showNotifications")
         let appActive = NSApp.isActive
         self.log.debug("notifications.attempt", ["settingOn": settingOn, "appActive": appActive, "title": title])
-
-        guard settingOn else {
-            self.log.debug("notifications.skipped", ["reason": "setting disabled"])
-            return
-        }
-        guard !appActive else {
-            self.log.debug("notifications.skipped", ["reason": "app is active"])
-            return
-        }
+        guard settingOn else { return }
+        guard !appActive else { return }
 
         // Bail early if the user hasn't granted permission rather than letting
         // the add() call fail silently.

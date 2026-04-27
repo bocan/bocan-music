@@ -194,9 +194,14 @@ public struct TrackTable: NSViewRepresentable {
 
     private var desiredRowHeight: CGFloat {
         switch self.rowDensity {
-        case "compact": 22
-        case "spacious": 36
-        default: 28
+        case "compact":
+            22
+
+        case "spacious":
+            36
+
+        default:
+            28
         }
     }
 

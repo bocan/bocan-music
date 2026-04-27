@@ -19,6 +19,7 @@ private final class _InitBox<T: Sendable>: @unchecked Sendable {
 
 /// Handles `applicationShouldTerminateAfterLastWindowClosed`, `⌘W` hiding,
 /// and `UNUserNotificationCenter` delegate callbacks.
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         // Register as the notification delegate early so tap-to-foreground works.
@@ -40,21 +41,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // MARK: UNUserNotificationCenterDelegate
 
     /// Tapping a track-change banner brings the app to the foreground.
-    @MainActor
-    func userNotificationCenter(
+    /// `nonisolated` because UNUserNotificationCenter may invoke this off the main thread;
+    /// AppKit work is dispatched onto the main actor explicitly.
+    nonisolated func userNotificationCenter(
         _: UNUserNotificationCenter,
         didReceive _: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        NSApp.activate(ignoringOtherApps: true)
-        (NSApp.mainWindow ?? NSApp.windows.first { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
+        // Dispatch AppKit work to main actor; call completion synchronously so
+        // it doesn't have to cross actor boundaries (it isn't Sendable).
+        Task { @MainActor in
+            NSApp.activate(ignoringOtherApps: true)
+            (NSApp.mainWindow ?? NSApp.windows.first { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
+        }
         completionHandler()
     }
 
     /// Suppress banners while the app is active (belt-and-suspenders;
     /// `NowPlayingViewModel` already gates on `NSApp.isActive` before posting).
-    @MainActor
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _: UNUserNotificationCenter,
         willPresent _: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void

@@ -166,8 +166,10 @@ public struct BocanRootView: View {
         switch key {
         case "light":
             NSApp.appearance = NSAppearance(named: .aqua)
+
         case "dark":
             NSApp.appearance = NSAppearance(named: .darkAqua)
+
         default:
             NSApp.appearance = nil // follow System
         }
