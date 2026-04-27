@@ -1,7 +1,6 @@
 // @preconcurrency: AVAudioPCMBuffer/AVAudioFormat lack Sendable; safe because
 // FFmpegDecoder is the sole owner of its buffers.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
-// swiftlint:disable file_length
 @preconcurrency import AVFoundation
 import CFFmpeg
 import Foundation

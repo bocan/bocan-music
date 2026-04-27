@@ -9,7 +9,9 @@ import SwiftUI
 @MainActor
 final class MainWindowTracker {
     static let shared = MainWindowTracker()
+
     private init() {}
+
     weak var window: NSWindow?
 }
 
@@ -35,5 +37,28 @@ struct MainWindowGrabber: NSViewRepresentable {
                 MainWindowTracker.shared.window = win
             }
         }
+    }
+}
+
+// MARK: - MiniPlayerWindowSetup
+
+/// Zero-size NSViewRepresentable placed in MiniPlayerView.  Excludes the mini
+/// player window from the automatic Window menu listing.
+///
+/// Uses a custom NSView subclass so viewDidMoveToWindow() fires at the exact
+/// moment the window reference becomes available — DispatchQueue.main.async is
+/// not sufficient because view.window is still nil when makeNSView returns.
+struct MiniPlayerWindowSetup: NSViewRepresentable {
+    func makeNSView(context: Context) -> WindowMenuExcludeView {
+        WindowMenuExcludeView()
+    }
+
+    func updateNSView(_ nsView: WindowMenuExcludeView, context: Context) {}
+}
+
+final class WindowMenuExcludeView: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.isExcludedFromWindowsMenu = true
     }
 }

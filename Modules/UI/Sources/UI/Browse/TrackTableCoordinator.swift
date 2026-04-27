@@ -102,9 +102,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     public func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
         switch UserDefaults.standard.string(forKey: "appearance.rowDensity") {
-        case "compact": 22
-        case "spacious": 36
-        default: 28
+        case "compact":
+            22
+
+        case "spacious":
+            36
+
+        default:
+            28
         }
     }
 
