@@ -94,6 +94,17 @@ public struct MiniPlayerView: View {
             Spacer()
 
             Button {
+                Task { await self.vm.nowPlaying.playPause() }
+            } label: {
+                Image(systemName: self.vm.nowPlaying.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Color.textPrimary)
+            .help(self.vm.nowPlaying.isPlaying ? "Pause" : "Play")
+            .accessibilityLabel(self.vm.nowPlaying.isPlaying ? "Pause" : "Play")
+
+            Button {
                 Task { await self.vm.nowPlaying.toggleShuffle() }
             } label: {
                 Image(systemName: "shuffle")
@@ -106,15 +117,32 @@ public struct MiniPlayerView: View {
             .accessibilityAddTraits(.isToggle)
 
             Button {
-                Task { await self.vm.nowPlaying.playPause() }
+                Task { await self.vm.nowPlaying.cycleRepeat() }
             } label: {
-                Image(systemName: self.vm.nowPlaying.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 14, weight: .bold))
+                Image(systemName: self.vm.nowPlaying.repeatMode == .one ? "repeat.1" : "repeat")
+                    .font(.system(size: 12, weight: .medium))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.textPrimary)
-            .help(self.vm.nowPlaying.isPlaying ? "Pause" : "Play")
-            .accessibilityLabel(self.vm.nowPlaying.isPlaying ? "Pause" : "Play")
+            .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : Color.accentColor)
+            .help(
+                "Repeat: \(self.vm.nowPlaying.repeatMode == .off ? "Off" : self.vm.nowPlaying.repeatMode == .all ? "All" : "One") — click to cycle"
+            )
+            .accessibilityLabel(
+                "Repeat \(self.vm.nowPlaying.repeatMode == .off ? "Off" : self.vm.nowPlaying.repeatMode == .all ? "All" : "One")"
+            )
+            .accessibilityAddTraits(.isToggle)
+
+            Button {
+                Task { await self.vm.nowPlaying.toggleStopAfterCurrent() }
+            } label: {
+                Image(systemName: "stop.circle\(self.vm.nowPlaying.stopAfterCurrent ? ".fill" : "")")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.vm.nowPlaying.stopAfterCurrent ? Color.accentColor : Color.textTertiary)
+            .help(self.vm.nowPlaying.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
+            .accessibilityLabel(self.vm.nowPlaying.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
+            .accessibilityAddTraits(.isToggle)
 
             Divider().frame(height: 14)
 
