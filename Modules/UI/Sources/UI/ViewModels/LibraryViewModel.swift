@@ -12,11 +12,11 @@ import UniformTypeIdentifiers
 
 // MARK: - UIStateV1
 
-/// Serialised sidebar + table UI state persisted to `settings` key `ui.state.v1`.
+/// Serialised sidebar + table UI state persisted to `settings` key `ui.state.v2`.
 struct UIStateV1: Codable {
     var selectedDestination: SidebarDestination = .songs
-    var sortColumn: TrackSortColumn = .addedAt
-    var sortAscending = false
+    var sortColumn: TrackSortColumn = .artist
+    var sortAscending = true
 }
 
 // MARK: - LibraryViewModel
@@ -452,7 +452,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             sortAscending: self.tracks.sortAscending
         )
         do {
-            try await self.settingsRepo.set(state, for: "ui.state.v1")
+            try await self.settingsRepo.set(state, for: "ui.state.v2")
         } catch {
             self.log.error("library.saveState.failed", ["error": String(reflecting: error)])
         }
@@ -461,7 +461,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Restores UI state from settings.
     public func restoreUIState() async {
         do {
-            guard let state = try await settingsRepo.get(UIStateV1.self, for: "ui.state.v1") else { return }
+            guard let state = try await settingsRepo.get(UIStateV1.self, for: "ui.state.v2") else { return }
             self.selectedDestination = state.selectedDestination
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
         } catch {
