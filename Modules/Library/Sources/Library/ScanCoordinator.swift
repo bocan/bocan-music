@@ -91,10 +91,19 @@ actor ScanCoordinator {
 
         emit(.started(rootCount: roots.count))
 
-        // Seed the change detector from the current DB state
+        // Seed the change detector from the current DB state — but only with
+        // tracks that belong to the roots we are about to scan.  Seeding with
+        // the entire library would mark every out-of-scope track as "removed"
+        // when a partial scan (e.g. a single newly-added file) completes.
+        // Disabled tracks are intentionally excluded from the seed so they are
+        // treated as new and re-imported (clearing their disabled flag).
         if mode == .quick {
-            let allTracks = await (try? self.trackRepo.fetchAll()) ?? []
-            await self.changeDetector.seed(allTracks.map {
+            let allTracks = await (try? self.trackRepo.fetchAllIncludingDisabled()) ?? []
+            let rootURLStrings = roots.map(\.url.absoluteString)
+            let scopedEnabledTracks = allTracks.filter { track in
+                !track.disabled && rootURLStrings.contains { track.fileURL.hasPrefix($0) }
+            }
+            await self.changeDetector.seed(scopedEnabledTracks.map {
                 (url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
             })
         }
