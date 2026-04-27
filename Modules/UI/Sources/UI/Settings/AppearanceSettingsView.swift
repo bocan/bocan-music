@@ -6,7 +6,6 @@ public struct AppearanceSettingsView: View {
     @AppStorage("appearance.colorScheme") private var colorScheme = "system"
     @AppStorage("appearance.accentColor") private var accentColor = "system"
     @AppStorage("appearance.rowDensity") private var rowDensity = "regular"
-    @AppStorage("appearance.reduceMotion") private var reduceMotion = false
 
     public init() {}
 
@@ -32,10 +31,6 @@ public struct AppearanceSettingsView: View {
                     Text("Spacious").tag("spacious")
                 }
                 .pickerStyle(.segmented)
-            }
-
-            Section("Motion") {
-                Toggle("Reduce motion (disables animations and marquee scroll)", isOn: self.$reduceMotion)
             }
         }
         .formStyle(.grouped)
