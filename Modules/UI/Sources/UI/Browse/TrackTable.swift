@@ -79,8 +79,8 @@ public struct TrackTable: NSViewRepresentable {
         let tableView = ContextMenuTableView()
         tableView.identifier = NSUserInterfaceItemIdentifier(A11y.TracksTable.table)
         tableView.autosaveName = self.sortable
-            ? "bocan.tracksTable.sortable.v2"
-            : "bocan.tracksTable.plain.v2"
+            ? "bocan.tracksTable.sortable.v3"
+            : "bocan.tracksTable.plain.v3"
         tableView.autosaveTableColumns = true
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.style = .inset
@@ -228,12 +228,12 @@ public struct TrackTable: NSViewRepresentable {
     /// All columns in display order.  Visibility can be toggled via the header menu.
     static let columnSpecs: [ColSpec] = [
         ColSpec(
-            id: .trackNumber,
-            title: "#",
-            minWidth: 28,
-            idealWidth: 32,
-            maxWidth: 40,
-            sortKey: "trackNumber",
+            id: .databaseID,
+            title: "ID",
+            minWidth: 36,
+            idealWidth: 52,
+            maxWidth: 72,
+            sortKey: "databaseID",
             hidden: false
         ),
         ColSpec(
@@ -288,6 +288,24 @@ public struct TrackTable: NSViewRepresentable {
             idealWidth: 60,
             maxWidth: 72,
             sortKey: "duration",
+            hidden: false
+        ),
+        ColSpec(
+            id: .trackNumber,
+            title: "Track",
+            minWidth: 28,
+            idealWidth: 40,
+            maxWidth: 56,
+            sortKey: "trackNumber",
+            hidden: false
+        ),
+        ColSpec(
+            id: .trackTotal,
+            title: "Of",
+            minWidth: 28,
+            idealWidth: 40,
+            maxWidth: 56,
+            sortKey: "trackTotal",
             hidden: false
         ),
         ColSpec(
