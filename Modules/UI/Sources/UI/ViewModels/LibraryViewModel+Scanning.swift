@@ -78,6 +78,16 @@ public extension LibraryViewModel {
         self.scanSummary = nil
     }
 
+    /// Starts or stops the FSEvents watcher based on the `library.watchForChanges` preference.
+    func startOrStopWatcher() async {
+        guard let scanner else { return }
+        if UserDefaults.standard.bool(forKey: "library.watchForChanges") {
+            await scanner.startWatching()
+        } else {
+            await scanner.stopWatching()
+        }
+    }
+
     /// Cancels any in-progress scan.
     func cancelScan() {
         self.scanTask?.cancel()
@@ -166,6 +176,7 @@ public extension LibraryViewModel {
                 await self.albums.load()
                 await self.artists.load()
                 await self.refreshRoots()
+                await self.startOrStopWatcher()
             }
 
         case .error, .removed:
