@@ -11,6 +11,7 @@ public struct MiniPlayerView: View {
     @ObservedObject public var vm: MiniPlayerViewModel
     @EnvironmentObject private var windowMode: WindowModeController
     @Environment(\.openWindow) private var openWindow
+    @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
 
     public init(vm: MiniPlayerViewModel) {
@@ -53,6 +54,7 @@ public struct MiniPlayerView: View {
             }
         }
         .onChange(of: self.vm.alwaysOnTop) { _, _ in self.applyWindowLevel() }
+        .preferredColorScheme(self.preferredColorScheme)
         .tint(AccentPalette.color(for: self.accentColorKey))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Mini Player")
