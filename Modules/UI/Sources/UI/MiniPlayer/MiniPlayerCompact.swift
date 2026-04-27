@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - MiniPlayerCompact
@@ -62,6 +63,10 @@ struct MiniPlayerCompact: View {
         HStack(spacing: 12) {
             Button {
                 self.library.showTagEditorForNowPlaying()
+                if let win = MainWindowTracker.shared.window {
+                    win.makeKeyAndOrderFront(nil)
+                }
+                NSApp.activate(ignoringOtherApps: true)
             } label: {
                 Image(systemName: "info.circle")
                     .font(.system(size: 14, weight: .medium))
