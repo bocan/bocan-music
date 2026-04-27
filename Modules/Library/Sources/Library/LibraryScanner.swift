@@ -24,6 +24,15 @@ public actor LibraryScanner {
     private var isScanning = false
     private let log = AppLogger.make(.library)
 
+    /// Called on the caller's context after FSEvents imports one or more files.
+    /// The ViewModel sets this to reload the tracks/albums/artists views.
+    public var onFileImported: (@Sendable () async -> Void)?
+
+    /// Sets the callback invoked after FSEvents imports one or more files.
+    public func setOnFileImported(_ handler: (@Sendable () async -> Void)?) {
+        self.onFileImported = handler
+    }
+
     // MARK: - Init
 
     public init(database: Database) {
@@ -61,10 +70,18 @@ public actor LibraryScanner {
         await self.watchNewRoot(path: url.path)
     }
 
-    /// Removes a root by its database ID.
+    /// Removes a root by its database ID and soft-deletes all tracks under it.
     public func removeRoot(id: Int64) async throws {
+        // Fetch the root path before deleting so we can disable its tracks.
+        let roots = try await self.rootRepo.fetchAll()
+        guard let root = roots.first(where: { $0.id == id }) else {
+            try await self.rootRepo.delete(id: id)
+            return
+        }
         try await self.rootRepo.delete(id: id)
-        self.log.info("library.root.removed", ["id": id])
+        let trackRepo = TrackRepository(database: self.database)
+        try await trackRepo.disableAll(underPath: root.path)
+        self.log.info("library.root.removed", ["id": id, "path": root.path])
     }
 
     /// Returns all persisted library roots.
@@ -233,6 +250,7 @@ public actor LibraryScanner {
     /// Handles a batch of FS-event URLs: filters to known audio extensions and
     /// triggers `scanSingleFile` for each matching, non-hidden file.
     private func handleFSChange(urls: [URL]) async {
+        var didImport = false
         for url in urls {
             guard !url.lastPathComponent.hasPrefix(".") else { continue }
             guard TagReader.isSupported(url) else { continue }
@@ -240,9 +258,13 @@ public actor LibraryScanner {
             do {
                 _ = try await self.scanSingleFile(url: url)
                 self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
+                didImport = true
             } catch {
                 self.log.warning("fsevents.rescan_failed", ["path": url.path, "error": "\(error)"])
             }
+        }
+        if didImport, let callback = self.onFileImported {
+            await callback()
         }
     }
 }
