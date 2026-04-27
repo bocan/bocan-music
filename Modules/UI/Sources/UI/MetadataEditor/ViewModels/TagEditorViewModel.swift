@@ -89,6 +89,10 @@ public final class TagEditorViewModel: ObservableObject {
         }
         guard !allTags.isEmpty else { return }
         self.populate(from: allTags)
+        // Populate DB-only fields (rating, loved, excludedFromShuffle) which are
+        // not stored in audio file tags and therefore absent from TrackTags.
+        let tracks = await (try? self.service.readTracks(ids: self.trackIDs)) ?? []
+        self.populateDBFields(from: tracks)
         // Load first front-cover for display (picture type 3 = front cover).
         let art = allTags.first?.coverArt.first { $0.pictureType == 3 }
             ?? allTags.first?.coverArt.first
@@ -251,6 +255,13 @@ public final class TagEditorViewModel: ObservableObject {
         self.sortArtist = Self.fieldState(allTags.map(\.sortArtist))
         self.sortAlbumArtist = Self.fieldState(allTags.map(\.sortAlbumArtist))
         self.sortAlbum = Self.fieldState(allTags.map(\.sortAlbum))
+    }
+
+    private func populateDBFields(from tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        self.rating = Self.fieldState(tracks.map { $0.rating == 0 ? nil : $0.rating })
+        self.loved = Self.fieldState(tracks.map(\.loved))
+        self.excludedFromShuffle = Self.fieldState(tracks.map(\.excludedFromShuffle))
     }
 
     private static func fieldState<T: Equatable>(_ values: [T?]) -> FieldState<T> {
