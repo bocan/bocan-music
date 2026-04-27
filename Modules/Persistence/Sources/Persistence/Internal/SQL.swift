@@ -15,6 +15,7 @@ enum SQL {
             FROM tracks
             JOIN tracks_fts ON tracks_fts.rowid = tracks.id
             WHERE tracks_fts MATCH ?
+              AND tracks.disabled = 0
             ORDER BY rank
             """,
             arguments: [escaped]
@@ -35,6 +36,7 @@ enum SQL {
             LEFT JOIN artists ON artists.id = tracks.artist_id
             LEFT JOIN albums  ON albums.id  = tracks.album_id
             WHERE tracks_fts MATCH ?
+              AND tracks.disabled = 0
             ORDER BY rank
             """,
             arguments: [escaped]
