@@ -10,11 +10,10 @@ import SwiftUI
 /// `NSPasteboard.PasteboardType.string`, so we read back with the same type
 /// — no UTI mismatch.
 ///
-/// All ordinary mouse/scroll events are forwarded to `nextResponder` so the
-/// SwiftUI content beneath (row text, context menus, list scroll) behaves
-/// exactly as if the overlay were not there.  `hitTest` returns `self` so
-/// AppKit's drag-destination lookup (which walks from the deepest hit-tested
-/// view upward) finds this view before any parent.
+/// `hitTest` returns `self` only during a live drag (leftMouseDragged) so that
+/// AppKit's drag-destination lookup finds this view.  All other events (clicks,
+/// scrolls, right-clicks) fall through to the underlying NSTableView so that
+/// normal row selection and context menus are unaffected.
 public final class DropTargetNSView: NSView {
     /// Set to `false` to silently decline every incoming drag (e.g. smart
     /// playlists and folders are not valid drop targets).
@@ -37,10 +36,13 @@ public final class DropTargetNSView: NSView {
         fatalError("init(coder:) is not supported")
     }
 
-    /// Pass right-clicks through so SwiftUI context menus on underlying rows work.
-    /// Drag-destination lookup uses a separate code path and is unaffected.
+    /// Only claim the hit during an active drag (leftMouseDragged) so AppKit's
+    /// drag-destination routing can find this view.  For all other events —
+    /// clicks, scrolls, right-clicks — return nil so the underlying NSTableView
+    /// receives them normally.  Forwarding via `nextResponder` is insufficient
+    /// because this view and the table are SwiftUI siblings, not parent/child.
     override public func hitTest(_ point: NSPoint) -> NSView? {
-        guard NSApp.currentEvent?.type != .rightMouseDown else { return nil }
+        guard NSApp.currentEvent?.type == .leftMouseDragged else { return nil }
         return bounds.contains(convert(point, from: superview)) ? self : nil
     }
 
@@ -80,33 +82,6 @@ public final class DropTargetNSView: NSView {
 
     override public func concludeDragOperation(_ sender: (any NSDraggingInfo)?) {
         self.isHighlighted = false
-    }
-
-    // MARK: - Mouse / scroll passthrough
-
-    /// Not a first responder — never steals keyboard focus.
-    override public var acceptsFirstResponder: Bool {
-        false
-    }
-
-    /// Forward all pointer and scroll events so the content underneath
-    /// (row selection, context menus, list scrolling) is unaffected.
-    override public func mouseDown(with event: NSEvent) {
-        nextResponder?.mouseDown(with: event)
-    }
-
-    override public func mouseUp(with event: NSEvent) {
-        nextResponder?.mouseUp(with: event)
-    }
-
-    override public func mouseDragged(with event: NSEvent) {
-        nextResponder?.mouseDragged(with: event)
-    }
-
-    /// rightMouseDown/rightMouseUp are not forwarded — hitTest returns nil for right-click
-    /// events so they never arrive here; the underlying SwiftUI rows handle them directly.
-    override public func scrollWheel(with event: NSEvent) {
-        nextResponder?.scrollWheel(with: event)
     }
 
     // MARK: - Drawing
