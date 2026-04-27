@@ -121,7 +121,28 @@ actor EditTransaction {
         // access this file and create temp siblings in the same directory.
         // The scope must remain active for the entire read-write-verify cycle.
         let rootURL = try await self.startRootScope(for: track.fileURL)
-        defer { rootURL?.stopAccessingSecurityScopedResource() }
+
+        // Fallback: if no folder root covers this file (e.g. it was added via
+        // "Add Files…" as an individual root), activate its per-file bookmark.
+        // This grants the sandbox read+write access to the specific file so that
+        // TagReader/TagWriter can open it and FileManager can replace it.
+        var perFileURL: URL? = nil
+        if rootURL == nil, let bookmark = track.fileBookmark {
+            var isStale = false
+            if let resolved = try? URL(
+                resolvingBookmarkData: bookmark,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            ), resolved.startAccessingSecurityScopedResource() {
+                perFileURL = resolved
+            }
+        }
+
+        defer {
+            rootURL?.stopAccessingSecurityScopedResource()
+            perFileURL?.stopAccessingSecurityScopedResource()
+        }
 
         // 2. Read current tags from file
         let currentTags = try await Task.detached(priority: .userInitiated) {
