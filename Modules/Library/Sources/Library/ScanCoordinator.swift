@@ -234,6 +234,16 @@ actor ScanCoordinator {
         if let ex = existingTrack, let exID = ex.id, ex.userEdited {
             let resolution = ConflictResolver.resolve(existingTrackID: exID, userEdited: true)
             if case let .conflict(trackID) = resolution {
+                // The user has manually edited this track's tags so we don't
+                // overwrite them — but we must still clear the disabled flag and
+                // refresh file-level fields so the track becomes visible again.
+                if ex.disabled {
+                    var updated = ex
+                    updated.disabled = false
+                    updated.fileSize = size
+                    updated.fileMtime = mtime
+                    try? await self.trackRepo.update(updated)
+                }
                 emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
                 return .conflict(trackID)
             }
