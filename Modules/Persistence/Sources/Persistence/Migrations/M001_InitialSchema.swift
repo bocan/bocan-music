@@ -1,7 +1,6 @@
 import Foundation
 import GRDB
 
-// swiftlint:disable file_length type_body_length
 /// The initial database schema: all tables, FTS virtual tables, triggers, and indexes.
 ///
 /// This migration is **append-only** once merged to `main`.
@@ -416,5 +415,3 @@ enum M001InitialSchema {
         }
     }
 }
-
-// swiftlint:enable file_length type_body_length

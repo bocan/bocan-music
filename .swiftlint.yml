@@ -108,6 +108,10 @@ function_body_length:
   error: 100
 
 file_length:
+  warning: 500
+  error: 700
+
+type_body_length:
   warning: 400
   error: 600
 

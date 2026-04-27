@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 // @preconcurrency: AVFoundation node types (AVAudioPlayerNode etc.) lack Sendable;
 // thread-safety is provided by AudioEngine's actor isolation.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
@@ -19,7 +18,7 @@ import Observability
 /// await engine.load(myURL)
 /// try await engine.play()
 /// ```
-public actor AudioEngine: Transport { // swiftlint:disable:this type_body_length
+public actor AudioEngine: Transport {
     // .default QoS: AVAudioPlayerNode.stop() blocks on AVFoundation's internal
     // default-QoS threads; running the actor at userInitiated caused priority
     // inversions (FB13119463). Real-time rendering is handled by AVFoundation's
