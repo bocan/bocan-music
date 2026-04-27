@@ -20,7 +20,7 @@ public struct LibrarySettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Music Sources") {
+            Section {
                 if self.vm.libraryRoots.isEmpty {
                     Text("No folders or files added yet.")
                         .foregroundStyle(.secondary)
@@ -64,6 +64,28 @@ public struct LibrarySettingsView: View {
                     }
                 }
                 .buttonStyle(.borderless)
+            } header: {
+                HStack(spacing: 6) {
+                    Text("Music Sources")
+                    if self.vm.isScanning {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .padding(.leading, 2)
+                        Text(self.vm.scanCurrentPath.isEmpty ? "Scanning…" : self.vm.scanCurrentPath)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: 200, alignment: .leading)
+                        Spacer()
+                        Button("Cancel") {
+                            self.vm.cancelScan()
+                        }
+                        .font(.caption)
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
         .formStyle(.grouped)
