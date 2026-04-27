@@ -43,7 +43,7 @@ public enum SQLBuilder {
 
         let sql = """
         SELECT tracks.* FROM tracks
-        \(joinSQL.isEmpty ? "" : joinSQL + "\n")WHERE \(whereClause)\(orderSQL)\(limitSQL)
+        \(joinSQL.isEmpty ? "" : joinSQL + "\n")WHERE tracks.disabled = 0 AND (\(whereClause))\(orderSQL)\(limitSQL)
         """
 
         return CompiledCriteria(
