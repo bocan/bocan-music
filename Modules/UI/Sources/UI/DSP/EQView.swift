@@ -187,21 +187,7 @@ public struct EQView: View {
     }
 
     private func applyBandChange(index: Int, gain: Double) {
-        guard let id = vm.state.eqPresetID,
-              let preset = vm.presets.first(where: { $0.id == id }) else { return }
-        var newGains = preset.bandGainsDB
-        guard index < newGains.count else { return }
-        newGains[index] = gain
-        let updated = EQPreset(
-            id: preset.id,
-            name: preset.name,
-            bandGainsDB: newGains,
-            isBuiltIn: preset.isBuiltIn,
-            outputGainDB: preset.outputGainDB
-        )
-        if !updated.isBuiltIn {
-            self.vm.presetStore.save(updated)
-        }
+        self.vm.updateBandGain(index: index, gain: gain)
     }
 
     private func toggleAB() {
