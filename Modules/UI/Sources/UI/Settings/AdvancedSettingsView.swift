@@ -61,7 +61,7 @@ public struct AdvancedSettingsView: View {
 
     private func revealDatabase() {
         guard let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
-        let dbURL = support.appendingPathComponent("Bocan/bocan.sqlite")
+        let dbURL = support.appendingPathComponent("Bocan/library.sqlite")
         NSWorkspace.shared.activateFileViewerSelecting([dbURL])
     }
 
