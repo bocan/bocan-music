@@ -124,12 +124,8 @@ public struct MiniPlayerView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
-            .help(
-                "Repeat: \(self.vm.nowPlaying.repeatMode == .off ? "Off" : self.vm.nowPlaying.repeatMode == .all ? "All" : "One") — click to cycle"
-            )
-            .accessibilityLabel(
-                "Repeat \(self.vm.nowPlaying.repeatMode == .off ? "Off" : self.vm.nowPlaying.repeatMode == .all ? "All" : "One")"
-            )
+            .help("Repeat: \(self.repeatModeLabel) — click to cycle")
+            .accessibilityLabel("Repeat \(self.repeatModeLabel)")
             .accessibilityAddTraits(.isToggle)
 
             Button {
@@ -222,9 +218,27 @@ public struct MiniPlayerView: View {
 
     private var preferredColorScheme: ColorScheme? {
         switch self.colorSchemeKey {
-        case "light": .light
-        case "dark": .dark
-        default: nil
+        case "light":
+            .light
+
+        case "dark":
+            .dark
+
+        default:
+            nil
+        }
+    }
+
+    private var repeatModeLabel: String {
+        switch self.vm.nowPlaying.repeatMode {
+        case .off:
+            "Off"
+
+        case .all:
+            "All"
+
+        case .one:
+            "One"
         }
     }
 }
