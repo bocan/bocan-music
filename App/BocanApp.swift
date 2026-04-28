@@ -112,57 +112,7 @@ struct BocanApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("Add Folder to Library…") {
-                    Task { await self.libraryViewModel.addFolderByPicker() }
-                }
-                .keyboardShortcut(KeyBindings.addFolder)
-
-                Button("Add Files to Library…") {
-                    Task { await self.libraryViewModel.addFilesByPicker() }
-                }
-                .keyboardShortcut(KeyBindings.addFiles)
-            }
-
-            CommandMenu("Playback") {
-                Button("Play / Pause") {
-                    Task { await self.libraryViewModel.nowPlaying.playPause() }
-                }
-                .keyboardShortcut(KeyBindings.playPause)
-            }
-
-            CommandGroup(after: .windowArrangement) {
-                Button("Toggle Miniplayer") {
-                    self.windowMode.toggleMiniPlayer()
-                }
-                .keyboardShortcut("m", modifiers: [.command, .option])
-            }
-
-            CommandMenu("Track") {
-                Button("Get Info") {
-                    self.libraryViewModel.showTagEditorForCurrentSelection()
-                }
-                .keyboardShortcut(KeyBindings.getInfo)
-                .disabled(!self.libraryViewModel.hasTrackSelection)
-
-                Button("Identify Track\u{2026}") {
-                    self.libraryViewModel.showIdentifyTrackForCurrentSelection()
-                }
-                .keyboardShortcut("i", modifiers: [.command, .option])
-                .disabled(!self.libraryViewModel.hasTrackSelection)
-
-                Button("Reveal in Finder") {
-                    self.libraryViewModel.revealSelectedInFinder()
-                }
-                .keyboardShortcut(KeyBindings.revealInFinder)
-                .disabled(!self.libraryViewModel.hasTrackSelection)
-
-                Divider()
-
-                Button("Love") {}
-                    .keyboardShortcut(KeyBindings.love)
-                    .disabled(true)
-            }
+            BocanCommands(vm: self.libraryViewModel, windowMode: self.windowMode)
         }
 
         // MARK: Mini player
@@ -276,6 +226,71 @@ struct BocanApp: App {
             "playback.rate": 1.0,
             "playback.gaplessPrerollSeconds": 5.0,
         ])
+    }
+}
+
+// MARK: - BocanCommands
+
+/// Application menu commands, extracted into a `Commands` struct so that
+/// `BocanApp.body` re-evaluations (triggered by `@StateObject` publishes) do
+/// not rebuild the menu bar.  SwiftUI diffs the struct's reference-type
+/// `@ObservedObject` and skips re-evaluation when the same objects are passed.
+private struct BocanCommands: Commands {
+    @ObservedObject var vm: LibraryViewModel
+    let windowMode: WindowModeController
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("Add Folder to Library…") {
+                Task { await self.vm.addFolderByPicker() }
+            }
+            .keyboardShortcut(KeyBindings.addFolder)
+
+            Button("Add Files to Library…") {
+                Task { await self.vm.addFilesByPicker() }
+            }
+            .keyboardShortcut(KeyBindings.addFiles)
+        }
+
+        CommandMenu("Playback") {
+            Button("Play / Pause") {
+                Task { await self.vm.nowPlaying.playPause() }
+            }
+            .keyboardShortcut(KeyBindings.playPause)
+        }
+
+        CommandGroup(after: .windowArrangement) {
+            Button("Toggle Miniplayer") {
+                self.windowMode.toggleMiniPlayer()
+            }
+            .keyboardShortcut("m", modifiers: [.command, .option])
+        }
+
+        CommandMenu("Track") {
+            Button("Get Info") {
+                self.vm.showTagEditorForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.getInfo)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Identify Track\u{2026}") {
+                self.vm.showIdentifyTrackForCurrentSelection()
+            }
+            .keyboardShortcut("i", modifiers: [.command, .option])
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Reveal in Finder") {
+                self.vm.revealSelectedInFinder()
+            }
+            .keyboardShortcut(KeyBindings.revealInFinder)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Love") {}
+                .keyboardShortcut(KeyBindings.love)
+                .disabled(true)
+        }
     }
 }
 
