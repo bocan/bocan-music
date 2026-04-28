@@ -73,7 +73,7 @@ public actor LyricsService {
     /// - Parameters:
     ///   - doc: Pass `nil` to delete existing lyrics.
     ///   - source: The source string to record (e.g. `"user"`, `"lrclib"`). Defaults to `"user"`.
-    ///   - persistToFile: Reserved for Phase 8's write path; currently a no-op.
+    ///   - persistToFile: When `true`, also writes the lyrics text back into the audio file's tags.
     public func setLyrics(
         _ doc: LyricsDocument?,
         for trackID: Int64,
@@ -110,7 +110,7 @@ public actor LyricsService {
         self.log.debug("lyrics.saved", ["track": trackID, "source": source])
 
         if persistToFile {
-            self.log.notice("lyrics.fileWrite.skipped", ["reason": "Phase 8 write path not yet wired"])
+            try await self.writeToFile(doc: doc, trackID: trackID)
         }
     }
 
@@ -123,8 +123,13 @@ public actor LyricsService {
         guard let fetcher,
               UserDefaults.standard.bool(forKey: "lyrics.lrclibEnabled") else { return nil }
 
-        let existing = try await lyrics(for: trackID)
-        guard existing == nil else { return existing }
+        // Only skip fetch if the user has manually edited, we already have an LRClib
+        // result, or a sidecar .lrc file is present.  Embedded (unsynced) lyrics don't
+        // block the fetch — LRClib may have synced lyrics that are better.
+        let row = try await lyricsRepo.fetch(trackID: trackID)
+        if let row, row.source == "user" { return self.parse(row: row) }
+        if let row, row.source == "lrclib" { return self.parse(row: row) }
+        if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
 
         guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
 
@@ -188,6 +193,39 @@ public actor LyricsService {
             }
         }
         return doc
+    }
+
+    private func writeToFile(doc: LyricsDocument, trackID: Int64) async throws {
+        guard let track = try? await trackRepo.fetch(id: trackID) else { return }
+        let url = URL(fileURLWithPath: track.fileURL)
+        let lyricsText: String = switch doc {
+        case let .unsynced(text):
+            text
+        case .synced:
+            doc.toLRC()
+        }
+
+        do {
+            if let bookmarkData = track.fileBookmark {
+                try await SecurityScope.withAccess(bookmarkData) { scopedURL in
+                    try await Task.detached(priority: .userInitiated) {
+                        var tags = try TagReader().read(from: scopedURL)
+                        tags.lyrics = lyricsText
+                        try TagWriter().write(tags, to: scopedURL)
+                    }.value
+                }
+            } else {
+                try await Task.detached(priority: .userInitiated) {
+                    var tags = try TagReader().read(from: url)
+                    tags.lyrics = lyricsText
+                    try TagWriter().write(tags, to: url)
+                }.value
+            }
+            self.log.debug("lyrics.fileWrite.done", ["track": trackID])
+        } catch {
+            self.log.error("lyrics.fileWrite.failed", ["track": trackID, "error": String(reflecting: error)])
+            throw error
+        }
     }
 
     private func loadSidecar(for trackID: Int64) async throws -> LyricsDocument? {
