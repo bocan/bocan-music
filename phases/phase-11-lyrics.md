@@ -12,7 +12,7 @@ Show lyrics for the current track. Support embedded unsynced lyrics, embedded sy
 
 - Commercial lyrics APIs with hostile T&Cs (Genius, Musixmatch) — explicitly excluded.
 - Karaoke-style word-level highlighting within a line — stretch; basic per-line is the v1 target.
-- Translations — stretch.
+- Translations.
 
 ## Outcome shape
 
