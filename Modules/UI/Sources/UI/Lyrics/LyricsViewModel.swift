@@ -59,6 +59,7 @@ public final class LyricsViewModel: ObservableObject {
 
         guard let trackID else { return }
         self.startObserving(trackID: trackID)
+        self.fetchIfMissing()
     }
 
     /// Updates `currentLineIndex` from the engine's playback position.

@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - LyricsService tests
 
-@Suite("LyricsService")
+@Suite("LyricsService", .serialized)
 struct LyricsServiceTests {
     // MARK: - Helpers
 
@@ -128,14 +128,17 @@ struct LyricsServiceTests {
 
     // MARK: - Auto-fetch
 
-    @Test("autoFetchIfMissing skips when fetcher is nil")
-    func autoFetchSkipsWithoutFetcher() async throws {
+    @Test("autoFetchIfMissing skips when lrclib consent is off")
+    func autoFetchSkipsWithoutConsent() async throws {
         let db = try await makeDB()
-        let svc = LyricsService(database: db, fetcher: nil)
+        let spy = SpyFetcher(returnDoc: .unsynced("Would fetch"))
+        let svc = self.makeService(db: db, fetcher: spy)
         let id = try await seedTrack(db: db)
+        UserDefaults.standard.set(false, forKey: "lyrics.lrclibEnabled")
 
         let result = try await svc.autoFetchIfMissing(for: id)
         #expect(result == nil)
+        #expect(!spy.wasCalled)
     }
 
     @Test("autoFetchIfMissing skips when lyrics already exist")
@@ -144,6 +147,8 @@ struct LyricsServiceTests {
         let spy = SpyFetcher()
         let svc = self.makeService(db: db, fetcher: spy)
         let id = try await seedTrack(db: db)
+        UserDefaults.standard.set(true, forKey: "lyrics.lrclibEnabled")
+        defer { UserDefaults.standard.removeObject(forKey: "lyrics.lrclibEnabled") }
 
         try await svc.setLyrics(.unsynced("existing"), for: id)
         _ = try await svc.autoFetchIfMissing(for: id)
@@ -157,6 +162,8 @@ struct LyricsServiceTests {
         let spy = SpyFetcher(returnDoc: .unsynced("From lrclib"))
         let svc = self.makeService(db: db, fetcher: spy)
         let id = try await seedTrack(db: db)
+        UserDefaults.standard.set(true, forKey: "lyrics.lrclibEnabled")
+        defer { UserDefaults.standard.removeObject(forKey: "lyrics.lrclibEnabled") }
 
         let result = try await svc.autoFetchIfMissing(for: id)
         #expect(spy.wasCalled)

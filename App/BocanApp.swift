@@ -243,8 +243,7 @@ struct BocanApp: App {
         _windowMode = StateObject(wrappedValue: WindowModeController())
         _dockTile = StateObject(wrappedValue: DockTileController())
 
-        let lrclibEnabled = UserDefaults.standard.bool(forKey: "lyrics.lrclibEnabled")
-        let lsvc = LyricsService(database: db, fetcher: lrclibEnabled ? LRClibClient() : nil)
+        let lsvc = LyricsService(database: db, fetcher: LRClibClient())
         self.lyricsService = lsvc
         self.lyricsViewModel = LyricsViewModel(service: lsvc)
 

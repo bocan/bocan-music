@@ -119,13 +119,14 @@ public actor LyricsService {
         }
     }
 
-    /// If no lyrics exist for `trackID` and a `fetcher` is configured, attempts to
-    /// retrieve lyrics from LRClib and saves the result.
+    /// If no lyrics exist for `trackID`, the user has enabled LRClib fetch, and a
+    /// `fetcher` is configured, attempts to retrieve lyrics and saves the result.
     ///
-    /// Returns the fetched document, or `nil` when nothing is available or consent
-    /// is absent (fetcher is `nil`).
+    /// Returns the fetched document, or `nil` when nothing is available, consent
+    /// is absent, or the fetcher is `nil`.
     public func autoFetchIfMissing(for trackID: Int64) async throws -> LyricsDocument? {
-        guard let fetcher else { return nil }
+        guard let fetcher,
+              UserDefaults.standard.bool(forKey: "lyrics.lrclibEnabled") else { return nil }
 
         let existing = try await lyrics(for: trackID)
         guard existing == nil else { return existing }
