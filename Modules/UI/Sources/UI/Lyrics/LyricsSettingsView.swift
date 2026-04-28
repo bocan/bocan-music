@@ -9,7 +9,7 @@ public struct LyricsSettingsView: View {
 
     @AppStorage("lyrics.autoShowPane") private var autoShowPane = false
     @AppStorage("lyrics.fontSizeDefault") private var fontSizeDefault: LyricsFontSize = .medium
-    @AppStorage("lyrics.sourcePriority") private var sourcePriority: LyricsSourcePriority = .preferEmbedded
+    @AppStorage("lyrics.sourcePriority") private var sourcePriority: LyricsSourcePriority = .preferSynced
     @AppStorage("lyrics.lrclibEnabled") private var lrclibEnabled = false
     @AppStorage("lyrics.embedOnSave") private var embedOnSave = false
 
