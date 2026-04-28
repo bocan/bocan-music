@@ -262,16 +262,14 @@ private struct BocanCommands: Commands {
                 Task { await self.vm.nowPlaying.playPause() }
             }
             .keyboardShortcut(KeyBindings.playPause)
-
-            Divider()
-
-            Button("Show Lyrics") {
-                self.lyricsVM.paneVisible = true
-            }
-            .keyboardShortcut("l", modifiers: .command)
         }
 
         CommandGroup(after: .windowArrangement) {
+            Button("Show Lyrics") {
+                self.lyricsVM.paneVisible.toggle()
+            }
+            .keyboardShortcut("l", modifiers: .command)
+
             Button("Toggle Miniplayer") {
                 self.windowMode.toggleMiniPlayer()
             }
