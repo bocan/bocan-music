@@ -19,26 +19,41 @@ public final class MiniPlayerViewModel: ObservableObject {
         /// SF Symbol representing this layout, shown on the cycle button.
         var icon: String {
             switch self {
-            case .strip: "minus"
-            case .compact: "rectangle"
-            case .square: "square"
+            case .strip:
+                "minus"
+
+            case .compact:
+                "rectangle"
+
+            case .square:
+                "square"
             }
         }
 
         /// Target window size when the user explicitly selects this layout.
         var defaultWindowSize: CGSize {
             switch self {
-            case .strip: CGSize(width: 420, height: 72)
-            case .compact: CGSize(width: 450, height: 145)
-            case .square: CGSize(width: 310, height: 310)
+            case .strip:
+                CGSize(width: 420, height: 72)
+
+            case .compact:
+                CGSize(width: 450, height: 145)
+
+            case .square:
+                CGSize(width: 310, height: 310)
             }
         }
 
-        func next() -> Layout {
+        func next() -> Self {
             switch self {
-            case .strip: .compact
-            case .compact: .square
-            case .square: .strip
+            case .strip:
+                .compact
+
+            case .compact:
+                .square
+
+            case .square:
+                .strip
             }
         }
     }
