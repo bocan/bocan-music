@@ -416,23 +416,25 @@ public final class TracksViewModel: ObservableObject {
         }
     }
 
+    private static let keyPathToColumn: [AnyKeyPath: TrackSortColumn] = [
+        \TrackRow.title: .title,
+        \TrackRow.artistName: .artist,
+        \TrackRow.albumName: .album,
+        \TrackRow.genre: .genre,
+        \TrackRow.year: .year,
+        \TrackRow.duration: .duration,
+        \TrackRow.playCount: .playCount,
+        \TrackRow.rating: .rating,
+        \TrackRow.addedAt: .addedAt,
+        \TrackRow.trackNumber: .trackNumber,
+        \TrackRow.trackTotal: .trackTotal,
+        \TrackRow.databaseID: .databaseID,
+    ]
+
     /// Reverse of `comparator(for:order:)` — recovers the persisted
     /// column identifier from a live comparator so `LibraryViewModel`
     /// can serialise `UIStateV1` without a parallel source of truth.
     private static func column(for comparator: KeyPathComparator<TrackRow>) -> TrackSortColumn? {
-        let keyPath = comparator.keyPath
-        if keyPath == \TrackRow.title { return .title }
-        if keyPath == \TrackRow.artistName { return .artist }
-        if keyPath == \TrackRow.albumName { return .album }
-        if keyPath == \TrackRow.genre { return .genre }
-        if keyPath == \TrackRow.year { return .year }
-        if keyPath == \TrackRow.duration { return .duration }
-        if keyPath == \TrackRow.playCount { return .playCount }
-        if keyPath == \TrackRow.rating { return .rating }
-        if keyPath == \TrackRow.addedAt { return .addedAt }
-        if keyPath == \TrackRow.trackNumber { return .trackNumber }
-        if keyPath == \TrackRow.trackTotal { return .trackTotal }
-        if keyPath == \TrackRow.databaseID { return .databaseID }
-        return nil
+        self.keyPathToColumn[comparator.keyPath]
     }
 }
