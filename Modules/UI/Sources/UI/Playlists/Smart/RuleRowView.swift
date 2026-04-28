@@ -198,6 +198,16 @@ private struct ValueControl: View {
 
     @ViewBuilder
     private var typedControl: some View {
+        // inLastDays / inLastMonths use an integer count, even for date fields.
+        if self.rule.comparator == .inLastDays || self.rule.comparator == .inLastMonths {
+            self.intControl
+        } else {
+            self.typedControlByDataType
+        }
+    }
+
+    @ViewBuilder
+    private var typedControlByDataType: some View {
         let def = FieldDefinitions.definition(for: self.rule.field)
         switch def.dataType {
         case .text:
