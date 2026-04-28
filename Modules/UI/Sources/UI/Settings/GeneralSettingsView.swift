@@ -23,7 +23,7 @@ public struct GeneralSettingsView: View {
 
             Section("Notifications") {
                 Toggle("Show track-change notifications", isOn: self.$showNotifications)
-                    .onChange(of: self.showNotifications) { enabled in
+                    .onChange(of: self.showNotifications) { _, enabled in
                         if enabled { self.requestNotificationAuth() }
                     }
                 Text("Notifications only appear when Bòcan is not in the foreground.")
