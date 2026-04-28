@@ -86,15 +86,15 @@ struct BocanApp: App {
     private let database: Database
     private let engine: AudioEngine
     private let player: QueuePlayer
-    @StateObject private var libraryViewModel: LibraryViewModel
-    @StateObject private var dspViewModel: DSPViewModel
-    // private let, not @StateObject: MiniPlayerViewModel.objectWillChange fires on every
-    // playback tick (forwarded from NowPlayingViewModel).  @StateObject would subscribe
-    // App.body to those ticks, rebuilding the Window menu 60× per second.  MiniPlayerView
-    // observes the instance directly via @ObservedObject, so the mini player still updates.
+    // All four are private let, not @StateObject. @StateObject would subscribe App.body
+    // to objectWillChange on each, rebuilding the menu bar on every selection change,
+    // playback tick, or scan update. Child views and environment objects observe these
+    // instances directly; BocanApp.body only needs the references, not reactivity.
+    private let libraryViewModel: LibraryViewModel
+    private let dspViewModel: DSPViewModel
     private let miniPlayerViewModel: MiniPlayerViewModel
-    @StateObject private var windowMode: WindowModeController
-    @StateObject private var dockTile: DockTileController
+    private let windowMode: WindowModeController
+    private let dockTile: DockTileController
     private let lyricsService: LyricsService
     private let lyricsViewModel: LyricsViewModel
 
@@ -112,7 +112,7 @@ struct BocanApp: App {
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
-            BocanCommands(vm: self.libraryViewModel, windowMode: self.windowMode)
+            BocanCommands(vm: self.libraryViewModel, windowMode: self.windowMode, lyricsVM: self.lyricsViewModel)
         }
 
         // MARK: Mini player
@@ -187,11 +187,11 @@ struct BocanApp: App {
         self.player = qp
 
         let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
-        _libraryViewModel = StateObject(wrappedValue: lvm)
-        _dspViewModel = StateObject(wrappedValue: DSPViewModel(engine: eng, presetStore: presetStore))
+        self.libraryViewModel = lvm
+        self.dspViewModel = DSPViewModel(engine: eng, presetStore: presetStore)
         self.miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
-        _windowMode = StateObject(wrappedValue: WindowModeController())
-        _dockTile = StateObject(wrappedValue: DockTileController())
+        self.windowMode = WindowModeController()
+        self.dockTile = DockTileController()
 
         let lsvc = LyricsService(database: db, fetcher: LRClibClient())
         self.lyricsService = lsvc
@@ -231,13 +231,18 @@ struct BocanApp: App {
 
 // MARK: - BocanCommands
 
-/// Application menu commands, extracted into a `Commands` struct so that
-/// `BocanApp.body` re-evaluations (triggered by `@StateObject` publishes) do
-/// not rebuild the menu bar.  SwiftUI diffs the struct's reference-type
-/// `@ObservedObject` and skips re-evaluation when the same objects are passed.
+/// Application menu commands.
+///
+/// Stored as plain `let` references (not `@ObservedObject`) so this struct's
+/// `body` never re-evaluates due to observable publishes.  `BocanApp.body`
+/// itself is also free of `@StateObject` subscriptions, meaning the menu bar
+/// is only rebuilt on `showMenuBarExtra` changes — not on every selection or
+/// playback tick.  Track-menu items are always enabled; actions guard
+/// internally against empty selections.
 private struct BocanCommands: Commands {
-    @ObservedObject var vm: LibraryViewModel
+    let vm: LibraryViewModel
     let windowMode: WindowModeController
+    let lyricsVM: LyricsViewModel
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -257,6 +262,13 @@ private struct BocanCommands: Commands {
                 Task { await self.vm.nowPlaying.playPause() }
             }
             .keyboardShortcut(KeyBindings.playPause)
+
+            Divider()
+
+            Button("Show Lyrics") {
+                self.lyricsVM.paneVisible = true
+            }
+            .keyboardShortcut("l", modifiers: .command)
         }
 
         CommandGroup(after: .windowArrangement) {
@@ -271,19 +283,16 @@ private struct BocanCommands: Commands {
                 self.vm.showTagEditorForCurrentSelection()
             }
             .keyboardShortcut(KeyBindings.getInfo)
-            .disabled(!self.vm.hasTrackSelection)
 
             Button("Identify Track\u{2026}") {
                 self.vm.showIdentifyTrackForCurrentSelection()
             }
             .keyboardShortcut("i", modifiers: [.command, .option])
-            .disabled(!self.vm.hasTrackSelection)
 
             Button("Reveal in Finder") {
                 self.vm.revealSelectedInFinder()
             }
             .keyboardShortcut(KeyBindings.revealInFinder)
-            .disabled(!self.vm.hasTrackSelection)
 
             Divider()
 

@@ -67,7 +67,6 @@ public struct BocanRootView: View {
                             }
                         }
                         .help("Toggle lyrics pane (⌘L)")
-                        .keyboardShortcut("l", modifiers: .command)
                     }
                 }
 

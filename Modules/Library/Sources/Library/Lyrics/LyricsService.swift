@@ -34,40 +34,35 @@ public actor LyricsService {
 
     // MARK: - Public API
 
-    /// Resolves the best available lyrics for `trackID` using the configured priority.
+    /// Resolves the best available lyrics for `trackID` using the priority
+    /// stored in `UserDefaults` under `"lyrics.sourcePriority"`.
     ///
-    /// Resolution order (default / `preferEmbedded`):
-    /// 1. User-edited DB row (`source = "user"`).
-    /// 2. Embedded synced (DB row with `source = "embedded"` + `is_synced = true`).
-    /// 3. Sidecar `.lrc` file adjacent to the audio file.
-    /// 4. Embedded unsynced (DB row with `source = "embedded"`).
-    /// 5. Fetched from LRClib (`source = "lrclib"`).
+    /// **preferSynced** (default): user → sidecar .lrc → embedded synced → lrclib → embedded unsynced
+    /// **preferEmbedded / preferUser**: user → embedded synced → sidecar .lrc → embedded unsynced → lrclib
     public func lyrics(for trackID: Int64) async throws -> LyricsDocument? {
         let row = try await lyricsRepo.fetch(trackID: trackID)
 
-        // 1. User-edited row has the highest priority.
+        // User edits always win regardless of priority.
         if let row, row.source == "user" {
             return self.parse(row: row)
         }
 
-        // 2. Embedded synced.
-        if let row, row.source == "embedded", row.isSynced {
-            return self.parse(row: row)
-        }
+        let priority = LyricsSourcePriority(
+            rawValue: UserDefaults.standard.string(forKey: "lyrics.sourcePriority") ?? ""
+        ) ?? .preferSynced
 
-        // 3. Sidecar .lrc.
-        if let sidecar = try await self.loadSidecar(for: trackID) {
-            return sidecar
-        }
+        switch priority {
+        case .preferSynced:
+            if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
+            if let row, row.source == "embedded", row.isSynced { return self.parse(row: row) }
+            if let row, row.source == "lrclib" { return self.parse(row: row) }
+            if let row, row.source == "embedded", !row.isSynced { return self.parse(row: row) }
 
-        // 4. Embedded unsynced.
-        if let row, row.source == "embedded", !row.isSynced {
-            return self.parse(row: row)
-        }
-
-        // 5. Fetched.
-        if let row, row.source == "lrclib" {
-            return self.parse(row: row)
+        case .preferEmbedded, .preferUser:
+            if let row, row.source == "embedded", row.isSynced { return self.parse(row: row) }
+            if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
+            if let row, row.source == "embedded", !row.isSynced { return self.parse(row: row) }
+            if let row, row.source == "lrclib" { return self.parse(row: row) }
         }
 
         return nil
@@ -157,17 +152,16 @@ public actor LyricsService {
     }
 
     /// Returns a stream that re-emits the resolved ``LyricsDocument`` whenever the
-    /// underlying DB row changes.
-    ///
-    /// Note: sidecar files are not watched; the stream reflects DB state only.
+    /// underlying DB row changes.  Each emission runs the full priority resolution
+    /// (including sidecar check and `lyrics.sourcePriority` setting).
     public func observe(_ trackID: Int64) -> AsyncThrowingStream<LyricsDocument?, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
                     let inner = await self.lyricsRepo.observe(trackID: trackID)
-                    for try await row in inner {
+                    for try await _ in inner {
                         try Task.checkCancellation()
-                        let doc: LyricsDocument? = row.flatMap { self.parse(row: $0) }
+                        let doc = try await self.lyrics(for: trackID)
                         continuation.yield(doc)
                     }
                     continuation.finish()
