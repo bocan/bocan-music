@@ -38,6 +38,7 @@ public struct Migrator {
         M008SmartLimitSort.register(in: &dm)
         M009AcoustID.register(in: &dm)
         M010DSPAssignments.register(in: &dm)
+        M011LyricsOffset.register(in: &dm)
         return Self(inner: dm)
     }
 

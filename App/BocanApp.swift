@@ -95,12 +95,14 @@ struct BocanApp: App {
     private let miniPlayerViewModel: MiniPlayerViewModel
     @StateObject private var windowMode: WindowModeController
     @StateObject private var dockTile: DockTileController
+    private let lyricsService: LyricsService
+    private let lyricsViewModel: LyricsViewModel
 
     var body: some Scene {
         // MARK: Main window
 
         WindowGroup("Bòcan", id: "main") {
-            BocanRootView(vm: self.libraryViewModel)
+            BocanRootView(vm: self.libraryViewModel, lyricsVM: self.lyricsViewModel)
                 .environmentObject(self.dspViewModel)
                 .environmentObject(self.windowMode)
                 .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
@@ -198,21 +200,7 @@ struct BocanApp: App {
     }
 
     init() {
-        // Register UserDefaults defaults for all @AppStorage keys whose default
-        // value is not the UserDefaults zero-value (false/0/"").  Without this,
-        // any code that reads UserDefaults.standard directly (e.g. startOrStopWatcher)
-        // before the user has explicitly set a preference gets the zero-value instead
-        // of the intended default, causing silent no-ops on first launch.
-        UserDefaults.standard.register(defaults: [
-            "library.watchForChanges": true,
-            "ui.windowMode.restoresLastMode": true,
-            "appearance.colorScheme": "system",
-            "appearance.accentColor": "system",
-            "appearance.rowDensity": "regular",
-            "advanced.logLevel": "info",
-            "playback.rate": 1.0,
-            "playback.gaplessPrerollSeconds": 5.0,
-        ])
+        Self.registerDefaults()
 
         self.log.info("app.launched", ["version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"])
         #if os(macOS)
@@ -255,6 +243,11 @@ struct BocanApp: App {
         _windowMode = StateObject(wrappedValue: WindowModeController())
         _dockTile = StateObject(wrappedValue: DockTileController())
 
+        let lrclibEnabled = UserDefaults.standard.bool(forKey: "lyrics.lrclibEnabled")
+        let lsvc = LyricsService(database: db, fetcher: lrclibEnabled ? LRClibClient() : nil)
+        self.lyricsService = lsvc
+        self.lyricsViewModel = LyricsViewModel(service: lsvc)
+
         // Forward NSWorkspace wake events to the sleep timer.
         // QueuePlayer lives in the Playback module and must not import AppKit,
         // so the wake subscription lives here in the app target.
@@ -269,6 +262,21 @@ struct BocanApp: App {
 
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp)
+    }
+
+    // MARK: - Private helpers
+
+    private static func registerDefaults() {
+        UserDefaults.standard.register(defaults: [
+            "library.watchForChanges": true,
+            "ui.windowMode.restoresLastMode": true,
+            "appearance.colorScheme": "system",
+            "appearance.accentColor": "system",
+            "appearance.rowDensity": "regular",
+            "advanced.logLevel": "info",
+            "playback.rate": 1.0,
+            "playback.gaplessPrerollSeconds": 5.0,
+        ])
     }
 }
 

@@ -109,6 +109,18 @@ public enum A11y {
     public enum SearchResults {
         public static let results = "searchResults"
     }
+
+    // MARK: - Lyrics
+
+    public enum Lyrics {
+        public static let pane = "lyricsPane"
+        public static let closeButton = "lyricsPane.close"
+        public static let emptyState = "lyricsPane.emptyState"
+        public static let unsyncedScroll = "lyricsPane.unsyncedScroll"
+        public static let syncedScroll = "lyricsPane.syncedScroll"
+        public static let editor = "lyricsEditor"
+        public static let insertTimestampButton = "lyricsEditor.insertTimestamp"
+    }
 }
 
 /// Legacy flat alias — retained so any UITest code written before the

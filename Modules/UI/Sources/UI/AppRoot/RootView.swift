@@ -18,6 +18,7 @@ import UniformTypeIdentifiers
 /// passing it manually through every level.
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
+    @ObservedObject private var lyricsVM: LyricsViewModel
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
@@ -27,37 +28,58 @@ public struct BocanRootView: View {
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
 
-    public init(vm: LibraryViewModel) {
+    public init(vm: LibraryViewModel, lyricsVM: LyricsViewModel) {
         _vm = StateObject(wrappedValue: vm)
+        self.lyricsVM = lyricsVM
     }
 
     public var body: some View {
-        VStack(spacing: 0) {
-            NavigationSplitView {
-                Sidebar(vm: self.vm)
-            } detail: {
-                ContentPane(vm: self.vm)
-            }
-            .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
-            .toolbar {
-                ToolbarItemGroup(placement: .navigation) {
-                    Button("Back", systemImage: "chevron.left") {
-                        Task { await self.vm.goBack() }
-                    }
-                    .disabled(!self.vm.canGoBack)
-                    .help("Back")
-                    .keyboardShortcut("[", modifiers: .command)
-
-                    Button("Forward", systemImage: "chevron.right") {
-                        Task { await self.vm.goForward() }
-                    }
-                    .disabled(!self.vm.canGoForward)
-                    .help("Forward")
-                    .keyboardShortcut("]", modifiers: .command)
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                NavigationSplitView {
+                    Sidebar(vm: self.vm)
+                } detail: {
+                    ContentPane(vm: self.vm)
                 }
+                .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
+                .toolbar {
+                    ToolbarItemGroup(placement: .navigation) {
+                        Button("Back", systemImage: "chevron.left") {
+                            Task { await self.vm.goBack() }
+                        }
+                        .disabled(!self.vm.canGoBack)
+                        .help("Back")
+                        .keyboardShortcut("[", modifiers: .command)
+
+                        Button("Forward", systemImage: "chevron.right") {
+                            Task { await self.vm.goForward() }
+                        }
+                        .disabled(!self.vm.canGoForward)
+                        .help("Forward")
+                        .keyboardShortcut("]", modifiers: .command)
+
+                        Button(
+                            self.lyricsVM.paneVisible ? "Hide Lyrics" : "Show Lyrics",
+                            systemImage: "text.quote"
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.lyricsVM.paneVisible.toggle()
+                            }
+                        }
+                        .help("Toggle lyrics pane (⌘L)")
+                        .keyboardShortcut("l", modifiers: .command)
+                    }
+                }
+
+                NowPlayingStrip(vm: self.vm.nowPlaying)
             }
 
-            NowPlayingStrip(vm: self.vm.nowPlaying)
+            LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
+                Task { await self.vm.nowPlaying.scrub(to: pos) }
+            }
+        }
+        .onChange(of: self.vm.nowPlaying.nowPlayingTrackID) { _, trackID in
+            self.lyricsVM.trackDidChange(trackID: trackID)
         }
         .environmentObject(self.vm)
         .task {
