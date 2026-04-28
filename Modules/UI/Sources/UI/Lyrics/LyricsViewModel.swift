@@ -22,6 +22,8 @@ public final class LyricsViewModel: ObservableObject {
     /// Whether the lyrics pane is visible.
     @AppStorage("lyrics.paneVisible") public var paneVisible = false
 
+    @AppStorage("lyrics.autoShowPane") private var autoShowPane = false
+
     /// Display font size bucket for the lyrics pane.
     @AppStorage("lyrics.fontSize") public var fontSizeKey: LyricsFontSize = .medium
 
@@ -139,6 +141,9 @@ public final class LyricsViewModel: ObservableObject {
                     await MainActor.run {
                         self.document = doc
                         self.currentLineIndex = nil
+                        if doc != nil, self.autoShowPane {
+                            self.paneVisible = true
+                        }
                     }
                 }
             } catch is CancellationError {
