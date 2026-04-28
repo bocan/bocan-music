@@ -60,7 +60,13 @@
       "Bash(xcodebuild -scheme Bocan -configuration Debug -destination 'platform=macOS' build)",
       "Bash(xcodebuild -scheme Bòcan -destination 'platform=macOS' build)",
       "Bash(xcodebuild -list)",
-      "Bash(git check-ignore *)"
+      "Bash(git check-ignore *)",
+      "Bash(git -C /Users/chris/Play/bocan-music stash)",
+      "Bash(git -C /Users/chris/Play/bocan-music stash pop)",
+      "Bash(git -C /Users/chris/Play/bocan-music checkout .claude/settings.local.json)",
+      "Bash(git -C /Users/chris/Play/bocan-music log --oneline Modules/Library/Tests/LibraryTests/ScanCoordinatorTests.swift)",
+      "Bash(git -C /Users/chris/Play/bocan-music stash -- Modules/UI/Tests)",
+      "Bash(git -C /Users/chris/Play/bocan-music log --oneline -- Modules/UI/Tests/UITests/ViewModelTests/SnapshotTests.swift)"
     ]
   },
   "enabledPlugins": {
