@@ -23,6 +23,7 @@ public final class LyricsViewModel: ObservableObject {
     @AppStorage("lyrics.paneVisible") public var paneVisible = false
 
     @AppStorage("lyrics.autoShowPane") private var autoShowPane = false
+    @AppStorage("lyrics.embedOnSave") private var embedOnSave = false
 
     /// Display font size bucket for the lyrics pane.
     @AppStorage("lyrics.fontSize") public var fontSizeKey: LyricsFontSize = .medium
@@ -96,9 +97,10 @@ public final class LyricsViewModel: ObservableObject {
     public func save(text: String) {
         guard let trackID = currentTrackID else { return }
         let doc: LyricsDocument = .unsynced(text)
+        let embed = self.embedOnSave
         Task {
             do {
-                try await self.service.setLyrics(doc, for: trackID, source: "user")
+                try await self.service.setLyrics(doc, for: trackID, source: "user", persistToFile: embed)
             } catch {
                 self.log.error("lyrics.save.failed", ["error": String(reflecting: error)])
             }
@@ -108,9 +110,10 @@ public final class LyricsViewModel: ObservableObject {
     /// Saves a fully-formed ``LyricsDocument`` (from the editor's synced wizard).
     public func save(document: LyricsDocument) {
         guard let trackID = currentTrackID else { return }
+        let embed = self.embedOnSave
         Task {
             do {
-                try await self.service.setLyrics(document, for: trackID, source: "user")
+                try await self.service.setLyrics(document, for: trackID, source: "user", persistToFile: embed)
             } catch {
                 self.log.error("lyrics.save.failed", ["error": String(reflecting: error)])
             }
