@@ -21,22 +21,28 @@ public struct Lyrics: Codable, FetchableRecord, PersistableRecord, Sendable {
     /// Whether `lyricsText` contains LRC time-code markers.
     public var isSynced: Bool
 
-    /// Where the lyrics came from: `"embedded"`, `"lrc-file"`, or `"fetched"`.
+    /// Where the lyrics came from: `"embedded"`, `"lrc-file"`, `"user"`, or `"lrclib"`.
     public var source: String?
+
+    /// Per-track display offset in milliseconds applied on top of any `[offset:]` tag.
+    ///
+    /// Positive values mean the lyrics run ahead of the audio (subtract from timestamps).
+    public var offsetMS: Int
 
     // MARK: - Init
 
-    /// Memberwise initialiser.
     public init(
         trackID: Int64,
         lyricsText: String? = nil,
         isSynced: Bool = false,
-        source: String? = nil
+        source: String? = nil,
+        offsetMS: Int = 0
     ) {
         self.trackID = trackID
         self.lyricsText = lyricsText
         self.isSynced = isSynced
         self.source = source
+        self.offsetMS = offsetMS
     }
 
     // MARK: - CodingKeys
@@ -46,5 +52,6 @@ public struct Lyrics: Codable, FetchableRecord, PersistableRecord, Sendable {
         case lyricsText = "lyrics_text"
         case isSynced = "is_synced"
         case source
+        case offsetMS = "offset_ms"
     }
 }
