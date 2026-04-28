@@ -165,12 +165,13 @@ actor TrackImporter {
 
         // Persist lyrics if present
         if let lyricsText = tags.lyrics, !lyricsText.isEmpty {
-            let lines = LRCParser.parse(lyricsText)
-            let isLRC = lines.contains { $0.timestamp != nil }
+            let doc = LRCParser.parseDocument(lyricsText)
             let lyricsRecord = Lyrics(
                 trackID: id,
                 lyricsText: lyricsText,
-                isSynced: isLRC,
+                isSynced: { if case .synced = doc { return true }
+                    return false
+                }(),
                 source: "embedded"
             )
             try await lyricsRepo.save(lyricsRecord)

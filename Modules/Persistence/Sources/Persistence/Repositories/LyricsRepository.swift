@@ -22,7 +22,7 @@ public struct LyricsRepository: Sendable {
         try await self.database.write { db in
             try lyrics.save(db)
         }
-        self.log.debug("lyrics.save", ["track": lyrics.trackID])
+        self.log.debug("lyrics.save", ["track": lyrics.trackID, "source": lyrics.source ?? "nil"])
     }
 
     /// Deletes lyrics for `trackID`.
@@ -41,6 +41,15 @@ public struct LyricsRepository: Sendable {
     /// Fetches the lyrics for `trackID`, or `nil` if none are stored.
     public func fetch(trackID: Int64) async throws -> Lyrics? {
         try await self.database.read { db in
+            try Lyrics.fetchOne(db, key: trackID)
+        }
+    }
+
+    // MARK: - Observation
+
+    /// Returns a stream that emits the `Lyrics` row for `trackID` (or `nil`) on every change.
+    public func observe(trackID: Int64) async -> AsyncThrowingStream<Lyrics?, Error> {
+        await self.database.observe { db in
             try Lyrics.fetchOne(db, key: trackID)
         }
     }

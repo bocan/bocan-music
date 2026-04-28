@@ -40,6 +40,10 @@ public struct SettingsScene: View {
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
                 .tag(SettingsTab.advanced)
 
+            LyricsSettingsView()
+                .tabItem { Label("Lyrics", systemImage: "text.quote") }
+                .tag(SettingsTab.lyrics)
+
             AboutView()
                 .tabItem { Label("About", systemImage: "info.circle") }
                 .tag(SettingsTab.about)
@@ -51,5 +55,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, about
+    case general, library, playback, dsp, appearance, advanced, lyrics, about
 }
