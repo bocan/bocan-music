@@ -51,6 +51,7 @@ public struct BocanRootView: View {
                     ContentPane(vm: self.vm)
                 }
                 .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
+                .searchFocused(self.$searchFocused)
                 .toolbar {
                     ToolbarItemGroup(placement: .navigation) {
                         Button("Back", systemImage: "chevron.left") {
@@ -142,6 +143,19 @@ public struct BocanRootView: View {
         .frame(minWidth: 900, minHeight: 550)
         .accessibilityIdentifier("BocanMainWindow")
         .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
+        .background(
+            // Phase 4 audit H2: persist sidebar divider position via NSSplitView
+            // autosave + a settings-key fallback held on LibraryViewModel.
+            SidebarWidthAutosave(initialWidth: self.vm.sidebarWidth) { width in
+                self.vm.sidebarWidth = width
+            }
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+        )
+        .onChange(of: self.vm.searchFocusRequestID) { _, _ in
+            // Phase 4 audit H5: ⌘F (Find) focuses the search field.
+            self.searchFocused = true
+        }
         .alert(
             "Playback Error",
             isPresented: self.playbackErrorBinding

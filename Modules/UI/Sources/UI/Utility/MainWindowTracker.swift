@@ -78,3 +78,84 @@ final class WindowMenuExcludeView: NSView {
         }
     }
 }
+
+// MARK: - SidebarWidthAutosave
+
+/// Phase 4 audit H2: enables AppKit's built-in `NSSplitView` autosave so the
+/// sidebar divider position survives app relaunches, and reports width
+/// changes back to `LibraryViewModel` so we can also persist via the
+/// `ui.state.v2` settings key (cross-machine profile portability).
+///
+/// SwiftUI's `NavigationSplitView` does not expose its underlying
+/// `NSSplitView` directly, so we walk the window's content view hierarchy
+/// once the view is mounted, set `autosaveName`, and install a delegate
+/// that forwards divider moves.
+struct SidebarWidthAutosave: NSViewRepresentable {
+    let initialWidth: Double?
+    let onWidthChange: (Double) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.attach(to: view, coordinator: context.coordinator)
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            self.attach(to: nsView, coordinator: context.coordinator)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onWidthChange: self.onWidthChange)
+    }
+
+    private func attach(to view: NSView, coordinator: Coordinator) {
+        guard coordinator.attached == false,
+              let window = view.window,
+              let splitView = Self.findSplitView(in: window.contentView) else { return }
+        splitView.autosaveName = "BocanRootSplitView"
+        if coordinator.previousDelegate == nil {
+            coordinator.previousDelegate = splitView.delegate
+        }
+        coordinator.splitView = splitView
+        splitView.delegate = coordinator
+        coordinator.attached = true
+
+        // Seed initial width if AppKit's autosave didn't already restore one
+        // larger than the SwiftUI default.  Negative / zero widths are ignored.
+        if let width = initialWidth, width > 0,
+           splitView.arrangedSubviews.count >= 2 {
+            splitView.setPosition(CGFloat(width), ofDividerAt: 0)
+        }
+    }
+
+    private static func findSplitView(in view: NSView?) -> NSSplitView? {
+        guard let view else { return nil }
+        if let split = view as? NSSplitView { return split }
+        for child in view.subviews {
+            if let found = Self.findSplitView(in: child) { return found }
+        }
+        return nil
+    }
+
+    final class Coordinator: NSObject, NSSplitViewDelegate {
+        let onWidthChange: (Double) -> Void
+        weak var splitView: NSSplitView?
+        weak var previousDelegate: NSSplitViewDelegate?
+        var attached = false
+
+        init(onWidthChange: @escaping (Double) -> Void) {
+            self.onWidthChange = onWidthChange
+        }
+
+        func splitViewDidResizeSubviews(_ notification: Notification) {
+            self.previousDelegate?.splitViewDidResizeSubviews?(notification)
+            guard let splitView,
+                  let sidebar = splitView.arrangedSubviews.first else { return }
+            self.onWidthChange(Double(sidebar.frame.width))
+        }
+    }
+}
