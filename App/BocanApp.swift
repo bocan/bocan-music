@@ -101,6 +101,8 @@ struct BocanApp: App {
     private let visualizerViewModel: VisualizerViewModel
     private let scrobbleService: ScrobbleService
     private let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
+    private let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
+    private let routeViewModel: RouteViewModel
 
     var body: some Scene {
         // MARK: Main window
@@ -109,7 +111,8 @@ struct BocanApp: App {
             BocanRootView(
                 vm: self.libraryViewModel,
                 lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel
+                visualizerVM: self.visualizerViewModel,
+                routeVM: self.routeViewModel
             )
             .environmentObject(self.dspViewModel)
             .environmentObject(self.windowMode)
@@ -204,11 +207,10 @@ struct BocanApp: App {
 
         // Build the scrobble service before the player so the sink can be wired in.
         let scrobbleParts = Self.makeScrobble(database: db, log: self.log)
-        let scrobble = scrobbleParts.service
-        self.scrobbleService = scrobble
+        self.scrobbleService = scrobbleParts.service
         self.scrobbleSettingsViewModel = scrobbleParts.viewModel
 
-        let qp = QueuePlayer(engine: eng, database: db, scrobbleSink: scrobble)
+        let qp = QueuePlayer(engine: eng, database: db, scrobbleSink: scrobbleParts.service)
         let scanner = LibraryScanner(database: db)
 
         self.database = db
@@ -226,6 +228,8 @@ struct BocanApp: App {
         self.lyricsService = lsvc
         self.lyricsViewModel = LyricsViewModel(service: lsvc)
         self.visualizerViewModel = VisualizerViewModel(engine: eng)
+        // Phase 15: AirPlay routing — `routeManager` is set at declaration.
+        self.routeViewModel = Self.makeRouteViewModel(manager: self.routeManager)
 
         // Forward NSWorkspace wake events to the sleep timer.
         // QueuePlayer lives in the Playback module and must not import AppKit,
@@ -243,7 +247,7 @@ struct BocanApp: App {
         registerTerminationObserver(player: qp)
 
         // Start scrobble worker once everything is wired up.
-        Task { [scrobble] in await scrobble.start() }
+        Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
     }
 
     // MARK: - Private helpers
@@ -264,6 +268,13 @@ struct BocanApp: App {
     private struct ScrobbleParts {
         let service: ScrobbleService
         let viewModel: ScrobbleSettingsViewModel
+    }
+
+    @MainActor
+    private static func makeRouteViewModel(manager: RouteManager) -> RouteViewModel {
+        let viewModel = RouteViewModel(manager: manager)
+        viewModel.start()
+        return viewModel
     }
 
     private static func makeScrobble(database db: Database, log: AppLogger) -> ScrobbleParts {
