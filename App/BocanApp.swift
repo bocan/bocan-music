@@ -250,6 +250,13 @@ struct BocanApp: App {
         // FSEvents may stop firing reliably across long sleeps.
         Self.installLibraryWakeObserver(scanner: scanner)
 
+        // Phase 3 audit M1: kick off the FSEvents watcher at app launch (gated on
+        // the `library.watchForChanges` preference).  Without this, FSEvents stay
+        // silent until the user navigates into the Library view, breaking the
+        // "files appear without manual rescan" acceptance criterion when the user
+        // lands on Now Playing or launches via the dock.
+        Task { [weak lvm] in await lvm?.startOrStopWatcher() }
+
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp, database: db)
 
@@ -379,99 +386,6 @@ struct BocanApp: App {
             NSWorkspace.shared.open(url)
         }
         return ScrobbleParts(service: service, viewModel: viewModel)
-    }
-}
-
-// MARK: - BocanCommands
-
-/// Application menu commands.
-///
-/// Stored as plain `let` references (not `@ObservedObject`) so this struct's
-/// `body` never re-evaluates due to observable publishes.  `BocanApp.body`
-/// itself is also free of `@StateObject` subscriptions, meaning the menu bar
-/// is only rebuilt on `showMenuBarExtra` changes — not on every selection or
-/// playback tick.  Track-menu items are always enabled; actions guard
-/// internally against empty selections.
-private struct BocanCommands: Commands {
-    let vm: LibraryViewModel
-    let windowMode: WindowModeController
-    let lyricsVM: LyricsViewModel
-    let visualizerVM: VisualizerViewModel
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some Commands {
-        CommandGroup(replacing: .newItem) {
-            Button("Add Folder to Library…") {
-                Task { await self.vm.addFolderByPicker() }
-            }
-            .keyboardShortcut(KeyBindings.addFolder)
-
-            Button("Add Files to Library…") {
-                Task { await self.vm.addFilesByPicker() }
-            }
-            .keyboardShortcut(KeyBindings.addFiles)
-
-            Divider()
-
-            Button("Import Playlist…") {
-                self.vm.isPlaylistImportSheetPresented = true
-            }
-            .keyboardShortcut("o", modifiers: [.command, .shift])
-        }
-
-        CommandMenu("Playback") {
-            Button("Play / Pause") {
-                Task { await self.vm.nowPlaying.playPause() }
-            }
-            .keyboardShortcut(KeyBindings.playPause)
-        }
-
-        CommandGroup(after: .windowArrangement) {
-            Button("Show Lyrics") {
-                self.lyricsVM.paneVisible.toggle()
-            }
-            .keyboardShortcut("l", modifiers: .command)
-
-            Button(self.visualizerVM.paneVisible ? "Hide Visualizer" : "Show Visualizer") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    self.visualizerVM.paneVisible.toggle()
-                }
-            }
-            .keyboardShortcut("v", modifiers: [.command, .shift])
-
-            Button("Open Fullscreen Visualizer") {
-                self.openWindow(id: "visualizer-fullscreen")
-            }
-            .keyboardShortcut("f", modifiers: [.command, .shift])
-
-            Button("Toggle Miniplayer") {
-                self.windowMode.toggleMiniPlayer()
-            }
-            .keyboardShortcut("m", modifiers: [.command, .option])
-        }
-
-        CommandMenu("Track") {
-            Button("Get Info") {
-                self.vm.showTagEditorForCurrentSelection()
-            }
-            .keyboardShortcut(KeyBindings.getInfo)
-
-            Button("Identify Track\u{2026}") {
-                self.vm.showIdentifyTrackForCurrentSelection()
-            }
-            .keyboardShortcut("i", modifiers: [.command, .option])
-
-            Button("Reveal in Finder") {
-                self.vm.revealSelectedInFinder()
-            }
-            .keyboardShortcut(KeyBindings.revealInFinder)
-
-            Divider()
-
-            Button("Love") {}
-                .keyboardShortcut(KeyBindings.love)
-                .disabled(true)
-        }
     }
 }
 

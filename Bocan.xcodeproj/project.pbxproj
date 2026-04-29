@@ -37,6 +37,7 @@
 		905B83A145C60C115F496A91 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = E05BB587A6FC66933F79D585 /* Playback */; };
 		9C385BADF495477668F1AA60 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EFCF37422883F3C0CF718D56 /* Persistence */; };
 		AE7DBDB3DD4836389E11BAC5 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
+		B8271C1D9DA274E689DACA81 /* BocanCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1792042403A11B4E098A3A /* BocanCommands.swift */; };
 		BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */; };
 		BF2E14746809D06614CA8246 /* libx264.165.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EAE5B0E69C35644EFB27D606 /* libx264.165.dylib */; };
 		C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */; };
@@ -72,6 +73,7 @@
 		82F9CA039EA2E967BAA21F51 /* AlbumsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlbumsViewModelTests.swift; sourceTree = "<group>"; };
 		8312FA03D246CA845C348E77 /* Playback */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Playback; path = Modules/Playback; sourceTree = SOURCE_ROOT; };
 		8929B62314FB8D67123CC447 /* PlaylistDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailViewModelTests.swift; sourceTree = "<group>"; };
+		8A1792042403A11B4E098A3A /* BocanCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BocanCommands.swift; sourceTree = "<group>"; };
 		8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLoggerTests.swift; sourceTree = "<group>"; };
 		8C85F460580B049360716FE5 /* Observability */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Observability; path = Modules/Observability; sourceTree = SOURCE_ROOT; };
 		92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizerViewModelTests.swift; sourceTree = "<group>"; };
@@ -94,7 +96,7 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_39919CFF-39C4-4388-A839-B90B3D5C9FD7" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_6E88FA25-E113-4B94-B8A3-6BB4CB01D2EF" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,6 +258,7 @@
 			isa = PBXGroup;
 			children = (
 				B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */,
+				8A1792042403A11B4E098A3A /* BocanCommands.swift */,
 				E86C2B2FF5D1DDE98868F4E4 /* DebugAudioView.swift */,
 				B6A9FE99C1399ECBBA9D4681 /* Lifecycle.swift */,
 				3D8E8EC191BDB21827F3BBAE /* RootView.swift */,
@@ -279,10 +282,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_7546AB4C-7C79-4F0B-A195-A3B4556D9F32" /* bocan-music */ = {
+		"TEMP_53E32300-388D-4F55-B9CB-D10C631A369D" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_39919CFF-39C4-4388-A839-B90B3D5C9FD7" /* Secrets.xcconfig */,
+				"TEMP_6E88FA25-E113-4B94-B8A3-6BB4CB01D2EF" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -450,6 +453,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */,
+				B8271C1D9DA274E689DACA81 /* BocanCommands.swift in Sources */,
 				83D1988AE70AF6C6F97FC1A3 /* DebugAudioView.swift in Sources */,
 				CCA52E05E1A09E45F6450688 /* Lifecycle.swift in Sources */,
 				DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */,
@@ -501,7 +505,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_39919CFF-39C4-4388-A839-B90B3D5C9FD7" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_6E88FA25-E113-4B94-B8A3-6BB4CB01D2EF" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -634,7 +638,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_39919CFF-39C4-4388-A839-B90B3D5C9FD7" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_6E88FA25-E113-4B94-B8A3-6BB4CB01D2EF" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;

@@ -49,6 +49,7 @@ public struct LibrarySettingsView: View {
                                     .foregroundStyle(.red)
                             }
                             .buttonStyle(.borderless)
+                            .help("Remove \(url.lastPathComponent) from library (does not delete files on disk)")
                             .accessibilityLabel("Remove \(url.lastPathComponent) from library")
                         }
                         .help(root.path)
@@ -59,9 +60,13 @@ public struct LibrarySettingsView: View {
                     Button("Add Folder…") {
                         Task { await self.vm.addFolderByPicker() }
                     }
+                    .help("Choose a folder containing music to add to your library")
+                    .accessibilityLabel("Add folder to library")
                     Button("Add Files…") {
                         Task { await self.vm.addFilesByPicker() }
                     }
+                    .help("Choose individual audio files to add to your library")
+                    .accessibilityLabel("Add files to library")
                 }
                 .buttonStyle(.borderless)
             } header: {
@@ -84,6 +89,8 @@ public struct LibrarySettingsView: View {
                         .font(.caption)
                         .buttonStyle(.borderless)
                         .foregroundStyle(.secondary)
+                        .help("Cancel the in-progress library scan")
+                        .accessibilityLabel("Cancel library scan")
                     }
                 }
             }
