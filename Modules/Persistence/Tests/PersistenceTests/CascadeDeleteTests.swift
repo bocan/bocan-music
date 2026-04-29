@@ -76,15 +76,36 @@ struct CascadeDeleteTests {
         var track = self.makeTrack()
         track.albumID = albumID
         let trackID = try await trackRepo.insert(track)
-        // Remove the FK link manually (since albums.id isn't ON DELETE CASCADE for tracks.album_id)
+        // Phase-2 audit #2: dropping the album must cascade album_id → NULL
+        // via SQLite's ON DELETE SET NULL action; the track itself survives.
         try await db.write { grdb in
-            try grdb.execute(
-                sql: "UPDATE tracks SET album_id = NULL WHERE id = ?",
-                arguments: [trackID]
-            )
             _ = try Album.deleteOne(grdb, key: albumID)
         }
         let fetched = try await trackRepo.fetch(id: trackID)
         #expect(fetched.albumID == nil)
+        #expect(fetched.id == trackID)
+    }
+
+    @Test("Delete artist sets artist_id and album_artist_id to NULL on tracks")
+    func deleteArtistNullsTrackArtistIDs() async throws {
+        let db = try await makeDatabase()
+        let artistRepo = ArtistRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let artist = try await artistRepo.findOrCreate(name: "Temp Artist")
+        guard let artistID = artist.id else {
+            Issue.record("findOrCreate returned an artist without an id")
+            return
+        }
+        var track = self.makeTrack()
+        track.artistID = artistID
+        track.albumArtistID = artistID
+        let trackID = try await trackRepo.insert(track)
+        try await db.write { grdb in
+            _ = try Artist.deleteOne(grdb, key: artistID)
+        }
+        let fetched = try await trackRepo.fetch(id: trackID)
+        #expect(fetched.artistID == nil)
+        #expect(fetched.albumArtistID == nil)
+        #expect(fetched.id == trackID)
     }
 }

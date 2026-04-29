@@ -41,6 +41,7 @@ public struct Migrator {
         M011LyricsOffset.register(in: &dm)
         M012Scrobbling.register(in: &dm)
         M013CueVirtualTracks.register(in: &dm)
+        M014ForeignKeyActions.register(in: &dm)
         return Self(inner: dm)
     }
 

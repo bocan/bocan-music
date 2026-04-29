@@ -18,11 +18,28 @@ public struct TrackRepository: Sendable {
 
     // MARK: - Write
 
+    /// Computes the canonical album-track sort key from disc/track numbers.
+    ///
+    /// Phase 2 spec: `printf('%02d.%04d', disc_number, track_number)` — stable
+    /// lexicographic ordering across all albums.  Treats nil values as 0 so a
+    /// track with no track number still sorts ahead of `01.0001`.
+    private static func computedSortKey(for track: Track) -> String {
+        String(format: "%02d.%04d", track.discNumber ?? 0, track.trackNumber ?? 0)
+    }
+
+    /// Returns `track` with `albumTrackSortKey` populated if absent.
+    private static func withSortKey(_ track: Track) -> Track {
+        guard track.albumTrackSortKey == nil else { return track }
+        var copy = track
+        copy.albumTrackSortKey = self.computedSortKey(for: track)
+        return copy
+    }
+
     /// Inserts `track` and returns the new `id`.
     @discardableResult
     public func insert(_ track: Track) async throws -> Int64 {
         let id: Int64 = try await self.database.write { db in
-            var mutable = track
+            var mutable = Self.withSortKey(track)
             try mutable.insert(db)
             guard let rowID = mutable.id else {
                 throw PersistenceError.notFound(entity: "Track", id: -1)
@@ -36,8 +53,9 @@ public struct TrackRepository: Sendable {
     /// Updates all columns of an existing `track`.
     public func update(_ track: Track) async throws {
         guard let id = track.id else { return }
+        let prepared = Self.withSortKey(track)
         try await self.database.write { db in
-            try track.update(db)
+            try prepared.update(db)
         }
         self.log.debug("track.update", ["id": id])
     }
@@ -60,7 +78,7 @@ public struct TrackRepository: Sendable {
     public func upsert(_ track: Track) async throws -> Int64 {
         let normalised = track.fileURL.precomposedStringWithCanonicalMapping
         let id: Int64 = try await self.database.write { db in
-            var mutable = track
+            var mutable = Self.withSortKey(track)
             // Normalise file_url before upsert to avoid phantom duplicates on APFS.
             mutable.fileURL = normalised
             try mutable.upsert(db)
