@@ -124,6 +124,12 @@ public struct EBUR128: Sendable {
     ) -> Result {
         precondition(leftSamples.count == rightSamples.count, "Channel arrays must match in length")
 
+        // Empty input → return the floor result rather than crashing in any of the
+        // downstream loops (block analysis, K-weighting, true-peak interpolation).
+        guard !leftSamples.isEmpty else {
+            return Result(integratedLUFS: -70.0, truePeakLinear: 0, blockCount: 0)
+        }
+
         let coeffs = self.kWeightCoefficients(sampleRate: sampleRate)
 
         // K-weight both channels
@@ -216,6 +222,11 @@ public struct EBUR128: Sendable {
 
         func maxInterpolated(_ samples: [Float]) {
             let n = samples.count
+            guard n > 0 else { return }
+            if n == 1 {
+                peak = Swift.max(peak, Swift.abs(Double(samples[0])))
+                return
+            }
             for i in 0 ..< n - 1 {
                 for k in 0 ..< factor {
                     let t = Double(k) / Double(factor)
