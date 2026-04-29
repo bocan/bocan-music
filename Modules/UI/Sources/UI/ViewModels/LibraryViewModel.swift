@@ -82,6 +82,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     @Published public var libraryRoots: [LibraryRoot] = []
     @Published public var isDragTargeted = false
 
+    // MARK: - Playlist import/export sheet flags
+
+    @Published public var isPlaylistImportSheetPresented = false
+    @Published public var playlistExportRequest: PlaylistExportRequest?
+
+    public struct PlaylistExportRequest: Identifiable, Equatable {
+        public let id: Int64
+        public let name: String
+    }
+
     // MARK: - Child view-models
 
     public let tracks: TracksViewModel
@@ -91,6 +101,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public let playlistSidebar: PlaylistSidebarViewModel
     public let playlistService: PlaylistService
     public let smartPlaylistService: SmartPlaylistService
+    public let playlistImporter: PlaylistImportService
+    public let playlistExporter: PlaylistExportService
 
     // MARK: - Dependencies
 
@@ -130,6 +142,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.playlistService = playlistService
         self.playlistSidebar = PlaylistSidebarViewModel(service: playlistService)
         self.smartPlaylistService = SmartPlaylistService(database: database)
+        let (importer, exporter) = Self.makePlaylistIO(
+            database: database,
+            trackRepo: trackRepo,
+            playlistService: playlistService
+        )
+        self.playlistImporter = importer
+        self.playlistExporter = exporter
         self.artists = ArtistsViewModel(repository: artistRepo)
         self.nowPlaying = NowPlayingViewModel(engine: engine, database: database)
 
@@ -143,6 +162,20 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 Task { await self.loadCurrentDestination() }
             }
 
+        self.wirePlaylistCallbacks()
+
+        // Seed built-in smart presets on first run (idempotent), then reload
+        // the sidebar so presets appear even if the initial load raced ahead.
+        let sps = self.smartPlaylistService
+        Task {
+            try? await BuiltInSmartPresets.seed(using: sps)
+            await self.playlistSidebar.reload()
+        }
+
+        self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
+    }
+
+    private func wirePlaylistCallbacks() {
         // Wire the NowPlayingStrip play button to start from the library when the
         // queue is empty.
         self.nowPlaying.onPlayFromEmptyQueue = { [weak self] in
@@ -164,15 +197,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             }
         }
 
-        // Seed built-in smart presets on first run (idempotent), then reload
-        // the sidebar so presets appear even if the initial load raced ahead.
-        let sps = self.smartPlaylistService
-        Task {
-            try? await BuiltInSmartPresets.seed(using: sps)
-            await self.playlistSidebar.reload()
+        self.playlistSidebar.onRequestExport = { [weak self] id, name in
+            self?.playlistExportRequest = .init(id: id, name: name)
         }
-
-        self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
     }
 
     private static func makeFingerprintQueue(database: Database) -> FingerprintQueue? {
@@ -181,6 +208,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
               !apiKey.isEmpty else { return nil }
         let service = FingerprintService(database: database, fpcalcURL: fpcalcURL, acoustIDAPIKey: apiKey)
         return FingerprintQueue(service: service)
+    }
+
+    private static func makePlaylistIO(
+        database: Database,
+        trackRepo: TrackRepository,
+        playlistService: PlaylistService
+    ) -> (PlaylistImportService, PlaylistExportService) {
+        let resolver = TrackResolver(trackRepo: trackRepo)
+        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService)
+        let exporter = PlaylistExportService(database: database)
+        return (importer, exporter)
     }
 
     // MARK: - Tag editor
