@@ -19,6 +19,7 @@ import UniformTypeIdentifiers
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
     @ObservedObject private var lyricsVM: LyricsViewModel
+    @ObservedObject private var visualizerVM: VisualizerViewModel
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
@@ -28,9 +29,10 @@ public struct BocanRootView: View {
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
 
-    public init(vm: LibraryViewModel, lyricsVM: LyricsViewModel) {
+    public init(vm: LibraryViewModel, lyricsVM: LyricsViewModel, visualizerVM: VisualizerViewModel) {
         _vm = StateObject(wrappedValue: vm)
         self.lyricsVM = lyricsVM
+        self.visualizerVM = visualizerVM
     }
 
     public var body: some View {
@@ -71,10 +73,17 @@ public struct BocanRootView: View {
                 }
 
                 NowPlayingStrip(vm: self.vm.nowPlaying)
+                    .environmentObject(self.visualizerVM)
             }
 
-            LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
-                Task { await self.vm.nowPlaying.scrub(to: pos) }
+            // Lyrics and Visualizer panes are mutually exclusive — both occupy the
+            // same trailing overlay slot. Visualizer wins when both are toggled on.
+            if self.visualizerVM.paneVisible {
+                VisualizerPane(vm: self.visualizerVM)
+            } else {
+                LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
+                    Task { await self.vm.nowPlaying.scrub(to: pos) }
+                }
             }
         }
         .onChange(of: self.vm.nowPlaying.nowPlayingTrackID) { _, trackID in
