@@ -90,4 +90,18 @@ struct EBUR128Tests {
         // Both should measure the same signal; LUFS should be within 1 LU of each other
         #expect(abs(r48.integratedLUFS - r44.integratedLUFS) < 1.0)
     }
+
+    @Test("Empty input returns the floor result instead of crashing")
+    func emptyInputReturnsFloor() {
+        let result = EBUR128.measure(leftSamples: [], rightSamples: [], sampleRate: 48000)
+        #expect(result.integratedLUFS == -70.0)
+        #expect(result.truePeakLinear == 0)
+        #expect(result.blockCount == 0)
+    }
+
+    @Test("Single-sample input does not crash")
+    func singleSampleInput() {
+        let result = EBUR128.measure(leftSamples: [0.5], rightSamples: [0.5], sampleRate: 48000)
+        #expect(result.truePeakLinear == 0.5)
+    }
 }
