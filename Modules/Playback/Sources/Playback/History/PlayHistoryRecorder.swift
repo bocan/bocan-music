@@ -100,6 +100,14 @@ public actor PlayHistoryRecorder {
         self.hasScrobbled = false
     }
 
+    /// Call when a gapless handoff has occurred — the outgoing track played
+    /// to its full natural length and was seamlessly replaced. Equivalent to
+    /// `trackDidEnd(elapsed:)` with `elapsed = trackDuration`, but doesn't
+    /// require the caller to know the previous track's duration.
+    public func trackDidEndNaturally() async {
+        await self.trackDidEnd(elapsed: self.trackDuration)
+    }
+
     // MARK: - Private
 
     private func meetsThreshold(elapsed: TimeInterval, duration: TimeInterval) -> Bool {
