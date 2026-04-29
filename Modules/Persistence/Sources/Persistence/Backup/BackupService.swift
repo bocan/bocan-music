@@ -37,10 +37,14 @@ public struct BackupService: Sendable {
                 withIntermediateDirectories: true,
                 attributes: nil
             )
-            try await self.database.write { sourceDB in
-                let destQueue = try DatabaseQueue(path: destinationURL.path)
-                try sourceDB.backup(to: destQueue.internalDatabase)
-            }
+            // Use SQLite's online backup API via GRDB's writer-to-writer
+            // overload.  The previous implementation tried to extract the
+            // raw `GRDB.Database` from a queue's `read` closure — that
+            // closure releases the connection back to the pool on return,
+            // so by the time `sourceDB.backup(to:)` ran the destination
+            // handle had become invalid (Phase 2 audit #6).
+            let destQueue = try DatabaseQueue(path: destinationURL.path)
+            try await self.database.backup(to: destQueue)
             self.log.debug("backup.end", ["destination": destinationURL.path])
         } catch let error as PersistenceError {
             throw error
@@ -77,16 +81,5 @@ public struct BackupService: Sendable {
         let dest = dir.appendingPathComponent("library-\(timestamp).sqlite")
         try await self.backup(to: dest)
         return true
-    }
-}
-
-// MARK: - GRDB internal database access
-
-private extension DatabaseQueue {
-    /// Exposes the raw GRDB.Database for use with the backup API.
-    var internalDatabase: GRDB.Database {
-        get throws {
-            try self.read { $0 }
-        }
     }
 }

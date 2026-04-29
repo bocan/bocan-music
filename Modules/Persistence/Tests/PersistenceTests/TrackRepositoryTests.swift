@@ -129,4 +129,46 @@ struct TrackRepositoryTests {
         let count = try await repo.count()
         #expect(count == 1)
     }
+
+    @Test("Insert auto-populates album_track_sort_key from disc/track numbers (audit #4)")
+    func insertPopulatesAlbumTrackSortKey() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        var t = self.makeTrack()
+        t.discNumber = 1
+        t.trackNumber = 7
+        let id = try await repo.insert(t)
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.albumTrackSortKey == "01.0007")
+    }
+
+    @Test("Upsert auto-populates album_track_sort_key (audit #4)")
+    func upsertPopulatesAlbumTrackSortKey() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        var t = self.makeTrack()
+        t.discNumber = 2
+        t.trackNumber = 3
+        let id = try await repo.upsert(t)
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.albumTrackSortKey == "02.0003")
+    }
+
+    @Test("Update refreshes album_track_sort_key when caller leaves it nil (audit #4)")
+    func updateRecomputesSortKeyWhenNil() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        var t = self.makeTrack()
+        t.discNumber = 1
+        t.trackNumber = 1
+        let id = try await repo.insert(t)
+        var fetched = try await repo.fetch(id: id)
+        // Caller edits track number and clears the cached key; repository
+        // should recompute on write so list ordering stays correct.
+        fetched.trackNumber = 12
+        fetched.albumTrackSortKey = nil
+        try await repo.update(fetched)
+        let final = try await repo.fetch(id: id)
+        #expect(final.albumTrackSortKey == "01.0012")
+    }
 }

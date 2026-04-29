@@ -145,4 +145,92 @@ struct FTSSearchTests {
         }
         #expect(results.count == 1)
     }
+
+    @Test("Renaming an artist updates tracks_fts.artist_name (audit #3)")
+    func renamingArtistRefreshesTrackFTS() async throws {
+        let db = try await makeDatabase()
+        let artistRepo = ArtistRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        var artist = try await artistRepo.findOrCreate(name: "Old Name")
+        guard let artistID = artist.id else {
+            Issue.record("findOrCreate did not yield an id")
+            return
+        }
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(
+            fileURL: "file:///tmp/rename-fts.flac",
+            fileSize: 1,
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 1,
+            title: "Some Song",
+            addedAt: now,
+            updatedAt: now
+        )
+        track.artistID = artistID
+        _ = try await trackRepo.insert(track)
+
+        // Pre-rename: search by old artist name finds the track.
+        let pre = try await db.read { grdb in
+            try SQL.tracksFTSQuery("Old Name").fetchAll(grdb)
+        }
+        #expect(pre.count == 1)
+
+        // Rename the artist.
+        artist.name = "Brand New Name"
+        try await artistRepo.update(artist)
+
+        // Post-rename: old name is gone, new name resolves.
+        let oldHits = try await db.read { grdb in
+            try SQL.tracksFTSQuery("Old Name").fetchAll(grdb)
+        }
+        #expect(oldHits.isEmpty)
+        let newHits = try await db.read { grdb in
+            try SQL.tracksFTSQuery("Brand New").fetchAll(grdb)
+        }
+        #expect(newHits.count == 1)
+    }
+
+    @Test("Renaming an album updates tracks_fts.album_title (audit #3)")
+    func renamingAlbumRefreshesTrackFTS() async throws {
+        let db = try await makeDatabase()
+        let albumRepo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let albumID = try await albumRepo.insert(Album(title: "Old Album"))
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(
+            fileURL: "file:///tmp/rename-album-fts.flac",
+            fileSize: 1,
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 1,
+            title: "Track One",
+            addedAt: now,
+            updatedAt: now
+        )
+        track.albumID = albumID
+        _ = try await trackRepo.insert(track)
+
+        let pre = try await db.read { grdb in
+            try SQL.tracksFTSQuery("Old Album").fetchAll(grdb)
+        }
+        #expect(pre.count == 1)
+
+        var album = try #require(
+            try await db.read { grdb in
+                try Album.fetchOne(grdb, key: albumID)
+            }
+        )
+        album.title = "Renamed Album"
+        try await albumRepo.update(album)
+
+        let oldHits = try await db.read { grdb in
+            try SQL.tracksFTSQuery("Old Album").fetchAll(grdb)
+        }
+        #expect(oldHits.isEmpty)
+        let newHits = try await db.read { grdb in
+            try SQL.tracksFTSQuery("Renamed").fetchAll(grdb)
+        }
+        #expect(newHits.count == 1)
+    }
 }
