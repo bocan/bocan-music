@@ -4,14 +4,20 @@ import SwiftUI
 // MARK: - CandidatePickerView
 
 /// Displays the ranked list of identification candidates for the user to pick from.
+///
+/// Each row is expandable into a per-field selector: the user ticks the
+/// individual fields they want to accept ("Apply selected") rather than
+/// having every tag overwritten in one go.
 struct CandidatePickerView: View {
     let candidates: [IdentificationCandidate]
-    let onApply: (IdentificationCandidate) async -> Void
+    let currentValues: CurrentTagValues
+    let onApply: (IdentificationCandidate, Set<IdentifyTagField>) async -> Void
     let onSkip: () -> Void
 
     @State private var expandedID: String?
     @State private var applying: String?
     @State private var applied: String?
+    @State private var fieldSelection: [String: Set<IdentifyTagField>] = [:]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -19,6 +25,12 @@ struct CandidatePickerView: View {
                 .font(.headline)
                 .padding(.horizontal)
                 .padding(.top, 16)
+                .padding(.bottom, 4)
+
+            Text("Tick the fields you want to accept — anything unchecked is left as-is.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
                 .padding(.bottom, 8)
 
             Divider()
@@ -26,18 +38,34 @@ struct CandidatePickerView: View {
             List(self.candidates) { candidate in
                 CandidateRow(
                     candidate: candidate,
+                    currentValues: self.currentValues,
+                    selection: self.binding(for: candidate),
                     isExpanded: self.expandedID == candidate.id,
                     isApplying: self.applying == candidate.id,
                     isApplied: self.applied == candidate.id,
                     onToggle: {
                         withAnimation(.easeInOut) {
-                            self.expandedID = self.expandedID == candidate.id ? nil : candidate.id
+                            if self.expandedID == candidate.id {
+                                self.expandedID = nil
+                            } else {
+                                self.expandedID = candidate.id
+                                if self.fieldSelection[candidate.id] == nil {
+                                    self.fieldSelection[candidate.id] = Self.defaultSelection(
+                                        candidate: candidate,
+                                        current: self.currentValues
+                                    )
+                                }
+                            }
                         }
                     },
                     onApply: {
+                        let fields = self.fieldSelection[candidate.id] ?? Self.defaultSelection(
+                            candidate: candidate,
+                            current: self.currentValues
+                        )
                         self.applying = candidate.id
                         Task {
-                            await self.onApply(candidate)
+                            await self.onApply(candidate, fields)
                             self.applied = candidate.id
                             self.applying = nil
                         }
@@ -56,12 +84,51 @@ struct CandidatePickerView: View {
             .padding()
         }
     }
+
+    private func binding(for candidate: IdentificationCandidate) -> Binding<Set<IdentifyTagField>> {
+        Binding(
+            get: {
+                self.fieldSelection[candidate.id] ?? Self.defaultSelection(
+                    candidate: candidate,
+                    current: self.currentValues
+                )
+            },
+            set: { self.fieldSelection[candidate.id] = $0 }
+        )
+    }
+
+    /// Default to selecting fields where the candidate offers a value that
+    /// differs from the current track value (and ignoring fields the
+    /// candidate doesn't carry).
+    private static func defaultSelection(
+        candidate: IdentificationCandidate,
+        current: CurrentTagValues
+    ) -> Set<IdentifyTagField> {
+        var fields: Set<IdentifyTagField> = []
+        if candidate.title != (current.title ?? "") { fields.insert(.title) }
+        if candidate.artist != (current.artist ?? "") { fields.insert(.artist) }
+        if let albumArtist = candidate.albumArtist, albumArtist != (current.albumArtist ?? "") {
+            fields.insert(.albumArtist)
+        }
+        if let album = candidate.album, album != (current.album ?? "") { fields.insert(.album) }
+        if let genre = candidate.genre, genre != (current.genre ?? "") { fields.insert(.genre) }
+        if let trackNumber = candidate.trackNumber, trackNumber != (current.trackNumber ?? -1) {
+            fields.insert(.trackNumber)
+        }
+        if let discNumber = candidate.discNumber, discNumber != (current.discNumber ?? -1) {
+            fields.insert(.discNumber)
+        }
+        if let year = candidate.year, year != (current.year ?? -1) { fields.insert(.year) }
+        return fields
+    }
 }
 
 // MARK: - CandidateRow
 
 private struct CandidateRow: View {
     let candidate: IdentificationCandidate
+    let currentValues: CurrentTagValues
+    @Binding var selection: Set<IdentifyTagField>
     let isExpanded: Bool
     let isApplying: Bool
     let isApplied: Bool
@@ -102,27 +169,48 @@ private struct CandidateRow: View {
             )
 
             if self.isExpanded {
-                self.detailGrid
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                FieldSelectionGrid(
+                    candidate: self.candidate,
+                    currentValues: self.currentValues,
+                    selection: self.$selection
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                if let mbid = self.candidate.mbRecordingID {
+                    HStack(spacing: 6) {
+                        Text("MBID")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                        Text(mbid)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
 
                 HStack {
+                    Button("Select All") { self.selectAll() }
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                    Button("Select None") { self.selection.removeAll() }
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
                     Spacer()
                     if self.isApplied {
                         Label("Applied", systemImage: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                             .font(.subheadline)
                     } else {
-                        Button("Apply") {
-                            self.onApply()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(self.isApplying)
-                        .overlay {
-                            if self.isApplying {
-                                ProgressView()
-                                    .scaleEffect(0.7)
+                        Button("Apply Selected") { self.onApply() }
+                            .buttonStyle(.borderedProminent)
+                            .disabled(self.selection.isEmpty || self.isApplying)
+                            .overlay {
+                                if self.isApplying {
+                                    ProgressView().scaleEffect(0.7)
+                                }
                             }
-                        }
                     }
                 }
                 .padding(.top, 4)
@@ -132,46 +220,147 @@ private struct CandidateRow: View {
         .contentShape(Rectangle())
     }
 
-    private var detailGrid: some View {
-        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 4) {
-            if let albumArtist = self.candidate.albumArtist {
-                GridRow {
-                    Text("Album Artist").foregroundStyle(.secondary).font(.caption)
-                    Text(albumArtist).font(.caption)
-                }
-            }
-            if let trackNumber = self.candidate.trackNumber {
-                GridRow {
-                    Text("Track").foregroundStyle(.secondary).font(.caption)
-                    Text(String(trackNumber)).font(.caption)
-                }
-            }
-            if let discNumber = self.candidate.discNumber {
-                GridRow {
-                    Text("Disc").foregroundStyle(.secondary).font(.caption)
-                    Text(String(discNumber)).font(.caption)
-                }
-            }
-            if let label = self.candidate.label {
-                GridRow {
-                    Text("Label").foregroundStyle(.secondary).font(.caption)
-                    Text(label).font(.caption)
-                }
-            }
-            if let genre = self.candidate.genre {
-                GridRow {
-                    Text("Genre").foregroundStyle(.secondary).font(.caption)
-                    Text(genre).font(.caption)
-                }
-            }
-            if let mbid = self.candidate.mbRecordingID {
-                GridRow {
-                    Text("MBID").foregroundStyle(.secondary).font(.caption)
-                    Text(mbid).font(.caption).foregroundStyle(.secondary)
+    private func selectAll() {
+        self.selection = Set(IdentifyTagField.allCases.filter { Self.candidateHasValue($0, candidate: self.candidate) })
+    }
+
+    private static func candidateHasValue(
+        _ field: IdentifyTagField,
+        candidate: IdentificationCandidate
+    ) -> Bool {
+        switch field {
+        case .title, .artist:
+            true
+
+        case .albumArtist:
+            candidate.albumArtist != nil
+
+        case .album:
+            candidate.album != nil
+
+        case .genre:
+            candidate.genre != nil
+
+        case .trackNumber:
+            candidate.trackNumber != nil
+
+        case .discNumber:
+            candidate.discNumber != nil
+
+        case .year:
+            candidate.year != nil
+        }
+    }
+}
+
+// MARK: - FieldSelectionGrid
+
+private struct FieldSelectionGrid: View {
+    let candidate: IdentificationCandidate
+    let currentValues: CurrentTagValues
+    @Binding var selection: Set<IdentifyTagField>
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ForEach(IdentifyTagField.allCases, id: \.self) { field in
+                if let proposed = self.proposed(for: field) {
+                    self.row(field: field, current: self.current(for: field), proposed: proposed)
                 }
             }
         }
         .padding(.leading, 4)
+    }
+
+    private func row(field: IdentifyTagField, current: String, proposed: String) -> some View {
+        let isOn = Binding<Bool>(
+            get: { self.selection.contains(field) },
+            set: { newValue in
+                if newValue { self.selection.insert(field) } else { self.selection.remove(field) }
+            }
+        )
+        let unchanged = current == proposed && !current.isEmpty
+        return HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Toggle("", isOn: isOn)
+                .toggleStyle(.checkbox)
+                .labelsHidden()
+                .accessibilityLabel("Accept \(field.displayName)")
+                .disabled(unchanged)
+            Text(field.displayName)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 90, alignment: .leading)
+            Text(current.isEmpty ? "—" : current)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "arrow.right")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            Text(proposed)
+                .font(.caption)
+                .foregroundStyle(unchanged ? .secondary : .primary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func proposed(for field: IdentifyTagField) -> String? {
+        switch field {
+        case .title:
+            self.candidate.title
+
+        case .artist:
+            self.candidate.artist
+
+        case .albumArtist:
+            self.candidate.albumArtist
+
+        case .album:
+            self.candidate.album
+
+        case .genre:
+            self.candidate.genre
+
+        case .trackNumber:
+            self.candidate.trackNumber.map(String.init)
+
+        case .discNumber:
+            self.candidate.discNumber.map(String.init)
+
+        case .year:
+            self.candidate.year.map(String.init)
+        }
+    }
+
+    private func current(for field: IdentifyTagField) -> String {
+        switch field {
+        case .title:
+            self.currentValues.title ?? ""
+
+        case .artist:
+            self.currentValues.artist ?? ""
+
+        case .albumArtist:
+            self.currentValues.albumArtist ?? ""
+
+        case .album:
+            self.currentValues.album ?? ""
+
+        case .genre:
+            self.currentValues.genre ?? ""
+
+        case .trackNumber:
+            self.currentValues.trackNumber.map(String.init) ?? ""
+
+        case .discNumber:
+            self.currentValues.discNumber.map(String.init) ?? ""
+
+        case .year:
+            self.currentValues.year.map(String.init) ?? ""
+        }
     }
 }
 
