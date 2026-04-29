@@ -11,8 +11,11 @@ import SwiftUI
 /// ```
 public struct SettingsScene: View {
     @State private var selectedTab: SettingsTab = .general
+    private let scrobbleViewModel: ScrobbleSettingsViewModel?
 
-    public init() {}
+    public init(scrobbleViewModel: ScrobbleSettingsViewModel? = nil) {
+        self.scrobbleViewModel = scrobbleViewModel
+    }
 
     public var body: some View {
         TabView(selection: self.$selectedTab) {
@@ -48,6 +51,12 @@ public struct SettingsScene: View {
                 .tabItem { Label("Visualizer", systemImage: "waveform") }
                 .tag(SettingsTab.visualizer)
 
+            if let scrobbleViewModel = self.scrobbleViewModel {
+                ScrobbleSettingsView(viewModel: scrobbleViewModel)
+                    .tabItem { Label("Scrobbling", systemImage: "dot.radiowaves.left.and.right") }
+                    .tag(SettingsTab.scrobble)
+            }
+
             AboutView()
                 .tabItem { Label("About", systemImage: "info.circle") }
                 .tag(SettingsTab.about)
@@ -59,5 +68,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, about
+    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, scrobble, about
 }
