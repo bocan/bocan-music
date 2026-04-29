@@ -264,6 +264,7 @@ private struct BocanCommands: Commands {
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
     let visualizerVM: VisualizerViewModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -297,6 +298,11 @@ private struct BocanCommands: Commands {
                 }
             }
             .keyboardShortcut("v", modifiers: [.command, .shift])
+
+            Button("Open Fullscreen Visualizer") {
+                self.openWindow(id: "visualizer-fullscreen")
+            }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
 
             Button("Toggle Miniplayer") {
                 self.windowMode.toggleMiniPlayer()
