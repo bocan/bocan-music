@@ -51,10 +51,13 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            // Phase 4 audit C2: ⌘⇧O is reserved for "Add Folder to Library…"
+            // (KeyBindings.addFolder).  Import Playlist gets ⌘⌥⇧O so the two
+            // file-import entries don't trample each other.
             Button("Import Playlist…") {
                 self.vm.isPlaylistImportSheetPresented = true
             }
-            .keyboardShortcut("o", modifiers: [.command, .shift])
+            .keyboardShortcut("o", modifiers: [.command, .option, .shift])
         }
 
         CommandMenu("Playback") {
@@ -65,10 +68,12 @@ struct BocanCommands: Commands {
         }
 
         CommandGroup(after: .windowArrangement) {
-            Button("Show Lyrics") {
+            // Phase 4 audit C1: ⌘L is reserved for "Love" (the Track menu);
+            // Show Lyrics moves to ⌘⌥L so the two don't collide.
+            Button(self.lyricsVM.paneVisible ? "Hide Lyrics" : "Show Lyrics") {
                 self.lyricsVM.paneVisible.toggle()
             }
-            .keyboardShortcut("l", modifiers: .command)
+            .keyboardShortcut("l", modifiers: [.command, .option])
 
             Button(self.visualizerVM.paneVisible ? "Hide Visualizer" : "Show Visualizer") {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -106,9 +111,31 @@ struct BocanCommands: Commands {
 
             Divider()
 
-            Button("Love") {}
-                .keyboardShortcut(KeyBindings.love)
-                .disabled(true)
+            // Phase 4 audit C1: real Love command, replacing the disabled stub.
+            Button("Love / Unlove") {
+                self.vm.toggleLovedForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.love)
+            .disabled(!self.vm.hasTrackSelection)
+
+            // Phase 4 audit C3: ⌘1…⌘5 rating shortcuts must work as global
+            // accelerators (the per-context-menu Rate submenu only fires when
+            // the menu is open).  ⌘0 clears the rating to round out the set.
+            Menu("Rate") {
+                Button("None") { self.vm.setRatingForCurrentSelection(stars: 0) }
+                    .keyboardShortcut("0", modifiers: .command)
+                Button("★") { self.vm.setRatingForCurrentSelection(stars: 1) }
+                    .keyboardShortcut(KeyBindings.rate1)
+                Button("★★") { self.vm.setRatingForCurrentSelection(stars: 2) }
+                    .keyboardShortcut(KeyBindings.rate2)
+                Button("★★★") { self.vm.setRatingForCurrentSelection(stars: 3) }
+                    .keyboardShortcut(KeyBindings.rate3)
+                Button("★★★★") { self.vm.setRatingForCurrentSelection(stars: 4) }
+                    .keyboardShortcut(KeyBindings.rate4)
+                Button("★★★★★") { self.vm.setRatingForCurrentSelection(stars: 5) }
+                    .keyboardShortcut(KeyBindings.rate5)
+            }
+            .disabled(!self.vm.hasTrackSelection)
         }
     }
 }
