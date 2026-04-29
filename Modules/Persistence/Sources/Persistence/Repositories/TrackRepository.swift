@@ -324,4 +324,40 @@ public struct TrackRepository: Sendable {
             return rows.compactMap { $0["composer"] as? String }
         }
     }
+
+    // MARK: - Metadata-driven matching
+
+    /// Looks up a single track by artist + title, optionally constrained by
+    /// duration (in seconds) within `tolerance` seconds.
+    ///
+    /// All comparisons are case-insensitive. Returns the highest-quality match
+    /// (closest duration) or `nil` when no candidate is within tolerance.
+    public func findByMetadata(
+        artist: String?,
+        title: String?,
+        duration: TimeInterval? = nil,
+        tolerance: TimeInterval = 2.0
+    ) async throws -> Track? {
+        guard let title, !title.isEmpty else { return nil }
+        let titleNorm = title.precomposedStringWithCanonicalMapping
+        let artistNorm = (artist ?? "").precomposedStringWithCanonicalMapping
+        return try await self.database.read { db in
+            // Join with artists to compare names case-insensitively.
+            let sql = """
+            SELECT tracks.* FROM tracks
+            LEFT JOIN artists ON artists.id = tracks.artist_id
+            WHERE tracks.disabled = 0
+              AND lower(tracks.title) = lower(?)
+              AND (? = '' OR lower(artists.name) = lower(?))
+            """
+            let candidates = try Track.fetchAll(db, sql: sql, arguments: [titleNorm, artistNorm, artistNorm])
+            guard let target = duration else {
+                return candidates.first
+            }
+            // Pick the candidate whose duration is closest to `target` and within tolerance.
+            return candidates
+                .filter { abs($0.duration - target) <= tolerance }
+                .min { abs($0.duration - target) < abs($1.duration - target) }
+        }
+    }
 }
