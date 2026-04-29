@@ -17,7 +17,8 @@ struct LastFmSignatureTests {
         let sig2 = LastFmSignature.sign(params, secret: "secret")
         #expect(sig1 == sig2)
         #expect(sig1.count == 32)
-        #expect(sig1.allSatisfy(\.isHexDigit))
+        let isAllHex = sig1.allSatisfy(\.isHexDigit)
+        #expect(isAllHex)
     }
 
     @Test("format and callback keys are excluded from signature")
