@@ -90,7 +90,7 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_A2D30BA6-12E6-44BB-967A-4C5A9C3F5336" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -273,10 +273,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_101AFD11-E76D-4822-8BC6-E07A491A4F28" /* bocan-music */ = {
+		"TEMP_F7F6294A-1ADD-4C68-8105-DE8967D5519F" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */,
+				"TEMP_A2D30BA6-12E6-44BB-967A-4C5A9C3F5336" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -493,7 +493,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A2D30BA6-12E6-44BB-967A-4C5A9C3F5336" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -626,7 +626,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A2D30BA6-12E6-44BB-967A-4C5A9C3F5336" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;

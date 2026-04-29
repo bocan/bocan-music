@@ -56,3 +56,17 @@ updates:
       interval: weekly
     commit-message:
       prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Acoustics
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
+
+  - package-ecosystem: swift
+    directory: /Modules/Scrobble
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build(deps)"
