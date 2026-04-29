@@ -656,6 +656,11 @@ public actor QueuePlayer: Transport {
         _ = await self.queue.advance()
         self.lastGaplessTransitionAt = Date()
 
+        // Credit the outgoing play before we overwrite recorder state.
+        // The handoff only fires when the previous track reached its natural end,
+        // so it counts as a full play for scrobble purposes.
+        await self.historyRecorder.trackDidEndNaturally()
+
         // Update metadata for the new track.
         if let track = try? await trackRepo.fetch(id: item.trackID) {
             self.emitCurrentTrack(track)
