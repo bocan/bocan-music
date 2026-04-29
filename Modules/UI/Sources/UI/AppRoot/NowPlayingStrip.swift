@@ -12,6 +12,9 @@ public struct NowPlayingStrip: View {
     @EnvironmentObject private var library: LibraryViewModel
     @EnvironmentObject private var dsp: DSPViewModel
     @EnvironmentObject private var visualizer: VisualizerViewModel
+    /// Optional — only the main window injects a `RouteViewModel`. Snapshot
+    /// tests and other ad-hoc surfaces can skip it.
+    @ObservedObject private var route: RouteViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
@@ -20,8 +23,9 @@ public struct NowPlayingStrip: View {
     @State private var scrubDragFraction: Double?
     @State private var showDSP = false
 
-    public init(vm: NowPlayingViewModel) {
+    public init(vm: NowPlayingViewModel, route: RouteViewModel? = nil) {
         self.vm = vm
+        self.route = route ?? RouteViewModel.placeholder
     }
 
     public var body: some View {
@@ -32,6 +36,10 @@ public struct NowPlayingStrip: View {
             self.transport
             Spacer(minLength: 16)
             self.volumeAndScrubber
+            Divider()
+                .frame(height: 32)
+                .padding(.horizontal, 4)
+            RoutePicker(vm: self.route)
             Divider()
                 .frame(height: 32)
                 .padding(.horizontal, 4)
