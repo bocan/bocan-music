@@ -40,6 +40,7 @@ public struct Migrator {
         M010DSPAssignments.register(in: &dm)
         M011LyricsOffset.register(in: &dm)
         M012Scrobbling.register(in: &dm)
+        M013CueVirtualTracks.register(in: &dm)
         return Self(inner: dm)
     }
 
