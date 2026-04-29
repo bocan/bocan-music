@@ -33,16 +33,15 @@ struct AudioTapTests {
         let tap = AudioTap(bufferSize: 1024)
         tap.install(on: mixer)
 
-        var gotNil = false
-        let task = Task {
+        let task = Task { () -> Bool in
             var iter = tap.samples.makeAsyncIterator()
             // After remove(), the very next iteration should return nil.
             _ = await iter.next() // may or may not have a sample yet
-            gotNil = await iter.next() == nil
+            return await iter.next() == nil
         }
 
         tap.remove(from: mixer)
-        await task.value
+        let gotNil = await task.value
         #expect(gotNil, "Stream did not finish after remove(from:)")
     }
 
@@ -93,14 +92,13 @@ struct AudioTapTests {
         let engine = AudioEngine()
         let stream = await engine.startTap()
 
-        var didFinish = false
-        let consumer = Task {
+        let consumer = Task { () -> Bool in
             for await _ in stream {}
-            didFinish = true
+            return true
         }
 
         await engine.stopTap()
-        await consumer.value
+        let didFinish = await consumer.value
         #expect(didFinish)
     }
 }

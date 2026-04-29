@@ -11,7 +11,7 @@ export default function (eleventyConfig) {
   // Markdown configuration.
   const md = markdownIt({ html: true, linkify: true, typographer: true }).use(
     markdownItAnchor,
-    { permalink: markdownItAnchor.permalink.headerLink() }
+    { permalink: markdownItAnchor.permalink.headerLink() },
   );
   eleventyConfig.setLibrary("md", md);
 
@@ -42,7 +42,7 @@ export default function (eleventyConfig) {
       day: "numeric",
       month: "long",
       year: "numeric",
-    })
+    }),
   );
 
   // Markdown filter for inline use in Nunjucks templates.
