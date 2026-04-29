@@ -1,0 +1,38 @@
+[
+  {
+    "name": "FFmpeg",
+    "url": "https://ffmpeg.org",
+    "license": "LGPL 2.1+ (configured without GPL/non-free flags)",
+    "purpose": "Decoding for OGG/Opus/WavPack/APE/DSD."
+  },
+  {
+    "name": "TagLib",
+    "url": "https://taglib.org",
+    "license": "LGPL 2.1 / MPL 1.1",
+    "purpose": "Reading and writing audio file tags."
+  },
+  {
+    "name": "Chromaprint / fpcalc",
+    "url": "https://acoustid.org/chromaprint",
+    "license": "LGPL 2.1+",
+    "purpose": "Acoustic fingerprinting for AcoustID lookups."
+  },
+  {
+    "name": "GRDB",
+    "url": "https://github.com/groue/GRDB.swift",
+    "license": "MIT",
+    "purpose": "SQLite database layer."
+  },
+  {
+    "name": "Sparkle",
+    "url": "https://sparkle-project.org",
+    "license": "MIT",
+    "purpose": "Update mechanism."
+  },
+  {
+    "name": "swift-snapshot-testing",
+    "url": "https://github.com/pointfreeco/swift-snapshot-testing",
+    "license": "MIT",
+    "purpose": "UI snapshot testing."
+  }
+]

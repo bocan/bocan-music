@@ -10,10 +10,18 @@ on:
         description: "Tag to release (e.g. v0.1.0)"
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   release:
-    name: Build, Sign & Release
-    runs-on: macos-15
+    name: Build, Sign & Release (arm64)
+    runs-on: macos-26
+
+    env:
+      ARCHS: arm64
+      ONLY_ACTIVE_ARCH: "NO"
+      MARKETING_VERSION: ${{ github.ref_name }}
 
     steps:
       - name: Checkout (full history for changelog)
@@ -21,14 +29,74 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Select Xcode 16
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.4.app
+
+      - name: Cache SPM packages
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            ~/.swiftpm
+          key: ${{ runner.os }}-spm-release-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-release-
+            ${{ runner.os }}-spm-
 
       - name: Install Brewfile dependencies
         run: brew bundle
 
+      - name: Set pkg-config path for FFmpeg and TagLib
+        run: |
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
+
+      - name: Stub Secrets.xcconfig (xcodegen requires it)
+        env:
+          ACOUSTID_API_KEY: ${{ secrets.ACOUSTID_API_KEY }}
+          BOCAN_LASTFM_API_KEY: ${{ secrets.BOCAN_LASTFM_API_KEY }}
+          BOCAN_LASTFM_SHARED_SECRET: ${{ secrets.BOCAN_LASTFM_SHARED_SECRET }}
+        run: |
+          if [[ ! -f Secrets.xcconfig ]]; then
+            cp Secrets.xcconfig.template Secrets.xcconfig
+          fi
+          if [[ -n "${ACOUSTID_API_KEY:-}" ]]; then
+            /usr/bin/sed -i '' "s|^ACOUSTID_API_KEY.*|ACOUSTID_API_KEY = ${ACOUSTID_API_KEY}|" Secrets.xcconfig
+          fi
+          if [[ -n "${BOCAN_LASTFM_API_KEY:-}" ]]; then
+            /usr/bin/sed -i '' "s|^BOCAN_LASTFM_API_KEY.*|BOCAN_LASTFM_API_KEY = ${BOCAN_LASTFM_API_KEY}|" Secrets.xcconfig
+          fi
+          if [[ -n "${BOCAN_LASTFM_SHARED_SECRET:-}" ]]; then
+            /usr/bin/sed -i '' "s|^BOCAN_LASTFM_SHARED_SECRET.*|BOCAN_LASTFM_SHARED_SECRET = ${BOCAN_LASTFM_SHARED_SECRET}|" Secrets.xcconfig
+          fi
+
+      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+        run: make bundle-fpcalc
+
       - name: Generate Xcode project
         run: make generate
+
+      - name: Run tests before release (fail fast)
+        run: make test-coverage 2>&1 | xcbeautify
+
+      - name: Verify required release secrets
+        env:
+          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+          DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+        run: |
+          missing=()
+          for var in DEVELOPER_ID_CERT_P12 DEVELOPER_ID_CERT_PASSWORD APPLE_ID APPLE_TEAM_ID APP_SPECIFIC_PASSWORD DEVELOPER_ID_IDENTITY; do
+            if [[ -z "${!var}" ]]; then missing+=("$var"); fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            echo "Configure them in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          echo "All required release secrets are present."
 
       - name: Import Developer ID certificate
         env:
@@ -45,18 +113,35 @@ jobs:
             -k "$KEYCHAIN_PATH" \
             -P "$DEVELOPER_ID_CERT_PASSWORD" \
             -T /usr/bin/codesign
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | xargs)
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      - name: Archive
+      - name: Stamp version into Info.plist
+        run: |
+          VERSION="${MARKETING_VERSION#v}"
+          BUILD_NUMBER=$(date +%s)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Resources/Info.plist
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
+
+      - name: Archive (arm64 only)
         run: |
           xcodebuild archive \
             -project Bocan.xcodeproj \
             -scheme Bocan \
             -configuration Release \
+            -destination 'generic/platform=macOS,arch=arm64' \
             -archivePath build/Bocan.xcarchive \
+            ARCHS=arm64 \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            CODE_SIGN_IDENTITY="${{ secrets.DEVELOPER_ID_IDENTITY }}" \
+            OTHER_CODE_SIGN_FLAGS="--timestamp --options=runtime" \
+            ENABLE_HARDENED_RUNTIME=YES \
             | xcbeautify
 
       - name: Export (Developer ID)
@@ -67,25 +152,37 @@ jobs:
             -exportPath build/export \
             | xcbeautify
 
-      - name: Notarize
+      - name: Verify code signature & hardened runtime
+        run: |
+          APP="build/export/Bocan.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign --display --verbose=4 "$APP" | tee /tmp/codesign.txt
+          if ! grep -q "flags=.*runtime" /tmp/codesign.txt; then
+            echo "::error::Hardened runtime flag missing from signature."
+            exit 1
+          fi
+
+      - name: Notarize app
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
         run: |
-          xcrun notarytool submit "build/export/Bocan.app" \
+          # notarytool requires a zip for .app submission.
+          ditto -c -k --keepParent "build/export/Bocan.app" "build/Bocan-notarize.zip"
+          xcrun notarytool submit "build/Bocan-notarize.zip" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APP_SPECIFIC_PASSWORD" \
             --wait
 
-      - name: Staple
+      - name: Staple app
         run: xcrun stapler staple build/export/Bocan.app
 
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "Bòcan" \
+            --volname "Bòcan ${RELEASE_VERSION}" \
             --window-pos 200 120 \
             --window-size 600 400 \
             --icon-size 128 \
@@ -93,31 +190,80 @@ jobs:
             --hide-extension "Bocan.app" \
             --app-drop-link 425 190 \
             "build/Bocan.dmg" \
-            "build/export/"
+            "build/export/" \
+          || (sleep 5 && create-dmg \
+            --volname "Bòcan ${RELEASE_VERSION}" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 128 \
+            --icon "Bocan.app" 175 190 \
+            --hide-extension "Bocan.app" \
+            --app-drop-link 425 190 \
+            "build/Bocan.dmg" \
+            "build/export/")
 
       - name: Sign DMG
-        run: codesign --sign "Developer ID Application" build/Bocan.dmg
-
-      - name: Generate changelog
-        id: changelog
         run: |
-          PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | sed -n '2p' || echo "")
-          if [[ -n "$PREV_TAG" ]]; then
-            CHANGES=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
-          else
-            CHANGES=$(git log --pretty=format:"- %s (%h)" --no-merges)
-          fi
-          echo "changes<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$CHANGES" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          codesign --force --sign "${{ secrets.DEVELOPER_ID_IDENTITY }}" \
+            --timestamp build/Bocan.dmg
+
+      - name: Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+        run: |
+          xcrun notarytool submit "build/Bocan.dmg" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APP_SPECIFIC_PASSWORD" \
+            --wait
+          xcrun stapler staple build/Bocan.dmg
+
+      - name: Gatekeeper assessment
+        run: spctl --assess --type open --context context:primary-signature --verbose=4 build/Bocan.dmg
+
+      - name: Compute checksums
+        id: checksums
+        run: |
+          cd build
+          shasum -a 256 Bocan.dmg | tee Bocan.dmg.sha256
+          SHA256=$(awk '{print $1}' Bocan.dmg.sha256)
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes from CHANGELOG
+        id: notes
+        run: |
+          chmod +x Scripts/release-notes.sh
+          NOTES_FILE=$(mktemp)
+          Scripts/release-notes.sh "${MARKETING_VERSION#v}" > "$NOTES_FILE" || \
+            echo "_See commit history for changes._" > "$NOTES_FILE"
+          {
+            echo "notes_path=$NOTES_FILE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Sign appcast entry (Sparkle EdDSA)
+        if: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' }}
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          chmod +x Scripts/sparkle-update.sh
+          Scripts/sparkle-update.sh \
+            --dmg build/Bocan.dmg \
+            --version "${RELEASE_VERSION}" \
+            --build "${BUILD_NUMBER}" \
+            --output build/appcast-entry.xml
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: build/Bocan.dmg
-          body: |
-            ## What's Changed
-
-            ${{ steps.changelog.outputs.changes }}
+          name: ${{ env.RELEASE_VERSION }}
+          tag_name: ${{ github.ref_name }}
+          body_path: ${{ steps.notes.outputs.notes_path }}
+          files: |
+            build/Bocan.dmg
+            build/Bocan.dmg.sha256
+            build/appcast-entry.xml
+          fail_on_unmatched_files: false
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
