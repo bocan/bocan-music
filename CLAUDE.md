@@ -115,6 +115,16 @@ make generate        # only needed if dylib filenames changed
 
 Active feature work is tracked in `phases/`. Start every new phase by reading `phases/_standards.md` and the target phase file. A phase is complete when `make lint && make test-coverage` is green and CI passes.
 
+## Important Guidelines!
+
+- Above all else, be careful with anything that may cause an audio "pop" - like when clicking on menus or menu items or bring up other windows.  Sound should always beat features.
+- Log freely around major features and audio processing.
+- Keep accessibility in mind for all features and changes.  I shouldn't need to wear reading glasses to see dialogs. All buttons or controls should have hover text.
+- Make sure if we add a keyboard shortcut, that it actually works.  Again - accessibility.
+- If any feature we claim to have isn't wired in yet - warn me!
+- When thinking about how to activate features remember, it could be a right click of the selected track, it might ALSO need to be a menu item. Basically, anywhere a control gets wired in, think about where it might also be convienient or accessible.
+- I like to think of this app as "The Homer" of music players.  I want ALL the cool features like iTunes and Winamp of old - but do tell me if I'm going over the top. I may disagree - but let's discuss it.
+
 ## Debugging
 
 Filter Console.app by subsystem `io.cloudcauldron.bocan` to see all app log output.
