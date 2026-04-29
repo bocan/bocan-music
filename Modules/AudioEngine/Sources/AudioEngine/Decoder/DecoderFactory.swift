@@ -22,8 +22,24 @@ public struct DecoderFactory: Sendable {
 
     static func make(codec: Codec, url: URL) throws -> any Decoder {
         switch codec {
-        case .wav, .flac, .mp3, .m4a:
+        case .wav, .mp3, .m4a:
             return try AVFoundationDecoder(url: url)
+
+        case .flac:
+            // AVFoundation's FLAC decoder supports up to 24-bit / 384 kHz but
+            // refuses unusual high-resolution streams (e.g. 32-bit float, very
+            // large block sizes).  Fall back to FFmpeg in that case so the
+            // file plays instead of throwing `decoderFailure`.
+            do {
+                return try AVFoundationDecoder(url: url)
+            } catch let error as AudioEngineError {
+                if case .accessDenied = error { throw error }
+                if case .fileNotFound = error { throw error }
+                if let ffmpeg = try? FFmpegDecoder(url: url) {
+                    return ffmpeg
+                }
+                throw error
+            }
 
         case .ogg, .opus, .dsf, .dff, .ape, .wavpack:
             return try FFmpegDecoder(url: url)

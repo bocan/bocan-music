@@ -22,7 +22,12 @@ public enum Codec: Sendable, Equatable, Hashable {
 /// container formats are supported natively.
 public struct FormatSniffer: Sendable {
     /// Number of bytes to read from the head of each file.
-    public static let sniffBytes = 16
+    ///
+    /// 64 bytes covers the standard Ogg page header (28 bytes) plus the
+    /// Opus identification header ("OpusHead") that appears at offset 28 in
+    /// the first packet of an Opus stream. Anything shorter would force us
+    /// back to extension-based heuristics for the OGG-vs-Opus discrimination.
+    public static let sniffBytes = 64
 
     public init() {}
 
@@ -77,8 +82,20 @@ private extension FormatSniffer {
     }
 
     func detectDsdCodec(from b: Data) -> Codec? {
-        // OGG: "OggS" at offset 0
-        if b.hasPrefix("OggS") { return .ogg }
+        // OGG: "OggS" at offset 0.
+        // Within an Ogg stream, the first packet begins at offset 28 and
+        // tells us whether this is Vorbis, Opus, FLAC, etc.  We look for
+        // the "OpusHead" magic — present at offset 28 in any Opus-in-Ogg
+        // file — and otherwise fall back to generic Vorbis/Ogg routing.
+        if b.hasPrefix("OggS") {
+            if b.count >= 36 {
+                let opusHead = Data("OpusHead".utf8)
+                if b[28 ..< 36] == opusHead {
+                    return .opus
+                }
+            }
+            return .ogg
+        }
 
         // DSF (Sony DSD): "DSD " at offset 0
         if b.hasPrefix("DSD ") { return .dsf }

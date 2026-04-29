@@ -177,4 +177,33 @@ public actor DeviceRouter {
         )
         self.listenerBlock = nil
     }
+
+    /// Set the system-wide default output device.
+    ///
+    /// Returns `true` on success.  Used both as the spec-mandated `set(_:)`
+    /// API and as the underlying mechanism behind any "select output device"
+    /// preference in the UI.  Per-app routing (changing only this app's
+    /// destination without affecting the rest of the system) is intentionally
+    /// out of scope for v1: the macOS HAL story for that requires a private
+    /// `kAudioOutputUnitProperty_CurrentDevice` dance against the engine's
+    /// output unit, and shipping it without a way to reset on crash is risky.
+    @discardableResult
+    public static func setDefaultOutputDevice(_ id: AudioDeviceID) -> Bool {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var deviceID = id
+        let size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        let status = AudioObjectSetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address,
+            0,
+            nil,
+            size,
+            &deviceID
+        )
+        return status == noErr
+    }
 }

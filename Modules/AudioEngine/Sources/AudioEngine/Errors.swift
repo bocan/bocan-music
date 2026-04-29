@@ -1,3 +1,6 @@
+// @preconcurrency: AVAudioFormat lacks Sendable but is only stored in error
+// payloads and never mutated after capture.
+// TODO: remove when AVFoundation adopts Sendable annotations (FB13119463).
 @preconcurrency import AVFoundation
 
 /// All errors produced by the `AudioEngine` module.

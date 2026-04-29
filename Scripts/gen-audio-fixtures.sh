@@ -73,6 +73,11 @@ make_fixture "sine-1s-48000-stereo.opus" \
 # For CI purposes, the DSF decoder test is skipped if the fixture is absent.
 # sine-1s-dsd64-stereo.dsf — NOT auto-generated.
 
+# 1 second, 440 Hz sine, 44100 Hz, WavPack
+make_fixture "sine-1s-44100-stereo.wv" \
+    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
+    -ac 2 -ar 44100 -c:a wavpack "sine-1s-44100-stereo.wv" -y -loglevel error
+
 # ── Corrupt / edge-case fixtures ─────────────────────────────────────────────
 
 # Corrupt MP3 — first 64 bytes of a valid MP3 then random garbage.
