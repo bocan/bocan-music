@@ -1,106 +1,118 @@
-# Phase 15 — Casting (AirPlay 2 + Google Cast)
+# Phase 15 — AirPlay routing
 
-> Prerequisites: Phases 0–14 complete. AudioEngine supports routing changes.
+> Prerequisites: Phases 0–14 complete. AudioEngine survives system output device changes.
 >
 > Read `phases/_standards.md` first.
 
 ## Goal
 
-Play Bòcan through remote speakers. AirPlay 2 first-class via the system picker. Google Cast via the official SDK. Transparent route switching: press play anywhere, pick a device, audio continues without losing position. Volume sync with remote. Graceful degradation when remote fails (auto-return to local).
+Surface AirPlay 2 as a first-class route through the system picker, and let Bòcan
+*know* what device audio is currently coming out of so the UI can say
+"Playing on Living Room HomePod". Audio follows the system output device — that's
+how AirPlay on macOS works for non-system apps — and Bòcan just gives the user a
+discoverable entry point and a clear indicator.
 
 ## Non-goals
 
-- Sonos via UPnP — not in v1 (would need custom protocol work). Noted as a future phase.
-- Multi-room grouping control from the app — use the system (AirPlay groups via macOS Sound menu; Google Home for Cast groups). We just pick the device.
-- DLNA / generic UPnP rendering — no.
-- Video casting — no.
+- **Google Cast.** Officially excluded. Google does not ship a maintained macOS
+  Cast SDK and a native CASTV2 implementation is out of scope.
+- **Sonos / DLNA / generic UPnP rendering.**
+- **Multi-room grouping** — managed at the OS level (System Settings ▸ Sound /
+  the AirPlay menu in Control Centre).
+- **Video casting.** Audio only.
+- **An embedded HTTP media server.** Not needed without Cast.
 
 ## Outcome shape
 
 ```
 Modules/Playback/Sources/Playback/Routing/
-├── RouteManager.swift                 # Actor coordinating route switches
 ├── Route.swift                        # Enum + metadata
-├── LocalRoute.swift                   # Default AVAudioEngine route
-├── AirPlayRoute.swift                 # System route via AVAudioSession-equivalent
-└── CastRoute.swift                    # Google Cast adapter
-
-Modules/Playback/Sources/Playback/Cast/
-├── CastDiscovery.swift                # GCKCastContext wrapper
-├── CastSession.swift                  # GCKSession lifecycle
-├── CastMediaServer.swift              # Local HTTP server to serve track bytes
-└── CastMediaItemBuilder.swift         # Builds GCKMediaInformation with metadata + cover URL
+├── OutputDeviceProvider.swift         # Protocol + CoreAudio HAL implementation
+└── RouteManager.swift                 # Actor publishing the current Route
 
 Modules/UI/Sources/UI/Routing/
-├── RoutePicker.swift                  # Single control: AirPlay + Cast unified
 ├── AirPlayButton.swift                # AVRoutePickerView wrapped for SwiftUI
-├── CastButton.swift                   # GCKUICastButton wrapped
-└── ActiveRouteChip.swift              # Transport-strip indicator
+├── ActiveRouteChip.swift              # Transport-strip indicator
+├── RoutePicker.swift                  # AirPlay button + chip combined
+└── RouteViewModel.swift               # @MainActor consumer of RouteManager
 ```
 
 ## Implementation plan
 
-### AirPlay
+### Route model
 
-1. **AirPlay 2 on macOS** is surfaced by the system; apps generally don't route audio explicitly — it follows the system output device. `AVRoutePickerView` (AppKit wrapper) gives a button that opens the system picker.
+1. `Route` is a Swift enum with three cases:
+   ```swift
+   public enum Route: Sendable, Hashable, Identifiable {
+       case local(name: String)              // built-in speakers / headphones
+       case airPlay(name: String)            // AirPlay-routed device
+       case external(name: String, kind: String)
+                                              // Bluetooth, HDMI, USB DAC, etc.
+   }
+   ```
+   `Route.id` derives a stable string for SwiftUI identity.
 
-2. **`AirPlayButton`** — `NSViewRepresentable` around `AVRoutePickerView`. Styled to match the app. Clicking opens the popover with AirPlay devices and system output devices.
+2. `OutputDeviceInfo` is a value type returned by the provider; carries the
+   CoreAudio device ID, the human-readable name, and a transport-type tag
+   so `RouteManager` can categorise it as `local` / `airPlay` / `external`.
 
-3. **Route change observation** — observe `AVAudioEngineConfigurationChange` and audio device changes via `CoreAudio` HAL property listeners. On change:
-   - Re-acquire the canonical format.
-   - Phase 1's `EngineGraph` already handles reconfiguration; ensure this path is solid.
-   - Update UI indicator ("Playing on Living Room").
+### Discovery & observation
 
-4. **Gapless on AirPlay**: AirPlay 2 supports gapless in theory but implementations vary. Treat it as best-effort; keep the `GaplessScheduler` unchanged; document that gapless on AirPlay depends on the receiver.
+3. **`OutputDeviceProvider`** is a protocol so tests can inject a mock:
+   ```swift
+   public protocol OutputDeviceProvider: Sendable {
+       func current() async -> OutputDeviceInfo
+       func updates() -> AsyncStream<OutputDeviceInfo>
+   }
+   ```
 
-### Google Cast
+4. **`CoreAudioOutputDeviceProvider`** is the production implementation. It
+   listens to `kAudioHardwarePropertyDefaultOutputDevice` on the system
+   object via `AudioObjectAddPropertyListenerBlock`, plus
+   `kAudioObjectPropertyName` and `kAudioDevicePropertyTransportType` on the
+   *current* default device. On every change it emits a fresh
+   `OutputDeviceInfo` to subscribers.
 
-5. **SDK**: `google-cast-sdk` via SPM (official). Initialise `GCKCastContext` with the Bòcan receiver app ID (use the default media receiver `CC1AD845` if no custom receiver is registered — it supports audio).
+5. **`RouteManager`** is an actor:
+   - Owns the provider's `updates()` stream and re-broadcasts `Route` values.
+   - Exposes `current` (read) and `routes` (`AsyncStream<Route>`).
+   - Maps transport types to cases: `.airPlay` for `kAudioDeviceTransportTypeAirPlay`,
+     `.local` for built-in, `.external` for everything else (with a kind
+     label like "Bluetooth", "HDMI", "USB").
 
-6. **Discovery** — `GCKDiscoveryManager` runs in the background; populates a `@Published` list of discovered devices.
+### UI
 
-7. **Session management** — `GCKSessionManager` events map to a `CastSessionState` enum (`idle | connecting | connected(GCKCastSession) | disconnecting | error(Error)`).
+6. **`AirPlayButton`** is an `NSViewRepresentable` around `AVRoutePickerView`
+   (AVKit). Tapping it opens the system AirPlay picker; the system handles
+   routing. Styled to match the transport strip (button look, accessible label).
 
-8. **Media serving**:
-   - Cast devices can't read sandboxed local files. Start a local HTTP server bound to `127.0.0.1` on an ephemeral port **only when casting** — Google Cast devices on the LAN reach it via the Mac's LAN IP.
-   - Use `Network.framework` (`NWListener`) for the server; implement minimal HTTP range support (`Range: bytes=…`).
-   - Serve decoded PCM? No — serve the original container when Cast supports it, transcode on-the-fly via the FFmpeg bridge otherwise.
-   - Supported containers on default receiver: MP3, AAC (M4A), WebM, Vorbis (OGG), FLAC (limited), WAV.
-   - Unsupported (DSD, APE, WMA, etc.): transcode to FLAC on-the-fly, serve as `audio/flac`.
+7. **`ActiveRouteChip`** is a small SwiftUI view next to the transport that
+   reads from `RouteViewModel` and shows the current device name with an
+   appropriate SF Symbol (`hifispeaker.fill` for AirPlay, `airpods` /
+   `headphones` / `speaker.fill` otherwise).
 
-9. **`CastMediaItemBuilder`**:
-   - URL: `http://<lan-ip>:<port>/tracks/<token>` — token is short-lived and rate-limited.
-   - `GCKMediaInformation` with content type, metadata (`GCKMediaMetadata(metadataType: .musicTrack)`), images (cover art URL served from the same server).
-   - Preload the next item via `GCKRemoteMediaClient.queueInsertItems` for gapless-on-receiver behaviour (the default receiver supports a queue).
+8. **`RoutePicker`** combines the two: chip on the left, AirPlay button on
+   the right. Drop it into `NowPlayingStrip`.
 
-10. **Local engine while casting**:
-    - **Mute** local output but keep the engine running (so UI sees timecode), OR
-    - **Pause** the local engine and drive UI from `GCKRemoteMediaClient.mediaStatus` updates (better — no wasted decoding on the Mac).
-    - Choose the second: when a cast session is active, the local engine is stopped; the `QueuePlayer` is still the logical owner of state but its `Transport` calls delegate to the cast route.
+9. **`RouteViewModel`** is `@MainActor`, owns a `Task` that consumes
+   `RouteManager.routes`, and publishes `current` for the views.
 
-11. **Volume sync**:
-    - Local volume = app's output gain.
-    - Cast volume = `GCKCastSession.currentDeviceVolume`.
-    - A slider in the transport strip binds to the active route's volume. Observe remote changes and update the slider without bouncing.
-    - **Never** change the system volume or the output device volume — too invasive.
+### Wiring
 
-12. **Transport commands** — Play/Pause/Next/Prev/Seek all flow through the active route. `QueuePlayer.Transport` gains a route-aware adapter.
+10. Construct `RouteManager` once in `BocanApp.init()` with the production
+    `CoreAudioOutputDeviceProvider`. Build a `RouteViewModel` and inject it
+    into the SwiftUI environment.
 
-13. **Fallback and failure**:
-    - Remote session drops unexpectedly → announce via toast, wait 5s for re-connect, then fall back to local and resume at last known position.
-    - If a track can't play on the receiver (codec refused), log, skip to next, toast the user.
+11. The audio engine itself does **not** need new code — `AVAudioEngine`
+    automatically follows the system default output device, including
+    AirPlay. `EngineGraph` already handles `AVAudioEngineConfigurationChange`
+    notifications from earlier phases.
 
-14. **`RoutePicker` UI**:
-    - Single button in the toolbar; popover shows:
-      - Top section: System Output (follows OS), AirPlay devices (via `AVRoutePickerView` embedded).
-      - Bottom section: Google Cast devices (from discovery).
-    - Active device checkmarked; tap to switch.
-    - Refresh button for Cast (triggers re-scan).
+### Privacy & entitlements
 
-15. **Privacy & entitlements**:
-    - `NSLocalNetworkUsageDescription` — required for mDNS / LAN traffic on macOS 14+. Provide a clear reason ("Bòcan uses your local network to discover and stream to cast-enabled speakers.").
-    - `NSBonjourServices` with `_googlecast._tcp` and any AirPlay bonjour types needed.
-    - Entitlement `com.apple.security.network.server` for the embedded HTTP server, `network.client` for Cast discovery.
+12. **Nothing new.** AirPlay routing on macOS goes through the system audio
+    stack; there is no LAN traffic from the app, no Bonjour discovery in
+    process, and no embedded HTTP server. Existing entitlements suffice.
 
 ## Definitions & contracts
 
@@ -108,11 +120,13 @@ Modules/UI/Sources/UI/Routing/
 
 ```swift
 public enum Route: Sendable, Hashable, Identifiable {
-    case local
-    case airPlay(id: String, name: String)
-    case cast(id: String, name: String)
+    case local(name: String)
+    case airPlay(name: String)
+    case external(name: String, kind: String)
 
-    public var id: String { /* derive */ }
+    public var id: String { ... }
+    public var displayName: String { ... }
+    public var iconSystemName: String { ... }
 }
 ```
 
@@ -120,90 +134,80 @@ public enum Route: Sendable, Hashable, Identifiable {
 
 ```swift
 public actor RouteManager {
-    public var current: Route { get }
-    public var devices: AsyncStream<[Route]> { get }
-    public func activate(_ route: Route) async throws
-    public func deactivateToLocal() async
-}
-```
-
-### `Transport` adapter
-
-```swift
-struct RouteAwareTransport: Transport {
-    let local: QueuePlayer
-    let cast: CastTransport?
-    // All methods dispatch to local or cast based on RouteManager.current
+    public init(provider: any OutputDeviceProvider)
+    public var current: Route { get async }
+    public nonisolated func routes() -> AsyncStream<Route>
+    public func start() async
+    public func stop() async
 }
 ```
 
 ## Context7 lookups
 
 - `use context7 AVRoutePickerView macOS NSViewRepresentable`
-- `use context7 CoreAudio HAL property listener output device change Swift`
-- `use context7 Google Cast iOS SDK Swift SessionManager queue`
-- `use context7 Google Cast MediaInformation GCKRemoteMediaClient load`
-- `use context7 Network.framework NWListener HTTP range server Swift`
-- `use context7 macOS sandbox local network NSLocalNetworkUsageDescription`
+- `use context7 CoreAudio HAL kAudioHardwarePropertyDefaultOutputDevice listener Swift`
+- `use context7 CoreAudio kAudioDevicePropertyTransportType airplay`
+- `use context7 AVAudioEngine configuration change notification Swift`
 
 ## Dependencies
 
-- Google Cast SDK — `https://github.com/google/cast-ios-sdk` (has macOS support via Catalyst; if that's a problem, consider the `google-cast-mac-sdk` binary framework — verify licensing and SPM packaging).
-  - Pin exact version.
-  - Document LGPL/BSD terms. (Google Cast SDK is proprietary but free-to-use under Google's terms.)
+None new.
 
 ## Test plan
 
-Integration tests require real devices; most can't be automated. Do:
+### Unit (covered by CI)
 
-### Unit
-
-- `RouteManager` state machine transitions correctly: activate, fail, fall-back.
-- `CastMediaServer` serves a byte range correctly; handles `HEAD` + `GET`; closes idle connections.
-- `CastMediaItemBuilder` produces valid `GCKMediaInformation` for MP3, FLAC, and DSD-needing-transcode inputs.
-- Volume binding updates without feedback loops given observed remote changes (mock session).
+- **`Route`**: every case round-trips its `id`, `displayName`, and
+  `iconSystemName`; equality is structural.
+- **`RouteManager`** with a `MockOutputDeviceProvider`:
+  - Initial `current` matches the provider's seed value.
+  - Pushing a new device through the mock stream produces a corresponding
+    `Route` on the manager's stream.
+  - `airPlay` transport tags map to `.airPlay`; built-in to `.local`;
+    everything else to `.external` with the correct kind label.
+  - `start()` is idempotent; `stop()` cancels the consumer task.
+- **Route ID stability**: same case + same name → same id; different name →
+  different id.
 
 ### Manual / integration
 
-- AirPlay: pick an AirPlay 2 speaker → audio moves there without gap; pause/play/next work.
-- Cast: pick a Google speaker → same expectations; gapless via `queueInsertItems`; dropping Wi-Fi → auto-fall-back to local.
-- Two sessions in succession: AirPlay, then Cast, then back to local; no resource leaks (verify local HTTP server torn down).
-
-### Security
-
-- Local HTTP server binds only to `127.0.0.1` and the LAN interface; not the internet. Verify via netstat.
-- Tokens in URLs are random, per-session, and expire when the session ends.
-- Reject requests without the session token.
+- Open Bòcan, click the AirPlay button → system picker appears.
+- Pick an AirPlay 2 speaker → audio plays on it; the chip updates to its
+  name within ~1 s.
+- Switch back to built-in via the system picker → chip updates without
+  needing app focus.
+- Switch via Control Centre's AirPlay menu (not Bòcan's button) → chip
+  still updates (HAL listener fires regardless of the source of the change).
+- Plug headphones in → chip updates to "Headphones".
 
 ## Acceptance criteria
 
-- [ ] AirPlay picker works; transport commands control playback.
-- [ ] Google Cast picker discovers devices on the LAN; casting plays audio on them.
-- [ ] Volume sync bidirectional.
-- [ ] Route fall-back on failure is automatic and explained.
-- [ ] No persistent HTTP server or discovery traffic when no cast is active.
-- [ ] Sandbox + entitlements correct.
-- [ ] 80%+ coverage on the non-SDK code.
+- [ ] AirPlay button opens the system picker.
+- [ ] Active route chip reflects the current output device and updates
+      automatically when it changes.
+- [ ] AirPlay 2 device selection plays audio without changes to the engine
+      graph (works because AVAudioEngine follows system output).
+- [ ] No new entitlements required; existing sandbox unchanged.
+- [ ] 80 %+ coverage on `Route` and `RouteManager`.
 - [ ] `make lint && make test-coverage` green.
 
 ## Gotchas
 
-- **Sandbox + LAN**: macOS requires `NSLocalNetworkUsageDescription` and the `NSBonjourServices` list, otherwise discovery silently fails. The prompt appears on first discovery; handle rejection by disabling Cast UI.
-- **Cast SDK and macOS sandbox**: historically the SDK shipped iOS-only; verify SPM build for macOS target (may need Catalyst). If Catalyst, UI integration has quirks with AppKit — plan.
-- **Local HTTP server** in a sandboxed app needs `network.server` entitlement. Bind explicitly to `0.0.0.0` (so LAN clients reach) but firewall: use session tokens in the URL to avoid exposing content to other LAN hosts.
-- **Transcoding on-the-fly**: start the FFmpeg pipeline and feed its output as the HTTP response body (streaming). Don't buffer to disk unless the receiver requires `Content-Length`. Many receivers require Content-Length; if so, transcode into a bounded in-memory ring or temp file and send chunked only when supported.
-- **Gapless on Cast**: the default receiver honours `preloadTime` on queue items but real-world behaviour varies. Set a 10s preload; accept small gaps on some devices.
-- **Volume feedback loops**: watch for the observed remote volume triggering a `setVolume` back to the remote; debounce by 150ms and ignore changes whose source is the same cycle.
-- **AirPlay selection**: on macOS, AirPlay is actually picked at the system level for most apps; ensure our engine follows system routing (standard AVAudioEngine behaviour). Document.
-- **Network privacy prompt**: surface a clear banner explaining why the prompt appears when the user first opens the picker, or the prompt seems random.
-- **Discovery lifetime**: run discovery only when picker open or cast is active. Background discovery drains battery and triggers repeated log spam.
-- **Firewalled users**: some users block LAN; if discovery returns empty within 3s, show a helpful "Check that local network access is allowed for Bòcan" hint.
-- **HTTP range requests**: receivers often seek by range. Implement `Range: bytes=N-M` correctly; partial responses are 206, with `Content-Range`.
-- **Track ordering during cast**: `GCKRemoteMediaClient.queueJumpToItem` may not reliably work mid-track; pause, jump, play — state machine handles it explicitly.
-- **Cast SDK updates**: pin the version and review new versions for proprietary telemetry before bumping.
+- **macOS AirPlay is system-routed.** Apps don't enumerate AirPlay devices
+  themselves — the system picker does it. We just observe the *current*
+  output device and trust the system.
+- **HAL property listeners** fire on a CoreAudio-owned thread. Hop to the
+  actor before mutating state. Use `AudioObjectAddPropertyListenerBlock`
+  rather than the C-callback variant so we get a closure with proper
+  capture semantics.
+- **Aggregate devices** can show up as the default output (Loopback,
+  BlackHole). Treat as `.external` with kind "Aggregate".
+- **AirPlay 2 latency** can be in the hundreds of milliseconds.
+- **`AVRoutePickerView` styling**: it's an AppKit control; don't try to
+  colour-tint it. Treat the picker button as an opaque system control.
+- **Headphone hot-plug**: macOS swaps the default output in ~50 ms; the
+  HAL listener fires and we re-publish.
 
 ## Handoff
 
-Phase 16 (Distribution) expects:
-
-- All entitlements required by this phase (`network.server`, `network.client`, `NSLocalNetworkUsageDescription`, `NSBonjourServices`) are captured in the entitlements file and the `Info.plist` and will be included in the notarised build.
+Phase 16 (Distribution) inherits no extra entitlements from this phase.
