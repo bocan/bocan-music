@@ -136,8 +136,12 @@ public final class FluidMetal: Visualizer {
             rpd.fragmentFunction = fragmentFn
             rpd.colorAttachments[0].pixelFormat = .bgra8Unorm
             rpd.colorAttachments[0].isBlendingEnabled = true
+            // Additive blending: overlapping particles accumulate brightness
+            // instead of occluding, creating the glow/bloom effect.
             rpd.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
-            rpd.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+            rpd.colorAttachments[0].destinationRGBBlendFactor = .one
+            rpd.colorAttachments[0].sourceAlphaBlendFactor = .zero
+            rpd.colorAttachments[0].destinationAlphaBlendFactor = .one
             self.renderPipeline = try device.makeRenderPipelineState(descriptor: rpd)
 
             self.particleBuffer = self.makeParticleBuffer(device: device)
@@ -340,6 +344,12 @@ private extension FluidMetal {
         uint     particleCount;
     };
 
+    // Standard HSV → linear-RGB conversion.
+    float3 hsv2rgb(float h, float s, float v) {
+        float3 p = abs(fract(float3(h) + float3(1.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0);
+        return v * mix(float3(1.0), clamp(p - 1.0, 0.0, 1.0), s);
+    }
+
     // Compute shader: update particle positions each frame.
     kernel void updateParticles(device Particle* particles [[buffer(0)]],
                                 constant Uniforms& u        [[buffer(1)]],
@@ -348,26 +358,29 @@ private extension FluidMetal {
         if (id >= u.particleCount) return;
         Particle p = particles[id];
 
-        // Bass-driven acceleration toward origin (creates pulsing effect).
+        // Bass-driven outward burst from origin.
         float2 toOrigin = -p.position;
         float dist = max(length(toOrigin), 0.001);
-        float bassPush = u.bassEnergy * 0.02;
-        p.velocity += normalize(toOrigin) * bassPush * (1.0 - dist * 0.5);
+        float bassPush = u.bassEnergy * 0.06;
+        p.velocity += normalize(toOrigin) * bassPush * (1.0 - dist * 0.4);
 
-        // Gentle swirl using spectral centroid as angular velocity modifier.
-        float angle = u.time * (0.3 + u.spectralCentroid * 0.5);
-        float2x2 rot = float2x2(cos(angle), -sin(angle), sin(angle), cos(angle));
-        p.velocity = rot * p.velocity * 0.995;  // drag
+        // Per-particle swirl: offset by particle index so they don't all rotate
+        // in lock-step — creates a more organic, fluid appearance.
+        float particlePhase = float(id) * 0.00021;
+        float angle = u.time * (0.15 + u.spectralCentroid * 0.35) + particlePhase;
+        float ca = cos(angle), sa = sin(angle);
+        float2x2 rot = float2x2(ca, -sa, sa, ca);
+        p.velocity = rot * p.velocity * 0.992;  // drag
 
         p.position += p.velocity;
 
         // Wrap around edges.
-        if (p.position.x > 1.1) { p.position.x = -1.1; }
-        if (p.position.x < -1.1) { p.position.x = 1.1; }
-        if (p.position.y > 1.1) { p.position.y = -1.1; }
-        if (p.position.y < -1.1) { p.position.y = 1.1; }
+        if (p.position.x >  1.1) { p.position.x = -1.1; }
+        if (p.position.x < -1.1) { p.position.x =  1.1; }
+        if (p.position.y >  1.1) { p.position.y = -1.1; }
+        if (p.position.y < -1.1) { p.position.y =  1.1; }
 
-        p.life = fmod(p.life + 0.005, 1.0);
+        p.life = fmod(p.life + 0.004, 1.0);
         particles[id] = p;
     }
 
@@ -377,32 +390,42 @@ private extension FluidMetal {
         float4 color;
     };
 
-    // Vertex shader: map particle NDC position to clip space, colour by centroid.
+    // Vertex shader: position + colour each particle point sprite.
     vertex VertexOut particleVertex(uint vid [[vertex_id]],
                                     device const Particle* particles [[buffer(0)]],
                                     constant Uniforms& u [[buffer(1)]])
     {
         Particle p = particles[vid];
-        float hue = u.spectralCentroid + p.life * 0.3;
-        // HSV to RGB (simplified for Metal)
-        float s = 0.8, v = 0.9;
-        float3 rgb = v * (1.0 - s * abs(fract(hue * 6.0 + float3(0,4,2)/6.0) * 2.0 - 1.0));
 
-        float alpha = 0.4 + p.life * 0.4;
+        // Hue sweeps the full spectrum via life cycle; centroid shifts the
+        // overall tint so the colour field drifts with the music's brightness.
+        float hue = fract(p.life + u.spectralCentroid * 0.8);
+        float sat = 0.85;
+        float val = 0.75 + u.bassEnergy * 0.25;   // brightens on bass hits
+        float3 rgb = hsv2rgb(hue, sat, val);
+
+        // Alpha: stronger near peak life, fades at both ends of the cycle.
+        float alpha = sin(p.life * 3.14159) * 0.8 + 0.2;
+
+        // Point size: comfortable base size so particles are visible even
+        // without audio; grows noticeably on bass transients.
+        float sz = 10.0 + u.bassEnergy * 14.0;
+
         VertexOut out;
         out.position  = float4(p.position, 0, 1);
-        out.pointSize = 3.0 + u.bassEnergy * 4.0;
+        out.pointSize = sz;
         out.color     = float4(rgb, alpha);
         return out;
     }
 
-    // Fragment shader: circular soft point sprite.
+    // Fragment shader: smooth Gaussian-ish soft disc for a glowing look.
     fragment float4 particleFragment(VertexOut in [[stage_in]],
                                      float2 pointCoord [[point_coord]])
     {
         float dist = length(pointCoord - float2(0.5));
         if (dist > 0.5) discard_fragment();
-        float alpha = in.color.a * (1.0 - dist * 2.0);
+        // Smooth falloff: bright centre, fades to transparent at the edge.
+        float alpha = in.color.a * smoothstep(0.5, 0.05, dist);
         return float4(in.color.rgb, alpha);
     }
     """
