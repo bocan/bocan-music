@@ -84,10 +84,7 @@ public final class EngineGraph: @unchecked Sendable {
         // outputNode.outputFormat is provided by the system device driver and is valid
         // before prepare(); graph modifications must not happen after prepare().
         let hwRate = self.engine.outputNode.outputFormat(forBus: 0).sampleRate
-        if hwRate > 0 {
-            // swiftlint:disable:next force_unwrapping
-            let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
-            let fmt = AVAudioFormat(standardFormatWithSampleRate: hwRate, channelLayout: layout)
+        if hwRate > 0, let fmt = StereoLayout.format(sampleRate: hwRate) {
             self.dsp.disconnect(engine: self.engine, playerNode: self.playerNode)
             self.dsp.connect(
                 format: fmt,
