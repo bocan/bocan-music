@@ -12,6 +12,7 @@
 #include <tstringlist.h>
 
 #include <cmath>
+#include <exception>
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -108,6 +109,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
 
 + (nullable BOCTags *)readTagsFromPath:(NSString *)path
                                  error:(NSError *__autoreleasing _Nullable *)outError {
+    try {
     TagLib::FileRef fileRef(
         [path fileSystemRepresentation],
         /* readAudioProperties */ true,
@@ -247,6 +249,29 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     }
 
     return tags;
+    } catch (const std::exception &e) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:@"io.cloudcauldron.bocan.metadata"
+                                            code:10
+                                        userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    @"TagLib threw std::exception while reading %@: %s",
+                    path, e.what()]
+            }];
+        }
+        return nil;
+    } catch (...) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:@"io.cloudcauldron.bocan.metadata"
+                                            code:11
+                                        userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    @"TagLib threw an unknown C++ exception while reading %@",
+                    path]
+            }];
+        }
+        return nil;
+    }
 }
 
 @end
@@ -260,6 +285,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
 + (BOOL)writeTagsToPath:(NSString *)path
                    tags:(BOCTags *)tags
                   error:(NSError *__autoreleasing _Nullable *)outError {
+    try {
     TagLib::FileRef fileRef([path fileSystemRepresentation]);
 
     if (fileRef.isNull() || !fileRef.tag()) {
@@ -388,6 +414,29 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     }
 
     return YES;
+    } catch (const std::exception &e) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:@"io.cloudcauldron.bocan.metadata"
+                                            code:12
+                                        userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    @"TagLib threw std::exception while writing %@: %s",
+                    path, e.what()]
+            }];
+        }
+        return NO;
+    } catch (...) {
+        if (outError) {
+            *outError = [NSError errorWithDomain:@"io.cloudcauldron.bocan.metadata"
+                                            code:13
+                                        userInfo:@{
+                NSLocalizedDescriptionKey: [NSString stringWithFormat:
+                    @"TagLib threw an unknown C++ exception while writing %@",
+                    path]
+            }];
+        }
+        return NO;
+    }
 }
 
 @end
