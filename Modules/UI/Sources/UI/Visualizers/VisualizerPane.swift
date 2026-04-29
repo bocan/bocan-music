@@ -53,6 +53,16 @@ public struct VisualizerPane: View {
             Spacer()
 
             Button {
+                self.openWindow(id: "visualizer-fullscreen")
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+            .help("Open fullscreen visualizer (⌘⇧F)")
+            .accessibilityLabel("Open fullscreen visualizer")
+
+            Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     self.vm.paneVisible = false
                 }
@@ -69,4 +79,6 @@ public struct VisualizerPane: View {
         .padding(.vertical, 8)
         .background(Color.black)
     }
+
+    @Environment(\.openWindow) private var openWindow
 }
