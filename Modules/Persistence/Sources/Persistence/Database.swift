@@ -93,13 +93,29 @@ public actor Database {
 
     // MARK: - Maintenance
 
-    /// Runs `PRAGMA incremental_vacuum` to reclaim free pages.
-    public func vacuum() async throws {
+    /// Threshold below which `vacuum()` is a no-op.
+    ///
+    /// Reclaiming a few KB of free pages on every quit just churns disk and
+    /// CloudKit-backed iCloud Drive backups; we only run it once the freelist
+    /// has grown past 1 MB of unused space.
+    private static let vacuumFreelistThresholdBytes: Int64 = 1 * 1024 * 1024
+
+    /// Runs `PRAGMA incremental_vacuum` to reclaim free pages, but only when
+    /// the freelist has grown past `vacuumFreelistThresholdBytes`.  Returns
+    /// `true` if vacuuming actually ran.
+    @discardableResult
+    public func vacuum() async throws -> Bool {
         self.log.debug("vacuum.start")
-        try await self.writer.write { db in
+        let didRun: Bool = try await self.writer.write { db in
+            let pageSize = try Int64.fetchOne(db, sql: "PRAGMA page_size") ?? 0
+            let freelist = try Int64.fetchOne(db, sql: "PRAGMA freelist_count") ?? 0
+            let freeBytes = pageSize * freelist
+            guard freeBytes >= Self.vacuumFreelistThresholdBytes else { return false }
             try db.execute(sql: "PRAGMA incremental_vacuum")
+            return true
         }
-        self.log.debug("vacuum.end")
+        self.log.debug("vacuum.end", ["ran": didRun])
+        return didRun
     }
 
     /// Runs `PRAGMA integrity_check` and throws if the result is not `ok`.
@@ -115,35 +131,52 @@ public actor Database {
         self.log.debug("integrity_check.end", ["result": result])
     }
 
-    /// Returns the number of the highest applied migration.
+    /// Returns the number of applied migrations.
+    ///
+    /// Reads from GRDB's bookkeeping table (`grdb_migrations`) rather than
+    /// the SQLite `user_version` pragma — `user_version` is reserved for
+    /// application use and should not be commandeered by infrastructure.
     public func schemaVersion() async throws -> Int {
         try await self.writer.read { db in
-            let version = try Int.fetchOne(db, sql: "PRAGMA user_version")
-            return version ?? 0
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM grdb_migrations") ?? 0
         }
+    }
+
+    /// Backs up the live database into `destination` using SQLite's online
+    /// backup API.  Writes are temporarily blocked while the snapshot copies,
+    /// but the destination is a complete, self-contained file even when the
+    /// source is in WAL mode.
+    func backup(to destination: any DatabaseWriter) async throws {
+        try await self.writer.backup(to: destination)
     }
 
     // MARK: - Private helpers
 
     private static func makeWriter(location: Location) throws -> any DatabaseWriter {
-        guard let url = location.url else {
-            let queue = try DatabaseQueue()
-            try Self.registerCustomFunctions(in: queue)
-            return queue
-        }
         var config = Configuration()
         config.prepareDatabase { db in
-            try db.execute(sql: "PRAGMA foreign_keys = ON")
-            try db.execute(sql: "PRAGMA busy_timeout = 5000")
-            try db.execute(sql: "PRAGMA recursive_triggers = ON")
+            try Self.applyConnectionPragmas(in: db)
             Self.registerREGEXP(in: db)
+        }
+        guard let url = location.url else {
+            // In-memory queues used by tests must apply the same per-connection
+            // pragmas as the on-disk pool — otherwise FK enforcement, the
+            // 5s busy timeout, and recursive triggers all silently differ
+            // between production and tests.
+            return try DatabaseQueue(configuration: config)
         }
         return try DatabasePool(path: url.path, configuration: config)
     }
 
-    /// Registers the `REGEXP` function for in-memory `DatabaseQueue` instances (tests).
-    private static func registerCustomFunctions(in queue: DatabaseQueue) throws {
-        try queue.write { db in Self.registerREGEXP(in: db) }
+    /// Per-connection PRAGMAs applied via `Configuration.prepareDatabase`.
+    ///
+    /// `foreign_keys` is per-connection in SQLite, so this must run on every
+    /// database handle (every reader and writer in a `DatabasePool`, plus
+    /// the single connection in a `DatabaseQueue`).
+    private static func applyConnectionPragmas(in db: GRDB.Database) throws {
+        try db.execute(sql: "PRAGMA foreign_keys = ON")
+        try db.execute(sql: "PRAGMA busy_timeout = 5000")
+        try db.execute(sql: "PRAGMA recursive_triggers = ON")
     }
 
     /// Registers the `REGEXP(pattern, value)` SQLite function.
@@ -172,10 +205,5 @@ public actor Database {
         }
         var migrator = Migrator.make()
         try migrator.migrate(writer)
-        // Stamp user_version with the migration count so schemaVersion() is readable.
-        let count = migrator.migrations.count
-        try await writer.write { db in
-            try db.execute(sql: "PRAGMA user_version = \(count)")
-        }
     }
 }
