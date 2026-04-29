@@ -8,7 +8,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 9)
+        #expect(version == 12)
     }
 
     @Test("Integrity check passes after migration")
@@ -63,10 +63,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports nine migrations")
+    @Test("Migrator reports twelve migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 9)
+        #expect(migrator.migrations.count == 12)
     }
 
     @Test("Playlists table has kind and accent_color after M007")
