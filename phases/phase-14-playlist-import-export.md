@@ -189,13 +189,13 @@ None new.
 
 ## Acceptance criteria
 
-- [ ] Import an M3U8 written by VLC → matching tracks resolved, unresolved list correct.
-- [ ] Export a playlist, edit in a text editor, re-import — same contents.
+- [x] Import an M3U8 written by VLC → matching tracks resolved, unresolved list correct.
+- [x] Export a playlist, edit in a text editor, re-import — same contents.
 - [ ] iTunes Library.xml import brings in playlists and (optionally) play stats.
 - [ ] CUE sheet lets me play individual tracks from a single-file rip.
-- [ ] Relative export survives moving the root.
-- [ ] 80%+ coverage on parsers/writers/resolver.
-- [ ] `make lint && make test-coverage` green.
+- [x] Relative export survives moving the root.
+- [x] 80%+ coverage on parsers/writers/resolver.
+- [x] `make lint && make test-coverage` green.
 
 ## Gotchas
 
