@@ -120,14 +120,15 @@ actor EditTransaction {
         // Start the root-folder security scope so TagReader / TagWriter can
         // access this file and create temp siblings in the same directory.
         // The scope must remain active for the entire read-write-verify cycle.
-        let rootURL = try await self.startRootScope(for: track.fileURL)
+        // The handle's `deinit` releases the scope when this function returns.
+        let rootScope = try await self.acquireRootScope(for: track.fileURL)
 
         // Fallback: if no folder root covers this file (e.g. it was added via
         // "Add Files…" as an individual root), activate its per-file bookmark.
         // This grants the sandbox read+write access to the specific file so that
         // TagReader/TagWriter can open it and FileManager can replace it.
         var perFileURL: URL? = nil
-        if rootURL == nil, let bookmark = track.fileBookmark {
+        if rootScope == nil, let bookmark = track.fileBookmark {
             var isStale = false
             if let resolved = try? URL(
                 resolvingBookmarkData: bookmark,
@@ -140,8 +141,10 @@ actor EditTransaction {
         }
 
         defer {
-            rootURL?.stopAccessingSecurityScopedResource()
+            // `rootScope` releases automatically via `deinit`; only the
+            // per-file fallback URL needs a manual stop.
             perFileURL?.stopAccessingSecurityScopedResource()
+            _ = rootScope // keep alive until end of function
         }
 
         // 2. Read current tags from file
@@ -254,16 +257,15 @@ actor EditTransaction {
 
     // MARK: - Security scope
 
-    /// Finds the library root that contains `fileURLString`, resolves its
-    /// security-scoped bookmark, and starts access.
-    ///
-    /// The caller **must** call `stopAccessingSecurityScopedResource()` on the
-    /// returned URL when the file operation is complete (typically via `defer`).
+    /// Acquires the security scope of the library root that contains
+    /// `fileURLString` and returns an RAII handle whose `deinit` releases it.
+    /// Caller binds the handle to a `let` for the duration of the operation;
+    /// no manual `defer` is required.
     ///
     /// Returns `nil` when no matching root exists (e.g. in-memory test DBs) or
     /// when the bookmark cannot be resolved — file I/O is then attempted with
     /// the raw URL, which works outside the sandbox.
-    private func startRootScope(for fileURLString: String) async throws -> URL? {
+    private func acquireRootScope(for fileURLString: String) async throws -> RootScopeHandle? {
         let roots = await (try? self.rootRepo.fetchAll()) ?? []
         guard let filePath = URL(string: fileURLString)?.path else { return nil }
         guard let root = roots.first(where: {
@@ -276,10 +278,14 @@ actor EditTransaction {
             options: .withSecurityScope,
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
-        ), rootURL.startAccessingSecurityScopedResource() else {
+        ) else {
+            self.log.warning("edit.root_scope.bookmark_unresolvable", ["filePath": filePath])
+            return nil
+        }
+        guard let handle = RootScopeHandle(url: rootURL) else {
             self.log.warning("edit.root_scope.failed", ["filePath": filePath])
             return nil
         }
-        return rootURL
+        return handle
     }
 }

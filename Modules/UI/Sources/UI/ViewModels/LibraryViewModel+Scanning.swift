@@ -134,6 +134,16 @@ public extension LibraryViewModel {
     }
 
     internal func triggerScan() {
+        self.triggerScan(mode: .quick)
+    }
+
+    /// Phase 3 audit M2: re-scan all library roots in either Quick or Full mode.
+    /// Exposed for the File-menu "Quick Rescan" / "Full Rescan" commands.
+    func rescanLibrary(mode: ScanMode) {
+        self.triggerScan(mode: mode)
+    }
+
+    internal func triggerScan(mode: ScanMode) {
         guard let scanner else { return }
         guard !self.isScanning else { return }
         self.isScanning = true
@@ -144,7 +154,7 @@ public extension LibraryViewModel {
         self.scanSummary = nil
         self.scanTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await scanner.scan(mode: .quick)
+            let stream = await scanner.scan(mode: mode)
             for await event in stream {
                 self.handleScanEvent(event)
             }
