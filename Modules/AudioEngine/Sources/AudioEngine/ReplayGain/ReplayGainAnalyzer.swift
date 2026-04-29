@@ -56,6 +56,14 @@ public struct ReplayGainAnalyzer: Sendable {
 
         let (leftSamples, rightSamples) = try await readSamples(from: file)
 
+        guard !leftSamples.isEmpty else {
+            log.warning("rg.analyze.empty", [
+                "url": url.lastPathComponent,
+                "reportedLength": file.length,
+            ])
+            throw AudioEngineError.decoderFailure(codec: "pcm", underlying: URLError(.zeroByteResource))
+        }
+
         let r128 = EBUR128.measure(
             leftSamples: leftSamples,
             rightSamples: rightSamples,
@@ -82,12 +90,24 @@ public struct ReplayGainAnalyzer: Sendable {
 
         var leftSamples: [Float] = []
         var rightSamples: [Float] = []
-        leftSamples.reserveCapacity(Int(file.length))
-        rightSamples.reserveCapacity(Int(file.length))
+        if file.length > 0 {
+            leftSamples.reserveCapacity(Int(file.length))
+            rightSamples.reserveCapacity(Int(file.length))
+        }
 
-        while file.framePosition < file.length {
+        // Read until the decoder yields a short/zero-length buffer. We don't rely
+        // on `file.framePosition < file.length` because some containers (notably
+        // FLACs without a STREAMINFO sample count) report length 0 even though
+        // the audio decodes fine.
+        while true {
             try Task.checkCancellation()
-            try file.read(into: buffer)
+            do {
+                try file.read(into: buffer)
+            } catch {
+                // Treat decode errors mid-stream as end-of-file so we still get a
+                // measurement from whatever decoded successfully.
+                break
+            }
             let frames = Int(buffer.frameLength)
             guard frames > 0 else { break }
 
