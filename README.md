@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml)
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue)
+![macOS 26+](https://img.shields.io/badge/macOS-26%2B-blue)
 ![Swift 6](https://img.shields.io/badge/Swift-6.0-orange)
 ![Xcode 26](https://img.shields.io/badge/Xcode-26-1575F9)
 
@@ -139,11 +139,11 @@ See [`phases/`](phases/README.md) for the full roadmap.
 | Binary / package name | `bocan` |
 | Bundle ID | `io.cloudcauldron.bocan` |
 | Log subsystem | `io.cloudcauldron.bocan` |
-| Minimum macOS | 14.0 (Sonoma) |
+| Minimum macOS | 26.0 (Tahoe) |
 
 ## Requirements
 
-- macOS 14.0+
+- macOS 26.0+
 - Xcode 26+
 - Homebrew (for FFmpeg, Chromaprint, TagLib, swiftlint, swiftformat, xcodegen, xcbeautify)
 
