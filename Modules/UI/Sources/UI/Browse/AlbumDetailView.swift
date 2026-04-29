@@ -74,21 +74,36 @@ public struct AlbumDetailView: View {
                         .foregroundStyle(Color.textSecondary)
                 }
 
-                // Play button
-                Button {
-                    Task {
-                        if let first = library.tracks.tracks.first {
-                            await self.library.play(track: first)
+                // Play / Shuffle buttons (Phase 4 audit H4).
+                HStack(spacing: 8) {
+                    Button {
+                        Task {
+                            if let first = library.tracks.tracks.first {
+                                await self.library.play(track: first)
+                            }
                         }
+                    } label: {
+                        Label("Play", systemImage: "play.fill")
+                            .font(Typography.body)
                     }
-                } label: {
-                    Label("Play", systemImage: "play.fill")
-                        .font(Typography.body)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .accessibilityLabel("Play Album")
+                    .help("Play this album from the first track")
+
+                    Button {
+                        Task { await self.playShuffled() }
+                    } label: {
+                        Label("Shuffle", systemImage: "shuffle")
+                            .font(Typography.body)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .accessibilityLabel("Shuffle Album")
+                    .help("Play this album in shuffled order")
+                    .disabled(self.library.tracks.tracks.isEmpty)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
                 .padding(.top, 4)
-                .accessibilityLabel("Play Album")
             }
 
             Spacer()
@@ -123,6 +138,13 @@ public struct AlbumDetailView: View {
     }
 
     // MARK: - Data loading
+
+    private func playShuffled() async {
+        let tracks = self.library.tracks.tracks
+        guard !tracks.isEmpty else { return }
+        await self.library.play(tracks: tracks, startingAt: 0)
+        await self.library.setShuffle(true)
+    }
 
     private func load() async {
         await self.library.tracks.load(albumID: self.albumID)
