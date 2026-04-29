@@ -194,4 +194,85 @@ struct TrackImporterTests {
         #expect(albums[0].coverArtHash == track.coverArtHash)
         #expect(albums[0].coverArtPath != nil)
     }
+
+    @Test("multi-valued ARTIST tag uses first value as the artists FK target")
+    func multiValueArtistUsesFirstValue() async throws {
+        let db = try await makeDB()
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+
+        var tags = self.makeTags(title: "Walk This Way")
+        tags.artist = "Run-DMC" // Flat field — used as fallback
+        tags.extendedTags = [
+            "ARTIST": ["Run-DMC", "Aerosmith"],
+            "GENRE": ["Hip-Hop", "Rock"],
+        ]
+
+        let url = URL(fileURLWithPath: "/tmp/walk-this-way.mp3")
+        let id = try await importer.importTrack(
+            url: url, bookmark: nil, tags: tags,
+            fileMtime: 1000, fileSize: 100
+        )
+
+        let track = try await TrackRepository(database: db).fetch(id: id)
+        let artists = try await ArtistRepository(database: db).fetchAll()
+        #expect(artists.count == 1)
+        #expect(artists[0].name == "Run-DMC")
+        #expect(track.artistID == artists[0].id)
+    }
+
+    @Test("extended_tags column is populated with deterministic JSON")
+    func extendedTagsPersisted() async throws {
+        let db = try await makeDB()
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+
+        var tags = self.makeTags(title: "JSON Roundtrip")
+        tags.extendedTags = [
+            "ARTIST": ["Run-DMC", "Aerosmith"],
+            "GENRE": ["Hip-Hop"],
+        ]
+
+        let url = URL(fileURLWithPath: "/tmp/json.mp3")
+        let id = try await importer.importTrack(
+            url: url, bookmark: nil, tags: tags,
+            fileMtime: 1000, fileSize: 100
+        )
+
+        let track = try await TrackRepository(database: db).fetch(id: id)
+        let json = try #require(track.extendedTags)
+        // Sorted-keys output is deterministic.
+        #expect(json == #"{"ARTIST":["Run-DMC","Aerosmith"],"GENRE":["Hip-Hop"]}"#)
+    }
+
+    @Test("empty extendedTags leaves the column NULL")
+    func emptyExtendedTagsIsNull() async throws {
+        let db = try await makeDB()
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+
+        let url = URL(fileURLWithPath: "/tmp/no-ext.mp3")
+        let id = try await importer.importTrack(
+            url: url, bookmark: nil, tags: self.makeTags(title: "No Ext"),
+            fileMtime: 1000, fileSize: 100
+        )
+
+        let track = try await TrackRepository(database: db).fetch(id: id)
+        #expect(track.extendedTags == nil)
+    }
 }

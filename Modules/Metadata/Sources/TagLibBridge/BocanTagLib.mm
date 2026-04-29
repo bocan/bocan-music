@@ -90,6 +90,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     self = [super init];
     if (self) {
         _coverArt = @[];
+        _extendedTags = @{};
         _replaygainTrackGain = NAN;
         _replaygainTrackPeak = NAN;
         _replaygainAlbumGain = NAN;
@@ -196,6 +197,29 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     // EBU R128 (stored as Q7.8 integer strings)
     tags.r128TrackGain = r128Gain(props, "R128_TRACK_GAIN");
     tags.r128AlbumGain = r128Gain(props, "R128_ALBUM_GAIN");
+
+    // -----------------------------------------------------------------------
+    // Full PropertyMap → NSDictionary<NSString *, NSArray<NSString *> *>
+    // Captures multi-valued tags (Vorbis comments / ID3v2.4) that the flat
+    // BOCTags fields cannot represent.
+    // -----------------------------------------------------------------------
+    {
+        NSMutableDictionary<NSString *, NSArray<NSString *> *> *ext =
+            [NSMutableDictionary dictionaryWithCapacity:props.size()];
+        for (auto it = props.begin(); it != props.end(); ++it) {
+            NSString *key = tagStringToNS(it->first);
+            if (!key || key.length == 0) continue;
+            const TagLib::StringList &values = it->second;
+            NSMutableArray<NSString *> *arr =
+                [NSMutableArray arrayWithCapacity:values.size()];
+            for (const auto &v : values) {
+                NSString *s = tagStringToNS(v);
+                if (s) [arr addObject:s];
+            }
+            if (arr.count > 0) ext[key] = [arr copy];
+        }
+        tags.extendedTags = [ext copy];
+    }
 
     // -----------------------------------------------------------------------
     // Cover art (TagLib 2.0 complexProperties API)

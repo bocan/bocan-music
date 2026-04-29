@@ -184,6 +184,11 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Foreign key to the `cover_art` row.
     public var coverArtHash: String?
 
+    /// JSON-encoded TagLib `PropertyMap` (string → [string]) capturing the
+    /// full set of multi-valued tags read from the file. `nil` until the
+    /// track is (re)imported after migration M015.
+    public var extendedTags: String?
+
     // MARK: - CUE virtual tracks (M013)
 
     /// Inclusive start offset within `source_file_url`, in milliseconds.
@@ -263,6 +268,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         userEdited: Bool = false,
         albumTrackSortKey: String? = nil,
         coverArtHash: String? = nil,
+        extendedTags: String? = nil,
         startOffsetMs: Int64? = nil,
         endOffsetMs: Int64? = nil,
         sourceFileURL: String? = nil,
@@ -321,6 +327,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.userEdited = userEdited
         self.albumTrackSortKey = albumTrackSortKey
         self.coverArtHash = coverArtHash
+        self.extendedTags = extendedTags
         self.startOffsetMs = startOffsetMs
         self.endOffsetMs = endOffsetMs
         self.sourceFileURL = sourceFileURL
@@ -392,6 +399,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case userEdited = "user_edited"
         case albumTrackSortKey = "album_track_sort_key"
         case coverArtHash = "cover_art_hash"
+        case extendedTags = "extended_tags"
         case startOffsetMs = "start_offset_ms"
         case endOffsetMs = "end_offset_ms"
         case sourceFileURL = "source_file_url"

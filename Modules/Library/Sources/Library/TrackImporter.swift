@@ -45,12 +45,18 @@ actor TrackImporter {
         fileMtime: Int64,
         fileSize: Int64
     ) async throws -> Int64 {
-        // Artist
-        let artistName = tags.artist ?? "Unknown Artist"
+        // Artist (may be multi-valued in Vorbis / ID3v2.4 — primary value
+        // becomes the artists.name FK target; the joined string lands in
+        // tracks.title via the importer's title field for display, while the
+        // full list is preserved in tracks.extended_tags JSON below).
+        let artistValues = tags.extendedTags["ARTIST"] ?? []
+        let primaryArtist = artistValues.first ?? tags.artist ?? "Unknown Artist"
+        let artistName = primaryArtist
         let artist = try await artistRepo.findOrCreate(name: artistName)
 
         // Album artist (may differ from track artist)
-        let albumArtistName = tags.albumArtist ?? artistName
+        let albumArtistValues = tags.extendedTags["ALBUMARTIST"] ?? []
+        let albumArtistName = albumArtistValues.first ?? tags.albumArtist ?? artistName
         let albumArtist = albumArtistName == artistName
             ? artist
             : try await self.artistRepo.findOrCreate(name: albumArtistName)
@@ -89,6 +95,11 @@ actor TrackImporter {
         let sortKey = String(format: "%02d.%04d", disc, track)
 
         let now = Int64(Date.now.timeIntervalSince1970)
+
+        // Serialise the full TagLib PropertyMap to JSON for persistence in
+        // tracks.extended_tags. Stable key order keeps the column free of
+        // gratuitous diffs across rescans.
+        let extendedTagsJSON: String? = self.encodeExtendedTags(tags.extendedTags)
 
         // Fetch existing to preserve play stats and user_edited flag
         let existing = try await trackRepo.fetchOne(fileURL: fileURLString)
@@ -156,6 +167,7 @@ actor TrackImporter {
             userEdited: false,
             albumTrackSortKey: sortKey,
             coverArtHash: coverArt?.hash,
+            extendedTags: extendedTagsJSON,
             addedAt: existing?.addedAt ?? now,
             updatedAt: now
         )
@@ -185,5 +197,23 @@ actor TrackImporter {
 
     private func isLossless(format: String) -> Bool {
         ["flac", "wav", "aiff", "aif", "alac", "wv", "ape", "dsf", "dff"].contains(format)
+    }
+
+    /// Encodes the multi-valued tag dictionary as a deterministic JSON string.
+    /// Keys are sorted so the column stays diff-stable across rescans of the
+    /// same file. Returns `nil` for an empty map (column stays NULL).
+    private func encodeExtendedTags(_ map: [String: [String]]) -> String? {
+        guard !map.isEmpty else { return nil }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        do {
+            let data = try encoder.encode(map)
+            return String(data: data, encoding: .utf8)
+        } catch {
+            self.log.warning("track.extended_tags.encode_failed", [
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
     }
 }
