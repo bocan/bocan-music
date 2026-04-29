@@ -118,4 +118,25 @@ struct ScrobbleQueueRepositoryTests {
         let stats = try await repo.stats()
         #expect(stats.dead == 0)
     }
+
+    @Test("fetchTrackMetadata returns row with joined artist/album names")
+    func fetchTrackMetadataLookup() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db, id: 7, title: "Helix", artist: "Aphex")
+        let repo = ScrobbleQueueRepository(database: db)
+        let row = try await repo.fetchTrackMetadata(trackID: 7)
+        let unwrapped = try #require(row)
+        #expect(unwrapped.title == "Helix")
+        #expect(unwrapped.artist == "Aphex")
+        #expect(unwrapped.duration == 240.0)
+        #expect(unwrapped.trackID == 7)
+    }
+
+    @Test("fetchTrackMetadata returns nil for missing track")
+    func fetchTrackMetadataMissing() async throws {
+        let db = try await self.makeDB()
+        let repo = ScrobbleQueueRepository(database: db)
+        let row = try await repo.fetchTrackMetadata(trackID: 999)
+        #expect(row == nil)
+    }
 }
