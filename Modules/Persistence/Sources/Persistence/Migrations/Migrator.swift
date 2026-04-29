@@ -42,6 +42,7 @@ public struct Migrator {
         M012Scrobbling.register(in: &dm)
         M013CueVirtualTracks.register(in: &dm)
         M014ForeignKeyActions.register(in: &dm)
+        M015TrackExtendedTags.register(in: &dm)
         return Self(inner: dm)
     }
 

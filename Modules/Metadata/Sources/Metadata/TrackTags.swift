@@ -48,6 +48,13 @@ public struct TrackTags: Sendable {
 
     public var coverArt: [ExtractedCoverArt]
 
+    // MARK: - Multi-valued tags
+
+    /// Full TagLib `PropertyMap` lifted into Swift: each key may carry
+    /// multiple values (Vorbis comments / ID3v2.4). The flat fields above
+    /// hold only the first value of each tag.
+    public var extendedTags: [String: [String]]
+
     // MARK: - Audio properties
 
     public var duration: Double
@@ -86,6 +93,7 @@ public struct TrackTags: Sendable {
         musicbrainzReleaseGroupID: String? = nil,
         replayGain: ReplayGain = ReplayGain(),
         coverArt: [ExtractedCoverArt] = [],
+        extendedTags: [String: [String]] = [:],
         duration: Double = 0,
         sampleRate: Int? = nil,
         bitrate: Int? = nil,
@@ -119,6 +127,7 @@ public struct TrackTags: Sendable {
         self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
         self.replayGain = replayGain
         self.coverArt = coverArt
+        self.extendedTags = extendedTags
         self.duration = duration
         self.sampleRate = sampleRate
         self.bitrate = bitrate

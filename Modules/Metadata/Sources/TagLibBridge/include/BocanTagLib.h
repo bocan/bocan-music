@@ -68,6 +68,11 @@ NS_ASSUME_NONNULL_BEGIN
 // Cover art
 @property (nonatomic, strong) NSArray<BOCCoverArt *> *coverArt;
 
+// Full TagLib PropertyMap, lifted into a Foundation type. Each value is the
+// list of values for the key (Vorbis comments and ID3v2.4 can have several).
+// Empty when reading a format whose PropertyMap mapping is not implemented.
+@property (nonatomic, strong) NSDictionary<NSString *, NSArray<NSString *> *> *extendedTags;
+
 // Audio properties
 @property (nonatomic, assign) double duration;      // seconds
 @property (nonatomic, assign) NSInteger sampleRate; // Hz

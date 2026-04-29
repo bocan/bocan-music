@@ -88,6 +88,15 @@ public struct TagReader: Sendable {
         tags.musicbrainzReleaseGroupID = raw.musicbrainzReleaseGroupID.map { String($0) }
         tags.replayGain = rg
         tags.coverArt = extracted
+        // Lift the TagLib PropertyMap (NSDictionary<NSString,NSArray<NSString>>)
+        // into a Swift [String: [String]]. Bridging is shallow but copies the
+        // strings, so the result is fully Sendable.
+        var ext: [String: [String]] = [:]
+        ext.reserveCapacity(raw.extendedTags.count)
+        for (key, values) in raw.extendedTags {
+            ext[String(key)] = values.map { String($0) }
+        }
+        tags.extendedTags = ext
         tags.duration = raw.duration
         tags.sampleRate = raw.sampleRate > 0 ? Int(raw.sampleRate) : nil
         tags.bitrate = raw.bitrate > 0 ? Int(raw.bitrate) : nil
