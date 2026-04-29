@@ -4,6 +4,7 @@ import Library
 import Observability
 import Persistence
 import Playback
+import Scrobble
 import SwiftUI
 import UI
 import UserNotifications
@@ -98,6 +99,8 @@ struct BocanApp: App {
     private let lyricsService: LyricsService
     private let lyricsViewModel: LyricsViewModel
     private let visualizerViewModel: VisualizerViewModel
+    private let scrobbleService: ScrobbleService
+    private let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
 
     var body: some Scene {
         // MARK: Main window
@@ -134,7 +137,7 @@ struct BocanApp: App {
         // MARK: Settings
 
         Settings {
-            SettingsScene()
+            SettingsScene(scrobbleViewModel: self.scrobbleSettingsViewModel)
                 .environmentObject(self.dspViewModel)
                 .environmentObject(self.libraryViewModel)
                 .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
@@ -198,7 +201,14 @@ struct BocanApp: App {
 
         let presetStore = PresetStore()
         let eng = AudioEngine(presets: presetStore)
-        let qp = QueuePlayer(engine: eng, database: db)
+
+        // Build the scrobble service before the player so the sink can be wired in.
+        let scrobbleParts = Self.makeScrobble(database: db, log: self.log)
+        let scrobble = scrobbleParts.service
+        self.scrobbleService = scrobble
+        self.scrobbleSettingsViewModel = scrobbleParts.viewModel
+
+        let qp = QueuePlayer(engine: eng, database: db, scrobbleSink: scrobble)
         let scanner = LibraryScanner(database: db)
 
         self.database = db
@@ -231,6 +241,9 @@ struct BocanApp: App {
 
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp)
+
+        // Start scrobble worker once everything is wired up.
+        Task { [scrobble] in await scrobble.start() }
     }
 
     // MARK: - Private helpers
@@ -246,6 +259,31 @@ struct BocanApp: App {
             "playback.rate": 1.0,
             "playback.gaplessPrerollSeconds": 5.0,
         ])
+    }
+
+    private struct ScrobbleParts {
+        let service: ScrobbleService
+        let viewModel: ScrobbleSettingsViewModel
+    }
+
+    private static func makeScrobble(database db: Database, log: AppLogger) -> ScrobbleParts {
+        let credentials = Credentials()
+        let adapter = CredentialsAdapter(store: credentials)
+        let http: any HTTPClient = URLSession.shared
+        var providers: [any ScrobbleProvider] = []
+        if let cfg = LastFmConfig.fromBundle() {
+            providers.append(LastFmProvider(config: cfg, http: http, credentials: adapter))
+        } else {
+            log.info("scrobble.lastfm.disabled", ["reason": "no api key in Info.plist"])
+        }
+        providers.append(ListenBrainzProvider(http: http, credentials: adapter))
+        let repo = ScrobbleQueueRepository(database: db)
+        let reachability = SystemReachability()
+        let service = ScrobbleService(providers: providers, repository: repo, reachability: reachability)
+        let viewModel = ScrobbleSettingsViewModel(service: service, credentials: adapter) { url in
+            NSWorkspace.shared.open(url)
+        }
+        return ScrobbleParts(service: service, viewModel: viewModel)
     }
 }
 

@@ -18,6 +18,7 @@
 		1EFDD9F88E80C58502A416CC /* libssl.3.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 12537730024981AF312B087F /* libssl.3.dylib */; };
 		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
 		2442A15E49DA0BC61C7B38E5 /* libdav1d.7.dylib in Resources */ = {isa = PBXBuildFile; fileRef = A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */; };
+		251364DE7069EC1D663C49E1 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
 		2F10190EBC449B79B6806730 /* Library in Frameworks */ = {isa = PBXBuildFile; productRef = D12DF4C04E3DB095C79E72AA /* Library */; };
 		497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */; };
 		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
@@ -34,9 +35,10 @@
 		8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = EE0BAD633E96C7812391D0FE /* AudioEngine */; };
 		905B83A145C60C115F496A91 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = E05BB587A6FC66933F79D585 /* Playback */; };
 		9C385BADF495477668F1AA60 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EFCF37422883F3C0CF718D56 /* Persistence */; };
-		AE7DBDB3DD4836389E11BAC5 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
+		AE7DBDB3DD4836389E11BAC5 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
 		BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */; };
 		BF2E14746809D06614CA8246 /* libx264.165.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EAE5B0E69C35644EFB27D606 /* libx264.165.dylib */; };
+		C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */; };
 		C60B8E502240CEA18C5EC019 /* libavutil.60.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 195A48BE28C07366C7A280FC /* libavutil.60.dylib */; };
 		CBD0BE1B05F022914A7025B6 /* libavcodec.62.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */; };
 		CDC6FA7516C4C15CBFBDF92F /* TracksViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */; };
@@ -70,6 +72,7 @@
 		8929B62314FB8D67123CC447 /* PlaylistDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailViewModelTests.swift; sourceTree = "<group>"; };
 		8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLoggerTests.swift; sourceTree = "<group>"; };
 		8C85F460580B049360716FE5 /* Observability */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Observability; path = Modules/Observability; sourceTree = SOURCE_ROOT; };
+		92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizerViewModelTests.swift; sourceTree = "<group>"; };
 		96DE902847E1307A6BBABDDC /* libswresample.6.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libswresample.6.dylib; sourceTree = "<group>"; };
 		A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libdav1d.7.dylib; sourceTree = "<group>"; };
 		A9999948FAD8FF8EE311BC9A /* fpcalc */ = {isa = PBXFileReference; path = fpcalc; sourceTree = "<group>"; };
@@ -81,12 +84,13 @@
 		D2389E70DB249B9953B85CD4 /* AudioEngine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = AudioEngine; path = Modules/AudioEngine; sourceTree = SOURCE_ROOT; };
 		D9B5B3110CE7BC30E8122BE8 /* UI */ = {isa = PBXFileReference; lastKnownFileType = folder; name = UI; path = Modules/UI; sourceTree = SOURCE_ROOT; };
 		DF5ADAFD0499127461E0702F /* libvpx.12.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libvpx.12.dylib; sourceTree = "<group>"; };
+		EA774AB72CC95F420281D172 /* Scrobble */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scrobble; path = Modules/Scrobble; sourceTree = SOURCE_ROOT; };
 		EAE5B0E69C35644EFB27D606 /* libx264.165.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libx264.165.dylib; sourceTree = "<group>"; };
 		EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_3799DCA4-B2B2-4A49-A03F-15872C544F6A" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_2D33B792-146A-4539-95C2-C86DE38C1DAC" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -100,7 +104,8 @@
 				905B83A145C60C115F496A91 /* Playback in Frameworks */,
 				2F10190EBC449B79B6806730 /* Library in Frameworks */,
 				0930C3F6FA5F345B5A26F234 /* Acoustics in Frameworks */,
-				AE7DBDB3DD4836389E11BAC5 /* UI in Frameworks */,
+				AE7DBDB3DD4836389E11BAC5 /* Scrobble in Frameworks */,
+				251364DE7069EC1D663C49E1 /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -183,6 +188,7 @@
 				30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */,
 				186F049CE6669E44D287954A /* SearchViewModelTests.swift */,
 				11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */,
+				92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */,
 			);
 			path = ViewModelTests;
 			sourceTree = "<group>";
@@ -204,6 +210,7 @@
 				8C85F460580B049360716FE5 /* Observability */,
 				6E014B4987A60B08F6DE299A /* Persistence */,
 				8312FA03D246CA845C348E77 /* Playback */,
+				EA774AB72CC95F420281D172 /* Scrobble */,
 				D9B5B3110CE7BC30E8122BE8 /* UI */,
 			);
 			name = Packages;
@@ -266,10 +273,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_E5A2DD33-2CC8-4A9E-AAA4-208246517286" /* bocan-music */ = {
+		"TEMP_62AF6351-9A20-4A2C-BE34-6A9420044A41" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_3799DCA4-B2B2-4A49-A03F-15872C544F6A" /* Secrets.xcconfig */,
+				"TEMP_2D33B792-146A-4539-95C2-C86DE38C1DAC" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -297,6 +304,7 @@
 				E05BB587A6FC66933F79D585 /* Playback */,
 				D12DF4C04E3DB095C79E72AA /* Library */,
 				66DA699183F712D5B228B317 /* Acoustics */,
+				7958F5C62AD395861A62A40B /* Scrobble */,
 				D1ABAB928B628AE14B24A3B8 /* UI */,
 			);
 			productName = Bocan;
@@ -373,6 +381,7 @@
 				DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */,
 				73929B74C971FA1861E7E569 /* XCLocalSwiftPackageReference "Modules/Persistence" */,
 				166FA01824FE15FCD4D4D28B /* XCLocalSwiftPackageReference "Modules/Playback" */,
+				3B5F2EF875A6F6FFF55F7ACB /* XCLocalSwiftPackageReference "Modules/Scrobble" */,
 				FE6D5E7CC473CB3FE993F62B /* XCLocalSwiftPackageReference "Modules/UI" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -426,6 +435,7 @@
 				BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */,
 				0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */,
 				CDC6FA7516C4C15CBFBDF92F /* TracksViewModelTests.swift in Sources */,
+				C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -483,7 +493,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_3799DCA4-B2B2-4A49-A03F-15872C544F6A" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_2D33B792-146A-4539-95C2-C86DE38C1DAC" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -614,7 +624,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_3799DCA4-B2B2-4A49-A03F-15872C544F6A" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_2D33B792-146A-4539-95C2-C86DE38C1DAC" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -748,6 +758,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Library;
 		};
+		3B5F2EF875A6F6FFF55F7ACB /* XCLocalSwiftPackageReference "Modules/Scrobble" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Scrobble;
+		};
 		73929B74C971FA1861E7E569 /* XCLocalSwiftPackageReference "Modules/Persistence" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Persistence;
@@ -790,6 +804,10 @@
 		725067C07C4341529B60581F /* Playback */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Playback;
+		};
+		7958F5C62AD395861A62A40B /* Scrobble */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Scrobble;
 		};
 		8F629E8B78D37805428363DA /* Observability */ = {
 			isa = XCSwiftPackageProductDependency;
