@@ -90,7 +90,7 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_5E6D996F-DC04-464B-84BC-8D91CA7A1538" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -273,10 +273,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_D7797DBA-49C4-4FE6-817F-E6500073062F" /* bocan-music */ = {
+		"TEMP_101AFD11-E76D-4822-8BC6-E07A491A4F28" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_5E6D996F-DC04-464B-84BC-8D91CA7A1538" /* Secrets.xcconfig */,
+				"TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -493,9 +493,10 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_5E6D996F-DC04-464B-84BC-8D91CA7A1538" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -560,6 +561,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
+				VALID_ARCHS = arm64;
 			};
 			name = Debug;
 		};
@@ -624,9 +626,10 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_5E6D996F-DC04-464B-84BC-8D91CA7A1538" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_1A6C6001-CB5F-495E-BD28-B02B8351D045" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -686,6 +689,7 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 6.0;
+				VALID_ARCHS = arm64;
 			};
 			name = Release;
 		};
