@@ -66,7 +66,8 @@
       "Bash(git -C /Users/chris/Play/bocan-music checkout .claude/settings.local.json)",
       "Bash(git -C /Users/chris/Play/bocan-music log --oneline Modules/Library/Tests/LibraryTests/ScanCoordinatorTests.swift)",
       "Bash(git -C /Users/chris/Play/bocan-music stash -- Modules/UI/Tests)",
-      "Bash(git -C /Users/chris/Play/bocan-music log --oneline -- Modules/UI/Tests/UITests/ViewModelTests/SnapshotTests.swift)"
+      "Bash(git -C /Users/chris/Play/bocan-music log --oneline -- Modules/UI/Tests/UITests/ViewModelTests/SnapshotTests.swift)",
+      "Bash(git commit *)"
     ]
   },
   "enabledPlugins": {

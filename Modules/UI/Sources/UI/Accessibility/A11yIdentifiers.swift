@@ -110,6 +110,14 @@ public enum A11y {
         public static let results = "searchResults"
     }
 
+    // MARK: - Visualizer
+
+    public enum Visualizer {
+        public static let pane = "visualizerPane"
+        public static let closeButton = "visualizerPane.close"
+        public static let host = "visualizerPane.host"
+    }
+
     // MARK: - Lyrics
 
     public enum Lyrics {

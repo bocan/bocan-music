@@ -44,6 +44,10 @@ public struct SettingsScene: View {
                 .tabItem { Label("Lyrics", systemImage: "text.quote") }
                 .tag(SettingsTab.lyrics)
 
+            VisualizerSettingsView()
+                .tabItem { Label("Visualizer", systemImage: "waveform") }
+                .tag(SettingsTab.visualizer)
+
             AboutView()
                 .tabItem { Label("About", systemImage: "info.circle") }
                 .tag(SettingsTab.about)
@@ -55,5 +59,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, lyrics, about
+    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, about
 }

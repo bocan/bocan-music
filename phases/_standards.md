@@ -5,7 +5,7 @@ Every phase assumes these. Re-read once, then obey without being asked.
 ## Language & Platform
 
 - **Swift 6.0+** with `-strict-concurrency=complete`. No `@preconcurrency` escape hatches except at clearly-marked third-party boundaries, with a TODO and a justification.
-- **macOS 14+ deployment target** (Sonoma). Nothing older.
+- **macOS 26+ deployment target** (Tahoe). Nothing older.
 - **Xcode 16+**.
 - **SwiftUI** primary; reach for `NSViewRepresentable`/`NSHostingController` only when SwiftUI genuinely cannot deliver. Document every drop-down to AppKit with a one-line comment explaining why.
 - **SPM only**. No CocoaPods, no Carthage, no manually-vendored xcframeworks unless they are the only option (e.g. FFmpeg binary artifacts).
@@ -33,7 +33,7 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 ## Naming
 
-- App display name: **Bòcan**
+- App display name: **Bòcan Music**
 - Binary / bundle / package / repo / module prefix: `bocan` (lowercase, ASCII)
 - Bundle ID: `io.cloudcauldron.bocan`
 - Type prefix: none. Swift modules namespace types.

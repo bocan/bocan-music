@@ -72,25 +72,34 @@ struct UISnapshotTests {
     @Suite("NowPlayingStrip Snapshots")
     @MainActor
     struct NowPlayingStripSnapshotTests {
-        private func makeVM() async throws -> NowPlayingViewModel {
+        private func makeNowPlayingVM() async throws -> NowPlayingViewModel {
             let db = try await Database(location: .inMemory)
             let engine = MockTransport()
             return NowPlayingViewModel(engine: engine, database: db)
         }
 
+        private func makeVisualizerVM() -> VisualizerViewModel {
+            VisualizerViewModel(engine: AudioEngine())
+        }
+
         @Test("Strip idle light mode")
         func stripIdleLight() async throws {
-            let vm = try await makeVM()
+            let vm = try await makeNowPlayingVM()
+            let vizVM = self.makeVisualizerVM()
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
-            let view = NowPlayingStrip(vm: vm).frame(width: size.width, height: size.height)
+            let view = NowPlayingStrip(vm: vm)
+                .environmentObject(vizVM)
+                .frame(width: size.width, height: size.height)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-idle-light")
         }
 
         @Test("Strip idle dark mode")
         func stripIdleDark() async throws {
-            let vm = try await makeVM()
+            let vm = try await makeNowPlayingVM()
+            let vizVM = self.makeVisualizerVM()
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
+                .environmentObject(vizVM)
                 .frame(width: size.width, height: size.height)
                 .colorScheme(.dark)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-idle-dark")
@@ -101,6 +110,7 @@ struct UISnapshotTests {
             let db = try await Database(location: .inMemory)
             let engine = MockTransport()
             let vm = NowPlayingViewModel(engine: engine, database: db)
+            let vizVM = self.makeVisualizerVM()
             let now = Int64(Date().timeIntervalSince1970)
             let track = Track(
                 fileURL: "file:///tmp/test.flac",
@@ -114,7 +124,9 @@ struct UISnapshotTests {
             )
             vm.setCurrentTrack(track)
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
-            let view = NowPlayingStrip(vm: vm).frame(width: size.width, height: size.height)
+            let view = NowPlayingStrip(vm: vm)
+                .environmentObject(vizVM)
+                .frame(width: size.width, height: size.height)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-with-track-light")
         }
     }
@@ -193,6 +205,83 @@ struct UISnapshotTests {
                 of: host(view, size: CGSize(width: 900, height: 600)),
                 as: .image(precision: 0.98),
                 named: "albums-empty-dark"
+            )
+        }
+    }
+
+    // MARK: - VisualizerSnapshotTests
+
+    // Note: Metal render paths (FluidMetal) are exempt from snapshot testing
+    // because MTKView requires a GPU, which is unavailable in headless environments.
+
+    @Suite("Visualizer Snapshots")
+    @MainActor
+    struct VisualizerSnapshotTests {
+        private static let syntheticAnalysis: Analysis = {
+            // Simulate a mid-heavy music signal for stable snapshots.
+            var bands = [Float](repeating: 0, count: FFTAnalyzer.bandCount)
+            for i in 0 ..< bands.count {
+                let t = Float(i) / Float(bands.count)
+                bands[i] = sin(t * .pi) * 0.8 // hump shape
+            }
+            return Analysis(bands: bands, rms: 0.6, peak: 0.9)
+        }()
+
+        @Test("SpectrumBars light mode")
+        func spectrumBarsLight() {
+            let viz = VisualizerViewModel(engine: AudioEngine())
+            viz.mode = .spectrumBars
+            viz.palette = .spectrum
+            let view = VisualizerHost(vm: viz)
+                .frame(width: 400, height: 200)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 400, height: 200)),
+                as: .image(precision: 0.95),
+                named: "viz-spectrum-bars-light"
+            )
+        }
+
+        @Test("SpectrumBars dark mode")
+        func spectrumBarsDark() {
+            let viz = VisualizerViewModel(engine: AudioEngine())
+            viz.mode = .spectrumBars
+            viz.palette = .spectrum
+            let view = VisualizerHost(vm: viz)
+                .frame(width: 400, height: 200)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 400, height: 200)),
+                as: .image(precision: 0.95),
+                named: "viz-spectrum-bars-dark"
+            )
+        }
+
+        @Test("Oscilloscope light mode")
+        func oscilloscopeLight() {
+            let viz = VisualizerViewModel(engine: AudioEngine())
+            viz.mode = .oscilloscope
+            viz.palette = .accent
+            let view = VisualizerHost(vm: viz)
+                .frame(width: 400, height: 200)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 400, height: 200)),
+                as: .image(precision: 0.95),
+                named: "viz-oscilloscope-light"
+            )
+        }
+
+        @Test("Oscilloscope dark mode")
+        func oscilloscopeDark() {
+            let viz = VisualizerViewModel(engine: AudioEngine())
+            viz.mode = .oscilloscope
+            viz.palette = .mono
+            let view = VisualizerHost(vm: viz)
+                .frame(width: 400, height: 200)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 400, height: 200)),
+                as: .image(precision: 0.95),
+                named: "viz-oscilloscope-dark"
             )
         }
     }

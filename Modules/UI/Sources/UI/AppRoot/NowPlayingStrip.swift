@@ -11,6 +11,7 @@ public struct NowPlayingStrip: View {
     @ObservedObject public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @EnvironmentObject private var dsp: DSPViewModel
+    @EnvironmentObject private var visualizer: VisualizerViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
@@ -201,6 +202,21 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.showDSP ? Color.accentColor : Color.textPrimary)
             .help("Equaliser & DSP")
             .accessibilityLabel("Equaliser & DSP")
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.visualizer.paneVisible.toggle()
+                }
+            } label: {
+                Image(systemName: "waveform")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(self.visualizer.paneVisible ? Color.accentColor : Color.textPrimary)
+            .help(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
+            .accessibilityLabel(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
+            .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.Visualizer.host)
         }
     }
 
