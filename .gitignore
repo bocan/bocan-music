@@ -67,3 +67,8 @@ Pods/
 *.swo
 *~
 Secrets.xcconfig
+
+# Website build artifacts (the site source itself IS tracked)
+/website/node_modules/
+/website/_site/
+/website/.cache/

@@ -1,0 +1,20 @@
+---
+layout: base.njk
+title: Changelog
+description: Release notes for every version of Bòcan.
+permalink: /changelog/
+pageClass: changelog
+---
+
+<div class="container container--narrow changelog">
+  <h1>Changelog</h1>
+  <p>
+    Pulled straight from the project's
+    <a href="{{ site.repo }}/blob/main/CHANGELOG.md" rel="external noopener"><code>CHANGELOG.md</code></a>.
+    The format follows
+    <a href="https://keepachangelog.com" rel="external noopener">Keep a Changelog</a>;
+    versions follow <a href="https://semver.org" rel="external noopener">SemVer</a>.
+  </p>
+
+  {{ changelog | md | safe }}
+</div>
