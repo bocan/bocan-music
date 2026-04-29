@@ -130,14 +130,14 @@ None new. Uses `Accelerate`, `Metal`, `MetalKit`.
 
 ## Acceptance criteria
 
-- [ ] At least three visualizer modes.
-- [ ] Fullscreen works.
-- [ ] 60fps on M-series; 30fps on battery by default.
-- [ ] No audible impact when a visualizer is running.
+- [x] At least three visualizer modes.
+- [x] Fullscreen works.
+- [x] 60fps on M-series; 30fps on battery by default.
+- [x] No audible impact when a visualizer is running.
 - [ ] No memory growth over a long session (< 10 MB drift in 30 min).
-- [ ] Snapshot tests for the non-Metal modes cover a known analysis input.
-- [ ] 80%+ coverage on the analysis path (Metal render paths are exempt from the line-coverage goal; document).
-- [ ] `make lint && make test-coverage` green.
+- [x] Snapshot tests for the non-Metal modes cover a known analysis input.
+- [x] 80%+ coverage on the analysis path (Metal render paths are exempt from the line-coverage goal; document).
+- [x] `make lint && make test-coverage` green.
 
 ## Gotchas
 
