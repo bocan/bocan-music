@@ -53,6 +53,27 @@ jobs:
         run: |
           echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
 
+      - name: Stub Secrets.xcconfig (xcodegen requires it)
+        env:
+          ACOUSTID_API_KEY: ${{ secrets.ACOUSTID_API_KEY }}
+          BOCAN_LASTFM_API_KEY: ${{ secrets.BOCAN_LASTFM_API_KEY }}
+          BOCAN_LASTFM_SHARED_SECRET: ${{ secrets.BOCAN_LASTFM_SHARED_SECRET }}
+        run: |
+          if [ ! -f Secrets.xcconfig ]; then
+            cp Secrets.xcconfig.template Secrets.xcconfig
+          fi
+          # Inject any optional repo secrets that happen to be set.  Missing
+          # secrets just leave the template's empty defaults in place.
+          if [ -n "$ACOUSTID_API_KEY" ]; then
+            sed -i '' "s|^ACOUSTID_API_KEY = .*|ACOUSTID_API_KEY = $ACOUSTID_API_KEY|" Secrets.xcconfig
+          fi
+          if [ -n "$BOCAN_LASTFM_API_KEY" ]; then
+            sed -i '' "s|^BOCAN_LASTFM_API_KEY = .*|BOCAN_LASTFM_API_KEY = $BOCAN_LASTFM_API_KEY|" Secrets.xcconfig
+          fi
+          if [ -n "$BOCAN_LASTFM_SHARED_SECRET" ]; then
+            sed -i '' "s|^BOCAN_LASTFM_SHARED_SECRET = .*|BOCAN_LASTFM_SHARED_SECRET = $BOCAN_LASTFM_SHARED_SECRET|" Secrets.xcconfig
+          fi
+
       - name: Generate Xcode project
         run: xcodegen generate
 
