@@ -213,7 +213,7 @@ public actor LibraryScanner {
         for root in allRoots {
             guard root.id != nil else { continue }
             let watchURL = self.watchableURL(for: root.path)
-            await watcher.watch(watchURL)
+            await watcher.watch(watchURL, bookmark: root.bookmark)
         }
 
         self.fsWatcher = watcher
@@ -227,13 +227,24 @@ public actor LibraryScanner {
         self.log.info("fsevents.stopped")
     }
 
+    /// Restarts every active FSEvent stream.  The App layer should call this
+    /// from a `NSWorkspace.didWakeNotification` handler — FSEvents may stop
+    /// firing reliably across long sleeps.
+    public func restartWatcher() async {
+        guard let watcher = self.fsWatcher else { return }
+        await watcher.restartAllStreams()
+        self.log.info("fsevents.restarted_after_wake")
+    }
+
     /// Adds a newly registered root to an already-running watcher.
     ///
     /// Called automatically by `addRoot(_:)` when watching is active.
     func watchNewRoot(path: String) async {
         guard let watcher = self.fsWatcher else { return }
+        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        let bookmark = roots.first(where: { $0.path == path })?.bookmark
         let url = self.watchableURL(for: path)
-        await watcher.watch(url)
+        await watcher.watch(url, bookmark: bookmark)
         self.log.debug("fsevents.root_added", ["path": path])
     }
 
@@ -254,7 +265,9 @@ public actor LibraryScanner {
     /// triggers `scanSingleFile` for each matching, non-hidden file.
     private func handleFSChange(urls: [URL]) async {
         var didImport = false
-        for url in urls {
+        for raw in urls {
+            // NFC-normalise — APFS may deliver decomposed UTF-8.
+            let url = URL(fileURLWithPath: raw.path.precomposedStringWithCanonicalMapping)
             guard !url.lastPathComponent.hasPrefix(".") else { continue }
             guard TagReader.isSupported(url) else { continue }
             guard FileManager.default.fileExists(atPath: url.path) else { continue }

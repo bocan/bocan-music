@@ -19,7 +19,7 @@ struct FSWatcherTests {
         }
 
         let testPaths = ["/tmp/a.mp3", "/tmp/b.flac"]
-        await watcher.handleEvents(paths: testPaths)
+        await watcher.handleEvents(paths: testPaths, flags: [0, 0])
 
         // Allow the spawned Task to complete
         try await Task.sleep(for: .milliseconds(50))

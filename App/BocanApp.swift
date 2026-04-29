@@ -246,6 +246,10 @@ struct BocanApp: App {
         // so all NSWorkspace subscriptions live in the app target.
         Self.installSleepWakeAndDeviceChangeObservers(engine: eng, sleepTimer: qp.sleepTimer)
 
+        // Phase 3 audit H1: re-open FSEvent streams after the system wakes;
+        // FSEvents may stop firing reliably across long sleeps.
+        Self.installLibraryWakeObserver(scanner: scanner)
+
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp, database: db)
 
@@ -257,6 +261,16 @@ struct BocanApp: App {
     }
 
     // MARK: - Private helpers
+
+    private static func installLibraryWakeObserver(scanner: LibraryScanner) {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            Task { await scanner.restartWatcher() }
+        }
+    }
 
     /// Phase 1 audit #6/#7/#8: pause-on-sleep, gated resume-on-wake, and
     /// default-output-device-change reconfiguration are wired here.  Pulled
