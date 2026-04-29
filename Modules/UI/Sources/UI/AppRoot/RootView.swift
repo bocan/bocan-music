@@ -20,6 +20,7 @@ public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
     @ObservedObject private var lyricsVM: LyricsViewModel
     @ObservedObject private var visualizerVM: VisualizerViewModel
+    @ObservedObject private var routeVM: RouteViewModel
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
@@ -29,10 +30,16 @@ public struct BocanRootView: View {
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
 
-    public init(vm: LibraryViewModel, lyricsVM: LyricsViewModel, visualizerVM: VisualizerViewModel) {
+    public init(
+        vm: LibraryViewModel,
+        lyricsVM: LyricsViewModel,
+        visualizerVM: VisualizerViewModel,
+        routeVM: RouteViewModel
+    ) {
         _vm = StateObject(wrappedValue: vm)
         self.lyricsVM = lyricsVM
         self.visualizerVM = visualizerVM
+        self.routeVM = routeVM
     }
 
     public var body: some View {
@@ -72,7 +79,7 @@ public struct BocanRootView: View {
                     }
                 }
 
-                NowPlayingStrip(vm: self.vm.nowPlaying)
+                NowPlayingStrip(vm: self.vm.nowPlaying, route: self.routeVM)
                     .environmentObject(self.visualizerVM)
             }
 
