@@ -32,7 +32,12 @@ public actor ChangeDetector {
 
     /// Seeds the detector with the current DB state before a scan begins.
     public func seed(_ entries: [(url: String, mtime: Int64, size: Int64)]) {
-        self.known = Dictionary(uniqueKeysWithValues: entries.map { ($0.url, ($0.mtime, $0.size)) })
+        // NFC-normalise stored URL strings — APFS may report decomposed UTF-8
+        // for the same on-disk file, so without this two scans of a path with
+        // accented characters could disagree.
+        self.known = Dictionary(uniqueKeysWithValues: entries.map {
+            ($0.url.precomposedStringWithCanonicalMapping, ($0.mtime, $0.size))
+        })
         self.visited = []
     }
 
@@ -40,7 +45,7 @@ public actor ChangeDetector {
     ///
     /// - Returns: `.new`, `.modified`, or `.unchanged`.
     public func check(url: URL, mtime: Int64, size: Int64) -> ChangeStatus {
-        let key = url.absoluteString
+        let key = url.absoluteString.precomposedStringWithCanonicalMapping
         self.visited.insert(key)
         guard let record = known[key] else { return .new }
         if record.mtime != mtime || record.size != size { return .modified }

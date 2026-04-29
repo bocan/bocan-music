@@ -21,6 +21,7 @@ actor ScanCoordinator {
     private let libraryRootRepo: LibraryRootRepository
     private let changeDetector: ChangeDetector
     private let tagReader: TagReader
+    private let settingsRepo: SettingsRepository
     private let log = AppLogger.make(.library)
 
     // MARK: - Init
@@ -35,6 +36,7 @@ actor ScanCoordinator {
         self.libraryRootRepo = LibraryRootRepository(database: database)
         self.changeDetector = ChangeDetector()
         self.tagReader = TagReader()
+        self.settingsRepo = SettingsRepository(database: database)
     }
 
     // MARK: - Internal types
@@ -122,11 +124,18 @@ actor ScanCoordinator {
         let supported = TagReader.supportedExtensions
         let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 4)
 
+        // Phase 3 audit H7: opt-in iCloud download for placeholder files.
+        let iCloudDownload: Bool = await (try? self.settingsRepo.get(Bool.self, for: "library.icloudDownload")) ?? nil ?? false
+
         // Collect all URLs first so we can cap concurrency properly
         var discoveredURLs: [(url: URL, rootID: Int64)] = []
         for root in roots {
             var walked = 0
-            for await fileURL in FileWalker.walk(root.url, supportedExtensions: supported) {
+            for await fileURL in FileWalker.walk(
+                root.url,
+                supportedExtensions: supported,
+                iCloudDownload: iCloudDownload
+            ) {
                 walked += 1
                 discoveredURLs.append((fileURL, root.rootID))
                 emit(.walking(currentPath: fileURL.path, walked: walked))
