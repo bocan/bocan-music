@@ -23,6 +23,8 @@ let package = Package(
             publicHeadersPath: "include",
             cxxSettings: [
                 .unsafeFlags([
+                    "-fexceptions",
+                    "-fcxx-exceptions",
                     "-I/opt/homebrew/include",
                     "-I/opt/homebrew/include/taglib",
                     "-I/usr/local/include",
