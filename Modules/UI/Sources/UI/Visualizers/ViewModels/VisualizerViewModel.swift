@@ -18,6 +18,9 @@ public final class VisualizerViewModel: ObservableObject {
     /// The latest analysis result, updated at the audio tap rate (~43×/s).
     @Published public private(set) var analysis: Analysis = .silent
 
+    /// The most recent raw audio buffer — used by waveform-based visualizers (e.g. Oscilloscope).
+    @Published public private(set) var latestSamples: AudioSamples?
+
     /// Whether the visualizer pane is currently visible.
     @AppStorage("visualizer.paneVisible") public var paneVisible = false
 
@@ -77,6 +80,7 @@ public final class VisualizerViewModel: ObservableObject {
         self.tapTask = nil
         Task { await self.engine.stopTap() }
         self.analysis = .silent
+        self.latestSamples = nil
         self.log.debug("visualizer.tap.stopped")
     }
 
@@ -90,6 +94,7 @@ public final class VisualizerViewModel: ObservableObject {
                 rawBands[i] = min(1, rawBands[i] * self.sensitivity)
             }
         }
+        self.latestSamples = samples
         self.analysis = Analysis(bands: rawBands, rms: samples.rms, peak: samples.peak)
     }
 

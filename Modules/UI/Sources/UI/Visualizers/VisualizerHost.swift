@@ -110,16 +110,16 @@ public struct VisualizerHost: View {
     // MARK: - Helpers
 
     /// The most recent audio samples — used by Canvas rendering.
-    /// Falls back to a buffer of zeros when the tap is silent.
+    /// Falls back to a silent buffer when the tap hasn't delivered a frame yet.
     private var latestSamples: AudioSamples {
-        AudioSamples(
+        self.vm.latestSamples ?? AudioSamples(
             timeStamp: .init(),
             sampleRate: 44100,
             mono: [],
             left: [],
             right: [],
-            rms: self.vm.analysis.rms,
-            peak: self.vm.analysis.peak
+            rms: 0,
+            peak: 0
         )
     }
 
