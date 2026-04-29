@@ -87,6 +87,16 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - **Export** any manual playlist via the sidebar context menu — choose `.m3u8`, `.m3u`, `.pls`, or `.xspf`, with **absolute** or **relative-to-folder** path mode for portable exports.
 - **CUE sheets** are recognised at scan time and exposed as virtual tracks (per-track playback offsets are still on the way).
 
+### Scrobbling
+
+- **Last.fm and ListenBrainz** support, running side-by-side or independently — connect either or both from the **Scrobbling** tab in Preferences.
+- **Last.fm desktop auth** flow: Bòcan opens the auth page in your browser and polls until you grant access; the session key lands in the macOS **Keychain**. **ListenBrainz** uses a personal user token (also Keychain-stored). Tokens are never written to disk or logs.
+- **Classic eligibility rule**: a play is scrobbled when the track is at least 30 s long *and* you've heard ≥ 50 % of it or ≥ 4 minutes — whichever comes first. Time spent paused doesn't count.
+- **Now-playing** pings on track start, throttled to one per 5 s so a fast skipper can't spam either service.
+- **Offline-resilient queue** — plays are persisted to SQLite and drained by per-provider workers with exponential backoff; reachability changes wake the workers automatically. Duplicates are blocked by a `(track_id, played_at)` unique constraint.
+- **Dead-letter handling**: rows that fail permanently (or exhaust retries) are surfaced in Settings with **Retry failed** and **Discard failed** buttons, alongside live counts of pending / failed / sent-today.
+- Loved-track toggles round-trip to both providers (where the track has an MBID for ListenBrainz feedback).
+
 ### Browser & UI
 
 - **Three-pane browser** — sidebar navigation, artist/album column browser, and a full track list.
@@ -140,7 +150,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 
 ## Features on the roadmap
 
-Phases 13–16 bring: **Last.fm / ListenBrainz scrobbling**, **AirPlay 2 / Google Cast** support, and full **App Store distribution** with notarisation and sandboxing hardening.
+Phases 15–16 bring: **AirPlay 2 / Google Cast** support, and full **App Store distribution** with notarisation and sandboxing hardening.
 
 See [`phases/`](phases/README.md) for the full roadmap.
 
