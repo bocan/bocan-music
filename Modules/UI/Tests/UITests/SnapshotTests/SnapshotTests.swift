@@ -1,4 +1,5 @@
 import AppKit
+import AudioEngine
 import Foundation
 import SnapshotTesting
 import SwiftUI
