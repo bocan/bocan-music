@@ -97,22 +97,32 @@ struct BocanApp: App {
     private let dockTile: DockTileController
     private let lyricsService: LyricsService
     private let lyricsViewModel: LyricsViewModel
+    private let visualizerViewModel: VisualizerViewModel
 
     var body: some Scene {
         // MARK: Main window
 
         WindowGroup("Bòcan", id: "main") {
-            BocanRootView(vm: self.libraryViewModel, lyricsVM: self.lyricsViewModel)
-                .environmentObject(self.dspViewModel)
-                .environmentObject(self.windowMode)
-                .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
+            BocanRootView(
+                vm: self.libraryViewModel,
+                lyricsVM: self.lyricsViewModel,
+                visualizerVM: self.visualizerViewModel
+            )
+            .environmentObject(self.dspViewModel)
+            .environmentObject(self.windowMode)
+            .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 1100, height: 700)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
         .commands {
-            BocanCommands(vm: self.libraryViewModel, windowMode: self.windowMode, lyricsVM: self.lyricsViewModel)
+            BocanCommands(
+                vm: self.libraryViewModel,
+                windowMode: self.windowMode,
+                lyricsVM: self.lyricsViewModel,
+                visualizerVM: self.visualizerViewModel
+            )
         }
 
         // MARK: Mini player
@@ -137,6 +147,15 @@ struct BocanApp: App {
         }
         .windowResizability(.contentMinSize)
         .windowStyle(.titleBar)
+
+        // MARK: Visualizer fullscreen
+
+        Window("Visualizer", id: "visualizer-fullscreen") {
+            VisualizerFullscreenView(vm: self.visualizerViewModel)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 1280, height: 800)
 
         // MARK: Menu bar widget
 
@@ -196,6 +215,7 @@ struct BocanApp: App {
         let lsvc = LyricsService(database: db, fetcher: LRClibClient())
         self.lyricsService = lsvc
         self.lyricsViewModel = LyricsViewModel(service: lsvc)
+        self.visualizerViewModel = VisualizerViewModel(engine: eng)
 
         // Forward NSWorkspace wake events to the sleep timer.
         // QueuePlayer lives in the Playback module and must not import AppKit,
@@ -243,6 +263,7 @@ private struct BocanCommands: Commands {
     let vm: LibraryViewModel
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
+    let visualizerVM: VisualizerViewModel
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -269,6 +290,13 @@ private struct BocanCommands: Commands {
                 self.lyricsVM.paneVisible.toggle()
             }
             .keyboardShortcut("l", modifiers: .command)
+
+            Button(self.visualizerVM.paneVisible ? "Hide Visualizer" : "Show Visualizer") {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.visualizerVM.paneVisible.toggle()
+                }
+            }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
 
             Button("Toggle Miniplayer") {
                 self.windowMode.toggleMiniPlayer()
