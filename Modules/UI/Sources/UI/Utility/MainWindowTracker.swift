@@ -81,15 +81,16 @@ final class WindowMenuExcludeView: NSView {
 
 // MARK: - SidebarWidthAutosave
 
-/// Phase 4 audit H2: enables AppKit's built-in `NSSplitView` autosave so the
-/// sidebar divider position survives app relaunches, and reports width
-/// changes back to `LibraryViewModel` so we can also persist via the
-/// `ui.state.v2` settings key (cross-machine profile portability).
+/// Phase 4 audit H2: persists the sidebar divider position so it survives
+/// app relaunches, and reports width changes back to `LibraryViewModel` so
+/// we can also persist via the `ui.state.v2` settings key (cross-machine
+/// profile portability).
 ///
-/// SwiftUI's `NavigationSplitView` does not expose its underlying
-/// `NSSplitView` directly, so we walk the window's content view hierarchy
-/// once the view is mounted, set `autosaveName`, and install a delegate
-/// that forwards divider moves.
+/// SwiftUI's `NavigationSplitView` is backed by an `NSSplitViewController`
+/// which owns the underlying `NSSplitView`'s delegate — attempting to
+/// replace that delegate raises an `NSInternalInconsistencyException`.
+/// Instead we observe `NSSplitView.didResizeSubviewsNotification` directly
+/// and only seed the initial width via `setPosition(_:ofDividerAt:)`.
 struct SidebarWidthAutosave: NSViewRepresentable {
     let initialWidth: Double?
     let onWidthChange: (Double) -> Void
@@ -116,16 +117,11 @@ struct SidebarWidthAutosave: NSViewRepresentable {
         guard coordinator.attached == false,
               let window = view.window,
               let splitView = Self.findSplitView(in: window.contentView) else { return }
-        splitView.autosaveName = "BocanRootSplitView"
-        if coordinator.previousDelegate == nil {
-            coordinator.previousDelegate = splitView.delegate
-        }
         coordinator.splitView = splitView
-        splitView.delegate = coordinator
+        coordinator.startObserving(splitView)
         coordinator.attached = true
 
-        // Seed initial width if AppKit's autosave didn't already restore one
-        // larger than the SwiftUI default.  Negative / zero widths are ignored.
+        // Seed initial width.  Negative / zero widths are ignored.
         if let width = initialWidth, width > 0,
            splitView.arrangedSubviews.count >= 2 {
             splitView.setPosition(CGFloat(width), ofDividerAt: 0)
@@ -141,21 +137,35 @@ struct SidebarWidthAutosave: NSViewRepresentable {
         return nil
     }
 
-    final class Coordinator: NSObject, NSSplitViewDelegate {
+    final class Coordinator: NSObject {
         let onWidthChange: (Double) -> Void
         weak var splitView: NSSplitView?
-        weak var previousDelegate: NSSplitViewDelegate?
         var attached = false
+        private var observer: NSObjectProtocol?
 
         init(onWidthChange: @escaping (Double) -> Void) {
             self.onWidthChange = onWidthChange
         }
 
-        func splitViewDidResizeSubviews(_ notification: Notification) {
-            self.previousDelegate?.splitViewDidResizeSubviews?(notification)
-            guard let splitView,
-                  let sidebar = splitView.arrangedSubviews.first else { return }
-            self.onWidthChange(Double(sidebar.frame.width))
+        deinit {
+            if let observer {
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
+
+        func startObserving(_ splitView: NSSplitView) {
+            // Use the notification (posted by NSSplitView itself) instead of
+            // becoming the delegate — the parent NSSplitViewController
+            // refuses delegate replacement and crashes with an assertion.
+            self.observer = NotificationCenter.default.addObserver(
+                forName: NSSplitView.didResizeSubviewsNotification,
+                object: splitView,
+                queue: .main
+            ) { [weak self] _ in
+                guard let self,
+                      let sidebar = self.splitView?.arrangedSubviews.first else { return }
+                self.onWidthChange(Double(sidebar.frame.width))
+            }
         }
     }
 }
