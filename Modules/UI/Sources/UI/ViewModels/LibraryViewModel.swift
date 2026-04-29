@@ -13,10 +13,18 @@ import UniformTypeIdentifiers
 // MARK: - UIStateV1
 
 /// Serialised sidebar + table UI state persisted to `settings` key `ui.state.v2`.
+///
+/// Phase 4 audit H2: `sidebarWidth` is persisted here as a fallback for the
+/// AppKit autosave name set on `NSSplitView` — autosave covers the common
+/// case (window restore on relaunch); the explicit value lets us seed a
+/// freshly-installed window or a profile copied between machines.
 struct UIStateV1: Codable {
     var selectedDestination: SidebarDestination = .songs
     var sortColumn: TrackSortColumn = .artist
     var sortAscending = true
+    /// Width of the navigation split-view's sidebar column, in points.
+    /// `nil` when no width has been recorded yet (first launch).
+    var sidebarWidth: Double?
 }
 
 // MARK: - LibraryViewModel
@@ -484,12 +492,26 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.engine as? QueuePlayer
     }
 
+    /// Last sidebar width reported by the AppKit split-view, used to seed
+    /// `UIStateV1.sidebarWidth` at save time.  Phase 4 audit H2.
+    @Published public var sidebarWidth: Double?
+
+    /// Bumped by the global ⌘F command; observed by `BocanRootView` to move
+    /// `@FocusState` onto the toolbar search field.  Phase 4 audit H5.
+    @Published public var searchFocusRequestID = UUID()
+
+    /// Asks the root view to focus the toolbar search field.
+    public func requestSearchFocus() {
+        self.searchFocusRequestID = UUID()
+    }
+
     /// Persists current UI state to settings.
     public func saveUIState() async {
         let state = UIStateV1(
             selectedDestination: selectedDestination,
             sortColumn: tracks.sortColumn,
-            sortAscending: self.tracks.sortAscending
+            sortAscending: self.tracks.sortAscending,
+            sidebarWidth: self.sidebarWidth
         )
         do {
             try await self.settingsRepo.set(state, for: "ui.state.v2")
@@ -504,6 +526,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             guard let state = try await settingsRepo.get(UIStateV1.self, for: "ui.state.v2") else { return }
             self.selectedDestination = state.selectedDestination
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
+            self.sidebarWidth = state.sidebarWidth
         } catch {
             self.log.error("library.restoreState.failed", ["error": String(reflecting: error)])
         }

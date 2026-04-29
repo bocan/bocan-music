@@ -67,6 +67,15 @@ struct BocanCommands: Commands {
             .keyboardShortcut(KeyBindings.playPause)
         }
 
+        // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the
+        // toolbar search field instead of triggering SwiftUI's no-op default.
+        CommandGroup(replacing: .textEditing) {
+            Button("Find") {
+                self.vm.requestSearchFocus()
+            }
+            .keyboardShortcut(KeyBindings.focusSearch)
+        }
+
         CommandGroup(after: .windowArrangement) {
             // Phase 4 audit C1: ⌘L is reserved for "Love" (the Track menu);
             // Show Lyrics moves to ⌘⌥L so the two don't collide.
