@@ -22,6 +22,7 @@ jobs:
       ARCHS: arm64
       ONLY_ACTIVE_ARCH: "NO"
       MARKETING_VERSION: ${{ github.ref_name }}
+      HAS_SPARKLE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' && 'true' || 'false' }}
 
     steps:
       - name: Checkout (full history for changelog)
@@ -243,7 +244,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Sign appcast entry (Sparkle EdDSA)
-        if: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' }}
+        if: env.HAS_SPARKLE_KEY == 'true'
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
