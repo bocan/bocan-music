@@ -2,6 +2,16 @@ import Foundation
 import Observability
 import Persistence
 
+// MARK: - ScrobbleSink
+
+/// Downstream consumer of recorded plays. The `Scrobble` module supplies the
+/// production implementation; tests can pass a no-op or capture for assertions.
+///
+/// Decoupled via this protocol so `Playback` doesn't depend on `Scrobble`.
+public protocol ScrobbleSink: Sendable {
+    func recordPlay(trackID: Int64, playedAt: Date, durationPlayed: TimeInterval) async
+}
+
 // MARK: - PlayHistoryRecorder
 
 /// Observes engine state and records play-history events.
@@ -22,6 +32,7 @@ public actor PlayHistoryRecorder {
 
     private let db: Database
     private let trackRepo: TrackRepository
+    private let scrobbleSink: (any ScrobbleSink)?
     private let log = AppLogger.make(.playback)
 
     // MARK: - Tracking state
@@ -33,9 +44,10 @@ public actor PlayHistoryRecorder {
 
     // MARK: - Init
 
-    public init(database: Database) {
+    public init(database: Database, scrobbleSink: (any ScrobbleSink)? = nil) {
         self.db = database
         self.trackRepo = TrackRepository(database: database)
+        self.scrobbleSink = scrobbleSink
     }
 
     // MARK: - Public API
@@ -102,7 +114,8 @@ public actor PlayHistoryRecorder {
         guard !self.hasScrobbled else { return }
         self.hasScrobbled = true
 
-        let playedAt = Int64(Date().timeIntervalSince1970)
+        let playedAtDate = Date()
+        let playedAt = Int64(playedAtDate.timeIntervalSince1970)
 
         do {
             try await self.db.write { db in
@@ -130,6 +143,11 @@ public actor PlayHistoryRecorder {
             self.log.debug("history.scrobbled", ["trackID": trackID, "duration": durationPlayed])
         } catch {
             self.log.error("history.scrobble.failed", ["error": String(reflecting: error)])
+            return
+        }
+        // Notify the scrobble pipeline so it can fan-out to remote services.
+        if let sink = scrobbleSink {
+            await sink.recordPlay(trackID: trackID, playedAt: playedAtDate, durationPlayed: durationPlayed)
         }
     }
 

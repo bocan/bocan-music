@@ -80,11 +80,11 @@ public actor QueuePlayer: Transport {
 
     // MARK: - Init
 
-    public init(engine: AudioEngine, database: Database) {
+    public init(engine: AudioEngine, database: Database, scrobbleSink: (any ScrobbleSink)? = nil) {
         self.engine = engine
         self.database = database
         self.queue = PlaybackQueue()
-        self.historyRecorder = PlayHistoryRecorder(database: database)
+        self.historyRecorder = PlayHistoryRecorder(database: database, scrobbleSink: scrobbleSink)
         self.persistence = QueuePersistence(database: database)
         self.gaplessScheduler = GaplessScheduler(engine: engine)
         self.trackRepo = TrackRepository(database: database)
