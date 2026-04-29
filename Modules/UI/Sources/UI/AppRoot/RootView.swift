@@ -75,7 +75,7 @@ public struct BocanRootView: View {
                                 self.lyricsVM.paneVisible.toggle()
                             }
                         }
-                        .help("Toggle lyrics pane (⌘L)")
+                        .help("Toggle lyrics pane (⌥⌘L)")
                     }
                 }
 
