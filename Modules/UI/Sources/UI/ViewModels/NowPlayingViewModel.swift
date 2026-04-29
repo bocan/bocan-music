@@ -358,7 +358,7 @@ private extension NowPlayingViewModel {
     /// the user has enabled the setting and the app is not frontmost.
     func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
         let settingOn = UserDefaults.standard.bool(forKey: "general.showNotifications")
-        let appActive = NSApp.isActive
+        let appActive = NSApp?.isActive ?? true
         self.log.debug("notifications.attempt", ["settingOn": settingOn, "appActive": appActive, "title": title])
         guard settingOn else { return }
         guard !appActive else { return }
