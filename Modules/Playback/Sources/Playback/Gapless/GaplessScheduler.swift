@@ -20,8 +20,24 @@ import Observability
 public actor GaplessScheduler {
     // MARK: - Configuration
 
-    /// How many seconds before track end to begin pre-scheduling.
-    private static let prerollSeconds: TimeInterval = 7.0
+    /// Default preroll window (seconds) used when the user hasn't customised
+    /// `playback.gaplessPrerollSeconds` or the persisted value is out of range.
+    private static let defaultPrerollSeconds: TimeInterval = 5.0
+    /// Lower bound (seconds) for the configurable preroll window.
+    private static let minPrerollSeconds: TimeInterval = 1.0
+    /// Upper bound (seconds) for the configurable preroll window.
+    private static let maxPrerollSeconds: TimeInterval = 15.0
+    /// `UserDefaults` key wired by `PlaybackSettingsView` and registered in
+    /// `BocanApp` defaults.  Read live each poll tick so changes apply without
+    /// requiring playback to restart.
+    private static let prerollDefaultsKey = "playback.gaplessPrerollSeconds"
+
+    /// Returns the user-configured preroll window, clamped to the supported range.
+    private static func currentPrerollSeconds() -> TimeInterval {
+        let raw = UserDefaults.standard.double(forKey: Self.prerollDefaultsKey)
+        guard raw > 0 else { return Self.defaultPrerollSeconds }
+        return min(Self.maxPrerollSeconds, max(Self.minPrerollSeconds, raw))
+    }
 
     // MARK: - Dependencies
 
@@ -116,7 +132,8 @@ public actor GaplessScheduler {
 
     private func checkAndArm() async {
         let remaining = await remainingTime()
-        guard remaining > 0, remaining <= Self.prerollSeconds else { return }
+        let preroll = Self.currentPrerollSeconds()
+        guard remaining > 0, remaining <= preroll else { return }
 
         // Already armed for this item?
         guard let provider = nextItemProvider else { return }
