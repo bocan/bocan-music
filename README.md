@@ -58,7 +58,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 
 - **Acoustic fingerprinting** via a bundled Chromaprint / fpcalc binary — no extra install required.
 - Submits fingerprints to [AcoustID](https://acoustid.org) and resolves matches against **MusicBrainz** to retrieve title, artist, album, year, track number, and ISRC.
-- Results are presented as a confirmation sheet — you choose which fields to accept; nothing is written without your say-so.
+- Results open in a **per-field confirmation sheet**: each candidate expands to show every tag (title, artist, album artist, album, genre, track #, disc #, year) with the **current value beside the proposed value** and a tickbox per field. Fields where the candidate matches what you already have are pre-disabled; fields that would change are pre-ticked. Hit "Apply Selected" and only the boxes you ticked are written — the rest are left untouched.
 - Sliding-window rate limiting keeps both the AcoustID (3 req/s) and MusicBrainz (1 req/s) APIs happy.
 
 ### DSP & audio effects
@@ -71,6 +71,21 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - **EQ presets** — built-in presets (Flat, Rock, Classical, Vocal, Bass Boost…) plus unlimited user-defined presets, persisted in the database.
 - **ReplayGain** — reads existing `REPLAYGAIN_TRACK_GAIN` / `REPLAYGAIN_ALBUM_GAIN` tags and applies them at playback time; analyses and writes tags for tracks that don't have them (EBU R128 K-weighted loudness).
 - **Per-track / per-album / global EQ** assignment stored in the database.
+
+### Visualisers
+
+- **Three real-time visualisers** driven by the live audio stream: a **spectrum bars** FFT display, a classic **oscilloscope** waveform, and a **fluid Metal** GPU shader that reacts to the music's energy.
+- A built-in **visualiser pane** docks beside Now Playing; **⌘⇧F** breaks it out into a dedicated fullscreen window for parties and lean-back listening.
+- **Sensitivity control** (0.1×–3.0×) and an **FPS cap** (30 / 60 / unlimited) let you trade detail for battery — settings persist via `AppStorage`.
+- Tap-anywhere mode switching between visualisers; the active mode is remembered between launches.
+
+### Playlists & playlist I/O
+
+- **Manual playlists** with drag-and-drop reordering, nestable folders, and SQLite-backed persistence.
+- **Smart playlists** built from a rule editor (artist / album / genre / play-count / date-added / rating predicates, AND/OR groups) compiled to live SQL — results update automatically as your library changes.
+- **Import** `.m3u`, `.m3u8`, `.pls`, and `.xspf` playlists via **File ▸ Import Playlist…** (⇧⌘O). Track resolution tries an exact path match first, then falls back to fuzzy artist/title/duration matching against your library.
+- **Export** any manual playlist via the sidebar context menu — choose `.m3u8`, `.m3u`, `.pls`, or `.xspf`, with **absolute** or **relative-to-folder** path mode for portable exports.
+- **CUE sheets** are recognised at scan time and exposed as virtual tracks (per-track playback offsets are still on the way).
 
 ### Browser & UI
 
@@ -125,7 +140,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 
 ## Features on the roadmap
 
-Phases 11–16 bring: **synced lyrics** (LRC + embedded), **audio visualisers**, **Last.fm / ListenBrainz scrobbling**, **smart + manual playlists**, **M3U/PLS playlist import/export**, **Google Cast** support, and full **App Store distribution** with notarisation and sandboxing hardening.
+Phases 13–16 bring: **Last.fm / ListenBrainz scrobbling**, **AirPlay 2 / Google Cast** support, and full **App Store distribution** with notarisation and sandboxing hardening.
 
 See [`phases/`](phases/README.md) for the full roadmap.
 
