@@ -166,6 +166,7 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.vm.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
             .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
+            .accessibilityHint(self.vm.shuffleOn ? "Activate to turn shuffle off" : "Activate to turn shuffle on")
             .accessibilityAddTraits(.isToggle)
 
             Button {
@@ -178,6 +179,18 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
             .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
             .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
+            .accessibilityHint({
+                switch self.vm.repeatMode {
+                case .off:
+                    "Activate to repeat all tracks"
+
+                case .all:
+                    "Activate to repeat current track"
+
+                case .one:
+                    "Activate to turn repeat off"
+                }
+            }())
             .accessibilityAddTraits(.isToggle)
 
             Button {
@@ -190,6 +203,8 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(self.vm.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
             .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
+            .accessibilityHint(self.vm
+                .stopAfterCurrent ? "Activate to keep playing after this track" : "Activate to stop playback after this track")
             .accessibilityAddTraits(.isToggle)
         }
     }
