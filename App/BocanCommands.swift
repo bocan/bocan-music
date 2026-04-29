@@ -65,6 +65,52 @@ struct BocanCommands: Commands {
                 Task { await self.vm.nowPlaying.playPause() }
             }
             .keyboardShortcut(KeyBindings.playPause)
+
+            Button("Next Track") {
+                Task { await self.vm.nowPlaying.next() }
+            }
+            .keyboardShortcut(KeyBindings.nextTrack)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
+            Button("Previous Track") {
+                Task { await self.vm.nowPlaying.previous() }
+            }
+            .keyboardShortcut(KeyBindings.previousTrack)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
+            Divider()
+
+            // Phase 5 audit H1: keyboard-accessible mode toggles.  Labels
+            // include the current state so VoiceOver announces it and so
+            // users can confirm without opening the strip.
+            Button("Toggle Shuffle") {
+                Task { await self.vm.nowPlaying.toggleShuffle() }
+            }
+            .keyboardShortcut(KeyBindings.toggleShuffle)
+
+            Button("Cycle Repeat") {
+                Task { await self.vm.nowPlaying.cycleRepeat() }
+            }
+            .keyboardShortcut(KeyBindings.cycleRepeat)
+
+            Button("Toggle Stop After Current") {
+                Task { await self.vm.nowPlaying.toggleStopAfterCurrent() }
+            }
+            .keyboardShortcut(KeyBindings.stopAfterCurrent)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
+            Divider()
+
+            Button("Clear Queue") {
+                Task { await self.vm.clearQueue() }
+            }
+            .keyboardShortcut(KeyBindings.clearQueue)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
+            Button("Show Up Next") {
+                Task { await self.vm.selectDestination(.upNext) }
+            }
+            .keyboardShortcut(KeyBindings.showUpNext)
         }
 
         // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the

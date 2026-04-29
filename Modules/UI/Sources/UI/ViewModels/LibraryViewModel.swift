@@ -498,6 +498,49 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         await qp.setRepeat(mode)
     }
 
+    /// Clears the entire playback queue and stops playback.  Used by the
+    /// Playback menu's "Clear Queue" command (Phase 5 audit H1) and the
+    /// matching Up Next toolbar / context-menu surfaces.
+    public func clearQueue() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.stop()
+        await qp.queue.clear()
+    }
+
+    /// Jumps to and starts playing the queue item at `index` in the existing
+    /// queue.  Used by the Up Next "Play From Here" context-menu action
+    /// (Phase 5 audit M1).
+    public func playFromQueueIndex(_ index: Int) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        do {
+            try await qp.playAt(index: index)
+        } catch {
+            self.log.error("library.playFromQueueIndex.failed", [
+                "index": index,
+                "error": String(reflecting: error),
+            ])
+        }
+    }
+
+    /// Moves a queue item to the top of the queue.  Used by the Up Next
+    /// "Move to Top" context-menu action (Phase 5 audit M1).
+    public func moveQueueItemToTop(id: QueueItem.ID) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let items = await qp.queue.items
+        guard let from = items.firstIndex(where: { $0.id == id }), from != 0 else { return }
+        await qp.queue.move(fromIndex: from, toIndex: 0)
+    }
+
+    /// Moves a queue item to the bottom of the queue.  Used by the Up Next
+    /// "Move to Bottom" context-menu action (Phase 5 audit M1).
+    public func moveQueueItemToBottom(id: QueueItem.ID) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let items = await qp.queue.items
+        let last = items.count - 1
+        guard let from = items.firstIndex(where: { $0.id == id }), from != last, last >= 0 else { return }
+        await qp.queue.move(fromIndex: from, toIndex: last)
+    }
+
     /// The underlying `QueuePlayer` if the engine is one; otherwise `nil`.
     public var queuePlayer: QueuePlayer? {
         self.engine as? QueuePlayer
