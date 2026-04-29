@@ -1,0 +1,56 @@
+---
+layout: base.njk
+title: Credits
+description: Standing on the shoulders of open-source giants.
+permalink: /credits/
+---
+
+<div class="container container--narrow">
+  <h1>Credits</h1>
+  <p>
+    {{ site.title }} stands on the shoulders of giants. The code below is what
+    makes the app possible. If you ever meet one of these maintainers in a
+    pub, buy them a pint.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th>Project</th><th>Licence</th><th>Used for</th></tr>
+    </thead>
+    <tbody>
+      {% for c in credits %}
+      <tr>
+        <td><a href="{{ c.url }}" rel="external noopener">{{ c.name }}</a></td>
+        <td>{{ c.license }}</td>
+        <td>{{ c.purpose }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Inspirations</h2>
+  <p>
+    iTunes 9, Winamp 5, Foobar2000, Cog, Audirvana, Swinsian, Vox. We took
+    notes from all of them. Mostly the good ones.
+  </p>
+
+  <h2>The name</h2>
+  <p>
+    <em>Bòcan</em> is Scottish Gaelic for a sprite or a hobgoblin — a small
+    spirit said to live in the hearth. It seemed appropriate for something
+    that lives quietly in your menu bar and plays you music.
+  </p>
+
+  <h2>People</h2>
+  <p>
+    Built by <a href="https://github.com/bocan" rel="external noopener">Chris Funderburg</a>
+    at <a href="https://cloudcauldron.io" rel="external noopener">Cloud Cauldron</a>.
+  </p>
+
+  <h2>Full third-party notices</h2>
+  <p>
+    The complete <code>NOTICES.md</code> with full licence text is included in
+    every release and viewable
+    <a href="{{ site.repo }}/blob/main/NOTICES.md" rel="external noopener">on GitHub</a>.
+  </p>
+</div>

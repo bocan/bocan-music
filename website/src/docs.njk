@@ -1,0 +1,102 @@
+---
+layout: base.njk
+title: Docs
+description: How to use Bòcan.
+permalink: /docs/
+---
+
+<div class="container container--narrow">
+  <h1>Docs</h1>
+  <p>
+    {{ site.title }} is meant to be obvious. If you're reading this, it
+    probably wasn't obvious enough. Sorry. We'll fix that.
+  </p>
+
+  <h2 id="getting-started">Getting started</h2>
+  <ol>
+    <li>Drag {{ site.title }} into <code>/Applications</code>.</li>
+    <li>Open it.</li>
+    <li>Choose <strong>Library &rarr; Add Folder…</strong> and point at your music.</li>
+    <li>Wait while it scans, fingerprints, and reads tags. Watch the spectrum analyser bounce.</li>
+    <li>Listen.</li>
+  </ol>
+
+  <h2 id="keyboard-shortcuts">Keyboard shortcuts</h2>
+  <table>
+    <thead><tr><th>Shortcut</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><kbd>Space</kbd></td><td>Play / Pause</td></tr>
+      <tr><td><kbd>&rarr;</kbd></td><td>Next track</td></tr>
+      <tr><td><kbd>&larr;</kbd></td><td>Previous track</td></tr>
+      <tr><td><kbd>&uarr;</kbd> / <kbd>&darr;</kbd></td><td>Volume up / down</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>F</kbd></td><td>Search library</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>L</kbd></td><td>Toggle lyrics pane</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>M</kbd></td><td>Toggle mini-player</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>I</kbd></td><td>Get info / tag editor</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Preferences</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⌥</kbd><kbd>S</kbd></td><td>Sleep timer</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="supported-formats">Supported formats</h2>
+  <p>
+    FLAC, ALAC, WAV, AIFF, MP3, AAC/M4A, OGG Vorbis, Opus, WavPack,
+    Monkey's Audio (APE), Musepack, DSD (DSF/DFF). Bit-perfect output up to
+    32-bit / 384 kHz. DSD via DoP.
+  </p>
+
+  <h2 id="smart-playlists">Smart playlists</h2>
+  <p>
+    Smart playlists support nested groups, all standard fields (artist,
+    album, year, BPM, rating, play count, last played, date added, key, …),
+    and a "limit by" clause. Shuffle is reproducible per session — no
+    "shuffle" that mysteriously plays the same five tracks.
+  </p>
+
+  <h2 id="cli">Command-line</h2>
+  <p>
+    {{ site.title }} ships with a tiny URL handler:
+    <code>open "bocan://play/track/&lt;uuid&gt;"</code>. Useful for scripting,
+    Stream Deck, Alfred workflows, and so on.
+  </p>
+
+  <h2 id="troubleshooting">Troubleshooting</h2>
+
+  <h3>Audio drops out for half a second</h3>
+  <p>
+    Almost always a sample-rate mismatch with the output device. Open
+    <strong>Audio MIDI Setup</strong> and set the device to a fixed rate
+    that matches most of your library (often 48 kHz or 96 kHz).
+    {{ site.title }} resamples on the fly when it has to, but switching rates
+    on the device is what causes the gap.
+  </p>
+
+  <h3>"Bòcan can't be opened because Apple cannot check it for malicious software"</h3>
+  <p>
+    You probably downloaded an unsigned development build, or Gatekeeper's
+    cache is stale. Right-click the app and choose <strong>Open</strong>;
+    confirm once. After that it'll launch normally.
+  </p>
+
+  <h3>Library scan is slow on a NAS</h3>
+  <p>
+    Mount with SMB3 over a wired connection where possible. The first scan
+    fingerprints every file, which means reading every byte. Subsequent
+    scans only look at modified files.
+  </p>
+
+  <h3>It crashed</h3>
+  <p>
+    Logs land in <code>~/Library/Logs/Bocan/</code>. Open one and zip it.
+    File an issue on
+    <a href="{{ site.repo }}/issues" rel="external noopener">GitHub</a> with
+    the zip attached, and a description of what you were doing.
+  </p>
+
+  <h2 id="more">More</h2>
+  <p>
+    For the full architecture, build instructions, and how to contribute,
+    see <a href="{{ site.repo }}#readme" rel="external noopener">the README</a>
+    and <a href="{{ site.repo }}/blob/main/CONTRIBUTING.md" rel="external noopener">CONTRIBUTING.md</a>.
+  </p>
+</div>

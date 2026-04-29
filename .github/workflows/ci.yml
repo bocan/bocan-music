@@ -39,6 +39,26 @@ jobs:
         run: |
           echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
 
+      - name: Stub Secrets.xcconfig (xcodegen requires it)
+        env:
+          ACOUSTID_API_KEY: ${{ secrets.ACOUSTID_API_KEY }}
+          BOCAN_LASTFM_API_KEY: ${{ secrets.BOCAN_LASTFM_API_KEY }}
+          BOCAN_LASTFM_SHARED_SECRET: ${{ secrets.BOCAN_LASTFM_SHARED_SECRET }}
+        run: |
+          if [[ ! -f Secrets.xcconfig ]]; then
+            cp Secrets.xcconfig.template Secrets.xcconfig
+          fi
+          # Inject CI-provided values when present (otherwise template defaults stay).
+          if [[ -n "${ACOUSTID_API_KEY:-}" ]]; then
+            /usr/bin/sed -i '' "s|^ACOUSTID_API_KEY.*|ACOUSTID_API_KEY = ${ACOUSTID_API_KEY}|" Secrets.xcconfig
+          fi
+          if [[ -n "${BOCAN_LASTFM_API_KEY:-}" ]]; then
+            /usr/bin/sed -i '' "s|^BOCAN_LASTFM_API_KEY.*|BOCAN_LASTFM_API_KEY = ${BOCAN_LASTFM_API_KEY}|" Secrets.xcconfig
+          fi
+          if [[ -n "${BOCAN_LASTFM_SHARED_SECRET:-}" ]]; then
+            /usr/bin/sed -i '' "s|^BOCAN_LASTFM_SHARED_SECRET.*|BOCAN_LASTFM_SHARED_SECRET = ${BOCAN_LASTFM_SHARED_SECRET}|" Secrets.xcconfig
+          fi
+
       - name: Doctor (print tool versions)
         run: make doctor
 

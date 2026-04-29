@@ -1,0 +1,42 @@
+[
+  {
+    "title": "Gapless. Properly gapless.",
+    "body": "Nanosecond-anchored scheduling on the same audio node. Live albums and DJ mixes flow without that little hiccup other players sneak past you."
+  },
+  {
+    "title": "Plays the awkward stuff.",
+    "body": "FLAC, ALAC, MP3, AAC, OGG, Opus, WavPack, Monkey's Audio, DSD. Bit-perfect output to whatever DAC you've got plugged in."
+  },
+  {
+    "title": "Smart playlists with teeth.",
+    "body": "Real predicates, not hand-wavy ones. \"Played fewer than three times since 2019, rated four stars or higher, not in any other smart list.\" Done."
+  },
+  {
+    "title": "Tags it knows; tags you don't.",
+    "body": "AcoustID fingerprinting hands you MusicBrainz IDs for that 64 kbps Limp Bizkit b-side from 2003 your friend insists is yours."
+  },
+  {
+    "title": "Mini-player that doesn't lie.",
+    "body": "Stays on top, sized like a Winamp window, with a real spectrum analyser. No fake Apple-Music-style \"oscilloscope\". Reads the actual signal."
+  },
+  {
+    "title": "Lyrics, scrolling, synced.",
+    "body": "LRC files, embedded lyrics, or fetched from Last.fm. Karaoke-style line highlight. Toggle a translucent lyrics pane next to the queue."
+  },
+  {
+    "title": "Cross-fade the mood.",
+    "body": "Per-genre fade durations. Equal-power curves. The dance set blends, the classical doesn't. You set the rules once."
+  },
+  {
+    "title": "Scrobbles only when you say so.",
+    "body": "Last.fm and ListenBrainz, opt-in, batched, signed. No background telemetry, no \"anonymous usage stats\". Bòcan never phones home."
+  },
+  {
+    "title": "Casts to AirPlay and Chromecast.",
+    "body": "Pick a HomePod, a Sonos, a TV, or a cheap Chromecast Audio you forgot you owned. Volume control follows the focused window."
+  },
+  {
+    "title": "The Homer of music players.",
+    "body": "Every cool feature from iTunes 9, Winamp 5, Foobar2000, and Cog — without the bloat, without the spyware, without the cloud."
+  }
+]

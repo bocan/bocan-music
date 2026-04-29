@@ -1,0 +1,19 @@
+{
+  "title": "Bòcan",
+  "tagline": "A music player for people who still keep their CDs.",
+  "description": "Native macOS music player. Gapless. Lossless. Yours. Plays everything from FLAC and DSD to your dustiest MP3s — no cloud, no subscription, no telemetry.",
+  "url": "https://bocan.app",
+  "lang": "en-GB",
+  "author": "Cloud Cauldron",
+  "repo": "https://github.com/bocan/bocan-music",
+  "release": {
+    "owner": "bocan",
+    "name": "bocan-music",
+    "asset": "Bocan.dmg",
+    "latest_url": "https://github.com/bocan/bocan-music/releases/latest",
+    "latest_download": "https://github.com/bocan/bocan-music/releases/latest/download/Bocan.dmg",
+    "all_releases_url": "https://github.com/bocan/bocan-music/releases"
+  },
+  "minimumMacOS": "macOS 26 Tahoe",
+  "architecture": "Apple Silicon (arm64)"
+}

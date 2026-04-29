@@ -1,0 +1,61 @@
+---
+layout: base.njk
+title: Privacy
+description: Bòcan does not collect, transmit, or share data about you. Here's the proof.
+permalink: /privacy/
+---
+
+<div class="container container--narrow">
+  <h1>Privacy</h1>
+
+  <p>Short version: <strong>{{ site.title }} doesn't spy on you.</strong></p>
+  <p>Longer version follows.</p>
+
+  <h2>What {{ site.title }} sends</h2>
+  <p><strong>Nothing.</strong> No usage statistics. No anonymous metrics. No
+  crash reports unless you explicitly approve a specific report. No "phone
+  home" to check that your licence is valid, because there is no licence.</p>
+
+  <p>The only network traffic the app makes by default is:</p>
+  <ul>
+    <li>Checking for updates (daily, can be disabled) by fetching a single XML feed from <code>{{ site.url }}/appcast.xml</code>. Your IP shows up in our web server's logs along with everyone else's.</li>
+  </ul>
+
+  <h2>What {{ site.title }} sends only if you turn it on</h2>
+  <ul>
+    <li><strong>Scrobbling</strong> to <a href="https://www.last.fm" rel="external noopener">Last.fm</a> or <a href="https://listenbrainz.org" rel="external noopener">ListenBrainz</a>. Off by default. Per-account, with credentials you supply, sent only to the service you authorised.</li>
+    <li><strong>AcoustID lookups</strong> to <a href="https://acoustid.org" rel="external noopener">AcoustID</a>, when you ask it to identify a track. Sends an audio fingerprint (not the audio) plus the track's existing tags.</li>
+    <li><strong>Lyrics fetches</strong> to <a href="https://www.last.fm" rel="external noopener">Last.fm</a> when you toggle the lyrics pane and the file has none. Sends artist + title.</li>
+    <li><strong>MusicBrainz cover art</strong>. Sends an MBID, gets back an image.</li>
+    <li><strong>Crash reports</strong> via MetricKit. Off by default. Each report is shown to you in full before sending; you decide. We never auto-submit.</li>
+  </ul>
+
+  <h2>What we collect on this website</h2>
+  <p>Standard web server logs (IP, user-agent, request path, timestamp), kept
+  for 30 days, used only to spot abuse. No cookies. No analytics. No tracking
+  pixels. No "we use cookies to enhance your experience" banner because we
+  don't and we don't.</p>
+
+  <h2>What's stored on your machine</h2>
+  <ul>
+    <li>Your library database, in <code>~/Library/Application Support/Bocan/</code>.</li>
+    <li>Logs, in <code>~/Library/Logs/Bocan/</code>.</li>
+    <li>Preferences, in <code>~/Library/Preferences/io.cloudcauldron.bocan.plist</code>.</li>
+  </ul>
+  <p>Delete those folders to delete everything {{ site.title }} knows about you.</p>
+
+  <h2>Source &amp; verifiability</h2>
+  <p>
+    The <a href="{{ site.repo }}" rel="external noopener">source code</a> is
+    public. If you don't believe us, run a packet sniffer.
+    <a href="https://www.charlesproxy.com" rel="external noopener">Charles</a>
+    or <a href="https://littlesnitch.app" rel="external noopener">Little Snitch</a>
+    will both confirm the above.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    Questions? Open an issue on
+    <a href="{{ site.repo }}/issues" rel="external noopener">GitHub</a>.
+  </p>
+</div>

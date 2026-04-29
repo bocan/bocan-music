@@ -1,0 +1,76 @@
+---
+layout: base.njk
+title: Download
+description: Download the latest release of Bòcan for macOS.
+permalink: /download/
+---
+
+<div class="container container--narrow">
+  <h1>Download {{ site.title }}</h1>
+  <p>
+    Notarised by Apple. Signed with a Developer ID. Stapled. Built for
+    {{ site.architecture }}. No installer, no setup wizard, no telemetry. Drag,
+    drop, double-click, listen.
+  </p>
+
+  <div class="dl-card">
+    <h2>Latest release</h2>
+    <p>
+      <a class="btn btn--primary" href="{{ site.release.latest_download }}">
+        Download {{ site.release.asset }}
+      </a>
+    </p>
+    <p>
+      <small>
+        Always points at the newest stable release. Hosted on GitHub Releases.
+      </small>
+    </p>
+    <div class="dl-meta">
+      <span><strong>Platform:</strong> {{ site.minimumMacOS }} or later</span>
+      <span><strong>Architecture:</strong> {{ site.architecture }}</span>
+      <span><strong>Format:</strong> Signed disk image (.dmg)</span>
+    </div>
+  </div>
+
+  <h2>Older releases &amp; release notes</h2>
+  <p>
+    Every release, with checksums, signatures, and release notes, is on
+    <a href="{{ site.release.all_releases_url }}" rel="external noopener">GitHub Releases</a>.
+  </p>
+
+  <h2>Verify the download</h2>
+  <p>
+    Each release has a SHA-256 checksum file attached. To verify after
+    downloading:
+  </p>
+  <pre><code>shasum -a 256 -c Bocan.dmg.sha256</code></pre>
+  <p>
+    macOS Gatekeeper does this automatically the first time you open it,
+    courtesy of the stapled notarisation ticket. The checksum is for people
+    who like belt <em>and</em> braces.
+  </p>
+
+  <h2>Install</h2>
+  <ol>
+    <li>Open the disk image.</li>
+    <li>Drag <strong>{{ site.title }}.app</strong> onto the Applications folder.</li>
+    <li>Eject the disk image. Burn it ceremonially if you're feeling old-school.</li>
+    <li>Open <strong>{{ site.title }}</strong> from Launchpad or Spotlight.</li>
+    <li>Point it at your music folders. It'll do the rest.</li>
+  </ol>
+
+  <h2>Homebrew</h2>
+  <p>
+    Coming soon: <code>brew install --cask bocan</code>. We'll publish a tap
+    once 1.0 ships and we trust ourselves not to push three updates a day.
+  </p>
+
+  <h2>Auto-update</h2>
+  <p>
+    {{ site.title }} ships with <a href="https://sparkle-project.org" rel="external noopener">Sparkle 2</a>.
+    It checks for updates daily by default — silently, in the background, with
+    EdDSA-signed verification. Turn it off in Preferences if you don't want
+    that. Choose the <em>Beta</em> channel if you want fresh paint and
+    occasional broken windows.
+  </p>
+</div>
