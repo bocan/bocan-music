@@ -273,6 +273,24 @@ public actor QueuePlayer: Transport {
         await queue.appendNext(items)
     }
 
+    /// Jump to and start playing the queue item at `index` in the existing queue.
+    /// No-op when the index is out of range.  Preserves shuffle / repeat state —
+    /// only the current cursor moves.  Used by the "Play From Here" Up Next
+    /// context-menu action so users can resume from any point in the queue
+    /// without rebuilding it.
+    public func playAt(index: Int) async throws {
+        let snapshot = await self.queue.items
+        guard snapshot.indices.contains(index) else { return }
+        self.activeReplaceCount += 1
+        defer { activeReplaceCount -= 1 }
+        await self.gaplessScheduler.reset()
+        await self.historyRecorder.trackSkipped(elapsed: self.engine.currentTime)
+        await self.queue.replace(with: snapshot, startAt: index)
+        try await self.loadCurrentItem()
+        try await self.engine.play()
+        await self.nowPlayingCentre?.setPlaying(true)
+    }
+
     /// Append `trackIDs` to the end of the queue.
     public func addToQueue(_ trackIDs: [Int64]) async throws {
         let items = try await buildItems(for: trackIDs)

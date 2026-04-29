@@ -1,3 +1,4 @@
+import AppKit
 import Playback
 import SwiftUI
 
@@ -44,6 +45,60 @@ private struct QueueContentView: View {
                             position: offset
                         )
                         .contextMenu {
+                            // Phase 5 audit M1: rich Up Next row context menu.
+                            Button("Play From Here") {
+                                Task {
+                                    await self.vm.playFromQueueIndex(offset)
+                                    await self.refreshQueue()
+                                }
+                            }
+                            .disabled(self.unavailableIDs.contains(item.id))
+
+                            Divider()
+
+                            Button("Move to Top") {
+                                Task {
+                                    await self.vm.moveQueueItemToTop(id: item.id)
+                                    await self.refreshQueue()
+                                }
+                            }
+                            .disabled(offset == 0)
+
+                            Button("Move to Bottom") {
+                                Task {
+                                    await self.vm.moveQueueItemToBottom(id: item.id)
+                                    await self.refreshQueue()
+                                }
+                            }
+                            .disabled(offset == self.items.count - 1)
+
+                            Divider()
+
+                            Button("Show in Finder") {
+                                if let url = URL(string: item.fileURL) {
+                                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                                }
+                            }
+                            .disabled(self.unavailableIDs.contains(item.id))
+
+                            Button("Get Info") {
+                                self.vm.tagEditorTrackIDs = [item.trackID]
+                            }
+
+                            if let albumID = item.albumID {
+                                Button("Go to Album") {
+                                    Task { await self.vm.selectDestination(.album(albumID)) }
+                                }
+                            }
+
+                            if let artistID = item.artistID {
+                                Button("Go to Artist") {
+                                    Task { await self.vm.selectDestination(.artist(artistID)) }
+                                }
+                            }
+
+                            Divider()
+
                             Button("Remove from Queue") {
                                 Task {
                                     await self.vm.queuePlayer?.queue.remove(ids: Set([item.id]))
