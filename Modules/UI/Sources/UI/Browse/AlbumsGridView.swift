@@ -65,6 +65,8 @@ private struct AlbumCell: View {
 public struct AlbumsGridView: View {
     @ObservedObject public var vm: AlbumsViewModel
     public var library: LibraryViewModel
+    /// Phase 4 audit L3: Cmd-click multi-select for albums.
+    @State private var selection: Set<Int64> = []
 
     public init(vm: AlbumsViewModel, library: LibraryViewModel) {
         self.vm = vm
@@ -79,11 +81,15 @@ public struct AlbumsGridView: View {
                 ProgressView("Loading…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.albums.isEmpty {
+                // Phase 4 audit L2: offer the same Add Music Folder action as TracksView.
                 EmptyState(
                     symbol: "square.grid.2x2",
                     title: "No Albums",
-                    message: "Your library doesn't contain any albums yet."
-                )
+                    message: "Add a music folder to start building your library.",
+                    actionLabel: "Add Music Folder"
+                ) {
+                    Task { await self.library.addFolderByPicker() }
+                }
             } else {
                 self.albumGrid
             }
@@ -99,40 +105,34 @@ public struct AlbumsGridView: View {
                 ForEach(self.vm.albums, id: \.id) { album in
                     let artistName = album.albumArtistID.flatMap { self.vm.artistNames[$0] }
                     let trackCount = album.id.flatMap { self.vm.trackCounts[$0] }
+                    let isSelected = album.id.map { self.selection.contains($0) } ?? false
                     AlbumCell(album: album, artistName: artistName, trackCount: trackCount)
+                        .padding(4)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+                        )
                         .contentShape(Rectangle())
+                        // Phase 4 audit L3: Cmd-click toggles into the multi-selection set
+                        // without navigating; plain click clears the selection and drills in.
+                        .highPriorityGesture(
+                            TapGesture().modifiers(.command).onEnded {
+                                guard let id = album.id else { return }
+                                if self.selection.contains(id) {
+                                    self.selection.remove(id)
+                                } else {
+                                    self.selection.insert(id)
+                                }
+                            }
+                        )
                         .onTapGesture {
                             if let id = album.id {
+                                self.selection = []
                                 self.vm.selectedAlbumID = id
                             }
                         }
                         .contextMenu {
-                            Button("Play Album") {
-                                Task {
-                                    if let id = album.id {
-                                        await self.library.selectDestination(.album(id))
-                                    }
-                                }
-                            }
-                            Divider()
-                            Toggle("Force Gapless Playback", isOn: Binding(
-                                get: { album.forceGapless },
-                                set: { forced in
-                                    if let id = album.id {
-                                        Task { await self.library.setAlbumForceGapless(albumID: id, forced: forced) }
-                                    }
-                                }
-                            ))
-                            Toggle("Exclude from Shuffle", isOn: Binding(
-                                get: { album.excludedFromShuffle },
-                                set: { excluded in
-                                    if let id = album.id {
-                                        Task { await self.library.setAlbumExcludedFromShuffle(albumID: id, excluded: excluded) }
-                                    }
-                                }
-                            ))
-                            Divider()
-                            Button("Get Info") {}.disabled(true) // TODO(phase-8)
+                            self.albumContextMenu(album: album)
                         }
                 }
             }
@@ -150,6 +150,74 @@ public struct AlbumsGridView: View {
                 self.vm.selectedAlbumID = nil
                 Task { await self.library.selectDestination(.album(id)) }
             }
+        }
+    }
+
+    // MARK: - Context menu
+
+    /// The set of album IDs the right-click affects: either the multi-selection
+    /// (when the right-clicked album is part of it) or just this single album.
+    private func targetIDs(for album: Album) -> [Int64] {
+        guard let id = album.id else { return [] }
+        if self.selection.contains(id), self.selection.count > 1 {
+            return Array(self.selection)
+        }
+        return [id]
+    }
+
+    @ViewBuilder
+    private func albumContextMenu(album: Album) -> some View {
+        let ids = self.targetIDs(for: album)
+        let multi = ids.count > 1
+
+        Button(multi ? "Play \(ids.count) Albums" : "Play Album") {
+            Task {
+                for id in ids {
+                    await self.library.selectDestination(.album(id))
+                }
+            }
+        }
+        .disabled(ids.isEmpty)
+
+        if !multi {
+            Divider()
+            Toggle("Force Gapless Playback", isOn: Binding(
+                get: { album.forceGapless },
+                set: { forced in
+                    if let id = album.id {
+                        Task { await self.library.setAlbumForceGapless(albumID: id, forced: forced) }
+                    }
+                }
+            ))
+            Toggle("Exclude from Shuffle", isOn: Binding(
+                get: { album.excludedFromShuffle },
+                set: { excluded in
+                    if let id = album.id {
+                        Task { await self.library.setAlbumExcludedFromShuffle(albumID: id, excluded: excluded) }
+                    }
+                }
+            ))
+        }
+
+        Divider()
+        // Phase 4 audit L8: wire Get Info now that Phase 8 has shipped.
+        Button(multi ? "Get Info (\(ids.count) Albums)" : "Get Info") {
+            Task { await self.openInspector(forAlbumIDs: ids) }
+        }
+        .disabled(ids.isEmpty)
+    }
+
+    /// Loads every track for the given album IDs and opens the track inspector.
+    private func openInspector(forAlbumIDs ids: [Int64]) async {
+        let repo = TrackRepository(database: self.library.database)
+        var collected: [Track] = []
+        for id in ids {
+            if let tracks = try? await repo.fetchAll(albumID: id) {
+                collected.append(contentsOf: tracks)
+            }
+        }
+        await MainActor.run {
+            self.library.showInspector(tracks: collected)
         }
     }
 }
