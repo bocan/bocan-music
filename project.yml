@@ -12,6 +12,10 @@ options:
   groupSortPosition: top
   settingPresets: app
   defaultConfig: Debug
+  # Phase 1 audit #13: XcodeGen has no scheme-level TSan flag, so we patch
+  # the generated `.xcscheme` after every regeneration.  See the script for
+  # the exact transformation.
+  postGenCommand: bash Scripts/patch-scheme.sh
 
 configFiles:
   Debug: Secrets.xcconfig
@@ -78,6 +82,7 @@ targets:
       testTargets:
         - BocanTests
         - BocanUITests
+      gatherCoverageData: true
 
   BocanTests:
     type: bundle.unit-test

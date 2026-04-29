@@ -188,3 +188,26 @@ Or set `$SIGNING_IDENTITY` in the environment before running `make bundle-fpcalc
 ## Debugging in Console.app
 
 Filter by subsystem `io.cloudcauldron.bocan` to see all Bòcan log output.
+
+## Phase 1 audit notes (audio engine)
+
+A few Phase 1 implementation choices are worth flagging because they are not
+discoverable from the spec alone:
+
+- **DSP / EQ / Limiter chain landed in Phase 1.** The original phase plan
+  scheduled these for Phase 9, but they were implemented up-front because
+  every signal chain test fixture needed a stable insertion point. The chain
+  is `PlayerNode → TimePitch → GainStage → EQ → BassBoost → Crossfeed →
+  StereoExpander → Limiter → Mixer → Output`; every node is always present
+  and individually bypassable. See `Modules/AudioEngine/Sources/AudioEngine/DSP/DSPChain.swift`.
+- **Anti-pop fades.** The engine ramps `AVAudioPlayerNode.volume` over ~10 ms
+  before any operation that truncates playback mid-cycle (`stop`, `pause`,
+  `seek`, track-change). This is a separate gain stage from the user-volume
+  mixer and the ReplayGain `GainStage`; do not collapse them.
+- **`make bundle-fpcalc`.** Re-link the bundled `fpcalc` and dependent
+  FFmpeg dylibs whenever Homebrew bumps FFmpeg's major version (e.g.
+  `libavcodec.61` → `libavcodec.62`). The script also re-signs the binaries
+  with the ad-hoc identity; pass `SIGNING_IDENTITY` for Developer-ID builds.
+- **Thread Sanitizer on the test action.** `Scripts/patch-scheme.sh` is run
+  by `xcodegen` (via `postGenCommand`) to enable TSan in the generated
+  scheme, because XcodeGen has no first-class flag for it.

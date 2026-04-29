@@ -18,7 +18,7 @@ import Observability
 /// await engine.load(myURL)
 /// try await engine.play()
 /// ```
-public actor AudioEngine: Transport {
+public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     // .default QoS: AVAudioPlayerNode.stop() blocks on AVFoundation's internal
     // default-QoS threads; running the actor at userInitiated caused priority
     // inversions (FB13119463). Real-time rendering is handled by AVFoundation's
@@ -30,17 +30,17 @@ public actor AudioEngine: Transport {
 
     // MARK: - State
 
-    private let graph: EngineGraph
-    private let deviceRouter: DeviceRouter
+    let graph: EngineGraph
+    let deviceRouter: DeviceRouter
     private let presets: PresetStore
     private var decoder: (any Decoder)?
-    private var pump: BufferPump?
+    var pump: BufferPump?
     private var _currentTime: TimeInterval = 0
     private var _duration: TimeInterval = 0
     private var _state: PlaybackState = .idle
     private var lastState: PlaybackState?
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
-    private let log = AppLogger.make(.audio)
+    let log = AppLogger.make(.audio)
 
     // MARK: - Gapless state
 
@@ -80,6 +80,12 @@ public actor AudioEngine: Transport {
         get async { self._duration }
     }
 
+    /// `true` when the engine is in `.playing`. Used by the App layer to
+    /// decide whether to auto-resume on wake.
+    public var isPlaying: Bool {
+        self._state == .playing
+    }
+
     // MARK: - Gapless public API
 
     /// The native source format of the currently loaded track.
@@ -113,12 +119,9 @@ public actor AudioEngine: Transport {
         let nextDuration = dec.duration
 
         let sampleRate = self.graph.outputSampleRate
-        // swiftlint:disable:next force_unwrapping
-        let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
-        let outputFmt = AVAudioFormat(
-            standardFormatWithSampleRate: sampleRate,
-            channelLayout: layout
-        )
+        guard let outputFmt = StereoLayout.format(sampleRate: sampleRate) else {
+            throw AudioEngineError.outputDeviceUnavailable
+        }
 
         let playerNode = self.graph.playerNode
         let nextPump = try BufferPump(
@@ -215,6 +218,12 @@ public actor AudioEngine: Transport {
     // MARK: - Transport conformance
 
     public func load(_ url: URL) async throws {
+        // Click-suppression: ramp the player-node volume to 0 *before* stop().
+        // AVAudioPlayerNode.stop() truncates whatever sample is currently in
+        // flight; if that sample is mid-cycle (which it almost always is) the
+        // discontinuity rings the speaker. A 10 ms cosine fade hides it.
+        await self.fadePlayerNode(to: 0)
+
         // Stop the player node before any awaits — otherwise queued buffers
         // keep playing for ~200 ms through the suspension points below.
         self.graph.playerNode.stop()
@@ -279,7 +288,10 @@ public actor AudioEngine: Transport {
         // suspended, results in several concurrent pumps all writing to the same
         // AVAudioPlayerNode, producing audible judder.
         if self._state == .paused {
+            // Fade in from the muted state we entered on pause.
+            self.graph.playerNode.volume = 0
             self.graph.playerNode.play()
+            await self.fadePlayerNode(to: 1)
             self.emit(.playing)
             self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
             return
@@ -287,12 +299,9 @@ public actor AudioEngine: Transport {
 
         // Build canonical output format.
         let sampleRate = self.graph.outputSampleRate
-        // swiftlint:disable:next force_unwrapping
-        let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
-        let outputFmt = AVAudioFormat(
-            standardFormatWithSampleRate: sampleRate,
-            channelLayout: layout
-        )
+        guard let outputFmt = StereoLayout.format(sampleRate: sampleRate) else {
+            throw AudioEngineError.outputDeviceUnavailable
+        }
 
         // Fresh start: stop any existing pump before creating a replacement
         // so it can't race the new one on the shared decoder.
@@ -311,7 +320,13 @@ public actor AudioEngine: Transport {
             Task { await self.handleEnded(firedBy: pumpID) }
         }
 
+        // Cold start: ramp player-node volume from 0 → 1 over ~10 ms to mask
+        // the audible click that occurs when AVAudioEngine connects a fresh
+        // graph at the hardware sample rate. Has no audible effect on warm
+        // restarts because volume is already 1.
+        self.graph.playerNode.volume = 0
         playerNode.play()
+        await self.fadePlayerNode(to: 1)
         self.emit(.playing)
         self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
     }
@@ -319,11 +334,14 @@ public actor AudioEngine: Transport {
     public func pause() async {
         self.log.debug("engine.pause")
         let playerNode = self.graph.playerNode
+        // Capture position *before* the fade so the displayed time doesn't
+        // tick forward during the ramp.
         if let time = playerNode.lastRenderTime,
            let playerTime = playerNode.playerTime(forNodeTime: time) {
             let rate = playerNode.outputFormat(forBus: 0).sampleRate
             self._currentTime += AudioTime.timeInterval(for: playerTime.sampleTime, sampleRate: rate)
         }
+        await self.fadePlayerNode(to: 0)
         playerNode.pause()
         self.emit(.paused)
     }
@@ -335,6 +353,8 @@ public actor AudioEngine: Transport {
     public func stop() async {
         self.log.debug("engine.stop")
         await self.cancelGaplessNext()
+        // 10 ms fade keeps stop() from popping mid-cycle.
+        await self.fadePlayerNode(to: 0)
         self.graph.playerNode.stop()
         await self.pump?.stop()
         self.pump = nil
@@ -353,7 +373,11 @@ public actor AudioEngine: Transport {
 
         let wasPlaying = self._state == .playing
 
-        // Pause the player while we seek.
+        // Pause the player while we seek. Fade first to suppress the click
+        // produced by stopping mid-cycle.
+        if wasPlaying {
+            await self.fadePlayerNode(to: 0)
+        }
         self.graph.playerNode.stop()
         await self.pump?.stop()
         self.pump = nil

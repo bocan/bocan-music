@@ -172,6 +172,15 @@ struct BocanApp: App {
         .onChange(of: self.showMenuBarExtra) { _, newValue in
             UserDefaults.standard.set(newValue, forKey: "general.showMenuBarExtra")
         }
+
+        #if DEBUG
+            // Phase 1 audit #14: debug-only manual playback window.  Opens a
+            // separate scene whose sole purpose is to drive the AudioEngine
+            // directly for codec / fade / seek triage.  Compiled out of Release.
+            Window("Debug Audio", id: "debug-audio") {
+                DebugAudioView(engine: self.engine)
+            }
+        #endif
     }
 
     init() {
@@ -231,17 +240,11 @@ struct BocanApp: App {
         // Phase 15: AirPlay routing — `routeManager` is set at declaration.
         self.routeViewModel = Self.makeRouteViewModel(manager: self.routeManager)
 
-        // Forward NSWorkspace wake events to the sleep timer.
+        // Forward NSWorkspace wake events to the sleep timer + install the
+        // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
         // QueuePlayer lives in the Playback module and must not import AppKit,
-        // so the wake subscription lives here in the app target.
-        let sleepTimer = qp.sleepTimer
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification,
-            object: nil,
-            queue: nil
-        ) { _ in
-            Task { await sleepTimer.handleSystemWake() }
-        }
+        // so all NSWorkspace subscriptions live in the app target.
+        Self.installSleepWakeAndDeviceChangeObservers(engine: eng, sleepTimer: qp.sleepTimer)
 
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp)
@@ -251,6 +254,53 @@ struct BocanApp: App {
     }
 
     // MARK: - Private helpers
+
+    /// Phase 1 audit #6/#7/#8: pause-on-sleep, gated resume-on-wake, and
+    /// default-output-device-change reconfiguration are wired here.  Pulled
+    /// out of `init` to keep the initializer body within SwiftLint's length
+    /// limit.
+    private static func installSleepWakeAndDeviceChangeObservers(engine: AudioEngine, sleepTimer: SleepTimer) {
+        // QueuePlayer wake-forwarding for the sleep timer.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            Task { await sleepTimer.handleSystemWake() }
+        }
+
+        // Spec: "Sleep/wake → pause on sleep; resume on wake **only if** we
+        // were playing (configurable later, default no)."  Pausing on sleep
+        // prevents the audible glitch produced when AVAudioEngine
+        // reconfigures asynchronously after the lid closes.  Resume-on-wake
+        // is gated on `playback.resumeOnWake` (defaults to false).
+        let wasPlayingBox = _InitBox<Bool>()
+        wasPlayingBox.value = false
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            Task {
+                wasPlayingBox.value = await engine.isPlaying
+                await engine.pause()
+            }
+        }
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            guard UserDefaults.standard.bool(forKey: "playback.resumeOnWake") else { return }
+            guard wasPlayingBox.value == true else { return }
+            Task { try? await engine.play() }
+        }
+
+        // Default-output-device change → reconfigure engine.  CoreAudio
+        // listener fires on a HAL thread; AudioEngine hops onto its own
+        // actor before touching AVFoundation state.
+        Task { await engine.startObservingOutputDeviceChanges() }
+    }
 
     private static func registerDefaults() {
         UserDefaults.standard.register(defaults: [
@@ -262,6 +312,7 @@ struct BocanApp: App {
             "advanced.logLevel": "info",
             "playback.rate": 1.0,
             "playback.gaplessPrerollSeconds": 5.0,
+            "playback.resumeOnWake": false,
         ])
     }
 

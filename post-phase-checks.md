@@ -13,3 +13,5 @@ Steps:
 - Consider accessibility in mind for all features and changes.  I shouldn't need to wear reading glasses to see dialogs. All buttons or controls should have hover text.
 - Make sure if we've specified a keyboard shortcut, that it actually works.  Again - accessibility.
 - Consider features. it could be a right click of the selected track, it might ALSO need to be a menu item. Basically, anywhere a control gets wired in, think about where it might also be convienient or accessible.
+
+Make no changes yet! Just make a list of any issues you find, and then we can go through them one by one.  This is the "post-phase checks" step, not the "fix all the things" step.  We want to be methodical and not miss anything.
