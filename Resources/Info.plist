@@ -30,6 +30,10 @@
     <string>Copyright © 2026 Chris Funderburg @ Cloud Cauldron. All rights reserved.</string>
     <key>AcoustIDAPIKey</key>
     <string>$(ACOUSTID_API_KEY)</string>
+    <key>BocanLastFmApiKey</key>
+    <string>$(BOCAN_LASTFM_API_KEY)</string>
+    <key>BocanLastFmSharedSecret</key>
+    <string>$(BOCAN_LASTFM_SHARED_SECRET)</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSSupportsAutomaticTermination</key>
