@@ -10,6 +10,13 @@ import Persistence
 /// Decoupled via this protocol so `Playback` doesn't depend on `Scrobble`.
 public protocol ScrobbleSink: Sendable {
     func recordPlay(trackID: Int64, playedAt: Date, durationPlayed: TimeInterval) async
+    /// Best-effort "now playing" hint sent when a track starts. Defaults to no-op
+    /// so existing test sinks don't need updating.
+    func nowPlaying(trackID: Int64) async
+}
+
+public extension ScrobbleSink {
+    func nowPlaying(trackID _: Int64) async {}
 }
 
 // MARK: - PlayHistoryRecorder
@@ -53,12 +60,15 @@ public actor PlayHistoryRecorder {
     // MARK: - Public API
 
     /// Call when a new track starts playing.
-    public func trackDidStart(trackID: Int64, duration: TimeInterval) {
+    public func trackDidStart(trackID: Int64, duration: TimeInterval) async {
         self.currentTrackID = trackID
         self.trackDuration = duration
         self.playStartedAt = Date()
         self.hasScrobbled = false
         self.log.debug("history.start", ["trackID": trackID, "duration": duration])
+        if let sink = scrobbleSink {
+            await sink.nowPlaying(trackID: trackID)
+        }
     }
 
     /// Call periodically (or at track end) with the elapsed time so far.

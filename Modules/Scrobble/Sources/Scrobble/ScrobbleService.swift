@@ -106,6 +106,32 @@ public actor ScrobbleService: ScrobbleSink {
             title: title, duration: duration, mbid: mbid,
             playedAt: Date()
         )
+        await self.dispatchNowPlaying(event)
+    }
+
+    /// `ScrobbleSink` entry point — fire a now-playing for the track currently
+    /// being decoded. Looks up metadata from the database; silently skips if
+    /// no providers are connected or the row is missing.
+    public func nowPlaying(trackID: Int64) async {
+        guard await !(self.activeProviderIDs().isEmpty) else { return }
+        do {
+            guard let row = try await self.repository.fetchTrackMetadata(trackID: trackID) else {
+                self.log.debug("scrobble.service.nowplaying.skip", ["reason": "track not found", "trackID": trackID])
+                return
+            }
+            let event = PlayEvent(
+                queueID: -1, trackID: row.trackID,
+                artist: row.artist, albumArtist: row.albumArtist, album: row.album,
+                title: row.title, duration: row.duration, mbid: row.mbid,
+                playedAt: Date()
+            )
+            await self.dispatchNowPlaying(event)
+        } catch {
+            self.log.warning("scrobble.service.nowplaying.lookup.fail", ["err": String(reflecting: error)])
+        }
+    }
+
+    private func dispatchNowPlaying(_ event: PlayEvent) async {
         for (pid, provider) in self.providers {
             let authed = await provider.isAuthenticated()
             guard authed else { continue }

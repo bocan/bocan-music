@@ -7,8 +7,13 @@ import Testing
 
 private actor CapturingScrobbleSink: ScrobbleSink {
     private(set) var calls: [(trackID: Int64, playedAt: Date, duration: TimeInterval)] = []
+    private(set) var nowPlayingCalls: [Int64] = []
     func recordPlay(trackID: Int64, playedAt: Date, durationPlayed: TimeInterval) async {
         self.calls.append((trackID, playedAt, durationPlayed))
+    }
+
+    func nowPlaying(trackID: Int64) async {
+        self.nowPlayingCalls.append(trackID)
     }
 }
 
@@ -79,6 +84,17 @@ struct HistoryRecorderTests {
         #expect(calls[0].trackID == 42)
         #expect(calls[0].duration == 180)
         #expect(calls[1].trackID == 43)
+    }
+
+    @Test("trackDidStart fires nowPlaying on the sink")
+    func nowPlayingFiresOnTrackStart() async throws {
+        let sink = CapturingScrobbleSink()
+        let db = await makeDatabase()
+        try await Self.insertTrack(id: 99, in: db)
+        let recorder = await PlayHistoryRecorder(database: db, scrobbleSink: sink)
+        await recorder.trackDidStart(trackID: 99, duration: 200)
+        let calls = await sink.nowPlayingCalls
+        #expect(calls == [99])
     }
 
     // MARK: - Helpers

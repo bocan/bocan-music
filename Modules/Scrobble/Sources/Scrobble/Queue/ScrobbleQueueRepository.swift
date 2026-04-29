@@ -211,6 +211,40 @@ public actor ScrobbleQueueRepository {
         }
     }
 
+    /// Look up the metadata needed to build a `PlayEvent` for a single track,
+    /// without going through the queue. Used by the now-playing path.
+    public func fetchTrackMetadata(trackID: Int64) async throws -> PendingRow? {
+        try await self.db.read { db in
+            let row = try Row.fetchOne(db, sql: """
+            SELECT t.id AS track_id,
+                   t.title, t.duration, t.musicbrainz_recording_id,
+                   a.name AS artist_name,
+                   aa.name AS album_artist_name,
+                   al.title AS album_title
+              FROM tracks t
+              LEFT JOIN artists a ON a.id = t.artist_id
+              LEFT JOIN artists aa ON aa.id = t.album_artist_id
+              LEFT JOIN albums al ON al.id = t.album_id
+             WHERE t.id = ?
+            """, arguments: [trackID])
+            guard let row else { return nil }
+            return PendingRow(
+                queueID: -1,
+                trackID: row["track_id"],
+                playedAt: Date(),
+                durationPlayed: 0,
+                attempts: 0,
+                nextAttemptAt: nil,
+                title: row["title"] ?? "",
+                artist: row["artist_name"] ?? "",
+                albumArtist: row["album_artist_name"],
+                album: row["album_title"],
+                duration: row["duration"] ?? 0,
+                mbid: row["musicbrainz_recording_id"]
+            )
+        }
+    }
+
     /// Aggregate counts for the UI summary line.
     public func stats(now: Date = Date()) async throws -> Stats {
         try await self.db.read { db in
