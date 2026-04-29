@@ -191,6 +191,12 @@ struct BocanApp: App {
             MetricKitListener.shared.start()
         #endif
 
+        // Phase 4 audit C5: reconcile login-item registration with the
+        // `general.launchAtLogin` preference, and observe the user default so
+        // toggling it in Settings registers/unregisters the app immediately.
+        LaunchAtLoginController.reconcileAtLaunch()
+        Self.installLaunchAtLoginObserver()
+
         // Initialise the database synchronously on the calling thread.
         // priority: .userInitiated matches the waiting thread (main = .userInteractive)
         // so the OS doesn't deprioritise this task while we're blocking on it,
@@ -278,6 +284,21 @@ struct BocanApp: App {
             Task { await scanner.restartWatcher() }
         }
     }
+
+    /// Phase 4 audit C5: observer that mirrors the `general.launchAtLogin`
+    /// preference into `SMAppService` registration so flipping the toggle in
+    /// Settings registers / unregisters the login item without a relaunch.
+    private static func installLaunchAtLoginObserver() {
+        // The observer outlives the App struct (UserDefaults retains its
+        // notification subscription).  Hold it in a static so multiple init
+        // calls (e.g. SwiftUI previews) don't pile up redundant observers.
+        if self.launchAtLoginObserver != nil { return }
+        self.launchAtLoginObserver = LaunchAtLoginObserver()
+    }
+
+    /// Strong reference to the KVO observer.  Static so it survives the
+    /// `App` struct being re-instantiated during SwiftUI scene rebuilds.
+    private static var launchAtLoginObserver: LaunchAtLoginObserver?
 
     /// Phase 1 audit #6/#7/#8: pause-on-sleep, gated resume-on-wake, and
     /// default-output-device-change reconfiguration are wired here.  Pulled

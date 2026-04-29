@@ -14,6 +14,8 @@ public struct GeneralSettingsView: View {
     public var body: some View {
         Form {
             Section("Startup") {
+                Toggle("Launch Bòcan at login", isOn: self.$launchAtLogin)
+                    .help("Register Bòcan as a macOS login item.")
                 Toggle("Restore last window mode on launch", isOn: self.$restoresLastMode)
             }
 
