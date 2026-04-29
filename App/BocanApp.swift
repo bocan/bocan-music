@@ -247,7 +247,10 @@ struct BocanApp: App {
         Self.installSleepWakeAndDeviceChangeObservers(engine: eng, sleepTimer: qp.sleepTimer)
 
         // Persist playback position on quit so it can be restored on next launch.
-        registerTerminationObserver(player: qp)
+        registerTerminationObserver(player: qp, database: db)
+
+        // Phase 2 audit #6: opportunistic iCloud backup, gated on settings.
+        Self.scheduleLaunchBackup(database: db)
 
         // Start scrobble worker once everything is wired up.
         Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
@@ -326,6 +329,22 @@ struct BocanApp: App {
         let viewModel = RouteViewModel(manager: manager)
         viewModel.start()
         return viewModel
+    }
+
+    /// Phase 2 audit #6: schedules an opportunistic iCloud Drive backup
+    /// shortly after launch.  Detached so a stalled iCloud sign-in cannot
+    /// delay UI; failures log only and never block startup.
+    private static func scheduleLaunchBackup(database db: Database) {
+        Task.detached { [db] in
+            let settings = SettingsRepository(database: db)
+            let enabled = await (try? settings.get(Bool.self, for: "backup.enabled")) ?? false
+            guard enabled == true else { return }
+            do {
+                _ = try await BackupService(database: db).backupToiCloudIfAvailable()
+            } catch {
+                AppLogger.make(.app).error("backup.launch_failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 
     private static func makeScrobble(database db: Database, log: AppLogger) -> ScrobbleParts {
@@ -443,26 +462,6 @@ private struct BocanCommands: Commands {
 }
 
 // MARK: - Helpers
-
-/// Registers a `willTerminateNotification` observer that saves the current
-/// playback position to `UserDefaults` before the process exits.
-///
-/// A `DispatchSemaphore` is used to block termination briefly while the async
-/// save completes; the 2-second timeout prevents a hang on slow devices.
-private func registerTerminationObserver(player: QueuePlayer) {
-    NotificationCenter.default.addObserver(
-        forName: NSApplication.willTerminateNotification,
-        object: nil,
-        queue: nil
-    ) { _ in
-        let semaphore = DispatchSemaphore(value: 0)
-        Task.detached {
-            await player.savePositionForSuspend()
-            semaphore.signal()
-        }
-        _ = semaphore.wait(timeout: .now() + 2)
-    }
-}
 
 // MARK: - InspectorWindowContent
 
