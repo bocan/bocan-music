@@ -1,5 +1,6 @@
-.PHONY: help bootstrap bundle-fpcalc doctor open build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui lint format install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc brew-bundle doctor open generate build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui uitest lint format format-check install-hooks clean
 
+## tests: Run format, lint, full test matrix (Xcode + every SPM module)
 tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui
 
 ## help: Print all available targets
@@ -31,6 +32,9 @@ doctor:
 	@xcbeautify --version
 	@xcodegen --version
 	@gh --version | head -1
+	@printf 'ffmpeg     '; ffmpeg -version 2>/dev/null | head -1 || echo '(missing)'
+	@printf 'fpcalc     '; fpcalc -version 2>/dev/null | head -1 || echo '(missing)'
+	@printf 'taglib     '; pkg-config --modversion taglib 2>/dev/null || echo '(missing)'
 	@echo "=============================="
 
 ## open: Open the Xcode project
@@ -103,6 +107,7 @@ test-acoustics:
 test-ui:
 	cd Modules/UI && swift test --enable-code-coverage
 
+## uitest: Run UI smoke tests (BocanUITests scheme target)
 uitest:
 	xcodebuild \
 		-project Bocan.xcodeproj \
