@@ -8,7 +8,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 12)
+        #expect(version == 13)
     }
 
     @Test("Integrity check passes after migration")
@@ -63,10 +63,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twelve migrations")
+    @Test("Migrator reports thirteen migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 12)
+        #expect(migrator.migrations.count == 13)
     }
 
     @Test("Playlists table has kind and accent_color after M007")
@@ -78,5 +78,17 @@ struct MigrationTests {
         }
         #expect(columns.contains("kind"))
         #expect(columns.contains("accent_color"))
+    }
+
+    @Test("Tracks table has CUE virtual-track columns after M013")
+    func cueVirtualTrackColumns() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(tracks)")
+                .compactMap { $0["name"] as String? }
+        }
+        #expect(columns.contains("start_offset_ms"))
+        #expect(columns.contains("end_offset_ms"))
+        #expect(columns.contains("source_file_url"))
     }
 }

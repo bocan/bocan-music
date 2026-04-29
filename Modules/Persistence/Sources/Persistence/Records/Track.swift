@@ -184,6 +184,21 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Foreign key to the `cover_art` row.
     public var coverArtHash: String?
 
+    // MARK: - CUE virtual tracks (M013)
+
+    /// Inclusive start offset within `source_file_url`, in milliseconds.
+    /// `nil` for whole-file tracks.
+    public var startOffsetMs: Int64?
+
+    /// Exclusive end offset within `source_file_url`, in milliseconds.
+    /// `nil` for whole-file tracks (decoder plays to EOF).
+    public var endOffsetMs: Int64?
+
+    /// File URL of the underlying audio file when this row is a virtual
+    /// CUE-derived track sharing one rip with siblings. `nil` for whole-file
+    /// tracks (where `fileURL` is the audio source).
+    public var sourceFileURL: String?
+
     // MARK: - Bookkeeping
 
     /// Unix timestamp when the track was added to the library.
@@ -248,6 +263,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         userEdited: Bool = false,
         albumTrackSortKey: String? = nil,
         coverArtHash: String? = nil,
+        startOffsetMs: Int64? = nil,
+        endOffsetMs: Int64? = nil,
+        sourceFileURL: String? = nil,
         addedAt: Int64,
         updatedAt: Int64
     ) {
@@ -303,6 +321,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.userEdited = userEdited
         self.albumTrackSortKey = albumTrackSortKey
         self.coverArtHash = coverArtHash
+        self.startOffsetMs = startOffsetMs
+        self.endOffsetMs = endOffsetMs
+        self.sourceFileURL = sourceFileURL
         self.addedAt = addedAt
         self.updatedAt = updatedAt
     }
@@ -371,6 +392,9 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case userEdited = "user_edited"
         case albumTrackSortKey = "album_track_sort_key"
         case coverArtHash = "cover_art_hash"
+        case startOffsetMs = "start_offset_ms"
+        case endOffsetMs = "end_offset_ms"
+        case sourceFileURL = "source_file_url"
         case addedAt = "added_at"
         case updatedAt = "updated_at"
     }
