@@ -33,6 +33,10 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     /// Wire this up externally (e.g. in `LibraryViewModel`) to deselect the content pane.
     public var onDidDelete: ((Set<Int64>) -> Void)?
 
+    /// Invoked when the user picks "Export…" from a manual playlist's
+    /// context menu. Wire this in `LibraryViewModel` to drive the export sheet.
+    public var onRequestExport: ((Int64, String) -> Void)?
+
     // MARK: - Init
 
     public init(service: PlaylistService) {

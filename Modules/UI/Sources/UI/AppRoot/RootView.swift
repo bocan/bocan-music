@@ -176,6 +176,26 @@ public struct BocanRootView: View {
                     }
                 }
         }
+        .sheet(isPresented: self.$vm.isPlaylistImportSheetPresented) {
+            PlaylistImportSheet(
+                isPresented: self.$vm.isPlaylistImportSheetPresented,
+                importer: self.vm.playlistImporter
+            ) { id in
+                Task { await self.vm.playlistSidebar.reload() }
+                self.vm.selectedDestination = .playlist(id)
+            }
+        }
+        .sheet(item: self.$vm.playlistExportRequest) { req in
+            PlaylistExportSheet(
+                isPresented: Binding(
+                    get: { self.vm.playlistExportRequest != nil },
+                    set: { if !$0 { self.vm.playlistExportRequest = nil } }
+                ),
+                exporter: self.vm.playlistExporter,
+                playlistID: req.id,
+                playlistName: req.name
+            )
+        }
         .onKeyPress(.init("i"), phases: .down) { event in
             guard event.modifiers == [.command, .option] else { return .ignored }
             self.vm.showIdentifyTrackForCurrentSelection()

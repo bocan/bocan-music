@@ -67,7 +67,9 @@
       "Bash(git -C /Users/chris/Play/bocan-music log --oneline Modules/Library/Tests/LibraryTests/ScanCoordinatorTests.swift)",
       "Bash(git -C /Users/chris/Play/bocan-music stash -- Modules/UI/Tests)",
       "Bash(git -C /Users/chris/Play/bocan-music log --oneline -- Modules/UI/Tests/UITests/ViewModelTests/SnapshotTests.swift)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(make test-coverage *)"
     ]
   },
   "enabledPlugins": {

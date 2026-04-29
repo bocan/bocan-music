@@ -315,6 +315,13 @@ private struct BocanCommands: Commands {
                 Task { await self.vm.addFilesByPicker() }
             }
             .keyboardShortcut(KeyBindings.addFiles)
+
+            Divider()
+
+            Button("Import Playlist…") {
+                self.vm.isPlaylistImportSheetPresented = true
+            }
+            .keyboardShortcut("o", modifiers: [.command, .shift])
         }
 
         CommandMenu("Playback") {

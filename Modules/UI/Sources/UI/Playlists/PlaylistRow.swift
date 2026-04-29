@@ -53,6 +53,11 @@ public struct PlaylistRow: View {
     private var contextMenuContent: some View {
         Button("Rename") { self.vm.renameTarget = self.node }
         Button("Duplicate") { Task { _ = await self.vm.duplicate(self.node) } }
+        if self.node.kind == .manual {
+            Button("Export…") {
+                self.vm.onRequestExport?(self.node.id, self.node.name)
+            }
+        }
         self.moveToFolderMenu
         Divider()
         Button("Delete", role: .destructive) { self.vm.deleteTarget = self.node }
