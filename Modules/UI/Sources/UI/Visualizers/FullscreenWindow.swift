@@ -13,7 +13,6 @@ public struct VisualizerFullscreenView: View {
     @Environment(\.dismissWindow) private var dismissWindow
 
     @State private var cursorHideTask: Task<Void, Never>?
-    @State private var cursorHidden = false
 
     public init(vm: VisualizerViewModel) {
         self.vm = vm
@@ -31,14 +30,18 @@ public struct VisualizerFullscreenView: View {
         }
         .onDisappear {
             self.vm.stop()
-            self.showCursor()
+            self.cursorHideTask?.cancel()
+            // Restore cursor unconditionally — setHiddenUntilMouseMoves(false)
+            // is safe to call even when the cursor is already visible.
+            NSCursor.setHiddenUntilMouseMoves(false)
         }
         .onKeyPress(.escape) {
             self.dismissWindow(id: "visualizer-fullscreen")
             return .handled
         }
         .onContinuousHover { _ in
-            self.showCursor()
+            // Mouse moved: cursor is already restored automatically by
+            // setHiddenUntilMouseMoves. Just reschedule the next hide.
             self.scheduleCursorHide()
         }
         .accessibilityLabel("Fullscreen Visualizer: \(self.vm.mode.displayName)")
@@ -51,19 +54,9 @@ public struct VisualizerFullscreenView: View {
         self.cursorHideTask = Task {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
-            self.hideCursor()
+            // One-shot hide: cursor reappears automatically on next mouse move.
+            // No matching unhide() call needed — no ref-count to misbalance.
+            NSCursor.setHiddenUntilMouseMoves(true)
         }
-    }
-
-    private func hideCursor() {
-        guard !self.cursorHidden else { return }
-        self.cursorHidden = true
-        NSCursor.hide()
-    }
-
-    private func showCursor() {
-        guard self.cursorHidden else { return }
-        self.cursorHidden = false
-        NSCursor.unhide()
     }
 }
