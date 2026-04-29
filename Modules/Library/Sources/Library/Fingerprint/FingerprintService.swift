@@ -60,7 +60,13 @@ public actor FingerprintService {
         self.log.debug("fingerprint.identify.start", ["trackID": trackID])
 
         // Resolve file URL — prefer security-scoped bookmark if available.
-        let fileURL = try resolveFileURL(for: track)
+        let (fileURL, scopedURL) = try resolveFileURL(for: track)
+        defer {
+            // Always pair start with stop. Holding the scope for the lifetime of
+            // identify() guarantees fpcalc, AcoustID, and MusicBrainz work all see
+            // the file, and prevents handle-table exhaustion across many calls.
+            scopedURL?.stopAccessingSecurityScopedResource()
+        }
 
         // 1. Compute fingerprint.
         let (fingerprint, duration) = try await self.fingerprinter.fingerprint(url: fileURL)
@@ -96,7 +102,7 @@ public actor FingerprintService {
 
     // MARK: - Private
 
-    private func resolveFileURL(for track: Track) throws -> URL {
+    private func resolveFileURL(for track: Track) throws -> (url: URL, scoped: URL?) {
         if let bookmark = track.fileBookmark {
             var isStale = false
             let url = try URL(
@@ -105,22 +111,18 @@ public actor FingerprintService {
                 relativeTo: nil,
                 bookmarkDataIsStale: &isStale
             )
-            // Start access; the process outlives this function call but fpcalc
-            // reads the file synchronously, so the scope is released after fingerprinting.
+            // Start the security scope. The caller must `stopAccessingSecurityScopedResource()`
+            // on the returned `scoped` URL once it is finished — `identify()` does this via
+            // `defer` so the scope lifetime is bounded to the call.
             guard url.startAccessingSecurityScopedResource() else {
                 throw LibraryError.bookmarkStale(url)
             }
-            // Stop access is deferred. fpcalc runs in a Task.detached inside
-            // Fingerprinter, which will complete before the next await in identify().
-            // We intentionally do NOT defer here because the fingerprinting Task
-            // outlives this stack frame. The resource access is terminated once
-            // fingerprinting completes — callers must not hold a reference beyond that.
-            return url
+            return (url, url)
         }
         guard let url = URL(string: track.fileURL) else {
             throw LibraryError.invalidFileURL(track.fileURL)
         }
-        return url
+        return (url, nil)
     }
 
     /// Builds zero or more `IdentificationCandidate` from a single AcoustID result.
