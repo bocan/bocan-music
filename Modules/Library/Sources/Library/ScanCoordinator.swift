@@ -99,9 +99,20 @@ actor ScanCoordinator {
         // treated as new and re-imported (clearing their disabled flag).
         if mode == .quick {
             let allTracks = await (try? self.trackRepo.fetchAllIncludingDisabled()) ?? []
-            let rootURLStrings = roots.map(\.url.absoluteString)
+            // Normalize roots to filesystem paths with symlinks resolved (e.g.
+            // `/var` → `/private/var`).  Without this, a root URL of
+            // `file:///var/folders/...` never prefix-matches a stored track URL
+            // of `file:///private/var/folders/...` and the seed becomes empty,
+            // disabling removal detection.  We use `realpath(3)` because
+            // `URL.resolvingSymlinksInPath()` only normalizes when the target
+            // file actually exists, which is unreliable for tracks whose files
+            // have been removed since import.
+            let rootPaths: [String] = roots.compactMap { Self.canonicalPath($0.url.path) }
             let scopedEnabledTracks = allTracks.filter { track in
-                !track.disabled && rootURLStrings.contains { track.fileURL.hasPrefix($0) }
+                guard !track.disabled else { return false }
+                guard let trackURL = URL(string: track.fileURL) else { return false }
+                let trackPath = Self.canonicalPath(trackURL.path) ?? trackURL.path
+                return rootPaths.contains { trackPath.hasPrefix($0) }
             }
             await self.changeDetector.seed(scopedEnabledTracks.map {
                 (url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
@@ -284,6 +295,21 @@ actor ScanCoordinator {
             emit(.error(url: url, error: error))
             return .error
         }
+    }
+
+    /// Resolves any filesystem symlinks in `path` via `realpath(3)` and returns
+    /// the canonical absolute form (e.g. `/var/...` → `/private/var/...` on
+    /// macOS).  Returns `nil` if the path cannot be resolved (e.g. the file
+    /// has been removed and no parent component exists).
+    ///
+    /// We use this rather than `URL.resolvingSymlinksInPath()` because the
+    /// latter only normalizes when the target itself exists, which is an
+    /// unreliable assumption when comparing roots against tracks whose files
+    /// may have just been removed.
+    private static func canonicalPath(_ path: String) -> String? {
+        var buffer = [CChar](repeating: 0, count: Int(PATH_MAX))
+        guard realpath(path, &buffer) != nil else { return nil }
+        return String(cString: buffer)
     }
 }
 
