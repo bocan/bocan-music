@@ -70,6 +70,7 @@ targets:
       - package: Playback
       - package: Library
       - package: Acoustics
+      - package: Scrobble
       - package: UI
     scheme:
       testTargets:
@@ -122,5 +123,7 @@ packages:
     path: Modules/Acoustics
   Library:
     path: Modules/Library
+  Scrobble:
+    path: Modules/Scrobble
   UI:
     path: Modules/UI
