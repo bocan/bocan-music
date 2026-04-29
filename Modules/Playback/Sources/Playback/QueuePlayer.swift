@@ -49,6 +49,16 @@ public actor QueuePlayer: Transport {
     public nonisolated let currentTrackChanges: AsyncStream<Track?>
     private var currentTrackContinuation: AsyncStream<Track?>.Continuation?
 
+    // MARK: - Unavailable items stream
+
+    /// Emits the set of queue-item IDs whose backing files are missing.
+    /// Re-emitted whenever availability is recomputed (currently after
+    /// `restoreQueue`).  UI consumers can observe this to render disabled
+    /// rows for restored items pointing at deleted/moved files.
+    public nonisolated let unavailableItemChanges: AsyncStream<Set<QueueItem.ID>>
+    private var unavailableItemContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
+    private var _unavailableItemIDs: Set<QueueItem.ID> = []
+
     // MARK: - Internal state
 
     private var currentTrack: Track?
@@ -99,6 +109,10 @@ public actor QueuePlayer: Transport {
         var trackContinuation: AsyncStream<Track?>.Continuation?
         self.currentTrackChanges = AsyncStream { trackContinuation = $0 }
         self.currentTrackContinuation = trackContinuation
+
+        var unavailableContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
+        self.unavailableItemChanges = AsyncStream { unavailableContinuation = $0 }
+        self.unavailableItemContinuation = unavailableContinuation
 
         // Build sleep timer — captures engine weakly so it can set volume / stop.
         self.sleepTimer = SleepTimer(
@@ -560,12 +574,26 @@ public actor QueuePlayer: Transport {
         // Determine whether the next item's album has `force_gapless` set and
         // the current item belongs to the same album.
         var forceGapless = false
-        if let nextAlbumID = item.albumID,
-           let currentItem = await queue.currentItem,
-           let currentAlbumID = currentItem.albumID,
-           currentAlbumID == nextAlbumID,
+        let currentItem = await queue.currentItem
+        let sameAlbum: Bool = {
+            guard let nextID = item.albumID, let curID = currentItem?.albumID else { return false }
+            return nextID == curID
+        }()
+
+        if sameAlbum,
+           let nextAlbumID = item.albumID,
            let album = try? await albumRepo.fetch(id: nextAlbumID) {
             forceGapless = album.forceGapless
+        } else if !sameAlbum {
+            // Cross-album boundary.  Honour the user-controlled
+            // `playback.crossAlbumGapless` toggle: when enabled, attempt
+            // gapless across albums by relaxing the padding-tag check (still
+            // bounded by the hardware sample-rate / channel-count gate inside
+            // `GaplessScheduler.checkAndArm`).  When disabled (default),
+            // refuse arming so the engine does a normal stop/load/play.
+            let allowCrossAlbum = UserDefaults.standard.bool(forKey: "playback.crossAlbumGapless")
+            guard allowCrossAlbum else { return nil }
+            forceGapless = true
         }
 
         return (item: item, forceGapless: forceGapless)
@@ -710,6 +738,10 @@ public actor QueuePlayer: Transport {
         }
         self.log.debug("queueplayer.queue.restored", ["count": saved.items.count])
 
+        // Identify items whose backing files have been moved or deleted while
+        // the app was closed so the UI can render them as disabled rows.
+        await self.recomputeUnavailableItems(items: saved.items)
+
         // If a resume position was saved on last quit, pre-load the current item
         // and seek to it (without playing) so the user can resume where they left off.
         let savedPosition = UserDefaults.standard.double(forKey: "playback.resumePosition")
@@ -721,6 +753,71 @@ public actor QueuePlayer: Transport {
             self.log.debug("queueplayer.position.restored", ["position": savedPosition])
         } catch {
             self.log.warning("queueplayer.position.restore.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    // MARK: - Unavailable items
+
+    /// Snapshot of queue-item IDs whose files are currently missing.
+    /// UI consumers should also subscribe to `unavailableItemChanges` to react
+    /// to updates (e.g. after a queue restore).
+    public func unavailableItemIDs() -> Set<QueueItem.ID> {
+        self._unavailableItemIDs
+    }
+
+    /// Walks `items` and marks any whose `fileURL` no longer exists on disk.
+    /// Acquires the matching library-root security scope once per root so the
+    /// existence check works under the macOS sandbox.  Emits the resulting set
+    /// on `unavailableItemChanges` exactly once.
+    private func recomputeUnavailableItems(items: [QueueItem]) async {
+        guard !items.isEmpty else {
+            if !self._unavailableItemIDs.isEmpty {
+                self._unavailableItemIDs = []
+                self.unavailableItemContinuation?.yield([])
+            }
+            return
+        }
+
+        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        var handles: [String: RootScopeHandle] = [:]
+        defer { handles.removeAll() } // RAII releases scopes
+
+        var missing: Set<QueueItem.ID> = []
+        for item in items {
+            guard let path = URL(string: item.fileURL)?.path else {
+                missing.insert(item.id)
+                continue
+            }
+
+            // Acquire (and memoise) the scope for the matching root so the
+            // sandbox grants `fileExists` access to files inside it.
+            if let root = roots.first(where: {
+                let prefix = $0.path == "/" ? "/" : $0.path + "/"
+                return path.hasPrefix(prefix)
+            }), handles[root.path] == nil {
+                var stale = false
+                if let url = try? URL(
+                    resolvingBookmarkData: root.bookmark,
+                    options: .withSecurityScope,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &stale
+                ), let handle = RootScopeHandle(url: url) {
+                    handles[root.path] = handle
+                }
+            }
+
+            if !FileManager.default.fileExists(atPath: path) {
+                missing.insert(item.id)
+            }
+        }
+
+        self._unavailableItemIDs = missing
+        self.unavailableItemContinuation?.yield(missing)
+        if !missing.isEmpty {
+            self.log.warning("queueplayer.queue.unavailable", [
+                "missing": missing.count,
+                "total": items.count,
+            ])
         }
     }
 
