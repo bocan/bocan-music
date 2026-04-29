@@ -28,6 +28,8 @@
     <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
     <key>NSHumanReadableCopyright</key>
     <string>Copyright © 2026 Chris Funderburg @ Cloud Cauldron. All rights reserved.</string>
+    <key>NSMusicFolderUsageDescription</key>
+    <string>Bòcan needs access to your Music folder to scan and play your library.</string>
     <key>AcoustIDAPIKey</key>
     <string>$(ACOUSTID_API_KEY)</string>
     <key>BocanLastFmApiKey</key>
