@@ -403,7 +403,7 @@ public actor QueuePlayer: Transport {
         // We go directly to the root scope when the per-file bookmark is absent (nil)
         // because the raw file:// URL is inaccessible in the sandbox without a scope.
         var resolvedFromPerFileBookmark = false
-        var scopedRootURL: URL? = nil
+        var rootScope: RootScopeHandle? = nil
         let url: URL
 
         if item.bookmark != nil {
@@ -421,8 +421,8 @@ public actor QueuePlayer: Transport {
                     self.log.error("queueplayer.url.bad_file_url", ["trackID": item.trackID, "url": item.fileURL])
                     throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
                 }
-                if let rootURL = try await self.startRootScope(for: item.fileURL) {
-                    scopedRootURL = rootURL
+                if let scope = try await self.acquireRootScope(for: item.fileURL) {
+                    rootScope = scope
                 } else {
                     // No root scope found — attempt raw URL anyway, matching the
                     // behaviour of the no-per-file-bookmark path (works in dev / non-sandboxed).
@@ -440,8 +440,8 @@ public actor QueuePlayer: Transport {
                     underlying: URLError(.badURL)
                 )
             }
-            if let rootURL = try await self.startRootScope(for: item.fileURL) {
-                scopedRootURL = rootURL
+            if let scope = try await self.acquireRootScope(for: item.fileURL) {
+                rootScope = scope
             } else {
                 // No root scope found — attempt raw URL anyway (works outside sandbox).
                 self.log.warning("queueplayer.url.no_root_scope", ["trackID": item.trackID])
@@ -459,7 +459,10 @@ public actor QueuePlayer: Transport {
         if resolvedFromPerFileBookmark {
             url.stopAccessingSecurityScopedResource()
         }
-        scopedRootURL?.stopAccessingSecurityScopedResource()
+        // Drop the RAII handle so the root scope is released here rather than
+        // waiting for the function to return (matches the pre-RAII timing).
+        withExtendedLifetime(rootScope) {}
+        rootScope = nil
 
         if let track {
             let capturedEngine = self.engine
@@ -577,7 +580,7 @@ public actor QueuePlayer: Transport {
     private func performGaplessPrefetch(item: QueueItem) async throws {
         // Resolve the URL the same way we would for a normal load.
         var resolvedFromPerFileBookmark = false
-        var scopedRootURL: URL? = nil
+        var rootScope: RootScopeHandle? = nil
         let url: URL
 
         if item.bookmark != nil {
@@ -589,8 +592,8 @@ public actor QueuePlayer: Transport {
                 guard let rawURL = URL(string: item.fileURL) else {
                     throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
                 }
-                if let rootURL = try await self.startRootScope(for: item.fileURL) {
-                    scopedRootURL = rootURL
+                if let scope = try await self.acquireRootScope(for: item.fileURL) {
+                    rootScope = scope
                 }
                 // No root scope — attempt raw URL anyway (mirrors loadAndPlay behaviour).
                 url = rawURL
@@ -602,8 +605,8 @@ public actor QueuePlayer: Transport {
                     underlying: URLError(.badURL)
                 )
             }
-            if let rootURL = try await self.startRootScope(for: item.fileURL) {
-                scopedRootURL = rootURL
+            if let scope = try await self.acquireRootScope(for: item.fileURL) {
+                rootScope = scope
             }
             url = rawURL
         }
@@ -611,7 +614,7 @@ public actor QueuePlayer: Transport {
         // Fail early if the file is unreachable — avoids opaque AVAudioFile errors.
         guard FileManager.default.fileExists(atPath: url.path) else {
             if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
-            scopedRootURL?.stopAccessingSecurityScopedResource()
+            // `rootScope` deinit releases on return.
             throw PlaybackError.bookmarkResolutionFailed(
                 trackID: item.trackID,
                 underlying: URLError(.fileDoesNotExist)
@@ -629,7 +632,7 @@ public actor QueuePlayer: Transport {
             }
         } catch {
             if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
-            scopedRootURL?.stopAccessingSecurityScopedResource()
+            // `rootScope` deinit releases on return.
             throw error
         }
 
@@ -637,7 +640,10 @@ public actor QueuePlayer: Transport {
         if resolvedFromPerFileBookmark {
             url.stopAccessingSecurityScopedResource()
         }
-        scopedRootURL?.stopAccessingSecurityScopedResource()
+        // Drop the RAII handle so the root scope is released here rather than
+        // waiting for the function to return (matches the pre-RAII timing).
+        withExtendedLifetime(rootScope) {}
+        rootScope = nil
     }
 
     /// Captured reference to the transition handler so `performGaplessPrefetch`
@@ -727,13 +733,13 @@ public actor QueuePlayer: Transport {
     }
 
     /// Finds the library root that contains `fileURLString`, resolves its
-    /// security-scoped bookmark, starts accessing the scope, and returns the
-    /// scoped root URL.  The caller is responsible for calling
-    /// `stopAccessingSecurityScopedResource()` on the returned URL.
+    /// security-scoped bookmark, starts accessing the scope, and returns an
+    /// RAII handle whose `deinit` releases the scope.  Caller binds to a
+    /// `let` for the duration of the operation; no manual `defer` is needed.
     ///
     /// Returns `nil` when no matching root is found or when the root bookmark
     /// cannot be resolved.
-    private func startRootScope(for fileURLString: String) async throws -> URL? {
+    private func acquireRootScope(for fileURLString: String) async throws -> RootScopeHandle? {
         let roots = await (try? self.rootRepo.fetchAll()) ?? []
         // fileURLString is stored as url.absoluteString ("file:///path/to/file.mp3")
         // while root.path is url.path ("/path/to/folder") — compare via the path component.
@@ -759,14 +765,14 @@ public actor QueuePlayer: Transport {
             self.log.error("queueplayer.root.bookmark_unresolvable", ["rootPath": root.path])
             return nil
         }
-        guard rootURL.startAccessingSecurityScopedResource() else {
+        guard let handle = RootScopeHandle(url: rootURL) else {
             self.log.error("queueplayer.root.scope_denied", ["rootPath": root.path])
             return nil
         }
         if isStale, let rootID = root.id {
             // Bookmark data was valid but stale — refresh it while we hold an active scope
             // so that future launches don't need to fall back to this recovery path.
-            if let freshData = try? rootURL.bookmarkData(
+            if let freshData = try? handle.url.bookmarkData(
                 options: .withSecurityScope,
                 includingResourceValuesForKeys: nil,
                 relativeTo: nil
@@ -781,7 +787,7 @@ public actor QueuePlayer: Transport {
                 }
             }
         }
-        return rootURL
+        return handle
     }
 
     // MARK: Item building

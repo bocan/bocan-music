@@ -167,7 +167,10 @@ actor ScanCoordinator {
                 inFlight += 1
                 let url = fileURL
                 let mode_ = mode
-                group.addTask {
+                // Phase 3 audit M4: scan import work runs at `.utility` so it
+                // doesn't steal CPU priority from playback (engine + queue
+                // operate at higher default priorities).
+                group.addTask(priority: .utility) {
                     let result = await self.importOne(url: url, mode: mode_, emit: emit)
                     return (url, result)
                 }
