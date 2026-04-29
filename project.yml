@@ -22,6 +22,8 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "26.0"
+    ARCHS: arm64
+    VALID_ARCHS: arm64
     PRODUCT_BUNDLE_IDENTIFIER: io.cloudcauldron.bocan
     INFOPLIST_FILE: Resources/Info.plist
     CODE_SIGN_ENTITLEMENTS: Resources/Bocan.entitlements

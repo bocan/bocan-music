@@ -307,9 +307,15 @@ actor ScanCoordinator {
     /// unreliable assumption when comparing roots against tracks whose files
     /// may have just been removed.
     private static func canonicalPath(_ path: String) -> String? {
-        var buffer = [CChar](repeating: 0, count: Int(PATH_MAX))
-        guard realpath(path, &buffer) != nil else { return nil }
-        return String(cString: buffer)
+        var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
+        let resolved = buffer.withUnsafeMutableBufferPointer { ptr -> UnsafeMutablePointer<CChar>? in
+            ptr.baseAddress!.withMemoryRebound(to: CChar.self, capacity: ptr.count) { cPtr in
+                realpath(path, cPtr)
+            }
+        }
+        guard resolved != nil else { return nil }
+        let length = buffer.firstIndex(of: 0) ?? buffer.count
+        return String(decoding: buffer[..<length], as: UTF8.self)
     }
 }
 
