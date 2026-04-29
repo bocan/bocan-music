@@ -151,7 +151,13 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let row = sender.clickedRow
         guard row >= 0, let id = dataSource?.itemIdentifier(forRow: row),
               let trackRow = rowsByID[id] else { return }
-        self.parent.actions.playNow(trackRow.track)
+        // Option-double-click → play just this track, no context.  The default
+        // double-click replays the surrounding browse-view context.
+        if NSApp.currentEvent?.modifierFlags.contains(.option) == true {
+            self.parent.actions.playSingle(trackRow.track)
+        } else {
+            self.parent.actions.playNow(trackRow.track)
+        }
     }
 
     @objc func toggleColumnVisibility(_ sender: NSMenuItem) {

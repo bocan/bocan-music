@@ -11,6 +11,10 @@ import SwiftUI
 public struct TrackContextMenuActions {
     /// Play a single track immediately.
     public let playNow: (Track) -> Void
+    /// Play a single track immediately, replacing the queue with just that
+    /// one track (no surrounding context).  Used by Option+double-click as
+    /// an explicit "play this and nothing else" gesture.
+    public let playSingle: (Track) -> Void
     /// Insert tracks next in the queue.
     public let playNext: ([Track]) -> Void
     /// Append tracks to the end of the queue.
