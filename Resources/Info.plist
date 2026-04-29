@@ -34,6 +34,14 @@
     <string>$(BOCAN_LASTFM_API_KEY)</string>
     <key>BocanLastFmSharedSecret</key>
     <string>$(BOCAN_LASTFM_SHARED_SECRET)</string>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Bòcan needs Local Network access to discover and pair with AirPlay speakers and Apple TVs on your Wi-Fi.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_airplay._tcp</string>
+        <string>_raop._tcp</string>
+        <string>_companion-link._tcp</string>
+    </array>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSSupportsAutomaticTermination</key>
