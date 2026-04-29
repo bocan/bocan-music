@@ -40,6 +40,10 @@ public final class FFTAnalyzer {
     private var imagpBuffer: [Float] // split-complex imaginary part (1024)
     private var magnitudes: [Float] // squared magnitudes per bin (1024)
     private var smoothed: [Float] // EMA-smoothed band values (32)
+    /// Per-band running peak for adaptive normalisation (slow decay).
+    /// Decays ~0.15% per frame — at 43 fps a peak halves in roughly 11 s,
+    /// long enough to feel stable but fast enough to adapt after a genre change.
+    private var bandPeaks: [Float]
 
     // Band bin ranges, recomputed when sample rate changes.
     private var bandBins: [(from: Int, to: Int)]
@@ -49,6 +53,7 @@ public final class FFTAnalyzer {
 
     private let attackAlpha: Float = 0.6
     private let releaseAlpha: Float = 0.08
+    private let peakDecay: Float = 0.9985
 
     // MARK: - Init
 
@@ -73,6 +78,7 @@ public final class FFTAnalyzer {
         self.imagpBuffer = [Float](repeating: 0, count: bins)
         self.magnitudes = [Float](repeating: 0, count: bins)
         self.smoothed = [Float](repeating: 0, count: Self.bandCount)
+        self.bandPeaks = [Float](repeating: 0, count: Self.bandCount)
         self.bandBins = []
     }
 
@@ -173,15 +179,26 @@ public final class FFTAnalyzer {
             self.smoothed[i] = alpha * bands[i] + (1 - alpha) * self.smoothed[i]
         }
 
-        // Normalise to 0…1.  Clamp rather than divide to prevent NaN on silence.
-        var result = self.smoothed
-        var maxVal: Float = 0
-        vDSP_maxv(result, 1, &maxVal, vDSP_Length(Self.bandCount))
-        if maxVal > 1e-6 {
-            var invMax = 1.0 / maxVal
-            vDSP_vsmul(result, 1, &invMax, &result, 1, vDSP_Length(Self.bandCount))
+        // Per-band adaptive normalisation.
+        //
+        // Each band tracks its own running peak (slow EMA decay).  Dividing by
+        // the per-band peak instead of the global maximum means every frequency
+        // band fills the full 0…1 range whenever it has *any* content — bass,
+        // mids, and high-frequency bands all scale independently.  Without this,
+        // the bass dominates the global max and high-frequency bands (which have
+        // far less raw energy) are crushed to near zero and never appear.
+        //
+        // Threshold: if a band's peak has never risen above 1 % of full scale
+        // (i.e. the frequency band genuinely has no content) the output is 0
+        // rather than amplifying noise.
+        var result = [Float](repeating: 0, count: Self.bandCount)
+        for i in 0 ..< Self.bandCount {
+            let val = self.smoothed[i]
+            self.bandPeaks[i] = max(val, self.bandPeaks[i] * self.peakDecay)
+            let peak = self.bandPeaks[i]
+            result[i] = peak > 1e-4 ? val / peak : 0
         }
-        // Hard clamp to [0, 1] — floating-point rounding can push slightly above 1.
+        // Hard clamp to [0, 1].
         var zero: Float = 0
         var one: Float = 1
         vDSP_vclip(result, 1, &zero, &one, &result, 1, vDSP_Length(Self.bandCount))

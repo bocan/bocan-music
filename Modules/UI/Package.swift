@@ -44,6 +44,7 @@ let package = Package(
             name: "UITests",
             dependencies: [
                 "UI",
+                .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
