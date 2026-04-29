@@ -21,6 +21,29 @@ public enum KeyBindings {
     /// `Space` — Play / pause (when not in a text field).
     public static let playPause = KeyboardShortcut(" ", modifiers: [])
 
+    // MARK: - Playback transport
+
+    /// `⌘→` — Next track.
+    public static let nextTrack = KeyboardShortcut(.rightArrow, modifiers: .command)
+
+    /// `⌘←` — Previous track.
+    public static let previousTrack = KeyboardShortcut(.leftArrow, modifiers: .command)
+
+    /// `⌘⇧S` — Toggle shuffle.
+    public static let toggleShuffle = KeyboardShortcut("s", modifiers: [.command, .shift])
+
+    /// `⌘⇧E` — Cycle repeat (off → all → one → off).
+    public static let cycleRepeat = KeyboardShortcut("e", modifiers: [.command, .shift])
+
+    /// `⌘⌥.` — Toggle stop-after-current.
+    public static let stopAfterCurrent = KeyboardShortcut(".", modifiers: [.command, .option])
+
+    /// `⌘⇧⌫` — Clear the playback queue.
+    public static let clearQueue = KeyboardShortcut(.delete, modifiers: [.command, .shift])
+
+    /// `⌘⌥U` — Reveal the Up Next sidebar destination.
+    public static let showUpNext = KeyboardShortcut("u", modifiers: [.command, .option])
+
     /// `⌘⇧N` — New playlist (Phase 6).
     public static let newPlaylist = KeyboardShortcut("n", modifiers: [.command, .shift])
 
