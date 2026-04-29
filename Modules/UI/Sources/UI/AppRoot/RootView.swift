@@ -159,7 +159,13 @@ public struct BocanRootView: View {
             if let track = self.vm.identifyTrack,
                let queue = self.vm.fingerprintQueue,
                let svc = self.vm.metadataEditService {
-                self.identifyVM = IdentifyTrackViewModel(track: track, queue: queue, editService: svc)
+                self.identifyVM = IdentifyTrackViewModel(
+                    track: track,
+                    queue: queue,
+                    editService: svc,
+                    artistRepo: self.vm.artistRepo,
+                    albumRepo: self.vm.albumRepo
+                )
             } else {
                 self.identifyVM = nil
             }

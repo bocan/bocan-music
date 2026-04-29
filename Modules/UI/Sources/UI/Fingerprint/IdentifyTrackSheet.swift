@@ -58,8 +58,9 @@ public struct IdentifyTrackSheet: View {
         case let .results(candidates):
             CandidatePickerView(
                 candidates: candidates,
-                onApply: { candidate in
-                    await self.vm.apply(candidate)
+                currentValues: self.vm.currentValues,
+                onApply: { candidate, fields in
+                    await self.vm.apply(candidate, fields: fields)
                     if self.vm.didApply {
                         self.dismiss()
                     }

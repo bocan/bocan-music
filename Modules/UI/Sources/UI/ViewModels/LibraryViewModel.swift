@@ -110,6 +110,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private let engine: any Transport
     private let settingsRepo: SettingsRepository
     let albumRepo: AlbumRepository
+    let artistRepo: ArtistRepository
     let scanner: LibraryScanner?
     var scanTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
@@ -131,6 +132,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         let albumRepo = AlbumRepository(database: database)
         let artistRepo = ArtistRepository(database: database)
         self.albumRepo = albumRepo
+        self.artistRepo = artistRepo
 
         self.tracks = TracksViewModel(
             repository: trackRepo,
