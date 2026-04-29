@@ -15,6 +15,11 @@ extension TracksView {
             playNow: { track in
                 Task { await lib.play(track: track) }
             },
+            playSingle: { track in
+                // Replace the queue with just this single track — the
+                // Option+double-click "play only this" gesture.
+                Task { await lib.play(tracks: [track], startingAt: 0) }
+            },
             playNext: { tracks in
                 Task { await lib.playNext(tracks: tracks) }
             },

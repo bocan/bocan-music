@@ -23,6 +23,7 @@ private struct QueueContentView: View {
     @ObservedObject var vm: LibraryViewModel
     @State private var items: [QueueItem] = []
     @State private var currentIndex: Int?
+    @State private var unavailableIDs: Set<QueueItem.ID> = []
 
     var body: some View {
         Group {
@@ -39,6 +40,7 @@ private struct QueueContentView: View {
                             item: item,
                             albumName: item.albumID.flatMap { self.vm.tracks.albumNames[$0] },
                             isCurrent: offset == self.currentIndex,
+                            isUnavailable: self.unavailableIDs.contains(item.id),
                             position: offset
                         )
                         .contextMenu {
@@ -60,18 +62,27 @@ private struct QueueContentView: View {
         .navigationTitle("Up Next")
         .task { await self.refreshQueue() }
         .task { await self.observeQueueChanges() }
+        .task { await self.observeUnavailableChanges() }
     }
 
     private func refreshQueue() async {
-        guard let queue = vm.queuePlayer?.queue else { return }
-        self.items = await queue.items
-        self.currentIndex = await queue.currentIndex
+        guard let qp = vm.queuePlayer else { return }
+        self.items = await qp.queue.items
+        self.currentIndex = await qp.queue.currentIndex
+        self.unavailableIDs = await qp.unavailableItemIDs()
     }
 
     private func observeQueueChanges() async {
         guard let queue = vm.queuePlayer?.queue else { return }
         for await _ in queue.changes {
             await self.refreshQueue()
+        }
+    }
+
+    private func observeUnavailableChanges() async {
+        guard let qp = vm.queuePlayer else { return }
+        for await ids in qp.unavailableItemChanges {
+            self.unavailableIDs = ids
         }
     }
 
@@ -92,6 +103,7 @@ private struct QueueRow: View {
     let item: QueueItem
     let albumName: String?
     let isCurrent: Bool
+    let isUnavailable: Bool
     let position: Int
 
     /// Best-effort display title: metadata title → decoded filename stem → raw last path component.
@@ -115,18 +127,18 @@ private struct QueueRow: View {
     var body: some View {
         HStack(spacing: 0) {
             // Playing indicator — opacity-hidden when not current; always hidden from VoiceOver.
-            Image(systemName: "speaker.wave.2.fill")
+            Image(systemName: self.isUnavailable ? "exclamationmark.triangle.fill" : "speaker.wave.2.fill")
                 .font(.system(size: 11))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(self.isUnavailable ? Color.orange : Color.accentColor)
                 .frame(width: 20)
-                .opacity(self.isCurrent ? 1 : 0)
+                .opacity((self.isCurrent || self.isUnavailable) ? 1 : 0)
                 .accessibilityHidden(true)
 
             // Title + artist/album
             VStack(alignment: .leading, spacing: 1) {
-                Text(self.displayTitle)
+                Text(self.titleWithSuffix)
                     .font(self.isCurrent ? Typography.body.weight(.semibold) : Typography.body)
-                    .foregroundStyle(self.isCurrent ? Color.accentColor : Color.textPrimary)
+                    .foregroundStyle(self.titleColor)
                     .lineLimit(1)
                 if let subtitle = self.displaySubtitle {
                     Text(subtitle)
@@ -156,14 +168,26 @@ private struct QueueRow: View {
                 .frame(width: 44, alignment: .trailing)
         }
         .padding(.vertical, 3)
+        .opacity(self.isUnavailable ? 0.55 : 1.0)
+        .help(self.isUnavailable ? "File missing — original location no longer exists" : "")
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.rowLabel)
         .accessibilityAddTraits(self.isCurrent ? .isSelected : [])
     }
 
+    private var titleWithSuffix: String {
+        self.isUnavailable ? "\(self.displayTitle) (missing)" : self.displayTitle
+    }
+
+    private var titleColor: Color {
+        if self.isUnavailable { return Color.textSecondary }
+        return self.isCurrent ? Color.accentColor : Color.textPrimary
+    }
+
     private var rowLabel: String {
         var parts = [self.isCurrent ? "Now playing: \(self.displayTitle)" : self.displayTitle]
+        if self.isUnavailable { parts.append("file missing") }
         if let sub = self.displaySubtitle { parts.append(sub) }
         if let genre = item.genre, !genre.isEmpty { parts.append(genre) }
         parts.append(Formatters.duration(self.item.duration))

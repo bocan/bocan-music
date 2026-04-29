@@ -39,6 +39,9 @@ public struct Sidebar: View {
 
             Section("Queue") {
                 self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
+                    .overlay(TrackDropTarget { ids in
+                        Task { await self.vm.addToQueue(trackIDs: ids) }
+                    })
             }
 
             PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)

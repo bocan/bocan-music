@@ -425,6 +425,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
+    /// Appends raw track IDs (e.g. from a pasteboard drop) to the end of the queue.
+    /// Used by the Up Next sidebar drop target where only the IDs are available.
+    public func addToQueue(trackIDs ids: [Int64]) async {
+        guard let qp = engine as? QueuePlayer, !ids.isEmpty else { return }
+        do {
+            try await qp.addToQueue(ids)
+        } catch {
+            self.log.error("library.addToQueue.failed", ["error": String(reflecting: error)])
+        }
+    }
+
     /// Plays all tracks from the album of `track`.
     public func playAlbum(track: Track, shuffle: Bool = false) async {
         guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
