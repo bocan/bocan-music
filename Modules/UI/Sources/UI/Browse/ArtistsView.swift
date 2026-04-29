@@ -178,11 +178,15 @@ public struct ArtistsView: View {
                 ProgressView("Loading…")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.artists.isEmpty {
+                // Phase 4 audit L2: offer the same Add Music Folder action as TracksView.
                 EmptyState(
                     symbol: "music.mic",
                     title: "No Artists",
-                    message: "Your library doesn't contain any artists yet."
-                )
+                    message: "Add a music folder to start building your library.",
+                    actionLabel: "Add Music Folder"
+                ) {
+                    Task { await self.library.addFolderByPicker() }
+                }
             } else {
                 self.artistList
             }

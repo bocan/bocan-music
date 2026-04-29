@@ -29,6 +29,10 @@ public struct BocanRootView: View {
     @State private var identifyVM: IdentifyTrackViewModel?
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
+    /// Phase 4 audit M8: observe so the FSEvents watcher starts/stops live
+    /// when the user toggles "Watch folders for new files" in Settings,
+    /// instead of waiting for the next launch.
+    @AppStorage("library.watchForChanges") private var watchForChanges = true
 
     public init(
         vm: LibraryViewModel,
@@ -155,6 +159,11 @@ public struct BocanRootView: View {
         .onChange(of: self.vm.searchFocusRequestID) { _, _ in
             // Phase 4 audit H5: ⌘F (Find) focuses the search field.
             self.searchFocused = true
+        }
+        .onChange(of: self.watchForChanges) { _, _ in
+            // Phase 4 audit M8: live-toggle the FSEvents watcher when the
+            // Settings switch flips, instead of waiting for next launch.
+            Task { await self.vm.startOrStopWatcher() }
         }
         .alert(
             "Playback Error",

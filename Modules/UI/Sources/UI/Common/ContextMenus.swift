@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Library
 import Observability
 import Persistence
 import SwiftUI
@@ -29,8 +30,8 @@ public struct TrackActions {
     /// Play all tracks by the artist of the given track.
     public var playArtist: @MainActor (Track) -> Void
 
-    /// TODO(phase-6): Add to playlist.
-    public var addToPlaylist: @MainActor ([Track]) -> Void
+    /// Add the given tracks to the manual playlist with `playlistID`.
+    public var addToPlaylist: @MainActor (Int64, [Track]) -> Void
 
     /// Toggle the `loved` flag on a track.
     public var toggleLoved: @MainActor (Track) async -> Void
@@ -64,7 +65,7 @@ public struct TrackActions {
         playAlbum: @escaping @MainActor (Track) -> Void = { _ in },
         shuffleAlbum: @escaping @MainActor (Track) -> Void = { _ in },
         playArtist: @escaping @MainActor (Track) -> Void = { _ in },
-        addToPlaylist: @escaping @MainActor ([Track]) -> Void = { _ in },
+        addToPlaylist: @escaping @MainActor (Int64, [Track]) -> Void = { _, _ in },
         toggleLoved: @escaping @MainActor (Track) async -> Void,
         setRating: @escaping @MainActor (Track, Int) async -> Void,
         revealInFinder: @escaping @MainActor (Track) -> Void,
@@ -98,11 +99,13 @@ public struct TrackActions {
 public struct TrackContextMenu: View {
     private let tracks: [Track]
     private let actions: TrackActions
+    private let playlistNodes: [PlaylistNode]
     private let log = AppLogger.make(.ui)
 
-    public init(tracks: [Track], actions: TrackActions) {
+    public init(tracks: [Track], actions: TrackActions, playlistNodes: [PlaylistNode] = []) {
         self.tracks = tracks
         self.actions = actions
+        self.playlistNodes = playlistNodes
     }
 
     public var body: some View {
@@ -138,12 +141,16 @@ public struct TrackContextMenu: View {
             }
         }
 
-        // Phase 6 stub
+        // Phase 4 audit L9: wire to playlistNodes (Phase 6 has shipped).
         Menu("Add to Playlist") {
-            Text("No playlists yet")
-                .foregroundStyle(.secondary)
+            if self.playlistNodes.isEmpty {
+                Text("No playlists yet")
+                    .foregroundStyle(.secondary)
+            } else {
+                self.playlistMenuContent(nodes: self.playlistNodes)
+            }
         }
-        .disabled(true) // TODO(phase-6): enable when Playlist module lands
+        .disabled(self.tracks.isEmpty || self.playlistNodes.isEmpty)
 
         Divider()
 
@@ -210,6 +217,32 @@ public struct TrackContextMenu: View {
 
     private func starLabel(_ stars: Int) -> String {
         stars == 0 ? "None" : String(repeating: "★", count: stars) + String(repeating: "☆", count: 5 - stars)
+    }
+
+    /// Recursively renders playlist folders and manual playlists. Smart
+    /// playlists are read-only and intentionally skipped. Returns `AnyView`
+    /// because a `@ViewBuilder` opaque return type would be defined in terms
+    /// of itself.
+    private func playlistMenuContent(nodes: [PlaylistNode]) -> AnyView {
+        AnyView(
+            ForEach(nodes, id: \.id) { node in
+                switch node.kind {
+                case .folder:
+                    Menu(node.name) {
+                        self.playlistMenuContent(nodes: node.children)
+                    }
+
+                case .manual:
+                    Button(node.name) {
+                        self.actions.addToPlaylist(node.id, self.tracks)
+                    }
+                    .disabled(self.tracks.isEmpty)
+
+                case .smart:
+                    EmptyView()
+                }
+            }
+        )
     }
 }
 
