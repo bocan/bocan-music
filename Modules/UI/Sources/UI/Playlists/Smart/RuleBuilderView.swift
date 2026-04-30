@@ -9,6 +9,7 @@ import SwiftUI
 public struct RuleBuilderView: View {
     let smartPlaylist: SmartPlaylist
     let service: SmartPlaylistService
+    let playlistService: PlaylistService?
     let onSaved: (SmartPlaylist) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -21,10 +22,12 @@ public struct RuleBuilderView: View {
     public init(
         smartPlaylist: SmartPlaylist,
         service: SmartPlaylistService,
+        playlistService: PlaylistService? = nil,
         onSaved: @escaping (SmartPlaylist) -> Void
     ) {
         self.smartPlaylist = smartPlaylist
         self.service = service
+        self.playlistService = playlistService
         self.onSaved = onSaved
         self._root = State(wrappedValue: EditableCriterion(from: smartPlaylist.criteria))
         self._limitSort = State(wrappedValue: smartPlaylist.limitSort)
@@ -45,6 +48,7 @@ public struct RuleBuilderView: View {
         }
         .frame(minWidth: 620, idealWidth: 720, minHeight: 420)
         .accessibilityIdentifier(A11y.RuleBuilder.view)
+        .environment(\.playlistServiceForRules, self.playlistService)
         .alert("Save Error", isPresented: Binding(
             get: { self.saveError != nil },
             set: { if !$0 { self.saveError = nil } }
