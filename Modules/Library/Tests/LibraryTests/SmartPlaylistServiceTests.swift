@@ -310,6 +310,35 @@ struct SmartPlaylistServiceTests {
         #expect(keys.count == keySet.count, "Duplicate preset keys found")
     }
 
+    @Test func unratedPresetMatchesNullAndZero() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        let zeroID = try await insertTrack(in: db, fileURL: "file:///zero.mp3", rating: 0)
+        let ratedID = try await insertTrack(in: db, fileURL: "file:///rated.mp3", rating: 80)
+
+        try await BuiltInSmartPresets.seed(using: svc)
+        let all = try await svc.listAll()
+        guard let unrated = all.first(where: { $0.smartPresetKey == "builtin.unrated" }),
+              let pid = unrated.id else {
+            Issue.record("Unrated preset not seeded")
+            return
+        }
+
+        // Behavioural: rating = 0 matches, rating = 80 does not.
+        let tracks = try await svc.tracks(for: pid)
+        let ids = tracks.compactMap(\.id)
+        #expect(ids.contains(zeroID), "rating = 0 should be Unrated")
+        #expect(!ids.contains(ratedID), "rating = 80 must not be Unrated")
+
+        // Defensive: verify the compiled SQL also includes the IS NULL branch
+        // so future schema changes that allow NULL ratings remain covered by
+        // this preset.
+        let resolved = try await svc.resolve(id: pid)
+        let compiled = try SQLBuilder.compile(criteria: resolved.criteria, limitSort: resolved.limitSort)
+        #expect(compiled.selectSQL.contains("IS NULL"))
+        #expect(compiled.selectSQL.contains("tracks.rating = ?"))
+    }
+
     // MARK: - Observation stream
 
     @Test func observeEmitsInitialResults() async throws {
