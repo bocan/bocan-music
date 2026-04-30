@@ -36,11 +36,25 @@ private struct QueueContentView: View {
     var body: some View {
         Group {
             if self.items.isEmpty {
-                EmptyState(
-                    symbol: "list.bullet.indent",
-                    title: "Queue is Empty",
-                    message: "Double-click a track, or right-click to add to queue."
-                )
+                if self.vm.libraryRoots.isEmpty {
+                    // Fresh install / no music folders configured: mirror the
+                    // Albums and Artists empty states with an Add-Music-Folder CTA
+                    // so this view doesn't dead-end users.
+                    EmptyState(
+                        symbol: "list.bullet.indent",
+                        title: "Queue is Empty",
+                        message: "Add a music folder to start building your library.",
+                        actionLabel: "Add Music Folder"
+                    ) {
+                        Task { await self.vm.addFolderByPicker() }
+                    }
+                } else {
+                    EmptyState(
+                        symbol: "list.bullet.indent",
+                        title: "Queue is Empty",
+                        message: "Double-click a track, or right-click to add to queue."
+                    )
+                }
             } else {
                 List {
                     ForEach(Array(self.items.enumerated()), id: \.element.id) { offset, item in
