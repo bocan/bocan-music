@@ -383,4 +383,73 @@ struct SmartPlaylistServiceTests {
         let ids = first?.compactMap(\.id) ?? []
         #expect(ids.contains(loved))
     }
+
+    // MARK: - Snapshot mode (liveUpdate = false)
+
+    @Test func snapshotPersistsAndDoesNotReExecuteQuery() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        let trackA = try await insertTrack(in: db, fileURL: "file:///a.mp3", loved: true)
+
+        let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let ls = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
+        let p = try await svc.create(name: "Loved Snapshot", criteria: criteria, limitSort: ls)
+        guard let pid = p.id else {
+            Issue.record("no id")
+            return
+        }
+
+        // After create with liveUpdate=false, the snapshot must already
+        // contain the matching track via auto-snapshot.
+        var ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(ids == [trackA])
+
+        // Mutate the library — add a new loved track that the live query
+        // would match. The snapshot must NOT change until refresh.
+        let trackB = try await insertTrack(in: db, fileURL: "file:///b.mp3", loved: true)
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(ids == [trackA], "snapshot must be frozen until snapshot(id:) is called")
+
+        // Explicit snapshot picks up trackB.
+        let count = try await svc.snapshot(id: pid)
+        #expect(count == 2)
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(Set(ids) == Set([trackA, trackB]))
+    }
+
+    @Test func updateSwitchingBetweenLiveAndSnapshot() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        let trackA = try await insertTrack(in: db, fileURL: "file:///a.mp3", loved: true)
+
+        let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let live = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: true)
+        let p = try await svc.create(name: "Loved", criteria: criteria, limitSort: live)
+        guard let pid = p.id else {
+            Issue.record("no id")
+            return
+        }
+
+        // In live mode, adding a track should be reflected immediately.
+        let trackB = try await insertTrack(in: db, fileURL: "file:///b.mp3", loved: true)
+        var ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(Set(ids) == Set([trackA, trackB]))
+
+        // Switch to snapshot mode via update — auto-snapshots current matches.
+        let snap = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
+        try await svc.update(id: pid, criteria: criteria, limitSort: snap)
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(Set(ids) == Set([trackA, trackB]))
+
+        // Add a third loved track — should NOT appear until refresh.
+        _ = try await self.insertTrack(in: db, fileURL: "file:///c.mp3", loved: true)
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(Set(ids) == Set([trackA, trackB]))
+
+        // Switch back to live — stored snapshot rows are cleared and the
+        // live query takes over.
+        try await svc.update(id: pid, criteria: criteria, limitSort: live)
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(ids.count == 3)
+    }
 }

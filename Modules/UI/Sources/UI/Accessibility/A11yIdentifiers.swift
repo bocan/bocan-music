@@ -89,6 +89,7 @@ public enum A11y {
         public static let view = "smartPlaylist.detail.view"
         public static let header = "smartPlaylist.detail.header"
         public static let editButton = "smartPlaylist.detail.edit"
+        public static let refreshButton = "smartPlaylist.detail.refresh"
     }
 
     public enum RuleBuilder {
