@@ -59,6 +59,9 @@ public actor SmartPlaylistService {
         }
         playlist.id = id
         self.log.debug("smartPlaylist.create", ["id": id, "name": name])
+        if !limitSort.liveUpdate {
+            try await self.snapshot(id: id)
+        }
         return playlist
     }
 
@@ -86,6 +89,18 @@ public actor SmartPlaylistService {
             try playlist.update(db)
         }
         self.log.debug("smartPlaylist.update", ["id": id])
+        if !limitSort.liveUpdate {
+            try await self.snapshot(id: id)
+        } else {
+            // Switching back to live mode: clear any stale snapshot rows so
+            // tracks(for:) starts returning live results immediately.
+            try await self.database.write { db in
+                try db.execute(
+                    sql: "DELETE FROM playlist_tracks WHERE playlist_id = ?",
+                    arguments: [id]
+                )
+            }
+        }
     }
 
     /// Deletes the smart playlist with `id`.
@@ -107,8 +122,23 @@ public actor SmartPlaylistService {
     }
 
     /// Executes the smart playlist's query and returns matching tracks.
+    ///
+    /// Live playlists (`liveUpdate == true`) execute the compiled SELECT.
+    /// Snapshot playlists (`liveUpdate == false`) read from the persisted
+    /// `playlist_tracks` rows so the contents stay frozen until the user
+    /// calls `snapshot(id:)`.
     public func tracks(for id: Int64) async throws -> [Track] {
         let sp = try await self.resolve(id: id)
+        if !sp.limitSort.liveUpdate {
+            return try await self.database.read { db in
+                try Track.fetchAll(db, sql: """
+                SELECT tracks.* FROM tracks
+                INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
+                WHERE playlist_tracks.playlist_id = ?
+                ORDER BY playlist_tracks.position
+                """, arguments: [id])
+            }
+        }
         let compiled = try CriteriaCompiler.compile(
             criteria: sp.criteria,
             limitSort: sp.limitSort,
@@ -119,6 +149,42 @@ public actor SmartPlaylistService {
         }
     }
 
+    /// Runs the smart playlist's query and atomically replaces its
+    /// `playlist_tracks` rows with the result. Used by snapshot playlists
+    /// (`liveUpdate == false`) and the manual "Refresh" affordance.
+    ///
+    /// The query and the replace happen inside a single `database.write`
+    /// transaction so observers never see a half-populated playlist.
+    @discardableResult
+    public func snapshot(id: Int64) async throws -> Int {
+        let sp = try await self.resolve(id: id)
+        let compiled = try CriteriaCompiler.compile(
+            criteria: sp.criteria,
+            limitSort: sp.limitSort,
+            seed: sp.playlist.id ?? 0
+        )
+        let count = try await self.database.write { db -> Int in
+            let tracks = try Track.fetchAll(db, sql: compiled.selectSQL, arguments: compiled.arguments)
+            try db.execute(
+                sql: "DELETE FROM playlist_tracks WHERE playlist_id = ?",
+                arguments: [id]
+            )
+            for (index, track) in tracks.enumerated() {
+                guard let tid = track.id else { continue }
+                try db.execute(
+                    sql: """
+                    INSERT INTO playlist_tracks (playlist_id, track_id, position)
+                    VALUES (?, ?, ?)
+                    """,
+                    arguments: [id, tid, index]
+                )
+            }
+            return tracks.count
+        }
+        self.log.debug("smartPlaylist.snapshot", ["id": id, "count": count])
+        return count
+    }
+
     /// Returns a live stream of track lists that re-emits whenever the relevant
     /// tables change. Debounces by 250ms to avoid flooding on consecutive plays.
     public func observe(_ id: Int64) -> AsyncThrowingStream<[Track], Error> {
@@ -126,13 +192,27 @@ public actor SmartPlaylistService {
             let task = Task {
                 do {
                     let sp = try await self.resolve(id: id)
-                    let compiled = try CriteriaCompiler.compile(
-                        criteria: sp.criteria,
-                        limitSort: sp.limitSort,
-                        seed: sp.playlist.id ?? 0
-                    )
-                    let sql = compiled.selectSQL
-                    let args = compiled.arguments
+                    let sql: String
+                    let args: StatementArguments
+                    if sp.limitSort.liveUpdate {
+                        let compiled = try CriteriaCompiler.compile(
+                            criteria: sp.criteria,
+                            limitSort: sp.limitSort,
+                            seed: sp.playlist.id ?? 0
+                        )
+                        sql = compiled.selectSQL
+                        args = compiled.arguments
+                    } else {
+                        // Snapshot mode: observe playlist_tracks so the UI
+                        // refreshes when snapshot(id:) writes new rows.
+                        sql = """
+                        SELECT tracks.* FROM tracks
+                        INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
+                        WHERE playlist_tracks.playlist_id = ?
+                        ORDER BY playlist_tracks.position
+                        """
+                        args = [id]
+                    }
                     let stream = await self.database.observe { db in
                         try Track.fetchAll(db, sql: sql, arguments: args)
                     }
