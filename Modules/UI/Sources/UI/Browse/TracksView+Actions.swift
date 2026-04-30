@@ -148,6 +148,42 @@ extension TracksView {
         let response = alert.runModal()
         guard response == .alertFirstButtonReturn else { return }
 
-        Task { await library.deleteTrackFromDisk(id: id) }
+        Task { @MainActor in
+            let outcome = await library.deleteTrackFromDisk(id: id)
+            // Phase 5.5 audit M3: when trashing fails (external volume,
+            // permission denied, …) we used to silently log and leave the
+            // file on disk. Offer an explicit fallback to permanent deletion
+            // so the user actually finds out and can choose what to do.
+            if case let .trashFailed(error, _) = outcome {
+                Self.confirmPermanentDelete(track: track, error: error, library: library)
+            }
+        }
+    }
+
+    /// Secondary confirmation shown when `trashItem` fails. Asks the user
+    /// whether to permanently delete the file. Only called from
+    /// `confirmDeleteFromDisk` after the user has already confirmed the
+    /// initial trash request.
+    @MainActor
+    private static func confirmPermanentDelete(
+        track: Track,
+        error: any Error,
+        library: LibraryViewModel
+    ) {
+        guard let id = track.id else { return }
+        let title = track.title ?? "this track"
+
+        let alert = NSAlert()
+        alert.messageText = "Move to Trash failed: \(error.localizedDescription)"
+        alert.informativeText =
+            "Permanently delete “\(title)”? This cannot be undone — the file will not be moved to the Trash."
+        alert.alertStyle = .critical
+        let deleteButton = alert.addButton(withTitle: "Delete Permanently")
+        deleteButton.hasDestructiveAction = true
+        alert.addButton(withTitle: "Cancel")
+
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        Task { await library.permanentlyDeleteTrackFromDisk(id: id) }
     }
 }
