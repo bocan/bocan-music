@@ -22,9 +22,16 @@ public struct QueueView: View {
 /// Inner view that observes queue state via the `QueuePlayer`.
 private struct QueueContentView: View {
     @ObservedObject var vm: LibraryViewModel
+    /// Observed separately so the animated row indicator pauses when playback pauses.
+    @ObservedObject var nowPlaying: NowPlayingViewModel
     @State private var items: [QueueItem] = []
     @State private var currentIndex: Int?
     @State private var unavailableIDs: Set<QueueItem.ID> = []
+
+    init(vm: LibraryViewModel) {
+        self.vm = vm
+        self.nowPlaying = vm.nowPlaying
+    }
 
     var body: some View {
         Group {
@@ -41,6 +48,7 @@ private struct QueueContentView: View {
                             item: item,
                             albumName: item.albumID.flatMap { self.vm.tracks.albumNames[$0] },
                             isCurrent: offset == self.currentIndex,
+                            isPlaying: self.nowPlaying.isPlaying,
                             isUnavailable: self.unavailableIDs.contains(item.id),
                             position: offset
                         )
@@ -158,6 +166,7 @@ private struct QueueRow: View {
     let item: QueueItem
     let albumName: String?
     let isCurrent: Bool
+    let isPlaying: Bool
     let isUnavailable: Bool
     let position: Int
 
@@ -181,13 +190,20 @@ private struct QueueRow: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Playing indicator — opacity-hidden when not current; always hidden from VoiceOver.
-            Image(systemName: self.isUnavailable ? "exclamationmark.triangle.fill" : "speaker.wave.2.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(self.isUnavailable ? Color.orange : Color.accentColor)
-                .frame(width: 20)
-                .opacity((self.isCurrent || self.isUnavailable) ? 1 : 0)
-                .accessibilityHidden(true)
+            // Playing indicator — animated bars for the current track, warning glyph for
+            // unavailable rows. Opacity-hidden otherwise; always hidden from VoiceOver.
+            Group {
+                if self.isUnavailable {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.orange)
+                } else {
+                    PlayingBarsIndicator(isPlaying: self.isPlaying)
+                }
+            }
+            .frame(width: 20)
+            .opacity((self.isCurrent || self.isUnavailable) ? 1 : 0)
+            .accessibilityHidden(true)
 
             // Title + artist/album
             VStack(alignment: .leading, spacing: 1) {
