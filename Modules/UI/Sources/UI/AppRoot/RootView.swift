@@ -172,6 +172,27 @@ public struct BocanRootView: View {
         } message: {
             Text(self.vm.playbackErrorMessage ?? "")
         }
+        .alert(
+            "Re-scan Failed",
+            isPresented: self.rescanErrorBinding
+        ) {
+            Button("OK") { self.vm.rescanErrorMessage = nil }
+        } message: {
+            Text(self.vm.rescanErrorMessage ?? "")
+        }
+        .overlay(alignment: .top) {
+            // Phase 5.5 audit M2: lightweight toast surface for transient
+            // confirmations (e.g. "Re-scanned «Title»"). Auto-dismisses
+            // via LibraryViewModel.showToast after 2 seconds.
+            if let toast = self.vm.toast {
+                ToastBanner(message: toast)
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityAddTraits(.isStaticText)
+                    .accessibilityLabel(toast.text)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: self.vm.toast)
         .onChange(of: self.vm.tagEditorTrackIDs) { _, ids in
             if let ids, !ids.isEmpty, let svc = self.vm.metadataEditService {
                 self.tagEditorVM = TagEditorViewModel(service: svc, trackIDs: ids)
@@ -263,6 +284,13 @@ public struct BocanRootView: View {
         Binding(
             get: { self.vm.playbackErrorMessage != nil },
             set: { if !$0 { self.vm.playbackErrorMessage = nil } }
+        )
+    }
+
+    private var rescanErrorBinding: Binding<Bool> {
+        Binding(
+            get: { self.vm.rescanErrorMessage != nil },
+            set: { if !$0 { self.vm.rescanErrorMessage = nil } }
         )
     }
 
