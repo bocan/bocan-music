@@ -53,6 +53,7 @@ public enum Field: String, Sendable, Codable, Hashable, CaseIterable {
     case excludedFromShuffle
     case isLossless
     case hasCoverArt
+    case hasLyrics
     case hasMusicBrainzReleaseID
 
     // MARK: - Enum fields

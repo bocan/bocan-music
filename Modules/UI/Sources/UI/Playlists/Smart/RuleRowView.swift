@@ -517,6 +517,9 @@ extension Field {
         case .hasCoverArt:
             "Has Cover Art"
 
+        case .hasLyrics:
+            "Has Lyrics"
+
         case .hasMusicBrainzReleaseID:
             "Has MusicBrainz ID"
 
@@ -663,7 +666,7 @@ enum FieldGroup: CaseIterable {
             [.addedAt, .lastPlayedAt]
 
         case .flags:
-            [.loved, .excludedFromShuffle, .isLossless, .hasCoverArt, .hasMusicBrainzReleaseID]
+            [.loved, .excludedFromShuffle, .isLossless, .hasCoverArt, .hasLyrics, .hasMusicBrainzReleaseID]
 
         case .membership:
             [.inPlaylist, .notInPlaylist]

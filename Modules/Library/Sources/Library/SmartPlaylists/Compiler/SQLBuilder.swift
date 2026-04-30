@@ -196,12 +196,18 @@ public enum SQLBuilder {
 
         // ── Boolean ──────────────────────────────────────────────────────────
         case .isTrue:
+            if rule.field == .hasLyrics {
+                return "(\(col) IS NOT NULL AND \(col) != '')"
+            }
             if rule.field == .hasCoverArt || rule.field == .hasMusicBrainzReleaseID {
                 return "\(col) IS NOT NULL"
             }
             return "\(col) = 1"
 
         case .isFalse:
+            if rule.field == .hasLyrics {
+                return "(\(col) IS NULL OR \(col) = '')"
+            }
             if rule.field == .hasCoverArt || rule.field == .hasMusicBrainzReleaseID {
                 return "\(col) IS NULL"
             }
