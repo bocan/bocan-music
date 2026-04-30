@@ -29,6 +29,63 @@ public struct SleepTimerMenu: View {
             : "Sleep timer — automatically stop playback after a set time")
         .accessibilityLabel(self.accessibilityLabel)
         .accessibilityHint("Opens a menu of sleep timer presets. Choose a duration to automatically stop playback.")
+        .popover(isPresented: self.$showCustomField, arrowEdge: .top) {
+            self.customDurationPopover
+        }
+    }
+
+    // MARK: - Custom duration popover
+
+    private var customDurationPopover: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Custom Sleep Timer")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 8) {
+                Stepper(value: self.$customMinutes, in: 1 ... 480) {
+                    HStack(spacing: 4) {
+                        TextField("Minutes", value: self.$customMinutes, format: .number)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 60)
+                            .multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Minutes")
+                        Text(self.customMinutes == 1 ? "minute" : "minutes")
+                            .foregroundStyle(Color.textSecondary)
+                    }
+                }
+                .help("Set the number of minutes (1–480) before playback stops")
+            }
+
+            Toggle("Fade out in last 30 s", isOn: Binding(
+                get: { self.vm.sleepTimerFadeOut },
+                set: { newVal in
+                    Task { await self.vm.setSleepTimer(minutes: nil, fadeOut: newVal) }
+                }
+            ))
+            .help("Gradually reduce volume to silence over the final 30 seconds before the timer fires")
+
+            HStack {
+                Spacer()
+                Button("Cancel", role: .cancel) {
+                    self.showCustomField = false
+                }
+                .keyboardShortcut(.cancelAction)
+                .help("Close without changing the sleep timer")
+
+                Button("Start") {
+                    let mins = max(1, min(480, self.customMinutes))
+                    Task {
+                        await self.vm.setSleepTimer(minutes: mins, fadeOut: self.vm.sleepTimerFadeOut)
+                    }
+                    self.showCustomField = false
+                }
+                .keyboardShortcut(.defaultAction)
+                .help("Start the sleep timer with the chosen duration")
+            }
+        }
+        .padding(16)
+        .frame(minWidth: 260)
     }
 
     // MARK: - Menu items
