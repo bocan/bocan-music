@@ -53,6 +53,7 @@ public enum Comparator: String, Sendable, Codable, Hashable, CaseIterable {
     /// Track's date is within the last N months.
     case inLastMonths
     /// Track's date is within the last N years.
+    case inLastYears
     case beforeDate
     case afterDate
     case onDate
