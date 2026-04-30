@@ -197,6 +197,20 @@ struct SmartCriteriaCompilerTests {
         #expect(c.selectSQL.contains("IS NULL"))
     }
 
+    @Test func hasLyricsIsTrue() throws {
+        let c = try compile(.hasLyrics, .isTrue, .null)
+        #expect(c.selectSQL.contains("LEFT JOIN lyrics ON lyrics.track_id = tracks.id"))
+        #expect(c.selectSQL.contains("lyrics.lyrics_text IS NOT NULL"))
+        #expect(c.selectSQL.contains("!= ''"))
+    }
+
+    @Test func hasLyricsIsFalse() throws {
+        let c = try compile(.hasLyrics, .isFalse, .null)
+        #expect(c.selectSQL.contains("LEFT JOIN lyrics ON lyrics.track_id = tracks.id"))
+        #expect(c.selectSQL.contains("lyrics.lyrics_text IS NULL"))
+        #expect(c.selectSQL.contains("= ''"))
+    }
+
     // MARK: - Membership
 
     @Test func notMemberOf() throws {
