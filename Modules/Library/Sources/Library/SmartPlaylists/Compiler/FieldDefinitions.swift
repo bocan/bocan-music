@@ -107,6 +107,14 @@ public enum FieldDefinitions {
         )
         t[.isLossless] = .init(dataType: .bool, allowedComparators: .bool, columnRef: .init(expression: "tracks.is_lossless"))
         t[.hasCoverArt] = .init(dataType: .bool, allowedComparators: .bool, columnRef: .init(expression: "tracks.cover_art_hash"))
+        t[.hasLyrics] = .init(
+            dataType: .bool,
+            allowedComparators: .bool,
+            columnRef: .init(
+                expression: "lyrics.lyrics_text",
+                join: Join("LEFT JOIN lyrics ON lyrics.track_id = tracks.id")
+            )
+        )
         t[.hasMusicBrainzReleaseID] = .init(
             dataType: .bool,
             allowedComparators: .bool,
