@@ -396,6 +396,27 @@ struct SmartCriteriaCompilerTests {
         }
     }
 
+    @Test func threeLevelNestingAllowed() throws {
+        // Root (1) → group (2) → group (3) — exactly at the cap.
+        let leaf = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let level3 = SmartCriterion.group(.and, [leaf])
+        let level2 = SmartCriterion.group(.and, [level3])
+        let level1 = SmartCriterion.group(.and, [level2])
+        try Validator.validate(level1)
+    }
+
+    @Test func fourLevelNestingThrows() {
+        // Root (1) → group (2) → group (3) → group (4) — exceeds cap of 3.
+        let leaf = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let level4 = SmartCriterion.group(.and, [leaf])
+        let level3 = SmartCriterion.group(.and, [level4])
+        let level2 = SmartCriterion.group(.and, [level3])
+        let level1 = SmartCriterion.group(.and, [level2])
+        #expect(throws: SmartPlaylistError.self) {
+            try Validator.validate(level1)
+        }
+    }
+
     // MARK: - Security: SQL injection resistance
 
     @Test func sqlInjectionIsNotInterpolated() throws {

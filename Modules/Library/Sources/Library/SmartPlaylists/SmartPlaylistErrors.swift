@@ -18,4 +18,8 @@ public enum SmartPlaylistError: Error, Sendable {
     case notSmartPlaylist(Int64)
     /// JSON decode failure for persisted criteria.
     case decodeFailed(String)
+    /// The criteria tree exceeds the maximum allowed group nesting depth.
+    /// The UI caps interactive nesting at 3 levels; deeper trees can only
+    /// arrive via hand-edited JSON or future migrations.
+    case tooDeeplyNested(maxDepth: Int)
 }
