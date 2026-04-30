@@ -266,7 +266,7 @@ private struct ValueControl: View {
             self.enumerationControl
 
         case .membership:
-            self.textControl
+            self.membershipControl
         }
     }
 
@@ -417,6 +417,18 @@ private struct ValueControl: View {
             set: { self.rule.value = .enumeration($0) }
         ))
         .textFieldStyle(.roundedBorder)
+    }
+
+    // MARK: - Membership
+
+    private var membershipControl: some View {
+        PlaylistPicker(selectedID: Binding(
+            get: {
+                if case let .playlistRef(id) = self.rule.value { return id }
+                return 0
+            },
+            set: { self.rule.value = .playlistRef($0) }
+        ))
     }
 }
 

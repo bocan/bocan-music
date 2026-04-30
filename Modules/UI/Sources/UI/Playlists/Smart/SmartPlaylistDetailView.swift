@@ -57,7 +57,8 @@ public struct SmartPlaylistDetailView: View {
             if let sp = self.vm.smartPlaylist {
                 RuleBuilderView(
                     smartPlaylist: sp,
-                    service: self.library.smartPlaylistService
+                    service: self.library.smartPlaylistService,
+                    playlistService: self.library.playlistService
                 ) { _ in
                     Task { await self.vm.load(playlistID: self.playlistID) }
                 }
