@@ -11,6 +11,10 @@ import Library
 public enum EditableCriterion: Identifiable, Equatable, Sendable {
     case rule(id: UUID, EditableRule)
     case group(id: UUID, op: LogicalOp, children: [Self])
+    /// Mirrors `SmartCriterion.invalid` — a leaf produced when persisted
+    /// criteria reference a field this build no longer knows about.
+    /// The UI shows a placeholder row prompting the user to remove it.
+    case invalid(id: UUID, reason: String)
 
     public var id: UUID {
         switch self {
@@ -18,6 +22,9 @@ public enum EditableCriterion: Identifiable, Equatable, Sendable {
             id
 
         case let .group(id, _, _):
+            id
+
+        case let .invalid(id, _):
             id
         }
     }
@@ -31,6 +38,9 @@ public enum EditableCriterion: Identifiable, Equatable, Sendable {
 
         case let .group(op, children):
             self = .group(id: UUID(), op: op, children: children.map { Self(from: $0) })
+
+        case let .invalid(reason):
+            self = .invalid(id: UUID(), reason: reason)
         }
     }
 
@@ -56,6 +66,12 @@ public enum EditableCriterion: Identifiable, Equatable, Sendable {
                 throw SmartPlaylistError.emptyGroup
             }
             return try .group(op, children.map { try $0.toSmartCriterion() })
+
+        case let .invalid(_, reason):
+            // Round-trips back to .invalid so the rest of the tree can still
+            // be inspected. `Validator.validate` will reject the save with
+            // SmartPlaylistError.invalidRule(reason:).
+            return .invalid(reason: reason)
         }
     }
 }
