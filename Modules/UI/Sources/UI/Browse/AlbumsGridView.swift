@@ -207,7 +207,7 @@ public struct AlbumsGridView: View {
         .disabled(ids.isEmpty)
     }
 
-    /// Loads every track for the given album IDs and opens the track inspector.
+    /// Loads every track for the given album IDs and opens the writable tag editor.
     private func openInspector(forAlbumIDs ids: [Int64]) async {
         let repo = TrackRepository(database: self.library.database)
         var collected: [Track] = []
@@ -217,7 +217,7 @@ public struct AlbumsGridView: View {
             }
         }
         await MainActor.run {
-            self.library.showInspector(tracks: collected)
+            self.library.showTagEditor(tracks: collected)
         }
     }
 }
