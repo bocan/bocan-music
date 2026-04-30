@@ -65,8 +65,11 @@ public extension LibraryViewModel {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = "Choose a folder containing music to add to your library."
-        panel.prompt = "Add Folder"
+        // Phase 5.5 audit L1: spell out exactly what the panel accepts so users
+        // aren't left wondering why "Open" became "Add" or what the file
+        // filter does on the sibling files panel.
+        panel.message = "Choose one or more folders containing music to add to your library."
+        panel.prompt = "Add"
         guard panel.runModal() == .OK else { return }
         await self.addURLs(panel.urls)
     }
@@ -82,8 +85,11 @@ public extension LibraryViewModel {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = true
         panel.allowedContentTypes = Self.supportedAudioTypes
-        panel.message = "Choose audio files to add to your library."
-        panel.prompt = "Add Files"
+        // Phase 5.5 audit L1: explicitly list the accepted formats so the
+        // greyed-out non-audio files in the panel don't look like a bug.
+        panel.message =
+            "Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library."
+        panel.prompt = "Add"
         guard panel.runModal() == .OK else { return }
         // Add each file directly — the sandbox grants access to the selected URLs,
         // not their parent directories.
