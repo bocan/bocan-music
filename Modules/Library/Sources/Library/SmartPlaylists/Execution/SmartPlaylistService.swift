@@ -34,6 +34,7 @@ public actor SmartPlaylistService {
         presetKey: String? = nil
     ) async throws -> Playlist {
         try Validator.validate(criteria)
+        try await self.rejectSmartPlaylistReferences(in: criteria)
         let criteriaJSON = try Self.encode(criteria)
         let limitSortJSON = try Self.encodeLimitSort(limitSort)
         let now = Self.now()
@@ -69,6 +70,7 @@ public actor SmartPlaylistService {
         limitSort: LimitSort
     ) async throws {
         try Validator.validate(criteria)
+        try await self.rejectSmartPlaylistReferences(in: criteria, excluding: id)
         let criteriaJSON = try Self.encode(criteria)
         let limitSortJSON = try Self.encodeLimitSort(limitSort)
         let now = Self.now()
@@ -214,5 +216,42 @@ public actor SmartPlaylistService {
 
     private static func now() -> Int64 {
         Int64(Date().timeIntervalSince1970)
+    }
+
+    /// Walks `criteria` collecting every `playlistRef` referenced by a
+    /// `memberOf` / `notMemberOf` rule, and throws
+    /// `SmartPlaylistError.cannotReferenceSmartPlaylist` if any of those rows
+    /// is itself a smart playlist. `excluding` is used on update to ignore the
+    /// playlist's own row (a self-reference will resolve to empty for the
+    /// same reason; we still reject smart-on-smart).
+    private func rejectSmartPlaylistReferences(
+        in criteria: SmartCriterion,
+        excluding: Int64? = nil
+    ) async throws {
+        let refs = Self.collectPlaylistRefs(in: criteria)
+        guard !refs.isEmpty else { return }
+        let smartRefs = try await self.database.read { db -> [Int64] in
+            var found: [Int64] = []
+            for id in refs where id != excluding {
+                if let row = try Playlist.fetchOne(db, key: id), row.kind == .smart {
+                    found.append(id)
+                }
+            }
+            return found
+        }
+        if let first = smartRefs.first {
+            throw SmartPlaylistError.cannotReferenceSmartPlaylist(id: first)
+        }
+    }
+
+    private static func collectPlaylistRefs(in criteria: SmartCriterion) -> [Int64] {
+        switch criteria {
+        case let .rule(rule):
+            guard rule.comparator == .memberOf || rule.comparator == .notMemberOf else { return [] }
+            if case let .playlistRef(id) = rule.value { return [id] }
+            return []
+        case let .group(_, children):
+            return children.flatMap(Self.collectPlaylistRefs(in:))
+        }
     }
 }

@@ -284,6 +284,31 @@ struct SmartPlaylistServiceTests {
         }
     }
 
+    // MARK: - Reject smart-playlist references
+
+    @Test func createRejectsMemberOfSmartPlaylist() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        // Smart playlist A
+        let a = try await svc.create(
+            name: "A",
+            criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        )
+        guard let aid = a.id else {
+            Issue.record("missing id")
+            return
+        }
+        // Smart playlist B references A via memberOf — must throw.
+        let recursive = SmartCriterion.rule(.init(
+            field: .inPlaylist,
+            comparator: .memberOf,
+            value: .playlistRef(aid)
+        ))
+        await #expect(throws: SmartPlaylistError.self) {
+            _ = try await svc.create(name: "B", criteria: recursive)
+        }
+    }
+
     // MARK: - Built-in presets
 
     @Test func builtInPresetsSeeded() async throws {
