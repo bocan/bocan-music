@@ -112,6 +112,37 @@ struct RuleRowView: View {
     }
 }
 
+// MARK: - InvalidRuleRow
+
+/// Placeholder row shown when a `SmartCriterion.invalid` sentinel is decoded —
+/// typically a rule referencing a field that this build no longer recognises.
+/// The user must remove the row before the playlist can be saved.
+struct InvalidRuleRow: View {
+    let reason: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(Color.orange)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Invalid rule — please remove")
+                    .font(Typography.body)
+                    .foregroundStyle(Color.textPrimary)
+                Text(self.reason)
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textSecondary)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(Color.orange.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .accessibilityLabel("Invalid rule, \(self.reason). Please remove.")
+    }
+}
+
 // MARK: - FieldPicker
 
 private struct FieldPicker: View {

@@ -417,6 +417,54 @@ struct SmartCriteriaCompilerTests {
         }
     }
 
+    @Test func unknownFieldDecodesAsInvalidSentinel() throws {
+        // Simulate a JSON blob written by a future version that introduced
+        // (or removed) a field this build doesn't recognise.
+        let json = #"""
+        {"rule":{"_0":{"field":"madeUpField","comparator":"contains","value":{"tag":"text","text":"x"}}}}
+        """#
+        let data = try #require(json.data(using: .utf8))
+        let criterion = try JSONDecoder().decode(SmartCriterion.self, from: data)
+        guard case let .invalid(reason) = criterion else {
+            Issue.record("Expected .invalid sentinel, got \(criterion)")
+            return
+        }
+        #expect(reason.contains("madeUpField"))
+    }
+
+    @Test func validatorRejectsInvalidSentinel() {
+        let criterion = SmartCriterion.invalid(reason: "Unknown field \"madeUpField\"")
+        #expect(throws: SmartPlaylistError.self) {
+            try Validator.validate(criterion)
+        }
+    }
+
+    @Test func surroundingTreeStillDecodesWhenOneRuleUnknown() throws {
+        // A group with one good rule + one rule using an unknown field must
+        // still decode end-to-end; only the broken leaf becomes .invalid.
+        let json = #"""
+        {"group":{"_0":"and","_1":[
+          {"rule":{"_0":{"field":"loved","comparator":"isTrue","value":{"tag":"null"}}}},
+          {"rule":{"_0":{"field":"madeUpField","comparator":"contains","value":{"tag":"text","text":"x"}}}}
+        ]}}
+        """#
+        let data = try #require(json.data(using: .utf8))
+        let criterion = try JSONDecoder().decode(SmartCriterion.self, from: data)
+        guard case let .group(_, children) = criterion else {
+            Issue.record("Expected .group root")
+            return
+        }
+        #expect(children.count == 2)
+        guard case .rule = children[0] else {
+            Issue.record("Expected first child to remain a rule")
+            return
+        }
+        guard case .invalid = children[1] else {
+            Issue.record("Expected second child to be .invalid")
+            return
+        }
+    }
+
     // MARK: - Security: SQL injection resistance
 
     @Test func sqlInjectionIsNotInterpolated() throws {

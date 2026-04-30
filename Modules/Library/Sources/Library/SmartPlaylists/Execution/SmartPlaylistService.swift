@@ -250,6 +250,8 @@ public actor SmartPlaylistService {
             guard rule.comparator == .memberOf || rule.comparator == .notMemberOf else { return [] }
             if case let .playlistRef(id) = rule.value { return [id] }
             return []
+        case .invalid:
+            return []
         case let .group(_, children):
             return children.flatMap(Self.collectPlaylistRefs(in:))
         }
