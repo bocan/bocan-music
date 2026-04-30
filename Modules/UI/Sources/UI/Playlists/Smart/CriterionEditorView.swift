@@ -21,6 +21,9 @@ struct CriterionEditorView: View {
                 onRemove: nil // top-level rule: cannot remove (caller handles)
             )
 
+        case let .invalid(_, reason):
+            InvalidRuleRow(reason: reason)
+
         case let .group(id, op, children):
             GroupEditorView(
                 id: id,

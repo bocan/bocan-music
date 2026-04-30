@@ -19,6 +19,8 @@ public enum Validator {
         switch criterion {
         case let .rule(rule):
             try Self.validateRule(rule)
+        case let .invalid(reason):
+            throw SmartPlaylistError.invalidRule(reason: reason)
         case let .group(_, children):
             guard !children.isEmpty else { throw SmartPlaylistError.emptyGroup }
             guard depth <= Self.maxGroupDepth else {

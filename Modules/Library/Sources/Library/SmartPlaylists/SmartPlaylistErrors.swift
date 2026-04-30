@@ -28,4 +28,9 @@ public enum SmartPlaylistError: Error, Sendable {
     /// silently empty results when in_playlist is implemented against
     /// `playlist_tracks` (which is empty for live smart playlists).
     case cannotReferenceSmartPlaylist(id: Int64)
+    /// The criteria tree contains an `.invalid` sentinel — most often a rule
+    /// referencing a field that this build no longer recognises. The playlist
+    /// can still be read and rendered, but cannot be saved until the user
+    /// removes the broken row.
+    case invalidRule(reason: String)
 }

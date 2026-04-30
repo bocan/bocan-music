@@ -63,6 +63,8 @@ public enum SQLBuilder {
         switch criterion {
         case let .rule(rule):
             return try Self.buildRule(rule, args: &args, joins: &joins)
+        case let .invalid(reason):
+            throw SmartPlaylistError.invalidRule(reason: reason)
         case let .group(op, children):
             let parts = try children.map { try Self.buildWhere($0, args: &args, joins: &joins) }
             let separator = op == .and ? " AND " : " OR "
