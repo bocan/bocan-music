@@ -42,6 +42,9 @@ public struct Sidebar: View {
                     .overlay(TrackDropTarget { ids in
                         Task { await self.vm.addToQueue(trackIDs: ids) }
                     })
+                    // Phase 5 audit L4: announce that this row is also a drop
+                    // target for tracks dragged from the library.
+                    .accessibilityHint("Shows the playback queue. Drop tracks here to add them to the end of the queue.")
             }
 
             PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)
