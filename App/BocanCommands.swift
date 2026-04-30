@@ -21,6 +21,17 @@ struct BocanCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
+            Button("New Playlist…") {
+                self.vm.playlistSidebar.beginNewPlaylist()
+            }
+            .keyboardShortcut(KeyBindings.newPlaylist)
+
+            Button("New Playlist Folder…") {
+                self.vm.playlistSidebar.beginNewFolder()
+            }
+
+            Divider()
+
             Button("Add Folder to Library…") {
                 Task { await self.vm.addFolderByPicker() }
             }
