@@ -22,4 +22,10 @@ public enum SmartPlaylistError: Error, Sendable {
     /// The UI caps interactive nesting at 3 levels; deeper trees can only
     /// arrive via hand-edited JSON or future migrations.
     case tooDeeplyNested(maxDepth: Int)
+    /// A `memberOf` / `notMemberOf` rule references a playlist that is itself
+    /// a smart playlist. Forbidden because evaluating the outer playlist would
+    /// recursively compile the inner one and risk infinite recursion or
+    /// silently empty results when in_playlist is implemented against
+    /// `playlist_tracks` (which is empty for live smart playlists).
+    case cannotReferenceSmartPlaylist(id: Int64)
 }
