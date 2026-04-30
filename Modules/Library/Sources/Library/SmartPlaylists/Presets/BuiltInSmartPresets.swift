@@ -53,7 +53,16 @@ public enum BuiltInSmartPresets {
         .init(
             key: "builtin.unrated",
             name: "Unrated",
-            criteria: .rule(.init(field: .rating, comparator: .equalTo, value: .int(0))),
+            // "Unrated" means the user has not assigned a rating.
+            //
+            // Schema: `tracks.rating INTEGER DEFAULT 0` (non-NULL in our
+            // current code path), but the metadata editor exposes a `nil`
+            // patch and external imports may insert NULL rows. Match both
+            // 0 and NULL so the preset is robust to either representation.
+            criteria: .group(.or, [
+                .rule(.init(field: .rating, comparator: .isNull, value: .null)),
+                .rule(.init(field: .rating, comparator: .equalTo, value: .int(0))),
+            ]),
             limitSort: LimitSort(sortBy: .addedAt, ascending: false)
         ),
         .init(
