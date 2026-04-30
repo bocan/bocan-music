@@ -1,4 +1,5 @@
 import AppKit
+import Persistence
 import SwiftUI
 
 // MARK: - TracksView context menu actions
@@ -60,16 +61,10 @@ extension TracksView {
                 lib.showIdentifyTrack(track)
             },
             removeFromLibrary: { tracks in
-                for track in tracks {
-                    if let id = track.id {
-                        Task { await lib.removeTrack(id: id) }
-                    }
-                }
+                Self.confirmRemoveFromLibrary(tracks: tracks, library: lib)
             },
             deleteFromDisk: { track in
-                if let id = track.id {
-                    Task { await lib.deleteTrackFromDisk(id: id) }
-                }
+                Self.confirmDeleteFromDisk(track: track, library: lib)
             },
             copy: { tracks in
                 let tsv = tracks
@@ -83,5 +78,76 @@ extension TracksView {
             },
             removeFromPlaylist: self.removeFromPlaylist
         )
+    }
+
+    // MARK: - Destructive confirmations
+
+    /// `UserDefaults` key for "Don't ask again" on the soft-delete (Remove from
+    /// Library) confirmation. Trash deletion is *never* suppressible — it
+    /// touches the filesystem, so we always confirm.
+    private static let suppressRemoveKey = "library.suppressRemoveConfirmation"
+
+    /// Presents the soft-delete confirmation. Honours the suppression flag.
+    /// Note: the flag only suppresses *Remove from Library* — trashing a file
+    /// always asks, regardless.
+    @MainActor
+    static func confirmRemoveFromLibrary(tracks: [Track], library: LibraryViewModel) {
+        let ids = tracks.compactMap(\.id)
+        guard !ids.isEmpty else { return }
+
+        let suppressed = UserDefaults.standard.bool(forKey: Self.suppressRemoveKey)
+        if suppressed {
+            for id in ids {
+                Task { await library.removeTrack(id: id) }
+            }
+            return
+        }
+
+        let alert = NSAlert()
+        if tracks.count == 1 {
+            let title = tracks.first?.title ?? "track"
+            alert.messageText = "Remove “\(title)” from library?"
+        } else {
+            alert.messageText = "Remove \(tracks.count) tracks from library?"
+        }
+        alert.informativeText = "The files will stay on disk and can be re-added later by rescanning the folder."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Remove")
+        alert.addButton(withTitle: "Cancel")
+        alert.showsSuppressionButton = true
+        alert.suppressionButton?.title = "Don’t ask again"
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        if alert.suppressionButton?.state == .on {
+            UserDefaults.standard.set(true, forKey: Self.suppressRemoveKey)
+        }
+
+        for id in ids {
+            Task { await library.removeTrack(id: id) }
+        }
+    }
+
+    /// Presents the trash-and-remove confirmation for a single track. Always
+    /// asks — there's no "don't ask again" path because the action is
+    /// destructive on disk.
+    @MainActor
+    static func confirmDeleteFromDisk(track: Track, library: LibraryViewModel) {
+        guard let id = track.id else { return }
+        let title = track.title ?? "this track"
+
+        let alert = NSAlert()
+        alert.messageText = "Move “\(title)” to Trash and remove from Bòcan?"
+        alert.informativeText = "The file will be moved to the Trash. You can restore it from the Trash until you empty it."
+        alert.alertStyle = .warning
+        let trashButton = alert.addButton(withTitle: "Move to Trash")
+        trashButton.hasDestructiveAction = true
+        alert.addButton(withTitle: "Cancel")
+
+        let response = alert.runModal()
+        guard response == .alertFirstButtonReturn else { return }
+
+        Task { await library.deleteTrackFromDisk(id: id) }
     }
 }
