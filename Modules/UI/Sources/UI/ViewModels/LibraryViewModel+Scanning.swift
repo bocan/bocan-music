@@ -70,7 +70,11 @@ public extension LibraryViewModel {
         // filter does on the sibling files panel.
         panel.message = "Choose one or more folders containing music to add to your library."
         panel.prompt = "Add"
-        guard panel.runModal() == .OK else { return }
+        // Phase 5.5 audit L2: use non-blocking `begin(completionHandler:)`
+        // instead of `runModal()` so the modal run loop doesn't starve the
+        // audio render callback on slower machines.
+        let response = await Self.runOpenPanelAsync(panel)
+        guard response == .OK else { return }
         await self.addURLs(panel.urls)
     }
 
@@ -90,10 +94,24 @@ public extension LibraryViewModel {
         panel.message =
             "Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library."
         panel.prompt = "Add"
-        guard panel.runModal() == .OK else { return }
+        // Phase 5.5 audit L2: non-blocking begin() — see `addFolderByPicker`.
+        let response = await Self.runOpenPanelAsync(panel)
+        guard response == .OK else { return }
         // Add each file directly — the sandbox grants access to the selected URLs,
         // not their parent directories.
         await self.addURLs(panel.urls)
+    }
+
+    /// Async wrapper around `NSOpenPanel.begin(completionHandler:)`. Unlike
+    /// `runModal()` this does **not** spin a nested modal run loop, so the
+    /// audio engine's render callback keeps its scheduling priority while the
+    /// panel is on screen.
+    private static func runOpenPanelAsync(_ panel: NSOpenPanel) async -> NSApplication.ModalResponse {
+        await withCheckedContinuation { (continuation: CheckedContinuation<NSApplication.ModalResponse, Never>) in
+            panel.begin { response in
+                continuation.resume(returning: response)
+            }
+        }
     }
 
     /// Handles a drag-and-drop of URLs onto the main window.
@@ -150,8 +168,51 @@ public extension LibraryViewModel {
     func cancelScan() {
         self.scanTask?.cancel()
         self.scanTask = nil
+        self.stopScanFlush()
         self.isScanning = false
         self.scanCurrentPath = ""
+    }
+
+    // MARK: - Scan progress coalescing (Phase 5.5 audit L2)
+
+    /// Starts the 4 Hz flush loop that copies `pendingScan*` mirror state into
+    /// the `@Published` scan counters. Called from `triggerScan(mode:)` at
+    /// the start of every scan; cancelled on `.finished` and `cancelScan()`.
+    internal func startScanFlush() {
+        self.scanFlushTask?.cancel()
+        self.scanFlushTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard let self, !Task.isCancelled else { return }
+                self.flushScanPending()
+            }
+        }
+    }
+
+    /// Cancels the flush loop and writes any remaining pending counters one
+    /// last time so the final values land in the UI.
+    internal func stopScanFlush() {
+        self.scanFlushTask?.cancel()
+        self.scanFlushTask = nil
+        self.flushScanPending()
+    }
+
+    /// Copies pending mirror state into the `@Published` scan properties,
+    /// skipping properties whose value hasn't changed to avoid pointless
+    /// `objectWillChange` ticks.
+    private func flushScanPending() {
+        if self.scanWalked != self.pendingScanWalked {
+            self.scanWalked = self.pendingScanWalked
+        }
+        if self.scanInserted != self.pendingScanInserted {
+            self.scanInserted = self.pendingScanInserted
+        }
+        if self.scanUpdated != self.pendingScanUpdated {
+            self.scanUpdated = self.pendingScanUpdated
+        }
+        if self.scanCurrentPath != self.pendingScanCurrentPath {
+            self.scanCurrentPath = self.pendingScanCurrentPath
+        }
     }
 
     // MARK: - Internal
@@ -197,6 +258,13 @@ public extension LibraryViewModel {
         self.scanUpdated = 0
         self.scanCurrentPath = ""
         self.scanSummary = nil
+        // Phase 5.5 audit L2: reset the coalesced mirror state and start the
+        // 4 Hz flush loop before kicking off the scan stream.
+        self.pendingScanWalked = 0
+        self.pendingScanInserted = 0
+        self.pendingScanUpdated = 0
+        self.pendingScanCurrentPath = ""
+        self.startScanFlush()
         self.scanTask = Task { [weak self] in
             guard let self else { return }
             let stream = await scanner.scan(mode: mode)
@@ -205,6 +273,7 @@ public extension LibraryViewModel {
             }
             // Safety net: if the stream ends without a .finished event, reset state.
             if self.isScanning {
+                self.stopScanFlush()
                 self.isScanning = false
                 self.scanCurrentPath = ""
             }
@@ -217,22 +286,28 @@ public extension LibraryViewModel {
             break
 
         case let .walking(path, walked):
-            self.scanCurrentPath = URL(fileURLWithPath: path).lastPathComponent
-            self.scanWalked = walked
+            // Phase 5.5 audit L2: write to the pending mirror only; the 4 Hz
+            // flush loop publishes these to SwiftUI to avoid 100k+
+            // objectWillChange ticks during a 50k-file scan.
+            self.pendingScanCurrentPath = URL(fileURLWithPath: path).lastPathComponent
+            self.pendingScanWalked = walked
 
         case let .processed(_, outcome):
             switch outcome {
             case .inserted:
-                self.scanInserted += 1
+                self.pendingScanInserted += 1
 
             case .updated:
-                self.scanUpdated += 1
+                self.pendingScanUpdated += 1
 
             default:
                 break
             }
 
         case let .finished(summary):
+            // Final flush before clearing isScanning so the banner shows the
+            // true final counts even if the last tick was mid-interval.
+            self.stopScanFlush()
             self.scanSummary = summary
             self.isScanning = false
             self.scanCurrentPath = ""

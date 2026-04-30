@@ -143,6 +143,15 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     let artistRepo: ArtistRepository
     let scanner: LibraryScanner?
     var scanTask: Task<Void, Never>?
+    /// Phase 5.5 audit L2: scan progress is coalesced into these "pending"
+    /// counters and flushed to the `@Published` properties at ~4 Hz so a
+    /// 50k-file scan doesn't drown the main actor in objectWillChange ticks
+    /// while audio is playing.
+    var pendingScanWalked = 0
+    var pendingScanInserted = 0
+    var pendingScanUpdated = 0
+    var pendingScanCurrentPath = ""
+    var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
     private var selectionCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
