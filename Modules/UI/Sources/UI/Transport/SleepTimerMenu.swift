@@ -24,8 +24,11 @@ public struct SleepTimerMenu: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help(self.vm.sleepTimerRemaining != nil ? "Sleep timer active" : "Sleep timer")
+        .help(self.vm.sleepTimerRemaining != nil
+            ? "Sleep timer active — \(self.formattedRemaining(self.vm.sleepTimerRemaining ?? 0)) remaining. Click to change."
+            : "Sleep timer — automatically stop playback after a set time")
         .accessibilityLabel(self.accessibilityLabel)
+        .accessibilityHint("Opens a menu of sleep timer presets. Choose a duration to automatically stop playback.")
     }
 
     // MARK: - Menu items
@@ -43,6 +46,7 @@ public struct SleepTimerMenu: View {
             Task { await self.vm.setSleepTimer(minutes: nil) }
         }
         .disabled(self.vm.sleepTimerRemaining == nil)
+        .help("Cancel the active sleep timer")
 
         Divider()
 
@@ -51,12 +55,14 @@ public struct SleepTimerMenu: View {
                 Button(preset.displayName) {
                     Task { await self.vm.setSleepTimer(minutes: minutes, fadeOut: self.vm.sleepTimerFadeOut) }
                 }
+                .help("Stop playback after \(preset.displayName)")
             }
         }
 
         Button("Custom…") {
             self.showCustomField = true
         }
+        .help("Set a custom sleep timer duration")
 
         Divider()
 
@@ -74,6 +80,7 @@ public struct SleepTimerMenu: View {
                 }
             }
         ))
+        .help("Gradually reduce volume to silence over the final 30 seconds before the timer fires")
     }
 
     // MARK: - Label
