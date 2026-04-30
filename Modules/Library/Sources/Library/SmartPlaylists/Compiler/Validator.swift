@@ -2,21 +2,30 @@ import Foundation
 
 /// Validates a `SmartCriterion` tree before compilation or persistence.
 public enum Validator {
+    /// Maximum allowed group-nesting depth. The root group counts as depth 1.
+    /// Mirrors the UI cap in `CriterionEditorView`, which hides the Add Group
+    /// button once a group already sits at depth 2 (so children would be 3).
+    /// Deeper trees can only arrive via hand-edited JSON or migrations.
+    public static let maxGroupDepth = 3
+
     /// Validates the entire criteria tree, throwing the first error found.
     public static func validate(_ criterion: SmartCriterion) throws {
-        try self.validateNode(criterion)
+        try self.validateNode(criterion, depth: 1)
     }
 
     // MARK: - Private
 
-    private static func validateNode(_ criterion: SmartCriterion) throws {
+    private static func validateNode(_ criterion: SmartCriterion, depth: Int) throws {
         switch criterion {
         case let .rule(rule):
             try Self.validateRule(rule)
         case let .group(_, children):
             guard !children.isEmpty else { throw SmartPlaylistError.emptyGroup }
+            guard depth <= Self.maxGroupDepth else {
+                throw SmartPlaylistError.tooDeeplyNested(maxDepth: Self.maxGroupDepth)
+            }
             for child in children {
-                try Self.validateNode(child)
+                try Self.validateNode(child, depth: depth + 1)
             }
         }
     }
