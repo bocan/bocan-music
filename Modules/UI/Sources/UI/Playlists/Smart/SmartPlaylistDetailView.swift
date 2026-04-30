@@ -117,6 +117,19 @@ public struct SmartPlaylistDetailView: View {
                 .controlSize(.large)
                 .disabled(self.vm.tracks.isEmpty)
 
+                if !self.vm.isLive {
+                    Button {
+                        Task { await self.vm.refresh() }
+                    } label: {
+                        Label("Refresh", systemImage: "arrow.clockwise")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .help("Re-run the rules and update the saved snapshot")
+                    .keyboardShortcut("r", modifiers: [.command])
+                    .accessibilityIdentifier(A11y.SmartPlaylistDetail.refreshButton)
+                }
+
                 Button {
                     self.isEditingRules = true
                 } label: {
