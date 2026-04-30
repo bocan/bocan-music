@@ -72,7 +72,9 @@ public struct ScanBanner: View {
             .buttonStyle(.borderless)
             .font(Typography.footnote)
             .foregroundStyle(Color.textSecondary)
+            .help("Cancel the running library scan")
             .accessibilityLabel("Cancel scan")
+            .accessibilityHint("Stops the in-progress library scan. Files already imported are kept.")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -103,7 +105,9 @@ public struct ScanBanner: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(Color.textSecondary)
+            .help("Dismiss the scan summary")
             .accessibilityLabel("Dismiss")
+            .accessibilityHint("Hides the scan summary banner.")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
