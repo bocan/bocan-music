@@ -104,7 +104,6 @@ public struct BocanRootView: View {
         .environmentObject(self.vm)
         .task {
             // Wire window openers before any UI loads.
-            self.vm.openInspectorWindow = { self.openWindow(id: "track-inspector") }
             let ow = self.openWindow
             let dw = self.dismissWindow
             self.windowMode.openWindow = { id in ow(id: id) }

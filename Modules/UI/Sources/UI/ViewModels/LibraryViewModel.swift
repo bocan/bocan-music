@@ -47,12 +47,6 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var forwardStack: [SidebarDestination] = []
     private static let historyLimit = 50
 
-    // MARK: - Inspector state
-
-    /// The track currently shown in the Inspector panel (`⌘I`).
-    /// `nil` when the panel is closed or no selection exists.
-    @Published public var inspectorTrack: Track?
-
     // MARK: - Tag editor state
 
     /// Non-nil when the tag editor sheet should be presented.
@@ -604,19 +598,6 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         guard !updated.isEmpty else { return }
         self.tracks.updateRows(for: updated)
     }
-
-    // MARK: - Inspector
-
-    /// Sets `inspectorTrack` to the first track in `tracks` and triggers the
-    /// inspector window to open (via the `@Environment(\.openWindow)` binding
-    /// set by `RootView`).
-    public func showInspector(tracks: [Track]) {
-        self.inspectorTrack = tracks.first
-        self.openInspectorWindow?()
-    }
-
-    /// Injected by `RootView` after `@Environment(\.openWindow)` is available.
-    public var openInspectorWindow: (() -> Void)?
 
     // MARK: - ReplayGain batch analysis
 
