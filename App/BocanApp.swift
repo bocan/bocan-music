@@ -146,14 +146,6 @@ struct BocanApp: App {
                 .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
 
-        // MARK: Track inspector
-
-        Window("Track Info", id: "track-inspector") {
-            InspectorWindowContent(vm: self.libraryViewModel)
-        }
-        .windowResizability(.contentMinSize)
-        .windowStyle(.titleBar)
-
         // MARK: Visualizer fullscreen
 
         Window("Visualizer", id: "visualizer-fullscreen") {
@@ -411,22 +403,3 @@ struct BocanApp: App {
 }
 
 // MARK: - Helpers
-
-// MARK: - InspectorWindowContent
-
-/// Observes `LibraryViewModel` so the Track Info window reacts to `inspectorTrack`
-/// changes at runtime (the `Window` scene builder itself does not re-evaluate on
-/// `@Published` changes without this helper).
-private struct InspectorWindowContent: View {
-    @ObservedObject var vm: LibraryViewModel
-
-    var body: some View {
-        if let track = vm.inspectorTrack {
-            TrackInspectorPanel(track: track, database: self.vm.database)
-        } else {
-            Text("No track selected")
-                .foregroundStyle(.secondary)
-                .frame(minWidth: 360, minHeight: 420)
-        }
-    }
-}
