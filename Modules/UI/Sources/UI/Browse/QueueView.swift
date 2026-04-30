@@ -114,6 +114,17 @@ private struct QueueContentView: View {
                                 }
                             }
                         }
+                        // Double-click row → play from this item. Mirrors the
+                        // accessibilityHint on QueueRow so VoiceOver and pointer
+                        // users get the same primary action. Skipped when the
+                        // file is missing so we don't no-op silently.
+                        .onTapGesture(count: 2) {
+                            guard !self.unavailableIDs.contains(item.id) else { return }
+                            Task {
+                                await self.vm.playFromQueueIndex(offset)
+                                await self.refreshQueue()
+                            }
+                        }
                     }
                     .onMove { from, to in
                         Task { await self.moveItems(from: from, to: to) }
@@ -244,6 +255,9 @@ private struct QueueRow: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.rowLabel)
+        .accessibilityHint(self.isUnavailable
+            ? "File is missing. Use the context menu to remove it from the queue."
+            : "Double-tap to play from this item. Use the context menu to reorder, jump to album or artist, or remove from the queue.")
         .accessibilityAddTraits(self.isCurrent ? .isSelected : [])
     }
 
