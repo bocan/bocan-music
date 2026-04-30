@@ -48,92 +48,11 @@ public struct PlaylistSidebarSection: View {
             }
         }
         .task { await self.vm.reload() }
-        .sheet(isPresented: Binding(
-            get: { self.vm.isPresentingNewPlaylist },
-            set: { self.vm.isPresentingNewPlaylist = $0 }
-        )) {
-            NewPlaylistSheet(
-                kind: .playlist,
-                isPresented: Binding(
-                    get: { self.vm.isPresentingNewPlaylist },
-                    set: { self.vm.isPresentingNewPlaylist = $0 }
-                ),
-                parentID: self.vm.newPlaylistParent
-            ) { name in
-                await self.vm.createPlaylist(name: name)
-            }
-        }
-        .sheet(isPresented: Binding(
-            get: { self.vm.isPresentingNewFolder },
-            set: { self.vm.isPresentingNewFolder = $0 }
-        )) {
-            NewPlaylistSheet(
-                kind: .folder,
-                isPresented: Binding(
-                    get: { self.vm.isPresentingNewFolder },
-                    set: { self.vm.isPresentingNewFolder = $0 }
-                ),
-                parentID: self.vm.newPlaylistParent
-            ) { name in
-                await self.vm.createFolder(name: name)
-            }
-        }
-        .sheet(isPresented: Binding(
-            get: { self.vm.isPresentingNewSmartPlaylist },
-            set: { self.vm.isPresentingNewSmartPlaylist = $0 }
-        )) {
-            NewSmartPlaylistSheet(
-                service: self.smartPlaylistService
-            ) { _ in
-                await self.vm.reload()
-                self.vm.isPresentingNewSmartPlaylist = false
-            }
-        }
-        .sheet(item: Binding(
-            get: { self.vm.renameTarget },
-            set: { self.vm.renameTarget = $0 }
-        )) { _ in
-            RenamePlaylistSheet(target: Binding(
-                get: { self.vm.renameTarget },
-                set: { self.vm.renameTarget = $0 }
-            )) { node, newName in
-                await self.vm.rename(node, to: newName)
-            }
-        }
-        .confirmationDialog(
-            "Delete Playlist",
-            isPresented: Binding(
-                get: { self.vm.deleteTarget != nil },
-                set: { newValue in if !newValue { self.vm.deleteTarget = nil } }
-            ),
-            presenting: self.vm.deleteTarget
-        ) { target in
-            Button("Delete", role: .destructive) {
-                Task { await self.vm.delete(target) }
-            }
-            Button("Cancel", role: .cancel) {
-                self.vm.deleteTarget = nil
-            }
-        } message: { target in
-            Text("Delete \"\(target.name)\"? Tracks remain in your library.")
-        }
-        .confirmationDialog(
-            "Delete Folder and Contents",
-            isPresented: Binding(
-                get: { self.vm.deleteRecursiveTarget != nil },
-                set: { newValue in if !newValue { self.vm.deleteRecursiveTarget = nil } }
-            ),
-            presenting: self.vm.deleteRecursiveTarget
-        ) { target in
-            Button("Delete Folder and Contents", role: .destructive) {
-                Task { await self.vm.delete(target, recursive: true) }
-            }
-            Button("Cancel", role: .cancel) {
-                self.vm.deleteRecursiveTarget = nil
-            }
-        } message: { target in
-            Text("Delete \"\(target.name)\" and all playlists inside it? This cannot be undone. Tracks remain in your library.")
-        }
+        // NOTE: Sheet / confirmationDialog presentation modifiers MUST be
+        // attached to the enclosing `List` (not this `Section`) — see
+        // `View.playlistSidebarPresentations` below. SwiftUI replicates
+        // modifiers attached to a `Section` once per row, which caused the
+        // name-entry sheet to flicker N times where N == row count.
     }
 
     // MARK: - Rows
@@ -150,5 +69,164 @@ public struct PlaylistSidebarSection: View {
             PlaylistRow(node: node, depth: depth, vm: self.vm)
                 .tag(SidebarDestination.playlist(node.id))
         }
+    }
+}
+
+// MARK: - Presentation modifiers
+
+/// Public extension that exposes the `playlistSidebarPresentations` modifier.
+public extension View {
+    /// Attaches the playlist-sidebar's sheets and confirmation dialogs to a
+    /// non-collection ancestor view (typically the enclosing `List`).
+    ///
+    /// These modifiers must NOT be attached to `PlaylistSidebarSection`
+    /// directly: SwiftUI replicates modifiers placed on a `Section` once per
+    /// row in the section's content, causing presentation animations to
+    /// fire N times where N is the row count.
+    func playlistSidebarPresentations(
+        vm: PlaylistSidebarViewModel,
+        smartPlaylistService: SmartPlaylistService
+    ) -> some View {
+        modifier(PlaylistSidebarPresentationsModifier(
+            vm: vm,
+            smartPlaylistService: smartPlaylistService
+        ))
+    }
+}
+
+private struct PlaylistSidebarPresentationsModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+    let smartPlaylistService: SmartPlaylistService
+
+    func body(content: Content) -> some View {
+        content
+            .modifier(NewPlaylistSheetModifier(vm: self.vm))
+            .modifier(NewFolderSheetModifier(vm: self.vm))
+            .modifier(NewSmartPlaylistSheetModifier(vm: self.vm, smartPlaylistService: self.smartPlaylistService))
+            .modifier(RenameSheetModifier(vm: self.vm))
+            .modifier(DeleteDialogsModifier(vm: self.vm))
+    }
+}
+
+private struct NewPlaylistSheetModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+
+    func body(content: Content) -> some View {
+        content.sheet(isPresented: Binding(
+            get: { self.vm.isPresentingNewPlaylist },
+            set: { self.vm.isPresentingNewPlaylist = $0 }
+        )) {
+            NewPlaylistSheet(
+                kind: .playlist,
+                isPresented: Binding(
+                    get: { self.vm.isPresentingNewPlaylist },
+                    set: { self.vm.isPresentingNewPlaylist = $0 }
+                ),
+                parentID: self.vm.newPlaylistParent
+            ) { name in
+                await self.vm.createPlaylist(name: name)
+            }
+        }
+    }
+}
+
+private struct NewFolderSheetModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+
+    func body(content: Content) -> some View {
+        content.sheet(isPresented: Binding(
+            get: { self.vm.isPresentingNewFolder },
+            set: { self.vm.isPresentingNewFolder = $0 }
+        )) {
+            NewPlaylistSheet(
+                kind: .folder,
+                isPresented: Binding(
+                    get: { self.vm.isPresentingNewFolder },
+                    set: { self.vm.isPresentingNewFolder = $0 }
+                ),
+                parentID: self.vm.newPlaylistParent
+            ) { name in
+                await self.vm.createFolder(name: name)
+            }
+        }
+    }
+}
+
+private struct NewSmartPlaylistSheetModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+    let smartPlaylistService: SmartPlaylistService
+
+    func body(content: Content) -> some View {
+        content.sheet(isPresented: Binding(
+            get: { self.vm.isPresentingNewSmartPlaylist },
+            set: { self.vm.isPresentingNewSmartPlaylist = $0 }
+        )) {
+            NewSmartPlaylistSheet(
+                service: self.smartPlaylistService
+            ) { _ in
+                await self.vm.reload()
+                self.vm.isPresentingNewSmartPlaylist = false
+            }
+        }
+    }
+}
+
+private struct RenameSheetModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+
+    func body(content: Content) -> some View {
+        content.sheet(item: Binding(
+            get: { self.vm.renameTarget },
+            set: { self.vm.renameTarget = $0 }
+        )) { _ in
+            RenamePlaylistSheet(target: Binding(
+                get: { self.vm.renameTarget },
+                set: { self.vm.renameTarget = $0 }
+            )) { node, newName in
+                await self.vm.rename(node, to: newName)
+            }
+        }
+    }
+}
+
+private struct DeleteDialogsModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+
+    func body(content: Content) -> some View {
+        content
+            .confirmationDialog(
+                "Delete Playlist",
+                isPresented: Binding(
+                    get: { self.vm.deleteTarget != nil },
+                    set: { newValue in if !newValue { self.vm.deleteTarget = nil } }
+                ),
+                presenting: self.vm.deleteTarget
+            ) { target in
+                Button("Delete", role: .destructive) {
+                    Task { await self.vm.delete(target) }
+                }
+                Button("Cancel", role: .cancel) {
+                    self.vm.deleteTarget = nil
+                }
+            } message: { target in
+                Text("Delete \"\(target.name)\"? Tracks remain in your library.")
+            }
+            .confirmationDialog(
+                "Delete Folder and Contents",
+                isPresented: Binding(
+                    get: { self.vm.deleteRecursiveTarget != nil },
+                    set: { newValue in if !newValue { self.vm.deleteRecursiveTarget = nil } }
+                ),
+                presenting: self.vm.deleteRecursiveTarget
+            ) { target in
+                Button("Delete Folder and Contents", role: .destructive) {
+                    Task { await self.vm.delete(target, recursive: true) }
+                }
+                Button("Cancel", role: .cancel) {
+                    self.vm.deleteRecursiveTarget = nil
+                }
+            } message: { target in
+                Text("Delete \"\(target.name)\" and all playlists inside it? This cannot be undone. Tracks remain in your library.")
+            }
     }
 }

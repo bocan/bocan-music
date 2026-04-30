@@ -52,6 +52,14 @@ public struct Sidebar: View {
         .listStyle(.sidebar)
         .frame(minWidth: Theme.sidebarMinWidth)
         .accessibilityIdentifier(A11y.Sidebar.list)
+        // Playlist-sidebar presentation modifiers MUST live here on the
+        // enclosing `List` rather than on `PlaylistSidebarSection` itself —
+        // SwiftUI replicates modifiers placed on a `Section` once per row,
+        // which caused the new-name sheet to flicker N times.
+        .playlistSidebarPresentations(
+            vm: self.vm.playlistSidebar,
+            smartPlaylistService: self.vm.smartPlaylistService
+        )
     }
 
     // MARK: - Row builder
