@@ -67,6 +67,9 @@ struct RuleRowView: View {
         case .inLastMonths:
             self.rule.value = .int(12)
 
+        case .inLastYears:
+            self.rule.value = .int(1)
+
         case .memberOf, .notMemberOf:
             if case .playlistRef = self.rule.value { return }
             self.rule.value = .playlistRef(0)
@@ -198,8 +201,11 @@ private struct ValueControl: View {
 
     @ViewBuilder
     private var typedControl: some View {
-        // inLastDays / inLastMonths use an integer count, even for date fields.
-        if self.rule.comparator == .inLastDays || self.rule.comparator == .inLastMonths {
+        // inLastDays / inLastMonths / inLastYears use an integer count, even for date fields.
+        let isLastN = self.rule.comparator == .inLastDays
+            || self.rule.comparator == .inLastMonths
+            || self.rule.comparator == .inLastYears
+        if isLastN {
             self.intControl
         } else {
             self.typedControlByDataType
@@ -286,7 +292,7 @@ private struct ValueControl: View {
 
     @ViewBuilder private var intControl: some View {
         switch self.rule.comparator {
-        case .inLastDays, .inLastMonths:
+        case .inLastDays, .inLastMonths, .inLastYears:
             Stepper(
                 value: Binding(
                     get: { if case let .int(n) = self.rule.value { return Int(n) }
@@ -602,6 +608,9 @@ extension Library.Comparator {
 
         case .inLastMonths:
             "in last (months)"
+
+        case .inLastYears:
+            "in last (years)"
 
         case .beforeDate:
             "before"

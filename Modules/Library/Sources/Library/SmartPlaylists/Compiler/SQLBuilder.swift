@@ -194,6 +194,11 @@ public enum SQLBuilder {
             args.append(n)
             return "\(col) >= unixepoch('now', '-' || ? || ' months')"
 
+        case .inLastYears:
+            guard case let .int(n) = rule.value else { throw Self.valueError(rule) }
+            args.append(n)
+            return "\(col) >= unixepoch('now', '-' || ? || ' years')"
+
         // ── Boolean ──────────────────────────────────────────────────────────
         case .isTrue:
             if rule.field == .hasLyrics {

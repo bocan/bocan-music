@@ -161,6 +161,15 @@ struct SmartCriteriaCompilerTests {
         #expect(c.selectSQL.contains("months"))
     }
 
+    @Test func lastPlayedAtInLastYears() throws {
+        let c = try compile(.lastPlayedAt, .inLastYears, .int(2))
+        #expect(c.selectSQL.contains("tracks.last_played_at"))
+        #expect(c.selectSQL.contains("unixepoch('now'"))
+        #expect(c.selectSQL.contains("years"))
+        // Count must be bound, not interpolated.
+        self.assertNoLiteral(c.selectSQL, "2")
+    }
+
     @Test func addedAtBefore() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let c = try compile(.addedAt, .beforeDate, .date(date))
