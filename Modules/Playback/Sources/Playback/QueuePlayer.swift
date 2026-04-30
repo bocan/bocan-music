@@ -536,7 +536,10 @@ public actor QueuePlayer: Transport {
         }
     }
 
-    private func handleTrackEnded() async {
+    /// Visible to tests so they can drive the end-of-track flow without needing a
+    /// real decoded audio file. Production callers always go through
+    /// `subscribeToEngineState()`.
+    func handleTrackEnded() async {
         // A play(…) call is in the middle of replacing the queue — it will load and
         // start the new track itself.  Advancing here would corrupt the new queue.
         guard self.activeReplaceCount == 0 else {

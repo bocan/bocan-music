@@ -126,6 +126,54 @@ struct QueuePlayerTests {
         #expect(flag == true)
     }
 
+    @Test("handleTrackEnded honours stop-after-current over repeat-one (Phase 5 audit M4)")
+    func stopAfterCurrentBeatsRepeatOne() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+
+        let repo = TrackRepository(database: db)
+        let ids = try await insertTestTracks(repo: repo, count: 2)
+
+        // Seed the queue with current = index 0.
+        try await player.addToQueue(ids)
+        let initial = await player.queue.items
+        await player.queue.replace(with: initial, startAt: 0)
+
+        // Both flags set simultaneously — the spec gotcha is that
+        // stop-after-current must win and the .one re-seek must not happen.
+        await player.setRepeat(.one)
+        await player.setStopAfterCurrent(true)
+
+        // Capture the first emitted state from QueuePlayer.state.
+        async let observedEnded: Bool = {
+            for await s in player.state {
+                if case .ended = s { return true }
+                // Anything other than .ended (e.g. .loading on advance) means
+                // we re-seeked or advanced — that's the failure case.
+                return false
+            }
+            return false
+        }()
+
+        await player.handleTrackEnded()
+
+        let sawEnded = await observedEnded
+        #expect(sawEnded == true, "Expected .ended; got a different state — repeat-one re-seeked or advance fired")
+
+        // Stop-after-current must be cleared (one-shot).
+        let stopFlag = await player.queue.stopAfterCurrent
+        #expect(stopFlag == false)
+
+        // Current index preserved — no .one re-seek, no .all advance.
+        let idx = await player.queue.currentIndex
+        #expect(idx == 0)
+
+        // Repeat-one mode is preserved (not cleared by stop).
+        let mode = await player.queue.repeatMode
+        #expect(mode == .one)
+    }
+
     // MARK: - Helpers
 
     private func makeTrack(n: Int) -> Track {
