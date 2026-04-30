@@ -263,17 +263,28 @@ public extension LibraryViewModel {
     }
 
     /// Re-scans a single file to refresh its tags.
+    ///
+    /// Phase 5.5 audit M2: surfaces feedback. On success, shows an inline
+    /// toast ("Re-scanned «Title»") for 2s. On failure, populates
+    /// `rescanErrorMessage` so RootView can present a dedicated error sheet
+    /// distinct from the playback-error alert.
     func rescanTrack(id: Int64) async {
         guard let scanner else { return }
         let trackRepo = TrackRepository(database: self.database)
         do {
             let track = try await trackRepo.fetch(id: id)
-            guard let url = URL(string: track.fileURL) else { return }
+            guard let url = URL(string: track.fileURL) else {
+                self.rescanErrorMessage = "Could not re-scan: the file path is invalid."
+                return
+            }
             _ = try await scanner.scanSingleFile(url: url)
             await self.tracks.load()
             self.log.debug("library.rescanTrack", ["id": id])
+            let title = track.title ?? url.lastPathComponent
+            self.showToast(ToastMessage(text: "Re-scanned “\(title)”", kind: .success))
         } catch {
             self.log.error("library.rescanTrack.failed", ["id": id, "error": String(reflecting: error)])
+            self.rescanErrorMessage = "Could not re-scan the file: \(error.localizedDescription)"
         }
     }
 

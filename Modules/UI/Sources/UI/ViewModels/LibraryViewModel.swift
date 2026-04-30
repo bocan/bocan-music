@@ -68,6 +68,34 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Set when playback fails; cleared when the user dismisses the alert.
     @Published public var playbackErrorMessage: String?
 
+    /// Set when a single-track re-scan fails so the UI can surface a sheet
+    /// distinct from the playback-error alert. Cleared when the user
+    /// dismisses the alert.
+    @Published public var rescanErrorMessage: String?
+
+    // MARK: - Lightweight toast surface
+
+    /// Transient confirmation toast (e.g. "Re-scanned «Title»"). Auto-cleared
+    /// after a short delay by ``showToast(_:)``.
+    @Published public var toast: ToastMessage?
+
+    /// Identifier for an inflight toast-dismiss task so a newer toast can
+    /// cancel the auto-dismiss for a stale one.
+    private var toastDismissID = UUID()
+
+    /// Shows a toast and auto-clears it after 2 seconds. Calling again before
+    /// the timer fires replaces the toast and resets the timer.
+    public func showToast(_ message: ToastMessage) {
+        let token = UUID()
+        self.toastDismissID = token
+        self.toast = message
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard let self, self.toastDismissID == token else { return }
+            self.toast = nil
+        }
+    }
+
     // MARK: - ReplayGain analysis state
 
     /// Non-nil while a batch ReplayGain analysis is running.
