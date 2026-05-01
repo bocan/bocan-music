@@ -110,7 +110,7 @@ public struct SmartPlaylistDetailView: View {
                 .disabled(self.vm.tracks.isEmpty)
 
                 Button {
-                    Task { await self.library.play(tracks: self.vm.tracks.shuffled()) }
+                    Task { await self.playShuffled() }
                 } label: {
                     Label("Shuffle", systemImage: "shuffle")
                 }
@@ -154,5 +154,13 @@ public struct SmartPlaylistDetailView: View {
             ? "\(mins) min"
             : "\(mins / 60) hr \(mins % 60) min"
         return "\(countText) · \(durationText)"
+    }
+
+    // MARK: - Actions
+
+    private func playShuffled() async {
+        guard !self.vm.tracks.isEmpty else { return }
+        await self.library.play(tracks: self.vm.tracks, startingAt: 0)
+        await self.library.setShuffle(true)
     }
 }
