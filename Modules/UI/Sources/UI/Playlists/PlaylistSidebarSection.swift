@@ -61,7 +61,7 @@ public struct PlaylistSidebarSection: View {
     private func row(for node: PlaylistNode, depth: Int) -> some View {
         if node.kind == .folder {
             PlaylistFolderRow(node: node, depth: depth, vm: self.vm)
-                .tag(SidebarDestination.playlist(node.id))
+                .tag(SidebarDestination.folder(node.id))
         } else if node.kind == .smart {
             PlaylistRow(node: node, depth: depth, vm: self.vm)
                 .tag(SidebarDestination.smartPlaylist(node.id))

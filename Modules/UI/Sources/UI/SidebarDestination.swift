@@ -32,8 +32,11 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
 
     // MARK: - Phase 6+
 
-    /// Stub — populated by Phase 6.
+    /// A manual playlist.
     case playlist(Int64)
+
+    /// A playlist folder (drills in to show children, not a track list).
+    case folder(Int64)
 
     // MARK: - Phase 7+
 

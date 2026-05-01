@@ -85,6 +85,15 @@ public enum A11y {
         public static let shuffleButton = "playlist.detail.shuffle"
     }
 
+    public enum PlaylistFolderDetail {
+        public static let view = "playlistFolder.detail.view"
+        public static let header = "playlistFolder.detail.header"
+
+        public static func childRow(_ id: Int64) -> String {
+            "playlistFolder.detail.child.\(id)"
+        }
+    }
+
     public enum SmartPlaylistDetail {
         public static let view = "smartPlaylist.detail.view"
         public static let header = "smartPlaylist.detail.header"
