@@ -66,6 +66,24 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         }
     }
 
+    /// Expands a folder without toggling it closed if it is already open.
+    public func expand(folderID: Int64) {
+        self.expandedFolders.insert(folderID)
+    }
+
+    /// Moves a playlist by ID into a folder (or top-level when `folderID` is `nil`).
+    ///
+    /// Convenience overload used by drag-and-drop, which only has the payload ID
+    /// rather than the full `PlaylistNode`.
+    public func move(playlistID: Int64, toFolder folderID: Int64?) async {
+        do {
+            try await self.service.move(playlistID, toParent: folderID)
+            await self.reload()
+        } catch {
+            self.lastError = self.describe(error)
+        }
+    }
+
     public func beginNewPlaylist(parent: Int64? = nil, trackIDs: [Int64] = []) {
         self.log.debug("playlist.sheet", ["kind": "playlist", "parent": parent ?? -1])
         self.newPlaylistParent = parent
