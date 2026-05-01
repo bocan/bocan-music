@@ -174,6 +174,49 @@ struct QueuePlayerTests {
         #expect(mode == .one)
     }
 
+    @Test("play(items:shuffle:true) pre-shuffles queue so first item differs from original first")
+    func playItemsWithShufflePreShuffles() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+
+        // Build 20 in-memory items — no DB needed.
+        let sourceFormat = AudioSourceFormat(
+            sampleRate: 44100, bitDepth: 16, channelCount: 2,
+            isInterleaved: false, codec: "flac"
+        )
+        let items: [QueueItem] = (1 ... 20).map { i in
+            QueueItem(
+                trackID: Int64(i),
+                bookmark: nil,
+                fileURL: "/tmp/preshuf\(i).flac",
+                duration: 200,
+                sourceFormat: sourceFormat
+            )
+        }
+        let originalFirstID = items[0].trackID
+
+        // play(items:shuffle:true) pre-shuffles before loading audio.
+        // Fake paths cause the engine.play() step to throw — that's expected.
+        try? await player.play(items: items, shuffle: true)
+
+        // Pre-shuffle + setShuffle must both have run before the engine error.
+        let state = await player.queue.shuffleState
+        if case .on = state {} else {
+            Issue.record("Expected shuffleState == .on after play(items:shuffle:true), got \(state)")
+        }
+
+        // All 20 items must be in the queue (no items dropped).
+        let queueItems = await player.queue.items
+        #expect(queueItems.count == 20)
+
+        // The current item (index 0) is very unlikely to still be the original
+        // first track after two independent shuffles (p ≈ 1/400 for N=20).
+        // If this assertion is ever flaky, increase the item count above.
+        let firstID = queueItems.first?.trackID
+        #expect(firstID != originalFirstID, "Expected pre-shuffle to change the first track")
+    }
+
     // MARK: - Helpers
 
     private func makeTrack(n: Int) -> Track {
