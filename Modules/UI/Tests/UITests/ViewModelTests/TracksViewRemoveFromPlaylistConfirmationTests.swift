@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import UI
 
+@MainActor
 @Suite("TracksView remove-from-playlist confirmation")
 struct TracksViewRemoveFromPlaylistConfirmationTests {
     private func makeUserDefaults() -> UserDefaults {
