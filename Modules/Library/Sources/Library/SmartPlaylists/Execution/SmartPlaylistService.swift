@@ -230,6 +230,7 @@ public actor SmartPlaylistService {
                     let sp = try await self.resolve(id: id)
                     let sql: String
                     let args: StatementArguments
+                    let regions: [any DatabaseRegionConvertible]
                     if sp.limitSort.liveUpdate {
                         let compiled = try CriteriaCompiler.compile(
                             criteria: sp.criteria,
@@ -238,6 +239,11 @@ public actor SmartPlaylistService {
                         )
                         sql = compiled.selectSQL
                         args = compiled.arguments
+                        let regionRequest = SQLRequest<Row>(
+                            sql: compiled.observationRegionSQL,
+                            arguments: compiled.arguments
+                        )
+                        regions = [regionRequest]
                     } else {
                         // Snapshot mode: observe playlist_tracks so the UI
                         // refreshes when snapshot(id:) writes new rows.
@@ -248,28 +254,57 @@ public actor SmartPlaylistService {
                         ORDER BY playlist_tracks.position
                         """
                         args = [id]
+                        let regionRequest = SQLRequest<Row>(
+                            sql: """
+                            SELECT tracks.id, playlist_tracks.position FROM tracks
+                            INNER JOIN playlist_tracks ON playlist_tracks.track_id = tracks.id
+                            WHERE playlist_tracks.playlist_id = ?
+                            ORDER BY playlist_tracks.position
+                            """,
+                            arguments: [id]
+                        )
+                        regions = [regionRequest]
                     }
-                    let stream = await self.database.observe { db in
+                    let stream = await self.database.observe(regions: regions) { db in
                         try Track.fetchAll(db, sql: sql, arguments: args)
                     }
-                    let debounceMs = SmartPlaylistPreferences.observeDebounceMilliseconds()
-                    let debounceSeconds = TimeInterval(debounceMs) / 1000
-                    var lastEmit = Date.distantPast
+                    let debounceMs = max(0, SmartPlaylistPreferences.observeDebounceMilliseconds())
+                    let debounceNs = UInt64(debounceMs) * 1_000_000
+                    var hasEmittedInitial = false
+                    let pending = PendingTracks()
+                    var flushTask: Task<Void, Never>?
                     for try await tracks in stream {
-                        // Debounce: only emit if at least the configured window has passed.
-                        let now = Date()
-                        if now.timeIntervalSince(lastEmit) >= debounceSeconds {
+                        if !hasEmittedInitial {
+                            hasEmittedInitial = true
                             continuation.yield(tracks)
-                            lastEmit = now
-                        } else {
-                            // Brief delay then emit (simplified debounce).
-                            let ns = UInt64(max(0, debounceMs)) * 1_000_000
-                            if ns > 0 {
-                                try await Task.sleep(nanoseconds: ns)
-                            }
-                            continuation.yield(tracks)
-                            lastEmit = Date()
+                            continue
                         }
+
+                        let currentGeneration = await pending.store(tracks)
+                        flushTask?.cancel()
+
+                        if debounceNs == 0 {
+                            if let latest = await pending.takeLatest() {
+                                continuation.yield(latest)
+                            }
+                            continue
+                        }
+
+                        flushTask = Task {
+                            do {
+                                try await Task.sleep(nanoseconds: debounceNs)
+                                guard !Task.isCancelled else { return }
+                                if let latest = await pending.takeIfMatchingGeneration(currentGeneration) {
+                                    continuation.yield(latest)
+                                }
+                            } catch {
+                                // Cancellation is expected when new values arrive.
+                            }
+                        }
+                    }
+                    flushTask?.cancel()
+                    if let latest = await pending.takeLatest() {
+                        continuation.yield(latest)
                     }
                     continuation.finish()
                 } catch {
@@ -381,5 +416,29 @@ public actor SmartPlaylistService {
         case let .group(_, children):
             return children.flatMap(Self.collectPlaylistRefs(in:))
         }
+    }
+}
+
+private actor PendingTracks {
+    private var tracks: [Track]?
+    private var generation: UInt64 = 0
+
+    func store(_ newTracks: [Track]) -> UInt64 {
+        self.tracks = newTracks
+        self.generation &+= 1
+        return self.generation
+    }
+
+    func takeIfMatchingGeneration(_ expectedGeneration: UInt64) -> [Track]? {
+        guard self.generation == expectedGeneration else { return nil }
+        let latest = self.tracks
+        self.tracks = nil
+        return latest
+    }
+
+    func takeLatest() -> [Track]? {
+        let latest = self.tracks
+        self.tracks = nil
+        return latest
     }
 }

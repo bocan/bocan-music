@@ -7,6 +7,9 @@ import GRDB
 public struct CompiledCriteria: Sendable {
     /// Full `SELECT tracks.* FROM tracks … WHERE … ORDER BY … LIMIT …` statement.
     public let selectSQL: String
+    /// `SELECT tracks.id …` variant used to construct an observation region
+    /// with the same WHERE/JOIN/ORDER dependencies as `selectSQL`.
+    public let observationRegionSQL: String
     /// Bound arguments — no user-provided strings are ever interpolated into `selectSQL`.
     public let arguments: StatementArguments
     /// The set of JOINs included in the query (used to construct a `DatabaseRegion`).
@@ -46,8 +49,14 @@ public enum SQLBuilder {
         \(joinSQL.isEmpty ? "" : joinSQL + "\n")WHERE tracks.disabled = 0 AND (\(whereClause))\(orderSQL)\(limitSQL)
         """
 
+        let observationRegionSQL = """
+        SELECT tracks.id FROM tracks
+        \(joinSQL.isEmpty ? "" : joinSQL + "\n")WHERE tracks.disabled = 0 AND (\(whereClause))\(orderSQL)\(limitSQL)
+        """
+
         return CompiledCriteria(
             selectSQL: sql,
+            observationRegionSQL: observationRegionSQL,
             arguments: StatementArguments(args),
             joins: joins
         )

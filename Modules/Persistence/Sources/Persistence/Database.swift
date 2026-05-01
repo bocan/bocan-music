@@ -70,6 +70,31 @@ public actor Database {
         }
     }
 
+    /// Returns a stream that emits values whenever `regions` are modified.
+    ///
+    /// Use this overload when the observed region is known up front and should
+    /// not be inferred from the fetch closure.
+    public func observe<T: Sendable>(
+        regions: [any DatabaseRegionConvertible],
+        value: @escaping @Sendable (GRDB.Database) throws -> T
+    ) -> AsyncThrowingStream<T, Error> {
+        let observation = ValueObservation.tracking(regions: regions, fetch: value)
+        let writer = self.writer
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await value in observation.values(in: writer) {
+                        continuation.yield(value)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     // MARK: - Internal observation bridge
 
     /// Starts a GRDB observation and returns a cancellable.
