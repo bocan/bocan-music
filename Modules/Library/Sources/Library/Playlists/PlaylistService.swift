@@ -8,6 +8,19 @@ import Persistence
 // handle appears only as a closure parameter in `observe(_:)`. All bare
 // references to `Database` below are qualified.
 
+// MARK: - PlaylistSortKey
+
+/// The dimension by which ``PlaylistService/sortContents(_:by:)`` re-orders a
+/// manual playlist's tracks.
+public enum PlaylistSortKey: String, Sendable, CaseIterable {
+    /// Alphabetical by track title (ICU-aware, case-insensitive).
+    case title
+    /// Alphabetical by primary artist name, then by title.
+    case artist
+    /// Chronological by the date the track was added to the library (oldest first).
+    case dateAdded
+}
+
 // MARK: - PlaylistService
 
 /// Actor-isolated façade for every playlist mutation in the app.
@@ -254,6 +267,39 @@ public actor PlaylistService {
         self.log.debug("playlist.clear", ["id": playlistID])
     }
 
+    /// Re-orders the contents of `playlistID` by `key` in a single SQLite transaction.
+    ///
+    /// Positions are rewritten from scratch using `PositionArranger.repackedPositions`
+    /// so the result is always a clean 1024-stepped sequence.
+    ///
+    /// Throws ``PlaylistError/wrongKind(id:expected:actual:)`` for folders and smart playlists.
+    public func sortContents(_ playlistID: Int64, by key: PlaylistSortKey) async throws {
+        let playlist = try await self.requireExisting(id: playlistID)
+        guard playlist.kind == .manual else {
+            throw PlaylistError.wrongKind(
+                id: playlistID, expected: "manual", actual: playlist.kind.rawValue
+            )
+        }
+        try await self.database.write { db in
+            // Fetch track IDs sorted by the requested key *inside* the write
+            // transaction so the read and the rewrite are a single atomic unit.
+            let rows = try Row.fetchAll(db, sql: Self.sortSQL(for: key), arguments: [playlistID])
+            let trackIDs: [Int64] = rows.map { $0["track_id"] }
+            let positions = PositionArranger.repackedPositions(count: trackIDs.count)
+            try db.execute(
+                sql: "DELETE FROM playlist_tracks WHERE playlist_id = ?",
+                arguments: [playlistID]
+            )
+            for (trackID, position) in zip(trackIDs, positions) {
+                try db.execute(
+                    sql: "INSERT INTO playlist_tracks (playlist_id, track_id, position) VALUES (?, ?, ?)",
+                    arguments: [playlistID, trackID, position]
+                )
+            }
+        }
+        self.log.debug("playlist.sort", ["id": playlistID, "by": key.rawValue])
+    }
+
     // MARK: - Queries
 
     /// Returns the forest of playlists and folders.
@@ -394,5 +440,36 @@ public actor PlaylistService {
         let stripped = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
         guard stripped.count == 6 else { return false }
         return stripped.allSatisfy(\.isHexDigit)
+    }
+
+    /// Returns the SQL query that fetches `track_id` values for a playlist in
+    /// the order dictated by `key`.  The single bind parameter is `playlist_id`.
+    private static func sortSQL(for key: PlaylistSortKey) -> String {
+        switch key {
+        case .title:
+            """
+            SELECT pt.track_id FROM playlist_tracks pt
+            INNER JOIN tracks t ON t.id = pt.track_id
+            WHERE pt.playlist_id = ?
+            ORDER BY LOWER(COALESCE(t.title, '')) ASC, t.id ASC
+            """
+        case .artist:
+            """
+            SELECT pt.track_id FROM playlist_tracks pt
+            INNER JOIN tracks t ON t.id = pt.track_id
+            LEFT JOIN artists a ON a.id = t.artist_id
+            WHERE pt.playlist_id = ?
+            ORDER BY LOWER(COALESCE(a.name, '')) ASC,
+                     LOWER(COALESCE(t.title, '')) ASC,
+                     t.id ASC
+            """
+        case .dateAdded:
+            """
+            SELECT pt.track_id FROM playlist_tracks pt
+            INNER JOIN tracks t ON t.id = pt.track_id
+            WHERE pt.playlist_id = ?
+            ORDER BY t.added_at ASC, t.id ASC
+            """
+        }
     }
 }
