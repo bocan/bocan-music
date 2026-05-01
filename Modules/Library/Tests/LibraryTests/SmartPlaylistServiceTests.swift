@@ -54,6 +54,7 @@ struct SmartPlaylistServiceTests {
         #expect(playlist.id != nil)
         #expect(playlist.name == "Loved")
         #expect(playlist.kind == .smart)
+        #expect(playlist.smartRandomSeed != nil)
     }
 
     @Test func createAppearsInListAll() async throws {
@@ -506,5 +507,33 @@ struct SmartPlaylistServiceTests {
         try await svc.update(id: pid, criteria: criteria, limitSort: live)
         ids = try await svc.tracks(for: pid).compactMap(\.id)
         #expect(ids.count == 3)
+    }
+
+    @Test func shuffleSeedRegeneratesPersistedSeed() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+
+        let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let p = try await svc.create(
+            name: "Randomized",
+            criteria: criteria,
+            limitSort: LimitSort(sortBy: .random, ascending: true, limit: nil, liveUpdate: true)
+        )
+        guard let pid = p.id else {
+            Issue.record("no id")
+            return
+        }
+
+        let before = try await svc.resolve(id: pid).playlist.smartRandomSeed
+        #expect(before != nil)
+
+        let first = try await svc.shuffleSeed(id: pid)
+        let afterFirst = try await svc.resolve(id: pid).playlist.smartRandomSeed
+        #expect(afterFirst == first)
+
+        let second = try await svc.shuffleSeed(id: pid)
+        let afterSecond = try await svc.resolve(id: pid).playlist.smartRandomSeed
+        #expect(afterSecond == second)
+        #expect(first != second)
     }
 }

@@ -48,6 +48,7 @@ public struct Migrator {
                 table.add(column: "smart_last_snapshot_at", .integer)
             }
         }
+        M017SmartRandomSeed.register(in: &dm)
         return Self(inner: dm)
     }
 

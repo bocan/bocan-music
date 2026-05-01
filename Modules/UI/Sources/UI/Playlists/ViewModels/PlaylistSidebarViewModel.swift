@@ -10,6 +10,13 @@ import Persistence
 /// folder tree and publishes changes as mutations complete.
 @MainActor
 public final class PlaylistSidebarViewModel: ObservableObject {
+    @MainActor private weak static var activeInstance: PlaylistSidebarViewModel?
+
+    @MainActor
+    public static var activeForNewPlaylistSheet: PlaylistSidebarViewModel? {
+        activeInstance
+    }
+
     // MARK: - Published state
 
     @Published public private(set) var nodes: [PlaylistNode] = []
@@ -22,6 +29,9 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     @Published public var isPresentingNewPlaylist = false
     @Published public var isPresentingNewFolder = false
     @Published public var isPresentingNewSmartPlaylist = false
+    /// Most recently created playlist ID. Used by sidebar/focus consumers to
+    /// scroll/select the new row.
+    @Published public var lastCreatedPlaylistID: Int64?
     @Published public var lastError: String?
     /// Set to trigger the accent-colour picker sheet for a specific playlist.
     @Published public var accentColorTarget: PlaylistNode?
@@ -44,6 +54,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     public init(service: PlaylistService) {
         self.service = service
+        Self.activeInstance = self
     }
 
     // MARK: - Public API
@@ -97,6 +108,43 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         self.isPresentingNewPlaylist = true
     }
 
+    /// Returns the pending selection IDs captured when the new-playlist flow was opened.
+    public func pendingSelectionForNewPlaylist() -> [Int64] {
+        self.pendingTrackIDs
+    }
+
+    /// Flat folder list used by the New Playlist sheet's parent picker.
+    public func foldersForParentPicker() -> [PlaylistNode] {
+        self.allFolders()
+    }
+
+    /// Returns a collision-safe default name for a new playlist in `parentID`.
+    public func defaultPlaylistName(parentID: Int64?) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let base = "New Playlist \(formatter.string(from: Date()))"
+        return self.uniqueSiblingName(base: base, parentID: parentID)
+    }
+
+    /// Resolves a collision-safe sibling name in `parentID`, appending ` (n)`.
+    public func uniqueSiblingName(base: String, parentID: Int64?) -> String {
+        let siblings = self.siblingNames(parentID: parentID)
+        let existing = Set(siblings.map { $0.lowercased() })
+        if !existing.contains(base.lowercased()) {
+            return base
+        }
+        var suffix = 2
+        while true {
+            let candidate = "\(base) (\(suffix))"
+            if !existing.contains(candidate.lowercased()) {
+                return candidate
+            }
+            suffix += 1
+        }
+    }
+
     public func beginNewFolder(parent: Int64? = nil) {
         self.log.debug("playlist.sheet", ["kind": "folder", "parent": parent ?? -1])
         self.newPlaylistParent = parent
@@ -110,14 +158,38 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     }
 
     public func createPlaylist(name: String) async -> Int64? {
+        await self.createPlaylist(
+            name: name,
+            parentID: self.newPlaylistParent,
+            includePendingSelection: true
+        )
+    }
+
+    /// Creates a playlist with explicit parent/selection controls used by the
+    /// new-playlist sheet.
+    public func createPlaylist(
+        name: String,
+        parentID: Int64?,
+        includePendingSelection: Bool
+    ) async -> Int64? {
         do {
-            let playlist = try await self.service.create(name: name, parentID: self.newPlaylistParent)
-            let ids = self.pendingTrackIDs
+            let resolvedName = self.uniqueSiblingName(base: name, parentID: parentID)
+            let playlist = try await self.service.create(name: resolvedName, parentID: parentID)
+            let ids = includePendingSelection ? self.pendingTrackIDs : []
             self.pendingTrackIDs = []
             if !ids.isEmpty, let playlistID = playlist.id {
                 try await self.service.addTracks(ids, to: playlistID)
             }
             await self.reload()
+            if let newID = playlist.id {
+                self.lastCreatedPlaylistID = newID
+                if let parentID {
+                    self.expandedFolders.insert(parentID)
+                }
+                if let createdNode = self.findNode(id: newID) {
+                    self.renameTarget = createdNode
+                }
+            }
             return playlist.id
         } catch {
             self.lastError = self.describe(error)
@@ -375,6 +447,17 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             result.append(node)
             self.collectFolders(node.children, into: &result)
         }
+    }
+
+    private func siblingNames(parentID: Int64?) -> [String] {
+        if let parentID, let parent = self.findNode(id: parentID) {
+            return parent.children
+                .filter { $0.kind == .manual }
+                .map(\.name)
+        }
+        return self.nodes
+            .filter { $0.parentID == nil && $0.kind == .manual }
+            .map(\.name)
     }
 
     private func describe(_ error: Error) -> String {
