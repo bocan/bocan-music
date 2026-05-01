@@ -12,7 +12,8 @@ extension TracksView {
             nowPlayingTrackID: self.nowPlaying.nowPlayingTrackID,
             sortable: true,
             playlistNodes: self.library.playlistSidebar.nodes,
-            actions: self.trackContextMenuActions
+            actions: self.trackContextMenuActions,
+            onMove: self.onMove
         )
     }
 
@@ -24,7 +25,8 @@ extension TracksView {
             nowPlayingTrackID: self.nowPlaying.nowPlayingTrackID,
             sortable: false,
             playlistNodes: self.library.playlistSidebar.nodes,
-            actions: self.trackContextMenuActions
+            actions: self.trackContextMenuActions,
+            onMove: self.onMove
         )
     }
 }
