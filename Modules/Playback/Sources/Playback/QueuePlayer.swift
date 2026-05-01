@@ -254,14 +254,29 @@ public actor QueuePlayer: Transport {
     /// objects in memory (e.g. the current browse view).  Avoids the per-track DB
     /// round-trips inside `buildItems(for:)`, which become the dominant latency
     /// when queueing a large library (~32 queries/track, seconds for 10k+ tracks).
-    public func play(items: [QueueItem], startingAt index: Int = 0) async throws {
+    ///
+    /// Pass `shuffle: true` to pre-shuffle the items with a fresh seed before
+    /// loading them into the queue.  This ensures the **first** track played is
+    /// already a randomly-selected one — not the original `items[0]`.  The queue
+    /// shuffle flag is also set so that auto-advance continues in shuffle order.
+    public func play(items: [QueueItem], startingAt index: Int = 0, shuffle: Bool = false) async throws {
         guard !items.isEmpty else { throw PlaybackError.queueEmpty }
         // Increment before the first queue mutation so handleTrackEnded /
         // handleGaplessTransition defer to this call during suspension points.
         self.activeReplaceCount += 1
         defer { activeReplaceCount -= 1 }
         await self.gaplessScheduler.reset()
-        await self.queue.replace(with: items, startAt: index)
+        let ordered: [QueueItem]
+        if shuffle {
+            let seed = UInt64.random(in: .min ... .max)
+            ordered = FisherYatesShuffle().shuffled(items, seed: seed)
+        } else {
+            ordered = items
+        }
+        await self.queue.replace(with: ordered, startAt: shuffle ? 0 : index)
+        if shuffle {
+            await self.queue.setShuffle(true)
+        }
         try await self.loadCurrentItem()
         try await self.engine.play()
         await self.nowPlayingCentre?.setPlaying(true)

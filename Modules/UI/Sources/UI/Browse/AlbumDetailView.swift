@@ -142,8 +142,7 @@ public struct AlbumDetailView: View {
     private func playShuffled() async {
         let tracks = self.library.tracks.tracks
         guard !tracks.isEmpty else { return }
-        await self.library.play(tracks: tracks, startingAt: 0)
-        await self.library.setShuffle(true)
+        await self.library.play(tracks: tracks, shuffle: true)
     }
 
     private func load() async {
