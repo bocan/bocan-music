@@ -88,33 +88,33 @@ public enum SQLBuilder {
         // ── Text ─────────────────────────────────────────────────────────────
         case .is:
             guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(v)
-            return "\(col) = ? COLLATE NOCASE"
+            args.append(v.lowercased())
+            return "LOWER(\(col)) = LOWER(?)"
 
         case .isNot:
             guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(v)
-            return "(\(col) IS NULL OR \(col) != ? COLLATE NOCASE)"
+            args.append(v.lowercased())
+            return "(\(col) IS NULL OR LOWER(\(col)) != LOWER(?))"
 
         case .contains:
             guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v) + "%")
-            return "\(col) LIKE ? ESCAPE '\\'"
+            args.append("%" + Self.escapeLike(v.lowercased()) + "%")
+            return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .doesNotContain:
             guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v) + "%")
-            return "(\(col) IS NULL OR \(col) NOT LIKE ? ESCAPE '\\')"
+            args.append("%" + Self.escapeLike(v.lowercased()) + "%")
+            return "(\(col) IS NULL OR LOWER(\(col)) NOT LIKE LOWER(?) ESCAPE '\\')"
 
         case .startsWith:
             guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append(Self.escapeLike(v) + "%")
-            return "\(col) LIKE ? ESCAPE '\\'"
+            args.append(Self.escapeLike(v.lowercased()) + "%")
+            return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .endsWith:
             guard case let .text(v) = rule.value else { throw Self.valueError(rule) }
-            args.append("%" + Self.escapeLike(v))
-            return "\(col) LIKE ? ESCAPE '\\'"
+            args.append("%" + Self.escapeLike(v.lowercased()))
+            return "LOWER(\(col)) LIKE LOWER(?) ESCAPE '\\'"
 
         case .matchesRegex:
             guard case let .text(pattern) = rule.value else { throw Self.valueError(rule) }

@@ -2,20 +2,41 @@
 ///
 /// Not every comparator is valid for every field type; use
 /// `Field.allowedComparators` to retrieve the applicable subset.
+///
+/// ## Case-insensitivity semantics (text comparators)
+///
+/// All text comparators (`is`, `isNot`, `contains`, `doesNotContain`,
+/// `startsWith`, `endsWith`) are **Unicode case-insensitive**.
+///
+/// SQLite's built-in `COLLATE NOCASE` and `LIKE` operator are ASCII-only —
+/// they will not match "Über" ↔ "über" or "Ελλάδα" ↔ "ελλάδα".
+/// `SQLBuilder` therefore wraps both the column expression and the bound
+/// parameter with SQLite's `LOWER()` scalar function, and also calls
+/// `String.lowercased()` on the Swift side before binding:
+///
+/// ```sql
+/// LOWER(tracks.title) LIKE LOWER(?) ESCAPE '\'
+/// ```
+///
+/// `String.lowercased()` delegates to ICU on Apple platforms, giving correct
+/// Unicode full-case folding for the device locale.  One known edge case:
+/// German "ß" lowercases to "ß" (single character), but uppercases to "SS"
+/// (two characters).  A search for "SS" will therefore **not** match a track
+/// titled "Straße".  This is a fundamental Unicode limitation, not a bug.
 public enum Comparator: String, Sendable, Codable, Hashable, CaseIterable {
     // MARK: - Text
 
-    /// Exact case-insensitive match.
+    /// Exact Unicode case-insensitive match: `LOWER(col) = LOWER(?)`.
     case `is`
-    /// Inverse of `is`.
+    /// Inverse of `is`: `LOWER(col) != LOWER(?)`.
     case isNot
-    /// SQL `LIKE '%value%'`.
+    /// Unicode case-insensitive substring: `LOWER(col) LIKE LOWER('%value%')`.
     case contains
-    /// SQL `NOT LIKE '%value%'`.
+    /// Inverse of `contains`.
     case doesNotContain
-    /// SQL `LIKE 'value%'`.
+    /// Unicode case-insensitive prefix: `LOWER(col) LIKE LOWER('value%')`.
     case startsWith
-    /// SQL `LIKE '%value'`.
+    /// Unicode case-insensitive suffix: `LOWER(col) LIKE LOWER('%value')`.
     case endsWith
     /// Custom `REGEXP` function (NSRegularExpression, unanchored).
     case matchesRegex
