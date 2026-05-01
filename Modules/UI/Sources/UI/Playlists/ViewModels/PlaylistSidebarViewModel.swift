@@ -71,6 +71,12 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         self.expandedFolders.insert(folderID)
     }
 
+    /// Replaces the current expanded-folder set, used when restoring persisted
+    /// UI state at launch.
+    public func setExpandedFolders(_ ids: Set<Int64>) {
+        self.expandedFolders = ids
+    }
+
     /// Moves a playlist by ID into a folder (or top-level when `folderID` is `nil`).
     ///
     /// Convenience overload used by drag-and-drop, which only has the payload ID

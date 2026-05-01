@@ -10,7 +10,7 @@ import Persistence
 import Playback
 import UniformTypeIdentifiers
 
-// MARK: - UIStateV1
+// MARK: - UIStateV2
 
 /// Serialised sidebar + table UI state persisted to `settings` key `ui.state.v2`.
 ///
@@ -18,13 +18,48 @@ import UniformTypeIdentifiers
 /// AppKit autosave name set on `NSSplitView` — autosave covers the common
 /// case (window restore on relaunch); the explicit value lets us seed a
 /// freshly-installed window or a profile copied between machines.
-struct UIStateV1: Codable {
+struct UIStateV2: Codable {
     var selectedDestination: SidebarDestination = .songs
     var sortColumn: TrackSortColumn = .artist
     var sortAscending = true
     /// Width of the navigation split-view's sidebar column, in points.
     /// `nil` when no width has been recorded yet (first launch).
     var sidebarWidth: Double?
+    /// Persisted IDs of expanded playlist folders in the sidebar tree.
+    var expandedPlaylistFolders: Set<Int64> = []
+
+    private enum CodingKeys: String, CodingKey {
+        case selectedDestination
+        case sortColumn
+        case sortAscending
+        case sidebarWidth
+        case expandedPlaylistFolders
+    }
+
+    init(
+        selectedDestination: SidebarDestination = .songs,
+        sortColumn: TrackSortColumn = .artist,
+        sortAscending: Bool = true,
+        sidebarWidth: Double? = nil,
+        expandedPlaylistFolders: Set<Int64> = []
+    ) {
+        self.selectedDestination = selectedDestination
+        self.sortColumn = sortColumn
+        self.sortAscending = sortAscending
+        self.sidebarWidth = sidebarWidth
+        self.expandedPlaylistFolders = expandedPlaylistFolders
+    }
+
+    /// Forward-compatible decoder for old payloads (V1) that do not include
+    /// `expandedPlaylistFolders`.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.selectedDestination = try c.decode(SidebarDestination.self, forKey: .selectedDestination)
+        self.sortColumn = try c.decode(TrackSortColumn.self, forKey: .sortColumn)
+        self.sortAscending = try c.decode(Bool.self, forKey: .sortAscending)
+        self.sidebarWidth = try c.decodeIfPresent(Double.self, forKey: .sidebarWidth)
+        self.expandedPlaylistFolders = try c.decodeIfPresent(Set<Int64>.self, forKey: .expandedPlaylistFolders) ?? []
+    }
 }
 
 // MARK: - LibraryViewModel
@@ -154,6 +189,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
     private var selectionCancellable: AnyCancellable?
+    private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -214,6 +250,20 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
 
         self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
+        self.wireExpandedFoldersPersistence()
+    }
+
+    private func wireExpandedFoldersPersistence() {
+        // Phase 6 audit: persist expanded playlist folders bidirectionally.
+        // Restore happens in `restoreUIState()`, and updates are saved with a
+        // short debounce to avoid frequent writes while users rapidly expand/collapse.
+        self.expandedFoldersCancellable = self.playlistSidebar.$expandedFolders
+            .dropFirst()
+            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task { await self.saveUIState() }
+            }
     }
 
     private func wirePlaylistCallbacks() {
@@ -584,7 +634,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     /// Last sidebar width reported by the AppKit split-view, used to seed
-    /// `UIStateV1.sidebarWidth` at save time.  Phase 4 audit H2.
+    /// `UIStateV2.sidebarWidth` at save time.  Phase 4 audit H2.
     @Published public var sidebarWidth: Double?
 
     /// Bumped by the global ⌘F command; observed by `BocanRootView` to move
@@ -598,11 +648,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Persists current UI state to settings.
     public func saveUIState() async {
-        let state = UIStateV1(
+        let state = UIStateV2(
             selectedDestination: selectedDestination,
             sortColumn: tracks.sortColumn,
             sortAscending: self.tracks.sortAscending,
-            sidebarWidth: self.sidebarWidth
+            sidebarWidth: self.sidebarWidth,
+            expandedPlaylistFolders: self.playlistSidebar.expandedFolders
         )
         do {
             try await self.settingsRepo.set(state, for: "ui.state.v2")
@@ -614,10 +665,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Restores UI state from settings.
     public func restoreUIState() async {
         do {
-            guard let state = try await settingsRepo.get(UIStateV1.self, for: "ui.state.v2") else { return }
+            guard let state = try await settingsRepo.get(UIStateV2.self, for: "ui.state.v2") else { return }
             self.selectedDestination = state.selectedDestination
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
             self.sidebarWidth = state.sidebarWidth
+            self.playlistSidebar.setExpandedFolders(state.expandedPlaylistFolders)
         } catch {
             self.log.error("library.restoreState.failed", ["error": String(reflecting: error)])
         }
