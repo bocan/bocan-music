@@ -64,6 +64,19 @@ struct PlaylistDetailViewModelTests {
         #expect(persisted == seed.vm.tracks.map { $0.id ?? -1 })
     }
 
+    @Test("move multiple tracks preserves relative order at destination")
+    func moveMultiple() async throws {
+        let seed = try await self.seed()
+        // Tracks are [D0, D1, D2, D3]; move first two to the end.
+        await seed.vm.load(playlistID: seed.playlistID)
+        await seed.vm.move(from: IndexSet([0, 1]), to: 4)
+        // Expected order: [D2, D3, D0, D1]
+        let got = seed.vm.tracks.compactMap(\.id)
+        #expect(got == [seed.trackIDs[2], seed.trackIDs[3], seed.trackIDs[0], seed.trackIDs[1]])
+        let persisted = try await seed.service.tracks(in: seed.playlistID).map { $0.id ?? -1 }
+        #expect(persisted == got)
+    }
+
     @Test("remove optimistically removes entries")
     func remove() async throws {
         let seed = try await self.seed()
