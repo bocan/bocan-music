@@ -122,7 +122,7 @@ public enum FieldDefinitions {
         )
 
         // ── Enum ─────────────────────────────────────────────────────────────
-        let formats = ["flac", "mp3", "aac", "alac", "ogg", "opus", "wav", "aiff", "m4a", "wv", "ape"]
+        let formats = ["flac", "mp3", "aac", "alac", "ogg", "opus", "wav", "aiff", "m4a", "wv", "ape", "dsd"]
         t[.fileFormat] = .init(
             dataType: .enumeration(formats),
             allowedComparators: [.is, .isNot],
