@@ -67,6 +67,7 @@ struct NewSmartPlaylistSheet: View {
         .frame(minWidth: 340)
         .onAppear {
             self.isNameFocused = true
+            Task { @MainActor in SmartPlaylistSurfacePrewarmer.prewarmOnce() }
             Task { await self.seedDefaultNameIfNeeded() }
         }
     }
