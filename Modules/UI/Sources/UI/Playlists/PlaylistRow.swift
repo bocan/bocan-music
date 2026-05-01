@@ -42,6 +42,7 @@ public struct PlaylistRow: View {
                 Task { await self.vm.addTracks(ids, to: self.node.id) }
             }
         )
+        .help(self.node.name)
         .accessibilityLabel("Playlist: \(self.node.name)")
         .accessibilityIdentifier(A11y.PlaylistSidebar.row(self.node.id))
     }

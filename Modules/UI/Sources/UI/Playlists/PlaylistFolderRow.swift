@@ -31,7 +31,9 @@ public struct PlaylistFolderRow: View {
                     .frame(width: 12)
             }
             .buttonStyle(.plain)
+            .help(self.isExpanded ? "Collapse folder" : "Expand folder")
             .accessibilityLabel(self.isExpanded ? "Collapse folder" : "Expand folder")
+            .accessibilityValue(self.isExpanded ? "Expanded" : "Collapsed")
 
             Image(systemName: self.isDropTargeted ? "folder.fill.badge.plus" : "folder")
                 .foregroundStyle(self.isDropTargeted ? Color.accentColor : Color.textSecondary)
@@ -73,6 +75,7 @@ public struct PlaylistFolderRow: View {
             }
         }
         .contextMenu { self.contextMenuContent }
+        .help(self.node.name)
         .accessibilityLabel("Folder: \(self.node.name)")
         .accessibilityIdentifier(A11y.PlaylistSidebar.folderRow(self.node.id))
     }
