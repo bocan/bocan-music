@@ -60,7 +60,7 @@ public actor SmartPlaylistService {
         playlist.id = id
         self.log.debug("smartPlaylist.create", ["id": id, "name": name])
         if !limitSort.liveUpdate {
-            try await self.snapshot(id: id)
+            try await self.snapshot(playlistID: id)
         }
         return playlist
     }
@@ -90,7 +90,7 @@ public actor SmartPlaylistService {
         }
         self.log.debug("smartPlaylist.update", ["id": id])
         if !limitSort.liveUpdate {
-            try await self.snapshot(id: id)
+            try await self.snapshot(playlistID: id)
         } else {
             // Switching back to live mode: clear any stale snapshot rows so
             // tracks(for:) starts returning live results immediately.
@@ -156,33 +156,45 @@ public actor SmartPlaylistService {
     /// The query and the replace happen inside a single `database.write`
     /// transaction so observers never see a half-populated playlist.
     @discardableResult
-    public func snapshot(id: Int64) async throws -> Int {
-        let sp = try await self.resolve(id: id)
+    public func snapshot(playlistID: Int64) async throws -> Int {
+        let sp = try await self.resolve(id: playlistID)
         let compiled = try CriteriaCompiler.compile(
             criteria: sp.criteria,
             limitSort: sp.limitSort,
             seed: sp.playlist.id ?? 0
         )
+        let snappedAt = Self.now()
         let count = try await self.database.write { db -> Int in
             let tracks = try Track.fetchAll(db, sql: compiled.selectSQL, arguments: compiled.arguments)
             try db.execute(
                 sql: "DELETE FROM playlist_tracks WHERE playlist_id = ?",
-                arguments: [id]
+                arguments: [playlistID]
             )
-            for (index, track) in tracks.enumerated() {
+            let positions = PositionArranger.repackedPositions(count: tracks.count)
+            for (track, position) in zip(tracks, positions) {
                 guard let tid = track.id else { continue }
                 try db.execute(
                     sql: """
                     INSERT INTO playlist_tracks (playlist_id, track_id, position)
                     VALUES (?, ?, ?)
                     """,
-                    arguments: [id, tid, index]
+                    arguments: [playlistID, tid, position]
                 )
             }
+            try db.execute(
+                sql: "UPDATE playlists SET smart_last_snapshot_at = ?, updated_at = ? WHERE id = ?",
+                arguments: [snappedAt, snappedAt, playlistID]
+            )
             return tracks.count
         }
-        self.log.debug("smartPlaylist.snapshot", ["id": id, "count": count])
+        self.log.debug("smartPlaylist.snapshot", ["id": playlistID, "count": count])
         return count
+    }
+
+    /// Backwards-compatible wrapper.
+    @discardableResult
+    public func snapshot(id: Int64) async throws -> Int {
+        try await self.snapshot(playlistID: id)
     }
 
     /// Returns a live stream of track lists that re-emits whenever the relevant
