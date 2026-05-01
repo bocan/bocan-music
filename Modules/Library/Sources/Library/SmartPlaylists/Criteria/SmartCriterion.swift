@@ -1,3 +1,5 @@
+import Observability
+
 /// A node in a smart-playlist criteria tree.
 ///
 /// The recursive `group` case allows arbitrarily nested `AND` / `OR`
@@ -34,6 +36,8 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
     private enum RuleAssoc: String, CodingKey { case _0 }
     private enum GroupAssoc: String, CodingKey { case _0, _1 }
     private enum InvalidAssoc: String, CodingKey { case reason }
+    private static let log = AppLogger.make(.library)
+    public static let newerVersionRuleMessage = "This rule was created in a newer version of Bòcan."
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: TopKey.self)
@@ -47,12 +51,21 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
             let inner = try container.nestedContainer(keyedBy: RuleAssoc.self, forKey: .rule)
             do {
                 let rule = try inner.decode(Rule.self, forKey: ._0)
-                self = .rule(rule)
+                if let warning = Self.unknownRuleWarning(for: rule) {
+                    Self.log.warning("smart.criteria.decode.unknownRule", ["warning": warning])
+                    self = .invalid(reason: Self.newerVersionRuleMessage)
+                } else {
+                    self = .rule(rule)
+                }
             } catch {
                 // Future-proofing: a removed field or comparator must not
                 // make the entire playlist undecodable. Surface a sentinel
                 // so the UI can render an "invalid rule" placeholder.
                 let reason = Self.lenientReason(from: inner) ?? "Unknown rule"
+                Self.log.warning("smart.criteria.decode.ruleFailed", [
+                    "reason": reason,
+                    "error": String(reflecting: error),
+                ])
                 self = .invalid(reason: reason)
             }
             return
@@ -104,6 +117,21 @@ public indirect enum SmartCriterion: Sendable, Codable, Hashable {
         guard let lenient = try? container.decode(LenientRule.self, forKey: ._0),
               let field = lenient.field else { return nil }
         return "Unknown field \"\(field)\""
+    }
+
+    private static func unknownRuleWarning(for rule: Rule) -> String? {
+        switch rule.field {
+        case let .unknown(raw):
+            return "Unknown field \"\(raw)\""
+        default:
+            break
+        }
+        switch rule.comparator {
+        case let .unknown(raw):
+            return "Unknown comparator \"\(raw)\""
+        default:
+            return nil
+        }
     }
 }
 

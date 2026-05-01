@@ -470,7 +470,20 @@ struct SmartCriteriaCompilerTests {
             Issue.record("Expected .invalid sentinel, got \(criterion)")
             return
         }
-        #expect(reason.contains("madeUpField"))
+        #expect(reason.contains("newer version"))
+    }
+
+    @Test func unknownComparatorDecodesAsInvalidSentinel() throws {
+        let json = #"""
+        {"rule":{"_0":{"field":"title","comparator":"brandNewComparator","value":{"tag":"text","text":"x"}}}}
+        """#
+        let data = try #require(json.data(using: .utf8))
+        let criterion = try JSONDecoder().decode(SmartCriterion.self, from: data)
+        guard case let .invalid(reason) = criterion else {
+            Issue.record("Expected .invalid sentinel, got \(criterion)")
+            return
+        }
+        #expect(reason.contains("newer version"))
     }
 
     @Test func validatorRejectsInvalidSentinel() {
@@ -562,5 +575,39 @@ struct SmartCriteriaCompilerTests {
             let decoded = try JSONDecoder().decode(Value.self, from: data)
             #expect(v == decoded)
         }
+    }
+
+    @Test func fieldUnknownRoundTripPreservesRawString() throws {
+        let original = Field.unknown("futureField")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Field.self, from: data)
+        guard case let .unknown(raw) = decoded else {
+            Issue.record("Expected .unknown field, got \(decoded)")
+            return
+        }
+        #expect(raw == "futureField")
+
+        guard let encoded = String(data: data, encoding: .utf8) else {
+            Issue.record("Encoded field data was not UTF-8")
+            return
+        }
+        #expect(encoded == #""futureField""#)
+    }
+
+    @Test func comparatorUnknownRoundTripPreservesRawString() throws {
+        let original = Comparator.unknown("futureComparator")
+        let data = try JSONEncoder().encode(original)
+        let decoded = try JSONDecoder().decode(Comparator.self, from: data)
+        guard case let .unknown(raw) = decoded else {
+            Issue.record("Expected .unknown comparator, got \(decoded)")
+            return
+        }
+        #expect(raw == "futureComparator")
+
+        guard let encoded = String(data: data, encoding: .utf8) else {
+            Issue.record("Encoded comparator data was not UTF-8")
+            return
+        }
+        #expect(encoded == #""futureComparator""#)
     }
 }

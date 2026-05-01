@@ -248,6 +248,9 @@ public enum SQLBuilder {
             guard case let .text(prefix) = rule.value else { throw Self.valueError(rule) }
             args.append(Self.escapeLike(prefix) + "%")
             return "\(col) LIKE ? ESCAPE '\\'"
+
+        case let .unknown(raw):
+            throw SmartPlaylistError.invalidRule(reason: "Unknown comparator \"\(raw)\"")
         }
     }
 
