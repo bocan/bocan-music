@@ -73,6 +73,17 @@ public struct PlaylistRow: View {
             Button("Export…") {
                 self.vm.onRequestExport?(self.node.id, self.node.name)
             }
+            Menu("Sort Contents") {
+                Button("By Title") {
+                    Task { await self.vm.sortContents(self.node, by: .title) }
+                }
+                Button("By Artist") {
+                    Task { await self.vm.sortContents(self.node, by: .artist) }
+                }
+                Button("By Date Added") {
+                    Task { await self.vm.sortContents(self.node, by: .dateAdded) }
+                }
+            }
         }
         self.moveToFolderMenu
         Divider()

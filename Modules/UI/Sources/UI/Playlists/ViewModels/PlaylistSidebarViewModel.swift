@@ -193,6 +193,16 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         }
     }
 
+    /// Sorts the contents of `node` by `key` and reloads the sidebar.
+    public func sortContents(_ node: PlaylistNode, by key: PlaylistSortKey) async {
+        do {
+            try await self.service.sortContents(node.id, by: key)
+            await self.reload()
+        } catch {
+            self.lastError = self.describe(error)
+        }
+    }
+
     // MARK: - Cover art & accent colour
 
     /// Opens a non-blocking `NSOpenPanel` for the user to pick a cover image,
