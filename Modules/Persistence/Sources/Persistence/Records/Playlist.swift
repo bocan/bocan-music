@@ -58,6 +58,12 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// snapshotted in `liveUpdate = false` mode.
     public var smartLastSnapshotAt: Int64?
 
+    /// Seed used for stable smart-playlist random sorting.
+    ///
+    /// Random ordering uses this value so the result stays stable until the
+    /// seed is explicitly regenerated ("Reshuffle").
+    public var smartRandomSeed: Int64?
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -76,7 +82,8 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         accentColor: String? = nil,
         smartLimitSort: String? = nil,
         smartPresetKey: String? = nil,
-        smartLastSnapshotAt: Int64? = nil
+        smartLastSnapshotAt: Int64? = nil,
+        smartRandomSeed: Int64? = nil
     ) {
         self.id = id
         self.name = name
@@ -92,6 +99,7 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         self.smartLimitSort = smartLimitSort
         self.smartPresetKey = smartPresetKey
         self.smartLastSnapshotAt = smartLastSnapshotAt
+        self.smartRandomSeed = smartRandomSeed
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -120,5 +128,6 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         case smartLimitSort = "smart_limit_sort"
         case smartPresetKey = "smart_preset_key"
         case smartLastSnapshotAt = "smart_last_snapshot_at"
+        case smartRandomSeed = "smart_random_seed"
     }
 }

@@ -8,7 +8,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 15)
+        #expect(version == 17)
     }
 
     @Test("Integrity check passes after migration")
@@ -63,10 +63,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports fifteen migrations")
+    @Test("Migrator reports seventeen migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 15)
+        #expect(migrator.migrations.count == 17)
     }
 
     @Test("Playlists table has kind and accent_color after M007")
@@ -78,6 +78,7 @@ struct MigrationTests {
         }
         #expect(columns.contains("kind"))
         #expect(columns.contains("accent_color"))
+        #expect(columns.contains("smart_random_seed"))
     }
 
     @Test("Tracks table has CUE virtual-track columns after M013")

@@ -14,7 +14,6 @@ public actor SmartPlaylistService {
 
     private let database: Persistence.Database
     private let log: AppLogger
-    private static let launchRandomSeed = Int64.random(in: Int64.min ... Int64.max)
 
     // MARK: - Init
 
@@ -48,7 +47,8 @@ public actor SmartPlaylistService {
             parentID: parentID,
             kind: .smart,
             smartLimitSort: limitSortJSON,
-            smartPresetKey: presetKey
+            smartPresetKey: presetKey,
+            smartRandomSeed: Int64.random(in: Int64.min ... Int64.max)
         )
         let id = try await self.database.write { [playlist] db in
             var localPlaylist = playlist
@@ -110,6 +110,29 @@ public actor SmartPlaylistService {
             try db.execute(sql: "DELETE FROM playlists WHERE id = ?", arguments: [id])
         }
         self.log.debug("smartPlaylist.delete", ["id": id])
+    }
+
+    /// Regenerates and persists a smart playlist's random seed.
+    ///
+    /// Callers should refresh/reload tracks after this when presenting random
+    /// ordering so the new seed is applied to query compilation.
+    @discardableResult
+    public func shuffleSeed(id: Int64) async throws -> Int64 {
+        let newSeed = Int64.random(in: Int64.min ... Int64.max)
+        let now = Self.now()
+        try await self.database.write { db in
+            guard var playlist = try Playlist.fetchOne(db, key: id) else {
+                throw SmartPlaylistError.notFound(id)
+            }
+            guard playlist.kind == .smart else {
+                throw SmartPlaylistError.notSmartPlaylist(id)
+            }
+            playlist.smartRandomSeed = newSeed
+            playlist.updatedAt = now
+            try playlist.update(db)
+        }
+        self.log.debug("smartPlaylist.shuffleSeed", ["id": id])
+        return newSeed
     }
 
     /// Resolves a smart playlist by `id`, returning its `SmartPlaylist` wrapper.
@@ -317,12 +340,8 @@ public actor SmartPlaylistService {
     }
 
     private static func querySeed(for smartPlaylist: SmartPlaylist) -> Int64 {
-        let base = smartPlaylist.playlist.id ?? 0
-        guard smartPlaylist.limitSort.sortBy == .random,
-              SmartPlaylistPreferences.randomRerollOnLaunch() else {
-            return base
-        }
-        return base ^ Self.launchRandomSeed
+        guard smartPlaylist.limitSort.sortBy == .random else { return 0 }
+        return smartPlaylist.playlist.smartRandomSeed ?? 0
     }
 
     /// Walks `criteria` collecting every `playlistRef` referenced by a
