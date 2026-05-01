@@ -67,6 +67,9 @@ public struct TrackTable: NSViewRepresentable {
     let sortable: Bool
     let playlistNodes: [PlaylistNode]
     let actions: TrackContextMenuActions
+    /// When non-nil the table allows intra-table drag-reorder and calls this
+    /// closure (on the main thread) with SwiftUI-style `(source, destination)` indices.
+    let onMove: ((IndexSet, Int) -> Void)?
     @AppStorage("appearance.rowDensity") private var rowDensity = "regular"
 
     // MARK: NSViewRepresentable
@@ -94,8 +97,16 @@ public struct TrackTable: NSViewRepresentable {
         tableView.allowsColumnSelection = false
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
 
-        tableView.setDraggingSourceOperationMask(.copy, forLocal: true)
+        // When reorder is enabled, allow move locally and copy externally.
+        if self.onMove != nil {
+            tableView.setDraggingSourceOperationMask([.move], forLocal: true)
+        } else {
+            tableView.setDraggingSourceOperationMask(.copy, forLocal: true)
+        }
         tableView.setDraggingSourceOperationMask(.copy, forLocal: false)
+        if self.onMove != nil {
+            tableView.registerForDraggedTypes([.string])
+        }
 
         tableView.delegate = coordinator
         tableView.doubleAction = #selector(TrackTableCoordinator.doubleClickAction(_:))
@@ -119,6 +130,7 @@ public struct TrackTable: NSViewRepresentable {
         }
         coordinator.dataSource = dataSource
         dataSource.coordinator = coordinator
+        dataSource.onMove = self.onMove
         coordinator.tableView = tableView
 
         let scrollView = NSScrollView()
@@ -191,6 +203,11 @@ public struct TrackTable: NSViewRepresentable {
         if coordinator.lastRowDensity != self.rowDensity {
             coordinator.lastRowDensity = self.rowDensity
             tableView.noteHeightOfRows(withIndexesChanged: IndexSet(integersIn: 0 ..< tableView.numberOfRows))
+        }
+
+        // 6 — onMove callback changed (e.g. playlist loaded or kind toggled).
+        if let dataSource = coordinator.dataSource {
+            dataSource.onMove = self.onMove
         }
     }
 

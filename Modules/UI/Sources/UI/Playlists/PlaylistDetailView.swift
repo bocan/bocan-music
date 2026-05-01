@@ -46,17 +46,24 @@ public struct PlaylistDetailView: View {
                     TracksView(
                         vm: self.library.tracks,
                         library: self.library,
-                        sortable: false
-                    ) { [weak vm] tracks in
-                        guard let vm else { return }
-                        var offsets = IndexSet()
-                        for (idx, t) in vm.tracks.enumerated()
-                            where tracks.contains(where: { $0.id == t.id && $0.id != nil }) {
-                            offsets.insert(idx)
-                        }
-                        guard !offsets.isEmpty else { return }
-                        Task { await vm.remove(at: offsets) }
-                    }
+                        sortable: false,
+                        removeFromPlaylist: { [weak vm] tracks in
+                            guard let vm else { return }
+                            var offsets = IndexSet()
+                            for (idx, t) in vm.tracks.enumerated()
+                                where tracks.contains(where: { $0.id == t.id && $0.id != nil }) {
+                                offsets.insert(idx)
+                            }
+                            guard !offsets.isEmpty else { return }
+                            Task { await vm.remove(at: offsets) }
+                        },
+                        onMove: self.vm.playlist?.kind == .manual
+                            ? { [weak vm] source, destination in
+                                guard let vm else { return }
+                                Task { await vm.move(from: source, to: destination) }
+                            }
+                            : nil
+                    )
                 }
             }
             .overlay(

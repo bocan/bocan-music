@@ -25,6 +25,9 @@ public struct TracksView: View {
     /// When non-nil, a "Remove from Playlist" item appears at the top of the
     /// destructive section of the track context menu.
     public var removeFromPlaylist: (([Track]) -> Void)?
+    /// When non-nil, enables intra-table drag-reorder and calls this closure
+    /// on drop with SwiftUI-style `(source, destination)` index sets.
+    public var onMove: ((IndexSet, Int) -> Void)?
 
     /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
     /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
@@ -42,7 +45,8 @@ public struct TracksView: View {
         library: LibraryViewModel,
         title: String? = nil,
         sortable: Bool = true,
-        removeFromPlaylist: (([Track]) -> Void)? = nil
+        removeFromPlaylist: (([Track]) -> Void)? = nil,
+        onMove: ((IndexSet, Int) -> Void)? = nil
     ) {
         self.vm = vm
         self.library = library
@@ -50,6 +54,7 @@ public struct TracksView: View {
         self.title = title
         self.sortable = sortable
         self.removeFromPlaylist = removeFromPlaylist
+        self.onMove = onMove
     }
 
     public var body: some View {
