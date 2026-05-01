@@ -91,8 +91,7 @@ public struct PlaylistDetailView: View {
 
     private func playShuffled() async {
         guard !self.vm.tracks.isEmpty else { return }
-        await self.library.play(tracks: self.vm.tracks, startingAt: 0)
-        await self.library.setShuffle(true)
+        await self.library.play(tracks: self.vm.tracks, shuffle: true)
     }
 
     private var accentColour: Color? {

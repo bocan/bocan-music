@@ -409,7 +409,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     /// Plays `tracks` starting at `index`, replacing the queue.
-    public func play(tracks: [Track], startingAt index: Int = 0) async {
+    ///
+    /// Pass `shuffle: true` to pre-shuffle before playback so the very first
+    /// track heard is randomly selected (not `tracks[0]`).
+    public func play(tracks: [Track], startingAt index: Int = 0, shuffle: Bool = false) async {
         guard let qp = engine as? QueuePlayer else { return }
         let names = self.tracks.artistNames
         let items: [QueueItem] = tracks.map { t in
@@ -417,7 +420,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             return QueueItem.make(from: t, artistName: name)
         }
         do {
-            try await qp.play(items: items, startingAt: index)
+            try await qp.play(items: items, startingAt: index, shuffle: shuffle)
         } catch {
             self.log.error("library.playAll.failed", ["error": String(reflecting: error)])
             self.playbackErrorMessage = "Could not play tracks. Try re-scanning your library."
