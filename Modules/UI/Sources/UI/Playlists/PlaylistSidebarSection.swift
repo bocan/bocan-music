@@ -104,6 +104,7 @@ private struct PlaylistSidebarPresentationsModifier: ViewModifier {
             .modifier(NewFolderSheetModifier(vm: self.vm))
             .modifier(NewSmartPlaylistSheetModifier(vm: self.vm, smartPlaylistService: self.smartPlaylistService))
             .modifier(RenameSheetModifier(vm: self.vm))
+            .modifier(AccentColorSheetModifier(vm: self.vm))
             .modifier(DeleteDialogsModifier(vm: self.vm))
     }
 }
@@ -228,5 +229,20 @@ private struct DeleteDialogsModifier: ViewModifier {
             } message: { target in
                 Text("Delete \"\(target.name)\" and all playlists inside it? This cannot be undone. Tracks remain in your library.")
             }
+    }
+}
+
+private struct AccentColorSheetModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+
+    func body(content: Content) -> some View {
+        content.sheet(item: Binding(
+            get: { self.vm.accentColorTarget },
+            set: { self.vm.accentColorTarget = $0 }
+        )) { node in
+            AccentColorSheet(node: node) { hex in
+                await self.vm.setAccentColor(hex, for: node.id)
+            }
+        }
     }
 }
