@@ -17,9 +17,7 @@ public struct PlaylistRow: View {
 
     public var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: self.node.kind == .smart ? "sparkles" : "music.note.list")
-                .foregroundStyle(self.accentColour ?? Color.textSecondary)
-                .frame(width: 16)
+            self.rowIcon
 
             Text(self.node.name)
                 .font(Typography.body)
@@ -49,6 +47,20 @@ public struct PlaylistRow: View {
         return Color(hex: hex)
     }
 
+    /// Small thumbnail shown in the sidebar row: user cover art when set,
+    /// otherwise the appropriate SF Symbol tinted with the accent colour.
+    @ViewBuilder
+    private var rowIcon: some View {
+        if let path = node.coverArtPath {
+            Artwork(artPath: path, seed: Int(self.node.id), size: 20)
+                .frame(width: 20, height: 20)
+        } else {
+            Image(systemName: self.node.kind == .smart ? "sparkles" : "music.note.list")
+                .foregroundStyle(self.accentColour ?? Color.textSecondary)
+                .frame(width: 16)
+        }
+    }
+
     @ViewBuilder
     private var contextMenuContent: some View {
         Button("Rename") { self.vm.renameTarget = self.node }
@@ -59,6 +71,15 @@ public struct PlaylistRow: View {
             }
         }
         self.moveToFolderMenu
+        Divider()
+        Button("Set Cover Art…") {
+            Task { await self.vm.setCoverArt(for: self.node) }
+        }
+        .help("Choose an image file to use as the cover art for this playlist")
+        Button("Set Accent Colour…") {
+            self.vm.accentColorTarget = self.node
+        }
+        .help("Set a custom accent colour for this playlist")
         Divider()
         Button("Delete", role: .destructive) { self.vm.deleteTarget = self.node }
     }
