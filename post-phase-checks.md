@@ -46,3 +46,33 @@ Verification status:
 	- Open `RenamePlaylistSheet` repeatedly while playing.
 	- Trigger playlist/folder delete `confirmationDialog` while playing.
 	- Open `Set Cover Art…` panel while playing and ensure no audible pop/dropout.
+
+## Phase 7 Audit — Smart Playlist Surface First-Mount Risk
+
+Date: 2026-05-01
+
+Scope reviewed:
+- `NewSmartPlaylistSheet`
+- `RuleBuilderView` sheet (from `SmartPlaylistDetailView`)
+- `SmartPresetPickerView` sheet (from RuleBuilder toolbar)
+
+Findings:
+- No blocking modal APIs (`runModal`, semaphores, sync waits) were found in these three smart-surface paths.
+- All heavy operations are async (`Task` / async service calls).
+
+Hardening applied:
+- Added `SmartPlaylistSurfacePrewarmer` one-shot off-screen warm-up that mounts a tiny hidden SwiftUI probe (`TextField`, segmented picker, `Menu`) inside an off-screen transparent `NSPanel`.
+- Hooked prewarm at first appearance of each smart surface and from the existing Phase 6 launch-time prewarm path in playlist sidebar presentation.
+
+Manual verification + sample capture (pending local run):
+- Start playback with a known clean track and queue a gapless transition.
+- While audio is active, trigger in order:
+	- New Smart Playlist sheet
+	- Edit Rules sheet
+	- Presets picker sheet
+- Record a 20–30 second audio sample while triggering each first-show path.
+- Confirm no audible pop/dropout and no gapless transition discontinuity.
+
+Status:
+- Static audit + hardening complete.
+- Manual runtime verification and sample capture remain required on a local desktop session.

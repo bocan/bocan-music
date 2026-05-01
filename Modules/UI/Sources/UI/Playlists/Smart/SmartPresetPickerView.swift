@@ -50,6 +50,9 @@ struct SmartPresetPickerView: View {
             }
         }
         .frame(minWidth: 500, minHeight: 340)
+        .onAppear {
+            Task { @MainActor in SmartPlaylistSurfacePrewarmer.prewarmOnce() }
+        }
         .task {
             do {
                 let playlists = try await self.service.listAll()
