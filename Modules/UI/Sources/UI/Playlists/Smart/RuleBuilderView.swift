@@ -54,6 +54,7 @@ public struct RuleBuilderView: View {
             set: { if !$0 { self.saveError = nil } }
         )) {
             Button("OK") { self.saveError = nil }
+                .help("Dismiss this message")
         } message: {
             Text(self.saveError ?? "")
         }
@@ -76,6 +77,7 @@ public struct RuleBuilderView: View {
                 Label("Presets…", systemImage: "star")
             }
             .buttonStyle(.borderless)
+            .help("Load criteria from a built-in smart playlist preset")
 
             Spacer()
 
@@ -89,6 +91,7 @@ public struct RuleBuilderView: View {
                 self.dismiss()
             }
             .keyboardShortcut(.cancelAction)
+            .help("Close this editor without saving changes")
 
             Button {
                 Task { await self.save() }
@@ -102,6 +105,7 @@ public struct RuleBuilderView: View {
             .buttonStyle(.borderedProminent)
             .disabled(self.isSaving)
             .keyboardShortcut(.defaultAction)
+            .help("Save these rules and update the smart playlist")
             .accessibilityIdentifier(A11y.RuleBuilder.saveButton)
         }
         .padding(.horizontal, 20)
