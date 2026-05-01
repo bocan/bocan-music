@@ -66,6 +66,17 @@ public struct ContentPane: View {
                 service: self.vm.playlistService
             )
 
+        case let .folder(id):
+            if let node = self.vm.playlistSidebar.findNode(id: id) {
+                PlaylistFolderView(node: node, library: self.vm)
+            } else {
+                ContentUnavailableView(
+                    "Folder Not Found",
+                    systemImage: "folder",
+                    description: Text("This folder may have been deleted.")
+                )
+            }
+
         case let .smartPlaylist(id):
             SmartPlaylistDetailView(
                 playlistID: id,
