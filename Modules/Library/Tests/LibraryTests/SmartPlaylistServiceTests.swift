@@ -385,6 +385,74 @@ struct SmartPlaylistServiceTests {
         #expect(ids.contains(loved))
     }
 
+    @Test func observeCoalescesPlayCountBurst() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+
+        let defaults = UserDefaults.standard
+        let key = SmartPlaylistPreferences.observeDebounceMillisecondsKey
+        let previous = defaults.object(forKey: key)
+        defaults.set(250, forKey: key)
+        defer {
+            if let previous {
+                defaults.set(previous, forKey: key)
+            } else {
+                defaults.removeObject(forKey: key)
+            }
+        }
+
+        let trackID = try await insertTrack(in: db, fileURL: "file:///burst.mp3", playCount: 0)
+        let criteria = SmartCriterion.rule(.init(field: .playCount, comparator: .greaterThanOrEqual, value: .int(0)))
+        let playlist = try await svc.create(name: "PlayCount Burst", criteria: criteria)
+        guard let playlistID = playlist.id else {
+            Issue.record("missing playlist id")
+            return
+        }
+
+        let stream = await svc.observe(playlistID)
+        var iterator = stream.makeAsyncIterator()
+        _ = try await iterator.next() // initial emission
+
+        actor Counter {
+            private(set) var value = 0
+            func increment() {
+                self.value += 1
+            }
+
+            func read() -> Int {
+                self.value
+            }
+        }
+        let counter = Counter()
+
+        let collector = Task {
+            do {
+                while let _ = try await iterator.next() {
+                    await counter.increment()
+                }
+            } catch {
+                // Cancellation is expected at test teardown.
+            }
+        }
+
+        for _ in 0 ..< 100 {
+            try await db.write { db in
+                try db.execute(
+                    sql: "UPDATE tracks SET play_count = play_count + 1 WHERE id = ?",
+                    arguments: [trackID]
+                )
+            }
+            try await Task.sleep(nanoseconds: 2_000_000) // ~200ms total burst
+        }
+
+        try await Task.sleep(nanoseconds: 700_000_000) // allow trailing debounce flush
+        collector.cancel()
+
+        let emissionCount = await counter.read()
+        #expect(emissionCount >= 1)
+        #expect(emissionCount <= 2)
+    }
+
     // MARK: - Snapshot mode (liveUpdate = false)
 
     @Test func snapshotPersistsAndDoesNotReExecuteQuery() async throws {
