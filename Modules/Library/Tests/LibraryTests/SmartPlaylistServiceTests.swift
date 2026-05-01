@@ -417,6 +417,61 @@ struct SmartPlaylistServiceTests {
         #expect(Set(ids) == Set([trackA, trackB]))
     }
 
+    @Test func snapshotStableUntilRefreshedWhenSourceRowsChange() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        let trackRepo = TrackRepository(database: db)
+
+        let loved = try await insertTrack(in: db, fileURL: "file:///stable_loved.mp3", loved: true)
+        let unloved = try await insertTrack(in: db, fileURL: "file:///stable_unloved.mp3", loved: false)
+
+        let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let ls = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
+        let p = try await svc.create(name: "Stable Snapshot", criteria: criteria, limitSort: ls)
+        guard let pid = p.id else {
+            Issue.record("no id")
+            return
+        }
+
+        var ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(ids == [loved])
+
+        // Change a criterion source-table row (`tracks.loved`) so the live
+        // query result would differ. Snapshot mode must stay frozen.
+        var mutable = try await trackRepo.fetch(id: unloved)
+        mutable.loved = true
+        try await trackRepo.update(mutable)
+
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(ids == [loved], "snapshot must not auto-update on source row changes")
+
+        _ = try await svc.snapshot(playlistID: pid)
+        ids = try await svc.tracks(for: pid).compactMap(\.id)
+        #expect(Set(ids) == Set([loved, unloved]))
+    }
+
+    @Test func snapshotWritesLastSnapshotTimestamp() async throws {
+        let db = try await makeDatabase()
+        let svc = self.makeService(db: db)
+        _ = try await self.insertTrack(in: db, fileURL: "file:///ts.mp3", loved: true)
+
+        let criteria = SmartCriterion.rule(.init(field: .loved, comparator: .isTrue, value: .null))
+        let ls = LimitSort(sortBy: .addedAt, ascending: true, limit: nil, liveUpdate: false)
+        let p = try await svc.create(name: "Timestamped", criteria: criteria, limitSort: ls)
+        guard let pid = p.id else {
+            Issue.record("no id")
+            return
+        }
+
+        let first = try await svc.resolve(id: pid).playlist.smartLastSnapshotAt
+        #expect(first != nil)
+
+        _ = try await svc.snapshot(playlistID: pid)
+        let second = try await svc.resolve(id: pid).playlist.smartLastSnapshotAt
+        #expect(second != nil)
+        #expect((second ?? 0) >= (first ?? 0))
+    }
+
     @Test func updateSwitchingBetweenLiveAndSnapshot() async throws {
         let db = try await makeDatabase()
         let svc = self.makeService(db: db)

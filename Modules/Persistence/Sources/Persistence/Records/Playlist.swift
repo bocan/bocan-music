@@ -52,6 +52,12 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// Key used to identify a built-in smart preset so it is not re-created on relaunch.
     public var smartPresetKey: String?
 
+    /// Unix timestamp of the most recent smart-playlist snapshot refresh.
+    ///
+    /// `nil` for non-smart playlists and smart playlists that have never been
+    /// snapshotted in `liveUpdate = false` mode.
+    public var smartLastSnapshotAt: Int64?
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -69,7 +75,8 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         kind: PlaylistKind = .manual,
         accentColor: String? = nil,
         smartLimitSort: String? = nil,
-        smartPresetKey: String? = nil
+        smartPresetKey: String? = nil,
+        smartLastSnapshotAt: Int64? = nil
     ) {
         self.id = id
         self.name = name
@@ -84,6 +91,7 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         self.accentColor = accentColor
         self.smartLimitSort = smartLimitSort
         self.smartPresetKey = smartPresetKey
+        self.smartLastSnapshotAt = smartLastSnapshotAt
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -111,5 +119,6 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
         case accentColor = "accent_color"
         case smartLimitSort = "smart_limit_sort"
         case smartPresetKey = "smart_preset_key"
+        case smartLastSnapshotAt = "smart_last_snapshot_at"
     }
 }
