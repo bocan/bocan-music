@@ -16,6 +16,8 @@ public struct RuleBuilderView: View {
     @State private var root: EditableCriterion
     @State private var limitSort: LimitSort
     @State private var isSaving = false
+    @State private var validationError: String?
+    @State private var nodeValidationErrors: [UUID: String] = [:]
     @State private var saveError: String?
     @State private var showPresets = false
 
@@ -39,7 +41,11 @@ public struct RuleBuilderView: View {
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
-                    CriterionEditorView(criterion: self.$root, depth: 0)
+                    CriterionEditorView(
+                        criterion: self.$root,
+                        depth: 0,
+                        validationMessages: self.nodeValidationErrors
+                    )
                     Divider().padding(.horizontal, 4)
                     LimitAndSortView(limitSort: self.$limitSort)
                 }
@@ -62,11 +68,16 @@ public struct RuleBuilderView: View {
             SmartPresetPickerView(service: self.service) { preset in
                 self.root = EditableCriterion(from: preset.criteria)
                 self.limitSort = preset.limitSort
+                self.refreshValidation()
                 self.showPresets = false
             }
         }
+        .onChange(of: self.root) { _, _ in
+            self.refreshValidation()
+        }
         .onAppear {
             Task { @MainActor in SmartPlaylistSurfacePrewarmer.prewarmOnce() }
+            self.refreshValidation()
         }
     }
 
@@ -106,9 +117,9 @@ public struct RuleBuilderView: View {
                 }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(self.isSaving)
+            .disabled(Self.isSaveDisabled(isSaving: self.isSaving, validationError: self.validationError))
             .keyboardShortcut(.defaultAction)
-            .help("Save these rules and update the smart playlist")
+            .help(self.saveHelpText)
             .accessibilityIdentifier(A11y.RuleBuilder.saveButton)
         }
         .padding(.horizontal, 20)
@@ -118,6 +129,8 @@ public struct RuleBuilderView: View {
     // MARK: - Save
 
     private func save() async {
+        self.refreshValidation()
+        guard self.validationError == nil else { return }
         self.isSaving = true
         do {
             let compiled = try self.root.toSmartCriterion()
@@ -134,5 +147,142 @@ public struct RuleBuilderView: View {
             self.saveError = error.localizedDescription
         }
         self.isSaving = false
+    }
+
+    private var saveHelpText: String {
+        if let validationError {
+            return "Fix validation errors before saving: \(validationError)"
+        }
+        return "Save these rules and update the smart playlist"
+    }
+
+    private func refreshValidation() {
+        let result = Self.validationResult(for: self.root)
+        self.validationError = result.error
+        self.nodeValidationErrors = result.nodeErrors
+    }
+
+    static func isSaveDisabled(isSaving: Bool, validationError: String?) -> Bool {
+        isSaving || validationError != nil
+    }
+
+    static func validationResult(for root: EditableCriterion) -> ValidationResult {
+        var result = MutableValidationAccumulator()
+        Self.validateNode(root, parentGroupID: nil, result: &result)
+
+        do {
+            let criterion = try root.toSmartCriterion()
+            try Validator.validate(criterion)
+        } catch let error as SmartPlaylistError {
+            result.setFallback(Self.message(for: error))
+        } catch {
+            result.setFallback(error.localizedDescription)
+        }
+
+        return ValidationResult(error: result.firstError, nodeErrors: result.nodeErrors)
+    }
+
+    private static func validateNode(
+        _ node: EditableCriterion,
+        parentGroupID: UUID?,
+        result: inout MutableValidationAccumulator
+    ) {
+        switch node {
+        case let .rule(id, rule):
+            if rule.comparator == .matchesRegex,
+               case let .text(pattern) = rule.value,
+               !Self.isValidRegex(pattern) {
+                result.add(nodeID: id, message: "Invalid regex pattern: \(pattern)")
+            }
+            if rule.comparator == .between,
+               case let .range(low, high) = rule.value,
+               Self.isReversedRange(low, high) {
+                result.add(
+                    nodeID: parentGroupID ?? id,
+                    message: "Between range is reversed (from must be <= to)"
+                )
+            }
+
+        case let .group(id, _, children):
+            if children.isEmpty {
+                result.add(nodeID: id, message: "Group must contain at least one rule")
+            }
+            for child in children {
+                Self.validateNode(child, parentGroupID: id, result: &result)
+            }
+
+        case let .invalid(id, reason):
+            result.add(nodeID: id, message: "Invalid rule: \(reason)")
+        }
+    }
+
+    private static func isValidRegex(_ pattern: String) -> Bool {
+        do {
+            _ = try NSRegularExpression(pattern: pattern)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private static func isReversedRange(_ low: Value, _ high: Value) -> Bool {
+        switch (low, high) {
+        case let (.int(left), .int(right)):
+            left > right
+
+        case let (.double(left), .double(right)):
+            left > right
+
+        case let (.duration(left), .duration(right)):
+            left > right
+
+        case let (.date(left), .date(right)):
+            left > right
+
+        default:
+            false
+        }
+    }
+
+    private static func message(for error: SmartPlaylistError) -> String {
+        switch error {
+        case .emptyGroup:
+            "Group must contain at least one rule"
+
+        case .betweenRangeReversed:
+            "Between range is reversed (from must be <= to)"
+
+        case let .invalidRegex(pattern):
+            "Invalid regex pattern: \(pattern)"
+
+        case let .invalidRule(reason):
+            "Invalid rule: \(reason)"
+
+        default:
+            error.localizedDescription
+        }
+    }
+}
+
+struct ValidationResult {
+    let error: String?
+    let nodeErrors: [UUID: String]
+}
+
+private struct MutableValidationAccumulator {
+    var firstError: String?
+    var nodeErrors: [UUID: String] = [:]
+
+    mutating func add(nodeID: UUID, message: String) {
+        if self.nodeErrors[nodeID] == nil {
+            self.nodeErrors[nodeID] = message
+        }
+        self.setFallback(message)
+    }
+
+    mutating func setFallback(_ message: String) {
+        if self.firstError == nil {
+            self.firstError = message
+        }
     }
 }

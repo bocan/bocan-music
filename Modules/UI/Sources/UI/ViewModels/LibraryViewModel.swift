@@ -52,7 +52,7 @@ struct UIStateV2: Codable {
 
     /// Forward-compatible decoder for old payloads (V1) that do not include
     /// `expandedPlaylistFolders`.
-    init(from decoder: Decoder) throws {
+    init(from decoder: any Swift.Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.selectedDestination = try c.decode(SidebarDestination.self, forKey: .selectedDestination)
         self.sortColumn = try c.decode(TrackSortColumn.self, forKey: .sortColumn)
@@ -641,9 +641,26 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `@FocusState` onto the toolbar search field.  Phase 4 audit H5.
     @Published public var searchFocusRequestID = UUID()
 
+    /// One-shot request for `SmartPlaylistDetailView` to open `RuleBuilderView`
+    /// as soon as the requested smart playlist is visible.
+    @Published public var smartPlaylistRuleBuilderRequestID: Int64?
+
     /// Asks the root view to focus the toolbar search field.
     public func requestSearchFocus() {
         self.searchFocusRequestID = UUID()
+    }
+
+    /// Requests that the smart-playlist detail for `playlistID` opens rule editor.
+    public func requestSmartPlaylistRuleBuilder(for playlistID: Int64) {
+        self.smartPlaylistRuleBuilderRequestID = playlistID
+    }
+
+    /// Consumes a pending rule-builder request if it targets `playlistID`.
+    @discardableResult
+    public func consumeSmartPlaylistRuleBuilderRequest(for playlistID: Int64) -> Bool {
+        guard self.smartPlaylistRuleBuilderRequestID == playlistID else { return false }
+        self.smartPlaylistRuleBuilderRequestID = nil
+        return true
     }
 
     /// Persists current UI state to settings.

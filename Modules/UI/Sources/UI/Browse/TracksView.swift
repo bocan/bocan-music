@@ -121,3 +121,56 @@ public struct TracksView: View {
         }
     }
 }
+
+// MARK: - Remove-from-playlist confirmation
+
+extension TracksView {
+    static let suppressRemoveFromPlaylistConfirmKey =
+        "io.cloudcauldron.bocan.playlist.removeTrack.suppressConfirm"
+
+    static func shouldConfirmRemoveFromPlaylist(userDefaults: UserDefaults = .standard) -> Bool {
+        !userDefaults.bool(forKey: self.suppressRemoveFromPlaylistConfirmKey)
+    }
+
+    static func setRemoveFromPlaylistConfirmationSuppressed(
+        _ suppressed: Bool,
+        userDefaults: UserDefaults = .standard
+    ) {
+        userDefaults.set(suppressed, forKey: self.suppressRemoveFromPlaylistConfirmKey)
+    }
+
+    @MainActor
+    static func confirmRemoveFromPlaylist(
+        tracks: [Track],
+        remove: @escaping ([Track]) -> Void,
+        userDefaults: UserDefaults = .standard
+    ) {
+        guard !tracks.isEmpty else { return }
+        guard self.shouldConfirmRemoveFromPlaylist(userDefaults: userDefaults) else {
+            remove(tracks)
+            return
+        }
+
+        let alert = NSAlert()
+        if tracks.count == 1 {
+            let title = tracks.first?.title ?? "track"
+            alert.messageText = "Remove “\(title)” from this playlist?"
+        } else {
+            alert.messageText = "Remove \(tracks.count) tracks from this playlist?"
+        }
+        alert.informativeText = "Tracks stay in your library and in other playlists."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Remove")
+        alert.addButton(withTitle: "Cancel")
+        alert.showsSuppressionButton = true
+        alert.suppressionButton?.title = "Don’t ask again"
+
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+
+        if alert.suppressionButton?.state == .on {
+            Self.setRemoveFromPlaylistConfirmationSuppressed(true, userDefaults: userDefaults)
+        }
+
+        remove(tracks)
+    }
+}

@@ -7,42 +7,52 @@ import SwiftUI
 /// A single rule row: [field picker] [comparator menu] [value control] [−]
 struct RuleRowView: View {
     @Binding var rule: EditableRule
+    let validationMessage: String?
     let onRemove: (() -> Void)?
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            FieldPicker(field: self.$rule.field)
-                .onChange(of: self.rule.field) { _, newField in
-                    self.adaptComparatorAndValue(for: newField)
-                }
-                .frame(minWidth: 140)
-                .help("Choose which track field this rule evaluates")
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
+                FieldPicker(field: self.$rule.field)
+                    .onChange(of: self.rule.field) { _, newField in
+                        self.adaptComparatorAndValue(for: newField)
+                    }
+                    .frame(minWidth: 140)
+                    .help("Choose which track field this rule evaluates")
 
-            ComparatorMenu(
-                field: self.rule.field,
-                comparator: self.$rule.comparator
-            )
-            .onChange(of: self.rule.comparator) { _, newComp in
-                self.adaptValueForComparator(newComp)
+                ComparatorMenu(
+                    field: self.rule.field,
+                    comparator: self.$rule.comparator
+                )
+                .onChange(of: self.rule.comparator) { _, newComp in
+                    self.adaptValueForComparator(newComp)
+                }
+                .frame(minWidth: 120)
+                .help("Choose how the selected field is compared")
+
+                ValueControl(rule: self.$rule)
+                    .frame(maxWidth: .infinity)
+                    .help("Set the comparison value for this rule")
+
+                if let onRemove {
+                    Button(action: onRemove) {
+                        Image(systemName: "minus.circle")
+                            .foregroundStyle(Color.red.opacity(0.8))
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Remove this rule")
+                    .accessibilityLabel("Remove rule")
+                }
             }
-            .frame(minWidth: 120)
-            .help("Choose how the selected field is compared")
+            .padding(.vertical, 2)
 
-            ValueControl(rule: self.$rule)
-                .frame(maxWidth: .infinity)
-                .help("Set the comparison value for this rule")
-
-            if let onRemove {
-                Button(action: onRemove) {
-                    Image(systemName: "minus.circle")
-                        .foregroundStyle(Color.red.opacity(0.8))
-                }
-                .buttonStyle(.borderless)
-                .help("Remove this rule")
-                .accessibilityLabel("Remove rule")
+            if let validationMessage {
+                Text(validationMessage)
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.red)
+                    .accessibilityLabel("Validation error: \(validationMessage)")
             }
         }
-        .padding(.vertical, 2)
     }
 
     // MARK: - Adapt helpers
@@ -104,9 +114,9 @@ struct RuleRowView: View {
                 if case .duration = self.rule.value { return }
                 self.rule.value = .duration(0)
 
-            case .enumeration:
+            case let .enumeration(options):
                 if case .enumeration = self.rule.value { return }
-                self.rule.value = .enumeration("")
+                self.rule.value = .enumeration(options.first ?? "")
 
             case .membership:
                 if case .playlistRef = self.rule.value { return }
@@ -418,13 +428,26 @@ private struct ValueControl: View {
     // MARK: - Enumeration
 
     private var enumerationControl: some View {
-        TextField("value", text: Binding(
-            get: { if case let .enumeration(enumVal) = self.rule.value { return enumVal }
-                return ""
-            },
-            set: { self.rule.value = .enumeration($0) }
-        ))
-        .textFieldStyle(.roundedBorder)
+        let def = FieldDefinitions.definition(for: self.rule.field)
+        guard case let .enumeration(options) = def.dataType, !options.isEmpty else {
+            return AnyView(EmptyView())
+        }
+        let current: String = {
+            if case let .enumeration(v) = self.rule.value { return v }
+            return options[0]
+        }()
+        return AnyView(
+            Menu(current) {
+                ForEach(options, id: \.self) { option in
+                    Button(option) {
+                        self.rule.value = .enumeration(option)
+                    }
+                }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .accessibilityLabel(Text("File format"))
+        )
     }
 
     // MARK: - Membership

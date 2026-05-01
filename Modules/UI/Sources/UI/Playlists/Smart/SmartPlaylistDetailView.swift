@@ -49,9 +49,17 @@ public struct SmartPlaylistDetailView: View {
             // TracksView can render them with full context-menu support.
             await self.vm.load(playlistID: self.playlistID)
             self.library.tracks.setTracks(self.vm.tracks)
+            if self.library.consumeSmartPlaylistRuleBuilderRequest(for: self.playlistID) {
+                self.isEditingRules = true
+            }
         }
         .onChange(of: self.vm.tracks.map(\.id)) { _, _ in
             self.library.tracks.setTracks(self.vm.tracks)
+        }
+        .onChange(of: self.library.smartPlaylistRuleBuilderRequestID) { _, _ in
+            if self.library.consumeSmartPlaylistRuleBuilderRequest(for: self.playlistID) {
+                self.isEditingRules = true
+            }
         }
         .sheet(isPresented: self.$isEditingRules) {
             if let sp = self.vm.smartPlaylist {
