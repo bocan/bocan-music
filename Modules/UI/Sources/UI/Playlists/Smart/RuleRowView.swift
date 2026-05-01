@@ -16,6 +16,7 @@ struct RuleRowView: View {
                     self.adaptComparatorAndValue(for: newField)
                 }
                 .frame(minWidth: 140)
+                .help("Choose which track field this rule evaluates")
 
             ComparatorMenu(
                 field: self.rule.field,
@@ -25,9 +26,11 @@ struct RuleRowView: View {
                 self.adaptValueForComparator(newComp)
             }
             .frame(minWidth: 120)
+            .help("Choose how the selected field is compared")
 
             ValueControl(rule: self.$rule)
                 .frame(maxWidth: .infinity)
+                .help("Set the comparison value for this rule")
 
             if let onRemove {
                 Button(action: onRemove) {
@@ -35,6 +38,7 @@ struct RuleRowView: View {
                         .foregroundStyle(Color.red.opacity(0.8))
                 }
                 .buttonStyle(.borderless)
+                .help("Remove this rule")
                 .accessibilityLabel("Remove rule")
             }
         }
@@ -165,6 +169,7 @@ private struct FieldPicker: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .help("Open field options")
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
@@ -173,6 +178,7 @@ private struct FieldPicker: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .menuStyle(.borderlessButton)
+        .help("Field selector")
     }
 }
 
@@ -197,6 +203,7 @@ private struct ComparatorMenu: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.textSecondary)
+                    .help("Open comparator options")
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
@@ -205,6 +212,7 @@ private struct ComparatorMenu: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .menuStyle(.borderlessButton)
+        .help("Comparator selector")
     }
 }
 

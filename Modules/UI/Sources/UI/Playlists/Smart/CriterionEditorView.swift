@@ -68,6 +68,9 @@ struct GroupEditorView: View {
                 }
                 .pickerStyle(.segmented)
                 .fixedSize()
+                .help("Choose whether all rules or any rule must match")
+                .accessibilityLabel("Match mode")
+                .accessibilityValue(self.op == .and ? "all" : "any")
                 Text("of the following rules:")
                     .foregroundStyle(Color.textSecondary)
                     .font(Typography.subheadline)
@@ -79,6 +82,7 @@ struct GroupEditorView: View {
                         .foregroundStyle(Color.accentColor)
                 }
                 .buttonStyle(.borderless)
+                .help("Add a rule to this group")
                 .accessibilityIdentifier(A11y.RuleBuilder.addRuleButton)
                 .accessibilityLabel("Add rule")
                 if self.depth < 2 {
@@ -89,6 +93,7 @@ struct GroupEditorView: View {
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.borderless)
+                    .help("Add a nested rule group")
                     .accessibilityLabel("Add group")
                 }
             }
@@ -118,6 +123,7 @@ struct GroupEditorView: View {
                             .foregroundStyle(Color.red.opacity(0.8))
                     }
                     .buttonStyle(.borderless)
+                    .help("Remove this row")
                     .accessibilityLabel("Remove rule")
                     .opacity(self.children.count > 1 ? 1 : 0.3)
                     .disabled(self.children.count <= 1)
