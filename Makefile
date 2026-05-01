@@ -57,6 +57,9 @@ build:
 
 ## test: Run unit + integration tests (excludes UITests)
 test:
+	@echo "=============================="
+	@echo "= Executing Xcode Test"
+	@echo "=============================="
 	rm -rf build/TestResults.xcresult
 	set -o pipefail && xcodebuild \
 		-project Bocan.xcodeproj \
@@ -70,6 +73,9 @@ test:
 
 ## test-coverage: Run tests and fail if coverage < 80%
 test-coverage:
+	@echo "=============================="
+	@echo "= Executing Coverage Test"
+	@echo "=============================="
 	rm -rf build/TestResults.xcresult
 	set -o pipefail && xcodebuild \
 		-project Bocan.xcodeproj \
@@ -85,26 +91,44 @@ test-coverage:
 
 ## test-audio-engine: Run AudioEngine SPM package tests (requires FFmpeg via Homebrew)
 test-audio-engine:
+	@echo "=============================="
+	@echo "= Executing AudioEngine Test"
+	@echo "=============================="
 	cd Modules/AudioEngine && swift test
 
 ## test-persistence: Run Persistence SPM package tests
 test-persistence:
+	@echo "=============================="
+	@echo "= Executing Persistence Test"
+	@echo "=============================="
 	cd Modules/Persistence && swift test --enable-code-coverage
 
 ## test-metadata: Run Metadata SPM package tests
 test-metadata:
+	@echo "=============================="
+	@echo "= Executing Metadata Test"
+	@echo "=============================="
 	cd Modules/Metadata && swift test --enable-code-coverage
 
 ## test-library: Run Library SPM package tests
 test-library:
+	@echo "=============================="
+	@echo "= Executing Library Test"
+	@echo "=============================="
 	cd Modules/Library && swift test --enable-code-coverage
 
 ## test-acoustics: Run Acoustics SPM package tests
 test-acoustics:
+	@echo "=============================="
+	@echo "= Executing Acoustics Test"
+	@echo "=============================="
 	cd Modules/Acoustics && swift test --enable-code-coverage
 
 ## test-ui: Run UI SPM package tests
 test-ui:
+	@echo "=============================="
+	@echo "= Executing UI Test"
+	@echo "=============================="
 	cd Modules/UI && swift test --enable-code-coverage
 
 ## uitest: Run UI smoke tests (BocanUITests scheme target)
