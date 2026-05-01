@@ -69,10 +69,11 @@ struct NewSmartPlaylistSheet: View {
                     value: .text("")
                 )),
             ])
+            let defaultLimitSort = LimitSort(liveUpdate: SmartPlaylistPreferences.defaultLiveUpdate())
             let playlist = try await self.service.create(
                 name: trimmed,
                 criteria: defaultCriteria,
-                limitSort: LimitSort(),
+                limitSort: defaultLimitSort,
                 parentID: nil,
                 presetKey: nil
             )
