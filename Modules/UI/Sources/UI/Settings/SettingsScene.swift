@@ -51,6 +51,10 @@ public struct SettingsScene: View {
                 .tabItem { Label("Visualizer", systemImage: "waveform") }
                 .tag(SettingsTab.visualizer)
 
+            SmartPlaylistsSettingsView()
+                .tabItem { Label("Smart Playlists", systemImage: "sparkles") }
+                .tag(SettingsTab.smartPlaylists)
+
             if let scrobbleViewModel = self.scrobbleViewModel {
                 ScrobbleSettingsView(viewModel: scrobbleViewModel)
                     .tabItem { Label("Scrobbling", systemImage: "dot.radiowaves.left.and.right") }
@@ -68,5 +72,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, scrobble, about
+    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, about
 }

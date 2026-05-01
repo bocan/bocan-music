@@ -14,6 +14,7 @@ public actor SmartPlaylistService {
 
     private let database: Persistence.Database
     private let log: AppLogger
+    private static let launchRandomSeed = Int64.random(in: Int64.min ... Int64.max)
 
     // MARK: - Init
 
@@ -142,7 +143,7 @@ public actor SmartPlaylistService {
         let compiled = try CriteriaCompiler.compile(
             criteria: sp.criteria,
             limitSort: sp.limitSort,
-            seed: sp.playlist.id ?? 0
+            seed: Self.querySeed(for: sp)
         )
         return try await self.database.read { db in
             try Track.fetchAll(db, sql: compiled.selectSQL, arguments: compiled.arguments)
@@ -161,7 +162,7 @@ public actor SmartPlaylistService {
         let compiled = try CriteriaCompiler.compile(
             criteria: sp.criteria,
             limitSort: sp.limitSort,
-            seed: sp.playlist.id ?? 0
+            seed: Self.querySeed(for: sp)
         )
         let snappedAt = Self.now()
         let count = try await self.database.write { db -> Int in
@@ -210,7 +211,7 @@ public actor SmartPlaylistService {
                         let compiled = try CriteriaCompiler.compile(
                             criteria: sp.criteria,
                             limitSort: sp.limitSort,
-                            seed: sp.playlist.id ?? 0
+                            seed: Self.querySeed(for: sp)
                         )
                         sql = compiled.selectSQL
                         args = compiled.arguments
@@ -228,16 +229,21 @@ public actor SmartPlaylistService {
                     let stream = await self.database.observe { db in
                         try Track.fetchAll(db, sql: sql, arguments: args)
                     }
+                    let debounceMs = SmartPlaylistPreferences.observeDebounceMilliseconds()
+                    let debounceSeconds = TimeInterval(debounceMs) / 1000
                     var lastEmit = Date.distantPast
                     for try await tracks in stream {
-                        // Debounce: only emit if at least 250ms has passed.
+                        // Debounce: only emit if at least the configured window has passed.
                         let now = Date()
-                        if now.timeIntervalSince(lastEmit) >= 0.25 {
+                        if now.timeIntervalSince(lastEmit) >= debounceSeconds {
                             continuation.yield(tracks)
                             lastEmit = now
                         } else {
                             // Brief delay then emit (simplified debounce).
-                            try await Task.sleep(nanoseconds: 250_000_000)
+                            let ns = UInt64(max(0, debounceMs)) * 1_000_000
+                            if ns > 0 {
+                                try await Task.sleep(nanoseconds: ns)
+                            }
                             continuation.yield(tracks)
                             lastEmit = Date()
                         }
@@ -308,6 +314,15 @@ public actor SmartPlaylistService {
 
     private static func now() -> Int64 {
         Int64(Date().timeIntervalSince1970)
+    }
+
+    private static func querySeed(for smartPlaylist: SmartPlaylist) -> Int64 {
+        let base = smartPlaylist.playlist.id ?? 0
+        guard smartPlaylist.limitSort.sortBy == .random,
+              SmartPlaylistPreferences.randomRerollOnLaunch() else {
+            return base
+        }
+        return base ^ Self.launchRandomSeed
     }
 
     /// Walks `criteria` collecting every `playlistRef` referenced by a
