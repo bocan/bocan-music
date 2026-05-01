@@ -134,16 +134,23 @@ struct RuleRowView: View {
 struct InvalidRuleRow: View {
     let reason: String
 
+    private var displayReason: String {
+        if self.reason.hasPrefix("Unknown field") || self.reason.hasPrefix("Unknown comparator") {
+            return SmartCriterion.newerVersionRuleMessage
+        }
+        return self.reason
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(Color.orange)
+            Image(systemName: "exclamationmark.circle")
+                .foregroundStyle(Color.textSecondary)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Invalid rule — please remove")
+                Text("Unsupported rule")
                     .font(Typography.body)
-                    .foregroundStyle(Color.textPrimary)
-                Text(self.reason)
+                    .foregroundStyle(Color.textSecondary)
+                Text(self.displayReason)
                     .font(Typography.caption)
                     .foregroundStyle(Color.textSecondary)
             }
@@ -151,9 +158,9 @@ struct InvalidRuleRow: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        .background(Color.orange.opacity(0.1))
+        .background(Color.bgSecondary)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .accessibilityLabel("Invalid rule, \(self.reason). Please remove.")
+        .accessibilityLabel("Unsupported rule. \(self.displayReason)")
     }
 }
 
@@ -614,6 +621,9 @@ extension Field {
 
         case .pathUnder:
             "File Path"
+
+        case .unknown:
+            "Unknown Field"
         }
     }
 }
@@ -709,6 +719,9 @@ extension Library.Comparator {
 
         case .pathUnder:
             "is under path"
+
+        case .unknown:
+            "unknown comparator"
         }
     }
 }

@@ -33,6 +33,13 @@ public enum Validator {
     }
 
     private static func validateRule(_ rule: SmartCriterion.Rule) throws {
+        if case let .unknown(raw) = rule.field {
+            throw SmartPlaylistError.invalidRule(reason: "Unknown field \"\(raw)\"")
+        }
+        if case let .unknown(raw) = rule.comparator {
+            throw SmartPlaylistError.invalidRule(reason: "Unknown comparator \"\(raw)\"")
+        }
+
         let def = FieldDefinitions.definition(for: rule.field)
 
         // Comparator must be allowed for this field.
