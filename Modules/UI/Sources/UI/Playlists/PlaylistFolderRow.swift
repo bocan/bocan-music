@@ -8,6 +8,8 @@ public struct PlaylistFolderRow: View {
     public let node: PlaylistNode
     public let depth: Int
     @ObservedObject public var vm: PlaylistSidebarViewModel
+    @State private var draftName = ""
+    @FocusState private var isRenameFieldFocused: Bool
 
     /// `true` while a `PlaylistDragPayload` hovers over this row.
     @State private var isDropTargeted = false
@@ -40,14 +42,13 @@ public struct PlaylistFolderRow: View {
                 .frame(width: 16)
                 .animation(.easeInOut(duration: 0.15), value: self.isDropTargeted)
 
-            Text(self.node.name)
-                .font(Typography.body)
-                .lineLimit(1)
+            self.nameView
 
             Spacer(minLength: 4)
         }
         .padding(.leading, CGFloat(self.depth) * 14)
         .padding(.vertical, 2)
+        .focusable()
         .background(
             RoundedRectangle(cornerRadius: 4)
                 .fill(self.isDropTargeted ? Color.accentColor.opacity(0.15) : Color.clear)
@@ -78,10 +79,63 @@ public struct PlaylistFolderRow: View {
         .help(self.node.name)
         .accessibilityLabel("Folder: \(self.node.name)")
         .accessibilityIdentifier(A11y.PlaylistSidebar.folderRow(self.node.id))
+        .onAppear { self.syncDraftName() }
+        .onChange(of: self.vm.renamingPlaylistID) { _, newValue in
+            if newValue == self.node.id {
+                self.draftName = self.node.name
+                self.isRenameFieldFocused = true
+            } else if self.isRenameFieldFocused {
+                self.isRenameFieldFocused = false
+            }
+        }
+        .onKeyPress(.return) {
+            guard !self.isInlineRenaming else { return .ignored }
+            self.vm.beginInlineRename(self.node)
+            self.draftName = self.node.name
+            self.isRenameFieldFocused = true
+            return .handled
+        }
     }
 
     private var isExpanded: Bool {
         self.vm.expandedFolders.contains(self.node.id)
+    }
+
+    private var isInlineRenaming: Bool {
+        self.vm.renamingPlaylistID == self.node.id
+    }
+
+    @ViewBuilder
+    private var nameView: some View {
+        if self.isInlineRenaming {
+            TextField("Folder Name", text: self.$draftName)
+                .font(Typography.body)
+                .textFieldStyle(.roundedBorder)
+                .focused(self.$isRenameFieldFocused)
+                .accessibilityLabel("Folder name")
+                .accessibilityIdentifier(A11y.PlaylistSidebar.newNameField)
+                .onAppear {
+                    self.draftName = self.node.name
+                    self.isRenameFieldFocused = true
+                }
+                .onSubmit {
+                    Task { await self.vm.commitInlineRename(self.node, proposedName: self.draftName) }
+                }
+                .onKeyPress(.escape) {
+                    self.draftName = self.node.name
+                    self.vm.cancelInlineRename()
+                    return .handled
+                }
+        } else {
+            Text(self.node.name)
+                .font(Typography.body)
+                .lineLimit(1)
+        }
+    }
+
+    private func syncDraftName() {
+        guard !self.isInlineRenaming else { return }
+        self.draftName = self.node.name
     }
 
     @ViewBuilder

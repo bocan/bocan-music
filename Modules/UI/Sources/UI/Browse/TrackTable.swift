@@ -111,10 +111,7 @@ public struct TrackTable: NSViewRepresentable {
         tableView.delegate = coordinator
         tableView.doubleAction = #selector(TrackTableCoordinator.doubleClickAction(_:))
         tableView.target = coordinator
-
-        tableView.menuProvider = { [weak coordinator] in
-            coordinator?.buildContextMenu() ?? NSMenu()
-        }
+        self.configureCallbacks(for: tableView, coordinator: coordinator)
 
         Self.addColumns(to: tableView, sortable: self.sortable)
         Self.buildHeaderMenu(for: tableView, coordinator: coordinator)
@@ -140,6 +137,15 @@ public struct TrackTable: NSViewRepresentable {
         scrollView.autohidesScrollers = true
         scrollView.borderType = .noBorder
         return scrollView
+    }
+
+    private func configureCallbacks(for tableView: ContextMenuTableView, coordinator: Coordinator) {
+        tableView.menuProvider = { [weak coordinator] in
+            coordinator?.buildContextMenu() ?? NSMenu()
+        }
+        tableView.deleteKeyHandler = { [weak coordinator] in
+            coordinator?.handleRemoveFromPlaylistKeyDown() ?? false
+        }
     }
 
     /// Pushes state changes from SwiftUI into the existing `NSTableView`.

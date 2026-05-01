@@ -12,6 +12,11 @@ extension TracksView {
     /// Async library operations are wrapped in `Task { … }` inside the closures.
     var trackContextMenuActions: TrackContextMenuActions {
         let lib = self.library
+        let removeFromPlaylistAction = self.removeFromPlaylist.map { remove in
+            { tracks in
+                Self.confirmRemoveFromPlaylist(tracks: tracks, remove: remove)
+            }
+        }
         return TrackContextMenuActions(
             playNow: { track in
                 Task { await lib.play(track: track) }
@@ -76,7 +81,7 @@ extension TracksView {
             toggleShuffle: { trackID, excluded in
                 Task { await lib.setTrackExcludedFromShuffle(trackID: trackID, excluded: excluded) }
             },
-            removeFromPlaylist: self.removeFromPlaylist
+            removeFromPlaylist: removeFromPlaylistAction
         )
     }
 

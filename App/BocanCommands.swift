@@ -26,6 +26,11 @@ struct BocanCommands: Commands {
             }
             .keyboardShortcut(KeyBindings.newPlaylist)
 
+            Button("New Smart Playlist…") {
+                self.vm.playlistSidebar.beginNewSmartPlaylist()
+            }
+            .keyboardShortcut(KeyBindings.newSmartPlaylist)
+
             Button("New Playlist Folder…") {
                 self.vm.playlistSidebar.beginNewFolder()
             }

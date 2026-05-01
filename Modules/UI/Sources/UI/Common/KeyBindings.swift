@@ -47,6 +47,9 @@ public enum KeyBindings {
     /// `⌘⇧N` — New playlist (Phase 6).
     public static let newPlaylist = KeyboardShortcut("n", modifiers: [.command, .shift])
 
+    /// `⌘⌥N` — New smart playlist (Phase 7).
+    public static let newSmartPlaylist = KeyboardShortcut("n", modifiers: [.command, .option])
+
     /// `⌘I` — Get info / tag editor (Phase 8).
     public static let getInfo = KeyboardShortcut("i", modifiers: .command)
 

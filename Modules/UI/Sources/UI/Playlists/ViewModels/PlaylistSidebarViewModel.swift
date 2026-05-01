@@ -21,6 +21,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     @Published public private(set) var nodes: [PlaylistNode] = []
     @Published public var expandedFolders: Set<Int64> = []
+    @Published public var renamingPlaylistID: Int64?
     @Published public var renameTarget: PlaylistNode?
     @Published public var deleteTarget: PlaylistNode?
     @Published public var deleteRecursiveTarget: PlaylistNode?
@@ -157,6 +158,14 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         self.isPresentingNewSmartPlaylist = true
     }
 
+    public func beginInlineRename(_ node: PlaylistNode) {
+        self.renamingPlaylistID = node.id
+    }
+
+    public func cancelInlineRename() {
+        self.renamingPlaylistID = nil
+    }
+
     public func createPlaylist(name: String) async -> Int64? {
         await self.createPlaylist(
             name: name,
@@ -186,9 +195,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
                 if let parentID {
                     self.expandedFolders.insert(parentID)
                 }
-                if let createdNode = self.findNode(id: newID) {
-                    self.renameTarget = createdNode
-                }
+                self.renamingPlaylistID = newID
             }
             return playlist.id
         } catch {
@@ -201,6 +208,10 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         do {
             let f = try await self.service.createFolder(name: name, parentID: self.newPlaylistParent)
             await self.reload()
+            if let parentID = self.newPlaylistParent {
+                self.expandedFolders.insert(parentID)
+            }
+            self.renamingPlaylistID = f.id
             return f.id
         } catch {
             self.lastError = self.describe(error)
@@ -211,10 +222,24 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     public func rename(_ node: PlaylistNode, to newName: String) async {
         do {
             try await self.service.rename(node.id, to: newName)
+            self.renamingPlaylistID = nil
             await self.reload()
         } catch {
             self.lastError = self.describe(error)
         }
+    }
+
+    public func commitInlineRename(_ node: PlaylistNode, proposedName: String) async {
+        let trimmed = proposedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            self.cancelInlineRename()
+            return
+        }
+        if trimmed == node.name {
+            self.cancelInlineRename()
+            return
+        }
+        await self.rename(node, to: trimmed)
     }
 
     public func delete(_ node: PlaylistNode, recursive: Bool = false) async {
