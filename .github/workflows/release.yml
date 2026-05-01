@@ -14,8 +14,28 @@ permissions:
   contents: write
 
 jobs:
+  check-signing:
+    name: Check signing secrets
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Verify DEVELOPER_ID_CERT_P12 is configured
+        id: check
+        env:
+          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+        run: |
+          if [[ -z "${DEVELOPER_ID_CERT_P12}" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Signing secrets not yet configured — skipping binary release build. Configure them in repo Settings → Secrets and variables → Actions when you have a Developer ID certificate."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
     name: Build, Sign & Release (arm64)
+    needs: check-signing
+    if: needs.check-signing.outputs.enabled == 'true'
     runs-on: macos-26
 
     env:
@@ -78,26 +98,6 @@ jobs:
 
       - name: Run tests before release (fail fast)
         run: make test-coverage 2>&1 | xcbeautify
-
-      - name: Verify required release secrets
-        env:
-          DEVELOPER_ID_CERT_P12: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
-          DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
-          DEVELOPER_ID_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
-        run: |
-          missing=()
-          for var in DEVELOPER_ID_CERT_P12 DEVELOPER_ID_CERT_PASSWORD APPLE_ID APPLE_TEAM_ID APP_SPECIFIC_PASSWORD DEVELOPER_ID_IDENTITY; do
-            if [[ -z "${!var}" ]]; then missing+=("$var"); fi
-          done
-          if (( ${#missing[@]} > 0 )); then
-            echo "::error::Missing required secrets: ${missing[*]}"
-            echo "Configure them in repo Settings → Secrets and variables → Actions."
-            exit 1
-          fi
-          echo "All required release secrets are present."
 
       - name: Import Developer ID certificate
         env:
