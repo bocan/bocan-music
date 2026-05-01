@@ -9,6 +9,7 @@ import SwiftUI
 struct CriterionEditorView: View {
     @Binding var criterion: EditableCriterion
     let depth: Int
+    let validationMessages: [UUID: String]
 
     var body: some View {
         switch self.criterion {
@@ -18,6 +19,7 @@ struct CriterionEditorView: View {
                     get: { rule },
                     set: { self.criterion = .rule(id: id, $0) }
                 ),
+                validationMessage: self.validationMessages[id],
                 onRemove: nil // top-level rule: cannot remove (caller handles)
             )
 
@@ -41,7 +43,9 @@ struct CriterionEditorView: View {
                         self.criterion = .group(id: id, op: op, children: newChildren)
                     }
                 ),
-                depth: self.depth
+                depth: self.depth,
+                validationMessage: self.validationMessages[id],
+                validationMessages: self.validationMessages
             )
         }
     }
@@ -54,6 +58,8 @@ struct GroupEditorView: View {
     @Binding var op: LogicalOp
     @Binding var children: [EditableCriterion]
     let depth: Int
+    let validationMessage: String?
+    let validationMessages: [UUID: String]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -99,6 +105,13 @@ struct GroupEditorView: View {
             }
             .padding(.bottom, 2)
 
+            if let validationMessage {
+                Text(validationMessage)
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.red)
+                    .accessibilityLabel("Validation error: \(validationMessage)")
+            }
+
             // Children
             ForEach(Array(self.children.enumerated()), id: \.element.id) { index, child in
                 HStack(alignment: .top, spacing: 0) {
@@ -114,7 +127,8 @@ struct GroupEditorView: View {
                             get: { self.children[safe: index] ?? child },
                             set: { self.children[safe: index] = $0 }
                         ),
-                        depth: self.depth + 1
+                        depth: self.depth + 1,
+                        validationMessages: self.validationMessages
                     )
                     Button {
                         self.children.remove(at: index)

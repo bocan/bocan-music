@@ -205,6 +205,28 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         return self.rows.filter { sel.contains($0.id) }.map(\.track)
     }
 
+    /// Handles Delete/Forward Delete key presses from the table.
+    /// Returns `true` when consumed.
+    func handleRemoveFromPlaylistKeyDown() -> Bool {
+        guard let removeFromPlaylist = self.parent.actions.removeFromPlaylist else {
+            return false
+        }
+        guard let tableView = self.tableView else {
+            return false
+        }
+        let selected = tableView.selectedRowIndexes.compactMap { index -> Track? in
+            guard let id = self.dataSource?.itemIdentifier(forRow: index) else {
+                return nil
+            }
+            return self.rowsByID[id]?.track
+        }
+        guard !selected.isEmpty else {
+            return false
+        }
+        removeFromPlaylist(selected)
+        return true
+    }
+
     private func addPlaybackItems(
         to menu: NSMenu,
         selected: [Track],
