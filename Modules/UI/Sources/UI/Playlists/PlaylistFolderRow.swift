@@ -9,6 +9,11 @@ public struct PlaylistFolderRow: View {
     public let depth: Int
     @ObservedObject public var vm: PlaylistSidebarViewModel
 
+    /// `true` while a `PlaylistDragPayload` hovers over this row.
+    @State private var isDropTargeted = false
+    /// Cancellable task that spring-loads the folder open after a short hover.
+    @State private var springLoadTask: Task<Void, Never>?
+
     public init(node: PlaylistNode, depth: Int, vm: PlaylistSidebarViewModel) {
         self.node = node
         self.depth = depth
@@ -28,9 +33,10 @@ public struct PlaylistFolderRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel(self.isExpanded ? "Collapse folder" : "Expand folder")
 
-            Image(systemName: "folder")
-                .foregroundStyle(Color.textSecondary)
+            Image(systemName: self.isDropTargeted ? "folder.fill.badge.plus" : "folder")
+                .foregroundStyle(self.isDropTargeted ? Color.accentColor : Color.textSecondary)
                 .frame(width: 16)
+                .animation(.easeInOut(duration: 0.15), value: self.isDropTargeted)
 
             Text(self.node.name)
                 .font(Typography.body)
@@ -39,6 +45,33 @@ public struct PlaylistFolderRow: View {
             Spacer(minLength: 4)
         }
         .padding(.leading, CGFloat(self.depth) * 14)
+        .padding(.vertical, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(self.isDropTargeted ? Color.accentColor.opacity(0.15) : Color.clear)
+                .padding(.horizontal, -4)
+                .animation(.easeInOut(duration: 0.15), value: self.isDropTargeted)
+        )
+        .dropDestination(for: PlaylistDragPayload.self) { items, _ in
+            guard let payload = items.first else { return false }
+            // Skip if the playlist is already in this folder (no-op move).
+            guard payload.sourceFolderID != self.node.id else { return false }
+            Task { await self.vm.move(playlistID: payload.playlistID, toFolder: self.node.id) }
+            return true
+        } isTargeted: { targeted in
+            self.isDropTargeted = targeted
+            if targeted {
+                // Spring-load: auto-expand the folder after a 700 ms hover.
+                self.springLoadTask = Task {
+                    try? await Task.sleep(nanoseconds: 700_000_000)
+                    guard !Task.isCancelled else { return }
+                    self.vm.expand(folderID: self.node.id)
+                }
+            } else {
+                self.springLoadTask?.cancel()
+                self.springLoadTask = nil
+            }
+        }
         .contextMenu { self.contextMenuContent }
         .accessibilityLabel("Folder: \(self.node.name)")
         .accessibilityIdentifier(A11y.PlaylistSidebar.folderRow(self.node.id))

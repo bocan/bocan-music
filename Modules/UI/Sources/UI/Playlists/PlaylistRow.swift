@@ -32,6 +32,10 @@ public struct PlaylistRow: View {
             }
         }
         .padding(.leading, CGFloat(self.depth) * 14)
+        .draggable(PlaylistDragPayload(
+            playlistID: self.node.id,
+            sourceFolderID: self.node.parentID
+        ))
         .contextMenu { self.contextMenuContent }
         .overlay(
             TrackDropTarget(isActive: self.node.kind == .manual) { ids in

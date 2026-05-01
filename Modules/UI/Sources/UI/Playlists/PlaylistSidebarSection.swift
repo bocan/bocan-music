@@ -106,6 +106,7 @@ private struct PlaylistSidebarPresentationsModifier: ViewModifier {
             .modifier(RenameSheetModifier(vm: self.vm))
             .modifier(AccentColorSheetModifier(vm: self.vm))
             .modifier(DeleteDialogsModifier(vm: self.vm))
+            .modifier(SidebarErrorAlertModifier(vm: self.vm))
     }
 }
 
@@ -243,6 +244,24 @@ private struct AccentColorSheetModifier: ViewModifier {
             AccentColorSheet(node: node) { hex in
                 await self.vm.setAccentColor(hex, for: node.id)
             }
+        }
+    }
+}
+
+private struct SidebarErrorAlertModifier: ViewModifier {
+    @ObservedObject var vm: PlaylistSidebarViewModel
+
+    func body(content: Content) -> some View {
+        content.alert(
+            "Playlist Error",
+            isPresented: Binding(
+                get: { self.vm.lastError != nil },
+                set: { if !$0 { self.vm.lastError = nil } }
+            )
+        ) {
+            Button("OK") { self.vm.lastError = nil }
+        } message: {
+            Text(self.vm.lastError ?? "")
         }
     }
 }
