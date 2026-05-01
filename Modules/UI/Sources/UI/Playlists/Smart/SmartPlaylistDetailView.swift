@@ -141,6 +141,17 @@ public struct SmartPlaylistDetailView: View {
                     .accessibilityIdentifier(A11y.SmartPlaylistDetail.refreshButton)
                 }
 
+                if self.vm.smartPlaylist?.limitSort.sortBy == .random {
+                    Button {
+                        Task { await self.reshuffle() }
+                    } label: {
+                        Label("Reshuffle", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
+                    .help("Pick a new random order")
+                }
+
                 Button {
                     self.isEditingRules = true
                 } label: {
@@ -184,5 +195,18 @@ public struct SmartPlaylistDetailView: View {
     private func playShuffled() async {
         guard !self.vm.tracks.isEmpty else { return }
         await self.library.play(tracks: self.vm.tracks, shuffle: true)
+    }
+
+    private func reshuffle() async {
+        do {
+            _ = try await self.library.smartPlaylistService.shuffleSeed(id: self.playlistID)
+            if self.vm.isLive {
+                await self.vm.load(playlistID: self.playlistID)
+            } else {
+                await self.vm.refresh()
+            }
+        } catch {
+            self.vm.lastError = "Could not reshuffle playlist."
+        }
     }
 }
