@@ -32,6 +32,10 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
         self.tracks.reduce(0) { $0 + $1.duration }
     }
 
+    public var lastSnapshottedAt: Int64? {
+        self.playlist?.smartLastSnapshotAt
+    }
+
     // MARK: - Dependencies
 
     private let service: SmartPlaylistService
@@ -65,13 +69,10 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
                 self.isLoading = false
                 self.startObservation(playlistID: playlistID)
             } else {
-                // Snapshot mode also observes — but the underlying stream
-                // reads from `playlist_tracks` so it only re-emits when the
-                // snapshot is rewritten via `refresh()`. This keeps the UI
-                // reactive without re-running the criteria query.
+                // Snapshot mode is intentionally non-live: read once from
+                // `playlist_tracks` and do not subscribe to updates.
                 self.tracks = try await self.service.tracks(for: playlistID)
                 self.isLoading = false
-                self.startObservation(playlistID: playlistID)
             }
         } catch {
             self.log.error("smartPlaylist.detail.load.failed", ["error": String(reflecting: error)])
@@ -86,7 +87,11 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
     public func refresh() async {
         guard let id = self.playlist?.id else { return }
         do {
-            _ = try await self.service.snapshot(id: id)
+            _ = try await self.service.snapshot(playlistID: id)
+            let refreshed = try await self.service.resolve(id: id)
+            self.smartPlaylist = refreshed
+            self.playlist = refreshed.playlist
+            self.tracks = try await self.service.tracks(for: id)
         } catch {
             self.log.error("smartPlaylist.refresh.failed", ["error": String(reflecting: error)])
             self.lastError = "Could not refresh playlist."

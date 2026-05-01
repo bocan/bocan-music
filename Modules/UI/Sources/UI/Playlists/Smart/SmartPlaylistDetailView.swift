@@ -95,6 +95,11 @@ public struct SmartPlaylistDetailView: View {
                 Text(self.subtitle)
                     .font(Typography.subheadline)
                     .foregroundStyle(Color.textSecondary)
+                if !self.vm.isLive, let snapshotText = self.snapshotSubtitle {
+                    Text(snapshotText)
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.textTertiary)
+                }
             }
 
             Spacer()
@@ -122,7 +127,7 @@ public struct SmartPlaylistDetailView: View {
                     Button {
                         Task { await self.vm.refresh() }
                     } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
+                        Label("Refresh now", systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
@@ -154,6 +159,17 @@ public struct SmartPlaylistDetailView: View {
             ? "\(mins) min"
             : "\(mins / 60) hr \(mins % 60) min"
         return "\(countText) · \(durationText)"
+    }
+
+    private var snapshotSubtitle: String? {
+        guard let unix = self.vm.lastSnapshottedAt else {
+            return "Snapshot not created yet"
+        }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        let text = formatter.string(from: Date(timeIntervalSince1970: TimeInterval(unix)))
+        return "Snapshotted at \(text)"
     }
 
     // MARK: - Actions
