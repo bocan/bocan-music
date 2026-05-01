@@ -60,6 +60,9 @@ public struct PlaylistHeader: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(self.trackCount == 0)
+                .help("Play this playlist in order")
+                .accessibilityLabel("Play")
+                .accessibilityHint("Starts playback from the first track in this playlist")
                 .accessibilityIdentifier(A11y.PlaylistDetail.playButton)
 
                 Button(action: self.shuffleAction) {
@@ -68,6 +71,9 @@ public struct PlaylistHeader: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(self.trackCount == 0)
+                .help("Shuffle and play this playlist")
+                .accessibilityLabel("Shuffle")
+                .accessibilityHint("Starts playback in shuffled order")
                 .accessibilityIdentifier(A11y.PlaylistDetail.shuffleButton)
             }
         }

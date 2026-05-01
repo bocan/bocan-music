@@ -43,6 +43,7 @@ public struct PlaylistSidebarSection: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
+                .help("Create a new playlist, smart playlist, or folder")
                 .accessibilityLabel("New Playlist or Folder")
                 .accessibilityIdentifier(A11y.PlaylistSidebar.addButton)
             }
