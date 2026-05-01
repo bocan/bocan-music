@@ -1,3 +1,4 @@
+import Foundation
 import Library
 import Persistence
 import SwiftUI
@@ -7,13 +8,24 @@ import SwiftUI
 /// Simple sheet to name a new smart playlist before opening the rule builder.
 struct NewSmartPlaylistSheet: View {
     let service: SmartPlaylistService
+    let parentID: Int64?
     let onCreated: (SmartPlaylist) async -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var name = "New Smart Playlist"
+    @State private var name = ""
     @State private var isSaving = false
     @State private var error: String?
     @FocusState private var isNameFocused: Bool
+
+    init(
+        service: SmartPlaylistService,
+        parentID: Int64? = nil,
+        onCreated: @escaping (SmartPlaylist) async -> Void
+    ) {
+        self.service = service
+        self.parentID = parentID
+        self.onCreated = onCreated
+    }
 
     var body: some View {
         VStack(spacing: 20) {
@@ -53,7 +65,10 @@ struct NewSmartPlaylistSheet: View {
         }
         .padding(28)
         .frame(minWidth: 340)
-        .onAppear { self.isNameFocused = true }
+        .onAppear {
+            self.isNameFocused = true
+            Task { await self.seedDefaultNameIfNeeded() }
+        }
     }
 
     private func save() async {
@@ -61,6 +76,7 @@ struct NewSmartPlaylistSheet: View {
         guard !trimmed.isEmpty else { return }
         self.isSaving = true
         do {
+            let uniqueName = try await self.resolveUniqueSiblingName(base: trimmed)
             // Create with a minimal default criterion: title contains ""
             let defaultCriteria = SmartCriterion.group(.and, [
                 .rule(SmartCriterion.Rule(
@@ -71,10 +87,10 @@ struct NewSmartPlaylistSheet: View {
             ])
             let defaultLimitSort = LimitSort(liveUpdate: SmartPlaylistPreferences.defaultLiveUpdate())
             let playlist = try await self.service.create(
-                name: trimmed,
+                name: uniqueName,
                 criteria: defaultCriteria,
                 limitSort: defaultLimitSort,
-                parentID: nil,
+                parentID: self.parentID,
                 presetKey: nil
             )
             let sp = try await self.service.resolve(id: playlist.id ?? -1)
@@ -83,5 +99,46 @@ struct NewSmartPlaylistSheet: View {
             self.error = error.localizedDescription
             self.isSaving = false
         }
+    }
+
+    private func seedDefaultNameIfNeeded() async {
+        guard self.name.isEmpty else { return }
+        do {
+            let base = Self.defaultNameBase()
+            self.name = try await self.resolveUniqueSiblingName(base: base)
+        } catch {
+            // If sibling lookup fails, still provide a deterministic default.
+            self.name = Self.defaultNameBase()
+        }
+    }
+
+    private func resolveUniqueSiblingName(base: String) async throws -> String {
+        let siblings = try await self.service
+            .listAll()
+            .filter { $0.parentID == self.parentID }
+        return Self.uniqueName(base: base, siblings: siblings)
+    }
+
+    private static func uniqueName(base: String, siblings: [Playlist]) -> String {
+        let existing = Set(siblings.map { $0.name.lowercased() })
+        if !existing.contains(base.lowercased()) {
+            return base
+        }
+        var suffix = 2
+        while true {
+            let candidate = "\(base) (\(suffix))"
+            if !existing.contains(candidate.lowercased()) {
+                return candidate
+            }
+            suffix += 1
+        }
+    }
+
+    private static func defaultNameBase(date: Date = Date()) -> String {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return "New Smart Playlist \(formatter.string(from: date))"
     }
 }
