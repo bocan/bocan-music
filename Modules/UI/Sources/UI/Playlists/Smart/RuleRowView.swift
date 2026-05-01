@@ -440,7 +440,7 @@ private struct ValueControl: View {
             return AnyView(EmptyView())
         }
         let current: String = {
-            if case let .enumeration(v) = self.rule.value { return v }
+            if case let .enumeration(value) = self.rule.value { return value }
             return options[0]
         }()
         return AnyView(
