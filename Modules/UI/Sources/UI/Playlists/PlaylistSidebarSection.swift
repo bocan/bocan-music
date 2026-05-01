@@ -1,3 +1,4 @@
+import AppKit
 import Library
 import Persistence
 import SwiftUI
@@ -101,6 +102,7 @@ private struct PlaylistSidebarPresentationsModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
+            .modifier(PlaylistSidebarSurfacePrewarmModifier())
             .modifier(NewPlaylistSheetModifier(vm: self.vm))
             .modifier(NewFolderSheetModifier(vm: self.vm))
             .modifier(NewSmartPlaylistSheetModifier(vm: self.vm, smartPlaylistService: self.smartPlaylistService))
@@ -108,6 +110,50 @@ private struct PlaylistSidebarPresentationsModifier: ViewModifier {
             .modifier(AccentColorSheetModifier(vm: self.vm))
             .modifier(DeleteDialogsModifier(vm: self.vm))
             .modifier(SidebarErrorAlertModifier(vm: self.vm))
+    }
+}
+
+private struct PlaylistSidebarSurfacePrewarmModifier: ViewModifier {
+    @State private var didSchedule = false
+
+    func body(content: Content) -> some View {
+        content.onAppear {
+            guard !self.didSchedule else { return }
+            self.didSchedule = true
+            Task { @MainActor in
+                PlaylistSidebarSurfacePrewarmer.prewarmOnce()
+            }
+        }
+    }
+}
+
+@MainActor
+private enum PlaylistSidebarSurfacePrewarmer {
+    private static var didPrewarm = false
+
+    static func prewarmOnce() {
+        guard !self.didPrewarm else { return }
+        self.didPrewarm = true
+
+        // Warm commonly-lazy AppKit work (font + first NSWindow-backed surface)
+        // off-screen so first visible sheet/dialog presentation is less likely to
+        // stall audio render callbacks during active playback.
+        _ = NSFont.systemFont(ofSize: 13)
+        let host = NSHostingView(rootView: Color.clear.frame(width: 1, height: 1))
+        let panel = NSPanel(
+            contentRect: NSRect(x: -20000, y: -20000, width: 16, height: 16),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.hidesOnDeactivate = true
+        panel.ignoresMouseEvents = true
+        panel.alphaValue = 0
+        panel.contentView = host
+        panel.orderFront(nil)
+        panel.orderOut(nil)
+        panel.close()
     }
 }
 
