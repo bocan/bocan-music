@@ -1,3 +1,4 @@
+import AppKit
 import Library
 import Persistence
 import SwiftUI
@@ -27,6 +28,8 @@ public struct PlaylistDetailView: View {
                 trackCount: self.vm.trackCount,
                 duration: self.vm.totalDuration,
                 accent: self.accentColour,
+                coverImage: self.userCoverImage,
+                mosaicImage: self.vm.mosaicImage,
                 playAction: { Task { await self.playAll() } },
                 shuffleAction: { Task { await self.playShuffled() } }
             )
@@ -64,6 +67,7 @@ public struct PlaylistDetailView: View {
                             }
                             : nil
                     )
+                    .tint(self.accentColour ?? Color.accentColor)
                 }
             }
             .overlay(
@@ -97,5 +101,11 @@ public struct PlaylistDetailView: View {
     private var accentColour: Color? {
         guard let hex = self.vm.playlist?.accentColor else { return nil }
         return Color(hex: hex)
+    }
+
+    /// `NSImage` loaded from the user-set `coverArtPath`, or `nil` if not set.
+    private var userCoverImage: NSImage? {
+        guard let path = self.vm.playlist?.coverArtPath else { return nil }
+        return NSImage(contentsOfFile: path)
     }
 }
