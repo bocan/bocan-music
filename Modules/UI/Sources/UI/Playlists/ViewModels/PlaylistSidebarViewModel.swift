@@ -476,13 +476,9 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     private func siblingNames(parentID: Int64?) -> [String] {
         if let parentID, let parent = self.findNode(id: parentID) {
-            return parent.children
-                .filter { $0.kind == .manual }
-                .map(\.name)
+            return parent.children.filter { $0.kind == .manual }.map(\.name)
         }
-        return self.nodes
-            .filter { $0.parentID == nil && $0.kind == .manual }
-            .map(\.name)
+        return self.nodes.filter { $0.parentID == nil && $0.kind == .manual }.map(\.name)
     }
 
     private func describe(_ error: Error) -> String {
