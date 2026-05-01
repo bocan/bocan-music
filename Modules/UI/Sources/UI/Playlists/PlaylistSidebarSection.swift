@@ -154,6 +154,11 @@ private enum PlaylistSidebarSurfacePrewarmer {
         panel.orderFront(nil)
         panel.orderOut(nil)
         panel.close()
+
+        // Phase 7 surfaces (`NewSmartPlaylistSheet`, `RuleBuilderView`,
+        // `SmartPresetPickerView`) are also first-presented during playback.
+        // Warm their common text/menu infrastructure in the same launch pass.
+        SmartPlaylistSurfacePrewarmer.prewarmOnce()
     }
 }
 

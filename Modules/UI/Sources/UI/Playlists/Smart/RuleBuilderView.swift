@@ -65,6 +65,9 @@ public struct RuleBuilderView: View {
                 self.showPresets = false
             }
         }
+        .onAppear {
+            Task { @MainActor in SmartPlaylistSurfacePrewarmer.prewarmOnce() }
+        }
     }
 
     // MARK: - Toolbar
