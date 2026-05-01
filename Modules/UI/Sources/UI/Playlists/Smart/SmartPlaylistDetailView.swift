@@ -69,6 +69,7 @@ public struct SmartPlaylistDetailView: View {
             set: { if !$0 { self.vm.lastError = nil } }
         )) {
             Button("OK") { self.vm.lastError = nil }
+                .help("Dismiss this error")
         } message: {
             Text(self.vm.lastError ?? "")
         }
@@ -113,6 +114,8 @@ public struct SmartPlaylistDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(self.vm.tracks.isEmpty)
+                .help("Play the current smart playlist in order")
+                .accessibilityHint("Starts playback from the first matching track")
 
                 Button {
                     Task { await self.playShuffled() }
@@ -122,6 +125,8 @@ public struct SmartPlaylistDetailView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(self.vm.tracks.isEmpty)
+                .help("Shuffle and play the matching tracks")
+                .accessibilityHint("Starts playback in shuffled order")
 
                 if !self.vm.isLive {
                     Button {
@@ -143,6 +148,8 @@ public struct SmartPlaylistDetailView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
+                .help("Open the rule builder to edit this smart playlist")
+                .accessibilityHint("Opens criteria, limit, and sort controls")
                 .accessibilityIdentifier(A11y.SmartPlaylistDetail.editButton)
             }
         }
