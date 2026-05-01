@@ -218,6 +218,19 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         return result
     }
 
+    /// Returns the node with the given `id` from the full tree, or `nil` if not found.
+    public func findNode(id: Int64) -> PlaylistNode? {
+        Self.findNode(id: id, in: self.nodes)
+    }
+
+    private static func findNode(id: Int64, in nodes: [PlaylistNode]) -> PlaylistNode? {
+        for node in nodes {
+            if node.id == id { return node }
+            if let found = findNode(id: id, in: node.children) { return found }
+        }
+        return nil
+    }
+
     private func collectFolders(_ nodes: [PlaylistNode], into result: inout [PlaylistNode]) {
         for node in nodes where node.kind == .folder {
             result.append(node)

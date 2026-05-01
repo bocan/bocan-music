@@ -86,6 +86,9 @@ extension SidebarDestination {
         case .playlist:
             "Playlist"
 
+        case .folder:
+            "Folder"
+
         case .smartPlaylist:
             "Smart Playlist"
 

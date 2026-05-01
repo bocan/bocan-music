@@ -44,6 +44,9 @@ extension LibraryViewModel {
         case .playlist:
             break // PlaylistDetailView handles its own loading
 
+        case .folder:
+            break // PlaylistFolderView reads directly from PlaylistSidebarViewModel.nodes
+
         case .smartPlaylist:
             break // SmartPlaylistDetailView handles its own loading
 

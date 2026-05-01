@@ -1,6 +1,7 @@
 import AppKit
 import AudioEngine
 import Foundation
+import Library
 import SnapshotTesting
 import SwiftUI
 import Testing
@@ -283,6 +284,124 @@ struct UISnapshotTests {
                 of: host(view, size: CGSize(width: 400, height: 200)),
                 as: .image(precision: 0.95),
                 named: "viz-oscilloscope-dark"
+            )
+        }
+    }
+
+    // MARK: - PlaylistFolderView Snapshots
+
+    @Suite("PlaylistFolderView Snapshots")
+    @MainActor
+    struct PlaylistFolderViewSnapshotTests {
+        private func makeVM() async throws -> LibraryViewModel {
+            let db = try await Database(location: .inMemory)
+            let engine = MockTransport()
+            return LibraryViewModel(database: db, engine: engine)
+        }
+
+        private func makeChildNodes() -> [PlaylistNode] {
+            [
+                PlaylistNode(
+                    id: 2,
+                    name: "Chill Mix",
+                    kind: .manual,
+                    parentID: 1,
+                    coverArtPath: nil,
+                    accentHex: nil,
+                    trackCount: 12,
+                    totalDuration: 2880,
+                    sortOrder: 0,
+                    children: []
+                ),
+                PlaylistNode(
+                    id: 3,
+                    name: "Most Played",
+                    kind: .smart,
+                    parentID: 1,
+                    coverArtPath: nil,
+                    accentHex: nil,
+                    trackCount: 7,
+                    totalDuration: 1680,
+                    sortOrder: 1,
+                    children: []
+                ),
+                PlaylistNode(
+                    id: 4,
+                    name: "Subfolder",
+                    kind: .folder,
+                    parentID: 1,
+                    coverArtPath: nil,
+                    accentHex: nil,
+                    trackCount: 0,
+                    totalDuration: 0,
+                    sortOrder: 2,
+                    children: []
+                ),
+            ]
+        }
+
+        private func makeNode(withChildren: Bool) -> PlaylistNode {
+            PlaylistNode(
+                id: 1,
+                name: "My Folder",
+                kind: .folder,
+                parentID: nil,
+                coverArtPath: nil,
+                accentHex: nil,
+                trackCount: 0,
+                totalDuration: 0,
+                sortOrder: 0,
+                children: withChildren ? self.makeChildNodes() : []
+            )
+        }
+
+        @Test("PlaylistFolderView with children light mode")
+        func folderWithChildrenLight() async throws {
+            let vm = try await makeVM()
+            let view = PlaylistFolderView(node: makeNode(withChildren: true), library: vm)
+                .frame(width: 600, height: 400)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 600, height: 400)),
+                as: .image(precision: 0.98),
+                named: "playlist-folder-children-light"
+            )
+        }
+
+        @Test("PlaylistFolderView with children dark mode")
+        func folderWithChildrenDark() async throws {
+            let vm = try await makeVM()
+            let view = PlaylistFolderView(node: makeNode(withChildren: true), library: vm)
+                .frame(width: 600, height: 400)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 600, height: 400)),
+                as: .image(precision: 0.98),
+                named: "playlist-folder-children-dark"
+            )
+        }
+
+        @Test("PlaylistFolderView empty light mode")
+        func folderEmptyLight() async throws {
+            let vm = try await makeVM()
+            let view = PlaylistFolderView(node: makeNode(withChildren: false), library: vm)
+                .frame(width: 600, height: 400)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 600, height: 400)),
+                as: .image(precision: 0.98),
+                named: "playlist-folder-empty-light"
+            )
+        }
+
+        @Test("PlaylistFolderView empty dark mode")
+        func folderEmptyDark() async throws {
+            let vm = try await makeVM()
+            let view = PlaylistFolderView(node: makeNode(withChildren: false), library: vm)
+                .frame(width: 600, height: 400)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 600, height: 400)),
+                as: .image(precision: 0.98),
+                named: "playlist-folder-empty-dark"
             )
         }
     }
