@@ -18,6 +18,7 @@ public struct ArtworkEditor: View {
     }
 
     @State private var isTargeted = false
+    @State private var isPickingFile = false
 
     public var body: some View {
         VStack(alignment: .center, spacing: 12) {
@@ -51,7 +52,7 @@ public struct ArtworkEditor: View {
 
             // Action buttons
             HStack(spacing: 8) {
-                Button("Choose File…") { self.chooseFile() }
+                Button("Choose File…") { self.isPickingFile = true }
                 Button("Paste") { self.pasteFromClipboard() }
                     .disabled(!NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))
                 Button("Fetch…") { self.isPresentingFetchSheet = true }
@@ -64,20 +65,18 @@ public struct ArtworkEditor: View {
             .font(Typography.footnote)
         }
         .padding()
+        .fileImporter(
+            isPresented: self.$isPickingFile,
+            allowedContentTypes: [.jpeg, .png, .webP, .gif]
+        ) { result in
+            if case let .success(url) = result,
+               let data = try? Data(contentsOf: url) {
+                self.vm.pendingArtData = Self.normalise(data)
+            }
+        }
     }
 
     // MARK: - Private actions
-
-    private func chooseFile() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.jpeg, .png, .webP, .gif]
-        panel.allowsMultipleSelection = false
-        panel.message = "Choose an image to use as cover art"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        if let data = try? Data(contentsOf: url) {
-            self.vm.pendingArtData = Self.normalise(data)
-        }
-    }
 
     private func pasteFromClipboard() {
         if let img = NSPasteboard.general.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage,
