@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bòcan Music Help</title>
+  <meta name="AppleTitle" content="Bòcan Music Help">
+  <meta name="AppleIcon" content="Art/AppIcon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Bòcan Music</h1>
+    <p class="subtitle">Native macOS music player</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Getting Started</h2>
+      <dl>
+        <dt>Add music to your library</dt>
+        <dd>
+          Choose <strong>File → Add Folder to Library…</strong> (⌘⇧O) or
+          <strong>File → Add Files to Library…</strong> to point Bòcan at your music.
+          The library scanner will index audio files and read their tags automatically.
+        </dd>
+
+        <dt>Playing tracks</dt>
+        <dd>
+          Double-click any track to start playback. Use
+          <strong>Space</strong> to play/pause, <strong>⌘→</strong> for next,
+          and <strong>⌘←</strong> for previous.
+        </dd>
+
+        <dt>Up Next queue</dt>
+        <dd>
+          Right-click tracks and choose <strong>Add to Queue</strong>, or drag
+          them onto the Up Next sidebar section. The current queue is shown
+          under <strong>Playback → Show Up Next</strong> (⌘⌥U).
+        </dd>
+
+        <dt>Editing track info</dt>
+        <dd>
+          Select one or more tracks and press <strong>⌘I</strong>, or choose
+          <strong>Track → Get Info</strong>. The editor lets you update tags,
+          artwork, and lyrics for a single track or in bulk.
+        </dd>
+
+        <dt>Playlists</dt>
+        <dd>
+          Create standard playlists with <strong>File → New Playlist…</strong> (⌘N)
+          or rules-based Smart Playlists with
+          <strong>File → New Smart Playlist…</strong> (⌘⌥N).
+          Import existing M3U/PLS/XSPF playlists via
+          <strong>File → Import Playlist…</strong>.
+        </dd>
+
+        <dt>Lyrics</dt>
+        <dd>
+          Toggle the lyrics pane with <strong>⌘⌥L</strong>. Bòcan displays
+          embedded LRC timestamps when available and scrolls in sync with playback.
+        </dd>
+
+        <dt>Miniplayer</dt>
+        <dd>
+          Switch to the compact window with <strong>⌘⌥M</strong> or
+          <strong>Window → Toggle Miniplayer</strong>.
+        </dd>
+
+        <dt>Scrobbling</dt>
+        <dd>
+          Connect your Last.fm account under
+          <strong>Bòcan → Settings… → Scrobbling</strong> to enable automatic
+          track scrobbling.
+        </dd>
+      </dl>
+    </section>
+
+    <section>
+      <h2>Keyboard Shortcuts</h2>
+      <table>
+        <thead>
+          <tr><th>Action</th><th>Shortcut</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Play / Pause</td><td>Space</td></tr>
+          <tr><td>Next Track</td><td>⌘→</td></tr>
+          <tr><td>Previous Track</td><td>⌘←</td></tr>
+          <tr><td>Toggle Shuffle</td><td>⌘S</td></tr>
+          <tr><td>Cycle Repeat</td><td>⌘R (hold)</td></tr>
+          <tr><td>Get Info</td><td>⌘I</td></tr>
+          <tr><td>Find</td><td>⌘F</td></tr>
+          <tr><td>New Playlist</td><td>⌘N</td></tr>
+          <tr><td>Add Folder to Library</td><td>⌘⇧O</td></tr>
+          <tr><td>Reveal in Finder</td><td>⌘R</td></tr>
+          <tr><td>Show Lyrics</td><td>⌘⌥L</td></tr>
+          <tr><td>Toggle Miniplayer</td><td>⌘⌥M</td></tr>
+          <tr><td>Show Up Next</td><td>⌘⌥U</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Supported Formats</h2>
+      <p>
+        Bòcan plays all formats supported by macOS Core Audio plus additional
+        formats via its built-in FFmpeg engine:
+      </p>
+      <ul>
+        <li><strong>Core Audio:</strong> FLAC, ALAC/M4A, MP3, AAC, AIFF, WAV, CAF</li>
+        <li><strong>FFmpeg engine:</strong> OGG Vorbis, Opus, APE (Monkey's Audio), DSD (DSF/DFF)</li>
+      </ul>
+      <p>
+        Tag formats supported: ID3v2 (MP3), Vorbis Comments (FLAC/OGG/Opus),
+        MP4/iTunes tags (M4A/AAC), APEv2.
+      </p>
+    </section>
+
+    <section class="footer-note">
+      <p>
+        Full documentation is in progress.
+        Visit the <a href="https://github.com/bocan/bocan-music">project on GitHub</a>
+        for release notes, issue tracking, and source code.
+      </p>
+    </section>
+  </main>
+</body>
+</html>
