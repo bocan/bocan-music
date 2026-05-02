@@ -191,10 +191,32 @@ public struct TagEditorSheet: View {
                     .padding(.horizontal)
                     .help("When checked, the lyrics text will be written to every selected track on Save")
             }
-            Text("Lyrics")
-                .font(Typography.footnote)
-                .foregroundStyle(Color.textTertiary)
+            HStack {
+                Text("Lyrics")
+                    .font(Typography.footnote)
+                    .foregroundStyle(Color.textTertiary)
+                Spacer()
+                Picker("", selection: self.$vm.lyricsMode) {
+                    Text("Auto").tag(TagEditorViewModel.LyricsMode.auto)
+                    Text("Synced").tag(TagEditorViewModel.LyricsMode.synced)
+                    Text("Plain").tag(TagEditorViewModel.LyricsMode.plain)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+                .help("Auto: detect LRC timestamps. Synced: always save as synced (LRC). Plain: always save as plain text.")
+            }
+            .padding(.horizontal)
+            if self.vm.lyricsMode == .auto, self.vm.lrcTimestampsDetected {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.badge.checkmark")
+                        .imageScale(.small)
+                    Text("LRC timestamps detected — will be saved as synced lyrics")
+                        .font(Typography.footnote)
+                }
+                .foregroundStyle(Color.accentColor)
                 .padding(.horizontal)
+                .accessibilityLabel("LRC timestamps detected, lyrics will be saved as synced")
+            }
             TextEditor(text: self.fieldBinding(\.lyrics))
                 .font(Typography.body)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
