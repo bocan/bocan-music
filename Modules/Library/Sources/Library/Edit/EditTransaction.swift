@@ -253,6 +253,16 @@ actor EditTransaction {
         var updated = patch.applying(to: track)
         updated.userEdited = true
 
+        // 8a. Stamp the DB row with the file's post-write mtime/size so the
+        //     next scan sees them as identical and does NOT raise a false-positive
+        //     "file changed after your last edit" conflict.
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path) {
+            if let modDate = attrs[.modificationDate] as? Date {
+                updated.fileMtime = Int64(modDate.timeIntervalSince1970)
+            }
+            if let sz = attrs[.size] as? Int { updated.fileSize = Int64(sz) }
+        }
+
         if patch.artist != nil || patch.albumArtist != nil || patch.album != nil {
             // Fetch current album/albumArtist rows for fallback values (ignore errors).
             let currentAlbum: Album? = if let id = track.albumID { try? await self.albumRepo.fetch(id: id) }
