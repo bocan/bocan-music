@@ -88,6 +88,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     @Published public var tagEditorTrackIDs: [Int64]?
     /// `true` when at least one track is selected in the current track table.
     @Published public var hasTrackSelection = false
+    /// `true` when exactly one track is selected — enables the "Identify Track…" toolbar button.
+    @Published public var hasSingleTrackSelection = false
     /// Shared `MetadataEditService` (nil only if the backup directory is unavailable).
     public let metadataEditService: MetadataEditService?
 
@@ -207,6 +209,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
     private var selectionCancellable: AnyCancellable?
+    private var singleSelectionCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
@@ -268,6 +271,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
 
         self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
+        self.singleSelectionCancellable = self.tracks.$selection.map { $0.count == 1 }.assign(to: \.hasSingleTrackSelection, on: self)
         self.wireExpandedFoldersPersistence()
     }
 
