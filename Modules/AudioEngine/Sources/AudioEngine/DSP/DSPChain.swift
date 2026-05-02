@@ -95,7 +95,8 @@ public final class DSPChain: @unchecked Sendable {
         engine.connect(self.crossfeed.node, to: self.stereoExpander.node, format: format)
         engine.connect(self.stereoExpander.node, to: self.limiter.node, format: format)
         engine.connect(self.limiter.node, to: mixer, format: format)
-        self.log.debug("dsp.chain.connected", ["sampleRate": format?.sampleRate ?? 0])
+        // sampleRate is 0 when format is nil (engine picks default); that's intentional at init.
+        self.log.debug("dsp.chain.connected", ["sampleRate": format?.sampleRate ?? 0 as Double])
     }
 
     /// Disconnect all internal and boundary connections.

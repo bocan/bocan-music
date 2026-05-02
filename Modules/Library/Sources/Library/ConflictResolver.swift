@@ -21,7 +21,7 @@ enum ConflictResolver {
     ///   - diskTags: Tags freshly read from disk (unused in v1, reserved for future diff).
     static func resolve(existingTrackID: Int64, userEdited: Bool) -> Resolution {
         guard userEdited else { return .overwrite }
-        AppLogger.make(.library).warning(
+        AppLogger.make(.library).info(
             "conflict.user_edited_wins",
             ["trackID": existingTrackID]
         )
