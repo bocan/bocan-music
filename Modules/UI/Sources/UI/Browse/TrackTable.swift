@@ -164,9 +164,15 @@ public struct TrackTable: NSViewRepresentable {
             coordinator.updateRows(self.rows)
             coordinator.lastAppliedIDs = newIDs
 
+            // NSDiffableDataSourceSnapshot requires unique item identifiers.
+            // Guard against duplicate track IDs (e.g. the same track added
+            // twice to a playlist) by deduplicating while preserving order.
+            var seen = Set<Int64>()
+            let uniqueIDs = newIDs.filter { seen.insert($0).inserted }
+
             var snapshot = NSDiffableDataSourceSnapshot<Int, Int64>()
             snapshot.appendSections([0])
-            snapshot.appendItems(newIDs)
+            snapshot.appendItems(uniqueIDs)
             let animated = coordinator.hasAppliedInitialSnapshot && !self.rows.isEmpty
             dataSource.apply(snapshot, animatingDifferences: animated)
             coordinator.hasAppliedInitialSnapshot = true
