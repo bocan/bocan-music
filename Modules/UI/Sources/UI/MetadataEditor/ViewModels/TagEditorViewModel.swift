@@ -40,6 +40,21 @@ public final class TagEditorViewModel: ObservableObject {
         case edited(T?) // user changed it; applies to all
     }
 
+    /// One row in the conflict diff sheet comparing a stored DB value to the on-disk value.
+    public struct ConflictDiffRow: Identifiable, Sendable {
+        public let id: String
+        public let label: String
+        public let stored: String
+        public let disk: String
+
+        public init(label: String, stored: String, disk: String) {
+            self.id = label
+            self.label = label
+            self.stored = stored
+            self.disk = disk
+        }
+    }
+
     // MARK: - Published fields
 
     @Published public var title: FieldState<String> = .shared(nil)
@@ -88,6 +103,12 @@ public final class TagEditorViewModel: ObservableObject {
     public private(set) var didSave = false
     /// `true` while a bulk action is executing (renumber, copy artist, etc.).
     @Published public internal(set) var isApplyingBulkAction = false
+    /// Track IDs that need conflict resolution (disk was changed after user edit).
+    @Published public internal(set) var conflictTrackIDs: Set<Int64> = []
+    /// `true` when at least one loaded track has an unresolved disk-change conflict.
+    public var hasConflict: Bool {
+        !self.conflictTrackIDs.isEmpty
+    }
 
     // MARK: - Dependencies
 
@@ -156,6 +177,9 @@ public final class TagEditorViewModel: ObservableObject {
         self.loadedTracksByID = tracksByID
         self.singleTrack = self.isSingleTrack ? tracksByID[self.trackIDs[0]] : nil
         self.populateDBFields(from: tracks)
+        // Detect unresolved disk-change conflicts.
+        let conflicting = tracks.compactMap { $0.needsConflictReview ? $0.id : nil }
+        self.conflictTrackIDs = Set(conflicting)
         // Load first front-cover for display (picture type 3 = front cover).
         let art = allTags.first?.coverArt.first { $0.pictureType == 3 }
             ?? allTags.first?.coverArt.first

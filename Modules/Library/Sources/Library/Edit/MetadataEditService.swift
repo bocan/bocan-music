@@ -149,6 +149,29 @@ public actor MetadataEditService {
         }.value
     }
 
+    // MARK: - Conflict resolution
+
+    /// Clears the `needs_conflict_review` flag for `trackID` (user chose "Keep My Edits").
+    /// The track remains `user_edited = 1`; the disk change is acknowledged but discarded.
+    public func clearConflictFlag(trackID: Int64) async throws {
+        var track = try await self.trackRepo.fetch(id: trackID)
+        guard track.needsConflictReview else { return }
+        track.needsConflictReview = false
+        try await self.trackRepo.update(track)
+        self.log.debug("conflict.cleared", ["trackID": trackID])
+    }
+
+    /// Clears both `user_edited` and `needs_conflict_review` for `trackID` (user chose
+    /// "Take Disk Version"). On the next library scan the track tags will be re-imported
+    /// from disk, overwriting any stored user edits.
+    public func acceptDiskVersion(trackID: Int64) async throws {
+        var track = try await self.trackRepo.fetch(id: trackID)
+        track.needsConflictReview = false
+        track.userEdited = false
+        try await self.trackRepo.update(track)
+        self.log.debug("conflict.accepted_disk", ["trackID": trackID])
+    }
+
     // MARK: - Helpers
 
     private static func backupRingDirectory() -> URL {
