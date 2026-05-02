@@ -83,6 +83,12 @@ public struct BocanRootView: View {
                             }
                         }
                         .help("Toggle lyrics pane (⌥⌘L)")
+
+                        Button("Identify Track", systemImage: "waveform.badge.magnifyingglass") {
+                            self.vm.showIdentifyTrackForCurrentSelection()
+                        }
+                        .disabled(!self.vm.hasSingleTrackSelection)
+                        .help("Identify track using AcoustID (⌘⌥I)")
                     }
                 }
 
