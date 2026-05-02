@@ -232,11 +232,15 @@ public struct BocanRootView: View {
             IdentifyTrackSheet(vm: identVM)
                 .onDisappear {
                     let didApply = identVM.didApply
+                    let openTagEditor = identVM.openTagEditorAfterDismiss
                     // Capture the track ID before clearing identifyTrack.
                     let trackID = self.vm.identifyTrack?.id
                     self.vm.identifyTrack = nil
                     if didApply, let id = trackID {
                         Task { await self.vm.refreshTracks(ids: [id]) }
+                    }
+                    if openTagEditor, let id = trackID {
+                        self.vm.tagEditorTrackIDs = [id]
                     }
                 }
         }
