@@ -8,7 +8,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 17)
+        #expect(version == 18)
     }
 
     @Test("Integrity check passes after migration")
@@ -63,10 +63,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports seventeen migrations")
+    @Test("Migrator reports eighteen migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 17)
+        #expect(migrator.migrations.count == 18)
     }
 
     @Test("Playlists table has kind and accent_color after M007")
@@ -101,5 +101,15 @@ struct MigrationTests {
                 .compactMap { $0["name"] as String? }
         }
         #expect(columns.contains("extended_tags"))
+    }
+
+    @Test("Tracks table has needs_conflict_review column after M018")
+    func needsConflictReviewColumn() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(tracks)")
+                .compactMap { $0["name"] as String? }
+        }
+        #expect(columns.contains("needs_conflict_review"))
     }
 }
