@@ -53,12 +53,16 @@ public struct ArtworkEditor: View {
             // Action buttons
             HStack(spacing: 8) {
                 Button("Choose File…") { self.isPickingFile = true }
+                    .help("Open an image file to use as cover art")
                 Button("Paste") { self.pasteFromClipboard() }
                     .disabled(!NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))
+                    .help("Paste an image from the clipboard")
                 Button("Fetch…") { self.isPresentingFetchSheet = true }
+                    .help("Search MusicBrainz for cover art online")
                 if self.vm.pendingArtData != nil || self.vm.existingArtData != nil {
                     Button("Remove") { self.vm.clearArtwork() }
                         .foregroundStyle(.red)
+                        .help("Remove the cover art from this track")
                 }
             }
             .buttonStyle(.bordered)
