@@ -33,6 +33,24 @@ struct CandidatePickerView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 8)
 
+            if let topScore = self.candidates.first?.score, topScore < 0.6 {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Low confidence — verify tags before applying.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal)
+                .padding(.bottom, 6)
+                .accessibilityLabel("Warning: low confidence match — verify tags before applying")
+            }
+
             Divider()
 
             List(self.candidates) { candidate in
