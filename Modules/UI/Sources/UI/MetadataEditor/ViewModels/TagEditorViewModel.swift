@@ -61,12 +61,26 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public var lastEditID: String?
     /// `true` once any save has successfully committed (never resets to false).
     public private(set) var didSave = false
+    /// `true` while a bulk action is executing (renumber, copy artist, etc.).
+    @Published public internal(set) var isApplyingBulkAction = false
 
     // MARK: - Dependencies
 
-    private let service: MetadataEditService
-    private let trackIDs: [Int64]
-    private let log = AppLogger.make(.ui)
+    let service: MetadataEditService
+    let trackIDs: [Int64]
+    let log = AppLogger.make(.ui)
+
+    /// Number of tracks being edited.  Used by the Bulk Actions UI.
+    public var trackCount: Int {
+        self.trackIDs.count
+    }
+
+    // MARK: - Per-track cached data (populated after load())
+
+    /// Tags loaded from disk, keyed by track ID.  Used by bulk operations.
+    var loadedTagsByID: [Int64: TrackTags] = [:]
+    /// DB track rows, keyed by track ID.  Used by cross-album renumber check.
+    var loadedTracksByID: [Int64: Track] = [:]
 
     // MARK: - Init
 
@@ -82,16 +96,24 @@ public final class TagEditorViewModel: ObservableObject {
     public func load() async {
         guard !self.trackIDs.isEmpty else { return }
         var allTags: [TrackTags] = []
+        var tagsByID: [Int64: TrackTags] = [:]
         for id in self.trackIDs {
             if let tags = try? await self.service.readTags(trackID: id) {
                 allTags.append(tags)
+                tagsByID[id] = tags
             }
         }
         guard !allTags.isEmpty else { return }
+        self.loadedTagsByID = tagsByID
         self.populate(from: allTags)
         // Populate DB-only fields (rating, loved, excludedFromShuffle) which are
         // not stored in audio file tags and therefore absent from TrackTags.
         let tracks = await (try? self.service.readTracks(ids: self.trackIDs)) ?? []
+        var tracksByID: [Int64: Track] = [:]
+        for track in tracks {
+            if let id = track.id { tracksByID[id] = track }
+        }
+        self.loadedTracksByID = tracksByID
         self.populateDBFields(from: tracks)
         // Load first front-cover for display (picture type 3 = front cover).
         let art = allTags.first?.coverArt.first { $0.pictureType == 3 }
