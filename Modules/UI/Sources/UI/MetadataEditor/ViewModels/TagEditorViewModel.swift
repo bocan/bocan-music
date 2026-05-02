@@ -15,6 +15,24 @@ import SwiftUI
 public final class TagEditorViewModel: ObservableObject {
     // MARK: - Field state
 
+    /// Identifies a tag field for the per-field enable/disable mechanism in multi-track editing.
+    ///
+    /// In single-track mode `enabledFields` is ignored — all edited fields are always written.
+    /// In multi-track mode a field is written on Save only when it is both `.edited` **and**
+    /// present in `enabledFields` (which is auto-populated when the user types in a field).
+    public enum FieldKey: String, CaseIterable, Hashable, Sendable {
+        /// Text fields present in the Details tab.
+        case title, artist, albumArtist, album, genre, composer, comment
+        /// Numeric fields present in the Details tab.
+        case year, discNumber, discTotal
+        /// Extended fields in the Details tab.
+        case bpm, musicalKey, isrc, lyrics
+        /// Sorting fields.
+        case sortArtist, sortAlbumArtist, sortAlbum
+        /// DB-only fields.
+        case rating, loved, excludedFromShuffle
+    }
+
     /// A field that may be shared (single value), mixed (various), or edited.
     public enum FieldState<T: Equatable>: Equatable {
         case shared(T?) // all selected tracks have this value
@@ -46,6 +64,13 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public var rating: FieldState<Int> = .shared(nil)
     @Published public var loved: FieldState<Bool> = .shared(nil)
     @Published public var excludedFromShuffle: FieldState<Bool> = .shared(nil)
+    /// Fields the user has opted in to applying in multi-track edit mode.
+    ///
+    /// Editing a field automatically inserts its key here.  Unchecking a checkbox
+    /// removes the key so the field is omitted from the patch on Save.
+    /// In single-track mode this set is not consulted — all edits are always applied.
+    @Published public var enabledFields: Set<FieldKey> = []
+
     /// New art chosen by the user (file/paste/fetch/drop). Nil = no change.
     @Published public var pendingArtData: Data?
     /// Existing art loaded from the file at open time, shown when `pendingArtData` is nil.
@@ -92,11 +117,24 @@ public final class TagEditorViewModel: ObservableObject {
         self.isSingleTrack = trackIDs.count == 1
     }
 
+    // MARK: - Multi-edit field selection
+
+    /// Marks every field as enabled so all edits will be applied on Save.
+    public func enableAllFields() {
+        self.enabledFields = Set(FieldKey.allCases)
+    }
+
+    /// Clears all field-enable flags so no edits will be applied on Save.
+    public func disableAllFields() {
+        self.enabledFields = []
+    }
+
     // MARK: - Load
 
     /// Loads tags for all selected tracks and populates fields.
     public func load() async {
         guard !self.trackIDs.isEmpty else { return }
+        self.enabledFields = []
         var allTags: [TrackTags] = []
         var tagsByID: [Int64: TrackTags] = [:]
         for id in self.trackIDs {
@@ -165,90 +203,131 @@ public final class TagEditorViewModel: ObservableObject {
     /// Marks `title` as edited with `value`.
     public func setTitle(_ value: String?) {
         self.title = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.title) }
     }
 
+    /// Marks `artist` as edited with `value`.
     public func setArtist(_ value: String?) {
         self.artist = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.artist) }
     }
 
+    /// Marks `albumArtist` as edited with `value`.
     public func setAlbumArtist(_ value: String?) {
         self.albumArtist = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.albumArtist) }
     }
 
+    /// Marks `album` as edited with `value`.
     public func setAlbum(_ value: String?) {
         self.album = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.album) }
     }
 
+    /// Marks `genre` as edited with `value`.
     public func setGenre(_ value: String?) {
         self.genre = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.genre) }
     }
 
+    /// Marks `composer` as edited with `value`.
     public func setComposer(_ value: String?) {
         self.composer = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.composer) }
     }
 
+    /// Marks `comment` as edited with `value`.
     public func setComment(_ value: String?) {
         self.comment = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.comment) }
     }
 
+    /// Marks `year` as edited with `value`.
     public func setYear(_ value: Int?) {
         self.year = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.year) }
     }
 
+    /// Marks `trackNumber` as edited with `value`.
     public func setTrackNumber(_ value: Int?) {
         self.trackNumber = .edited(value)
     }
 
+    /// Marks `trackTotal` as edited with `value`.
     public func setTrackTotal(_ value: Int?) {
         self.trackTotal = .edited(value)
     }
 
+    /// Marks `discNumber` as edited with `value`.
     public func setDiscNumber(_ value: Int?) {
         self.discNumber = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.discNumber) }
     }
 
+    /// Marks `discTotal` as edited with `value`.
     public func setDiscTotal(_ value: Int?) {
         self.discTotal = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.discTotal) }
     }
 
+    /// Marks `bpm` as edited with `value`.
     public func setBPM(_ value: Double?) {
         self.bpm = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.bpm) }
     }
 
+    /// Marks `key` as edited with `value`.
     public func setKey(_ value: String?) {
         self.key = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.musicalKey) }
     }
 
+    /// Marks `isrc` as edited with `value`.
     public func setISRC(_ value: String?) {
         self.isrc = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.isrc) }
     }
 
+    /// Marks `lyrics` as edited with `value`.
     public func setLyrics(_ value: String?) {
         self.lyrics = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.lyrics) }
     }
 
+    /// Marks `sortArtist` as edited with `value`.
     public func setSortArtist(_ value: String?) {
         self.sortArtist = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.sortArtist) }
     }
 
+    /// Marks `sortAlbumArtist` as edited with `value`.
     public func setSortAlbumArtist(_ value: String?) {
         self.sortAlbumArtist = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.sortAlbumArtist) }
     }
 
+    /// Marks `sortAlbum` as edited with `value`.
     public func setSortAlbum(_ value: String?) {
         self.sortAlbum = .edited(value?.nilIfEmpty)
+        if !self.isSingleTrack { self.enabledFields.insert(.sortAlbum) }
     }
 
+    /// Marks `rating` as edited with `value`.
     public func setRating(_ value: Int?) {
         self.rating = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.rating) }
     }
 
+    /// Marks `loved` as edited with `value`.
     public func setLoved(_ value: Bool?) {
         self.loved = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.loved) }
     }
 
+    /// Marks `excludedFromShuffle` as edited with `value`.
     public func setExcludedFromShuffle(_ value: Bool?) {
         self.excludedFromShuffle = .edited(value)
+        if !self.isSingleTrack { self.enabledFields.insert(.excludedFromShuffle) }
     }
 
     /// Removes the cover art: clears pending data and marks the art as deleted.
@@ -298,31 +377,35 @@ public final class TagEditorViewModel: ObservableObject {
 
     private func buildPatch() -> TrackTagPatch {
         var patch = TrackTagPatch()
-        patch.title = Self.patchValue(self.title)
-        patch.artist = Self.patchValue(self.artist)
-        patch.albumArtist = Self.patchValue(self.albumArtist)
-        patch.album = Self.patchValue(self.album)
-        patch.genre = Self.patchValue(self.genre)
-        patch.composer = Self.patchValue(self.composer)
-        patch.comment = Self.patchValue(self.comment)
-        patch.year = Self.patchValue(self.year)
-        // trackNumber intentionally skipped in multi-edit (disabled per spec)
+        patch.title = self.patchValue(self.title, key: .title)
+        patch.artist = self.patchValue(self.artist, key: .artist)
+        patch.albumArtist = self.patchValue(self.albumArtist, key: .albumArtist)
+        patch.album = self.patchValue(self.album, key: .album)
+        patch.genre = self.patchValue(self.genre, key: .genre)
+        patch.composer = self.patchValue(self.composer, key: .composer)
+        patch.comment = self.patchValue(self.comment, key: .comment)
+        patch.year = self.patchValue(self.year, key: .year)
+        // trackNumber / trackTotal: single-track only (no FieldKey needed)
         if self.isSingleTrack {
-            patch.trackNumber = Self.patchValue(self.trackNumber)
-            patch.trackTotal = Self.patchValue(self.trackTotal)
+            if case let .edited(val) = self.trackNumber { patch.trackNumber = val }
+            if case let .edited(val) = self.trackTotal { patch.trackTotal = val }
         }
-        patch.discNumber = Self.patchValue(self.discNumber)
-        patch.discTotal = Self.patchValue(self.discTotal)
-        patch.bpm = Self.patchValue(self.bpm)
-        patch.key = Self.patchValue(self.key)
-        patch.isrc = Self.patchValue(self.isrc)
-        patch.lyrics = Self.patchValue(self.lyrics)
-        patch.sortArtist = Self.patchValue(self.sortArtist)
-        patch.sortAlbumArtist = Self.patchValue(self.sortAlbumArtist)
-        patch.sortAlbum = Self.patchValue(self.sortAlbum)
-        patch.rating = Self.patchValue(self.rating)
-        if let loved = self.loved.editedValue { patch.loved = loved }
-        if let efs = self.excludedFromShuffle.editedValue { patch.excludedFromShuffle = efs }
+        patch.discNumber = self.patchValue(self.discNumber, key: .discNumber)
+        patch.discTotal = self.patchValue(self.discTotal, key: .discTotal)
+        patch.bpm = self.patchValue(self.bpm, key: .bpm)
+        patch.key = self.patchValue(self.key, key: .musicalKey)
+        patch.isrc = self.patchValue(self.isrc, key: .isrc)
+        patch.lyrics = self.patchValue(self.lyrics, key: .lyrics)
+        patch.sortArtist = self.patchValue(self.sortArtist, key: .sortArtist)
+        patch.sortAlbumArtist = self.patchValue(self.sortAlbumArtist, key: .sortAlbumArtist)
+        patch.sortAlbum = self.patchValue(self.sortAlbum, key: .sortAlbum)
+        patch.rating = self.patchValue(self.rating, key: .rating)
+        if case let .edited(val) = self.loved,
+           self.isSingleTrack || self.enabledFields.contains(.loved) { patch.loved = val }
+        if case let .edited(val) = self.excludedFromShuffle,
+           self.isSingleTrack || self.enabledFields.contains(.excludedFromShuffle) {
+            patch.excludedFromShuffle = val
+        }
         if self.artworkCleared {
             patch.coverArt = .some(nil) // signals "remove art"
         } else if let artData = self.pendingArtData {
@@ -332,18 +415,12 @@ public final class TagEditorViewModel: ObservableObject {
     }
 
     /// Converts an `.edited` field state into a `TrackTagPatch` double-optional.
-    private static func patchValue<T>(_ state: FieldState<T>) -> T?? {
+    ///
+    /// In multi-track mode the field must also be present in `enabledFields`;
+    /// in single-track mode the check is skipped.
+    private func patchValue<T>(_ state: FieldState<T>, key: FieldKey) -> T?? {
+        guard self.isSingleTrack || self.enabledFields.contains(key) else { return nil }
         if case let .edited(val) = state { return val }
-        return nil
-    }
-}
-
-// MARK: - FieldState extension
-
-private extension TagEditorViewModel.FieldState {
-    /// Returns the value when the state is `.edited`, otherwise `nil`.
-    var editedValue: T?? {
-        if case let .edited(val) = self { return val }
         return nil
     }
 }
