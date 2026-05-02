@@ -46,8 +46,14 @@ public struct TagEditorSheet: View {
                 case .lyrics:
                     self.lyricsTab
 
+                case .fileInfo:
+                    self.fileInfoTab
+
                 case .sorting:
                     self.sortingTab
+
+                case .advanced:
+                    self.advancedTab
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -395,7 +401,7 @@ public struct TagEditorSheet: View {
 // MARK: - Tab enum
 
 private enum Tab: String, CaseIterable, Identifiable {
-    case details, artwork, lyrics, sorting
+    case details, artwork, lyrics, fileInfo, sorting, advanced
 
     var id: String {
         self.rawValue
@@ -412,8 +418,14 @@ private enum Tab: String, CaseIterable, Identifiable {
         case .lyrics:
             "Lyrics"
 
+        case .fileInfo:
+            "File Info"
+
         case .sorting:
             "Sorting"
+
+        case .advanced:
+            "Advanced"
         }
     }
 }
