@@ -90,7 +90,8 @@ targets:
         inputFiles:
           - "$(SRCROOT)/HelpBook/Bocan.help/Contents/Info.plist"
         outputFiles:
-          - "$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/Bocan.help/Contents/Info.plist"
+          - "$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/Bocan.help\
+            /Contents/Info.plist"
         runOnlyWhenInstalling: false
     scheme:
       testTargets:

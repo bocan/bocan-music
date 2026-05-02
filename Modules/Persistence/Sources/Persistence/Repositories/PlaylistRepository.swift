@@ -136,10 +136,22 @@ public struct PlaylistRepository: Sendable {
 
     /// Appends `trackID` to `playlistID` at the next available position.
     ///
+    /// No-ops silently when the track is already a member (duplicate entries
+    /// are prevented by the unique index on `(playlist_id, track_id)`).
+    ///
     /// Uses a 1-step position; prefer `insertTracks(_:at:in:)` for the
     /// sparse positioning scheme expected by `PlaylistService`.
     public func appendTrack(trackID: Int64, to playlistID: Int64) async throws {
         try await self.database.write { db in
+            // Guard: skip if the track is already in this playlist.
+            let already = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id = ? AND track_id = ?",
+                arguments: [playlistID, trackID]
+            ) ?? 0
+            guard already == 0 else {
+                return
+            }
             let maxPos = try Int.fetchOne(
                 db,
                 sql: "SELECT COALESCE(MAX(position), 0) FROM playlist_tracks WHERE playlist_id = ?",
@@ -159,12 +171,23 @@ public struct PlaylistRepository: Sendable {
     ///
     /// Positions in `rows` must not collide with existing positions in
     /// the playlist; the caller (`PlaylistService`) is responsible for
-    /// picking them.
+    /// picking them.  Track IDs that are already members are skipped
+    /// (see unique index `idx_pt_unique_membership`).
     public func insertRows(_ rows: [PlaylistTrack], in playlistID: Int64) async throws {
         guard !rows.isEmpty else { return }
         try await self.database.write { db in
+            // Fetch the set of track IDs already in this playlist once and
+            // filter the incoming batch to avoid violating the unique index.
+            let existing: Set<Int64> = try Row
+                .fetchAll(
+                    db,
+                    sql: "SELECT track_id FROM playlist_tracks WHERE playlist_id = ?",
+                    arguments: [playlistID]
+                )
+                .reduce(into: []) { $0.insert($1["track_id"]) }
             for row in rows {
                 precondition(row.playlistID == playlistID, "row does not belong to playlist")
+                guard !existing.contains(row.trackID) else { continue }
                 try row.insert(db)
             }
         }
