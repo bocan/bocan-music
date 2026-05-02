@@ -241,7 +241,15 @@ extension TagEditorSheet {
     ) -> Binding<String> {
         Binding(
             get: { self.vm[keyPath: kp].currentValue.flatMap(\.self) ?? "" },
-            set: { newVal in self.applyStringEdit(kp, value: newVal) }
+            set: { newVal in
+                // Guard against spurious writes that TextEditor fires during its
+                // initialisation / re-render when the binding value already equals the
+                // displayed text. Without this guard, `objectWillChange` fires mid-render,
+                // causing "Publishing changes from within view updates" faults.
+                let current = self.vm[keyPath: kp].currentValue.flatMap(\.self) ?? ""
+                guard newVal != current else { return }
+                self.applyStringEdit(kp, value: newVal)
+            }
         )
     }
 
