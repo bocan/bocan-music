@@ -79,7 +79,7 @@ public struct TagEditorSheet: View {
         }
         .sheet(isPresented: self.$isPresentingFetchSheet) {
             CoverArtFetchSheet(
-                vm: CoverArtFetchViewModel(fetcher: CoverArtSearchService()),
+                vm: self.vm.coverArtFetchVM,
                 isPresented: self.$isPresentingFetchSheet
             ) { data in
                 self.vm.pendingArtData = data
