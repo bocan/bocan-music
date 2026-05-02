@@ -138,7 +138,25 @@ public actor MetadataEditService {
         // Use the per-file security-scoped bookmark when available so that
         // the sandboxed process can open the file outside its container.
         if let bookmarkData = track.fileBookmark {
-            return try await SecurityScope.withAccess(bookmarkData) { scopedURL in
+            return try await SecurityScope.withAccess(bookmarkData, onStaleBookmark: { [self] freshURL in
+                // Renew and persist the stale per-file bookmark while we still hold access.
+                do {
+                    let fresh = try freshURL.bookmarkData(
+                        options: .withSecurityScope,
+                        includingResourceValuesForKeys: nil,
+                        relativeTo: nil
+                    )
+                    var updated = track
+                    updated.fileBookmark = fresh
+                    try await self.trackRepo.update(updated)
+                    self.log.debug("security_scope.refreshed", ["trackID": trackID])
+                } catch {
+                    self.log.warning(
+                        "security_scope.refresh_failed",
+                        ["trackID": trackID, "error": String(reflecting: error)]
+                    )
+                }
+            }) { scopedURL in
                 try await Task.detached(priority: .userInitiated) {
                     try TagReader().read(from: scopedURL)
                 }.value
