@@ -52,5 +52,18 @@
     <false/>
     <key>NSSupportsSuddenTermination</key>
     <false/>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>io.cloudcauldron.bocan.playlist-drag</string>
+            <key>UTTypeDescription</key>
+            <string>Bòcan Playlist Drag Item</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>
