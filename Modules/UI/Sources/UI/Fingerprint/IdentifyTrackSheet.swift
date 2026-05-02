@@ -31,6 +31,7 @@ public struct IdentifyTrackSheet: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
+                .help("Close")
             }
             .padding([.horizontal, .top], 16)
             .padding(.bottom, 8)
