@@ -18,6 +18,7 @@ public struct TagEditorSheet: View {
 
     @State private var selectedTab: Tab = .details
     @State private var isPresentingFetchSheet = false
+    @State private var isPresentingRenumberConfirm = false
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -78,6 +79,10 @@ public struct TagEditorSheet: View {
 
     private var detailsTab: some View {
         Form {
+            if !self.vm.isSingleTrack {
+                self.bulkActionsSection
+            }
+
             Section("Track Info") {
                 TagFieldRow("Title", text: self.fieldBinding(\.title), isVarious: self.vm.title == .various)
                 TagFieldRow("Artist", text: self.fieldBinding(\.artist), isVarious: self.vm.artist == .various)
@@ -135,6 +140,90 @@ public struct TagEditorSheet: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: - Bulk Actions (multi-track only)
+
+    private var bulkActionsSection: some View {
+        Section("Bulk Actions") {
+            // Renumber tracks in current sort order
+            LabeledContent("Track Numbers") {
+                Button("Renumber 1…\(self.vm.trackCount)") {
+                    if self.vm.tracksSpanMultipleAlbums {
+                        self.isPresentingRenumberConfirm = true
+                    } else {
+                        Task { await self.vm.renumberTracks() }
+                    }
+                }
+                .disabled(self.vm.isApplyingBulkAction)
+                .help("Assign sequential track numbers (1…N) in the current sort order")
+            }
+            .confirmationDialog(
+                "Tracks span multiple albums",
+                isPresented: self.$isPresentingRenumberConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Renumber Anyway", role: .destructive) {
+                    Task { await self.vm.renumberTracks() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The selected tracks belong to more than one album. Renumbering will overwrite each track's number. Continue?")
+            }
+
+            // Copy each track's artist into its album artist field
+            LabeledContent("Album Artist") {
+                Button("Set from Artist") {
+                    Task { await self.vm.copyArtistToAlbumArtist() }
+                }
+                .disabled(self.vm.isApplyingBulkAction)
+                .help("Copy each track's Artist value into its Album Artist field")
+            }
+
+            // Text case buttons for all text fields
+            LabeledContent("Text Case") {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 4) {
+                    ForEach(TagEditorViewModel.StringField.allCases, id: \.self) { field in
+                        GridRow {
+                            Text(field.label)
+                                .foregroundStyle(Color.textSecondary)
+                                .frame(maxWidth: 110, alignment: .trailing)
+                            self.casePillButtons(for: field)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    /// Three compact case-transformation buttons for a single text field.
+    private func casePillButtons(for field: TagEditorViewModel.StringField) -> some View {
+        HStack(spacing: 4) {
+            Button("Aa") {
+                self.vm.applyTextCase(.titleCase, to: field)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+            .help("Title Case")
+            .accessibilityLabel("Title Case for \(String(describing: field))")
+
+            Button("AA") {
+                self.vm.applyTextCase(.upper, to: field)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+            .help("UPPERCASE")
+            .accessibilityLabel("Uppercase for \(String(describing: field))")
+
+            Button("aa") {
+                self.vm.applyTextCase(.lower, to: field)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+            .help("lowercase")
+            .accessibilityLabel("Lowercase for \(String(describing: field))")
+        }
     }
 
     private var artworkTab: some View {
