@@ -19,9 +19,15 @@ public struct TagEditorSheet: View {
     @State private var selectedTab: Tab = .details
     @State private var isPresentingFetchSheet = false
     @State private var isPresentingRenumberConfirm = false
+    @State private var isPresentingConflictDiff = false
 
     public var body: some View {
         VStack(spacing: 0) {
+            // Conflict-resolution banner — shown when disk changed after user edit
+            if self.vm.hasConflict {
+                self.conflictBanner
+            }
+
             // Tab picker
             Picker("Tab", selection: self.$selectedTab) {
                 ForEach(Tab.allCases) { tab in
@@ -79,9 +85,41 @@ public struct TagEditorSheet: View {
                 self.vm.pendingArtData = data
             }
         }
+        .sheet(isPresented: self.$isPresentingConflictDiff) {
+            ConflictDiffSheet(vm: self.vm, isPresented: self.$isPresentingConflictDiff)
+        }
     }
 
     // MARK: - Tabs
+
+    /// Banner displayed when at least one track has `needsConflictReview = true`.
+    private var conflictBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+            Text("This file was changed on disk after your last edit.")
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Keep My Edits") {
+                Task { await self.vm.keepMyEdits() }
+            }
+            .help("Preserve your stored tag values and dismiss this warning")
+            Button("Take Disk Version") {
+                Task { await self.vm.takeDiskVersion() }
+            }
+            .help("Load the tags now on disk, discarding your previous edits")
+            Button("Show Diff…") {
+                self.isPresentingConflictDiff = true
+            }
+            .help("Compare your stored edits side-by-side with what's on disk")
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color.yellow.opacity(0.12))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Conflict: file was changed on disk after your last edit")
+    }
 
     // MARK: - Bulk Actions (multi-track only)
 

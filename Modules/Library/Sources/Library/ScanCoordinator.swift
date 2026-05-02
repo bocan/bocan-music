@@ -260,13 +260,15 @@ actor ScanCoordinator {
                 // The user has manually edited this track's tags so we don't
                 // overwrite them — but we must still clear the disabled flag and
                 // refresh file-level fields so the track becomes visible again.
+                // Also set needs_conflict_review so the Tag Editor shows a banner.
+                var updated = ex
                 if ex.disabled {
-                    var updated = ex
                     updated.disabled = false
                     updated.fileSize = size
                     updated.fileMtime = mtime
-                    try? await self.trackRepo.update(updated)
                 }
+                updated.needsConflictReview = true
+                try? await self.trackRepo.update(updated)
                 emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
                 return .conflict(trackID)
             }
