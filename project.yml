@@ -78,6 +78,16 @@ targets:
       - package: Acoustics
       - package: Scrobble
       - package: UI
+    preBuildScripts:
+      - name: Index Help Book
+        script: |
+          HELP_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/Bocan.help"
+          if [[ -d "$HELP_DIR" ]]; then
+            hiutil -C -a -f "$HELP_DIR" 2>/dev/null || true
+          fi
+        inputFiles: []
+        outputFiles: []
+        runOnlyWhenInstalling: false
     scheme:
       testTargets:
         - BocanTests

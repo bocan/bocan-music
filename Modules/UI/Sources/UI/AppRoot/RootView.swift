@@ -27,6 +27,8 @@ public struct BocanRootView: View {
     @Environment(\.dismissWindow) private var dismissWindow
     @State private var tagEditorVM: TagEditorViewModel?
     @State private var identifyVM: IdentifyTrackViewModel?
+    @State private var batchCoverArtVM: BatchCoverArtViewModel?
+    @State private var duplicateReviewVM: DuplicateReviewViewModel?
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     /// Phase 4 audit M8: observe so the FSEvents watcher starts/stops live
@@ -251,6 +253,43 @@ public struct BocanRootView: View {
                 playlistID: req.id,
                 playlistName: req.name
             )
+        }
+        .onChange(of: self.vm.isBatchCoverArtSheetPresented) { _, presented in
+            if presented {
+                self.batchCoverArtVM = BatchCoverArtViewModel(
+                    database: self.vm.database,
+                    albumRepo: self.vm.albumRepo,
+                    artistRepo: self.vm.artistRepo
+                )
+            } else {
+                self.batchCoverArtVM = nil
+            }
+        }
+        .sheet(isPresented: self.$vm.isBatchCoverArtSheetPresented) {
+            if let batchVM = self.batchCoverArtVM {
+                BatchCoverArtSheet(
+                    vm: batchVM,
+                    isPresented: self.$vm.isBatchCoverArtSheetPresented
+                )
+            }
+        }
+        .onChange(of: self.vm.isDuplicateReviewSheetPresented) { _, presented in
+            if presented {
+                self.duplicateReviewVM = DuplicateReviewViewModel(
+                    database: self.vm.database,
+                    library: self.vm
+                )
+            } else {
+                self.duplicateReviewVM = nil
+            }
+        }
+        .sheet(isPresented: self.$vm.isDuplicateReviewSheetPresented) {
+            if let dupVM = self.duplicateReviewVM {
+                DuplicateReviewSheet(
+                    vm: dupVM,
+                    isPresented: self.$vm.isDuplicateReviewSheetPresented
+                )
+            }
         }
         .onKeyPress(.init("i"), phases: .down) { event in
             guard event.modifiers == [.command, .option] else { return .ignored }

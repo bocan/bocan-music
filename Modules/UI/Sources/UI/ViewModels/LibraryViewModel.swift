@@ -152,6 +152,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     @Published public var isPlaylistImportSheetPresented = false
     @Published public var playlistExportRequest: PlaylistExportRequest?
 
+    // MARK: - Tools sheet flags
+
+    /// Set to `true` to present the "Fetch Missing Cover Art" progress sheet.
+    @Published public var isBatchCoverArtSheetPresented = false
+
+    /// Set to `true` to present the "Find Duplicates" review sheet.
+    @Published public var isDuplicateReviewSheetPresented = false
+
+    /// Presents the batch cover-art fetch sheet.
+    public func showBatchCoverArt() {
+        self.isBatchCoverArtSheetPresented = true
+    }
+
+    /// Presents the duplicate-track review sheet.
+    public func showDuplicateReview() {
+        self.isDuplicateReviewSheetPresented = true
+    }
+
     public struct PlaylistExportRequest: Identifiable, Equatable {
         public let id: Int64
         public let name: String
