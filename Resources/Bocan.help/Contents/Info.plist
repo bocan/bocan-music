@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>io.cloudcauldron.bocan.help</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Bocan Help</string>
+    <key>HPDBookTitle</key>
+    <string>Bòcan Music Help</string>
+    <key>HPDBookIndexPath</key>
+    <string>index.html</string>
+    <key>HPDBookType</key>
+    <string>3</string>
+    <key>HPDBookIconPath</key>
+    <string>Art/AppIcon.png</string>
+</dict>
+</plist>

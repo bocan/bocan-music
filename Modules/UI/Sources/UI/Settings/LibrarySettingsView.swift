@@ -25,7 +25,7 @@ public struct LibrarySettingsView: View {
                 Toggle("Embed cover art directly into audio files", isOn: self.$embedCoverArt)
                     .help(
                         "When on, saving cover art rewrites the audio file to embed the image. " +
-                        "When off, art is stored only in Bòcan's cache and won't appear in other apps."
+                            "When off, art is stored only in Bòcan's cache and won't appear in other apps."
                     )
                 if self.embedCoverArt {
                     Text("Files will be modified when you save cover art changes.")
