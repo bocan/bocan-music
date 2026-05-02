@@ -40,6 +40,16 @@ public final class TagEditorViewModel: ObservableObject {
         case edited(T?) // user changed it; applies to all
     }
 
+    /// Controls whether edited lyrics are saved as synced (LRC) or plain text.
+    public enum LyricsMode: String, CaseIterable, Sendable {
+        /// Auto-detect: synced when LRC timestamps are present, otherwise plain.
+        case auto
+        /// Always save as synced lyrics (LRC), even if no timestamps are detected.
+        case synced
+        /// Always save as plain text, stripping no content but marking non-synced.
+        case plain
+    }
+
     /// One row in the conflict diff sheet comparing a stored DB value to the on-disk value.
     public struct ConflictDiffRow: Identifiable, Sendable {
         public let id: String
@@ -73,6 +83,8 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public var key: FieldState<String> = .shared(nil)
     @Published public var isrc: FieldState<String> = .shared(nil)
     @Published public var lyrics: FieldState<String> = .shared(nil)
+    /// How to save the lyrics text: auto-detect, force synced, or force plain.
+    @Published public var lyricsMode: LyricsMode = .auto
     @Published public var sortArtist: FieldState<String> = .shared(nil)
     @Published public var sortAlbumArtist: FieldState<String> = .shared(nil)
     @Published public var sortAlbum: FieldState<String> = .shared(nil)
@@ -419,7 +431,17 @@ public final class TagEditorViewModel: ObservableObject {
         patch.bpm = self.patchValue(self.bpm, key: .bpm)
         patch.key = self.patchValue(self.key, key: .musicalKey)
         patch.isrc = self.patchValue(self.isrc, key: .isrc)
-        patch.lyrics = self.patchValue(self.lyrics, key: .lyrics)
+        // Route lyrics to the synced or plain field depending on the resolved mode.
+        // Only one of patch.lyrics / patch.syncedLyrics is set at a time.
+        let rawLyrics: String?? = self.patchValue(self.lyrics, key: .lyrics)
+        if rawLyrics != nil {
+            if self.effectiveLyricsIsSynced {
+                patch.syncedLyrics = rawLyrics
+                patch.lyrics = .some(nil) // ensure plain field is cleared
+            } else {
+                patch.lyrics = rawLyrics
+            }
+        }
         patch.sortArtist = self.patchValue(self.sortArtist, key: .sortArtist)
         patch.sortAlbumArtist = self.patchValue(self.sortAlbumArtist, key: .sortAlbumArtist)
         patch.sortAlbum = self.patchValue(self.sortAlbum, key: .sortAlbum)

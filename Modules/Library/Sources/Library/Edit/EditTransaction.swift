@@ -99,6 +99,45 @@ actor EditTransaction {
                     var mutable = track
                     if let hash = coverHash { mutable.coverArtHash = hash }
                     try mutable.update(db)
+
+                    // Keep the lyrics table in sync with the edited text so
+                    // Phase 11 (lyrics display) sees the updated isSynced flag
+                    // immediately — without waiting for the next rescan.
+                    if let trackID = mutable.id {
+                        if let text = patch.syncedLyrics {
+                            // nil text means "clear synced lyrics"
+                            if let lyricsText = text {
+                                let row = Lyrics(
+                                    trackID: trackID,
+                                    lyricsText: lyricsText,
+                                    isSynced: true,
+                                    source: "user"
+                                )
+                                try row.save(db)
+                            } else {
+                                try db.execute(
+                                    sql: "DELETE FROM lyrics WHERE track_id = ?",
+                                    arguments: [trackID]
+                                )
+                            }
+                        } else if let text = patch.lyrics {
+                            // nil text means "clear plain lyrics"
+                            if let lyricsText = text {
+                                let row = Lyrics(
+                                    trackID: trackID,
+                                    lyricsText: lyricsText,
+                                    isSynced: false,
+                                    source: "user"
+                                )
+                                try row.save(db)
+                            } else {
+                                try db.execute(
+                                    sql: "DELETE FROM lyrics WHERE track_id = ?",
+                                    arguments: [trackID]
+                                )
+                            }
+                        }
+                    }
                 }
             }
             self.log.debug("edit.committed", ["count": successfulUpdates.count])
@@ -265,6 +304,9 @@ actor EditTransaction {
         if let v = patch.key { tags.key = v }
         if let v = patch.isrc { tags.isrc = v }
         if let v = patch.lyrics { tags.lyrics = v }
+        // syncedLyrics writes to the same audio-file tag as plain lyrics;
+        // the isSynced distinction is maintained in the lyrics DB table only.
+        if let v = patch.syncedLyrics { tags.lyrics = v }
         if let v = patch.sortArtist { tags.sortArtist = v }
         if let v = patch.sortAlbumArtist { tags.sortAlbumArtist = v }
         if let v = patch.sortAlbum { tags.sortAlbum = v }
