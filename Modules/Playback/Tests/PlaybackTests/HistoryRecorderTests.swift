@@ -93,6 +93,8 @@ struct HistoryRecorderTests {
         try await Self.insertTrack(id: 99, in: db)
         let recorder = await PlayHistoryRecorder(database: db, scrobbleSink: sink)
         await recorder.trackDidStart(trackID: 99, duration: 200)
+        // nowPlaying is dispatched fire-and-forget; yield to let the task run.
+        await Task.yield()
         let calls = await sink.nowPlayingCalls
         #expect(calls == [99])
     }

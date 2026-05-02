@@ -66,8 +66,10 @@ public actor PlayHistoryRecorder {
         self.playStartedAt = Date()
         self.hasScrobbled = false
         self.log.debug("history.start", ["trackID": trackID, "duration": duration])
+        // Fire-and-forget: the Now Playing hint to scrobbling services is best-effort
+        // and must never block the playback hot path (engine.play() follows immediately).
         if let sink = scrobbleSink {
-            await sink.nowPlaying(trackID: trackID)
+            Task { await sink.nowPlaying(trackID: trackID) }
         }
     }
 
