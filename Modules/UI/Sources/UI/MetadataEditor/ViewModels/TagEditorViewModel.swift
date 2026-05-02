@@ -81,6 +81,8 @@ public final class TagEditorViewModel: ObservableObject {
     var loadedTagsByID: [Int64: TrackTags] = [:]
     /// DB track rows, keyed by track ID.  Used by cross-album renumber check.
     var loadedTracksByID: [Int64: Track] = [:]
+    /// The single `Track` row loaded from the DB.  `nil` in multi-track mode or before `load()`.
+    @Published public private(set) var singleTrack: Track?
 
     // MARK: - Init
 
@@ -114,6 +116,7 @@ public final class TagEditorViewModel: ObservableObject {
             if let id = track.id { tracksByID[id] = track }
         }
         self.loadedTracksByID = tracksByID
+        self.singleTrack = self.isSingleTrack ? tracksByID[self.trackIDs[0]] : nil
         self.populateDBFields(from: tracks)
         // Load first front-cover for display (picture type 3 = front cover).
         let art = allTags.first?.coverArt.first { $0.pictureType == 3 }
