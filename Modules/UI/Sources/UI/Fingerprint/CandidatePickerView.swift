@@ -80,6 +80,7 @@ struct CandidatePickerView: View {
                 Spacer()
                 Button("Skip", action: self.onSkip)
                     .keyboardShortcut(.escape, modifiers: [])
+                    .help("Skip this track without applying changes")
             }
             .padding()
         }
@@ -194,9 +195,11 @@ private struct CandidateRow: View {
                     Button("Select All") { self.selectAll() }
                         .buttonStyle(.borderless)
                         .controlSize(.small)
+                        .help("Select all available tag fields")
                     Button("Select None") { self.selection.removeAll() }
                         .buttonStyle(.borderless)
                         .controlSize(.small)
+                        .help("Deselect all tag fields")
                     Spacer()
                     if self.isApplied {
                         Label("Applied", systemImage: "checkmark.circle.fill")
@@ -206,6 +209,7 @@ private struct CandidateRow: View {
                         Button("Apply Selected") { self.onApply() }
                             .buttonStyle(.borderedProminent)
                             .disabled(self.selection.isEmpty || self.isApplying)
+                            .help("Write selected fields to the track's tags")
                             .overlay {
                                 if self.isApplying {
                                     ProgressView().scaleEffect(0.7)
