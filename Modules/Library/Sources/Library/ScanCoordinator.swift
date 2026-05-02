@@ -262,11 +262,14 @@ actor ScanCoordinator {
                 // refresh file-level fields so the track becomes visible again.
                 // Also set needs_conflict_review so the Tag Editor shows a banner.
                 var updated = ex
-                if ex.disabled {
-                    updated.disabled = false
-                    updated.fileSize = size
-                    updated.fileMtime = mtime
-                }
+                // Always sync fileMtime/fileSize so subsequent scans see a
+                // matching mtime and don't re-process this file on every
+                // startup. Without this, the conflict branch fires on every
+                // launch for any track whose mtime changed before the
+                // EditTransaction stamp was introduced.
+                updated.fileSize = size
+                updated.fileMtime = mtime
+                if ex.disabled { updated.disabled = false }
                 updated.needsConflictReview = true
                 try? await self.trackRepo.update(updated)
                 emit(.processed(url: url, outcome: .conflict(trackID: trackID)))

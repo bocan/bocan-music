@@ -116,6 +116,10 @@ public struct BocanRootView: View {
             let dw = self.dismissWindow
             self.windowMode.openWindow = { id in ow(id: id) }
             self.windowMode.dismissWindow = { id in dw(id: id) }
+            // Load the playlist sidebar BEFORE restoring UI state so that a
+            // saved .folder destination doesn't briefly show "Folder Not Found"
+            // while playlistSidebar.nodes is still empty.
+            await self.vm.playlistSidebar.reload()
             await self.vm.restoreUIState()
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
