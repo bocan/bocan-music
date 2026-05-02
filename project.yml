@@ -79,14 +79,18 @@ targets:
       - package: Scrobble
       - package: UI
     preBuildScripts:
-      - name: Index Help Book
+      - name: Copy and Index Help Book
         script: |
-          HELP_DIR="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/Bocan.help"
-          if [[ -d "$HELP_DIR" ]]; then
-            hiutil -C -a -f "$HELP_DIR" 2>/dev/null || true
+          SRC="${SRCROOT}/HelpBook/Bocan.help"
+          DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/Bocan.help"
+          if [[ -d "$SRC" ]]; then
+            rsync -a --delete "$SRC/" "$DEST/"
+            hiutil -C -a -f "$DEST" 2>/dev/null || true
           fi
-        inputFiles: []
-        outputFiles: []
+        inputFiles:
+          - "$(SRCROOT)/HelpBook/Bocan.help/Contents/Info.plist"
+        outputFiles:
+          - "$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/Bocan.help/Contents/Info.plist"
         runOnlyWhenInstalling: false
     scheme:
       testTargets:
