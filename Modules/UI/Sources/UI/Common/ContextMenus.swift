@@ -189,7 +189,6 @@ public struct TrackContextMenu: View {
         Button("Get Info") {
             self.actions.getInfo(self.tracks)
         }
-        .keyboardShortcut("i", modifiers: .command)
         .disabled(self.tracks.isEmpty)
 
         Divider()
