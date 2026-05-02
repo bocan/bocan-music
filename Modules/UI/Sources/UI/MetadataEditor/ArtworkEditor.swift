@@ -86,27 +86,32 @@ public struct ArtworkEditor: View {
         }
     }
 
+    @MainActor
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
 
         // Try file URL first
         if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-            _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                guard let url, let data = try? Data(contentsOf: url) else { return }
-                DispatchQueue.main.async {
-                    self.vm.pendingArtData = Self.normalise(data)
+            Task { @MainActor in
+                let url: URL? = await withCheckedContinuation { cont in
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in cont.resume(returning: url as? URL) }
                 }
+                guard let url, let data = try? Data(contentsOf: url) else { return }
+                self.vm.pendingArtData = Self.normalise(data)
             }
             return true
         }
 
         // Try image data (NSImage doesn't bridge via loadObject; use raw data)
         if provider.hasItemConformingToTypeIdentifier("public.image") {
-            _ = provider.loadDataRepresentation(forTypeIdentifier: "public.image") { data, _ in
-                guard let data else { return }
-                DispatchQueue.main.async {
-                    self.vm.pendingArtData = Self.normalise(data)
+            Task { @MainActor in
+                let data: Data? = await withCheckedContinuation { cont in
+                    _ = provider.loadDataRepresentation(forTypeIdentifier: "public.image") { data, _ in
+                        cont.resume(returning: data)
+                    }
                 }
+                guard let data else { return }
+                self.vm.pendingArtData = Self.normalise(data)
             }
             return true
         }
