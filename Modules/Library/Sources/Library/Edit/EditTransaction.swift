@@ -59,11 +59,14 @@ actor EditTransaction {
 
     /// Applies `patch` to every track in `trackIDs`.
     ///
+    /// - Parameter embedCoverArt: When `true`, cover art changes are written
+    ///   directly into the audio file bytes in addition to the app cache.
     /// - Parameter onProgress: Called after each file completes (0-based index, total count).
     /// - Throws: `EditError.partial` if some but not all files succeeded.
     func execute(
         patch: TrackTagPatch,
         trackIDs: [Int64],
+        embedCoverArt: Bool = false,
         onProgress: (@Sendable (Int, Int) -> Void)? = nil
     ) async throws {
         guard !patch.isEmpty else { return }
@@ -75,7 +78,11 @@ actor EditTransaction {
         for (idx, trackID) in trackIDs.enumerated() {
             try Task.checkCancellation()
             do {
-                let result = try await self.processOneTrack(trackID: trackID, patch: patch)
+                let result = try await self.processOneTrack(
+                    trackID: trackID,
+                    patch: patch,
+                    embedCoverArt: embedCoverArt
+                )
                 successfulUpdates.append(result)
             } catch {
                 self.log.error("edit.track.failed", ["id": trackID, "error": String(reflecting: error)])
@@ -106,7 +113,8 @@ actor EditTransaction {
 
     private func processOneTrack(
         trackID: Int64,
-        patch: TrackTagPatch
+        patch: TrackTagPatch,
+        embedCoverArt: Bool
     ) async throws -> (track: Track, coverArtHash: String?) {
         // 1. Fetch DB row
         let track = try await self.trackRepo.fetch(id: trackID)
@@ -159,6 +167,22 @@ actor EditTransaction {
         // 4. Build the new tags by applying the patch
         var newTags = currentTags
         Self.applyPatch(patch, to: &newTags)
+
+        // 4b. If embedding is enabled, include the patched cover art bytes in the
+        //     file tags so TagWriter writes them into the audio file.
+        if embedCoverArt, let artPatch = patch.coverArt {
+            if let artData = artPatch {
+                let rawArts = [RawCoverArt(
+                    data: artData,
+                    mimeType: Self.mimeType(for: artData),
+                    pictureType: 3 // APIC type 3 = front cover
+                )]
+                newTags.coverArt = CoverArtExtractor.extract(from: rawArts)
+            } else {
+                // Patch explicitly clears the art → remove from file as well.
+                newTags.coverArt = []
+            }
+        }
 
         // 5. Write file atomically
         try await Task.detached(priority: .userInitiated) {
@@ -253,6 +277,24 @@ actor EditTransaction {
                 albumPeak: rg.albumPeak
             )
         }
+    }
+
+    /// Detects the MIME type of image `data` from its magic bytes.
+    ///
+    /// Returns `"image/jpeg"` as the default for unrecognised formats because
+    /// `ArtworkEditor.normalise()` converts large images to JPEG, making JPEG
+    /// the most common format for patched cover art.
+    private static func mimeType(for data: Data) -> String {
+        guard data.count >= 4 else { return "image/jpeg" }
+        let header = data.prefix(4)
+        // PNG: 89 50 4E 47
+        if header.starts(with: [0x89, 0x50, 0x4E, 0x47]) { return "image/png" }
+        // JPEG: FF D8 FF
+        if header.starts(with: [0xFF, 0xD8, 0xFF]) { return "image/jpeg" }
+        // WebP: 52 49 46 46 ... 57 45 42 50 (need 12 bytes)
+        if data.count >= 12, header.starts(with: [0x52, 0x49, 0x46, 0x46]),
+           data[8 ..< 12].elementsEqual([0x57, 0x45, 0x42, 0x50]) { return "image/webp" }
+        return "image/jpeg"
     }
 
     // MARK: - Security scope
