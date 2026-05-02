@@ -41,6 +41,7 @@ public struct TagFieldRow: View {
             )
             .foregroundStyle(self.isVarious && self.text.isEmpty ? Color.textTertiary : Color.primary)
             .disabled(self.enabledBinding.map { !$0.wrappedValue } ?? false)
+            .accessibilityLabel(self.label)
         } label: {
             HStack(spacing: 4) {
                 if let eb = self.enabledBinding {
@@ -91,6 +92,7 @@ public struct IntFieldRow: View {
             )
             .foregroundStyle(self.isVarious && self.value == nil ? Color.textTertiary : Color.primary)
             .disabled(self.enabledBinding.map { !$0.wrappedValue } ?? false)
+            .accessibilityLabel(self.label)
         } label: {
             HStack(spacing: 4) {
                 if let eb = self.enabledBinding {
