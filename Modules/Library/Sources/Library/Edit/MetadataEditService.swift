@@ -171,10 +171,20 @@ public actor MetadataEditService {
 
     /// Clears the `needs_conflict_review` flag for `trackID` (user chose "Keep My Edits").
     /// The track remains `user_edited = 1`; the disk change is acknowledged but discarded.
+    /// Also stamps `fileMtime`/`fileSize` with the current on-disk values so the next
+    /// scan sees a matching mtime and does not re-raise the conflict immediately.
     public func clearConflictFlag(trackID: Int64) async throws {
         var track = try await self.trackRepo.fetch(id: trackID)
         guard track.needsConflictReview else { return }
         track.needsConflictReview = false
+        // Sync the stored mtime/size so the scanner won't re-flag this file.
+        if let url = URL(string: track.fileURL),
+           let attrs = try? FileManager.default.attributesOfItem(atPath: url.path) {
+            if let modDate = attrs[.modificationDate] as? Date {
+                track.fileMtime = Int64(modDate.timeIntervalSince1970)
+            }
+            if let sz = attrs[.size] as? Int { track.fileSize = Int64(sz) }
+        }
         try await self.trackRepo.update(track)
         self.log.debug("conflict.cleared", ["trackID": trackID])
     }
