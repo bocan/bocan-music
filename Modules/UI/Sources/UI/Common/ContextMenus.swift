@@ -42,7 +42,7 @@ public struct TrackActions {
     /// Reveal the backing file in Finder.
     public var revealInFinder: @MainActor (Track) -> Void
 
-    /// TODO(phase-8): Open the tag editor.
+    /// Open the tag editor.
     public var getInfo: @MainActor ([Track]) -> Void
 
     /// Remove the track(s) from the library (soft-delete).
