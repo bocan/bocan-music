@@ -20,6 +20,9 @@ public struct TagEditorSheet: View {
     @State private var isPresentingFetchSheet = false
     @State private var isPresentingRenumberConfirm = false
     @State private var isPresentingConflictDiff = false
+    /// Tracks keyboard focus across all editable fields in the Details tab.
+    /// Internal (not private) so the TagEditorSheet+DetailsTab extension can access `$focusedField`.
+    @FocusState var focusedField: TagEditorFocusField?
 
     public var body: some View {
         VStack(spacing: 0) {
@@ -69,6 +72,7 @@ public struct TagEditorSheet: View {
         }
         .frame(minWidth: 520, idealWidth: 600, minHeight: 420)
         .task { await self.vm.load() }
+        .onAppear { self.focusedField = .title }
         .alert("Error", isPresented: Binding(
             get: { self.vm.lastError != nil },
             set: { if !$0 { self.vm.lastError = nil } }
@@ -258,6 +262,48 @@ public struct TagEditorSheet: View {
     // MARK: - Helpers
 
     // fieldBinding, intBinding, applyStringEdit, applyIntEdit live in TagEditorSheet+DetailsTab.swift
+}
+
+// MARK: - TagEditorFocusField
+
+/// Identifies each focusable field in the Details tab for explicit Tab-key order.
+/// Internal so the TagEditorSheet+DetailsTab extension in a separate file can use it.
+enum TagEditorFocusField: Hashable {
+    case title
+
+    case artist
+
+    case albumArtist
+
+    case album
+
+    case genre
+
+    case composer
+
+    case year
+
+    case trackNumber
+
+    case trackTotal
+
+    case discNumber
+
+    case discTotal
+
+    case bpm
+
+    case key
+
+    case isrc
+
+    case comment
+
+    case rating
+
+    case loved
+
+    case excludedFromShuffle
 }
 
 // MARK: - Tab enum

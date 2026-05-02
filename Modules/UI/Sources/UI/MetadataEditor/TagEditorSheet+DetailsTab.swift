@@ -19,36 +19,42 @@ extension TagEditorSheet {
                     isVarious: self.vm.title == .various,
                     enabledBinding: self.enabledFor(.title)
                 )
+                .focused(self.$focusedField, equals: .title)
                 TagFieldRow(
                     "Artist",
                     text: self.fieldBinding(\.artist),
                     isVarious: self.vm.artist == .various,
                     enabledBinding: self.enabledFor(.artist)
                 )
+                .focused(self.$focusedField, equals: .artist)
                 TagFieldRow(
                     "Album Artist",
                     text: self.fieldBinding(\.albumArtist),
                     isVarious: self.vm.albumArtist == .various,
                     enabledBinding: self.enabledFor(.albumArtist)
                 )
+                .focused(self.$focusedField, equals: .albumArtist)
                 TagFieldRow(
                     "Album",
                     text: self.fieldBinding(\.album),
                     isVarious: self.vm.album == .various,
                     enabledBinding: self.enabledFor(.album)
                 )
+                .focused(self.$focusedField, equals: .album)
                 TagFieldRow(
                     "Genre",
                     text: self.fieldBinding(\.genre),
                     isVarious: self.vm.genre == .various,
                     enabledBinding: self.enabledFor(.genre)
                 )
+                .focused(self.$focusedField, equals: .genre)
                 TagFieldRow(
                     "Composer",
                     text: self.fieldBinding(\.composer),
                     isVarious: self.vm.composer == .various,
                     enabledBinding: self.enabledFor(.composer)
                 )
+                .focused(self.$focusedField, equals: .composer)
             }
 
             Section("Numbering") {
@@ -58,9 +64,12 @@ extension TagEditorSheet {
                     isVarious: self.vm.year == .various,
                     enabledBinding: self.enabledFor(.year)
                 )
+                .focused(self.$focusedField, equals: .year)
                 if self.vm.isSingleTrack {
                     IntFieldRow("Track", value: self.intBinding(\.trackNumber), isVarious: false)
+                        .focused(self.$focusedField, equals: .trackNumber)
                     IntFieldRow("Of", value: self.intBinding(\.trackTotal), isVarious: false)
+                        .focused(self.$focusedField, equals: .trackTotal)
                 }
                 IntFieldRow(
                     "Disc",
@@ -68,12 +77,14 @@ extension TagEditorSheet {
                     isVarious: self.vm.discNumber == .various,
                     enabledBinding: self.enabledFor(.discNumber)
                 )
+                .focused(self.$focusedField, equals: .discNumber)
                 IntFieldRow(
                     "Discs",
                     value: self.intBinding(\.discTotal),
                     isVarious: self.vm.discTotal == .various,
                     enabledBinding: self.enabledFor(.discTotal)
                 )
+                .focused(self.$focusedField, equals: .discTotal)
             }
 
             Section("Extended") {
@@ -97,24 +108,28 @@ extension TagEditorSheet {
                     isVarious: self.vm.bpm == .various,
                     enabledBinding: self.enabledFor(.bpm)
                 )
+                .focused(self.$focusedField, equals: .bpm)
                 TagFieldRow(
                     "Key",
                     text: self.fieldBinding(\.key),
                     isVarious: self.vm.key == .various,
                     enabledBinding: self.enabledFor(.musicalKey)
                 )
+                .focused(self.$focusedField, equals: .key)
                 TagFieldRow(
                     "ISRC",
                     text: self.fieldBinding(\.isrc),
                     isVarious: self.vm.isrc == .various,
                     enabledBinding: self.enabledFor(.isrc)
                 )
+                .focused(self.$focusedField, equals: .isrc)
                 TagFieldRow(
                     "Comment",
                     text: self.fieldBinding(\.comment),
                     isVarious: self.vm.comment == .various,
                     enabledBinding: self.enabledFor(.comment)
                 )
+                .focused(self.$focusedField, equals: .comment)
             }
 
             Section("Rating") {
@@ -126,6 +141,7 @@ extension TagEditorSheet {
                     ),
                     enabledBinding: self.enabledFor(.rating)
                 )
+                .focused(self.$focusedField, equals: .rating)
                 ToggleFieldRow(
                     "Loved",
                     value: Binding(
@@ -134,6 +150,7 @@ extension TagEditorSheet {
                     ),
                     enabledBinding: self.enabledFor(.loved)
                 )
+                .focused(self.$focusedField, equals: .loved)
                 ToggleFieldRow(
                     "Excluded from Shuffle",
                     value: Binding(
@@ -142,6 +159,7 @@ extension TagEditorSheet {
                     ),
                     enabledBinding: self.enabledFor(.excludedFromShuffle)
                 )
+                .focused(self.$focusedField, equals: .excludedFromShuffle)
             }
         }
         .formStyle(.grouped)
