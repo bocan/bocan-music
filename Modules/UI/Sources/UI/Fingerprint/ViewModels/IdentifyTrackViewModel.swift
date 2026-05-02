@@ -264,4 +264,12 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
 
         self.currentValues = snapshot
     }
+
+    // MARK: - Testing support
+
+    /// Bypasses the async pipeline to set the display phase directly.
+    /// Only intended for snapshot and unit tests; not part of the public API.
+    func overridePhase(_ newPhase: Phase) {
+        self.phase = newPhase
+    }
 }
