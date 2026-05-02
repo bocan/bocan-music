@@ -70,7 +70,8 @@ public actor MetadataEditService {
         self.log.debug("edit.start", ["count": trackIDs.count])
         let start = Date()
 
-        try await tx.execute(patch: patch, trackIDs: trackIDs, onProgress: onProgress)
+        let embedCoverArt = UserDefaults.standard.bool(forKey: "metadata.embedCoverArt")
+        try await tx.execute(patch: patch, trackIDs: trackIDs, embedCoverArt: embedCoverArt, onProgress: onProgress)
 
         let ms = Int(Date().timeIntervalSince(start) * 1000)
         self.log.debug("edit.end", ["count": trackIDs.count, "ms": ms])
