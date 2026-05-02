@@ -104,6 +104,9 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public private(set) var existingArtData: Data?
     /// True when the user explicitly clicked Remove to delete existing art.
     public private(set) var artworkCleared = false
+    /// View model for the cover-art fetch sheet. Held here so it survives sheet
+    /// presentation cycles and can be injected with a mock in tests.
+    public let coverArtFetchVM: CoverArtFetchViewModel
 
     // MARK: - Status
 
@@ -144,10 +147,11 @@ public final class TagEditorViewModel: ObservableObject {
 
     // MARK: - Init
 
-    public init(service: MetadataEditService, trackIDs: [Int64]) {
+    public init(service: MetadataEditService, trackIDs: [Int64], fetcher: any CoverArtFetcher = CoverArtSearchService()) {
         self.service = service
         self.trackIDs = trackIDs
         self.isSingleTrack = trackIDs.count == 1
+        self.coverArtFetchVM = CoverArtFetchViewModel(fetcher: fetcher)
     }
 
     // MARK: - Multi-edit field selection
