@@ -20,6 +20,9 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     // MARK: - Published state
 
     @Published public private(set) var nodes: [PlaylistNode] = []
+    /// `true` after the first `reload()` completes. Use this to distinguish
+    /// "sidebar not yet loaded" from "item genuinely not found" in the UI.
+    @Published public private(set) var isLoaded = false
     @Published public var expandedFolders: Set<Int64> = []
     @Published public var renamingPlaylistID: Int64?
     @Published public var renameTarget: PlaylistNode?
@@ -64,6 +67,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     public func reload() async {
         do {
             self.nodes = try await self.service.list()
+            self.isLoaded = true
         } catch {
             self.log.error("playlist.sidebar.reload.failed", ["error": String(reflecting: error)])
             self.lastError = "Could not load playlists."
