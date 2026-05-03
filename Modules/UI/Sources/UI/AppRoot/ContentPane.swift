@@ -9,9 +9,14 @@ import SwiftUI
 /// already observes.  No separate search panel is needed.
 public struct ContentPane: View {
     @ObservedObject public var vm: LibraryViewModel
+    /// Observed separately so changes to `isLoaded` / `nodes` on the sidebar
+    /// VM trigger a re-render of ContentPane even though `playlistSidebar` is
+    /// a plain `let` on `LibraryViewModel` (not `@Published`).
+    @ObservedObject private var sidebar: PlaylistSidebarViewModel
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
+        self.sidebar = vm.playlistSidebar
     }
 
     public var body: some View {
