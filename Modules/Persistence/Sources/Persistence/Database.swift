@@ -223,9 +223,14 @@ public actor Database {
     }
 
     private static func configure(writer: any DatabaseWriter) async throws {
-        // WAL mode for on-disk pools (no-op for in-memory queues)
+        // WAL mode for on-disk pools (no-op for in-memory queues).
+        // wal_autocheckpoint: checkpoint after 400 pages (~1.6 MB) instead of the
+        // SQLite default of 1,000. This prevents the WAL growing large enough that
+        // ValueObservation delivers a stale (pre-WAL-replay) snapshot on the next
+        // app launch, which surfaced as an empty library list despite rows being present.
         try await writer.write { db in
             _ = try? db.execute(sql: "PRAGMA journal_mode = WAL")
+            try db.execute(sql: "PRAGMA wal_autocheckpoint = 400")
             try db.execute(sql: "PRAGMA auto_vacuum = INCREMENTAL")
         }
         var migrator = Migrator.make()

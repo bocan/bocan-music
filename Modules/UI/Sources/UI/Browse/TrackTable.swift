@@ -45,6 +45,8 @@ public struct TrackContextMenuActions {
     public let copy: ([Track]) -> Void
     /// Set or clear the shuffle-exclusion flag for a track.
     public let toggleShuffle: (Int64, Bool) -> Void
+    /// Compute ReplayGain for the selected tracks, replacing any existing values.
+    public let computeReplayGain: ([Track]) -> Void
     /// Remove the selected tracks from the current playlist.
     /// `nil` means this view is not inside a playlist — the menu item is hidden.
     public let removeFromPlaylist: (([Track]) -> Void)?
@@ -130,6 +132,10 @@ public struct TrackTable: NSViewRepresentable {
         dataSource.onMove = self.onMove
         coordinator.tableView = tableView
 
+        return self.makeScrollView(wrapping: tableView)
+    }
+
+    private func makeScrollView(wrapping tableView: NSTableView) -> NSScrollView {
         let scrollView = NSScrollView()
         scrollView.documentView = tableView
         scrollView.hasVerticalScroller = true
@@ -164,9 +170,15 @@ public struct TrackTable: NSViewRepresentable {
             coordinator.updateRows(self.rows)
             coordinator.lastAppliedIDs = newIDs
 
+            // NSDiffableDataSourceSnapshot requires unique item identifiers.
+            // Guard against duplicate track IDs (e.g. the same track added
+            // twice to a playlist) by deduplicating while preserving order.
+            var seen = Set<Int64>()
+            let uniqueIDs = newIDs.filter { seen.insert($0).inserted }
+
             var snapshot = NSDiffableDataSourceSnapshot<Int, Int64>()
             snapshot.appendSections([0])
-            snapshot.appendItems(newIDs)
+            snapshot.appendItems(uniqueIDs)
             let animated = coordinator.hasAppliedInitialSnapshot && !self.rows.isEmpty
             dataSource.apply(snapshot, animatingDifferences: animated)
             coordinator.hasAppliedInitialSnapshot = true
@@ -212,9 +224,7 @@ public struct TrackTable: NSViewRepresentable {
         }
 
         // 6 — onMove callback changed (e.g. playlist loaded or kind toggled).
-        if let dataSource = coordinator.dataSource {
-            dataSource.onMove = self.onMove
-        }
+        dataSource.onMove = self.onMove
     }
 
     // MARK: - Row density

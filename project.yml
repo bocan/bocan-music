@@ -78,6 +78,21 @@ targets:
       - package: Acoustics
       - package: Scrobble
       - package: UI
+    preBuildScripts:
+      - name: Copy and Index Help Book
+        script: |
+          SRC="${SRCROOT}/HelpBook/Bocan.help"
+          DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/Bocan.help"
+          if [[ -d "$SRC" ]]; then
+            rsync -a --delete "$SRC/" "$DEST/"
+            hiutil -C -a -f "$DEST" 2>/dev/null || true
+          fi
+        inputFiles:
+          - "$(SRCROOT)/HelpBook/Bocan.help/Contents/Info.plist"
+        outputFiles:
+          - "$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/Bocan.help\
+            /Contents/Info.plist"
+        runOnlyWhenInstalling: false
     scheme:
       testTargets:
         - BocanTests

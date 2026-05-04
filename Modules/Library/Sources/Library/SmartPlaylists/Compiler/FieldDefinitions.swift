@@ -106,7 +106,18 @@ public enum FieldDefinitions {
             columnRef: .init(expression: "tracks.excluded_from_shuffle")
         )
         t[.isLossless] = .init(dataType: .bool, allowedComparators: .bool, columnRef: .init(expression: "tracks.is_lossless"))
-        t[.hasCoverArt] = .init(dataType: .bool, allowedComparators: .bool, columnRef: .init(expression: "tracks.cover_art_hash"))
+        // Cover art is stored at the album level (batch-fetch and embedded art
+        // both populate albums.cover_art_hash via M006 backfill or AlbumRepository
+        // .setCoverArt). Checking albums.cover_art_hash means "will this track
+        // display art in the app", which is the correct semantic for a smart playlist.
+        t[.hasCoverArt] = .init(
+            dataType: .bool,
+            allowedComparators: .bool,
+            columnRef: .init(
+                expression: "albums.cover_art_hash",
+                join: Join("LEFT JOIN albums ON albums.id = tracks.album_id")
+            )
+        )
         t[.hasLyrics] = .init(
             dataType: .bool,
             allowedComparators: .bool,

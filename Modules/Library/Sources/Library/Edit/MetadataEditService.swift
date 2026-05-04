@@ -70,7 +70,8 @@ public actor MetadataEditService {
         self.log.debug("edit.start", ["count": trackIDs.count])
         let start = Date()
 
-        try await tx.execute(patch: patch, trackIDs: trackIDs, onProgress: onProgress)
+        let embedCoverArt = UserDefaults.standard.bool(forKey: "metadata.embedCoverArt")
+        try await tx.execute(patch: patch, trackIDs: trackIDs, embedCoverArt: embedCoverArt, onProgress: onProgress)
 
         let ms = Int(Date().timeIntervalSince(start) * 1000)
         self.log.debug("edit.end", ["count": trackIDs.count, "ms": ms])
@@ -137,7 +138,25 @@ public actor MetadataEditService {
         // Use the per-file security-scoped bookmark when available so that
         // the sandboxed process can open the file outside its container.
         if let bookmarkData = track.fileBookmark {
-            return try await SecurityScope.withAccess(bookmarkData) { scopedURL in
+            return try await SecurityScope.withAccess(bookmarkData, onStaleBookmark: { [self] freshURL in
+                // Renew and persist the stale per-file bookmark while we still hold access.
+                do {
+                    let fresh = try freshURL.bookmarkData(
+                        options: .withSecurityScope,
+                        includingResourceValuesForKeys: nil,
+                        relativeTo: nil
+                    )
+                    var updated = track
+                    updated.fileBookmark = fresh
+                    try await self.trackRepo.update(updated)
+                    self.log.debug("security_scope.refreshed", ["trackID": trackID])
+                } catch {
+                    self.log.warning(
+                        "security_scope.refresh_failed",
+                        ["trackID": trackID, "error": String(reflecting: error)]
+                    )
+                }
+            }) { scopedURL in
                 try await Task.detached(priority: .userInitiated) {
                     try TagReader().read(from: scopedURL)
                 }.value
@@ -146,6 +165,39 @@ public actor MetadataEditService {
         return try await Task.detached(priority: .userInitiated) {
             try TagReader().read(from: url)
         }.value
+    }
+
+    // MARK: - Conflict resolution
+
+    /// Clears the `needs_conflict_review` flag for `trackID` (user chose "Keep My Edits").
+    /// The track remains `user_edited = 1`; the disk change is acknowledged but discarded.
+    /// Also stamps `fileMtime`/`fileSize` with the current on-disk values so the next
+    /// scan sees a matching mtime and does not re-raise the conflict immediately.
+    public func clearConflictFlag(trackID: Int64) async throws {
+        var track = try await self.trackRepo.fetch(id: trackID)
+        guard track.needsConflictReview else { return }
+        track.needsConflictReview = false
+        // Sync the stored mtime/size so the scanner won't re-flag this file.
+        if let url = URL(string: track.fileURL),
+           let attrs = try? FileManager.default.attributesOfItem(atPath: url.path) {
+            if let modDate = attrs[.modificationDate] as? Date {
+                track.fileMtime = Int64(modDate.timeIntervalSince1970)
+            }
+            if let sz = attrs[.size] as? Int { track.fileSize = Int64(sz) }
+        }
+        try await self.trackRepo.update(track)
+        self.log.debug("conflict.cleared", ["trackID": trackID])
+    }
+
+    /// Clears both `user_edited` and `needs_conflict_review` for `trackID` (user chose
+    /// "Take Disk Version"). On the next library scan the track tags will be re-imported
+    /// from disk, overwriting any stored user edits.
+    public func acceptDiskVersion(trackID: Int64) async throws {
+        var track = try await self.trackRepo.fetch(id: trackID)
+        track.needsConflictReview = false
+        track.userEdited = false
+        try await self.trackRepo.update(track)
+        self.log.debug("conflict.accepted_disk", ["trackID": trackID])
     }
 
     // MARK: - Helpers

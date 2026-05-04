@@ -15,6 +15,7 @@
 		117F164AC803AC6C6C2EC42C /* libswresample.6.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 96DE902847E1307A6BBABDDC /* libswresample.6.dylib */; };
 		146E67FA9E1B65EC2CB4F01E /* libSvtAv1Enc.4.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 10497567C431D6A1E5AE1805 /* libSvtAv1Enc.4.dylib */; };
 		171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
+		1A7E5FA27ADE29289C39EC19 /* LibraryViewModelToastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */; };
 		1EFDD9F88E80C58502A416CC /* libssl.3.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 12537730024981AF312B087F /* libssl.3.dylib */; };
 		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
 		2442A15E49DA0BC61C7B38E5 /* libdav1d.7.dylib in Resources */ = {isa = PBXBuildFile; fileRef = A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */; };
@@ -39,7 +40,9 @@
 		AE7DBDB3DD4836389E11BAC5 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
 		AFC2291506F5C92F46B51EA3 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83A27BDC0A44ED576CBDE8C /* LaunchAtLoginController.swift */; };
 		B8271C1D9DA274E689DACA81 /* BocanCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1792042403A11B4E098A3A /* BocanCommands.swift */; };
+		B837875EEF2C22BF2BA2E01B /* SmartPlaylistDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */; };
 		BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */; };
+		BEA7762AAF83D96A7AA9F607 /* TracksViewRemoveFromPlaylistConfirmationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4974E7D03EB41C73C23C1851 /* TracksViewRemoveFromPlaylistConfirmationTests.swift */; };
 		BF2E14746809D06614CA8246 /* libx264.165.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EAE5B0E69C35644EFB27D606 /* libx264.165.dylib */; };
 		C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */; };
 		C60B8E502240CEA18C5EC019 /* libavutil.60.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 195A48BE28C07366C7A280FC /* libavutil.60.dylib */; };
@@ -52,6 +55,8 @@
 		DD47FACC42CEB355BF55BF61 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = A162527B2B2B56BFB7154789 /* UI */; };
 		DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8E8EC191BDB21827F3BBAE /* RootView.swift */; };
 		E64501B0250A9E9F74BEB98D /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4CFA157601C8EA52079F84 /* Persistence */; };
+		F15BD1977564114CD73DEA3F /* LibraryViewModelDeleteFromDiskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */; };
+		F3D833ADDEE61DD7224FEC9B /* RuleBuilderViewValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,11 +66,14 @@
 		12537730024981AF312B087F /* libssl.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libssl.3.dylib; sourceTree = "<group>"; };
 		186F049CE6669E44D287954A /* SearchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModelTests.swift; sourceTree = "<group>"; };
 		195A48BE28C07366C7A280FC /* libavutil.60.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavutil.60.dylib; sourceTree = "<group>"; };
+		22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModelDeleteFromDiskTests.swift; sourceTree = "<group>"; };
 		30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistSidebarViewModelTests.swift; sourceTree = "<group>"; };
 		3AB7C159C37D262541974E75 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		3D8E8EC191BDB21827F3BBAE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		4184573B514D5001203CDC8F /* libchromaprint.1.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libchromaprint.1.dylib; sourceTree = "<group>"; };
+		4974E7D03EB41C73C23C1851 /* TracksViewRemoveFromPlaylistConfirmationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TracksViewRemoveFromPlaylistConfirmationTests.swift; sourceTree = "<group>"; };
+		601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlaylistDetailViewModelTests.swift; sourceTree = "<group>"; };
 		64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingViewModelTests.swift; sourceTree = "<group>"; };
 		6C8BD227AC55BA870F3E55D5 /* libmp3lame.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libmp3lame.0.dylib; sourceTree = "<group>"; };
 		6E014B4987A60B08F6DE299A /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Modules/Persistence; sourceTree = SOURCE_ROOT; };
@@ -77,8 +85,10 @@
 		8A1792042403A11B4E098A3A /* BocanCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BocanCommands.swift; sourceTree = "<group>"; };
 		8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLoggerTests.swift; sourceTree = "<group>"; };
 		8C85F460580B049360716FE5 /* Observability */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Observability; path = Modules/Observability; sourceTree = SOURCE_ROOT; };
+		8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleBuilderViewValidationTests.swift; sourceTree = "<group>"; };
 		92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualizerViewModelTests.swift; sourceTree = "<group>"; };
 		96DE902847E1307A6BBABDDC /* libswresample.6.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libswresample.6.dylib; sourceTree = "<group>"; };
+		9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModelToastTests.swift; sourceTree = "<group>"; };
 		A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libdav1d.7.dylib; sourceTree = "<group>"; };
 		A9999948FAD8FF8EE311BC9A /* fpcalc */ = {isa = PBXFileReference; path = fpcalc; sourceTree = "<group>"; };
 		B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BocanApp.swift; sourceTree = "<group>"; };
@@ -98,7 +108,7 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_685F7AFC-5C11-4AAF-A031-18C67ACA8E97" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -191,11 +201,16 @@
 			isa = PBXGroup;
 			children = (
 				82F9CA039EA2E967BAA21F51 /* AlbumsViewModelTests.swift */,
+				22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */,
+				9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */,
 				64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */,
 				8929B62314FB8D67123CC447 /* PlaylistDetailViewModelTests.swift */,
 				30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */,
+				8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */,
 				186F049CE6669E44D287954A /* SearchViewModelTests.swift */,
+				601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */,
 				11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */,
+				4974E7D03EB41C73C23C1851 /* TracksViewRemoveFromPlaylistConfirmationTests.swift */,
 				92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */,
 			);
 			path = ViewModelTests;
@@ -285,10 +300,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_108304F3-D7F3-42F3-A560-824D59E46E1E" /* bocan-music */ = {
+		"TEMP_D5B4D679-F9CA-4B12-8A74-755388B606B2" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_685F7AFC-5C11-4AAF-A031-18C67ACA8E97" /* Secrets.xcconfig */,
+				"TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -300,6 +315,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 215193F3C85CF7D6A68AEC6C /* Build configuration list for PBXNativeTarget "Bocan" */;
 			buildPhases = (
+				AB311EDEC8B6631D332FD11A /* Copy and Index Help Book */,
 				428BDF1EC190C6BB2C2652D6 /* Sources */,
 				0B57795DC3D65C37EB221A3D /* Resources */,
 				2EA58E03C6A26F8E2B491726 /* Frameworks */,
@@ -435,6 +451,29 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		AB311EDEC8B6631D332FD11A /* Copy and Index Help Book */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/HelpBook/Bocan.help/Contents/Info.plist",
+			);
+			name = "Copy and Index Help Book";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/$(CONTENTS_FOLDER_PATH)/Resources/Bocan.help/Contents/Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "SRC=\"${SRCROOT}/HelpBook/Bocan.help\"\nDEST=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/Bocan.help\"\nif [[ -d \"$SRC\" ]]; then\n  rsync -a --delete \"$SRC/\" \"$DEST/\"\n  hiutil -C -a -f \"$DEST\" 2>/dev/null || true\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		1ED7F30C67656A463D4AA900 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -442,11 +481,16 @@
 			files = (
 				D4FF663D31850CABBFD89C5A /* AlbumsViewModelTests.swift in Sources */,
 				CF662F890AEBEE98A2B06936 /* AppLoggerTests.swift in Sources */,
+				F15BD1977564114CD73DEA3F /* LibraryViewModelDeleteFromDiskTests.swift in Sources */,
+				1A7E5FA27ADE29289C39EC19 /* LibraryViewModelToastTests.swift in Sources */,
 				77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */,
 				5CBE9166A007819CF6F242ED /* PlaylistDetailViewModelTests.swift in Sources */,
 				BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */,
+				F3D833ADDEE61DD7224FEC9B /* RuleBuilderViewValidationTests.swift in Sources */,
 				0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */,
+				B837875EEF2C22BF2BA2E01B /* SmartPlaylistDetailViewModelTests.swift in Sources */,
 				CDC6FA7516C4C15CBFBDF92F /* TracksViewModelTests.swift in Sources */,
+				BEA7762AAF83D96A7AA9F607 /* TracksViewRemoveFromPlaylistConfirmationTests.swift in Sources */,
 				C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -509,7 +553,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_685F7AFC-5C11-4AAF-A031-18C67ACA8E97" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -642,7 +686,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_685F7AFC-5C11-4AAF-A031-18C67ACA8E97" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;

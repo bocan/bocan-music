@@ -178,6 +178,10 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
     /// Set to `true` when the user has manually edited tags; prevents rescan from overwriting.
     public var userEdited: Bool
 
+    /// Set to `true` by the scanner when the file was modified on disk after the user last edited
+    /// its tags. The Tag Editor surfaces a resolution banner and clears this flag when resolved.
+    public var needsConflictReview: Bool
+
     /// Stable sort key: `printf('%02d.%04d', disc_number, track_number)`.
     public var albumTrackSortKey: String?
 
@@ -266,6 +270,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         contentHash: String? = nil,
         disabled: Bool = false,
         userEdited: Bool = false,
+        needsConflictReview: Bool = false,
         albumTrackSortKey: String? = nil,
         coverArtHash: String? = nil,
         extendedTags: String? = nil,
@@ -325,6 +330,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         self.contentHash = contentHash
         self.disabled = disabled
         self.userEdited = userEdited
+        self.needsConflictReview = needsConflictReview
         self.albumTrackSortKey = albumTrackSortKey
         self.coverArtHash = coverArtHash
         self.extendedTags = extendedTags
@@ -397,6 +403,7 @@ public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendabl
         case contentHash = "content_hash"
         case disabled
         case userEdited = "user_edited"
+        case needsConflictReview = "needs_conflict_review"
         case albumTrackSortKey = "album_track_sort_key"
         case coverArtHash = "cover_art_hash"
         case extendedTags = "extended_tags"

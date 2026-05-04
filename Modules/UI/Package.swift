@@ -48,6 +48,7 @@ let package = Package(
                 "UI",
                 .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "Persistence", package: "Persistence"),
+                .product(name: "Library", package: "Library"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             swiftSettings: [

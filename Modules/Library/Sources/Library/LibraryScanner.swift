@@ -138,6 +138,24 @@ public actor LibraryScanner {
                         }
                         if isStale {
                             self.log.warning("security_scope.stale", ["url": url.path])
+                            // Bookmark is still resolvable but macOS has flagged it for renewal.
+                            // Persist a fresh bookmark now so future launches don't fail entirely.
+                            do {
+                                let fresh = try url.bookmarkData(
+                                    options: .withSecurityScope,
+                                    includingResourceValuesForKeys: nil,
+                                    relativeTo: nil
+                                )
+                                var updated = root
+                                updated.bookmark = fresh
+                                try await self.rootRepo.upsert(updated)
+                                self.log.debug("security_scope.refreshed", ["url": url.path])
+                            } catch {
+                                self.log.warning(
+                                    "security_scope.refresh_failed",
+                                    ["url": url.path, "error": String(reflecting: error)]
+                                )
+                            }
                         }
                         resolved.append((url, rootID))
                     } catch {

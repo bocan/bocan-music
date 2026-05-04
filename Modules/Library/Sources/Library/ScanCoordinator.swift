@@ -260,13 +260,23 @@ actor ScanCoordinator {
                 // The user has manually edited this track's tags so we don't
                 // overwrite them — but we must still clear the disabled flag and
                 // refresh file-level fields so the track becomes visible again.
-                if ex.disabled {
-                    var updated = ex
-                    updated.disabled = false
-                    updated.fileSize = size
-                    updated.fileMtime = mtime
-                    try? await self.trackRepo.update(updated)
+                // Also set needs_conflict_review so the Tag Editor shows a banner.
+                var updated = ex
+                // Always sync fileMtime/fileSize so subsequent scans see a
+                // matching mtime and don't re-process this file on every
+                // startup. Without this, the conflict branch fires on every
+                // launch for any track whose mtime changed before the
+                // EditTransaction stamp was introduced.
+                updated.fileSize = size
+                updated.fileMtime = mtime
+                if ex.disabled { updated.disabled = false }
+                // Only raise the review flag when disk tags actually differ from
+                // the DB values. A mtime-only change (e.g. app rewrote the file
+                // but the tags are identical) is not a user-visible conflict.
+                if Self.tagsDiffer(dbTrack: ex, diskTags: tags) {
+                    updated.needsConflictReview = true
                 }
+                try? await self.trackRepo.update(updated)
                 emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
                 return .conflict(trackID)
             }
@@ -318,6 +328,26 @@ actor ScanCoordinator {
     /// latter only normalizes when the target itself exists, which is an
     /// unreliable assumption when comparing roots against tracks whose files
     /// may have just been removed.
+    /// Returns `true` when any user-visible tag field differs between the
+    /// stored `Track` and the freshly-read `TrackTags`. Used in the conflict
+    /// branch so we only raise `needsConflictReview` when something actually
+    /// changed — not just the file's modification timestamp.
+    private static func tagsDiffer(dbTrack: Track, diskTags: TrackTags) -> Bool {
+        func ne<T: Equatable>(_ a: T?, _ b: T?) -> Bool {
+            a != b
+        }
+        return ne(dbTrack.title, diskTags.title) ||
+            ne(dbTrack.genre, diskTags.genre) ||
+            ne(dbTrack.composer, diskTags.composer) ||
+            ne(dbTrack.isrc, diskTags.isrc) ||
+            ne(dbTrack.key, diskTags.key) ||
+            ne(dbTrack.year, diskTags.year) ||
+            ne(dbTrack.trackNumber, diskTags.trackNumber) ||
+            ne(dbTrack.trackTotal, diskTags.trackTotal) ||
+            ne(dbTrack.discNumber, diskTags.discNumber) ||
+            ne(dbTrack.discTotal, diskTags.discTotal)
+    }
+
     private static func canonicalPath(_ path: String) -> String? {
         var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
         let resolved = buffer.withUnsafeMutableBufferPointer { ptr -> UnsafeMutablePointer<CChar>? in
