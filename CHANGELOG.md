@@ -5,6 +5,24 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0](https://github.com/bocan/bocan-music/compare/v0.3.0...v0.4.0) (2026-05-04)
+
+
+### ### Added
+
+* **tests:** add DSPViewModel environment to NowPlayingStrip snapshots ([4f2c448](https://github.com/bocan/bocan-music/commit/4f2c44850735b15b7146b7dad2d1c81102ee0ddf))
+* **ui:** add ⌘⌥E keyboard shortcut and menu item for EQ/DSP panel ([#94](https://github.com/bocan/bocan-music/issues/94)) ([37d314b](https://github.com/bocan/bocan-music/commit/37d314b532fbaecfacad891fb3eaa89fd43a7b6f))
+* **ui:** implement per-track and per-album EQ scope picker ([#91](https://github.com/bocan/bocan-music/issues/91)) ([7a1da10](https://github.com/bocan/bocan-music/commit/7a1da10906c55b5f841383990ce76783b9333d6e))
+
+
+### ### Fixed
+
+* **audio:** flush EQ IIR delay lines before un-bypass to prevent pop ([#92](https://github.com/bocan/bocan-music/issues/92)) ([5e82403](https://github.com/bocan/bocan-music/commit/5e8240315b0f99e29cf56850d1a804d88d168506))
+* **ui:** A/B compare is press-and-hold, not a toggle ([#93](https://github.com/bocan/bocan-music/issues/93)) ([fe2379d](https://github.com/bocan/bocan-music/commit/fe2379d6533c6e1217678c99d2497ed26e9d7473))
+* **ui:** add full EQ/Effects/ReplayGain tabs to DSP Settings view ([#89](https://github.com/bocan/bocan-music/issues/89)) ([3bf54a4](https://github.com/bocan/bocan-music/commit/3bf54a41fc04944c6217d04bb2e01433a1657687))
+* **ui:** eliminate 'publishing during view update' warnings in EQ scope picker ([#95](https://github.com/bocan/bocan-music/issues/95)) ([7b41aeb](https://github.com/bocan/bocan-music/commit/7b41aeb99d693fd20f8b7d62e395fb39eea1565c))
+* **ui:** wire EQ output gain slider to preset mutation ([#90](https://github.com/bocan/bocan-music/issues/90)) ([8c18761](https://github.com/bocan/bocan-music/commit/8c187613bc00479398c8630be05933a0f5ece26d))
+
 ## [0.3.0](https://github.com/bocan/bocan-music/compare/v0.2.0...v0.3.0) (2026-05-04)
 
 
