@@ -47,6 +47,8 @@ public struct TrackContextMenuActions {
     public let toggleShuffle: (Int64, Bool) -> Void
     /// Compute ReplayGain for the selected tracks, replacing any existing values.
     public let computeReplayGain: ([Track]) -> Void
+    /// Set a star rating (0–5) on the selected tracks.
+    public let rate: ([Track], Int) -> Void
     /// Remove the selected tracks from the current playlist.
     /// `nil` means this view is not inside a playlist — the menu item is hidden.
     public let removeFromPlaylist: (([Track]) -> Void)?

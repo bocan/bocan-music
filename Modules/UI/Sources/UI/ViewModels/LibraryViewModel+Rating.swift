@@ -35,6 +35,20 @@ public extension LibraryViewModel {
         Task { await self.applyRating(value, to: selected) }
     }
 
+    /// Sets the rating (0–5 stars, stored as 0–100) on explicit tracks,
+    /// bypassing the ViewModel selection.  Used by the context menu, which
+    /// already has the target tracks in hand.
+    ///
+    /// - Parameters:
+    ///   - stars: 0–5.  Values outside the range are clamped.
+    ///   - tracks: The tracks to update.
+    func setRating(stars: Int, for tracks: [Track]) {
+        let clamped = max(0, min(5, stars))
+        let value = clamped * 20
+        guard !tracks.isEmpty else { return }
+        Task { await self.applyRating(value, to: tracks) }
+    }
+
     // MARK: - Persistence helpers
 
     private func applyLoved(_ loved: Bool, to tracks: [Track]) async {
