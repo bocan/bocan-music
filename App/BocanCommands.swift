@@ -207,6 +207,15 @@ struct BocanCommands: Commands {
                     .keyboardShortcut(KeyBindings.rate5)
             }
             .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Compute Replay Gain") {
+                let ids = self.vm.tracks.selection.compactMap(\.self)
+                Task { await self.vm.computeReplayGain(forTrackIDs: ids) }
+            }
+            .help("Analyse loudness for the selected tracks and save ReplayGain values")
+            .disabled(!self.vm.hasTrackSelection)
         }
 
         // Override the default help command to open the help page directly.
@@ -235,9 +244,10 @@ struct BocanCommands: Commands {
 
             Divider()
 
-            Button("Recompute ReplayGain") {}
-                .disabled(true)
-            // Stub — will be implemented in Phase 9 (EQ & Effects).
+            Button("Recompute ReplayGain") {
+                Task { await self.vm.recomputeAllReplayGain() }
+            }
+            .help("Re-analyse loudness for every track in the library")
         }
     }
 }

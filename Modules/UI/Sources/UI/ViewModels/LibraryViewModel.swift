@@ -756,6 +756,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     // MARK: - ReplayGain batch analysis
 
+    /// Analyse ReplayGain for a specific set of track IDs (e.g. the current selection).
+    ///
+    /// Only tracks whose IDs exist in the database are analysed; IDs that are not
+    /// found are silently skipped.  Any existing ReplayGain values for the supplied
+    /// tracks are replaced.
+    public func computeReplayGain(forTrackIDs ids: [Int64]) async {
+        guard self.replayGainProgress == nil else { return }
+        guard !ids.isEmpty else { return }
+        let repo = TrackRepository(database: self.database)
+        do {
+            let all = try await repo.fetchAll()
+            let selected = all.filter { ids.contains($0.id ?? -1) }
+            await self.runReplayGainBatch(tracks: selected, repo: repo)
+        } catch {
+            self.log.error("rg.selection.fetchFailed", ["error": String(reflecting: error)])
+        }
+    }
+
     /// Analyse only tracks that currently have no ReplayGain data.
     public func computeMissingReplayGain() async {
         guard self.replayGainProgress == nil else { return } // already running
