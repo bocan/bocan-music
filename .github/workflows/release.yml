@@ -169,7 +169,7 @@ jobs:
         run: |
           APP="build/export/Bocan.app"
           codesign --verify --deep --strict --verbose=2 "$APP"
-          codesign --display --verbose=4 "$APP" | tee /tmp/codesign.txt
+          codesign --display --verbose=4 "$APP" 2>&1 | tee /tmp/codesign.txt
           if ! grep -q "flags=.*runtime" /tmp/codesign.txt; then
             echo "::error::Hardened runtime flag missing from signature."
             exit 1
