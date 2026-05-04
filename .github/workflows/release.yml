@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*.*.*"
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -41,7 +43,7 @@ jobs:
     env:
       ARCHS: arm64
       ONLY_ACTIVE_ARCH: "NO"
-      MARKETING_VERSION: ${{ github.ref_name }}
+      MARKETING_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
       HAS_SPARKLE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' && 'true' || 'false' }}
 
     steps:
@@ -130,6 +132,7 @@ jobs:
 
       - name: Archive (arm64 only)
         run: |
+          set -o pipefail
           xcodebuild archive \
             -project Bocan.xcodeproj \
             -scheme Bocan \
@@ -146,12 +149,21 @@ jobs:
             | xcbeautify
 
       - name: Export (Developer ID)
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          # Generate ExportOptions with the real team ID ($(VAR) syntax is not
+          # expanded by xcodebuild -exportArchive, so we substitute it here).
+          sed "s/\$(APPLE_TEAM_ID)/${APPLE_TEAM_ID}/g" Scripts/ExportOptions.plist \
+            > /tmp/ExportOptions.plist
+          set -o pipefail
           xcodebuild -exportArchive \
             -archivePath build/Bocan.xcarchive \
-            -exportOptionsPlist Scripts/ExportOptions.plist \
+            -exportOptionsPlist /tmp/ExportOptions.plist \
             -exportPath build/export \
             | xcbeautify
+          echo "=== Export contents ==="
+          ls -la build/export/
 
       - name: Verify code signature & hardened runtime
         run: |
