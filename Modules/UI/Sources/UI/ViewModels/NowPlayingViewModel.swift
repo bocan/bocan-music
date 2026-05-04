@@ -10,35 +10,47 @@ import UserNotifications
 
 /// Drives the `NowPlayingStrip` at the bottom of every screen.
 ///
-/// Subscribes to `Transport.state` on init and updates its `@Published`
+/// Subscribes to `Transport.state` on init and updates its observable
 /// properties on `@MainActor`.  Phase 5 will replace the concrete engine
 /// with a `QueuePlayer` that also conforms to `Transport`.
+@Observable
 @MainActor
-public final class NowPlayingViewModel: ObservableObject {
-    // MARK: - Published state
+public final class NowPlayingViewModel {
+    // MARK: - Observable state
 
-    @Published public private(set) var artwork: NSImage?
-    @Published public private(set) var title = ""
-    @Published public private(set) var artist = ""
-    @Published public private(set) var album = ""
-    @Published public private(set) var duration: TimeInterval = 0
-    @Published public private(set) var position: TimeInterval = 0
-    @Published public private(set) var isPlaying = false
-    @Published public var volume: Float = 1.0
-    @Published public private(set) var shuffleOn = false
-    @Published public private(set) var repeatMode: RepeatMode = .off
-    @Published public private(set) var stopAfterCurrent = false
+    /// Cover art for the current track, or `nil` when nothing is playing.
+    public private(set) var artwork: NSImage?
+    /// Track title of the current item, or empty string when idle.
+    public private(set) var title = ""
+    /// Primary artist of the current item.
+    public private(set) var artist = ""
+    /// Album name of the current item.
+    public private(set) var album = ""
+    /// Total duration of the current track in seconds.
+    public private(set) var duration: TimeInterval = 0
+    /// Current playback position in seconds.
+    public private(set) var position: TimeInterval = 0
+    /// `true` while the engine is actively playing.
+    public private(set) var isPlaying = false
+    /// Output volume in the range 0.0–1.0.
+    public var volume: Float = 1.0
+    /// `true` when shuffle mode is active.
+    public private(set) var shuffleOn = false
+    /// Current repeat mode (.off / .one / .all).
+    public private(set) var repeatMode: RepeatMode = .off
+    /// `true` when "stop after current track" is armed.
+    public private(set) var stopAfterCurrent = false
     /// The database ID of the track currently loaded into the engine, or `nil`.
-    @Published public private(set) var nowPlayingTrackID: Int64?
+    public private(set) var nowPlayingTrackID: Int64?
     /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
     /// Used by `playPause()` to decide whether to resume or reload the library.
-    @Published public private(set) var isPaused = false
+    public private(set) var isPaused = false
     /// Current playback rate (0.5×–2.0×). Default 1.0×.
-    @Published public private(set) var playbackRate: Float = 1.0
+    public private(set) var playbackRate: Float = 1.0
     /// Seconds remaining on the sleep timer, or `nil` when off.
-    @Published public private(set) var sleepTimerRemaining: TimeInterval?
+    public private(set) var sleepTimerRemaining: TimeInterval?
     /// Whether the sleep timer's fade-out option is active.
-    @Published public private(set) var sleepTimerFadeOut = false
+    public private(set) var sleepTimerFadeOut = false
 
     // MARK: - Callbacks
 
@@ -58,6 +70,7 @@ public final class NowPlayingViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// Creates a new `NowPlayingViewModel` bound to the given transport and database.
     public init(engine: any Transport, database: Database) {
         self.engine = engine
         self.database = database
