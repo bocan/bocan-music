@@ -92,6 +92,7 @@ struct UISnapshotTests {
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-idle-light")
         }
@@ -103,6 +104,7 @@ struct UISnapshotTests {
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
                 .colorScheme(.dark)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-idle-dark")
@@ -129,6 +131,7 @@ struct UISnapshotTests {
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-with-track-light")
         }

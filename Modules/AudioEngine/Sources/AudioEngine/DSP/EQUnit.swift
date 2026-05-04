@@ -1,3 +1,4 @@
+import AudioToolbox
 @preconcurrency import AVFoundation
 import Foundation
 
@@ -43,10 +44,17 @@ public final class EQUnit: @unchecked Sendable {
         }
     }
 
-    /// Reset all bands and global gain to 0 dB.
+    /// Reset all bands and global gain to 0 dB, and flush IIR delay lines.
+    ///
+    /// `AudioUnitReset` zeroes all internal biquad delay buffers.  Call this
+    /// before un-bypassing so the filter re-starts from a known-zero state
+    /// rather than from stale samples held from the previous active period.
     public func reset() {
         self.node.bands.forEach { $0.gain = 0 }
         self.node.globalGain = 0
+        // Flush IIR delay lines — must be called while the unit is still
+        // bypassed (no audio flowing through it) to be a silent operation.
+        AudioUnitReset(self.node.audioUnit, kAudioUnitScope_Global, 0)
     }
 
     /// When `true`, the EQ node is completely bypassed (zero floating-point noise).
