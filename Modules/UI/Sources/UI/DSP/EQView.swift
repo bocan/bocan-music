@@ -30,6 +30,7 @@ public struct EQView: View {
     public var body: some View {
         VStack(spacing: 12) {
             self.topBar
+            self.scopeRow
             Divider()
             self.bandSliders
             Divider()
@@ -40,6 +41,64 @@ public struct EQView: View {
         .sheet(isPresented: self.$showManagePresets) {
             PresetManagerView(vm: self.vm)
         }
+    }
+
+    // MARK: - Scope row
+
+    private var scopeRow: some View {
+        HStack(spacing: 8) {
+            Text("Scope:")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("EQ Scope", selection: self.$vm.eqScope) {
+                ForEach(EQScope.allCases, id: \.self) { scope in
+                    Text(scope.rawValue).tag(scope)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("EQ scope: Global, This Album, or This Track")
+            .help("Select which scope the EQ preset applies to")
+            .fixedSize()
+            .disabled(
+                (self.vm.eqScope == .track || self.vm.currentTrackID == nil) &&
+                    (self.vm.eqScope == .album || self.vm.currentAlbumID == nil) &&
+                    false
+            )
+
+            Spacer()
+
+            if self.vm.eqScope != .global {
+                if self.vm.hasScopedPreset {
+                    Button("Clear Override") {
+                        Task { await self.vm.clearCurrentScopePreset() }
+                    }
+                    .font(.caption)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(
+                        "Clear \(self.vm.eqScope.rawValue.lowercased()) EQ override"
+                    )
+                    .help("Remove the EQ preset override for \(self.vm.eqScope.rawValue.lowercased())")
+                }
+                let scopeName = self.vm.eqScope == .track ? "track" : "album"
+                let hasContext = self.vm.eqScope == .track
+                    ? self.vm.currentTrackID != nil
+                    : self.vm.currentAlbumID != nil
+                Button("Save for \(self.vm.eqScope.rawValue)") {
+                    Task { await self.vm.saveCurrentScopePreset() }
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .disabled(!hasContext || self.vm.state.eqPresetID == nil)
+                .accessibilityLabel("Save current preset for \(self.vm.eqScope.rawValue.lowercased())")
+                .help(
+                    "Pin the current EQ preset to this \(scopeName). " +
+                        "It will be applied automatically when this \(scopeName) plays."
+                )
+            }
+        }
+        .padding(.horizontal, 2)
     }
 
     // MARK: - Top bar
