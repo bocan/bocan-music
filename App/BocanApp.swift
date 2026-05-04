@@ -114,7 +114,7 @@ struct BocanApp: App {
                 visualizerVM: self.visualizerViewModel,
                 routeVM: self.routeViewModel
             )
-            .environmentObject(self.dspViewModel)
+            .environment(self.dspViewModel)
             .environmentObject(self.windowMode)
             .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
         }
@@ -142,7 +142,7 @@ struct BocanApp: App {
 
         Settings {
             SettingsScene(scrobbleViewModel: self.scrobbleSettingsViewModel)
-                .environmentObject(self.dspViewModel)
+                .environment(self.dspViewModel)
                 .environmentObject(self.libraryViewModel)
                 .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }

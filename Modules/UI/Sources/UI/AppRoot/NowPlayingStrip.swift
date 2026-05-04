@@ -10,7 +10,7 @@ import SwiftUI
 public struct NowPlayingStrip: View {
     @ObservedObject public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
-    @EnvironmentObject private var dsp: DSPViewModel
+    @Environment(DSPViewModel.self) private var dsp: DSPViewModel
     @EnvironmentObject private var visualizer: VisualizerViewModel
     /// Optional — only the main window injects a `RouteViewModel`. Snapshot
     /// tests and other ad-hoc surfaces can skip it.

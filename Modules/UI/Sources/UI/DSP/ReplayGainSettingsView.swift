@@ -8,7 +8,7 @@ import SwiftUI
 /// Analysis is run in a background task; the view shows progress and result via
 /// `LibraryViewModel.replayGainProgress`.
 public struct ReplayGainSettingsView: View {
-    @ObservedObject var vm: DSPViewModel
+    @Bindable var vm: DSPViewModel
     @EnvironmentObject private var library: LibraryViewModel
 
     @State private var showRecomputeConfirm = false

@@ -1,6 +1,7 @@
 import AudioEngine
 import Foundation
 import Observability
+import Observation
 import Persistence
 import Playback
 import SwiftUI
@@ -21,40 +22,44 @@ public enum EQScope: String, CaseIterable, Sendable {
 /// Owns the `DSPState` snapshot and propagates changes to `AudioEngine` immediately.
 /// All mutations run on `@MainActor`.
 @MainActor
-public final class DSPViewModel: ObservableObject {
-    // MARK: - Published state
+@Observable
+public final class DSPViewModel {
+    // MARK: - State
 
-    @Published public var state: DSPState {
+    /// Current DSP state snapshot; changes are persisted and pushed to the audio engine immediately.
+    public var state: DSPState {
         didSet { self.pushToEngine() }
     }
 
-    @Published public var presets: [EQPreset] = []
+    /// All available EQ presets (built-in + user-saved).
+    public var presets: [EQPreset] = []
 
     /// `true` while ReplayGain analysis is in progress.
-    @Published public private(set) var isAnalyzing = false
+    public private(set) var isAnalyzing = false
 
     /// When set to `true` the DSP/EQ sheet should be presented.
     ///
     /// `NowPlayingStrip` observes this and reflects it into its local `showDSP`
     /// `@State`, so menu commands and keyboard shortcuts that only have access
     /// to `DSPViewModel` can still open the sheet.
-    @Published public var showDSPPanel = false
+    public var showDSPPanel = false
 
     /// Which scope the EQ picker targets (Global / This Album / This Track).
-    @Published public var eqScope: EQScope = .global
+    public var eqScope: EQScope = .global
 
     /// The `Track.id` of the currently-playing track, updated automatically.
-    @Published public private(set) var currentTrackID: Int64?
+    public private(set) var currentTrackID: Int64?
 
     /// The `Album.id` of the currently-playing track's album, updated automatically.
-    @Published public private(set) var currentAlbumID: Int64?
+    public private(set) var currentAlbumID: Int64?
 
     /// Whether there is a scoped (track or album) EQ assignment active for the current track.
-    @Published public private(set) var hasScopedPreset = false
+    public private(set) var hasScopedPreset = false
 
     // MARK: - Dependencies
 
     private let engine: AudioEngine
+    /// The preset store shared between the EQ picker and the preset manager.
     public let presetStore: PresetStore
     private let queuePlayer: QueuePlayer?
     private let assignmentRepo: DSPAssignmentRepository?
@@ -66,6 +71,7 @@ public final class DSPViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// Creates a `DSPViewModel` wired to the given engine and optional queue player.
     public init(
         engine: AudioEngine,
         presetStore: PresetStore = PresetStore(),
@@ -92,6 +98,7 @@ public final class DSPViewModel: ObservableObject {
 
     // MARK: - Preset actions
 
+    /// Selects an EQ preset, applying it immediately and clearing any transient scope override.
     public func selectPreset(_ preset: EQPreset) {
         // Selecting a preset explicitly clears any transient scoped override.
         self.eqOverridePresetID = nil
@@ -99,6 +106,7 @@ public final class DSPViewModel: ObservableObject {
         self.state.eqEnabled = true
     }
 
+    /// Saves the current EQ band gains as a new named user preset.
     public func saveUserPreset(name: String) {
         guard let id = state.eqPresetID,
               let current = presetStore.preset(forID: id) else { return }
@@ -114,6 +122,7 @@ public final class DSPViewModel: ObservableObject {
         self.state.eqPresetID = newPreset.id
     }
 
+    /// Deletes the user preset with the given ID, falling back to Flat if it was selected.
     public func deleteUserPreset(id: EQPreset.ID) {
         self.presetStore.delete(id: id)
         self.presets = self.presetStore.allPresets
@@ -251,6 +260,7 @@ public final class DSPViewModel: ObservableObject {
 
     // MARK: - ReplayGain analysis
 
+    /// Analyses the audio file at `url` for ReplayGain, returning the result or `nil` on error.
     public func analyzeReplayGain(url: URL) async -> ReplayGainResult? {
         self.isAnalyzing = true
         defer { isAnalyzing = false }

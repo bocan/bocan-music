@@ -7,7 +7,7 @@ import SwiftUI
 /// Presented as a sheet from `NowPlayingStrip` when the user taps the EQ button.
 /// Each tab wraps an existing DSP view; the sheet owns no additional state.
 struct DSPSheet: View {
-    @ObservedObject var vm: DSPViewModel
+    @Bindable var vm: DSPViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
