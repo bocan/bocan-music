@@ -8,7 +8,7 @@ import SwiftUI
 /// effects, and ReplayGain from the standard Settings window (⌘,) without
 /// needing the Now Playing strip's DSP sheet to be open.
 public struct DSPSettingsView: View {
-    @EnvironmentObject private var dsp: DSPViewModel
+    @Environment(DSPViewModel.self) private var dsp: DSPViewModel
 
     public init() {}
 

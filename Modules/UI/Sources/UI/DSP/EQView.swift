@@ -9,7 +9,7 @@ import SwiftUI
 /// The A/B button is press-and-hold: the flat reference is active only while
 /// the button is held down, returning to the active preset on release.
 public struct EQView: View {
-    @ObservedObject var vm: DSPViewModel
+    @Bindable var vm: DSPViewModel
 
     /// Tracks whether A/B compare mode is showing the flat reference.
     @State private var isABFlat = false
