@@ -137,7 +137,7 @@ jobs:
             -project Bocan.xcodeproj \
             -scheme Bocan \
             -configuration Release \
-            -destination 'generic/platform=macOS,arch=arm64' \
+            -destination 'generic/platform=macOS' \
             -archivePath build/Bocan.xcarchive \
             ARCHS=arm64 \
             ONLY_ACTIVE_ARCH=NO \
