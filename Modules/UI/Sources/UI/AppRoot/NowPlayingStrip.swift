@@ -56,6 +56,14 @@ public struct NowPlayingStrip: View {
         .sheet(isPresented: self.$showDSP) {
             DSPSheet(vm: self.dsp)
         }
+        // Allow DSPViewModel.showDSPPanel to open the sheet from menu commands
+        // and keyboard shortcuts that don't have direct access to @State.
+        .onChange(of: self.dsp.showDSPPanel) { _, requested in
+            if requested {
+                self.showDSP = true
+                self.dsp.showDSPPanel = false
+            }
+        }
     }
 
     // MARK: - Sub-views
@@ -222,8 +230,9 @@ public struct NowPlayingStrip: View {
                     .font(.system(size: 15, weight: .medium))
             }
             .buttonStyle(.plain)
+            .keyboardShortcut(KeyBindings.showEQPanel)
             .foregroundStyle(self.showDSP ? Color.accentColor : Color.textPrimary)
-            .help("Equaliser & DSP")
+            .help("Equaliser & DSP (⌘⌥E)")
             .accessibilityLabel("Equaliser & DSP")
 
             Button {

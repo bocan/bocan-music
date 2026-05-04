@@ -127,7 +127,8 @@ struct BocanApp: App {
                 vm: self.libraryViewModel,
                 windowMode: self.windowMode,
                 lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel
+                visualizerVM: self.visualizerViewModel,
+                dspVM: self.dspViewModel
             )
         }
 
