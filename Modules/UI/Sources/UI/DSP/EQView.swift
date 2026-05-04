@@ -182,7 +182,7 @@ public struct EQView: View {
     private var outputGainBinding: Binding<Double> {
         Binding(
             get: { self.outputGainValue },
-            set: { _ in } // TODO(phase-10): wire output gain slider to preset mutation
+            set: { self.vm.updateOutputGain($0) }
         )
     }
 

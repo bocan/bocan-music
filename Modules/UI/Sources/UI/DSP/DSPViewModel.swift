@@ -112,6 +112,37 @@ public final class DSPViewModel: ObservableObject {
         }
     }
 
+    /// Updates the output gain of the current EQ preset, creating a "Custom" preset
+    /// if the current one is built-in (mirrors the `updateBandGain` pattern).
+    public func updateOutputGain(_ gain: Double) {
+        guard let id = self.state.eqPresetID,
+              let preset = self.presets.first(where: { $0.id == id }) else { return }
+        if preset.isBuiltIn {
+            let customID = "bocan.custom-edit"
+            let custom = EQPreset(
+                id: customID,
+                name: "Custom",
+                bandGainsDB: preset.bandGainsDB,
+                isBuiltIn: false,
+                outputGainDB: gain
+            )
+            self.presetStore.save(custom)
+            self.presets = self.presetStore.allPresets
+            self.state.eqPresetID = customID
+        } else {
+            let updated = EQPreset(
+                id: preset.id,
+                name: preset.name,
+                bandGainsDB: preset.bandGainsDB,
+                isBuiltIn: false,
+                outputGainDB: gain
+            )
+            self.presetStore.save(updated)
+            self.presets = self.presetStore.allPresets
+            self.pushToEngine()
+        }
+    }
+
     // MARK: - ReplayGain analysis
 
     public func analyzeReplayGain(url: URL) async -> ReplayGainResult? {
