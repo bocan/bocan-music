@@ -5,6 +5,58 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/bocan/bocan-music/compare/v0.2.0...v0.3.0) (2026-05-04)
+
+
+### ### Added
+
+* **playback:** wire CrossfadeScheduler end-to-end ([#87](https://github.com/bocan/bocan-music/issues/87)) ([7a4f5ce](https://github.com/bocan/bocan-music/commit/7a4f5ceaa854e85f6211beeba4e6eb019d1a4bfd))
+* **settings:** add embed cover art preference (phase-8 audit H5) ([08312f1](https://github.com/bocan/bocan-music/commit/08312f198634956e48e5d9583706ccd3447d9082)), closes [#67](https://github.com/bocan/bocan-music/issues/67)
+* **ui:** add Bulk Actions section to multi-track editor (phase-8 audit H6) ([0d987b1](https://github.com/bocan/bocan-music/commit/0d987b19288ff69d9d0f1a94e4e1e528d928b748)), closes [#69](https://github.com/bocan/bocan-music/issues/69)
+* **ui:** add CommandMenu("Tools") with batch cover art and duplicate finder ([ea16b84](https://github.com/bocan/bocan-music/commit/ea16b8497830fbac9eb92dcd10c8385b2cfcd9d2)), closes [#68](https://github.com/bocan/bocan-music/issues/68)
+* **ui:** add Compute Replay Gain to Track menu and right-click context menu ([#88](https://github.com/bocan/bocan-music/issues/88)) ([0f99e39](https://github.com/bocan/bocan-music/commit/0f99e397fd837631bac8c05ff429f613bb82a244))
+* **ui:** add explicit Tab-key focus order to tag editor Details tab ([#80](https://github.com/bocan/bocan-music/issues/80)) ([768dc7d](https://github.com/bocan/bocan-music/commit/768dc7d4c41ac3be27c2608de5167a2de6335abf))
+* **ui:** add File Info and Advanced tabs to tag editor (phase-8 audit) ([ce942d0](https://github.com/bocan/bocan-music/commit/ce942d034075cb6f517f379fcc4caf83b1ec26e4)), closes [#66](https://github.com/bocan/bocan-music/issues/66)
+* **ui:** add Identify Track toolbar button ([#83](https://github.com/bocan/bocan-music/issues/83)) ([cf69fab](https://github.com/bocan/bocan-music/commit/cf69fabfe31f9c87fc801cfab3710fdf0127a647))
+* **ui:** add per-field apply-checkboxes for multi-track tag editing ([cc9817c](https://github.com/bocan/bocan-music/commit/cc9817c2c78d7383c9c2a19099808efe4e87a5a5)), closes [#70](https://github.com/bocan/bocan-music/issues/70)
+* **ui:** detect LRC timestamps in lyrics tab, save as synced lyrics ([#74](https://github.com/bocan/bocan-music/issues/74)) ([145a6a8](https://github.com/bocan/bocan-music/commit/145a6a874c0c34d11e3f944760ab251009c775a9))
+* **ui:** show conflict-resolution banner in TagEditorSheet ([#73](https://github.com/bocan/bocan-music/issues/73)) ([2bde72e](https://github.com/bocan/bocan-music/commit/2bde72e5f568895ecfe613a66dbfed9b4e799e0f))
+
+
+### ### Fixed
+
+* **app:** declare playlist-drag UTType in Info.plist, fix conflict log level ([3085d67](https://github.com/bocan/bocan-music/commit/3085d670c85175d67d4be3aafa60ad62497077c2))
+* **audio:** ramp bass-boost gain/bypass to prevent audio pop ([#86](https://github.com/bocan/bocan-music/issues/86)) ([e4bb57f](https://github.com/bocan/bocan-music/commit/e4bb57fe06fda6e48e3c1d888646005eeecacbd2))
+* **dsp:** improve EQ bypass transitions to prevent audible pops ([f09e2d8](https://github.com/bocan/bocan-music/commit/f09e2d88c562fffe0d10cce1d2ecce2db1a70495))
+* **library:** auto-renew stale security-scoped bookmarks on resolution ([317f61c](https://github.com/bocan/bocan-music/commit/317f61cc2f4195c82adf225caa741e75a1e01517))
+* **library:** hasCoverArt smart rule checks albums.cover_art_hash not tracks ([e8ab684](https://github.com/bocan/bocan-music/commit/e8ab684426ee80c7056626b00d39cc013de496d4))
+* **library:** stamp fileMtime/fileSize after tag write to prevent false-positive conflict ([2340b1e](https://github.com/bocan/bocan-music/commit/2340b1e9c3c8fc5382b7ef56442b9dae9c7ff1df))
+* **library:** upgrade http CAA image URLs to https to satisfy ATS ([73856a0](https://github.com/bocan/bocan-music/commit/73856a02824150737cadba20afdb9f240d83ac47))
+* **playback:** fire-and-forget nowPlaying to unblock 15s playback delay ([206cd24](https://github.com/bocan/bocan-music/commit/206cd24173a4bc7a6ba69aad06f20d48676abec0))
+* **ui,library:** folder-not-found flash + recurring startup conflicts ([5583df3](https://github.com/bocan/bocan-music/commit/5583df3135bd1e30ece3a41244337e6fd97e0ca8))
+* **ui,library:** properly fix folder-not-found flash and conflict re-flagging ([ce4767e](https://github.com/bocan/bocan-music/commit/ce4767e92603886dc24618fa380217035c9dc246))
+* **ui,persistence:** crash on playlist with duplicate track entries ([9a0fdb9](https://github.com/bocan/bocan-music/commit/9a0fdb9cebec0125564cfd0c10ef8b23cb5b64e9))
+* **ui:** acquire security-scoped resource in .fileImporter completion ([#78](https://github.com/bocan/bocan-music/issues/78)) ([fa44a2f](https://github.com/bocan/bocan-music/commit/fa44a2feb20f04e945d03aac6ba9329a73fe1608))
+* **ui:** add .accessibilityLabel to TextField in TagFieldRow and IntFieldRow ([#77](https://github.com/bocan/bocan-music/issues/77)) ([bb091d7](https://github.com/bocan/bocan-music/commit/bb091d7992e0058b7d8650a4f9eb83f93940b015))
+* **ui:** add .help() to CandidatePickerView buttons ([#83](https://github.com/bocan/bocan-music/issues/83)) ([394d099](https://github.com/bocan/bocan-music/commit/394d099434e0c06fe730f153bc3a45eb1fb1fb74))
+* **ui:** add .help() to IdentifyTrackSheet Close button ([#83](https://github.com/bocan/bocan-music/issues/83)) ([43e6a65](https://github.com/bocan/bocan-music/commit/43e6a653f2617f27b247b503a11a1af07a8d6db4))
+* **ui:** add .help() tooltip to all ArtworkEditor action buttons ([#82](https://github.com/bocan/bocan-music/issues/82)) ([04d8816](https://github.com/bocan/bocan-music/commit/04d8816911ae8f56e35af11f21c3f32aa16bee16))
+* **ui:** add low-confidence warning banner in CandidatePickerView ([#83](https://github.com/bocan/bocan-music/issues/83)) ([bb33629](https://github.com/bocan/bocan-music/commit/bb336291412a19e0a09adee0d781206882a1f125))
+* **ui:** Edit Tags button in noMatchView opens tag editor ([#83](https://github.com/bocan/bocan-music/issues/83)) ([07730de](https://github.com/bocan/bocan-music/commit/07730de38b6223f5fbd9df9a6a4a6da346dbb097))
+* **ui:** enhance PlaylistSidebarViewModel to handle missing nodes gracefully ([f09e2d8](https://github.com/bocan/bocan-music/commit/f09e2d88c562fffe0d10cce1d2ecce2db1a70495))
+* **ui:** guard fieldBinding setter to prevent publish-during-render fault in lyrics tab ([05881ce](https://github.com/bocan/bocan-music/commit/05881ce8278b7549f7267a6fa3566c0cbeb5c65d))
+* **ui:** observe sidebar VM in ContentPane so isLoaded triggers re-render ([90f6a34](https://github.com/bocan/bocan-music/commit/90f6a34968562f1dd58bab15f3bcd23f89bd1d61))
+* **ui:** refactor TrackTable to simplify scroll view creation ([f09e2d8](https://github.com/bocan/bocan-music/commit/f09e2d88c562fffe0d10cce1d2ecce2db1a70495))
+* **ui:** remove duplicate ⌘I shortcut from context menu Get Info button ([#81](https://github.com/bocan/bocan-music/issues/81)) ([d9e2f9b](https://github.com/bocan/bocan-music/commit/d9e2f9bf8ee486bc7cbc9d568bc59f3c81818397))
+* **ui:** replace DispatchQueue.main.async with Task in ArtworkEditor.handleDrop ([a7b59c3](https://github.com/bocan/bocan-music/commit/a7b59c3a4a33f7f1978187d8cb1dfd11dfac36bd)), closes [#71](https://github.com/bocan/bocan-music/issues/71)
+* **ui:** replace NSOpenPanel.runModal() with .fileImporter() in ArtworkEditor ([#76](https://github.com/bocan/bocan-music/issues/76)) ([b7990ed](https://github.com/bocan/bocan-music/commit/b7990edfd83c5336090f8e9f4c4f5f398e27b670))
+* **ui:** streamline TrackTableCoordinator's data handling ([f09e2d8](https://github.com/bocan/bocan-music/commit/f09e2d88c562fffe0d10cce1d2ecce2db1a70495))
+
+
+### ### Changed
+
+* **ui:** inject CoverArtFetcher into TagEditorViewModel ([#75](https://github.com/bocan/bocan-music/issues/75)) ([a9cb4cb](https://github.com/bocan/bocan-music/commit/a9cb4cb70baee844b93fbe0ce4313abe9838323b))
+
 ## [0.2.0](https://github.com/bocan/bocan-music/compare/v0.1.0...v0.2.0) (2026-05-01)
 
 
