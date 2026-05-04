@@ -10,5 +10,7 @@
     <string>automatic</string>
     <key>stripSwiftSymbols</key>
     <true/>
+    <key>hardened-runtime</key>
+    <true/>
 </dict>
 </plist>
