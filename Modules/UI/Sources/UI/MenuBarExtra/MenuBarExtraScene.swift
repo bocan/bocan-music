@@ -17,7 +17,7 @@ import SwiftUI
 /// }
 /// ```
 public struct MenuBarExtraScene: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @Environment(\.openWindow) private var openWindow
 
     public init(vm: NowPlayingViewModel) {

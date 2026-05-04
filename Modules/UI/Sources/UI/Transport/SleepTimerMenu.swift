@@ -8,7 +8,7 @@ import SwiftUI
 /// The label shows a moon icon + remaining time when the timer is active
 /// (e.g. "☽ 28 m"), or just a moon icon when inactive.
 public struct SleepTimerMenu: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @State private var customMinutes = 30
     @State private var showCustomField = false
 

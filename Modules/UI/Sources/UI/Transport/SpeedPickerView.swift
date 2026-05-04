@@ -8,7 +8,7 @@ import SwiftUI
 /// quick-pick buttons.  Hidden at 1.0× by default; visible on hover or when
 /// a non-unity rate is set.
 public struct SpeedPickerView: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var isPopoverShown = false
     @State private var isHovered = false
