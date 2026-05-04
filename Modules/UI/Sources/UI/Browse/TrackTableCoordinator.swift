@@ -45,9 +45,8 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             newRows.compactMap { row -> (Int64, TrackRow)? in
                 guard let id = row.id else { return nil }
                 return (id, row)
-            },
-            uniquingKeysWith: { _, new in new }
-        )
+            }
+        ) { _, new in new }
     }
 
     // MARK: Cell population

@@ -130,6 +130,10 @@ public struct TrackTable: NSViewRepresentable {
         dataSource.onMove = self.onMove
         coordinator.tableView = tableView
 
+        return self.makeScrollView(wrapping: tableView)
+    }
+
+    private func makeScrollView(wrapping tableView: NSTableView) -> NSScrollView {
         let scrollView = NSScrollView()
         scrollView.documentView = tableView
         scrollView.hasVerticalScroller = true
@@ -218,9 +222,7 @@ public struct TrackTable: NSViewRepresentable {
         }
 
         // 6 — onMove callback changed (e.g. playlist loaded or kind toggled).
-        if let dataSource = coordinator.dataSource {
-            dataSource.onMove = self.onMove
-        }
+        dataSource.onMove = self.onMove
     }
 
     // MARK: - Row density
