@@ -307,6 +307,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             menu.addItem(identifyItem)
         }
 
+        let rgItem = ActionMenuItem("Compute Replay Gain") { acts.computeReplayGain(selected) }
+        rgItem.isEnabled = !selected.isEmpty
+        menu.addItem(rgItem)
+
         menu.addItem(.separator())
         if let removeFromPlaylist = acts.removeFromPlaylist {
             let rp = ActionMenuItem("Remove from Playlist") { removeFromPlaylist(selected) }
