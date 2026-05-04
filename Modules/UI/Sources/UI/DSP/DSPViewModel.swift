@@ -27,13 +27,15 @@ public final class DSPViewModel: ObservableObject {
 
     private let engine: AudioEngine
     public let presetStore: PresetStore
+    private let queuePlayer: QueuePlayer?
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
-    public init(engine: AudioEngine, presetStore: PresetStore = PresetStore()) {
+    public init(engine: AudioEngine, presetStore: PresetStore = PresetStore(), queuePlayer: QueuePlayer? = nil) {
         self.engine = engine
         self.presetStore = presetStore
+        self.queuePlayer = queuePlayer
         self.state = DSPState.load()
         self.presets = presetStore.allPresets
         // Apply persisted state immediately.
@@ -128,5 +130,11 @@ public final class DSPViewModel: ObservableObject {
     private func pushToEngine() {
         self.state.save()
         Task { await self.engine.applyDSPState(self.state) }
+        // Forward crossfade config to the playback layer so the slider has effect.
+        let config = CrossfadeScheduler.Config(
+            durationSeconds: self.state.crossfadeSeconds,
+            albumGapless: self.state.crossfadeAlbumGapless
+        )
+        Task { await self.queuePlayer?.setCrossfadeConfig(config) }
     }
 }
