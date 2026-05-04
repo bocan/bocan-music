@@ -72,6 +72,9 @@ public enum KeyBindings {
     /// `⌘5` — Rate 5 stars.
     public static let rate5 = KeyboardShortcut("5", modifiers: .command)
 
+    /// `⌘⌥E` — Open or close the Equaliser & DSP panel.
+    public static let showEQPanel = KeyboardShortcut("e", modifiers: [.command, .option])
+
     // MARK: - Navigation
 
     /// `⌥⌘→` — Drill into content (album / artist detail).

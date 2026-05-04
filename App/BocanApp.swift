@@ -114,7 +114,7 @@ struct BocanApp: App {
                 visualizerVM: self.visualizerViewModel,
                 routeVM: self.routeViewModel
             )
-            .environmentObject(self.dspViewModel)
+            .environment(self.dspViewModel)
             .environmentObject(self.windowMode)
             .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
         }
@@ -127,7 +127,8 @@ struct BocanApp: App {
                 vm: self.libraryViewModel,
                 windowMode: self.windowMode,
                 lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel
+                visualizerVM: self.visualizerViewModel,
+                dspVM: self.dspViewModel
             )
         }
 
@@ -141,7 +142,7 @@ struct BocanApp: App {
 
         Settings {
             SettingsScene(scrobbleViewModel: self.scrobbleSettingsViewModel)
-                .environmentObject(self.dspViewModel)
+                .environment(self.dspViewModel)
                 .environmentObject(self.libraryViewModel)
                 .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
@@ -175,6 +176,7 @@ struct BocanApp: App {
         #endif
     }
 
+    // swiftlint:disable:next function_body_length
     init() {
         Self.registerDefaults()
 
@@ -226,7 +228,12 @@ struct BocanApp: App {
 
         let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
         self.libraryViewModel = lvm
-        self.dspViewModel = DSPViewModel(engine: eng, presetStore: presetStore, queuePlayer: qp)
+        self.dspViewModel = DSPViewModel(
+            engine: eng,
+            presetStore: presetStore,
+            queuePlayer: qp,
+            assignmentRepo: DSPAssignmentRepository(database: db)
+        )
         self.miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
         self.windowMode = WindowModeController()
         self.dockTile = DockTileController()

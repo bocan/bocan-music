@@ -10,7 +10,7 @@ import SwiftUI
 public struct NowPlayingStrip: View {
     @ObservedObject public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
-    @EnvironmentObject private var dsp: DSPViewModel
+    @Environment(DSPViewModel.self) private var dsp: DSPViewModel
     @EnvironmentObject private var visualizer: VisualizerViewModel
     /// Optional — only the main window injects a `RouteViewModel`. Snapshot
     /// tests and other ad-hoc surfaces can skip it.
@@ -55,6 +55,14 @@ public struct NowPlayingStrip: View {
         .accessibilityIdentifier(A11y.NowPlaying.strip)
         .sheet(isPresented: self.$showDSP) {
             DSPSheet(vm: self.dsp)
+        }
+        // Allow DSPViewModel.showDSPPanel to open the sheet from menu commands
+        // and keyboard shortcuts that don't have direct access to @State.
+        .onChange(of: self.dsp.showDSPPanel) { _, requested in
+            if requested {
+                self.showDSP = true
+                self.dsp.showDSPPanel = false
+            }
         }
     }
 
@@ -222,8 +230,9 @@ public struct NowPlayingStrip: View {
                     .font(.system(size: 15, weight: .medium))
             }
             .buttonStyle(.plain)
+            .keyboardShortcut(KeyBindings.showEQPanel)
             .foregroundStyle(self.showDSP ? Color.accentColor : Color.textPrimary)
-            .help("Equaliser & DSP")
+            .help("Equaliser & DSP (⌘⌥E)")
             .accessibilityLabel("Equaliser & DSP")
 
             Button {

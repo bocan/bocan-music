@@ -6,7 +6,7 @@ import SwiftUI
 /// Manages user-created EQ presets: rename, duplicate, delete.
 /// Built-in presets are shown as read-only references.
 public struct PresetManagerView: View {
-    @ObservedObject var vm: DSPViewModel
+    @Bindable var vm: DSPViewModel
     @Environment(\.dismiss) private var dismiss
 
     @State private var renameID: EQPreset.ID?
