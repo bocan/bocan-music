@@ -50,6 +50,16 @@ public actor QueuePlayer: Transport {
     public nonisolated let currentTrackChanges: AsyncStream<Track?>
     private var currentTrackContinuation: AsyncStream<Track?>.Continuation?
 
+    // MARK: - Track ID changes stream (for EQ scope resolution)
+
+    /// Emits `(trackID, albumID?)` whenever a new track starts loading.
+    ///
+    /// Separate from `currentTrackChanges` so DSP consumers don't compete with
+    /// `NowPlayingViewModel` on the same single-consumer `AsyncStream`.
+    /// Emits `(−1, nil)` when playback stops.
+    public nonisolated let trackIDChanges: AsyncStream<(trackID: Int64, albumID: Int64?)>
+    private var trackIDContinuation: AsyncStream<(trackID: Int64, albumID: Int64?)>.Continuation?
+
     // MARK: - Unavailable items stream
 
     /// Emits the set of queue-item IDs whose backing files are missing.
@@ -119,6 +129,10 @@ public actor QueuePlayer: Transport {
         var trackContinuation: AsyncStream<Track?>.Continuation?
         self.currentTrackChanges = AsyncStream { trackContinuation = $0 }
         self.currentTrackContinuation = trackContinuation
+
+        var trackIDCont: AsyncStream<(trackID: Int64, albumID: Int64?)>.Continuation?
+        self.trackIDChanges = AsyncStream { trackIDCont = $0 }
+        self.trackIDContinuation = trackIDCont
 
         var unavailableContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
         self.unavailableItemChanges = AsyncStream { unavailableContinuation = $0 }
@@ -937,10 +951,14 @@ public actor QueuePlayer: Transport {
 
     // MARK: Root-scope fallback
 
-    /// Updates `currentTrack` and broadcasts the change on `currentTrackChanges`.
+    /// Updates `currentTrack` and broadcasts the change on `currentTrackChanges`
+    /// and `trackIDChanges`.
     private func emitCurrentTrack(_ track: Track?) {
         self.currentTrack = track
         self.currentTrackContinuation?.yield(track)
+        let tid: Int64 = track?.id ?? -1
+        let aid: Int64? = track?.albumID
+        self.trackIDContinuation?.yield((trackID: tid, albumID: aid))
     }
 
     /// Finds the library root that contains `fileURLString`, resolves its

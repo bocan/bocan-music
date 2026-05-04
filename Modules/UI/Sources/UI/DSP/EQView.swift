@@ -6,9 +6,10 @@ import SwiftUI
 /// 10-band parametric EQ with preset picker, bypass toggle, and A/B compare.
 ///
 /// Sliders are vertical, labelled with ISO centre-frequency names.
-/// The A/B button toggles between the current preset and a flat reference.
+/// The A/B button is press-and-hold: the flat reference is active only while
+/// the button is held down, returning to the active preset on release.
 public struct EQView: View {
-    @ObservedObject var vm: DSPViewModel
+    @Bindable var vm: DSPViewModel
 
     /// Tracks whether A/B compare mode is showing the flat reference.
     @State private var isABFlat = false
@@ -30,6 +31,7 @@ public struct EQView: View {
     public var body: some View {
         VStack(spacing: 12) {
             self.topBar
+            self.scopeRow
             Divider()
             self.bandSliders
             Divider()
@@ -40,6 +42,64 @@ public struct EQView: View {
         .sheet(isPresented: self.$showManagePresets) {
             PresetManagerView(vm: self.vm)
         }
+    }
+
+    // MARK: - Scope row
+
+    private var scopeRow: some View {
+        HStack(spacing: 8) {
+            Text("Scope:")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("EQ Scope", selection: self.$vm.eqScope) {
+                ForEach(EQScope.allCases, id: \.self) { scope in
+                    Text(scope.rawValue).tag(scope)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityLabel("EQ scope: Global, This Album, or This Track")
+            .help("Select which scope the EQ preset applies to")
+            .fixedSize()
+            .disabled(
+                (self.vm.eqScope == .track || self.vm.currentTrackID == nil) &&
+                    (self.vm.eqScope == .album || self.vm.currentAlbumID == nil) &&
+                    false
+            )
+
+            Spacer()
+
+            if self.vm.eqScope != .global {
+                if self.vm.hasScopedPreset {
+                    Button("Clear Override") {
+                        Task { await self.vm.clearCurrentScopePreset() }
+                    }
+                    .font(.caption)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(
+                        "Clear \(self.vm.eqScope.rawValue.lowercased()) EQ override"
+                    )
+                    .help("Remove the EQ preset override for \(self.vm.eqScope.rawValue.lowercased())")
+                }
+                let scopeName = self.vm.eqScope == .track ? "track" : "album"
+                let hasContext = self.vm.eqScope == .track
+                    ? self.vm.currentTrackID != nil
+                    : self.vm.currentAlbumID != nil
+                Button("Save for \(self.vm.eqScope.rawValue)") {
+                    Task { await self.vm.saveCurrentScopePreset() }
+                }
+                .font(.caption)
+                .buttonStyle(.bordered)
+                .disabled(!hasContext || self.vm.state.eqPresetID == nil)
+                .accessibilityLabel("Save current preset for \(self.vm.eqScope.rawValue.lowercased())")
+                .help(
+                    "Pin the current EQ preset to this \(scopeName). " +
+                        "It will be applied automatically when this \(scopeName) plays."
+                )
+            }
+        }
+        .padding(.horizontal, 2)
     }
 
     // MARK: - Top bar
@@ -83,19 +143,31 @@ public struct EQView: View {
     }
 
     private var abButton: some View {
-        Button {
-            self.toggleAB()
-        } label: {
-            Text(self.isABFlat ? "B" : "A")
-                .monospacedDigit()
-                .frame(width: 28, height: 28)
-                .background(self.isABFlat ? Color.accentColor : Color.secondary.opacity(0.2))
-                .foregroundStyle(self.isABFlat ? .white : .primary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("A/B compare: toggle between current and flat")
-        .help("Toggle A/B compare (flat reference)")
+        Text(self.isABFlat ? "B" : "A")
+            .monospacedDigit()
+            .frame(width: 28, height: 28)
+            .background(self.isABFlat ? Color.accentColor : Color.secondary.opacity(0.2))
+            .foregroundStyle(self.isABFlat ? .white : .primary)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            // Press-and-hold: flat reference is active only while finger/mouse is down.
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in
+                        guard !self.isABFlat else { return }
+                        self.savedPresetID = self.vm.state.eqPresetID
+                        self.vm.state.eqPresetID = BuiltInPresets.flat.id
+                        self.isABFlat = true
+                    }
+                    .onEnded { _ in
+                        guard self.isABFlat else { return }
+                        self.vm.state.eqPresetID = self.savedPresetID
+                        self.isABFlat = false
+                    }
+            )
+            .accessibilityLabel("A/B compare: hold for flat reference")
+            .accessibilityHint("Hold to preview flat EQ; release to return to active preset")
+            .help("Hold for flat reference — release to return to active preset")
+            .contentShape(Rectangle())
     }
 
     // MARK: - Band sliders
@@ -182,25 +254,12 @@ public struct EQView: View {
     private var outputGainBinding: Binding<Double> {
         Binding(
             get: { self.outputGainValue },
-            set: { _ in } // TODO(phase-10): wire output gain slider to preset mutation
+            set: { self.vm.updateOutputGain($0) }
         )
     }
 
     private func applyBandChange(index: Int, gain: Double) {
         self.vm.updateBandGain(index: index, gain: gain)
-    }
-
-    private func toggleAB() {
-        if self.isABFlat {
-            // Restore saved preset
-            self.vm.state.eqPresetID = self.savedPresetID
-            self.isABFlat = false
-        } else {
-            // Switch to flat
-            self.savedPresetID = self.vm.state.eqPresetID
-            self.vm.state.eqPresetID = BuiltInPresets.flat.id
-            self.isABFlat = true
-        }
     }
 
     private func freqLabel(_ freq: Float) -> String {

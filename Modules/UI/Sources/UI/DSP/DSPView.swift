@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// Displayed as a settings panel; composable into a sheet or sidebar pane.
 public struct DSPView: View {
-    @ObservedObject var vm: DSPViewModel
+    @Bindable var vm: DSPViewModel
 
     public init(vm: DSPViewModel) {
         self.vm = vm

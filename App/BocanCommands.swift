@@ -17,6 +17,7 @@ struct BocanCommands: Commands {
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
     let visualizerVM: VisualizerViewModel
+    let dspVM: DSPViewModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -162,6 +163,13 @@ struct BocanCommands: Commands {
                 self.windowMode.toggleMiniPlayer()
             }
             .keyboardShortcut("m", modifiers: [.command, .option])
+
+            Divider()
+
+            Button("Equaliser & DSP…") {
+                self.dspVM.showDSPPanel = true
+            }
+            .keyboardShortcut(KeyBindings.showEQPanel)
         }
 
         CommandMenu("Track") {
