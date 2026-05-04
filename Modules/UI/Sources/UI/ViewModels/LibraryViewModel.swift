@@ -706,6 +706,27 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         do {
             guard let state = try await settingsRepo.get(UIStateV2.self, for: "ui.state.v2") else { return }
             self.selectedDestination = state.selectedDestination
+            // Validate the restored destination. `playlistSidebar.reload()` is always
+            // called before this method in the startup sequence, so `nodes` is already
+            // populated. If the saved folder/playlist was deleted since last launch,
+            // fall back to Songs rather than showing "Folder Not Found" on every startup.
+            let savedDestID: Int64? = switch self.selectedDestination {
+            case let .folder(id):
+                id
+
+            case let .playlist(id):
+                id
+
+            case let .smartPlaylist(id):
+                id
+
+            default:
+                nil
+            }
+            if let id = savedDestID, self.playlistSidebar.findNode(id: id) == nil {
+                self.log.warning("ui.restoreState.destinationGone", ["id": id])
+                self.selectedDestination = .songs
+            }
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
             self.sidebarWidth = state.sidebarWidth
             self.playlistSidebar.setExpandedFolders(state.expandedPlaylistFolders)
