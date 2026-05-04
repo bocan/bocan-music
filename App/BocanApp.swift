@@ -226,7 +226,7 @@ struct BocanApp: App {
 
         let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
         self.libraryViewModel = lvm
-        self.dspViewModel = DSPViewModel(engine: eng, presetStore: presetStore)
+        self.dspViewModel = DSPViewModel(engine: eng, presetStore: presetStore, queuePlayer: qp)
         self.miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
         self.windowMode = WindowModeController()
         self.dockTile = DockTileController()
