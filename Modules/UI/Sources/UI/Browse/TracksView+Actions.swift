@@ -85,6 +85,9 @@ extension TracksView {
                 let ids = tracks.compactMap(\.id)
                 Task { await lib.computeReplayGain(forTrackIDs: ids) }
             },
+            rate: { tracks, stars in
+                lib.setRating(stars: stars, for: tracks)
+            },
             removeFromPlaylist: removeFromPlaylistAction
         )
     }
