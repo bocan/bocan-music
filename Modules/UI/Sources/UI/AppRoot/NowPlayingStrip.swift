@@ -8,7 +8,7 @@ import SwiftUI
 /// and a volume slider.  Prev/Next buttons are present but disabled until
 /// Phase 5 introduces the queue.
 public struct NowPlayingStrip: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
     @EnvironmentObject private var visualizer: VisualizerViewModel

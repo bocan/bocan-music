@@ -23,7 +23,7 @@ public struct QueueView: View {
 private struct QueueContentView: View {
     @ObservedObject var vm: LibraryViewModel
     /// Observed separately so the animated row indicator pauses when playback pauses.
-    @ObservedObject var nowPlaying: NowPlayingViewModel
+    var nowPlaying: NowPlayingViewModel
     @State private var items: [QueueItem] = []
     @State private var currentIndex: Int?
     @State private var unavailableIDs: Set<QueueItem.ID> = []
