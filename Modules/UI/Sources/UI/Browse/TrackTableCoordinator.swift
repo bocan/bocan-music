@@ -38,12 +38,15 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     func updateRows(_ newRows: [TrackRow]) {
         self.rows = newRows
+        // Use uniquingKeysWith because the same track can appear more than once
+        // in a playlist (different positions). We only need one lookup entry per
+        // track ID for cell rendering; last-writer-wins is fine here.
         self.rowsByID = Dictionary(
-            uniqueKeysWithValues: newRows.compactMap { row in
+            newRows.compactMap { row -> (Int64, TrackRow)? in
                 guard let id = row.id else { return nil }
                 return (id, row)
             }
-        )
+        ) { _, new in new }
     }
 
     // MARK: Cell population
@@ -303,6 +306,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             identifyItem.isEnabled = selected.count == 1
             menu.addItem(identifyItem)
         }
+
+        let rgItem = ActionMenuItem("Compute Replay Gain") { acts.computeReplayGain(selected) }
+        rgItem.isEnabled = !selected.isEmpty
+        menu.addItem(rgItem)
 
         menu.addItem(.separator())
         if let removeFromPlaylist = acts.removeFromPlaylist {

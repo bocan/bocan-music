@@ -9,9 +9,14 @@ import SwiftUI
 /// already observes.  No separate search panel is needed.
 public struct ContentPane: View {
     @ObservedObject public var vm: LibraryViewModel
+    /// Observed separately so changes to `isLoaded` / `nodes` on the sidebar
+    /// VM trigger a re-render of ContentPane even though `playlistSidebar` is
+    /// a plain `let` on `LibraryViewModel` (not `@Published`).
+    @ObservedObject private var sidebar: PlaylistSidebarViewModel
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
+        self.sidebar = vm.playlistSidebar
     }
 
     public var body: some View {
@@ -69,13 +74,16 @@ public struct ContentPane: View {
         case let .folder(id):
             if let node = self.vm.playlistSidebar.findNode(id: id) {
                 PlaylistFolderView(node: node, library: self.vm)
-            } else {
+            } else if self.vm.playlistSidebar.isLoaded {
+                // Sidebar has fully loaded — the folder is genuinely gone.
                 ContentUnavailableView(
                     "Folder Not Found",
                     systemImage: "folder",
                     description: Text("This folder may have been deleted.")
                 )
             }
+            // else: sidebar not loaded yet — render nothing rather than
+            // flashing an error on every startup.
 
         case let .smartPlaylist(id):
             SmartPlaylistDetailView(

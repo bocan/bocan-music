@@ -27,6 +27,8 @@ public struct BocanRootView: View {
     @Environment(\.dismissWindow) private var dismissWindow
     @State private var tagEditorVM: TagEditorViewModel?
     @State private var identifyVM: IdentifyTrackViewModel?
+    @State private var batchCoverArtVM: BatchCoverArtViewModel?
+    @State private var duplicateReviewVM: DuplicateReviewViewModel?
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     /// Phase 4 audit M8: observe so the FSEvents watcher starts/stops live
@@ -81,6 +83,12 @@ public struct BocanRootView: View {
                             }
                         }
                         .help("Toggle lyrics pane (⌥⌘L)")
+
+                        Button("Identify Track", systemImage: "waveform.badge.magnifyingglass") {
+                            self.vm.showIdentifyTrackForCurrentSelection()
+                        }
+                        .disabled(!self.vm.hasSingleTrackSelection)
+                        .help("Identify track using AcoustID (⌘⌥I)")
                     }
                 }
 
@@ -108,6 +116,10 @@ public struct BocanRootView: View {
             let dw = self.dismissWindow
             self.windowMode.openWindow = { id in ow(id: id) }
             self.windowMode.dismissWindow = { id in dw(id: id) }
+            // Load the playlist sidebar BEFORE restoring UI state so that a
+            // saved .folder destination doesn't briefly show "Folder Not Found"
+            // while playlistSidebar.nodes is still empty.
+            await self.vm.playlistSidebar.reload()
             await self.vm.restoreUIState()
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
@@ -224,11 +236,15 @@ public struct BocanRootView: View {
             IdentifyTrackSheet(vm: identVM)
                 .onDisappear {
                     let didApply = identVM.didApply
+                    let openTagEditor = identVM.openTagEditorAfterDismiss
                     // Capture the track ID before clearing identifyTrack.
                     let trackID = self.vm.identifyTrack?.id
                     self.vm.identifyTrack = nil
                     if didApply, let id = trackID {
                         Task { await self.vm.refreshTracks(ids: [id]) }
+                    }
+                    if openTagEditor, let id = trackID {
+                        self.vm.tagEditorTrackIDs = [id]
                     }
                 }
         }
@@ -251,6 +267,43 @@ public struct BocanRootView: View {
                 playlistID: req.id,
                 playlistName: req.name
             )
+        }
+        .onChange(of: self.vm.isBatchCoverArtSheetPresented) { _, presented in
+            if presented {
+                self.batchCoverArtVM = BatchCoverArtViewModel(
+                    database: self.vm.database,
+                    albumRepo: self.vm.albumRepo,
+                    artistRepo: self.vm.artistRepo
+                )
+            } else {
+                self.batchCoverArtVM = nil
+            }
+        }
+        .sheet(isPresented: self.$vm.isBatchCoverArtSheetPresented) {
+            if let batchVM = self.batchCoverArtVM {
+                BatchCoverArtSheet(
+                    vm: batchVM,
+                    isPresented: self.$vm.isBatchCoverArtSheetPresented
+                )
+            }
+        }
+        .onChange(of: self.vm.isDuplicateReviewSheetPresented) { _, presented in
+            if presented {
+                self.duplicateReviewVM = DuplicateReviewViewModel(
+                    database: self.vm.database,
+                    library: self.vm
+                )
+            } else {
+                self.duplicateReviewVM = nil
+            }
+        }
+        .sheet(isPresented: self.$vm.isDuplicateReviewSheetPresented) {
+            if let dupVM = self.duplicateReviewVM {
+                DuplicateReviewSheet(
+                    vm: dupVM,
+                    isPresented: self.$vm.isDuplicateReviewSheetPresented
+                )
+            }
         }
         .onKeyPress(.init("i"), phases: .down) { event in
             guard event.modifiers == [.command, .option] else { return .ignored }

@@ -1,0 +1,153 @@
+/* Bòcan Help Book — styles
+   Respects macOS light/dark mode via prefers-color-scheme. */
+
+:root {
+  --bg: #ffffff;
+  --fg: #1c1c1e;
+  --fg-secondary: #3a3a3c;
+  --accent: #e4572e;
+  --border: #e5e5ea;
+  --table-stripe: #f2f2f7;
+  --code-bg: #f2f2f7;
+  --header-bg: #f9f9f9;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --fg: #f2f2f7;
+    --fg-secondary: #aeaeb2;
+    --accent: #ff6b47;
+    --border: #38383a;
+    --table-stripe: #2c2c2e;
+    --code-bg: #2c2c2e;
+    --header-bg: #2c2c2e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--bg);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+}
+
+header {
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 0 24px;
+  margin-bottom: 32px;
+}
+
+header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+header .subtitle {
+  color: var(--fg-secondary);
+  margin-top: 4px;
+}
+
+section {
+  margin-bottom: 40px;
+}
+
+h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Definition list */
+dl {
+  display: grid;
+  grid-template-columns: minmax(160px, max-content) 1fr;
+  gap: 12px 24px;
+}
+
+dt {
+  font-weight: 600;
+  color: var(--fg);
+  padding-top: 2px;
+}
+
+dd {
+  color: var(--fg-secondary);
+}
+
+strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Keyboard shortcut table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--table-stripe);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:nth-child(even) td {
+  background: var(--table-stripe);
+}
+
+/* Unordered list */
+ul, ol {
+  padding-left: 20px;
+  color: var(--fg-secondary);
+}
+
+li {
+  margin-bottom: 6px;
+}
+
+p {
+  color: var(--fg-secondary);
+  margin-bottom: 12px;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.footer-note {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.footer-note p {
+  font-size: 12px;
+}

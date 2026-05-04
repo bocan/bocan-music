@@ -3,6 +3,15 @@ import Foundation
 import Observability
 import Persistence
 
+// MARK: - Fingerprintable
+
+/// Abstracts `Fingerprinter` so tests can inject a stub without needing `fpcalc`.
+protocol Fingerprintable: Sendable {
+    func fingerprint(url: URL) async throws -> (fingerprint: String, duration: Int)
+}
+
+extension Fingerprinter: Fingerprintable {}
+
 // MARK: - FingerprintService
 
 /// Orchestrates the full acoustic-identification pipeline:
@@ -17,7 +26,7 @@ import Persistence
 public actor FingerprintService {
     // MARK: - Dependencies
 
-    private let fingerprinter: Fingerprinter
+    private let fingerprinter: any Fingerprintable
     private let acoustidClient: AcoustIDClient
     private let mbClient: Acoustics.MusicBrainzClient
     private let store: FingerprintStore
@@ -44,6 +53,19 @@ public actor FingerprintService {
         self.acoustidClient = AcoustIDClient(apiKey: acoustIDAPIKey, rateLimiter: acoustIDLimiter)
         self.mbClient = Acoustics.MusicBrainzClient(userAgent: userAgent, rateLimiter: mbLimiter)
         self.store = FingerprintStore(database: database)
+    }
+
+    /// Internal initializer for testing: accepts pre-built, injectable dependencies.
+    init(
+        fingerprinter: some Fingerprintable,
+        acoustidClient: AcoustIDClient,
+        mbClient: Acoustics.MusicBrainzClient,
+        store: FingerprintStore
+    ) {
+        self.fingerprinter = fingerprinter
+        self.acoustidClient = acoustidClient
+        self.mbClient = mbClient
+        self.store = store
     }
 
     // MARK: - Public API

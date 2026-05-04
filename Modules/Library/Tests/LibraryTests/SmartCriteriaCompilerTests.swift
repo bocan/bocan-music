@@ -239,12 +239,14 @@ struct SmartCriteriaCompilerTests {
 
     @Test func hasCoverArtIsTrue() throws {
         let c = try compile(.hasCoverArt, .isTrue, .null)
-        #expect(c.selectSQL.contains("IS NOT NULL"))
+        #expect(c.selectSQL.contains("LEFT JOIN albums ON albums.id = tracks.album_id"))
+        #expect(c.selectSQL.contains("albums.cover_art_hash IS NOT NULL"))
     }
 
     @Test func hasCoverArtIsFalse() throws {
         let c = try compile(.hasCoverArt, .isFalse, .null)
-        #expect(c.selectSQL.contains("IS NULL"))
+        #expect(c.selectSQL.contains("LEFT JOIN albums ON albums.id = tracks.album_id"))
+        #expect(c.selectSQL.contains("albums.cover_art_hash IS NULL"))
     }
 
     @Test func hasLyricsIsTrue() throws {

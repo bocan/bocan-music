@@ -31,6 +31,7 @@ public struct IdentifyTrackSheet: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
+                .help("Close")
             }
             .padding([.horizontal, .top], 16)
             .padding(.bottom, 8)
@@ -100,6 +101,7 @@ public struct IdentifyTrackSheet: View {
             Text("No AcoustID match was found for this track. Try editing tags manually.")
         } actions: {
             Button("Edit Tags") {
+                self.vm.requestTagEditor()
                 self.dismiss()
             }
             .buttonStyle(.bordered)

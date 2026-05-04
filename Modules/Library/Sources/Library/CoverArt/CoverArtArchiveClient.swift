@@ -46,14 +46,27 @@ public actor CoverArtArchiveClient {
     }
 
     /// Downloads the image at `imageURL` (follows Archive.org redirects).
+    ///
+    /// CAA's JSON API returns `http://` image URLs despite the service supporting HTTPS.
+    /// We upgrade to `https://` unconditionally so ATS doesn't block the request.
     public func download(imageURL: URL) async throws -> Data {
         await self.limiter.wait()
-        self.log.debug("caa.download", ["url": imageURL.path])
-        let (data, _) = try await self.session.data(from: imageURL)
+        let secureURL = Self.upgradeToHTTPS(imageURL)
+        self.log.debug("caa.download", ["url": secureURL.path])
+        let (data, _) = try await self.session.data(from: secureURL)
         return data
     }
 
     // MARK: - Private helpers
+
+    /// Replaces `http` scheme with `https` for coverartarchive.org URLs.
+    /// Other URLs (e.g. ia800504.us.archive.org redirects) are returned unchanged.
+    private static func upgradeToHTTPS(_ url: URL) -> URL {
+        guard url.scheme == "http",
+              var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+        components.scheme = "https"
+        return components.url ?? url
+    }
 
     private func fetchIndex(url: URL) async throws -> CAAIndex? {
         var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 15)

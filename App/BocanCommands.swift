@@ -207,6 +207,47 @@ struct BocanCommands: Commands {
                     .keyboardShortcut(KeyBindings.rate5)
             }
             .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Compute Replay Gain") {
+                let ids = self.vm.tracks.selection.compactMap(\.self)
+                Task { await self.vm.computeReplayGain(forTrackIDs: ids) }
+            }
+            .help("Analyse loudness for the selected tracks and save ReplayGain values")
+            .disabled(!self.vm.hasTrackSelection)
+        }
+
+        // Override the default help command to open the help page directly.
+        // Apple's Help Book system requires the bundle to be indexed with
+        // hiutil before the Help Viewer can display it; during development
+        // that never runs, so we redirect to GitHub instead.
+        CommandGroup(replacing: .help) {
+            Button("Bòcan Music Help") {
+                if let url = URL(string: "https://github.com/bocan/bocan-music") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            .keyboardShortcut("?", modifiers: .command)
+        }
+
+        CommandMenu("Tools") {
+            Button("Fetch Missing Cover Art\u{2026}") {
+                self.vm.showBatchCoverArt()
+            }
+            .help("Search MusicBrainz for cover art for albums with no artwork")
+
+            Button("Find Duplicates\u{2026}") {
+                self.vm.showDuplicateReview()
+            }
+            .help("Find and review tracks that appear more than once in your library")
+
+            Divider()
+
+            Button("Recompute ReplayGain") {
+                Task { await self.vm.recomputeAllReplayGain() }
+            }
+            .help("Re-analyse loudness for every track in the library")
         }
     }
 }
