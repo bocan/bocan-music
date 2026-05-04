@@ -464,11 +464,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     }
 
     private static func findNode(id: Int64, in nodes: [PlaylistNode]) -> PlaylistNode? {
-        for node in nodes {
-            if node.id == id { return node }
-            if let found = findNode(id: id, in: node.children) { return found }
-        }
-        return nil
+        nodes.lazy.compactMap { $0.id == id ? $0 : self.findNode(id: id, in: $0.children) }.first
     }
 
     private func collectFolders(_ nodes: [PlaylistNode], into result: inout [PlaylistNode]) {

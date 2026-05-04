@@ -133,15 +133,30 @@ public final class DSPChain: @unchecked Sendable {
 
     /// Apply a complete `DSPState` snapshot to the chain.
     public func apply(_ state: DSPState, presets: PresetStore) {
-        // EQ — ramp gains when the EQ is active before *and* after the change to
-        // avoid the pop caused by stepping IIR biquad coefficients mid-stream.
+        // EQ bypass transitions: ramp gains to/from 0 dB to prevent the IIR
+        // delay-line discontinuity that causes an audible pop on bypass toggling.
         let eqWasActive = !self.eq.bypass
-        self.eq.bypass = !state.eqEnabled
-        if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
-            if eqWasActive, state.eqEnabled {
+        let eqWillBeActive = state.eqEnabled
+        if eqWasActive, !eqWillBeActive {
+            // Disabling: ramp all bands to 0 dB then engage bypass so the
+            // IIR delay-line drains cleanly before it is discarded.
+            self.rampToFlatThenBypass()
+        } else if !eqWasActive, eqWillBeActive {
+            // Enabling: zero the bands so the freshly un-bypassed IIR filter
+            // starts at flat response (no discontinuity), then ramp to target.
+            self.eqRampTask?.cancel()
+            self.eqRampTask = nil
+            self.eq.reset()
+            self.eq.bypass = false
+            if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
+                self.rampEQ(to: preset)
+            }
+        } else if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
+            // No bypass state change: update the preset.
+            if eqWillBeActive {
                 self.rampEQ(to: preset)
             } else {
-                // Instant apply is safe when the EQ was or will be bypassed.
+                // Instant apply is safe while the EQ is bypassed.
                 self.eq.apply(preset: preset)
             }
         }
@@ -192,6 +207,35 @@ public final class DSPChain: @unchecked Sendable {
                 self.eq.node.globalGain = Float(startGlobal + (targetGlobal - startGlobal) * ease)
                 try? await Task.sleep(nanoseconds: 5_000_000) // 5 ms
             }
+        }
+    }
+
+    /// Ramp all EQ band gains from their current values to 0 dB (flat), then
+    /// engage bypass. Prevents the audible pop from discarding the IIR
+    /// delay-line state when `bypass` is set while audio is flowing.
+    ///
+    /// 6 steps × 5 ms = 30 ms total — inaudible as a fade, long enough to
+    /// drain the IIR delay line to a near-zero state at any sample rate ≤ 192 kHz.
+    private func rampToFlatThenBypass() {
+        self.eqRampTask?.cancel()
+        let startGains = self.eq.node.bands.map { Double($0.gain) }
+        let startGlobal = Double(self.eq.node.globalGain)
+        let steps = 6
+        self.eqRampTask = Task { [weak self] in
+            for step in 1 ... steps {
+                guard !Task.isCancelled, let self else { return }
+                let t = Double(step) / Double(steps)
+                let ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+                for (i, band) in self.eq.node.bands.enumerated() {
+                    let start = i < startGains.count ? startGains[i] : 0
+                    band.gain = Float(start * (1.0 - ease))
+                }
+                self.eq.node.globalGain = Float(startGlobal * (1.0 - ease))
+                try? await Task.sleep(nanoseconds: 5_000_000) // 5 ms
+            }
+            guard !Task.isCancelled, let self else { return }
+            self.eq.bypass = true
+            self.log.debug("dsp.eq.bypass.engaged", [:])
         }
     }
 
