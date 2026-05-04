@@ -44,11 +44,26 @@
         <string>_raop._tcp</string>
         <string>_companion-link._tcp</string>
     </array>
+    <key>NSHelpBook</key>
+    <string>Bocan Help</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSSupportsAutomaticTermination</key>
     <false/>
     <key>NSSupportsSuddenTermination</key>
     <false/>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>io.cloudcauldron.bocan.playlist-drag</string>
+            <key>UTTypeDescription</key>
+            <string>Bòcan Playlist Drag Item</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

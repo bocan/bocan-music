@@ -81,6 +81,10 @@ extension TracksView {
             toggleShuffle: { trackID, excluded in
                 Task { await lib.setTrackExcludedFromShuffle(trackID: trackID, excluded: excluded) }
             },
+            computeReplayGain: { tracks in
+                let ids = tracks.compactMap(\.id)
+                Task { await lib.computeReplayGain(forTrackIDs: ids) }
+            },
             removeFromPlaylist: removeFromPlaylistAction
         )
     }

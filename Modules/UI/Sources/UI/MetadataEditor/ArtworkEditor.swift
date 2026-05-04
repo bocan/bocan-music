@@ -18,6 +18,7 @@ public struct ArtworkEditor: View {
     }
 
     @State private var isTargeted = false
+    @State private var isPickingFile = false
 
     public var body: some View {
         VStack(alignment: .center, spacing: 12) {
@@ -51,33 +52,40 @@ public struct ArtworkEditor: View {
 
             // Action buttons
             HStack(spacing: 8) {
-                Button("Choose File…") { self.chooseFile() }
+                Button("Choose File…") { self.isPickingFile = true }
+                    .help("Open an image file to use as cover art")
                 Button("Paste") { self.pasteFromClipboard() }
                     .disabled(!NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))
+                    .help("Paste an image from the clipboard")
                 Button("Fetch…") { self.isPresentingFetchSheet = true }
+                    .help("Search MusicBrainz for cover art online")
                 if self.vm.pendingArtData != nil || self.vm.existingArtData != nil {
                     Button("Remove") { self.vm.clearArtwork() }
                         .foregroundStyle(.red)
+                        .help("Remove the cover art from this track")
                 }
             }
             .buttonStyle(.bordered)
             .font(Typography.footnote)
         }
         .padding()
+        .fileImporter(
+            isPresented: self.$isPickingFile,
+            allowedContentTypes: [.jpeg, .png, .webP, .gif]
+        ) { result in
+            if case let .success(url) = result {
+                // .fileImporter returns a security-scoped URL; we must explicitly
+                // acquire and release the grant before reading file data.
+                let accessed = url.startAccessingSecurityScopedResource()
+                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+                if let data = try? Data(contentsOf: url) {
+                    self.vm.pendingArtData = Self.normalise(data)
+                }
+            }
+        }
     }
 
     // MARK: - Private actions
-
-    private func chooseFile() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.jpeg, .png, .webP, .gif]
-        panel.allowsMultipleSelection = false
-        panel.message = "Choose an image to use as cover art"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        if let data = try? Data(contentsOf: url) {
-            self.vm.pendingArtData = Self.normalise(data)
-        }
-    }
 
     private func pasteFromClipboard() {
         if let img = NSPasteboard.general.readObjects(forClasses: [NSImage.self], options: nil)?.first as? NSImage,
@@ -86,27 +94,32 @@ public struct ArtworkEditor: View {
         }
     }
 
+    @MainActor
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
         guard let provider = providers.first else { return false }
 
         // Try file URL first
         if provider.hasItemConformingToTypeIdentifier("public.file-url") {
-            _ = provider.loadObject(ofClass: URL.self) { url, _ in
-                guard let url, let data = try? Data(contentsOf: url) else { return }
-                DispatchQueue.main.async {
-                    self.vm.pendingArtData = Self.normalise(data)
+            Task { @MainActor in
+                let url: URL? = await withCheckedContinuation { cont in
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in cont.resume(returning: url as? URL) }
                 }
+                guard let url, let data = try? Data(contentsOf: url) else { return }
+                self.vm.pendingArtData = Self.normalise(data)
             }
             return true
         }
 
         // Try image data (NSImage doesn't bridge via loadObject; use raw data)
         if provider.hasItemConformingToTypeIdentifier("public.image") {
-            _ = provider.loadDataRepresentation(forTypeIdentifier: "public.image") { data, _ in
-                guard let data else { return }
-                DispatchQueue.main.async {
-                    self.vm.pendingArtData = Self.normalise(data)
+            Task { @MainActor in
+                let data: Data? = await withCheckedContinuation { cont in
+                    _ = provider.loadDataRepresentation(forTypeIdentifier: "public.image") { data, _ in
+                        cont.resume(returning: data)
+                    }
                 }
+                guard let data else { return }
+                self.vm.pendingArtData = Self.normalise(data)
             }
             return true
         }

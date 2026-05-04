@@ -88,6 +88,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     @Published public var tagEditorTrackIDs: [Int64]?
     /// `true` when at least one track is selected in the current track table.
     @Published public var hasTrackSelection = false
+    /// `true` when exactly one track is selected — enables the "Identify Track…" toolbar button.
+    @Published public var hasSingleTrackSelection = false
     /// Shared `MetadataEditService` (nil only if the backup directory is unavailable).
     public let metadataEditService: MetadataEditService?
 
@@ -152,6 +154,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     @Published public var isPlaylistImportSheetPresented = false
     @Published public var playlistExportRequest: PlaylistExportRequest?
 
+    // MARK: - Tools sheet flags
+
+    /// Set to `true` to present the "Fetch Missing Cover Art" progress sheet.
+    @Published public var isBatchCoverArtSheetPresented = false
+
+    /// Set to `true` to present the "Find Duplicates" review sheet.
+    @Published public var isDuplicateReviewSheetPresented = false
+
+    /// Presents the batch cover-art fetch sheet.
+    public func showBatchCoverArt() {
+        self.isBatchCoverArtSheetPresented = true
+    }
+
+    /// Presents the duplicate-track review sheet.
+    public func showDuplicateReview() {
+        self.isDuplicateReviewSheetPresented = true
+    }
+
     public struct PlaylistExportRequest: Identifiable, Equatable {
         public let id: Int64
         public let name: String
@@ -189,6 +209,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
     private var selectionCancellable: AnyCancellable?
+    private var singleSelectionCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
@@ -250,6 +271,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
 
         self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
+        self.singleSelectionCancellable = self.tracks.$selection.map { $0.count == 1 }.assign(to: \.hasSingleTrackSelection, on: self)
         self.wireExpandedFoldersPersistence()
     }
 
@@ -684,6 +706,27 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         do {
             guard let state = try await settingsRepo.get(UIStateV2.self, for: "ui.state.v2") else { return }
             self.selectedDestination = state.selectedDestination
+            // Validate the restored destination. `playlistSidebar.reload()` is always
+            // called before this method in the startup sequence, so `nodes` is already
+            // populated. If the saved folder/playlist was deleted since last launch,
+            // fall back to Songs rather than showing "Folder Not Found" on every startup.
+            let savedDestID: Int64? = switch self.selectedDestination {
+            case let .folder(id):
+                id
+
+            case let .playlist(id):
+                id
+
+            case let .smartPlaylist(id):
+                id
+
+            default:
+                nil
+            }
+            if let id = savedDestID, self.playlistSidebar.findNode(id: id) == nil {
+                self.log.warning("ui.restoreState.destinationGone", ["id": id])
+                self.selectedDestination = .songs
+            }
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
             self.sidebarWidth = state.sidebarWidth
             self.playlistSidebar.setExpandedFolders(state.expandedPlaylistFolders)
@@ -712,6 +755,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     // MARK: - ReplayGain batch analysis
+
+    /// Analyse ReplayGain for a specific set of track IDs (e.g. the current selection).
+    ///
+    /// Only tracks whose IDs exist in the database are analysed; IDs that are not
+    /// found are silently skipped.  Any existing ReplayGain values for the supplied
+    /// tracks are replaced.
+    public func computeReplayGain(forTrackIDs ids: [Int64]) async {
+        guard self.replayGainProgress == nil else { return }
+        guard !ids.isEmpty else { return }
+        let repo = TrackRepository(database: self.database)
+        do {
+            let all = try await repo.fetchAll()
+            let selected = all.filter { ids.contains($0.id ?? -1) }
+            await self.runReplayGainBatch(tracks: selected, repo: repo)
+        } catch {
+            self.log.error("rg.selection.fetchFailed", ["error": String(reflecting: error)])
+        }
+    }
 
     /// Analyse only tracks that currently have no ReplayGain data.
     public func computeMissingReplayGain() async {

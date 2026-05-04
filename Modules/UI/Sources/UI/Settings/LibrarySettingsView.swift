@@ -7,6 +7,7 @@ public struct LibrarySettingsView: View {
     @EnvironmentObject private var vm: LibraryViewModel
     @AppStorage("library.watchForChanges") private var watchForChanges = true
     @AppStorage("library.quickScanByDefault") private var quickScan = false
+    @AppStorage("metadata.embedCoverArt") private var embedCoverArt = false
 
     public init() {}
 
@@ -18,6 +19,23 @@ public struct LibrarySettingsView: View {
                 Text("Quick scan reads only file metadata tags without computing replay gain.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("Metadata") {
+                Toggle("Embed cover art directly into audio files", isOn: self.$embedCoverArt)
+                    .help(
+                        "When on, saving cover art rewrites the audio file to embed the image. " +
+                            "When off, art is stored only in Bòcan's cache and won't appear in other apps."
+                    )
+                if self.embedCoverArt {
+                    Text("Files will be modified when you save cover art changes.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Cover art is stored in Bòcan's cache only and won't be visible in other apps.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section {

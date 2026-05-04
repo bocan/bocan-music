@@ -105,6 +105,9 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
 
     @Published public private(set) var phase: Phase = .fingerprinting
     @Published public private(set) var didApply = false
+    /// Set to `true` when the user taps "Edit Tags" from the no-match state.
+    /// `RootView` observes this on `.onDisappear` and opens the tag editor.
+    @Published public private(set) var openTagEditorAfterDismiss = false
     @Published public private(set) var currentValues = CurrentTagValues()
 
     // MARK: - Identifiable
@@ -180,6 +183,13 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
         self.identifyTask = nil
     }
 
+    /// Called by the "Edit Tags" button in the no-match view.
+    /// Signals `RootView` to open the tag editor once this sheet dismisses.
+    public func requestTagEditor() {
+        self.openTagEditorAfterDismiss = true
+        self.cancel()
+    }
+
     /// Applies the user-selected `fields` of `candidate` to the track's file
     /// via `MetadataEditService`. Fields not present in `fields` are left
     /// untouched on disk and in the database.
@@ -253,5 +263,13 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
         }
 
         self.currentValues = snapshot
+    }
+
+    // MARK: - Testing support
+
+    /// Bypasses the async pipeline to set the display phase directly.
+    /// Only intended for snapshot and unit tests; not part of the public API.
+    func overridePhase(_ newPhase: Phase) {
+        self.phase = newPhase
     }
 }

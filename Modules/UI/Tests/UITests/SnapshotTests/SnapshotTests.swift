@@ -1,3 +1,4 @@
+import Acoustics
 import AppKit
 import AudioEngine
 import Foundation
@@ -12,7 +13,7 @@ import Testing
 
 /// Wraps a SwiftUI view in an NSHostingView at the given size for NSView-based snapshot testing.
 @MainActor
-private func host(_ view: some View, size: CGSize) -> NSView {
+func host(_ view: some View, size: CGSize) -> NSView {
     let hosting = NSHostingView(rootView: view)
     hosting.frame = CGRect(origin: .zero, size: size)
     return hosting

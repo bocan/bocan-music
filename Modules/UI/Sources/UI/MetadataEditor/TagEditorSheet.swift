@@ -18,9 +18,19 @@ public struct TagEditorSheet: View {
 
     @State private var selectedTab: Tab = .details
     @State private var isPresentingFetchSheet = false
+    @State private var isPresentingRenumberConfirm = false
+    @State private var isPresentingConflictDiff = false
+    /// Tracks keyboard focus across all editable fields in the Details tab.
+    /// Internal (not private) so the TagEditorSheet+DetailsTab extension can access `$focusedField`.
+    @FocusState var focusedField: TagEditorFocusField?
 
     public var body: some View {
         VStack(spacing: 0) {
+            // Conflict-resolution banner — shown when disk changed after user edit
+            if self.vm.hasConflict {
+                self.conflictBanner
+            }
+
             // Tab picker
             Picker("Tab", selection: self.$selectedTab) {
                 ForEach(Tab.allCases) { tab in
@@ -45,8 +55,14 @@ public struct TagEditorSheet: View {
                 case .lyrics:
                     self.lyricsTab
 
+                case .fileInfo:
+                    self.fileInfoTab
+
                 case .sorting:
                     self.sortingTab
+
+                case .advanced:
+                    self.advancedTab
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,6 +72,7 @@ public struct TagEditorSheet: View {
         }
         .frame(minWidth: 520, idealWidth: 600, minHeight: 420)
         .task { await self.vm.load() }
+        .onAppear { self.focusedField = .title }
         .alert("Error", isPresented: Binding(
             get: { self.vm.lastError != nil },
             set: { if !$0 { self.vm.lastError = nil } }
@@ -66,76 +83,105 @@ public struct TagEditorSheet: View {
         }
         .sheet(isPresented: self.$isPresentingFetchSheet) {
             CoverArtFetchSheet(
-                vm: CoverArtFetchViewModel(fetcher: CoverArtSearchService()),
+                vm: self.vm.coverArtFetchVM,
                 isPresented: self.$isPresentingFetchSheet
             ) { data in
                 self.vm.pendingArtData = data
             }
         }
+        .sheet(isPresented: self.$isPresentingConflictDiff) {
+            ConflictDiffSheet(vm: self.vm, isPresented: self.$isPresentingConflictDiff)
+        }
     }
 
     // MARK: - Tabs
 
-    private var detailsTab: some View {
-        Form {
-            Section("Track Info") {
-                TagFieldRow("Title", text: self.fieldBinding(\.title), isVarious: self.vm.title == .various)
-                TagFieldRow("Artist", text: self.fieldBinding(\.artist), isVarious: self.vm.artist == .various)
-                TagFieldRow("Album Artist", text: self.fieldBinding(\.albumArtist), isVarious: self.vm.albumArtist == .various)
-                TagFieldRow("Album", text: self.fieldBinding(\.album), isVarious: self.vm.album == .various)
-                TagFieldRow("Genre", text: self.fieldBinding(\.genre), isVarious: self.vm.genre == .various)
-                TagFieldRow("Composer", text: self.fieldBinding(\.composer), isVarious: self.vm.composer == .various)
+    /// Banner displayed when at least one track has `needsConflictReview = true`.
+    private var conflictBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.yellow)
+                .accessibilityHidden(true)
+            Text("This file was changed on disk after your last edit.")
+                .font(.subheadline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Keep My Edits") {
+                Task { await self.vm.keepMyEdits() }
             }
+            .help("Preserve your stored tag values and dismiss this warning")
+            Button("Take Disk Version") {
+                Task { await self.vm.takeDiskVersion() }
+            }
+            .help("Load the tags now on disk, discarding your previous edits")
+            Button("Show Diff…") {
+                self.isPresentingConflictDiff = true
+            }
+            .help("Compare your stored edits side-by-side with what's on disk")
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color.yellow.opacity(0.12))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Conflict: file was changed on disk after your last edit")
+    }
 
-            Section("Numbering") {
-                IntFieldRow("Year", value: self.intBinding(\.year), isVarious: self.vm.year == .various)
-                if self.vm.isSingleTrack {
-                    IntFieldRow("Track", value: self.intBinding(\.trackNumber), isVarious: false)
-                    IntFieldRow("Of", value: self.intBinding(\.trackTotal), isVarious: false)
+    // MARK: - Bulk Actions (multi-track only)
+
+    var bulkActionsSection: some View {
+        Section("Bulk Actions") {
+            // Renumber tracks in current sort order
+            LabeledContent("Track Numbers") {
+                Button("Renumber 1…\(self.vm.trackCount)") {
+                    if self.vm.tracksSpanMultipleAlbums {
+                        self.isPresentingRenumberConfirm = true
+                    } else {
+                        Task { await self.vm.renumberTracks() }
+                    }
                 }
-                IntFieldRow("Disc", value: self.intBinding(\.discNumber), isVarious: self.vm.discNumber == .various)
-                IntFieldRow("Discs", value: self.intBinding(\.discTotal), isVarious: self.vm.discTotal == .various)
+                .disabled(self.vm.isApplyingBulkAction)
+                .help("Assign sequential track numbers (1…N) in the current sort order")
+            }
+            .confirmationDialog(
+                "Tracks span multiple albums",
+                isPresented: self.$isPresentingRenumberConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Renumber Anyway", role: .destructive) {
+                    Task { await self.vm.renumberTracks() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("The selected tracks belong to more than one album. Renumbering will overwrite each track's number. Continue?")
             }
 
-            Section("Extended") {
-                IntFieldRow("BPM", value: Binding(
-                    get: {
-                        switch self.vm.bpm {
-                        case let .shared(val):
-                            val.flatMap { Int($0) }
+            // Copy each track's artist into its album artist field
+            LabeledContent("Album Artist") {
+                Button("Set from Artist") {
+                    Task { await self.vm.copyArtistToAlbumArtist() }
+                }
+                .disabled(self.vm.isApplyingBulkAction)
+                .help("Copy each track's Artist value into its Album Artist field")
+            }
 
-                        case let .edited(val):
-                            val.flatMap { Int($0) }
-
-                        case .various:
-                            nil
+            // Text case buttons for all text fields
+            LabeledContent("Text Case") {
+                Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 4) {
+                    ForEach(TagEditorViewModel.StringField.allCases, id: \.self) { field in
+                        GridRow {
+                            Text(field.label)
+                                .foregroundStyle(Color.textSecondary)
+                                .frame(maxWidth: 110, alignment: .trailing)
+                            self.casePillButtons(for: field)
                         }
-                    },
-                    set: { self.vm.setBPM($0.map { Double($0) }) }
-                ))
-                TagFieldRow("Key", text: self.fieldBinding(\.key), isVarious: self.vm.key == .various)
-                TagFieldRow("ISRC", text: self.fieldBinding(\.isrc), isVarious: self.vm.isrc == .various)
-                TagFieldRow("Comment", text: self.fieldBinding(\.comment), isVarious: self.vm.comment == .various)
-            }
-
-            Section("Rating") {
-                StarRatingRow("Rating", rating: Binding(
-                    get: { self.vm.rating.currentValue.flatMap(\.self) },
-                    set: { self.vm.setRating($0) }
-                ))
-                Toggle("Loved", isOn: Binding(
-                    get: { self.vm.loved.currentValue.flatMap(\.self) ?? false },
-                    set: { self.vm.setLoved($0) }
-                ))
-                Toggle("Excluded from Shuffle", isOn: Binding(
-                    get: { self.vm.excludedFromShuffle.currentValue.flatMap(\.self) ?? false },
-                    set: { self.vm.setExcludedFromShuffle($0) }
-                ))
+                    }
+                }
+                .padding(.vertical, 4)
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
+
+    // Three compact case-transformation buttons for a single text field.
+    // (defined in TagEditorSheet+DetailsTab.swift)
 
     private var artworkTab: some View {
         ArtworkEditor(vm: self.vm, isPresentingFetchSheet: self.$isPresentingFetchSheet)
@@ -143,10 +189,38 @@ public struct TagEditorSheet: View {
 
     private var lyricsTab: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Lyrics")
-                .font(Typography.footnote)
-                .foregroundStyle(Color.textTertiary)
+            if !self.vm.isSingleTrack, let eb = self.enabledFor(.lyrics) {
+                Toggle("Apply lyrics to all tracks", isOn: eb)
+                    .toggleStyle(.checkbox)
+                    .padding(.horizontal)
+                    .help("When checked, the lyrics text will be written to every selected track on Save")
+            }
+            HStack {
+                Text("Lyrics")
+                    .font(Typography.footnote)
+                    .foregroundStyle(Color.textTertiary)
+                Spacer()
+                Picker("", selection: self.$vm.lyricsMode) {
+                    Text("Auto").tag(TagEditorViewModel.LyricsMode.auto)
+                    Text("Synced").tag(TagEditorViewModel.LyricsMode.synced)
+                    Text("Plain").tag(TagEditorViewModel.LyricsMode.plain)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+                .help("Auto: detect LRC timestamps. Synced: always save as synced (LRC). Plain: always save as plain text.")
+            }
+            .padding(.horizontal)
+            if self.vm.lyricsMode == .auto, self.vm.lrcTimestampsDetected {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.badge.checkmark")
+                        .imageScale(.small)
+                    Text("LRC timestamps detected — will be saved as synced lyrics")
+                        .font(Typography.footnote)
+                }
+                .foregroundStyle(Color.accentColor)
                 .padding(.horizontal)
+                .accessibilityLabel("LRC timestamps detected, lyrics will be saved as synced")
+            }
             TextEditor(text: self.fieldBinding(\.lyrics))
                 .font(Typography.body)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -157,29 +231,7 @@ public struct TagEditorSheet: View {
         }
     }
 
-    private var sortingTab: some View {
-        Form {
-            Section("Sort Names") {
-                TagFieldRow(
-                    "Sort Artist",
-                    text: self.fieldBinding(\.sortArtist),
-                    isVarious: self.vm.sortArtist == .various
-                )
-                TagFieldRow(
-                    "Sort Album Artist",
-                    text: self.fieldBinding(\.sortAlbumArtist),
-                    isVarious: self.vm.sortAlbumArtist == .various
-                )
-                TagFieldRow(
-                    "Sort Album",
-                    text: self.fieldBinding(\.sortAlbum),
-                    isVarious: self.vm.sortAlbum == .various
-                )
-            }
-        }
-        .formStyle(.grouped)
-        .padding()
-    }
+    // sortingTab is defined in TagEditorSheet+DetailsTab.swift
 
     // MARK: - Bottom bar
 
@@ -209,104 +261,55 @@ public struct TagEditorSheet: View {
 
     // MARK: - Helpers
 
-    /// String binding for a `FieldState<String>` property on the VM.
-    private func fieldBinding(_ kp: WritableKeyPath<TagEditorViewModel, TagEditorViewModel.FieldState<String>>) -> Binding<String> {
-        Binding(
-            get: { self.vm[keyPath: kp].currentValue.flatMap(\.self) ?? "" },
-            set: { newVal in
-                // Reflect the edit back through the typed setter on the VM.
-                // Since we can't call a setter generically, we embed the mapping here.
-                self.applyStringEdit(kp, value: newVal)
-            }
-        )
-    }
+    // fieldBinding, intBinding, applyStringEdit, applyIntEdit live in TagEditorSheet+DetailsTab.swift
+}
 
-    private func intBinding(_ kp: WritableKeyPath<TagEditorViewModel, TagEditorViewModel.FieldState<Int>>) -> Binding<Int?> {
-        Binding(
-            get: { self.vm[keyPath: kp].currentValue.flatMap(\.self) },
-            set: { newVal in self.applyIntEdit(kp, value: newVal) }
-        )
-    }
+// MARK: - TagEditorFocusField
 
-    private func applyStringEdit(
-        _ kp: WritableKeyPath<TagEditorViewModel, TagEditorViewModel.FieldState<String>>,
-        value: String
-    ) {
-        switch kp {
-        case \.title:
-            self.vm.setTitle(value)
+/// Identifies each focusable field in the Details tab for explicit Tab-key order.
+/// Internal so the TagEditorSheet+DetailsTab extension in a separate file can use it.
+enum TagEditorFocusField: Hashable {
+    case title
 
-        case \.artist:
-            self.vm.setArtist(value)
+    case artist
 
-        case \.albumArtist:
-            self.vm.setAlbumArtist(value)
+    case albumArtist
 
-        case \.album:
-            self.vm.setAlbum(value)
+    case album
 
-        case \.genre:
-            self.vm.setGenre(value)
+    case genre
 
-        case \.composer:
-            self.vm.setComposer(value)
+    case composer
 
-        case \.comment:
-            self.vm.setComment(value)
+    case year
 
-        case \.key:
-            self.vm.setKey(value)
+    case trackNumber
 
-        case \.isrc:
-            self.vm.setISRC(value)
+    case trackTotal
 
-        case \.lyrics:
-            self.vm.setLyrics(value)
+    case discNumber
 
-        case \.sortArtist:
-            self.vm.setSortArtist(value)
+    case discTotal
 
-        case \.sortAlbumArtist:
-            self.vm.setSortAlbumArtist(value)
+    case bpm
 
-        case \.sortAlbum:
-            self.vm.setSortAlbum(value)
+    case key
 
-        default:
-            break
-        }
-    }
+    case isrc
 
-    private func applyIntEdit(
-        _ kp: WritableKeyPath<TagEditorViewModel, TagEditorViewModel.FieldState<Int>>,
-        value: Int?
-    ) {
-        switch kp {
-        case \.year:
-            self.vm.setYear(value)
+    case comment
 
-        case \.trackNumber:
-            self.vm.setTrackNumber(value)
+    case rating
 
-        case \.trackTotal:
-            self.vm.setTrackTotal(value)
+    case loved
 
-        case \.discNumber:
-            self.vm.setDiscNumber(value)
-
-        case \.discTotal:
-            self.vm.setDiscTotal(value)
-
-        default:
-            break
-        }
-    }
+    case excludedFromShuffle
 }
 
 // MARK: - Tab enum
 
 private enum Tab: String, CaseIterable, Identifiable {
-    case details, artwork, lyrics, sorting
+    case details, artwork, lyrics, fileInfo, sorting, advanced
 
     var id: String {
         self.rawValue
@@ -323,40 +326,14 @@ private enum Tab: String, CaseIterable, Identifiable {
         case .lyrics:
             "Lyrics"
 
+        case .fileInfo:
+            "File Info"
+
         case .sorting:
             "Sorting"
+
+        case .advanced:
+            "Advanced"
         }
-    }
-}
-
-// MARK: - FieldState helper
-
-private extension TagEditorViewModel.FieldState {
-    /// Current displayable value (edited or shared).
-    var currentValue: T?? {
-        switch self {
-        case let .shared(val):
-            val
-
-        case let .edited(val):
-            val
-
-        case .various:
-            nil
-        }
-    }
-}
-
-private extension TagEditorViewModel.FieldState where Self == TagEditorViewModel.FieldState<String> {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        if case .various = lhs, case .various = rhs { return true }
-        return false
-    }
-}
-
-private extension TagEditorViewModel.FieldState where Self == TagEditorViewModel.FieldState<Int> {
-    static func == (lhs: Self, rhs: Self) -> Bool {
-        if case .various = lhs, case .various = rhs { return true }
-        return false
     }
 }

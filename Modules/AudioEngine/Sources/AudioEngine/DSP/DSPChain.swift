@@ -36,8 +36,11 @@ public final class DSPChain: @unchecked Sendable {
 
     private let log = AppLogger.make(.audio)
 
-    /// In-flight gain ramp task — cancelled and replaced on each preset change.
+    /// In-flight EQ gain ramp task — cancelled and replaced on each preset change.
     private var eqRampTask: Task<Void, Never>?
+
+    /// In-flight bass-boost ramp task — cancelled and replaced on each slider move.
+    private var bassBoostRampTask: Task<Void, Never>?
 
     // MARK: - Graph connection points
 
@@ -95,7 +98,8 @@ public final class DSPChain: @unchecked Sendable {
         engine.connect(self.crossfeed.node, to: self.stereoExpander.node, format: format)
         engine.connect(self.stereoExpander.node, to: self.limiter.node, format: format)
         engine.connect(self.limiter.node, to: mixer, format: format)
-        self.log.debug("dsp.chain.connected", ["sampleRate": format?.sampleRate ?? 0])
+        // sampleRate is 0 when format is nil (engine picks default); that's intentional at init.
+        self.log.debug("dsp.chain.connected", ["sampleRate": format?.sampleRate ?? 0 as Double])
     }
 
     /// Disconnect all internal and boundary connections.
@@ -132,21 +136,36 @@ public final class DSPChain: @unchecked Sendable {
 
     /// Apply a complete `DSPState` snapshot to the chain.
     public func apply(_ state: DSPState, presets: PresetStore) {
-        // EQ — ramp gains when the EQ is active before *and* after the change to
-        // avoid the pop caused by stepping IIR biquad coefficients mid-stream.
+        // EQ bypass transitions: ramp gains to/from 0 dB to prevent the IIR
+        // delay-line discontinuity that causes an audible pop on bypass toggling.
         let eqWasActive = !self.eq.bypass
-        self.eq.bypass = !state.eqEnabled
-        if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
-            if eqWasActive, state.eqEnabled {
+        let eqWillBeActive = state.eqEnabled
+        if eqWasActive, !eqWillBeActive {
+            // Disabling: ramp all bands to 0 dB then engage bypass so the
+            // IIR delay-line drains cleanly before it is discarded.
+            self.rampToFlatThenBypass()
+        } else if !eqWasActive, eqWillBeActive {
+            // Enabling: zero the bands so the freshly un-bypassed IIR filter
+            // starts at flat response (no discontinuity), then ramp to target.
+            self.eqRampTask?.cancel()
+            self.eqRampTask = nil
+            self.eq.reset()
+            self.eq.bypass = false
+            if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
+                self.rampEQ(to: preset)
+            }
+        } else if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
+            // No bypass state change: update the preset.
+            if eqWillBeActive {
                 self.rampEQ(to: preset)
             } else {
-                // Instant apply is safe when the EQ was or will be bypassed.
+                // Instant apply is safe while the EQ is bypassed.
                 self.eq.apply(preset: preset)
             }
         }
 
-        // Bass boost
-        self.bassBoost.setGainDB(state.bassBoostDB)
+        // Bass boost — ramp to avoid IIR discontinuity on gain/bypass changes.
+        self.rampBassBoost(to: state.bassBoostDB)
 
         // Crossfeed
         self.crossfeed.setAmount(state.crossfeedAmount)
@@ -194,6 +213,75 @@ public final class DSPChain: @unchecked Sendable {
         }
     }
 
+    /// Ramp all EQ band gains from their current values to 0 dB (flat), then
+    /// engage bypass. Prevents the audible pop from discarding the IIR
+    /// delay-line state when `bypass` is set while audio is flowing.
+    ///
+    /// 6 steps × 5 ms = 30 ms total — inaudible as a fade, long enough to
+    /// drain the IIR delay line to a near-zero state at any sample rate ≤ 192 kHz.
+    private func rampToFlatThenBypass() {
+        self.eqRampTask?.cancel()
+        let startGains = self.eq.node.bands.map { Double($0.gain) }
+        let startGlobal = Double(self.eq.node.globalGain)
+        let steps = 6
+        self.eqRampTask = Task { [weak self] in
+            for step in 1 ... steps {
+                guard !Task.isCancelled, let self else { return }
+                let t = Double(step) / Double(steps)
+                let ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+                for (i, band) in self.eq.node.bands.enumerated() {
+                    let start = i < startGains.count ? startGains[i] : 0
+                    band.gain = Float(start * (1.0 - ease))
+                }
+                self.eq.node.globalGain = Float(startGlobal * (1.0 - ease))
+                try? await Task.sleep(nanoseconds: 5_000_000) // 5 ms
+            }
+            guard !Task.isCancelled, let self else { return }
+            self.eq.bypass = true
+            self.log.debug("dsp.eq.bypass.engaged", [:])
+        }
+    }
+
+    /// Interpolate bass-boost gain from its current value to `targetDB` over ~60 ms,
+    /// managing the bypass flag pop-free.
+    ///
+    /// - If currently bypassed and target > 0: un-bypass first (gain is 0 = flat passthrough),
+    ///   then ramp up — no discontinuity because the IIR starts from a known-zero state.
+    /// - If currently active and target == 0: ramp to 0 first, then engage bypass — the
+    ///   IIR delay-line drains to near-zero before it is discarded.
+    /// - Otherwise: ramp between current and target with the node remaining active.
+    ///
+    /// Each call cancels any in-flight ramp, so rapid slider moves coalesce naturally.
+    private func rampBassBoost(to targetDB: Double) {
+        self.bassBoostRampTask?.cancel()
+        let targetClamped = targetDB.clamped(to: 0 ... 12)
+        let startDB = self.bassBoost.gainDB
+        if !self.bassBoost.node.bypass, targetClamped == startDB { return }
+        if self.bassBoost.node.bypass, targetClamped == 0 { return }
+
+        // Un-bypass at gain=0 so the filter starts from a flat (zero-gain) state.
+        if self.bassBoost.node.bypass, targetClamped > 0 {
+            self.bassBoost.node.bypass = false
+        }
+
+        let steps = 12
+        self.bassBoostRampTask = Task { [weak self] in
+            for step in 1 ... steps {
+                guard !Task.isCancelled, let self else { return }
+                let t = Double(step) / Double(steps)
+                let ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
+                self.bassBoost.node.bands.first?.gain = Float(startDB + (targetClamped - startDB) * ease)
+                try? await Task.sleep(nanoseconds: 5_000_000) // 5 ms
+            }
+            guard !Task.isCancelled, let self else { return }
+            self.bassBoost.node.bands.first?.gain = Float(targetClamped)
+            if targetClamped == 0 {
+                self.bassBoost.node.bypass = true
+            }
+            self.log.debug("dsp.bassboost.ramp.done", ["targetDB": targetClamped])
+        }
+    }
+
     /// Apply ReplayGain compensation.
     public func applyGain(db: Double) {
         self.gainStage.setGainDB(db)
@@ -203,6 +291,8 @@ public final class DSPChain: @unchecked Sendable {
     public func reset() {
         self.eqRampTask?.cancel()
         self.eqRampTask = nil
+        self.bassBoostRampTask?.cancel()
+        self.bassBoostRampTask = nil
         self.gainStage.reset()
         self.eq.reset()
         self.eq.bypass = false

@@ -33,6 +33,24 @@ struct CandidatePickerView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 8)
 
+            if let topScore = self.candidates.first?.score, topScore < 0.6 {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Low confidence — verify tags before applying.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .padding(.horizontal)
+                .padding(.bottom, 6)
+                .accessibilityLabel("Warning: low confidence match — verify tags before applying")
+            }
+
             Divider()
 
             List(self.candidates) { candidate in
@@ -80,6 +98,7 @@ struct CandidatePickerView: View {
                 Spacer()
                 Button("Skip", action: self.onSkip)
                     .keyboardShortcut(.escape, modifiers: [])
+                    .help("Skip this track without applying changes")
             }
             .padding()
         }
@@ -194,9 +213,11 @@ private struct CandidateRow: View {
                     Button("Select All") { self.selectAll() }
                         .buttonStyle(.borderless)
                         .controlSize(.small)
+                        .help("Select all available tag fields")
                     Button("Select None") { self.selection.removeAll() }
                         .buttonStyle(.borderless)
                         .controlSize(.small)
+                        .help("Deselect all tag fields")
                     Spacer()
                     if self.isApplied {
                         Label("Applied", systemImage: "checkmark.circle.fill")
@@ -206,6 +227,7 @@ private struct CandidateRow: View {
                         Button("Apply Selected") { self.onApply() }
                             .buttonStyle(.borderedProminent)
                             .disabled(self.selection.isEmpty || self.isApplying)
+                            .help("Write selected fields to the track's tags")
                             .overlay {
                                 if self.isApplying {
                                     ProgressView().scaleEffect(0.7)

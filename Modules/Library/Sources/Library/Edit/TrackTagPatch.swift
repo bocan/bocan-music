@@ -36,6 +36,10 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
     public var key: String??
     public var isrc: String??
     public var lyrics: String??
+    /// LRC-formatted synced lyrics text. When set, the lyrics DB row will be
+    /// saved with `isSynced = true`. Set `lyrics` to `.some(nil)` when providing
+    /// `syncedLyrics` to avoid conflicting writes.
+    public var syncedLyrics: String??
 
     // MARK: - Sort tags
 
@@ -80,6 +84,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         key: String?? = nil,
         isrc: String?? = nil,
         lyrics: String?? = nil,
+        syncedLyrics: String?? = nil,
         sortArtist: String?? = nil,
         sortAlbumArtist: String?? = nil,
         sortAlbum: String?? = nil,
@@ -108,6 +113,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         self.key = key
         self.isrc = isrc
         self.lyrics = lyrics
+        self.syncedLyrics = syncedLyrics
         self.sortArtist = sortArtist
         self.sortAlbumArtist = sortAlbumArtist
         self.sortAlbum = sortAlbum
@@ -129,7 +135,8 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
             self.album == nil && self.genre == nil && self.composer == nil && self.comment == nil &&
             self.trackNumber == nil && self.trackTotal == nil && self.discNumber == nil &&
             self.discTotal == nil && self.year == nil && self.bpm == nil && self.key == nil &&
-            self.isrc == nil && self.lyrics == nil && self.sortArtist == nil &&
+            self.isrc == nil && self.lyrics == nil && self.syncedLyrics == nil &&
+            self.sortArtist == nil &&
             self.sortAlbumArtist == nil && self.sortAlbum == nil && self.coverArt == nil &&
             self.rating == nil && self.loved == nil && self.excludedFromShuffle == nil &&
             self.replaygainTrackGain == nil && self.replaygainTrackPeak == nil &&

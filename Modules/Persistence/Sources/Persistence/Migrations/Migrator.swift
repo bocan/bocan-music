@@ -49,6 +49,8 @@ public struct Migrator {
             }
         }
         M017SmartRandomSeed.register(in: &dm)
+        M018ConflictReviewFlag.register(in: &dm)
+        M019PlaylistTrackUnique.register(in: &dm)
         return Self(inner: dm)
     }
 
