@@ -108,6 +108,16 @@ struct BocanCommands: Commands {
             }
             .keyboardShortcut(KeyBindings.mute)
 
+            Button("Increase Volume") {
+                Task { await self.vm.nowPlaying.increaseVolume() }
+            }
+            .keyboardShortcut(KeyBindings.increaseVolume)
+
+            Button("Decrease Volume") {
+                Task { await self.vm.nowPlaying.decreaseVolume() }
+            }
+            .keyboardShortcut(KeyBindings.decreaseVolume)
+
             // Phase 5 audit H1: keyboard-accessible mode toggles.  Labels
             // include the current state so VoiceOver announces it and so
             // users can confirm without opening the strip.

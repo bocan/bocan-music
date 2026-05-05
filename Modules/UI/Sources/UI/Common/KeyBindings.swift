@@ -96,6 +96,12 @@ public enum KeyBindings {
     /// `⌘⇧Q` — Append selected tracks to the end of the queue.
     public static let addToQueue = KeyboardShortcut("q", modifiers: [.command, .shift])
 
+    /// `⌘↑` — Increase app volume by 10%.
+    public static let increaseVolume = KeyboardShortcut(.upArrow, modifiers: .command)
+
+    /// `⌘↓` — Decrease app volume by 10%.
+    public static let decreaseVolume = KeyboardShortcut(.downArrow, modifiers: .command)
+
     /// `⌘⌥↑` — Increase playback speed to the next quick rate.
     public static let increaseSpeed = KeyboardShortcut(.upArrow, modifiers: [.command, .option])
 

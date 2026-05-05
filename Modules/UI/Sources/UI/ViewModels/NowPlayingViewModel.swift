@@ -86,8 +86,8 @@ public final class NowPlayingViewModel {
             self.startObservingCurrentTrack(qp)
             self.startObservingSleepTimer(qp)
         }
-        if let v = UserDefaults.standard.object(forKey: "playback.rate") as? Double {
-            let r = max(0.5, min(2.0, Float(v)))
+        if let storedRate = UserDefaults.standard.object(forKey: "playback.rate") as? Double {
+            let r = max(0.5, min(2.0, Float(storedRate)))
             self.playbackRate = r
             Task { await self.setRate(r) }
         }
@@ -141,9 +141,7 @@ public final class NowPlayingViewModel {
         }
     }
 
-    /// Clamps and applies the volume to the engine.
-    /// When muted, updates the stored level but keeps the engine at 0 so the
-    /// mute is preserved until the user explicitly un-mutes.
+    /// Clamps and applies volume to the engine; preserves mute state.
     public func setVolume(_ newVolume: Float) async {
         self.volume = min(1, max(0, newVolume))
         if !self.isMuted {
@@ -151,9 +149,7 @@ public final class NowPlayingViewModel {
         }
     }
 
-    /// Toggles mute on/off.
-    /// Muting forces engine volume to 0 without changing the stored `volume`
-    /// property, so un-muting restores the exact previous level.
+    /// Toggles mute; preserves stored volume so unmuting restores the previous level.
     public func toggleMute() async {
         if self.isMuted {
             self.isMuted = false
@@ -162,6 +158,16 @@ public final class NowPlayingViewModel {
             self.isMuted = true
             await self.engine.setVolume(0)
         }
+    }
+
+    /// Steps volume up by 10%, clamped to 1.0.
+    public func increaseVolume() async {
+        await self.setVolume(min(1.0, self.volume + 0.1))
+    }
+
+    /// Steps volume down by 10%, clamped to 0.0.
+    public func decreaseVolume() async {
+        await self.setVolume(max(0.0, self.volume - 0.1))
     }
 
     /// Skips to previous, or restarts current track if past the 3-second threshold.
@@ -253,6 +259,7 @@ public final class NowPlayingViewModel {
         await self.setRate(1.0)
     }
 
+    /// Quick-pick rates shared with `SpeedPickerView` and the Playback menu.
     public static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
 
     /// Sleep timer presets shared with the Playback menu.
@@ -292,13 +299,9 @@ public final class NowPlayingViewModel {
                 }
             }
         }
-        // Observe queue changes to keep UI button state (shuffle, repeat,
-        // stop-after-current) in sync with the actor's authoritative state.
-        // Critical after restoreQueue() applies persisted values at launch — the
-        // user should see the real repeat/shuffle mode, not the default.
+        // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
         Task { [weak self] in
             guard let self else { return }
-            // Seed from the actor's current state before listening for changes.
             let initialRepeat = await qp.queue.repeatMode
             let initialShuffle = await qp.queue.shuffleState
             let initialStopAfter = await qp.queue.stopAfterCurrent
@@ -445,8 +448,7 @@ private extension NowPlayingViewModel {
         }
     }
 
-    /// Posts a `UNNotification` banner when a new track starts, provided
-    /// the user has enabled the setting and the app is not frontmost.
+    /// Posts a `UNNotification` banner when a new track starts (if enabled and app is not frontmost).
     func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
         let settingOn = UserDefaults.standard.bool(forKey: "general.showNotifications")
         let appActive = NSApp?.isActive ?? true
@@ -454,8 +456,6 @@ private extension NowPlayingViewModel {
         guard settingOn else { return }
         guard !appActive else { return }
 
-        // Bail early if the user hasn't granted permission rather than letting
-        // the add() call fail silently.
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         guard settings.authorizationStatus == .authorized else {
             self.log.warning(
