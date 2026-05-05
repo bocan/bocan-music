@@ -473,7 +473,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                     let name = t.artistID.flatMap { names[$0] }
                     return QueueItem.make(from: t, artistName: name)
                 }
-                try await qp.play(items: items, startingAt: startIndex)
+                try await qp.play(items: items, startingAt: startIndex, shuffle: self.nowPlaying.shuffleOn)
             } catch {
                 self.log.error("library.play.failed", ["error": String(reflecting: error)])
                 self.playbackErrorMessage = "Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library."
@@ -591,7 +591,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         Task { await self.addToQueue(tracks: selected) }
     }
 
-    /// Plays all tracks from the album of `track`.
+    /// Plays the album of the first selected track, replacing the queue.
+    public func playAlbumForCurrentSelection(shuffle: Bool = false) {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        Task { await self.playAlbum(track: track, shuffle: shuffle) }
+    }
+
+    /// Plays all tracks by the artist of the first selected track, replacing the queue.
+    public func playArtistForCurrentSelection() {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        Task { await self.playArtist(track: track) }
+    }
+
+    // Plays all tracks from the album of `track`.
+
     public func playAlbum(track: Track, shuffle: Bool = false) async {
         guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
         do {

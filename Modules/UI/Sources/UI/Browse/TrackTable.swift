@@ -15,6 +15,12 @@ public struct TrackContextMenuActions {
     /// one track (no surrounding context).  Used by Option+double-click as
     /// an explicit "play this and nothing else" gesture.
     public let playSingle: (Track) -> Void
+    /// Play all tracks from the same album as `track`, replacing the queue.
+    public let playAlbum: (Track) -> Void
+    /// Play all tracks from the same album as `track`, replacing the queue, shuffled.
+    public let shuffleAlbum: (Track) -> Void
+    /// Play all tracks by the same artist as `track`, replacing the queue.
+    public let playArtist: (Track) -> Void
     /// Insert tracks next in the queue.
     public let playNext: ([Track]) -> Void
     /// Append tracks to the end of the queue.

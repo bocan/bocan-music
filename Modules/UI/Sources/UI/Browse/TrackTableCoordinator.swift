@@ -197,7 +197,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         self.addPlaybackItems(to: menu, selected: selected, first: first, acts: acts)
         self.addLoveItem(to: menu, first: first, acts: acts)
         self.addRateItem(to: menu, selected: selected, acts: acts)
-        self.addNavigationItems(to: menu, first: first, acts: acts)
+        self.addNavigationItems(to: menu, selected: selected, first: first, acts: acts)
         self.addFileItems(to: menu, selected: selected, first: first, acts: acts)
         return menu
     }
@@ -270,10 +270,6 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         first: Track?,
         acts: TrackContextMenuActions
     ) {
-        // TODO(phase-future): add "Play Album", "Shuffle Album", and "Play Artist" items here
-        // once the library query APIs needed to fetch album/artist tracks are exposed through
-        // TrackContextMenuActions.  These items existed in the old dead-code TrackContextMenu
-        // SwiftUI view but were never wired to the live AppKit menu.
         if let track = first {
             menu.addItem(ActionMenuItem("Play Now") { acts.playNow(track) })
         }
@@ -327,11 +323,33 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     private func addNavigationItems(
         to menu: NSMenu,
+        selected: [Track],
         first: Track?,
         acts: TrackContextMenuActions
     ) {
         menu.addItem(.separator())
         var hasNav = false
+
+        // All-same-album check: only show album actions when selection is within one album.
+        let allSameAlbum = !selected.isEmpty
+            && selected.allSatisfy { $0.albumID != nil && $0.albumID == selected[0].albumID }
+        // All-same-artist check: only show artist action when selection is within one artist.
+        let allSameArtist = !selected.isEmpty
+            && selected.allSatisfy { $0.artistID != nil && $0.artistID == selected[0].artistID }
+
+        if let track = first, allSameAlbum {
+            menu.addItem(ActionMenuItem("Play Album") { acts.playAlbum(track) })
+            menu.addItem(ActionMenuItem("Shuffle Album") { acts.shuffleAlbum(track) })
+            hasNav = true
+        }
+        if let track = first, allSameArtist {
+            menu.addItem(ActionMenuItem("Play Artist") { acts.playArtist(track) })
+            hasNav = true
+        }
+        if hasNav { menu.addItem(.separator())
+            hasNav = false
+        }
+
         if let id = first?.artistID {
             menu.addItem(ActionMenuItem("Go to Artist") { acts.goToArtist(id) })
             hasNav = true
