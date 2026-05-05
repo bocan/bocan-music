@@ -57,14 +57,6 @@ public struct SleepTimerMenu: View {
                 .help("Set the number of minutes (1–480) before playback stops")
             }
 
-            Toggle("Fade out in last 30 s", isOn: Binding(
-                get: { self.vm.sleepTimerFadeOut },
-                set: { newVal in
-                    Task { await self.vm.setSleepTimer(minutes: nil, fadeOut: newVal) }
-                }
-            ))
-            .help("Gradually reduce volume to silence over the final 30 seconds before the timer fires")
-
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) {
