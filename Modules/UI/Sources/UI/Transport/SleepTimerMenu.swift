@@ -29,6 +29,7 @@ public struct SleepTimerMenu: View {
             : "Sleep timer — automatically stop playback after a set time")
         .accessibilityLabel(self.accessibilityLabel)
         .accessibilityHint("Opens a menu of sleep timer presets. Choose a duration to automatically stop playback.")
+        .accessibilityIdentifier(A11y.NowPlaying.sleepTimer)
         .popover(isPresented: self.$showCustomField, arrowEdge: .top) {
             self.customDurationPopover
         }

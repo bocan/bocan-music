@@ -165,6 +165,7 @@ public struct NowPlayingStrip: View {
             .disabled(self.vm.nowPlayingTrackID == nil)
             .help("Get info for current track")
             .accessibilityLabel("Track Info")
+            .accessibilityIdentifier(A11y.NowPlaying.infoButton)
 
             Button {
                 Task { await self.vm.previous() }
@@ -215,6 +216,7 @@ public struct NowPlayingStrip: View {
             .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
             .accessibilityHint(self.vm.shuffleOn ? "Activate to turn shuffle off" : "Activate to turn shuffle on")
             .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.shuffleButton)
 
             Button {
                 Task { await self.vm.cycleRepeat() }
@@ -239,6 +241,7 @@ public struct NowPlayingStrip: View {
                 }
             }())
             .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.repeatButton)
 
             Button {
                 Task { await self.vm.toggleStopAfterCurrent() }
@@ -253,6 +256,7 @@ public struct NowPlayingStrip: View {
             .accessibilityHint(self.vm
                 .stopAfterCurrent ? "Activate to keep playing after this track" : "Activate to stop playback after this track")
             .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.stopAfterCurrentButton)
         }
     }
 
@@ -292,6 +296,7 @@ public struct NowPlayingStrip: View {
                 self.dsp.isEQActive || self.dsp.hasScopedPreset
                     ? "Equaliser & DSP — active" : "Equaliser & DSP"
             )
+            .accessibilityIdentifier(A11y.NowPlaying.dspButton)
 
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -306,7 +311,7 @@ public struct NowPlayingStrip: View {
             .help(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
             .accessibilityLabel(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
             .accessibilityAddTraits(.isToggle)
-            .accessibilityIdentifier(A11y.Visualizer.host)
+            .accessibilityIdentifier(A11y.NowPlaying.visualizerButton)
         }
     }
 
