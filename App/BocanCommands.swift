@@ -95,6 +95,12 @@ struct BocanCommands: Commands {
             .keyboardShortcut(KeyBindings.previousTrack)
             .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
 
+            Button("Restart Track") {
+                Task { await self.vm.nowPlaying.restartTrack() }
+            }
+            .keyboardShortcut(KeyBindings.restartTrack)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
             Divider()
 
             Button(self.vm.nowPlaying.isMuted ? "Unmute" : "Mute") {

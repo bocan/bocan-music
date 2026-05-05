@@ -26,8 +26,11 @@ public enum KeyBindings {
     /// `⌘→` — Next track.
     public static let nextTrack = KeyboardShortcut(.rightArrow, modifiers: .command)
 
-    /// `⌘←` — Previous track.
+    /// `⌘←` — Previous track (restarts current if past 3 seconds).
     public static let previousTrack = KeyboardShortcut(.leftArrow, modifiers: .command)
+
+    /// `⌘⌥←` — Restart the current track from the beginning (unconditional).
+    public static let restartTrack = KeyboardShortcut(.leftArrow, modifiers: [.command, .option])
 
     /// `⌘⇧S` — Toggle shuffle.
     public static let toggleShuffle = KeyboardShortcut("s", modifiers: [.command, .shift])
