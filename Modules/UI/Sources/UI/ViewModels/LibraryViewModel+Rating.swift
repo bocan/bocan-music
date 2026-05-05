@@ -10,6 +10,16 @@ import Persistence
 /// and refreshes affected rows so the UI reflects the change without
 /// reloading the whole destination.
 public extension LibraryViewModel {
+    /// Toggles the `loved` flag on an explicit set of tracks (bypasses VM selection).
+    ///
+    /// All-loved → unlove all; otherwise love all — consistent with
+    /// `toggleLovedForCurrentSelection()`.
+    func toggleLoved(for tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        let newValue = !tracks.allSatisfy(\.loved)
+        Task { await self.applyLoved(newValue, to: tracks) }
+    }
+
     /// Toggles the `loved` flag on every track in the current selection.
     ///
     /// If the selection is heterogeneous (some loved, some not), all

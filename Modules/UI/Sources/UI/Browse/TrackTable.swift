@@ -29,8 +29,8 @@ public struct TrackContextMenuActions {
     public let addToPlaylist: (Int64, [Track]) -> Void
     /// Create a new playlist pre-populated with the selected tracks.
     public let newPlaylistFromSelection: ([Track]) -> Void
-    /// Toggle the loved state of a track.
-    public let love: (Track) -> Void
+    /// Toggle the loved state on the given tracks (all-loved → unlove all; otherwise love all).
+    public let love: ([Track]) -> Void
     /// Navigate the library to the track's artist.
     public let goToArtist: (Int64) -> Void
     /// Navigate the library to the track's album.
