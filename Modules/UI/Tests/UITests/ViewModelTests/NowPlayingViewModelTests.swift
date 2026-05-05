@@ -65,7 +65,11 @@ final class MockTransport: Transport, @unchecked Sendable {
         self.seekTarget = time
     }
 
-    func setVolume(_: Float) async {}
+    func setVolume(_ vol: Float) async {
+        self.lastSetVolume = vol
+    }
+
+    var lastSetVolume: Float = 1.0
 }
 
 // MARK: - NowPlayingViewModelTests
@@ -183,6 +187,46 @@ struct NowPlayingViewModelTests {
 
         await vm.setVolume(0.75)
         #expect(vm.volume == 0.75)
+    }
+
+    @Test("toggleMute silences engine without changing stored volume")
+    func toggleMuteSilences() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        await vm.setVolume(0.6)
+        #expect(engine.lastSetVolume == 0.6)
+
+        // Mute: engine receives 0, stored volume unchanged.
+        await vm.toggleMute()
+        #expect(vm.isMuted == true)
+        #expect(vm.volume == 0.6)
+        #expect(engine.lastSetVolume == 0.0)
+
+        // Un-mute: engine restored to stored volume.
+        await vm.toggleMute()
+        #expect(vm.isMuted == false)
+        #expect(vm.volume == 0.6)
+        #expect(engine.lastSetVolume == 0.6)
+    }
+
+    @Test("setVolume while muted preserves mute")
+    func setVolumeWhileMuted() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        await vm.setVolume(0.8)
+        await vm.toggleMute()
+        #expect(vm.isMuted == true)
+
+        // Adjusting volume while muted should update stored level but not send to engine.
+        await vm.setVolume(0.5)
+        #expect(vm.volume == 0.5)
+        #expect(engine.lastSetVolume == 0.0) // engine still silent
+
+        // Un-mute restores to the new stored level.
+        await vm.toggleMute()
+        #expect(engine.lastSetVolume == 0.5)
     }
 
     // MARK: - Speed

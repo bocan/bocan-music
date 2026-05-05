@@ -41,6 +41,9 @@ public enum KeyBindings {
     /// `⌘⇧⌫` — Clear the playback queue.
     public static let clearQueue = KeyboardShortcut(.delete, modifiers: [.command, .shift])
 
+    /// `⌘⌥Z` — Mute / unmute.
+    public static let mute = KeyboardShortcut("z", modifiers: [.command, .option])
+
     /// `⌘⌥U` — Reveal the Up Next sidebar destination.
     public static let showUpNext = KeyboardShortcut("u", modifiers: [.command, .option])
 

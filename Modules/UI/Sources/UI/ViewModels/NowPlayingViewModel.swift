@@ -47,6 +47,8 @@ public final class NowPlayingViewModel {
     public private(set) var isPaused = false
     /// Current playback rate (0.5×–2.0×). Default 1.0×.
     public private(set) var playbackRate: Float = 1.0
+    /// `true` when the output is muted (volume forced to 0 without forgetting the real level).
+    public private(set) var isMuted = false
     /// Seconds remaining on the sleep timer, or `nil` when off.
     public private(set) var sleepTimerRemaining: TimeInterval?
     /// Whether the sleep timer's fade-out option is active.
@@ -131,9 +133,26 @@ public final class NowPlayingViewModel {
     }
 
     /// Clamps and applies the volume to the engine.
+    /// When muted, updates the stored level but keeps the engine at 0 so the
+    /// mute is preserved until the user explicitly un-mutes.
     public func setVolume(_ newVolume: Float) async {
         self.volume = min(1, max(0, newVolume))
-        await self.engine.setVolume(self.volume)
+        if !self.isMuted {
+            await self.engine.setVolume(self.volume)
+        }
+    }
+
+    /// Toggles mute on/off.
+    /// Muting forces engine volume to 0 without changing the stored `volume`
+    /// property, so un-muting restores the exact previous level.
+    public func toggleMute() async {
+        if self.isMuted {
+            self.isMuted = false
+            await self.engine.setVolume(self.volume)
+        } else {
+            self.isMuted = true
+            await self.engine.setVolume(0)
+        }
     }
 
     /// Skips to the previous track (no-op if engine is not a QueuePlayer).
