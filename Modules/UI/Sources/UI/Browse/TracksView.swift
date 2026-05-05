@@ -18,7 +18,7 @@ import SwiftUI
 /// composer, smart folder, active search) are small enough that
 /// header sort is both useful and performant.
 public struct TracksView: View {
-    @ObservedObject public var vm: TracksViewModel
+    @Bindable public var vm: TracksViewModel
     public var library: LibraryViewModel
     public var title: String?
     public var sortable: Bool
