@@ -62,8 +62,7 @@ public final class NowPlayingViewModel {
 
     // MARK: - Callbacks
 
-    /// Called when play is pressed but the queue is empty and nothing is loaded.
-    /// Set by `LibraryViewModel` to start playing the current library view.
+    /// Called when play is pressed but the queue is empty; set by `LibraryViewModel`.
     public var onPlayFromEmptyQueue: (@MainActor () -> Void)?
 
     // MARK: - Internal
@@ -86,6 +85,11 @@ public final class NowPlayingViewModel {
         if let qp = engine as? QueuePlayer {
             self.startObservingCurrentTrack(qp)
             self.startObservingSleepTimer(qp)
+        }
+        if let v = UserDefaults.standard.object(forKey: "playback.rate") as? Double {
+            let r = max(0.5, min(2.0, Float(v)))
+            self.playbackRate = r
+            Task { await self.setRate(r) }
         }
     }
 
@@ -161,7 +165,6 @@ public final class NowPlayingViewModel {
     }
 
     /// Skips to previous, or restarts current track if past the 3-second threshold.
-    /// See ``restartTrack()`` for an unconditional restart.
     public func previous() async {
         let pos = await self.engine.currentTime
         if pos > 3.0 {
@@ -230,17 +233,16 @@ public final class NowPlayingViewModel {
         guard let qp = engine as? QueuePlayer else { return }
         await qp.setRate(rate)
         self.playbackRate = max(0.5, min(2.0, rate))
+        UserDefaults.standard.set(Double(self.playbackRate), forKey: "playback.rate")
     }
 
     /// Steps up to the next quick rate above the current rate.
-    /// Clamps at the maximum quick rate (2.0×).
     public func increaseSpeed() async {
         let next = Self.quickRates.first { $0 > self.playbackRate + 0.01 }
         await self.setRate(next ?? 2.0)
     }
 
     /// Steps down to the next quick rate below the current rate.
-    /// Clamps at the minimum quick rate (0.75×).
     public func decreaseSpeed() async {
         let prev = Self.quickRates.last { $0 < self.playbackRate - 0.01 }
         await self.setRate(prev ?? 0.75)
@@ -251,11 +253,9 @@ public final class NowPlayingViewModel {
         await self.setRate(1.0)
     }
 
-    /// Quick-pick rates shared with `SpeedPickerView` and the Playback menu.
     public static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
 
     /// Sleep timer presets shared with the Playback menu.
-    /// Each entry is `(label, minutes)` where `minutes == nil` means "Off".
     public static let sleepPresets: [(label: String, minutes: Int?)] = [
         ("Off", nil),
         ("15 min", 15),
