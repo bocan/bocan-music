@@ -44,6 +44,8 @@ public final class NowPlayingViewModel {
     public private(set) var nowPlayingTrackID: Int64?
     /// The album ID of the track currently loaded into the engine, or `nil`.
     public private(set) var nowPlayingAlbumID: Int64?
+    /// The artist ID of the track currently loaded into the engine, or `nil`.
+    public private(set) var nowPlayingArtistID: Int64?
     /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
     /// Used by `playPause()` to decide whether to resume or reload the library.
     public private(set) var isPaused = false
@@ -96,6 +98,7 @@ public final class NowPlayingViewModel {
         self.currentTrack = track
         self.nowPlayingTrackID = track.id
         self.nowPlayingAlbumID = track.albumID
+        self.nowPlayingArtistID = track.artistID
         self.title = track.title ?? "Unknown Track"
         self.artist = ""
         self.album = ""
@@ -269,6 +272,7 @@ public final class NowPlayingViewModel {
                 } else {
                     self.nowPlayingTrackID = nil
                     self.nowPlayingAlbumID = nil
+                    self.nowPlayingArtistID = nil
                     self.title = ""
                     self.artist = ""
                     self.album = ""

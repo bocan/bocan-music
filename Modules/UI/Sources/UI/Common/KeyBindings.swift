@@ -47,6 +47,12 @@ public enum KeyBindings {
     /// `⌘⌥A` — Go to the album of the currently-playing track.
     public static let goToCurrentAlbum = KeyboardShortcut("a", modifiers: [.command, .option])
 
+    /// `⌘J` — Jump to the currently-playing track in the track list.
+    public static let jumpToCurrentTrack = KeyboardShortcut("j", modifiers: .command)
+
+    /// `⌘⌥G` — Go to the artist of the currently-playing track.
+    public static let goToCurrentArtist = KeyboardShortcut("g", modifiers: [.command, .option])
+
     /// `⌘⌥U` — Reveal the Up Next sidebar destination.
     public static let showUpNext = KeyboardShortcut("u", modifiers: [.command, .option])
 
