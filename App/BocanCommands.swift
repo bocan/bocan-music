@@ -243,6 +243,23 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            Button("Play Album") {
+                self.vm.playAlbumForCurrentSelection(shuffle: false)
+            }
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Shuffle Album") {
+                self.vm.playAlbumForCurrentSelection(shuffle: true)
+            }
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Play Artist") {
+                self.vm.playArtistForCurrentSelection()
+            }
+            .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
             Button("Get Info") {
                 self.vm.showTagEditorForCurrentSelection()
             }
