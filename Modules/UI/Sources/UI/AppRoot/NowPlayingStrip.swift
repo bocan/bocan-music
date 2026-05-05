@@ -14,7 +14,7 @@ public struct NowPlayingStrip: View {
     @EnvironmentObject private var visualizer: VisualizerViewModel
     /// Optional — only the main window injects a `RouteViewModel`. Snapshot
     /// tests and other ad-hoc surfaces can skip it.
-    @ObservedObject private var route: RouteViewModel
+    private var route: RouteViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
