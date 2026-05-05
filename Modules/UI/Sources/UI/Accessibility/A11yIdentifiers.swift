@@ -54,6 +54,8 @@ public enum A11y {
         public static let volumeSlider = "nowPlayingStrip.volume"
         public static let muteButton = "nowPlayingStrip.mute"
         public static let artworkButton = "nowPlayingStrip.artwork.button"
+        public static let titleButton = "nowPlayingStrip.title.button"
+        public static let subtitleButton = "nowPlayingStrip.subtitle.button"
     }
 
     // MARK: - Search

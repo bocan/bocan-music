@@ -102,18 +102,44 @@ public struct NowPlayingStrip: View {
 
     private var trackInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
-                .font(Typography.body)
-                .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
-                .lineLimit(1)
-                .accessibilityIdentifier(A11y.NowPlaying.title)
-
-            if let subtitle = self.trackSubtitle, !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(Typography.subheadline)
-                    .foregroundStyle(Color.textSecondary)
+            // Title — click to jump to current track in the track list.
+            Button {
+                Task { await self.library.scrollToNowPlayingTrack() }
+            } label: {
+                Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
+                    .font(Typography.body)
+                    .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
                     .lineLimit(1)
-                    .accessibilityIdentifier(A11y.NowPlaying.artist)
+                    .accessibilityHidden(true)
+            }
+            .buttonStyle(.plain)
+            .disabled(self.vm.nowPlayingTrackID == nil)
+            .help(self.vm.nowPlayingTrackID != nil ? "Jump to \"\(self.vm.title)\" in track list" : "Not playing")
+            .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
+            .accessibilityLabel(
+                self.vm.nowPlayingTrackID != nil
+                    ? "Jump to \(self.vm.title) in track list"
+                    : "Not playing"
+            )
+            .accessibilityIdentifier(A11y.NowPlaying.titleButton)
+
+            // Artist — click to navigate to the artist view.
+            if !self.vm.artist.isEmpty {
+                Button {
+                    Task { await self.library.goToCurrentArtist() }
+                } label: {
+                    Text(self.trackSubtitle ?? self.vm.artist)
+                        .font(Typography.subheadline)
+                        .foregroundStyle(Color.textSecondary)
+                        .lineLimit(1)
+                        .accessibilityHidden(true)
+                }
+                .buttonStyle(.plain)
+                .disabled(self.vm.nowPlayingArtistID == nil)
+                .help(self.vm.nowPlayingArtistID != nil ? "Go to artist: \(self.vm.artist)" : self.vm.artist)
+                .keyboardShortcut(KeyBindings.goToCurrentArtist)
+                .accessibilityLabel("Go to artist \(self.vm.artist)")
+                .accessibilityIdentifier(A11y.NowPlaying.subtitleButton)
             }
         }
         .frame(minWidth: 120, maxWidth: 300, alignment: .leading)

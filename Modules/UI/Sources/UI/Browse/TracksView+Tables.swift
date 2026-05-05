@@ -13,6 +13,7 @@ extension TracksView {
             sortable: true,
             playlistNodes: self.library.playlistSidebar.nodes,
             actions: self.trackContextMenuActions,
+            scrollRequest: self.vm.scrollRequest,
             onMove: self.onMove
         )
     }
@@ -26,6 +27,7 @@ extension TracksView {
             sortable: false,
             playlistNodes: self.library.playlistSidebar.nodes,
             actions: self.trackContextMenuActions,
+            scrollRequest: self.vm.scrollRequest,
             onMove: self.onMove
         )
     }

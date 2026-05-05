@@ -186,11 +186,23 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            Button("Jump to Current Track") {
+                Task { await self.vm.scrollToNowPlayingTrack() }
+            }
+            .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
             Button("Go to Current Album") {
                 Task { await self.vm.goToCurrentAlbum() }
             }
             .keyboardShortcut(KeyBindings.goToCurrentAlbum)
             .disabled(self.vm.nowPlaying.nowPlayingAlbumID == nil)
+
+            Button("Go to Current Artist") {
+                Task { await self.vm.goToCurrentArtist() }
+            }
+            .keyboardShortcut(KeyBindings.goToCurrentArtist)
+            .disabled(self.vm.nowPlaying.nowPlayingArtistID == nil)
         }
 
         // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the

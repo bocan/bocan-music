@@ -106,6 +106,18 @@ public final class TracksViewModel {
     /// Maps `albumID → album title` for column display.  Refreshed on every load.
     public private(set) var albumNames: [Int64: String] = [:]
 
+    /// Incremented each time the caller wants the table to scroll the now-playing
+    /// track into view.  `TrackTable.updateNSView` detects the change and calls
+    /// `scrollRowToVisible` for the matching row.
+    public private(set) var scrollRequest = 0
+
+    /// Signals `TrackTable` to scroll the now-playing track into view on the
+    /// next `updateNSView` pass.  Each call increments the counter so repeated
+    /// "jump" requests always scroll even when the same track is playing.
+    public func requestScrollToNowPlaying() {
+        self.scrollRequest += 1
+    }
+
     // MARK: - Computed back-compat accessors
 
     /// The raw tracks, in their current display order.  Preserved for

@@ -18,6 +18,8 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var lastAppliedIDs: [Int64] = []
     var lastNowPlayingID: Track.ID?
     var hasAppliedInitialSnapshot = false
+    /// Tracks the last scroll-request counter processed to avoid re-scrolling.
+    var lastScrollRequest: Int = -1
 
     // Guards against feedback loops when syncing selection / sort.
     var isSyncingSelection = false
