@@ -316,6 +316,36 @@ struct NowPlayingViewModelTests {
         #expect(vm.playbackRate == 1.0)
     }
 
+    // MARK: - Volume step
+
+    @Test("increaseVolume steps up by 0.1, clamped to 1.0")
+    func increaseVolumeSteps() async throws {
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: MockTransport(), database: db)
+        await vm.setVolume(0.8)
+        await vm.increaseVolume()
+        #expect(abs(vm.volume - 0.9) < 0.001)
+        await vm.increaseVolume()
+        #expect(vm.volume == 1.0)
+        // Clamped at 1.0.
+        await vm.increaseVolume()
+        #expect(vm.volume == 1.0)
+    }
+
+    @Test("decreaseVolume steps down by 0.1, clamped to 0.0")
+    func decreaseVolumeSteps() async throws {
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: MockTransport(), database: db)
+        await vm.setVolume(0.2)
+        await vm.decreaseVolume()
+        #expect(abs(vm.volume - 0.1) < 0.001)
+        await vm.decreaseVolume()
+        #expect(vm.volume == 0.0)
+        // Clamped at 0.0.
+        await vm.decreaseVolume()
+        #expect(vm.volume == 0.0)
+    }
+
     // MARK: - Sleep timer
 
     @Test("sleepPresets contains Off and all expected durations")
