@@ -183,6 +183,14 @@ struct BocanCommands: Commands {
                 .pickerStyle(.inline)
                 .labelsHidden()
             }
+
+            Divider()
+
+            Button("Go to Current Album") {
+                Task { await self.vm.goToCurrentAlbum() }
+            }
+            .keyboardShortcut(KeyBindings.goToCurrentAlbum)
+            .disabled(self.vm.nowPlaying.nowPlayingAlbumID == nil)
         }
 
         // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the

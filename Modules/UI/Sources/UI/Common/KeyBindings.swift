@@ -44,6 +44,9 @@ public enum KeyBindings {
     /// `⌘⌥Z` — Mute / unmute.
     public static let mute = KeyboardShortcut("z", modifiers: [.command, .option])
 
+    /// `⌘⌥A` — Go to the album of the currently-playing track.
+    public static let goToCurrentAlbum = KeyboardShortcut("a", modifiers: [.command, .option])
+
     /// `⌘⌥U` — Reveal the Up Next sidebar destination.
     public static let showUpNext = KeyboardShortcut("u", modifiers: [.command, .option])
 
