@@ -77,6 +77,8 @@ public struct TrackTable: NSViewRepresentable {
     let sortable: Bool
     let playlistNodes: [PlaylistNode]
     let actions: TrackContextMenuActions
+    /// Each increment triggers a scroll-to-now-playing in `updateNSView`.
+    let scrollRequest: Int
     /// When non-nil the table allows intra-table drag-reorder and calls this
     /// closure (on the main thread) with SwiftUI-style `(source, destination)` indices.
     let onMove: ((IndexSet, Int) -> Void)?
@@ -238,6 +240,18 @@ public struct TrackTable: NSViewRepresentable {
 
         // 6 — onMove callback changed (e.g. playlist loaded or kind toggled).
         dataSource.onMove = self.onMove
+
+        // 7 — Scroll to the now-playing track when requested.
+        self.applyScrollIfNeeded(coordinator: coordinator, tableView: tableView)
+    }
+
+    private func applyScrollIfNeeded(coordinator: TrackTableCoordinator, tableView: NSTableView) {
+        guard self.scrollRequest != coordinator.lastScrollRequest else { return }
+        coordinator.lastScrollRequest = self.scrollRequest
+        if let nowID = self.nowPlayingTrackID,
+           let idx = coordinator.rows.firstIndex(where: { $0.id == nowID }) {
+            tableView.scrollRowToVisible(idx)
+        }
     }
 
     // MARK: - Row density

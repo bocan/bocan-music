@@ -374,6 +374,27 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         await self.selectDestination(.album(albumID))
     }
 
+    /// Navigates the sidebar to the artist of the currently-playing track.
+    ///
+    /// No-op when nothing is playing or when the playing track has no artist ID.
+    public func goToCurrentArtist() async {
+        guard let artistID = self.nowPlaying.nowPlayingArtistID else { return }
+        await self.selectDestination(.artist(artistID))
+    }
+
+    /// Scrolls the track list to reveal the currently-playing track.
+    ///
+    /// If the now-playing track is not in the current destination (e.g. an album
+    /// or artist drill-down that doesn't contain it), the sidebar first navigates
+    /// to the Songs view before requesting the scroll.
+    public func scrollToNowPlayingTrack() async {
+        guard let id = self.nowPlaying.nowPlayingTrackID else { return }
+        if !self.tracks.rows.contains(where: { $0.id == id }) {
+            await self.selectDestination(.songs)
+        }
+        self.tracks.requestScrollToNowPlaying()
+    }
+
     /// Opens the tag editor for whatever is currently selected in the track table.
     public func showTagEditorForCurrentSelection() {
         let ids = self.tracks.selection.compactMap(\.self)
