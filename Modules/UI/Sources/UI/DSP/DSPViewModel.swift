@@ -56,6 +56,15 @@ public final class DSPViewModel {
     /// Whether there is a scoped (track or album) EQ assignment active for the current track.
     public private(set) var hasScopedPreset = false
 
+    /// `true` when EQ is in the signal path **and** the active preset is non-flat.
+    ///
+    /// Use this to show a persistent active-state indicator on the DSP button,
+    /// independently of whether the DSP sheet is currently open.
+    public var isEQActive: Bool {
+        guard let presetID = self.state.eqPresetID else { return false }
+        return self.state.eqEnabled && presetID != BuiltInPresets.flat.id
+    }
+
     // MARK: - Dependencies
 
     private let engine: AudioEngine
