@@ -184,4 +184,30 @@ struct NowPlayingViewModelTests {
         await vm.setVolume(0.75)
         #expect(vm.volume == 0.75)
     }
+
+    // MARK: - Speed
+
+    @Test("quickRates is sorted ascending from 0.75 to 2.0")
+    func quickRatesOrder() {
+        let rates = NowPlayingViewModel.quickRates
+        #expect(rates.first == 0.75)
+        #expect(rates.last == 2.0)
+        #expect(rates == rates.sorted())
+        #expect(rates.contains(1.0))
+    }
+
+    @Test("increaseSpeed and decreaseSpeed are no-ops without a QueuePlayer")
+    func speedStepNoOpWithoutQueuePlayer() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        // MockTransport is not a QueuePlayer, so setRate guards early.
+        // Verify calls don't crash and playbackRate remains 1.0.
+        await vm.increaseSpeed()
+        #expect(vm.playbackRate == 1.0)
+        await vm.decreaseSpeed()
+        #expect(vm.playbackRate == 1.0)
+        await vm.resetSpeed()
+        #expect(vm.playbackRate == 1.0)
+    }
 }
