@@ -79,7 +79,8 @@ public struct MenuBarExtraScene: View {
                         .font(.system(size: 16, weight: .semibold))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Previous")
+                .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
+                .accessibilityLabel("Previous or restart")
 
                 Button {
                     Task { await self.vm.playPause() }

@@ -11,8 +11,7 @@ import UserNotifications
 /// Drives the `NowPlayingStrip` at the bottom of every screen.
 ///
 /// Subscribes to `Transport.state` on init and updates its observable
-/// properties on `@MainActor`.  Phase 5 will replace the concrete engine
-/// with a `QueuePlayer` that also conforms to `Transport`.
+/// properties on `@MainActor`.
 @Observable
 @MainActor
 public final class NowPlayingViewModel {
@@ -161,10 +160,23 @@ public final class NowPlayingViewModel {
         }
     }
 
-    /// Skips to the previous track (no-op if engine is not a QueuePlayer).
+    /// Skips to previous, or restarts current track if past the 3-second threshold.
+    /// See ``restartTrack()`` for an unconditional restart.
     public func previous() async {
-        guard let qp = engine as? QueuePlayer else { return }
-        do { try await qp.previous() } catch {}
+        let pos = await self.engine.currentTime
+        if pos > 3.0 {
+            await self.scrub(to: 0)
+        } else {
+            guard let qp = self.engine as? QueuePlayer else { return }
+            do { try await qp.previous() } catch {
+                self.log.error("transport.previous.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Restarts the current track from position 0, regardless of position.
+    public func restartTrack() async {
+        await self.scrub(to: 0)
     }
 
     /// Skips to the next track (no-op if engine is not a QueuePlayer).
