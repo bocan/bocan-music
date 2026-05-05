@@ -93,6 +93,14 @@ public enum KeyBindings {
     /// `⌘⌥E` — Open or close the Equaliser & DSP panel.
     public static let showEQPanel = KeyboardShortcut("e", modifiers: [.command, .option])
 
+    // MARK: - Selection
+
+    /// `⌘A` — Select all visible tracks.
+    public static let selectAll = KeyboardShortcut("a", modifiers: .command)
+
+    /// `⌘⇧A` — Deselect all tracks.
+    public static let deselectAll = KeyboardShortcut("a", modifiers: [.command, .shift])
+
     // MARK: - Navigation
 
     /// `⌥⌘→` — Drill into content (album / artist detail).
