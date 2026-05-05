@@ -19,7 +19,10 @@ public final class RouteViewModel {
 
     private let manager: RouteManager?
     private let log = AppLogger.make(.playback)
-    /// nonisolated(unsafe) allows deinit (which is nonisolated) to cancel the task.
+    /// `@ObservationIgnored` keeps this as a plain stored var so that
+    /// `nonisolated(unsafe)` is meaningful — `deinit` (nonisolated) needs
+    /// to call `cancel()` on it, and the task handle doesn't need observation.
+    @ObservationIgnored
     private nonisolated(unsafe) var consumer: Task<Void, Never>?
 
     /// Creates a `RouteViewModel` wired to the given `RouteManager`.
