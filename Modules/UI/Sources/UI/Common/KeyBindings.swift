@@ -72,6 +72,15 @@ public enum KeyBindings {
     /// `⌘5` — Rate 5 stars.
     public static let rate5 = KeyboardShortcut("5", modifiers: .command)
 
+    /// `⌘↩` — Play selected tracks now (replacing the queue).
+    public static let playNow = KeyboardShortcut(.return, modifiers: .command)
+
+    /// `⌘⇧↩` — Insert selected tracks immediately after the current item.
+    public static let playNext = KeyboardShortcut(.return, modifiers: [.command, .shift])
+
+    /// `⌘⇧Q` — Append selected tracks to the end of the queue.
+    public static let addToQueue = KeyboardShortcut("q", modifiers: [.command, .shift])
+
     /// `⌘⌥E` — Open or close the Equaliser & DSP panel.
     public static let showEQPanel = KeyboardShortcut("e", modifiers: [.command, .option])
 

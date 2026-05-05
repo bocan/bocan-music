@@ -559,6 +559,28 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
+    /// Plays the first selected track now, with full browse-context (same as double-click).
+    public func playNowForCurrentSelection() {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        Task { await self.play(track: track) }
+    }
+
+    /// Inserts all selected tracks immediately after the current item.
+    public func playNextForCurrentSelection() {
+        let selected = self.tracks.tracks.filter { self.tracks.selection.contains($0.id) }
+        guard !selected.isEmpty else { return }
+        Task { await self.playNext(tracks: selected) }
+    }
+
+    /// Appends all selected tracks to the end of the queue.
+    public func addToQueueForCurrentSelection() {
+        let selected = self.tracks.tracks.filter { self.tracks.selection.contains($0.id) }
+        guard !selected.isEmpty else { return }
+        Task { await self.addToQueue(tracks: selected) }
+    }
+
     /// Plays all tracks from the album of `track`.
     public func playAlbum(track: Track, shuffle: Bool = false) async {
         guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
