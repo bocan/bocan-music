@@ -144,7 +144,7 @@ extension TracksView {
         tracks: [Track],
         remove: @escaping ([Track]) -> Void,
         userDefaults: UserDefaults = .standard
-    ) {
+    ) async {
         guard !tracks.isEmpty else { return }
         guard self.shouldConfirmRemoveFromPlaylist(userDefaults: userDefaults) else {
             remove(tracks)
@@ -165,7 +165,7 @@ extension TracksView {
         alert.showsSuppressionButton = true
         alert.suppressionButton?.title = "Don’t ask again"
 
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        guard await Self.runAlertAsync(alert) == .alertFirstButtonReturn else { return }
 
         if alert.suppressionButton?.state == .on {
             Self.setRemoveFromPlaylistConfirmationSuppressed(true, userDefaults: userDefaults)
