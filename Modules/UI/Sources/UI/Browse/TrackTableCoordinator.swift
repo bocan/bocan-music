@@ -270,6 +270,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         first: Track?,
         acts: TrackContextMenuActions
     ) {
+        // TODO(phase-future): add "Play Album", "Shuffle Album", and "Play Artist" items here
+        // once the library query APIs needed to fetch album/artist tracks are exposed through
+        // TrackContextMenuActions.  These items existed in the old dead-code TrackContextMenu
+        // SwiftUI view but were never wired to the live AppKit menu.
         if let track = first {
             menu.addItem(ActionMenuItem("Play Now") { acts.playNow(track) })
         }
