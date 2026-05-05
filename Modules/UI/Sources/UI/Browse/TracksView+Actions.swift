@@ -14,7 +14,7 @@ extension TracksView {
         let lib = self.library
         let removeFromPlaylistAction = self.removeFromPlaylist.map { remove in
             { tracks in
-                Self.confirmRemoveFromPlaylist(tracks: tracks, remove: remove)
+                _ = Task { await Self.confirmRemoveFromPlaylist(tracks: tracks, remove: remove) }
             }
         }
         return TrackContextMenuActions(
@@ -66,10 +66,10 @@ extension TracksView {
                 lib.showIdentifyTrack(track)
             },
             removeFromLibrary: { tracks in
-                Self.confirmRemoveFromLibrary(tracks: tracks, library: lib)
+                Task { await Self.confirmRemoveFromLibrary(tracks: tracks, library: lib) }
             },
             deleteFromDisk: { track in
-                Self.confirmDeleteFromDisk(track: track, library: lib)
+                Task { await Self.confirmDeleteFromDisk(track: track, library: lib) }
             },
             copy: { rows in
                 let header = ["Title", "Artist", "Album", "Track", "Year", "Genre", "Duration", "Rating"]
@@ -106,6 +106,24 @@ extension TracksView {
 
     // MARK: - Destructive confirmations
 
+    /// Presents `alert` as a non-blocking sheet on the key window.
+    ///
+    /// Unlike `NSAlert.runModal()` this does **not** spin a nested modal run loop,
+    /// so async tasks awaiting on the main actor continue to be dispatched while
+    /// the sheet is on screen. Falls back to `runModal()` only if no window is
+    /// available (should not occur in normal operation).
+    @MainActor
+    static func runAlertAsync(_ alert: NSAlert) async -> NSApplication.ModalResponse {
+        guard let window = NSApp.keyWindow ?? NSApp.mainWindow else {
+            return alert.runModal()
+        }
+        return await withCheckedContinuation { continuation in
+            alert.beginSheetModal(for: window) { response in
+                continuation.resume(returning: response)
+            }
+        }
+    }
+
     /// `UserDefaults` key for "Don't ask again" on the soft-delete (Remove from
     /// Library) confirmation. Trash deletion is *never* suppressible — it
     /// touches the filesystem, so we always confirm.
@@ -115,7 +133,7 @@ extension TracksView {
     /// Note: the flag only suppresses *Remove from Library* — trashing a file
     /// always asks, regardless.
     @MainActor
-    static func confirmRemoveFromLibrary(tracks: [Track], library: LibraryViewModel) {
+    static func confirmRemoveFromLibrary(tracks: [Track], library: LibraryViewModel) async {
         let ids = tracks.compactMap(\.id)
         guard !ids.isEmpty else { return }
 
@@ -141,7 +159,7 @@ extension TracksView {
         alert.showsSuppressionButton = true
         alert.suppressionButton?.title = "Don’t ask again"
 
-        let response = alert.runModal()
+        let response = await runAlertAsync(alert)
         guard response == .alertFirstButtonReturn else { return }
 
         if alert.suppressionButton?.state == .on {
@@ -157,7 +175,7 @@ extension TracksView {
     /// asks — there's no "don't ask again" path because the action is
     /// destructive on disk.
     @MainActor
-    static func confirmDeleteFromDisk(track: Track, library: LibraryViewModel) {
+    static func confirmDeleteFromDisk(track: Track, library: LibraryViewModel) async {
         guard let id = track.id else { return }
         let title = track.title ?? "this track"
 
@@ -169,7 +187,7 @@ extension TracksView {
         trashButton.hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
 
-        let response = alert.runModal()
+        let response = await runAlertAsync(alert)
         guard response == .alertFirstButtonReturn else { return }
 
         Task { @MainActor in
@@ -179,7 +197,7 @@ extension TracksView {
             // file on disk. Offer an explicit fallback to permanent deletion
             // so the user actually finds out and can choose what to do.
             if case let .trashFailed(error, _) = outcome {
-                Self.confirmPermanentDelete(track: track, error: error, library: library)
+                await Self.confirmPermanentDelete(track: track, error: error, library: library)
             }
         }
     }
@@ -193,7 +211,7 @@ extension TracksView {
         track: Track,
         error: any Error,
         library: LibraryViewModel
-    ) {
+    ) async {
         guard let id = track.id else { return }
         let title = track.title ?? "this track"
 
@@ -206,7 +224,7 @@ extension TracksView {
         deleteButton.hasDestructiveAction = true
         alert.addButton(withTitle: "Cancel")
 
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        guard await self.runAlertAsync(alert) == .alertFirstButtonReturn else { return }
 
         Task { await library.permanentlyDeleteTrackFromDisk(id: id) }
     }
