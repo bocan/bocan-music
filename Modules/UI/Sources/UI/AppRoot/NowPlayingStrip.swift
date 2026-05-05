@@ -228,12 +228,31 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 15, weight: .medium))
+                    .overlay(alignment: .topTrailing) {
+                        if self.dsp.isEQActive || self.dsp.hasScopedPreset {
+                            ZStack {
+                                Circle()
+                                    .fill(.background)
+                                    .frame(width: 7, height: 7)
+                                Circle()
+                                    .fill(self.dsp.hasScopedPreset ? Color.orange : Color.accentColor)
+                                    .frame(width: 5, height: 5)
+                            }
+                            .offset(x: 5, y: -4)
+                        }
+                    }
             }
             .buttonStyle(.plain)
             .keyboardShortcut(KeyBindings.showEQPanel)
-            .foregroundStyle(self.showDSP ? Color.accentColor : Color.textPrimary)
+            .foregroundStyle(
+                (self.dsp.isEQActive || self.dsp.hasScopedPreset || self.showDSP)
+                    ? Color.accentColor : Color.textPrimary
+            )
             .help("Equaliser & DSP (⌘⌥E)")
-            .accessibilityLabel("Equaliser & DSP")
+            .accessibilityLabel(
+                self.dsp.isEQActive || self.dsp.hasScopedPreset
+                    ? "Equaliser & DSP — active" : "Equaliser & DSP"
+            )
 
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
