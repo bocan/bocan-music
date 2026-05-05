@@ -210,4 +210,31 @@ struct NowPlayingViewModelTests {
         await vm.resetSpeed()
         #expect(vm.playbackRate == 1.0)
     }
+
+    // MARK: - Sleep timer
+
+    @Test("sleepPresets contains Off and all expected durations")
+    func sleepPresetsContents() {
+        let presets = NowPlayingViewModel.sleepPresets
+        #expect(presets.contains { $0.minutes == nil }, "Off preset missing")
+        #expect(presets.contains { $0.minutes == 15 })
+        #expect(presets.contains { $0.minutes == 30 })
+        #expect(presets.contains { $0.minutes == 60 })
+        #expect(presets.contains { $0.minutes == 120 })
+        // First entry should be Off so it appears at the top of the menu.
+        #expect(presets.first?.minutes == nil)
+    }
+
+    @Test("sleepTimerActiveMinutes is nil initially and unchanged without QueuePlayer")
+    func sleepTimerActiveMinutesNoOpWithoutQueuePlayer() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        #expect(vm.sleepTimerActiveMinutes == nil)
+        // MockTransport is not a QueuePlayer, so setSleepTimer guards early.
+        await vm.setSleepTimer(minutes: 30)
+        #expect(vm.sleepTimerActiveMinutes == nil)
+        await vm.setSleepTimer(minutes: nil)
+        #expect(vm.sleepTimerActiveMinutes == nil)
+    }
 }

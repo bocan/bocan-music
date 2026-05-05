@@ -51,6 +51,9 @@ public final class NowPlayingViewModel {
     public private(set) var sleepTimerRemaining: TimeInterval?
     /// Whether the sleep timer's fade-out option is active.
     public private(set) var sleepTimerFadeOut = false
+    /// The number of minutes the active sleep timer was set to, or `nil` when off.
+    /// Used by the Playback menu to show a checkmark next to the active preset.
+    public private(set) var sleepTimerActiveMinutes: Int?
 
     // MARK: - Callbacks
 
@@ -214,11 +217,24 @@ public final class NowPlayingViewModel {
     /// Quick-pick rates shared with `SpeedPickerView` and the Playback menu.
     public static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
 
+    /// Sleep timer presets shared with the Playback menu.
+    /// Each entry is `(label, minutes)` where `minutes == nil` means "Off".
+    public static let sleepPresets: [(label: String, minutes: Int?)] = [
+        ("Off", nil),
+        ("15 min", 15),
+        ("30 min", 30),
+        ("45 min", 45),
+        ("1 hr", 60),
+        ("1 hr 30 min", 90),
+        ("2 hr", 120),
+    ]
+
     /// Configure the sleep timer.  Pass `nil` minutes to cancel.
     public func setSleepTimer(minutes: Int?, fadeOut: Bool = false) async {
         guard let qp = engine as? QueuePlayer else { return }
         await qp.sleepTimer.set(minutes: minutes, fadeOut: fadeOut)
         self.sleepTimerFadeOut = fadeOut
+        self.sleepTimerActiveMinutes = minutes
         if minutes == nil { self.sleepTimerRemaining = nil }
     }
 
@@ -280,6 +296,7 @@ public final class NowPlayingViewModel {
                 let (remaining, fadeOut) = await (rem, fade)
                 self.sleepTimerRemaining = remaining
                 self.sleepTimerFadeOut = fadeOut
+                if remaining == nil { self.sleepTimerActiveMinutes = nil }
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }

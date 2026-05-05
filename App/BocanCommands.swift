@@ -153,6 +153,31 @@ struct BocanCommands: Commands {
                 Task { await self.vm.nowPlaying.resetSpeed() }
             }
             .keyboardShortcut(KeyBindings.resetSpeed)
+
+            Divider()
+
+            Menu("Sleep Timer") {
+                Picker(
+                    "Sleep Timer",
+                    selection: Binding(
+                        get: { self.vm.nowPlaying.sleepTimerActiveMinutes },
+                        set: { minutes in
+                            Task {
+                                await self.vm.nowPlaying.setSleepTimer(
+                                    minutes: minutes,
+                                    fadeOut: self.vm.nowPlaying.sleepTimerFadeOut
+                                )
+                            }
+                        }
+                    )
+                ) {
+                    ForEach(NowPlayingViewModel.sleepPresets, id: \.label) { preset in
+                        Text(preset.label).tag(preset.minutes)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
         }
 
         // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the
