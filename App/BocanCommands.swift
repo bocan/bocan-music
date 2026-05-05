@@ -128,6 +128,31 @@ struct BocanCommands: Commands {
                 Task { await self.vm.selectDestination(.upNext) }
             }
             .keyboardShortcut(KeyBindings.showUpNext)
+
+            Divider()
+
+            Menu("Playback Speed") {
+                ForEach(NowPlayingViewModel.quickRates, id: \.self) { rate in
+                    Button(String(format: "%.2g×", rate)) {
+                        Task { await self.vm.nowPlaying.setRate(rate) }
+                    }
+                }
+            }
+
+            Button("Increase Speed") {
+                Task { await self.vm.nowPlaying.increaseSpeed() }
+            }
+            .keyboardShortcut(KeyBindings.increaseSpeed)
+
+            Button("Decrease Speed") {
+                Task { await self.vm.nowPlaying.decreaseSpeed() }
+            }
+            .keyboardShortcut(KeyBindings.decreaseSpeed)
+
+            Button("Reset Speed to 1×") {
+                Task { await self.vm.nowPlaying.resetSpeed() }
+            }
+            .keyboardShortcut(KeyBindings.resetSpeed)
         }
 
         // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the
