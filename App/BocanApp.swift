@@ -127,8 +127,7 @@ struct BocanApp: App {
                 vm: self.libraryViewModel,
                 windowMode: self.windowMode,
                 lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel,
-                dspVM: self.dspViewModel
+                visualizerVM: self.visualizerViewModel
             )
         }
 
@@ -155,6 +154,18 @@ struct BocanApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 1280, height: 800)
+
+        // MARK: Equaliser & DSP panel
+
+        // Non-modal floating window so the user can tweak EQ/effects while
+        // the track list and transport controls stay fully interactive.
+        Window("Equaliser & DSP", id: "dsp") {
+            DSPSheet(vm: self.dspViewModel)
+        }
+        .defaultSize(width: 600, height: 520)
+        .windowResizability(.contentMinSize)
+        .restorationBehavior(.disabled)
+        .keyboardShortcut(KeyBindings.showEQPanel)
 
         // MARK: Menu bar widget
 

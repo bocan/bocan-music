@@ -37,13 +37,6 @@ public final class DSPViewModel {
     /// `true` while ReplayGain analysis is in progress.
     public private(set) var isAnalyzing = false
 
-    /// When set to `true` the DSP/EQ sheet should be presented.
-    ///
-    /// `NowPlayingStrip` observes this and reflects it into its local `showDSP`
-    /// `@State`, so menu commands and keyboard shortcuts that only have access
-    /// to `DSPViewModel` can still open the sheet.
-    public var showDSPPanel = false
-
     /// Which scope the EQ picker targets (Global / This Album / This Track).
     public var eqScope: EQScope = .global
 
