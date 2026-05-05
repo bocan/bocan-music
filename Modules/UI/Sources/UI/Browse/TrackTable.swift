@@ -154,6 +154,9 @@ public struct TrackTable: NSViewRepresentable {
         tableView.deleteKeyHandler = { [weak coordinator] in
             coordinator?.handleRemoveFromPlaylistKeyDown() ?? false
         }
+        tableView.returnKeyHandler = { [weak coordinator] in
+            coordinator?.handleReturnKeyDown()
+        }
     }
 
     /// Pushes state changes from SwiftUI into the existing `NSTableView`.

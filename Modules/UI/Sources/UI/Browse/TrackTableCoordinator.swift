@@ -209,6 +209,16 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         return self.rows.filter { sel.contains($0.id) }.map(\.track)
     }
 
+    /// Handles Return/Enter key presses from the table.
+    /// Plays the first selected track using the same browse-view context as double-click.
+    func handleReturnKeyDown() {
+        guard let tableView = self.tableView,
+              let firstIndex = tableView.selectedRowIndexes.first,
+              let id = self.dataSource?.itemIdentifier(forRow: firstIndex),
+              let trackRow = self.rowsByID[id] else { return }
+        self.parent.actions.playNow(trackRow.track)
+    }
+
     /// Handles Delete/Forward Delete key presses from the table.
     /// Returns `true` when consumed.
     func handleRemoveFromPlaylistKeyDown() -> Bool {
