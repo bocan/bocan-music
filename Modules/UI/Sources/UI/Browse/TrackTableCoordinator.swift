@@ -204,9 +204,21 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     // MARK: Context menu — helpers
 
+    /// Synchronises the table selection to the right-clicked row before building the context menu.
+    ///
+    /// This intentionally mirrors the standard macOS behaviour used by Finder and Music.app:
+    ///
+    /// - **Right-click inside the existing selection** — the `guard` exits immediately; the
+    ///   multi-row selection is preserved and the menu applies to all selected rows.
+    /// - **Right-click outside the existing selection** — the selection is replaced with the
+    ///   single clicked row so the menu always targets a visible, unambiguous set of tracks.
+    ///
+    /// Do **not** remove the selection-replace branch; it is intentional, not a bug.
     private func syncClickedRow(in tv: NSTableView) {
         let clicked = tv.clickedRow
+        // Already inside the selection — leave multi-row selection intact.
         guard clicked >= 0, !tv.selectedRowIndexes.contains(clicked) else { return }
+        // Outside the selection — move selection to the clicked row (Finder / Music.app behaviour).
         self.isSyncingSelection = true
         tv.selectRowIndexes(IndexSet(integer: clicked), byExtendingSelection: false)
         self.isSyncingSelection = false
