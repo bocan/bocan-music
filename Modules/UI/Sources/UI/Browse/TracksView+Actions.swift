@@ -26,6 +26,15 @@ extension TracksView {
                 // Option+double-click "play only this" gesture.
                 Task { await lib.play(tracks: [track], startingAt: 0) }
             },
+            playAlbum: { track in
+                Task { await lib.playAlbum(track: track, shuffle: false) }
+            },
+            shuffleAlbum: { track in
+                Task { await lib.playAlbum(track: track, shuffle: true) }
+            },
+            playArtist: { track in
+                Task { await lib.playArtist(track: track) }
+            },
             playNext: { tracks in
                 Task { await lib.playNext(tracks: tracks) }
             },
