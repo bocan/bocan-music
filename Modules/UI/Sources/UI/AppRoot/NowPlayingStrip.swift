@@ -69,22 +69,35 @@ public struct NowPlayingStrip: View {
     // MARK: - Sub-views
 
     private var artwork: some View {
-        Group {
-            if let img = vm.artwork {
-                Image(nsImage: img)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                    .accessibilityLabel("\(self.vm.album) by \(self.vm.artist)")
-            } else {
-                GradientPlaceholder(seed: 0)
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                    .accessibilityLabel("No artwork")
+        Button {
+            Task { await self.library.goToCurrentAlbum() }
+        } label: {
+            Group {
+                if let img = vm.artwork {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 48, height: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                        .accessibilityHidden(true)
+                } else {
+                    GradientPlaceholder(seed: 0)
+                        .frame(width: 48, height: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                        .accessibilityHidden(true)
+                }
             }
         }
-        .accessibilityIdentifier(A11y.NowPlaying.artwork)
+        .buttonStyle(.plain)
+        .disabled(self.vm.nowPlayingAlbumID == nil)
+        .help(self.vm.nowPlayingAlbumID != nil ? "Go to album: \(self.vm.album)" : "No album")
+        .keyboardShortcut(KeyBindings.goToCurrentAlbum)
+        .accessibilityLabel(
+            self.vm.nowPlayingAlbumID != nil
+                ? "Go to album \(self.vm.album) by \(self.vm.artist)"
+                : "No artwork"
+        )
+        .accessibilityIdentifier(A11y.NowPlaying.artworkButton)
     }
 
     private var trackInfo: some View {
