@@ -41,7 +41,7 @@ extension TracksView {
                 lib.playlistSidebar.beginNewPlaylist(trackIDs: ids)
             },
             love: { _ in
-                // TODO(phase-8): persist loved state
+                lib.toggleLovedForCurrentSelection()
             },
             goToArtist: { artistID in
                 Task { await lib.selectDestination(.artist(artistID)) }
