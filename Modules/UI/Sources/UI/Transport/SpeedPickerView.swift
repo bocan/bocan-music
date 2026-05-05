@@ -33,6 +33,7 @@ public struct SpeedPickerView: View {
         .onHover { self.isHovered = $0 }
         .help("Playback speed")
         .accessibilityLabel("Speed: \(self.rateLabel)")
+        .accessibilityIdentifier(A11y.NowPlaying.speedPicker)
         .popover(isPresented: self.$isPopoverShown, arrowEdge: .top) {
             self.popoverContent
         }

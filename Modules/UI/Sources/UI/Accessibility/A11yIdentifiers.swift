@@ -56,6 +56,14 @@ public enum A11y {
         public static let artworkButton = "nowPlayingStrip.artwork.button"
         public static let titleButton = "nowPlayingStrip.title.button"
         public static let subtitleButton = "nowPlayingStrip.subtitle.button"
+        public static let infoButton = "nowPlayingStrip.info"
+        public static let shuffleButton = "nowPlayingStrip.shuffle"
+        public static let repeatButton = "nowPlayingStrip.repeat"
+        public static let stopAfterCurrentButton = "nowPlayingStrip.stopAfterCurrent"
+        public static let speedPicker = "nowPlayingStrip.speedPicker"
+        public static let sleepTimer = "nowPlayingStrip.sleepTimer"
+        public static let dspButton = "nowPlayingStrip.dsp"
+        public static let visualizerButton = "nowPlayingStrip.visualizer"
     }
 
     // MARK: - Search
