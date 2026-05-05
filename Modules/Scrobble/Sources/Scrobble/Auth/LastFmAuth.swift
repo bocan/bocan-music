@@ -46,7 +46,7 @@ public actor LastFmAuth {
     /// `Task.cancel()` aborts the poll loop cleanly.
     public func connect() async throws -> Result {
         let token = try await self.provider.requestAuthToken()
-        let url = await self.provider.authorisationURL(forToken: token)
+        let url = self.provider.authorisationURL(forToken: token)
         self.openURL(url)
         self.log.info("scrobble.lastfm.auth.opened", ["url": url.absoluteString])
 
