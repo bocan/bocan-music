@@ -21,6 +21,13 @@ final class ContextMenuTableView: NSTableView {
             handler()
             return
         }
+        // ⌘A — explicitly delegate to NSTableView.selectAll so the standard
+        // macOS "select all rows" affordance works even though we subclass keyDown.
+        if event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
+           event.charactersIgnoringModifiers == "a" {
+            self.selectAll(nil)
+            return
+        }
         super.keyDown(with: event)
     }
 

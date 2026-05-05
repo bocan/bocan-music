@@ -294,6 +294,19 @@ struct BocanCommands: Commands {
             }
             .help("Analyse loudness for the selected tracks and save ReplayGain values")
             .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Select All") {
+                self.vm.selectAllTracks()
+            }
+            .keyboardShortcut(KeyBindings.selectAll)
+
+            Button("Deselect All") {
+                self.vm.deselectAllTracks()
+            }
+            .keyboardShortcut(KeyBindings.deselectAll)
+            .disabled(!self.vm.hasTrackSelection)
         }
 
         // Override the default help command to open the help page directly.
