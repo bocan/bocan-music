@@ -21,7 +21,7 @@ public struct NowPlayingStrip: View {
     /// updates coming from the engine.  Seeking happens once on release.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
-    @State private var showDSP = false
+    @Environment(\.openWindow) private var openWindow
 
     public init(vm: NowPlayingViewModel, route: RouteViewModel? = nil) {
         self.vm = vm
@@ -53,17 +53,6 @@ public struct NowPlayingStrip: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(A11y.NowPlaying.strip)
-        .sheet(isPresented: self.$showDSP) {
-            DSPSheet(vm: self.dsp)
-        }
-        // Allow DSPViewModel.showDSPPanel to open the sheet from menu commands
-        // and keyboard shortcuts that don't have direct access to @State.
-        .onChange(of: self.dsp.showDSPPanel) { _, requested in
-            if requested {
-                self.showDSP = true
-                self.dsp.showDSPPanel = false
-            }
-        }
     }
 
     // MARK: - Sub-views
@@ -267,7 +256,7 @@ public struct NowPlayingStrip: View {
             SleepTimerMenu(vm: self.vm)
 
             Button {
-                self.showDSP.toggle()
+                self.openWindow(id: "dsp")
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 15, weight: .medium))
@@ -286,9 +275,8 @@ public struct NowPlayingStrip: View {
                     }
             }
             .buttonStyle(.plain)
-            .keyboardShortcut(KeyBindings.showEQPanel)
             .foregroundStyle(
-                (self.dsp.isEQActive || self.dsp.hasScopedPreset || self.showDSP)
+                (self.dsp.isEQActive || self.dsp.hasScopedPreset)
                     ? Color.accentColor : Color.textPrimary
             )
             .help("Equaliser & DSP (⌘⌥E)")

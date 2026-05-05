@@ -17,7 +17,6 @@ struct BocanCommands: Commands {
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
     let visualizerVM: VisualizerViewModel
-    let dspVM: DSPViewModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -258,7 +257,7 @@ struct BocanCommands: Commands {
             Divider()
 
             Button("Equaliser & DSP…") {
-                self.dspVM.showDSPPanel = true
+                self.openWindow(id: "dsp")
             }
             .keyboardShortcut(KeyBindings.showEQPanel)
         }
