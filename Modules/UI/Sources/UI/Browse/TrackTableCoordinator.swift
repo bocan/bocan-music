@@ -197,7 +197,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let acts = self.parent.actions
         let menu = NSMenu()
         self.addPlaybackItems(to: menu, selected: selected, first: first, acts: acts)
-        self.addLoveItem(to: menu, first: first, acts: acts)
+        self.addLoveItem(to: menu, selected: selected, acts: acts)
         self.addRateItem(to: menu, selected: selected, acts: acts)
         self.addNavigationItems(to: menu, selected: selected, first: first, acts: acts)
         self.addFileItems(to: menu, selected: selected, first: first, acts: acts)
@@ -297,12 +297,13 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     private func addLoveItem(
         to menu: NSMenu,
-        first: Track?,
+        selected: [Track],
         acts: TrackContextMenuActions
     ) {
-        guard let track = first else { return }
+        guard !selected.isEmpty else { return }
+        let allLoved = selected.allSatisfy(\.loved)
         menu.addItem(.separator())
-        menu.addItem(ActionMenuItem(track.loved ? "Unlove" : "Love") { acts.love(track) })
+        menu.addItem(ActionMenuItem(allLoved ? "Unlove" : "Love") { acts.love(selected) })
     }
 
     private func addRateItem(
