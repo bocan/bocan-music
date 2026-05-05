@@ -49,8 +49,8 @@ extension TracksView {
                 let ids = tracks.compactMap(\.id)
                 lib.playlistSidebar.beginNewPlaylist(trackIDs: ids)
             },
-            love: { _ in
-                lib.toggleLovedForCurrentSelection()
+            love: { tracks in
+                lib.toggleLoved(for: tracks)
             },
             goToArtist: { artistID in
                 Task { await lib.selectDestination(.artist(artistID)) }
