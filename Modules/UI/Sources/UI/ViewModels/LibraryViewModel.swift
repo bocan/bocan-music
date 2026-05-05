@@ -366,6 +366,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.tagEditorTrackIDs = [id]
     }
 
+    /// Navigates the sidebar to the album of the currently-playing track.
+    ///
+    /// No-op when nothing is playing or when the playing track has no album ID.
+    public func goToCurrentAlbum() async {
+        guard let albumID = self.nowPlaying.nowPlayingAlbumID else { return }
+        await self.selectDestination(.album(albumID))
+    }
+
     /// Opens the tag editor for whatever is currently selected in the track table.
     public func showTagEditorForCurrentSelection() {
         let ids = self.tracks.selection.compactMap(\.self)
