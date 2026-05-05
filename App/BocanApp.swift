@@ -136,13 +136,13 @@ struct BocanApp: App {
 
         MiniPlayerWindow(vm: self.miniPlayerViewModel)
             .environmentObject(self.windowMode)
+            // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
             .environmentObject(self.libraryViewModel)
-
-        // MARK: Settings
 
         Settings {
             SettingsScene(scrobbleViewModel: self.scrobbleSettingsViewModel)
                 .environment(self.dspViewModel)
+                // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
                 .environmentObject(self.libraryViewModel)
                 .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
