@@ -52,6 +52,7 @@ public enum A11y {
         public static let scrubber = "nowPlayingStrip.scrubber"
         public static let volume = "nowPlayingStrip.volume"
         public static let volumeSlider = "nowPlayingStrip.volume"
+        public static let muteButton = "nowPlayingStrip.mute"
     }
 
     // MARK: - Search
