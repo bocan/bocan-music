@@ -42,7 +42,7 @@ public struct TrackContextMenuActions {
     /// Delete a track's file from disk and remove it from the library.
     public let deleteFromDisk: (Track) -> Void
     /// Copy track metadata to the clipboard.
-    public let copy: ([Track]) -> Void
+    public let copy: ([TrackRow]) -> Void
     /// Set or clear the shuffle-exclusion flag for a track.
     public let toggleShuffle: (Int64, Bool) -> Void
     /// Compute ReplayGain for the selected tracks, replacing any existing values.
