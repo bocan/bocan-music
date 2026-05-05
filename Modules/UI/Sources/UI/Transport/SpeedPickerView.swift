@@ -26,11 +26,10 @@ public struct SpeedPickerView: View {
         } label: {
             Text(self.rateLabel)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(self.isActive ? AccentPalette.color(for: self.accentColorKey) : Color.textPrimary)
+                .foregroundStyle(self.labelColor)
                 .frame(width: 36)
         }
         .buttonStyle(.plain)
-        .opacity(self.isActive || self.isHovered ? 1 : 0.4)
         .onHover { self.isHovered = $0 }
         .help("Playback speed")
         .accessibilityLabel("Speed: \(self.rateLabel)")
@@ -98,5 +97,16 @@ public struct SpeedPickerView: View {
 
     private var isActive: Bool {
         abs(self.vm.playbackRate - 1.0) > 0.01
+    }
+
+    /// Foreground colour for the rate label.
+    ///
+    /// - Active (non-unity rate): accent colour — draws the eye.
+    /// - Hovered at unity: `textPrimary` — indicates interactivity.
+    /// - Idle at unity: `textTertiary` — de-emphasised but WCAG AA compliant,
+    ///   matching the convention used by shuffle/repeat/sleep inactive states.
+    private var labelColor: Color {
+        if self.isActive { return AccentPalette.color(for: self.accentColorKey) }
+        return self.isHovered ? Color.textPrimary : Color.textTertiary
     }
 }
