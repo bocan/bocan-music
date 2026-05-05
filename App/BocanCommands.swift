@@ -393,6 +393,11 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            Button("Compute Missing ReplayGain") {
+                Task { await self.vm.computeMissingReplayGain() }
+            }
+            .help("Analyse loudness for tracks that don't yet have ReplayGain data")
+
             Button("Recompute ReplayGain") {
                 Task { await self.vm.recomputeAllReplayGain() }
             }
