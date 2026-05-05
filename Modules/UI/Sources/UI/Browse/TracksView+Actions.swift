@@ -71,10 +71,22 @@ extension TracksView {
             deleteFromDisk: { track in
                 Self.confirmDeleteFromDisk(track: track, library: lib)
             },
-            copy: { tracks in
-                let tsv = tracks
-                    .map { [$0.title ?? "", $0.genre ?? ""].joined(separator: "\t") }
-                    .joined(separator: "\n")
+            copy: { rows in
+                let header = ["Title", "Artist", "Album", "Track", "Year", "Genre", "Duration", "Rating"]
+                    .joined(separator: "\t")
+                let lines = rows.map { row in
+                    [
+                        row.title,
+                        row.artistName,
+                        row.albumName,
+                        row.trackNumber > 0 ? String(row.trackNumber) : "",
+                        row.yearText,
+                        row.genre,
+                        Formatters.duration(row.duration),
+                        String(Formatters.stars(from: row.rating)),
+                    ].joined(separator: "\t")
+                }
+                let tsv = ([header] + lines).joined(separator: "\n")
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(tsv, forType: .string)
             },

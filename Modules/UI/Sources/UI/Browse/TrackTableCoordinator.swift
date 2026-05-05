@@ -343,8 +343,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             menu.addItem(ActionMenuItem("Delete from Disk") { acts.deleteFromDisk(track) })
         }
         menu.addItem(.separator())
-        let copyItem = ActionMenuItem("Copy") { acts.copy(selected) }
-        copyItem.isEnabled = !selected.isEmpty
+        let selectedRows = self.rows.filter { self.parent.selection.contains($0.id) }
+        let copyItem = ActionMenuItem("Copy") { acts.copy(selectedRows) }
+        copyItem.isEnabled = !selectedRows.isEmpty
         menu.addItem(copyItem)
     }
 
