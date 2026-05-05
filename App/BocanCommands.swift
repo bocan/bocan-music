@@ -173,6 +173,26 @@ struct BocanCommands: Commands {
         }
 
         CommandMenu("Track") {
+            Button("Play Now") {
+                self.vm.playNowForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.playNow)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Play Next") {
+                self.vm.playNextForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.playNext)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Add to Queue") {
+                self.vm.addToQueueForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.addToQueue)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
             Button("Get Info") {
                 self.vm.showTagEditorForCurrentSelection()
             }
