@@ -97,6 +97,11 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            Button(self.vm.nowPlaying.isMuted ? "Unmute" : "Mute") {
+                Task { await self.vm.nowPlaying.toggleMute() }
+            }
+            .keyboardShortcut(KeyBindings.mute)
+
             // Phase 5 audit H1: keyboard-accessible mode toggles.  Labels
             // include the current state so VoiceOver announces it and so
             // users can confirm without opening the strip.

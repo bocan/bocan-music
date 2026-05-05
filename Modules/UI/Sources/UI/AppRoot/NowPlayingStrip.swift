@@ -324,10 +324,18 @@ public struct NowPlayingStrip: View {
 
     private var volumeRow: some View {
         HStack(spacing: 4) {
-            Image(systemName: "speaker.fill")
-                .font(Typography.caption)
-                .foregroundStyle(Color.textTertiary)
-                .accessibilityHidden(true)
+            Button {
+                Task { await self.vm.toggleMute() }
+            } label: {
+                Image(systemName: self.vm.isMuted ? "speaker.slash.fill" : "speaker.fill")
+                    .font(Typography.caption)
+                    .foregroundStyle(self.vm.isMuted ? Color.primary : Color.textTertiary)
+            }
+            .buttonStyle(.plain)
+            .help(self.vm.isMuted ? "Unmute" : "Mute")
+            .accessibilityLabel(self.vm.isMuted ? "Unmute" : "Mute")
+            .accessibilityIdentifier(A11y.NowPlaying.muteButton)
+            .keyboardShortcut(KeyBindings.mute)
 
             Slider(value: Binding(
                 get: { Double(self.vm.volume) },
