@@ -291,6 +291,31 @@ struct NowPlayingViewModelTests {
         #expect(vm.playbackRate == 1.0)
     }
 
+    @Test("playbackRate is restored from UserDefaults on init")
+    func playbackRateRestoredFromUserDefaults() async throws {
+        let db = try await makeDatabase()
+        UserDefaults.standard.set(1.5, forKey: "playback.rate")
+        defer { UserDefaults.standard.removeObject(forKey: "playback.rate") }
+        let vm = NowPlayingViewModel(engine: MockTransport(), database: db)
+        #expect(vm.playbackRate == 1.5)
+    }
+
+    @Test("playbackRate clamps out-of-range UserDefaults value on init")
+    func playbackRateClampedFromUserDefaults() async throws {
+        let db = try await makeDatabase()
+        UserDefaults.standard.set(5.0, forKey: "playback.rate")
+        defer { UserDefaults.standard.removeObject(forKey: "playback.rate") }
+        let vm = NowPlayingViewModel(engine: MockTransport(), database: db)
+        #expect(vm.playbackRate == 2.0)
+    }
+
+    @Test("playbackRate stays at 1.0 when no UserDefaults value is stored")
+    func playbackRateDefaultsToUnityWhenAbsent() async throws {
+        UserDefaults.standard.removeObject(forKey: "playback.rate")
+        let vm = try await NowPlayingViewModel(engine: MockTransport(), database: makeDatabase())
+        #expect(vm.playbackRate == 1.0)
+    }
+
     // MARK: - Sleep timer
 
     @Test("sleepPresets contains Off and all expected durations")
