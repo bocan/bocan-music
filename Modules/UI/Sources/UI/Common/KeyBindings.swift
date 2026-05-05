@@ -81,6 +81,15 @@ public enum KeyBindings {
     /// `⌘⇧Q` — Append selected tracks to the end of the queue.
     public static let addToQueue = KeyboardShortcut("q", modifiers: [.command, .shift])
 
+    /// `⌘⌥↑` — Increase playback speed to the next quick rate.
+    public static let increaseSpeed = KeyboardShortcut(.upArrow, modifiers: [.command, .option])
+
+    /// `⌘⌥↓` — Decrease playback speed to the previous quick rate.
+    public static let decreaseSpeed = KeyboardShortcut(.downArrow, modifiers: [.command, .option])
+
+    /// `⌘⌥0` — Reset playback speed to 1×.
+    public static let resetSpeed = KeyboardShortcut("0", modifiers: [.command, .option])
+
     /// `⌘⌥E` — Open or close the Equaliser & DSP panel.
     public static let showEQPanel = KeyboardShortcut("e", modifiers: [.command, .option])
 

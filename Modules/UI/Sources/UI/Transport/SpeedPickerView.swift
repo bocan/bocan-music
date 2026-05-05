@@ -90,7 +90,7 @@ public struct SpeedPickerView: View {
 
     // MARK: - Helpers
 
-    private static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
+    private static let quickRates: [Float] = NowPlayingViewModel.quickRates
 
     private var rateLabel: String {
         String(format: "%.2g×", self.vm.playbackRate)
