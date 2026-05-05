@@ -173,6 +173,42 @@ struct NowPlayingViewModelTests {
         #expect(engine.seekTarget == 42.5)
     }
 
+    // MARK: - Previous / restart threshold
+
+    @Test("previous within first 3 seconds does not restart (delegates to qp.previous)")
+    func previousWithinThresholdDoesNotRestart() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        // 2.9 s — within the restart threshold.
+        engine.storedCurrentTime = 2.9
+        await vm.previous()
+        // The "restart" code path calls scrub(to:0) → engine.seek(to:0).
+        // It must NOT have been taken; seekTarget stays nil.
+        #expect(engine.seekTarget == nil)
+    }
+
+    @Test("previous past 3 seconds restarts current track")
+    func previousPastThresholdRestartsTrack() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        // 5.0 s — past the restart threshold.
+        engine.storedCurrentTime = 5.0
+        await vm.previous()
+        #expect(engine.seekTarget == 0.0)
+    }
+
+    @Test("restartTrack always scrubs to zero")
+    func restartTrackScrubsToZero() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        engine.storedCurrentTime = 120.0
+        await vm.restartTrack()
+        #expect(engine.seekTarget == 0.0)
+    }
+
     @Test("volume is clamped to [0, 1]")
     func volumeClamped() async throws {
         let engine = MockTransport()
