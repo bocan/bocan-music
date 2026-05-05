@@ -177,7 +177,7 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(Color.textPrimary)
             .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
             .accessibilityLabel("Previous or restart")
-            .accessibilityIdentifier(A11y.NowPlaying.prevButton)
+            .accessibilityIdentifier(A11y.NowPlaying.prev)
 
             Button {
                 Task { await self.vm.playPause() }
@@ -190,7 +190,7 @@ public struct NowPlayingStrip: View {
             .keyboardShortcut(KeyBindings.playPause)
             .help(self.vm.isPlaying ? "Pause" : "Play")
             .accessibilityLabel(self.vm.isPlaying ? "Pause" : "Play")
-            .accessibilityIdentifier(A11y.NowPlaying.playPauseButton)
+            .accessibilityIdentifier(A11y.NowPlaying.playPause)
 
             Button {
                 Task { await self.vm.next() }
@@ -202,7 +202,7 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(Color.textPrimary)
             .help("Next track")
             .accessibilityLabel("Next")
-            .accessibilityIdentifier(A11y.NowPlaying.nextButton)
+            .accessibilityIdentifier(A11y.NowPlaying.next)
 
             Button {
                 Task { await self.vm.toggleShuffle() }
