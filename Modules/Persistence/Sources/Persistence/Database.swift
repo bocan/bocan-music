@@ -172,7 +172,7 @@ public actor Database {
     /// but the destination is a complete, self-contained file even when the
     /// source is in WAL mode.
     func backup(to destination: any DatabaseWriter) async throws {
-        try await self.writer.backup(to: destination)
+        try self.writer.backup(to: destination)
     }
 
     // MARK: - Private helpers
