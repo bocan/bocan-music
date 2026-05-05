@@ -89,6 +89,8 @@ public struct TrackTable: NSViewRepresentable {
 
         let tableView = ContextMenuTableView()
         tableView.identifier = NSUserInterfaceItemIdentifier(A11y.TracksTable.table)
+        tableView.setAccessibilityLabel("Track List")
+        tableView.setAccessibilityRoleDescription("Music track list")
         tableView.autosaveName = self.sortable
             ? "bocan.tracksTable.sortable.v3"
             : "bocan.tracksTable.plain.v3"

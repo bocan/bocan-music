@@ -30,6 +30,8 @@ extension TrackTable {
         for spec in columnSpecs {
             let col = NSTableColumn(identifier: spec.id)
             col.title = spec.title
+            col.headerCell.title = spec.title
+            col.headerCell.setAccessibilityLabel(spec.title)
             col.minWidth = spec.minWidth
             col.width = spec.idealWidth
             col.maxWidth = spec.maxWidth

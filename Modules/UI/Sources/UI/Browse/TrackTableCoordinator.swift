@@ -73,6 +73,17 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         cell.textField?.font = isNowPlaying
             ? .boldSystemFont(ofSize: NSFont.systemFontSize)
             : .systemFont(ofSize: NSFont.systemFontSize)
+        // Give VoiceOver context by prefixing the column name.
+        // Rating uses a spoken form ("3 stars") instead of the star glyphs.
+        let colTitle = TrackTable.columnSpecs.first { $0.id == column.identifier }?.title ?? column.title
+        let spokenValue: String
+        if column.identifier == .rating {
+            let stars = Formatters.stars(from: row.rating)
+            spokenValue = stars == 0 ? "Not rated" : "\(stars) star\(stars == 1 ? "" : "s")"
+        } else {
+            spokenValue = cell.textField?.stringValue ?? ""
+        }
+        cell.setAccessibilityLabel("\(colTitle): \(spokenValue)")
         return cell
     }
 
