@@ -559,6 +559,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
+    /// Selects all currently visible tracks in the track list.
+    public func selectAllTracks() {
+        self.tracks.selectAll()
+    }
+
+    /// Clears the track selection.
+    public func deselectAllTracks() {
+        self.tracks.deselectAll()
+    }
+
     /// Plays the first selected track now, with full browse-context (same as double-click).
     public func playNowForCurrentSelection() {
         guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {

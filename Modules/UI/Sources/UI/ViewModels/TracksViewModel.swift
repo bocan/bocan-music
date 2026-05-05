@@ -166,6 +166,16 @@ public final class TracksViewModel {
 
     // MARK: - Public API
 
+    /// Selects all currently visible rows.
+    public func selectAll() {
+        self.selection = Set(self.rows.compactMap(\.id))
+    }
+
+    /// Clears the selection.
+    public func deselectAll() {
+        self.selection = []
+    }
+
     /// (Re)loads all tracks from the database and applies current sort/filter.
     public func load() async {
         self.isLoading = true
