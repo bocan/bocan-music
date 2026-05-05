@@ -102,7 +102,7 @@ public struct ArtworkEditor: View {
         if provider.hasItemConformingToTypeIdentifier("public.file-url") {
             Task { @MainActor in
                 let url: URL? = await withCheckedContinuation { cont in
-                    _ = provider.loadObject(ofClass: URL.self) { url, _ in cont.resume(returning: url as? URL) }
+                    _ = provider.loadObject(ofClass: URL.self) { url, _ in cont.resume(returning: url) }
                 }
                 guard let url, let data = try? Data(contentsOf: url) else { return }
                 self.vm.pendingArtData = Self.normalise(data)
