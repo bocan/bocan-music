@@ -208,8 +208,6 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     var pendingScanCurrentPath = ""
     var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
-    private var selectionCancellable: AnyCancellable?
-    private var singleSelectionCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
@@ -270,9 +268,25 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             await self.playlistSidebar.reload()
         }
 
-        self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
-        self.singleSelectionCancellable = self.tracks.$selection.map { $0.count == 1 }.assign(to: \.hasSingleTrackSelection, on: self)
+        self.observeTracksSelection()
         self.wireExpandedFoldersPersistence()
+    }
+
+    /// Bridges `TracksViewModel` (`@Observable`) selection state into the
+    /// `@Published` properties that `ObservableObject` consumers depend on.
+    ///
+    /// Uses a recursive `withObservationTracking` loop: the `apply` closure
+    /// both reads `tracks.selection` (registering the dependency) and writes
+    /// the derived `@Published` flags; `onChange` re-schedules the same
+    /// function so the next mutation is also caught.
+    private func observeTracksSelection() {
+        withObservationTracking {
+            let sel = self.tracks.selection
+            self.hasTrackSelection = !sel.isEmpty
+            self.hasSingleTrackSelection = sel.count == 1
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.observeTracksSelection() }
+        }
     }
 
     private func wireExpandedFoldersPersistence() {

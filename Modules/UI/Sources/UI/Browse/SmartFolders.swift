@@ -7,7 +7,7 @@ import SwiftUI
 ///
 /// Supported destinations: `.recentlyAdded`, `.recentlyPlayed`, `.mostPlayed`.
 public struct SmartFolderView: View {
-    @ObservedObject public var vm: TracksViewModel
+    public var vm: TracksViewModel
     public var library: LibraryViewModel
     public var destination: SidebarDestination
 

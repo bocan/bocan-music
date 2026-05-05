@@ -1,5 +1,6 @@
 import Foundation
 import Observability
+import Observation
 import Persistence
 
 // MARK: - Track sort support
@@ -67,8 +68,8 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
 
 /// Manages the sorted, filtered list of tracks shown in `TracksView`.
 ///
-/// Owned by `LibraryViewModel` and injected into `TracksView` as an
-/// `@ObservedObject`.  All mutation happens on `@MainActor`.
+/// Owned by `LibraryViewModel` and injected into `TracksView`.  All mutation
+/// happens on `@MainActor`.
 ///
 /// ## Sorting
 ///
@@ -77,30 +78,33 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
 /// When it changes — whether by a column-header click or programmatic
 /// `setSort(column:ascending:)` — `rows` is resorted in place.  Nothing
 /// else re-sorts the array behind the Table's back.
+@Observable
 @MainActor
-public final class TracksViewModel: ObservableObject {
-    // MARK: - Published state
+public final class TracksViewModel {
+    // MARK: - State
 
     /// Decorated, already-sorted rows rendered by `Table`.
-    @Published public private(set) var rows: [TrackRow] = []
-    @Published public private(set) var isLoading = false
-    @Published public var selection: Set<Track.ID> = []
+    public private(set) var rows: [TrackRow] = []
+    /// `true` while a load or search is in flight.
+    public private(set) var isLoading = false
+    /// The currently selected track IDs.
+    public var selection: Set<Track.ID> = []
 
     /// Full stack of active comparators.  Owned by `TracksView` as
     /// `@State` and pushed in via `applySort(_:)` — keeping the Table's
-    /// binding writes out of `@Published` is what prevents the
+    /// binding writes out of the observation path is what prevents the
     /// SwiftUI-reentrant update cycle that otherwise runs CPU to 100%
     /// and allocates ~1 GB every few seconds.
     public private(set) var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
     /// Free-text filter (operates client-side for in-memory arrays).
-    @Published public var filterText = ""
+    public var filterText = ""
 
     /// Maps `artistID → artist name` for column display.  Refreshed on every load.
-    @Published public private(set) var artistNames: [Int64: String] = [:]
+    public private(set) var artistNames: [Int64: String] = [:]
 
     /// Maps `albumID → album title` for column display.  Refreshed on every load.
-    @Published public private(set) var albumNames: [Int64: String] = [:]
+    public private(set) var albumNames: [Int64: String] = [:]
 
     // MARK: - Computed back-compat accessors
 
@@ -149,6 +153,7 @@ public final class TracksViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// Creates a new `TracksViewModel` backed by the given repositories.
     public init(
         repository: TrackRepository,
         artistRepository: ArtistRepository,
