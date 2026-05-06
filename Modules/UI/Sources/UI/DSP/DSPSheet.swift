@@ -2,15 +2,18 @@ import SwiftUI
 
 // MARK: - DSPSheet
 
-/// Tabbed panel sheet presenting EQ, effects, and ReplayGain settings.
+/// Tabbed panel presenting EQ, effects, and ReplayGain settings.
 ///
-/// Presented as a sheet from `NowPlayingStrip` when the user taps the EQ button.
-/// Each tab wraps an existing DSP view; the sheet owns no additional state.
-struct DSPSheet: View {
-    @Bindable var vm: DSPViewModel
-    @Environment(\.dismiss) private var dismiss
+/// Hosted in a floating `Window` scene (non-modal) so the user can tweak the EQ
+/// while the track list and transport controls remain fully interactive.
+public struct DSPSheet: View {
+    @Bindable public var vm: DSPViewModel
 
-    var body: some View {
+    public init(vm: DSPViewModel) {
+        self.vm = vm
+    }
+
+    public var body: some View {
         TabView {
             EQView(vm: self.vm)
                 .tabItem { Label("Equaliser", systemImage: "slider.vertical.3") }
@@ -20,13 +23,6 @@ struct DSPSheet: View {
 
             ReplayGainSettingsView(vm: self.vm)
                 .tabItem { Label("ReplayGain", systemImage: "chart.bar.fill") }
-        }
-        .frame(minWidth: 560, minHeight: 480)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Done") { self.dismiss() }
-                    .keyboardShortcut(.return)
-            }
         }
     }
 }

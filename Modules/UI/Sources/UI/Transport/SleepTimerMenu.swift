@@ -8,7 +8,7 @@ import SwiftUI
 /// The label shows a moon icon + remaining time when the timer is active
 /// (e.g. "☽ 28 m"), or just a moon icon when inactive.
 public struct SleepTimerMenu: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @State private var customMinutes = 30
     @State private var showCustomField = false
 
@@ -29,6 +29,7 @@ public struct SleepTimerMenu: View {
             : "Sleep timer — automatically stop playback after a set time")
         .accessibilityLabel(self.accessibilityLabel)
         .accessibilityHint("Opens a menu of sleep timer presets. Choose a duration to automatically stop playback.")
+        .accessibilityIdentifier(A11y.NowPlaying.sleepTimer)
         .popover(isPresented: self.$showCustomField, arrowEdge: .top) {
             self.customDurationPopover
         }
@@ -56,14 +57,6 @@ public struct SleepTimerMenu: View {
                 }
                 .help("Set the number of minutes (1–480) before playback stops")
             }
-
-            Toggle("Fade out in last 30 s", isOn: Binding(
-                get: { self.vm.sleepTimerFadeOut },
-                set: { newVal in
-                    Task { await self.vm.setSleepTimer(minutes: nil, fadeOut: newVal) }
-                }
-            ))
-            .help("Gradually reduce volume to silence over the final 30 seconds before the timer fires")
 
             HStack {
                 Spacer()

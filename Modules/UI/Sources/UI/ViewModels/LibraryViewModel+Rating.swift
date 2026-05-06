@@ -10,6 +10,16 @@ import Persistence
 /// and refreshes affected rows so the UI reflects the change without
 /// reloading the whole destination.
 public extension LibraryViewModel {
+    /// Toggles the `loved` flag on an explicit set of tracks (bypasses VM selection).
+    ///
+    /// All-loved → unlove all; otherwise love all — consistent with
+    /// `toggleLovedForCurrentSelection()`.
+    func toggleLoved(for tracks: [Track]) {
+        guard !tracks.isEmpty else { return }
+        let newValue = !tracks.allSatisfy(\.loved)
+        Task { await self.applyLoved(newValue, to: tracks) }
+    }
+
     /// Toggles the `loved` flag on every track in the current selection.
     ///
     /// If the selection is heterogeneous (some loved, some not), all
@@ -33,6 +43,20 @@ public extension LibraryViewModel {
         let selected = self.tracks.tracks.filter { selectedIDs.contains($0.id) }
         guard !selected.isEmpty else { return }
         Task { await self.applyRating(value, to: selected) }
+    }
+
+    /// Sets the rating (0–5 stars, stored as 0–100) on explicit tracks,
+    /// bypassing the ViewModel selection.  Used by the context menu, which
+    /// already has the target tracks in hand.
+    ///
+    /// - Parameters:
+    ///   - stars: 0–5.  Values outside the range are clamped.
+    ///   - tracks: The tracks to update.
+    func setRating(stars: Int, for tracks: [Track]) {
+        let clamped = max(0, min(5, stars))
+        let value = clamped * 20
+        guard !tracks.isEmpty else { return }
+        Task { await self.applyRating(value, to: tracks) }
     }
 
     // MARK: - Persistence helpers

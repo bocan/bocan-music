@@ -124,8 +124,8 @@ struct MiniPlayerSquare: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
-                .help("Previous track")
-                .accessibilityLabel("Previous")
+                .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
+                .accessibilityLabel("Previous or restart")
 
                 Button {
                     Task { await self.np.playPause() }

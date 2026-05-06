@@ -20,7 +20,7 @@ public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
     @ObservedObject private var lyricsVM: LyricsViewModel
     @ObservedObject private var visualizerVM: VisualizerViewModel
-    @ObservedObject private var routeVM: RouteViewModel
+    private var routeVM: RouteViewModel
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow

@@ -18,6 +18,8 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var lastAppliedIDs: [Int64] = []
     var lastNowPlayingID: Track.ID?
     var hasAppliedInitialSnapshot = false
+    /// Tracks the last scroll-request counter processed to avoid re-scrolling.
+    var lastScrollRequest: Int = -1
 
     // Guards against feedback loops when syncing selection / sort.
     var isSyncingSelection = false
@@ -73,6 +75,17 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         cell.textField?.font = isNowPlaying
             ? .boldSystemFont(ofSize: NSFont.systemFontSize)
             : .systemFont(ofSize: NSFont.systemFontSize)
+        // Give VoiceOver context by prefixing the column name.
+        // Rating uses a spoken form ("3 stars") instead of the star glyphs.
+        let colTitle = TrackTable.columnSpecs.first { $0.id == column.identifier }?.title ?? column.title
+        let spokenValue: String
+        if column.identifier == .rating {
+            let stars = Formatters.stars(from: row.rating)
+            spokenValue = stars == 0 ? "Not rated" : "\(stars) star\(stars == 1 ? "" : "s")"
+        } else {
+            spokenValue = cell.textField?.stringValue ?? ""
+        }
+        cell.setAccessibilityLabel("\(colTitle): \(spokenValue)")
         return cell
     }
 
@@ -184,17 +197,30 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let acts = self.parent.actions
         let menu = NSMenu()
         self.addPlaybackItems(to: menu, selected: selected, first: first, acts: acts)
-        self.addLoveItem(to: menu, first: first, acts: acts)
-        self.addNavigationItems(to: menu, first: first, acts: acts)
+        self.addLoveItem(to: menu, selected: selected, acts: acts)
+        self.addRateItem(to: menu, selected: selected, acts: acts)
+        self.addNavigationItems(to: menu, selected: selected, first: first, acts: acts)
         self.addFileItems(to: menu, selected: selected, first: first, acts: acts)
         return menu
     }
 
     // MARK: Context menu — helpers
 
+    /// Synchronises the table selection to the right-clicked row before building the context menu.
+    ///
+    /// This intentionally mirrors the standard macOS behaviour used by Finder and Music.app:
+    ///
+    /// - **Right-click inside the existing selection** — the `guard` exits immediately; the
+    ///   multi-row selection is preserved and the menu applies to all selected rows.
+    /// - **Right-click outside the existing selection** — the selection is replaced with the
+    ///   single clicked row so the menu always targets a visible, unambiguous set of tracks.
+    ///
+    /// Do **not** remove the selection-replace branch; it is intentional, not a bug.
     private func syncClickedRow(in tv: NSTableView) {
         let clicked = tv.clickedRow
+        // Already inside the selection — leave multi-row selection intact.
         guard clicked >= 0, !tv.selectedRowIndexes.contains(clicked) else { return }
+        // Outside the selection — move selection to the clicked row (Finder / Music.app behaviour).
         self.isSyncingSelection = true
         tv.selectRowIndexes(IndexSet(integer: clicked), byExtendingSelection: false)
         self.isSyncingSelection = false
@@ -206,6 +232,16 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     private func selectedTracks() -> [Track] {
         let sel = self.parent.selection
         return self.rows.filter { sel.contains($0.id) }.map(\.track)
+    }
+
+    /// Handles Return/Enter key presses from the table.
+    /// Plays the first selected track using the same browse-view context as double-click.
+    func handleReturnKeyDown() {
+        guard let tableView = self.tableView,
+              let firstIndex = tableView.selectedRowIndexes.first,
+              let id = self.dataSource?.itemIdentifier(forRow: firstIndex),
+              let trackRow = self.rowsByID[id] else { return }
+        self.parent.actions.playNow(trackRow.track)
     }
 
     /// Handles Delete/Forward Delete key presses from the table.
@@ -261,21 +297,62 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     private func addLoveItem(
         to menu: NSMenu,
-        first: Track?,
+        selected: [Track],
         acts: TrackContextMenuActions
     ) {
-        guard let track = first else { return }
+        guard !selected.isEmpty else { return }
+        let allLoved = selected.allSatisfy(\.loved)
         menu.addItem(.separator())
-        menu.addItem(ActionMenuItem(track.loved ? "Unlove" : "Love") { acts.love(track) })
+        menu.addItem(ActionMenuItem(allLoved ? "Unlove" : "Love") { acts.love(selected) })
+    }
+
+    private func addRateItem(
+        to menu: NSMenu,
+        selected: [Track],
+        acts: TrackContextMenuActions
+    ) {
+        guard !selected.isEmpty else { return }
+        let rateMenu = NSMenu(title: "Rate")
+        for star in 0 ... 5 {
+            let label = star == 0
+                ? "None"
+                : String(repeating: "\u{2605}", count: star) + String(repeating: "\u{2606}", count: 5 - star)
+            rateMenu.addItem(ActionMenuItem(label) { acts.rate(selected, star) })
+        }
+        let item = NSMenuItem(title: "Rate", action: nil, keyEquivalent: "")
+        item.submenu = rateMenu
+        menu.addItem(item)
     }
 
     private func addNavigationItems(
         to menu: NSMenu,
+        selected: [Track],
         first: Track?,
         acts: TrackContextMenuActions
     ) {
         menu.addItem(.separator())
         var hasNav = false
+
+        // All-same-album check: only show album actions when selection is within one album.
+        let allSameAlbum = !selected.isEmpty
+            && selected.allSatisfy { $0.albumID != nil && $0.albumID == selected[0].albumID }
+        // All-same-artist check: only show artist action when selection is within one artist.
+        let allSameArtist = !selected.isEmpty
+            && selected.allSatisfy { $0.artistID != nil && $0.artistID == selected[0].artistID }
+
+        if let track = first, allSameAlbum {
+            menu.addItem(ActionMenuItem("Play Album") { acts.playAlbum(track) })
+            menu.addItem(ActionMenuItem("Shuffle Album") { acts.shuffleAlbum(track) })
+            hasNav = true
+        }
+        if let track = first, allSameArtist {
+            menu.addItem(ActionMenuItem("Play Artist") { acts.playArtist(track) })
+            hasNav = true
+        }
+        if hasNav { menu.addItem(.separator())
+            hasNav = false
+        }
+
         if let id = first?.artistID {
             menu.addItem(ActionMenuItem("Go to Artist") { acts.goToArtist(id) })
             hasNav = true
@@ -324,8 +401,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             menu.addItem(ActionMenuItem("Delete from Disk") { acts.deleteFromDisk(track) })
         }
         menu.addItem(.separator())
-        let copyItem = ActionMenuItem("Copy") { acts.copy(selected) }
-        copyItem.isEnabled = !selected.isEmpty
+        let selectedRows = self.rows.filter { self.parent.selection.contains($0.id) }
+        let copyItem = ActionMenuItem("Copy") { acts.copy(selectedRows) }
+        copyItem.isEnabled = !selectedRows.isEmpty
         menu.addItem(copyItem)
     }
 
@@ -348,143 +426,5 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             }
             // Smart playlists are read-only — skip them entirely.
         }
-    }
-}
-
-// MARK: - ActionMenuItem
-
-/// `NSMenuItem` that executes a closure when activated.  Owns the block
-/// as its target to avoid external retain cycles.
-final class ActionMenuItem: NSMenuItem {
-    private let block: () -> Void
-
-    init(_ title: String, _ block: @escaping () -> Void) {
-        self.block = block
-        super.init(title: title, action: #selector(Self.fire), keyEquivalent: "")
-        self.target = self
-    }
-
-    @available(*, unavailable)
-    required init(coder: NSCoder) {
-        fatalError("unavailable")
-    }
-
-    @objc private func fire() {
-        self.block()
-    }
-}
-
-// MARK: - ShuffleCheckCell
-
-/// `NSTableCellView` subclass for the Shuffle Exclude column.
-final class ShuffleCheckCell: NSTableCellView {
-    private let checkbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
-    private var trackID: Int64?
-    private var onToggle: ((Int64, Bool) -> Void)?
-
-    override init(frame: NSRect) {
-        super.init(frame: frame)
-        identifier = NSUserInterfaceItemIdentifier("checkCell.shuffleExclude")
-        self.checkbox.translatesAutoresizingMaskIntoConstraints = false
-        self.checkbox.target = self
-        self.checkbox.action = #selector(self.checkboxChanged(_:))
-        addSubview(self.checkbox)
-        NSLayoutConstraint.activate([
-            self.checkbox.centerXAnchor.constraint(equalTo: centerXAnchor),
-            self.checkbox.centerYAnchor.constraint(equalTo: centerYAnchor),
-        ])
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("unavailable")
-    }
-
-    func configure(row: TrackRow, action: @escaping (Int64, Bool) -> Void) {
-        self.trackID = row.id
-        self.onToggle = action
-        self.checkbox.state = row.excludedFromShuffle ? .on : .off
-    }
-
-    @objc private func checkboxChanged(_ sender: NSButton) {
-        guard let id = trackID else { return }
-        self.onToggle?(id, sender.state == .on)
-    }
-}
-
-// MARK: - TrackDiffableDataSource
-
-/// Subclass of `NSTableViewDiffableDataSource` that adds drag-to-playlist
-/// support by implementing `tableView(_:pasteboardWriterForRow:)`.
-/// The section identifier is a single `Int` (0); item identifiers are `Int64` track IDs.
-@MainActor
-final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
-    /// Forwarded to the coordinator so sort-descriptor changes reach SwiftUI.
-    weak var coordinator: TrackTableCoordinator?
-
-    /// When non-nil, the data source participates in intra-table reorder.
-    var onMove: ((IndexSet, Int) -> Void)?
-
-    @objc func tableView(
-        _ tableView: NSTableView,
-        sortDescriptorsDidChange _: [NSSortDescriptor]
-    ) {
-        MainActor.assumeIsolated {
-            self.coordinator?.handleSortDescriptorsDidChange(in: tableView)
-        }
-    }
-
-    @objc func tableView(
-        _ tableView: NSTableView,
-        pasteboardWriterForRow row: Int
-    ) -> (any NSPasteboardWriting)? {
-        guard let id = itemIdentifier(forRow: row) else { return nil }
-        let item = NSPasteboardItem()
-        item.setString(String(id), forType: .string)
-        return item
-    }
-
-    // MARK: - Drag-reorder (intra-table)
-
-    /// Validate a drop: only allow intra-table reorder when `onMove` is set.
-    @objc func tableView(
-        _ tableView: NSTableView,
-        validateDrop info: any NSDraggingInfo,
-        proposedRow row: Int,
-        proposedDropOperation dropOperation: NSTableView.DropOperation
-    ) -> NSDragOperation {
-        guard self.onMove != nil,
-              info.draggingSource as? NSTableView === tableView else { return [] }
-        // Only allow drop between rows, not onto a row.
-        if dropOperation == .on {
-            tableView.setDropRow(row, dropOperation: .above)
-        }
-        return .move
-    }
-
-    /// Accept the drop and call `onMove` with SwiftUI-style indices.
-    @objc func tableView(
-        _ tableView: NSTableView,
-        acceptDrop info: any NSDraggingInfo,
-        row: Int,
-        dropOperation: NSTableView.DropOperation
-    ) -> Bool {
-        guard let onMove = self.onMove,
-              info.draggingSource as? NSTableView === tableView else { return false }
-
-        // Collect the dragged row indices by looking up each pasteboard item's
-        // track-ID string and finding its current index in the snapshot.
-        var sourceIndices = IndexSet()
-        info.draggingPasteboard.pasteboardItems?.forEach { item in
-            guard let str = item.string(forType: .string),
-                  let trackID = Int64(str) else { return }
-            if let idx = self.row(forItemIdentifier: trackID), idx >= 0 {
-                sourceIndices.insert(idx)
-            }
-        }
-        guard !sourceIndices.isEmpty else { return false }
-
-        onMove(sourceIndices, row)
-        return true
     }
 }

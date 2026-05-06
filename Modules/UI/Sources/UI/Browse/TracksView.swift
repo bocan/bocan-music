@@ -18,7 +18,7 @@ import SwiftUI
 /// composer, smart folder, active search) are small enough that
 /// header sort is both useful and performant.
 public struct TracksView: View {
-    @ObservedObject public var vm: TracksViewModel
+    @Bindable public var vm: TracksViewModel
     public var library: LibraryViewModel
     public var title: String?
     public var sortable: Bool
@@ -30,8 +30,8 @@ public struct TracksView: View {
     public var onMove: ((IndexSet, Int) -> Void)?
 
     /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
-    /// invalidate this view (SwiftUI doesn't traverse nested ObservableObjects).
-    @ObservedObject var nowPlaying: NowPlayingViewModel
+    /// invalidate this view (`@Observable` tracking handles property-level granularity).
+    var nowPlaying: NowPlayingViewModel
 
     /// Local sort state.  Owned by the View (not the VM) so that
     /// NSTableView sort-descriptor writes never fire `objectWillChange`
@@ -144,7 +144,7 @@ extension TracksView {
         tracks: [Track],
         remove: @escaping ([Track]) -> Void,
         userDefaults: UserDefaults = .standard
-    ) {
+    ) async {
         guard !tracks.isEmpty else { return }
         guard self.shouldConfirmRemoveFromPlaylist(userDefaults: userDefaults) else {
             remove(tracks)
@@ -165,7 +165,7 @@ extension TracksView {
         alert.showsSuppressionButton = true
         alert.suppressionButton?.title = "Don’t ask again"
 
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        guard await Self.runAlertAsync(alert) == .alertFirstButtonReturn else { return }
 
         if alert.suppressionButton?.state == .on {
             Self.setRemoveFromPlaylistConfirmationSuppressed(true, userDefaults: userDefaults)

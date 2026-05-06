@@ -37,13 +37,6 @@ public final class DSPViewModel {
     /// `true` while ReplayGain analysis is in progress.
     public private(set) var isAnalyzing = false
 
-    /// When set to `true` the DSP/EQ sheet should be presented.
-    ///
-    /// `NowPlayingStrip` observes this and reflects it into its local `showDSP`
-    /// `@State`, so menu commands and keyboard shortcuts that only have access
-    /// to `DSPViewModel` can still open the sheet.
-    public var showDSPPanel = false
-
     /// Which scope the EQ picker targets (Global / This Album / This Track).
     public var eqScope: EQScope = .global
 
@@ -55,6 +48,15 @@ public final class DSPViewModel {
 
     /// Whether there is a scoped (track or album) EQ assignment active for the current track.
     public private(set) var hasScopedPreset = false
+
+    /// `true` when EQ is in the signal path **and** the active preset is non-flat.
+    ///
+    /// Use this to show a persistent active-state indicator on the DSP button,
+    /// independently of whether the DSP sheet is currently open.
+    public var isEQActive: Bool {
+        guard let presetID = self.state.eqPresetID else { return false }
+        return self.state.eqEnabled && presetID != BuiltInPresets.flat.id
+    }
 
     // MARK: - Dependencies
 
