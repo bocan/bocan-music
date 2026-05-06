@@ -137,11 +137,14 @@ struct SidebarWidthAutosave: NSViewRepresentable {
         return nil
     }
 
+    @MainActor
     final class Coordinator: NSObject {
         let onWidthChange: (Double) -> Void
         weak var splitView: NSSplitView?
         var attached = false
-        private var observer: NSObjectProtocol?
+        // nonisolated(unsafe): accessed from nonisolated deinit;
+        // NotificationCenter.removeObserver is thread-safe.
+        private nonisolated(unsafe) var observer: NSObjectProtocol?
 
         init(onWidthChange: @escaping (Double) -> Void) {
             self.onWidthChange = onWidthChange
@@ -162,9 +165,13 @@ struct SidebarWidthAutosave: NSViewRepresentable {
                 object: splitView,
                 queue: .main
             ) { [weak self] _ in
-                guard let self,
-                      let sidebar = self.splitView?.arrangedSubviews.first else { return }
-                self.onWidthChange(Double(sidebar.frame.width))
+                // queue: .main guarantees this runs on the main thread;
+                // assumeIsolated lets us access @MainActor properties safely.
+                MainActor.assumeIsolated {
+                    guard let self,
+                          let sidebar = self.splitView?.arrangedSubviews.first else { return }
+                    self.onWidthChange(Double(sidebar.frame.width))
+                }
             }
         }
     }

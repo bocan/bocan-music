@@ -9,6 +9,9 @@ import SwiftUI
 /// `LibraryViewModel.replayGainProgress`.
 public struct ReplayGainSettingsView: View {
     @Bindable var vm: DSPViewModel
+    // TODO: When LibraryViewModel is migrated to @Observable, change to:
+    // @Environment(LibraryViewModel.self) private var library
+    // and update injection sites from .environmentObject(library) → .environment(library)
     @EnvironmentObject private var library: LibraryViewModel
 
     @State private var showRecomputeConfirm = false

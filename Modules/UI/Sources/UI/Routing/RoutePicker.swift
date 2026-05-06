@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Combined route indicator + AirPlay picker for the now-playing strip.
 public struct RoutePicker: View {
-    @ObservedObject var vm: RouteViewModel
+    var vm: RouteViewModel
 
     public init(vm: RouteViewModel) {
         self.vm = vm

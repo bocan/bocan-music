@@ -8,7 +8,7 @@ import SwiftUI
 /// quick-pick buttons.  Hidden at 1.0× by default; visible on hover or when
 /// a non-unity rate is set.
 public struct SpeedPickerView: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var isPopoverShown = false
     @State private var isHovered = false
@@ -26,14 +26,14 @@ public struct SpeedPickerView: View {
         } label: {
             Text(self.rateLabel)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundStyle(self.isActive ? AccentPalette.color(for: self.accentColorKey) : Color.textPrimary)
+                .foregroundStyle(self.labelColor)
                 .frame(width: 36)
         }
         .buttonStyle(.plain)
-        .opacity(self.isActive || self.isHovered ? 1 : 0.4)
         .onHover { self.isHovered = $0 }
         .help("Playback speed")
         .accessibilityLabel("Speed: \(self.rateLabel)")
+        .accessibilityIdentifier(A11y.NowPlaying.speedPicker)
         .popover(isPresented: self.$isPopoverShown, arrowEdge: .top) {
             self.popoverContent
         }
@@ -90,7 +90,7 @@ public struct SpeedPickerView: View {
 
     // MARK: - Helpers
 
-    private static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
+    private static let quickRates: [Float] = NowPlayingViewModel.quickRates
 
     private var rateLabel: String {
         String(format: "%.2g×", self.vm.playbackRate)
@@ -98,5 +98,16 @@ public struct SpeedPickerView: View {
 
     private var isActive: Bool {
         abs(self.vm.playbackRate - 1.0) > 0.01
+    }
+
+    /// Foreground colour for the rate label.
+    ///
+    /// - Active (non-unity rate): accent colour — draws the eye.
+    /// - Hovered at unity: `textPrimary` — indicates interactivity.
+    /// - Idle at unity: `textTertiary` — de-emphasised but WCAG AA compliant,
+    ///   matching the convention used by shuffle/repeat/sleep inactive states.
+    private var labelColor: Color {
+        if self.isActive { return AccentPalette.color(for: self.accentColorKey) }
+        return self.isHovered ? Color.textPrimary : Color.textTertiary
     }
 }

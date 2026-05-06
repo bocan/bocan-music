@@ -1,3 +1,4 @@
 {
-  "claudeCode.useTerminal": true
+  "claudeCode.useTerminal": true,
+  "githubPullRequests.pullRequestDescription": "Copilot"
 }

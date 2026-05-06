@@ -10,40 +10,59 @@ import UserNotifications
 
 /// Drives the `NowPlayingStrip` at the bottom of every screen.
 ///
-/// Subscribes to `Transport.state` on init and updates its `@Published`
-/// properties on `@MainActor`.  Phase 5 will replace the concrete engine
-/// with a `QueuePlayer` that also conforms to `Transport`.
+/// Subscribes to `Transport.state` on init and updates its observable
+/// properties on `@MainActor`.
+@Observable
 @MainActor
-public final class NowPlayingViewModel: ObservableObject {
-    // MARK: - Published state
+public final class NowPlayingViewModel {
+    // MARK: - Observable state
 
-    @Published public private(set) var artwork: NSImage?
-    @Published public private(set) var title = ""
-    @Published public private(set) var artist = ""
-    @Published public private(set) var album = ""
-    @Published public private(set) var duration: TimeInterval = 0
-    @Published public private(set) var position: TimeInterval = 0
-    @Published public private(set) var isPlaying = false
-    @Published public var volume: Float = 1.0
-    @Published public private(set) var shuffleOn = false
-    @Published public private(set) var repeatMode: RepeatMode = .off
-    @Published public private(set) var stopAfterCurrent = false
+    /// Cover art for the current track, or `nil` when nothing is playing.
+    public private(set) var artwork: NSImage?
+    /// Track title of the current item, or empty string when idle.
+    public private(set) var title = ""
+    /// Primary artist of the current item.
+    public private(set) var artist = ""
+    /// Album name of the current item.
+    public private(set) var album = ""
+    /// Total duration of the current track in seconds.
+    public private(set) var duration: TimeInterval = 0
+    /// Current playback position in seconds.
+    public private(set) var position: TimeInterval = 0
+    /// `true` while the engine is actively playing.
+    public private(set) var isPlaying = false
+    /// Output volume in the range 0.0–1.0.
+    public var volume: Float = 1.0
+    /// `true` when shuffle mode is active.
+    public private(set) var shuffleOn = false
+    /// Current repeat mode (.off / .one / .all).
+    public private(set) var repeatMode: RepeatMode = .off
+    /// `true` when "stop after current track" is armed.
+    public private(set) var stopAfterCurrent = false
     /// The database ID of the track currently loaded into the engine, or `nil`.
-    @Published public private(set) var nowPlayingTrackID: Int64?
+    public private(set) var nowPlayingTrackID: Int64?
+    /// The album ID of the track currently loaded into the engine, or `nil`.
+    public private(set) var nowPlayingAlbumID: Int64?
+    /// The artist ID of the track currently loaded into the engine, or `nil`.
+    public private(set) var nowPlayingArtistID: Int64?
     /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
     /// Used by `playPause()` to decide whether to resume or reload the library.
-    @Published public private(set) var isPaused = false
+    public private(set) var isPaused = false
     /// Current playback rate (0.5×–2.0×). Default 1.0×.
-    @Published public private(set) var playbackRate: Float = 1.0
+    public private(set) var playbackRate: Float = 1.0
+    /// `true` when the output is muted (volume forced to 0 without forgetting the real level).
+    public private(set) var isMuted = false
     /// Seconds remaining on the sleep timer, or `nil` when off.
-    @Published public private(set) var sleepTimerRemaining: TimeInterval?
+    public private(set) var sleepTimerRemaining: TimeInterval?
     /// Whether the sleep timer's fade-out option is active.
-    @Published public private(set) var sleepTimerFadeOut = false
+    public private(set) var sleepTimerFadeOut = false
+    /// The number of minutes the active sleep timer was set to, or `nil` when off.
+    /// Used by the Playback menu to show a checkmark next to the active preset.
+    public private(set) var sleepTimerActiveMinutes: Int?
 
     // MARK: - Callbacks
 
-    /// Called when play is pressed but the queue is empty and nothing is loaded.
-    /// Set by `LibraryViewModel` to start playing the current library view.
+    /// Called when play is pressed but the queue is empty; set by `LibraryViewModel`.
     public var onPlayFromEmptyQueue: (@MainActor () -> Void)?
 
     // MARK: - Internal
@@ -58,6 +77,7 @@ public final class NowPlayingViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// Creates a new `NowPlayingViewModel` bound to the given transport and database.
     public init(engine: any Transport, database: Database) {
         self.engine = engine
         self.database = database
@@ -65,6 +85,11 @@ public final class NowPlayingViewModel: ObservableObject {
         if let qp = engine as? QueuePlayer {
             self.startObservingCurrentTrack(qp)
             self.startObservingSleepTimer(qp)
+        }
+        if let storedRate = UserDefaults.standard.object(forKey: "playback.rate") as? Double {
+            let r = max(0.5, min(2.0, Float(storedRate)))
+            self.playbackRate = r
+            Task { await self.setRate(r) }
         }
     }
 
@@ -75,6 +100,8 @@ public final class NowPlayingViewModel: ObservableObject {
         self.log.info("playback.track", ["id": track.id ?? -1, "title": track.title ?? "?"])
         self.currentTrack = track
         self.nowPlayingTrackID = track.id
+        self.nowPlayingAlbumID = track.albumID
+        self.nowPlayingArtistID = track.artistID
         self.title = track.title ?? "Unknown Track"
         self.artist = ""
         self.album = ""
@@ -114,16 +141,51 @@ public final class NowPlayingViewModel: ObservableObject {
         }
     }
 
-    /// Clamps and applies the volume to the engine.
+    /// Clamps and applies volume to the engine; preserves mute state.
     public func setVolume(_ newVolume: Float) async {
         self.volume = min(1, max(0, newVolume))
-        await self.engine.setVolume(self.volume)
+        if !self.isMuted {
+            await self.engine.setVolume(self.volume)
+        }
     }
 
-    /// Skips to the previous track (no-op if engine is not a QueuePlayer).
+    /// Toggles mute; preserves stored volume so unmuting restores the previous level.
+    public func toggleMute() async {
+        if self.isMuted {
+            self.isMuted = false
+            await self.engine.setVolume(self.volume)
+        } else {
+            self.isMuted = true
+            await self.engine.setVolume(0)
+        }
+    }
+
+    /// Steps volume up by 10%, clamped to 1.0.
+    public func increaseVolume() async {
+        await self.setVolume(min(1.0, self.volume + 0.1))
+    }
+
+    /// Steps volume down by 10%, clamped to 0.0.
+    public func decreaseVolume() async {
+        await self.setVolume(max(0.0, self.volume - 0.1))
+    }
+
+    /// Skips to previous, or restarts current track if past the 3-second threshold.
     public func previous() async {
-        guard let qp = engine as? QueuePlayer else { return }
-        do { try await qp.previous() } catch {}
+        let pos = await self.engine.currentTime
+        if pos > 3.0 {
+            await self.scrub(to: 0)
+        } else {
+            guard let qp = self.engine as? QueuePlayer else { return }
+            do { try await qp.previous() } catch {
+                self.log.error("transport.previous.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Restarts the current track from position 0, regardless of position.
+    public func restartTrack() async {
+        await self.scrub(to: 0)
     }
 
     /// Skips to the next track (no-op if engine is not a QueuePlayer).
@@ -177,13 +239,46 @@ public final class NowPlayingViewModel: ObservableObject {
         guard let qp = engine as? QueuePlayer else { return }
         await qp.setRate(rate)
         self.playbackRate = max(0.5, min(2.0, rate))
+        UserDefaults.standard.set(Double(self.playbackRate), forKey: "playback.rate")
     }
+
+    /// Steps up to the next quick rate above the current rate.
+    public func increaseSpeed() async {
+        let next = Self.quickRates.first { $0 > self.playbackRate + 0.01 }
+        await self.setRate(next ?? 2.0)
+    }
+
+    /// Steps down to the next quick rate below the current rate.
+    public func decreaseSpeed() async {
+        let prev = Self.quickRates.last { $0 < self.playbackRate - 0.01 }
+        await self.setRate(prev ?? 0.75)
+    }
+
+    /// Resets playback speed to 1.0×.
+    public func resetSpeed() async {
+        await self.setRate(1.0)
+    }
+
+    /// Quick-pick rates shared with `SpeedPickerView` and the Playback menu.
+    public static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
+
+    /// Sleep timer presets shared with the Playback menu.
+    public static let sleepPresets: [(label: String, minutes: Int?)] = [
+        ("Off", nil),
+        ("15 min", 15),
+        ("30 min", 30),
+        ("45 min", 45),
+        ("1 hr", 60),
+        ("1 hr 30 min", 90),
+        ("2 hr", 120),
+    ]
 
     /// Configure the sleep timer.  Pass `nil` minutes to cancel.
     public func setSleepTimer(minutes: Int?, fadeOut: Bool = false) async {
         guard let qp = engine as? QueuePlayer else { return }
         await qp.sleepTimer.set(minutes: minutes, fadeOut: fadeOut)
         self.sleepTimerFadeOut = fadeOut
+        self.sleepTimerActiveMinutes = minutes
         if minutes == nil { self.sleepTimerRemaining = nil }
     }
 
@@ -195,6 +290,8 @@ public final class NowPlayingViewModel: ObservableObject {
                     self.setCurrentTrack(track)
                 } else {
                     self.nowPlayingTrackID = nil
+                    self.nowPlayingAlbumID = nil
+                    self.nowPlayingArtistID = nil
                     self.title = ""
                     self.artist = ""
                     self.album = ""
@@ -202,13 +299,9 @@ public final class NowPlayingViewModel: ObservableObject {
                 }
             }
         }
-        // Observe queue changes to keep UI button state (shuffle, repeat,
-        // stop-after-current) in sync with the actor's authoritative state.
-        // Critical after restoreQueue() applies persisted values at launch — the
-        // user should see the real repeat/shuffle mode, not the default.
+        // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
         Task { [weak self] in
             guard let self else { return }
-            // Seed from the actor's current state before listening for changes.
             let initialRepeat = await qp.queue.repeatMode
             let initialShuffle = await qp.queue.shuffleState
             let initialStopAfter = await qp.queue.stopAfterCurrent
@@ -245,6 +338,7 @@ public final class NowPlayingViewModel: ObservableObject {
                 let (remaining, fadeOut) = await (rem, fade)
                 self.sleepTimerRemaining = remaining
                 self.sleepTimerFadeOut = fadeOut
+                if remaining == nil { self.sleepTimerActiveMinutes = nil }
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
@@ -354,8 +448,7 @@ private extension NowPlayingViewModel {
         }
     }
 
-    /// Posts a `UNNotification` banner when a new track starts, provided
-    /// the user has enabled the setting and the app is not frontmost.
+    /// Posts a `UNNotification` banner when a new track starts (if enabled and app is not frontmost).
     func postTrackChangeNotification(title: String, artist: String, artworkPath: String?) async {
         let settingOn = UserDefaults.standard.bool(forKey: "general.showNotifications")
         let appActive = NSApp?.isActive ?? true
@@ -363,8 +456,6 @@ private extension NowPlayingViewModel {
         guard settingOn else { return }
         guard !appActive else { return }
 
-        // Bail early if the user hasn't granted permission rather than letting
-        // the add() call fail silently.
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         guard settings.authorizationStatus == .authorized else {
             self.log.warning(
