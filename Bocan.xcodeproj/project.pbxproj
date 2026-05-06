@@ -42,6 +42,7 @@
 		B8271C1D9DA274E689DACA81 /* BocanCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1792042403A11B4E098A3A /* BocanCommands.swift */; };
 		B837875EEF2C22BF2BA2E01B /* SmartPlaylistDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */; };
 		BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */; };
+		BC00576C8988893926D84C76 /* DSPViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F1F8836F6CA2AB271F7EF7E /* DSPViewModelTests.swift */; };
 		BEA7762AAF83D96A7AA9F607 /* TracksViewRemoveFromPlaylistConfirmationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4974E7D03EB41C73C23C1851 /* TracksViewRemoveFromPlaylistConfirmationTests.swift */; };
 		BF2E14746809D06614CA8246 /* libx264.165.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EAE5B0E69C35644EFB27D606 /* libx264.165.dylib */; };
 		C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */; };
@@ -55,12 +56,14 @@
 		DD47FACC42CEB355BF55BF61 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = A162527B2B2B56BFB7154789 /* UI */; };
 		DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8E8EC191BDB21827F3BBAE /* RootView.swift */; };
 		E64501B0250A9E9F74BEB98D /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = 4C4CFA157601C8EA52079F84 /* Persistence */; };
+		E97F656EB92A9BEF410F136A /* TagEditorViewModelCoverArtTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE4418B4A2222EEC024FF83 /* TagEditorViewModelCoverArtTests.swift */; };
 		F15BD1977564114CD73DEA3F /* LibraryViewModelDeleteFromDiskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */; };
 		F3D833ADDEE61DD7224FEC9B /* RuleBuilderViewValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0BA06444E0E71CD641790EEF /* Bocan.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bocan.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0F1F8836F6CA2AB271F7EF7E /* DSPViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DSPViewModelTests.swift; sourceTree = "<group>"; };
 		10497567C431D6A1E5AE1805 /* libSvtAv1Enc.4.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libSvtAv1Enc.4.dylib; sourceTree = "<group>"; };
 		11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TracksViewModelTests.swift; sourceTree = "<group>"; };
 		12537730024981AF312B087F /* libssl.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libssl.3.dylib; sourceTree = "<group>"; };
@@ -105,10 +108,11 @@
 		EA774AB72CC95F420281D172 /* Scrobble */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Scrobble; path = Modules/Scrobble; sourceTree = SOURCE_ROOT; };
 		EAE5B0E69C35644EFB27D606 /* libx264.165.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libx264.165.dylib; sourceTree = "<group>"; };
 		EEDD41F65D6F6874C9441E67 /* BocanUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BocanUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EEE4418B4A2222EEC024FF83 /* TagEditorViewModelCoverArtTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagEditorViewModelCoverArtTests.swift; sourceTree = "<group>"; };
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_BDD41F11-B123-40F4-9827-23CD31644EAC" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -201,6 +205,7 @@
 			isa = PBXGroup;
 			children = (
 				82F9CA039EA2E967BAA21F51 /* AlbumsViewModelTests.swift */,
+				0F1F8836F6CA2AB271F7EF7E /* DSPViewModelTests.swift */,
 				22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */,
 				9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */,
 				64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */,
@@ -209,6 +214,7 @@
 				8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */,
 				186F049CE6669E44D287954A /* SearchViewModelTests.swift */,
 				601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */,
+				EEE4418B4A2222EEC024FF83 /* TagEditorViewModelCoverArtTests.swift */,
 				11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */,
 				4974E7D03EB41C73C23C1851 /* TracksViewRemoveFromPlaylistConfirmationTests.swift */,
 				92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */,
@@ -300,10 +306,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_D5B4D679-F9CA-4B12-8A74-755388B606B2" /* bocan-music */ = {
+		"TEMP_FC3F5065-20B3-4FFB-BEE9-C475137025B7" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */,
+				"TEMP_BDD41F11-B123-40F4-9827-23CD31644EAC" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -481,6 +487,7 @@
 			files = (
 				D4FF663D31850CABBFD89C5A /* AlbumsViewModelTests.swift in Sources */,
 				CF662F890AEBEE98A2B06936 /* AppLoggerTests.swift in Sources */,
+				BC00576C8988893926D84C76 /* DSPViewModelTests.swift in Sources */,
 				F15BD1977564114CD73DEA3F /* LibraryViewModelDeleteFromDiskTests.swift in Sources */,
 				1A7E5FA27ADE29289C39EC19 /* LibraryViewModelToastTests.swift in Sources */,
 				77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */,
@@ -489,6 +496,7 @@
 				F3D833ADDEE61DD7224FEC9B /* RuleBuilderViewValidationTests.swift in Sources */,
 				0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */,
 				B837875EEF2C22BF2BA2E01B /* SmartPlaylistDetailViewModelTests.swift in Sources */,
+				E97F656EB92A9BEF410F136A /* TagEditorViewModelCoverArtTests.swift in Sources */,
 				CDC6FA7516C4C15CBFBDF92F /* TracksViewModelTests.swift in Sources */,
 				BEA7762AAF83D96A7AA9F607 /* TracksViewRemoveFromPlaylistConfirmationTests.swift in Sources */,
 				C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */,
@@ -553,7 +561,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_BDD41F11-B123-40F4-9827-23CD31644EAC" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -608,7 +616,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "/opt/homebrew/include /opt/homebrew/opt/ffmpeg/include /opt/homebrew/opt/taglib/include/taglib $(inherited)";
 				INFOPLIST_FILE = Resources/Info.plist;
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/lib $(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -686,7 +696,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A144C564-C389-49D4-A1B0-143F4A869676" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_BDD41F11-B123-40F4-9827-23CD31644EAC" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -736,7 +746,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "/opt/homebrew/include /opt/homebrew/opt/ffmpeg/include /opt/homebrew/opt/taglib/include/taglib $(inherited)";
 				INFOPLIST_FILE = Resources/Info.plist;
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/lib $(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
