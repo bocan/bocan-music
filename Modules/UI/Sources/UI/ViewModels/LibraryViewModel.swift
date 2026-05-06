@@ -208,8 +208,6 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     var pendingScanCurrentPath = ""
     var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
-    private var selectionCancellable: AnyCancellable?
-    private var singleSelectionCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
 
@@ -270,9 +268,25 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             await self.playlistSidebar.reload()
         }
 
-        self.selectionCancellable = self.tracks.$selection.map { !$0.isEmpty }.assign(to: \.hasTrackSelection, on: self)
-        self.singleSelectionCancellable = self.tracks.$selection.map { $0.count == 1 }.assign(to: \.hasSingleTrackSelection, on: self)
+        self.observeTracksSelection()
         self.wireExpandedFoldersPersistence()
+    }
+
+    /// Bridges `TracksViewModel` (`@Observable`) selection state into the
+    /// `@Published` properties that `ObservableObject` consumers depend on.
+    ///
+    /// Uses a recursive `withObservationTracking` loop: the `apply` closure
+    /// both reads `tracks.selection` (registering the dependency) and writes
+    /// the derived `@Published` flags; `onChange` re-schedules the same
+    /// function so the next mutation is also caught.
+    private func observeTracksSelection() {
+        withObservationTracking {
+            let sel = self.tracks.selection
+            self.hasTrackSelection = !sel.isEmpty
+            self.hasSingleTrackSelection = sel.count == 1
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.observeTracksSelection() }
+        }
     }
 
     private func wireExpandedFoldersPersistence() {
@@ -350,6 +364,35 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public func showTagEditorForNowPlaying() {
         guard let id = self.nowPlaying.nowPlayingTrackID else { return }
         self.tagEditorTrackIDs = [id]
+    }
+
+    /// Navigates the sidebar to the album of the currently-playing track.
+    ///
+    /// No-op when nothing is playing or when the playing track has no album ID.
+    public func goToCurrentAlbum() async {
+        guard let albumID = self.nowPlaying.nowPlayingAlbumID else { return }
+        await self.selectDestination(.album(albumID))
+    }
+
+    /// Navigates the sidebar to the artist of the currently-playing track.
+    ///
+    /// No-op when nothing is playing or when the playing track has no artist ID.
+    public func goToCurrentArtist() async {
+        guard let artistID = self.nowPlaying.nowPlayingArtistID else { return }
+        await self.selectDestination(.artist(artistID))
+    }
+
+    /// Scrolls the track list to reveal the currently-playing track.
+    ///
+    /// If the now-playing track is not in the current destination (e.g. an album
+    /// or artist drill-down that doesn't contain it), the sidebar first navigates
+    /// to the Songs view before requesting the scroll.
+    public func scrollToNowPlayingTrack() async {
+        guard let id = self.nowPlaying.nowPlayingTrackID else { return }
+        if !self.tracks.rows.contains(where: { $0.id == id }) {
+            await self.selectDestination(.songs)
+        }
+        self.tracks.requestScrollToNowPlaying()
     }
 
     /// Opens the tag editor for whatever is currently selected in the track table.
@@ -459,7 +502,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                     let name = t.artistID.flatMap { names[$0] }
                     return QueueItem.make(from: t, artistName: name)
                 }
-                try await qp.play(items: items, startingAt: startIndex)
+                try await qp.play(items: items, startingAt: startIndex, shuffle: self.nowPlaying.shuffleOn)
             } catch {
                 self.log.error("library.play.failed", ["error": String(reflecting: error)])
                 self.playbackErrorMessage = "Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library."
@@ -545,7 +588,56 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    /// Plays all tracks from the album of `track`.
+    /// Selects all currently visible tracks in the track list.
+    public func selectAllTracks() {
+        self.tracks.selectAll()
+    }
+
+    /// Clears the track selection.
+    public func deselectAllTracks() {
+        self.tracks.deselectAll()
+    }
+
+    /// Plays the first selected track now, with full browse-context (same as double-click).
+    public func playNowForCurrentSelection() {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        Task { await self.play(track: track) }
+    }
+
+    /// Inserts all selected tracks immediately after the current item.
+    public func playNextForCurrentSelection() {
+        let selected = self.tracks.tracks.filter { self.tracks.selection.contains($0.id) }
+        guard !selected.isEmpty else { return }
+        Task { await self.playNext(tracks: selected) }
+    }
+
+    /// Appends all selected tracks to the end of the queue.
+    public func addToQueueForCurrentSelection() {
+        let selected = self.tracks.tracks.filter { self.tracks.selection.contains($0.id) }
+        guard !selected.isEmpty else { return }
+        Task { await self.addToQueue(tracks: selected) }
+    }
+
+    /// Plays the album of the first selected track, replacing the queue.
+    public func playAlbumForCurrentSelection(shuffle: Bool = false) {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        Task { await self.playAlbum(track: track, shuffle: shuffle) }
+    }
+
+    /// Plays all tracks by the artist of the first selected track, replacing the queue.
+    public func playArtistForCurrentSelection() {
+        guard let track = self.tracks.tracks.first(where: { self.tracks.selection.contains($0.id) }) else {
+            return
+        }
+        Task { await self.playArtist(track: track) }
+    }
+
+    // Plays all tracks from the album of `track`.
+
     public func playAlbum(track: Track, shuffle: Bool = false) async {
         guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
         do {

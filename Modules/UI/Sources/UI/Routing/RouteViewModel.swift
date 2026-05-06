@@ -1,5 +1,6 @@
 import Foundation
 import Observability
+import Observation
 import Playback
 import SwiftUI
 
@@ -11,23 +12,30 @@ import SwiftUI
 /// environment. Spawns a single `Task` that consumes
 /// `RouteManager.routes()` and republishes onto the main actor.
 @MainActor
-public final class RouteViewModel: ObservableObject {
-    @Published public private(set) var current: Route = .local(name: "Built-in Output")
+@Observable
+public final class RouteViewModel {
+    /// The current audio output route.
+    public private(set) var current: Route = .local(name: "Built-in Output")
 
     private let manager: RouteManager?
     private let log = AppLogger.make(.playback)
-    private var consumer: Task<Void, Never>?
+    /// `@ObservationIgnored` keeps this as a plain stored var so that
+    /// `nonisolated(unsafe)` is meaningful — `deinit` (nonisolated) needs
+    /// to call `cancel()` on it, and the task handle doesn't need observation.
+    @ObservationIgnored
+    private nonisolated(unsafe) var consumer: Task<Void, Never>?
 
+    /// Creates a `RouteViewModel` wired to the given `RouteManager`.
     public init(manager: RouteManager) {
         self.manager = manager
     }
 
-    /// Inert view model used by previews and snapshot tests that don't care
-    /// about route changes. Never starts a consumer task.
     private init() {
         self.manager = nil
     }
 
+    /// Inert view model used by previews and snapshot tests that don't care
+    /// about route changes. Never starts a consumer task.
     public static let placeholder = RouteViewModel()
 
     /// Begin observing route changes. Idempotent.
@@ -44,6 +52,7 @@ public final class RouteViewModel: ObservableObject {
         }
     }
 
+    /// Stops observing route changes and cancels the consumer task.
     public func stop() {
         self.consumer?.cancel()
         self.consumer = nil

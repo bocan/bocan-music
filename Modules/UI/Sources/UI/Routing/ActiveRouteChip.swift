@@ -9,7 +9,7 @@ import SwiftUI
 /// picker is `AirPlayButton`, but users may not notice it, so the chip
 /// nudges them toward the system picker as well.
 public struct ActiveRouteChip: View {
-    @ObservedObject var vm: RouteViewModel
+    var vm: RouteViewModel
     @State private var showPopover = false
 
     public init(vm: RouteViewModel) {

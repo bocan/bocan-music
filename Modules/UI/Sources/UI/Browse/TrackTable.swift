@@ -15,6 +15,12 @@ public struct TrackContextMenuActions {
     /// one track (no surrounding context).  Used by Option+double-click as
     /// an explicit "play this and nothing else" gesture.
     public let playSingle: (Track) -> Void
+    /// Play all tracks from the same album as `track`, replacing the queue.
+    public let playAlbum: (Track) -> Void
+    /// Play all tracks from the same album as `track`, replacing the queue, shuffled.
+    public let shuffleAlbum: (Track) -> Void
+    /// Play all tracks by the same artist as `track`, replacing the queue.
+    public let playArtist: (Track) -> Void
     /// Insert tracks next in the queue.
     public let playNext: ([Track]) -> Void
     /// Append tracks to the end of the queue.
@@ -23,8 +29,8 @@ public struct TrackContextMenuActions {
     public let addToPlaylist: (Int64, [Track]) -> Void
     /// Create a new playlist pre-populated with the selected tracks.
     public let newPlaylistFromSelection: ([Track]) -> Void
-    /// Toggle the loved state of a track.
-    public let love: (Track) -> Void
+    /// Toggle the loved state on the given tracks (all-loved → unlove all; otherwise love all).
+    public let love: ([Track]) -> Void
     /// Navigate the library to the track's artist.
     public let goToArtist: (Int64) -> Void
     /// Navigate the library to the track's album.
@@ -42,11 +48,13 @@ public struct TrackContextMenuActions {
     /// Delete a track's file from disk and remove it from the library.
     public let deleteFromDisk: (Track) -> Void
     /// Copy track metadata to the clipboard.
-    public let copy: ([Track]) -> Void
+    public let copy: ([TrackRow]) -> Void
     /// Set or clear the shuffle-exclusion flag for a track.
     public let toggleShuffle: (Int64, Bool) -> Void
     /// Compute ReplayGain for the selected tracks, replacing any existing values.
     public let computeReplayGain: ([Track]) -> Void
+    /// Set a star rating (0–5) on the selected tracks.
+    public let rate: ([Track], Int) -> Void
     /// Remove the selected tracks from the current playlist.
     /// `nil` means this view is not inside a playlist — the menu item is hidden.
     public let removeFromPlaylist: (([Track]) -> Void)?
@@ -69,6 +77,8 @@ public struct TrackTable: NSViewRepresentable {
     let sortable: Bool
     let playlistNodes: [PlaylistNode]
     let actions: TrackContextMenuActions
+    /// Each increment triggers a scroll-to-now-playing in `updateNSView`.
+    let scrollRequest: Int
     /// When non-nil the table allows intra-table drag-reorder and calls this
     /// closure (on the main thread) with SwiftUI-style `(source, destination)` indices.
     let onMove: ((IndexSet, Int) -> Void)?
@@ -87,6 +97,8 @@ public struct TrackTable: NSViewRepresentable {
 
         let tableView = ContextMenuTableView()
         tableView.identifier = NSUserInterfaceItemIdentifier(A11y.TracksTable.table)
+        tableView.setAccessibilityLabel("Track List")
+        tableView.setAccessibilityRoleDescription("Music track list")
         tableView.autosaveName = self.sortable
             ? "bocan.tracksTable.sortable.v3"
             : "bocan.tracksTable.plain.v3"
@@ -151,6 +163,9 @@ public struct TrackTable: NSViewRepresentable {
         }
         tableView.deleteKeyHandler = { [weak coordinator] in
             coordinator?.handleRemoveFromPlaylistKeyDown() ?? false
+        }
+        tableView.returnKeyHandler = { [weak coordinator] in
+            coordinator?.handleReturnKeyDown()
         }
     }
 
@@ -225,6 +240,18 @@ public struct TrackTable: NSViewRepresentable {
 
         // 6 — onMove callback changed (e.g. playlist loaded or kind toggled).
         dataSource.onMove = self.onMove
+
+        // 7 — Scroll to the now-playing track when requested.
+        self.applyScrollIfNeeded(coordinator: coordinator, tableView: tableView)
+    }
+
+    private func applyScrollIfNeeded(coordinator: TrackTableCoordinator, tableView: NSTableView) {
+        guard self.scrollRequest != coordinator.lastScrollRequest else { return }
+        coordinator.lastScrollRequest = self.scrollRequest
+        if let nowID = self.nowPlayingTrackID,
+           let idx = coordinator.rows.firstIndex(where: { $0.id == nowID }) {
+            tableView.scrollRowToVisible(idx)
+        }
     }
 
     // MARK: - Row density

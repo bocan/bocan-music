@@ -172,13 +172,21 @@ public actor Database {
     /// but the destination is a complete, self-contained file even when the
     /// source is in WAL mode.
     func backup(to destination: any DatabaseWriter) async throws {
-        try await self.writer.backup(to: destination)
+        try self.writer.backup(to: destination)
     }
 
     // MARK: - Private helpers
 
     private static func makeWriter(location: Location) throws -> any DatabaseWriter {
         var config = Configuration()
+        // Give GRDB's internal writer/reader queues .userInitiated QoS so that
+        // @MainActor and other high-priority callers don't trigger the OS
+        // thread-performance priority-inversion warning (GRDB Pool.swift:97).
+        // GRDB propagates `targetQueue` through its entire queue hierarchy.
+        config.targetQueue = DispatchQueue(
+            label: "io.cloudcauldron.bocan.db",
+            qos: .userInitiated
+        )
         config.prepareDatabase { db in
             try Self.applyConnectionPragmas(in: db)
             Self.registerREGEXP(in: db)

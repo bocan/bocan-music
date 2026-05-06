@@ -8,20 +8,20 @@ import SwiftUI
 /// and a volume slider.  Prev/Next buttons are present but disabled until
 /// Phase 5 introduces the queue.
 public struct NowPlayingStrip: View {
-    @ObservedObject public var vm: NowPlayingViewModel
+    public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
     @EnvironmentObject private var visualizer: VisualizerViewModel
     /// Optional — only the main window injects a `RouteViewModel`. Snapshot
     /// tests and other ad-hoc surfaces can skip it.
-    @ObservedObject private var route: RouteViewModel
+    private var route: RouteViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
     /// updates coming from the engine.  Seeking happens once on release.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
-    @State private var showDSP = false
+    @Environment(\.openWindow) private var openWindow
 
     public init(vm: NowPlayingViewModel, route: RouteViewModel? = nil) {
         self.vm = vm
@@ -53,54 +53,82 @@ public struct NowPlayingStrip: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(A11y.NowPlaying.strip)
-        .sheet(isPresented: self.$showDSP) {
-            DSPSheet(vm: self.dsp)
-        }
-        // Allow DSPViewModel.showDSPPanel to open the sheet from menu commands
-        // and keyboard shortcuts that don't have direct access to @State.
-        .onChange(of: self.dsp.showDSPPanel) { _, requested in
-            if requested {
-                self.showDSP = true
-                self.dsp.showDSPPanel = false
-            }
-        }
     }
 
     // MARK: - Sub-views
 
     private var artwork: some View {
-        Group {
-            if let img = vm.artwork {
-                Image(nsImage: img)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                    .accessibilityLabel("\(self.vm.album) by \(self.vm.artist)")
-            } else {
-                GradientPlaceholder(seed: 0)
-                    .frame(width: 48, height: 48)
-                    .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                    .accessibilityLabel("No artwork")
+        Button {
+            Task { await self.library.goToCurrentAlbum() }
+        } label: {
+            Group {
+                if let img = vm.artwork {
+                    Image(nsImage: img)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 48, height: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                        .accessibilityHidden(true)
+                } else {
+                    GradientPlaceholder(seed: 0)
+                        .frame(width: 48, height: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                        .accessibilityHidden(true)
+                }
             }
         }
-        .accessibilityIdentifier(A11y.NowPlaying.artwork)
+        .buttonStyle(.plain)
+        .disabled(self.vm.nowPlayingAlbumID == nil)
+        .help(self.vm.nowPlayingAlbumID != nil ? "Go to album: \(self.vm.album)" : "No album")
+        .keyboardShortcut(KeyBindings.goToCurrentAlbum)
+        .accessibilityLabel(
+            self.vm.nowPlayingAlbumID != nil
+                ? "Go to album \(self.vm.album) by \(self.vm.artist)"
+                : "No artwork"
+        )
+        .accessibilityIdentifier(A11y.NowPlaying.artworkButton)
     }
 
     private var trackInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
-                .font(Typography.body)
-                .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
-                .lineLimit(1)
-                .accessibilityIdentifier(A11y.NowPlaying.title)
-
-            if let subtitle = self.trackSubtitle, !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(Typography.subheadline)
-                    .foregroundStyle(Color.textSecondary)
+            // Title — click to jump to current track in the track list.
+            Button {
+                Task { await self.library.scrollToNowPlayingTrack() }
+            } label: {
+                Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
+                    .font(Typography.body)
+                    .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
                     .lineLimit(1)
-                    .accessibilityIdentifier(A11y.NowPlaying.artist)
+                    .accessibilityHidden(true)
+            }
+            .buttonStyle(.plain)
+            .disabled(self.vm.nowPlayingTrackID == nil)
+            .help(self.vm.nowPlayingTrackID != nil ? "Jump to \"\(self.vm.title)\" in track list" : "Not playing")
+            .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
+            .accessibilityLabel(
+                self.vm.nowPlayingTrackID != nil
+                    ? "Jump to \(self.vm.title) in track list"
+                    : "Not playing"
+            )
+            .accessibilityIdentifier(A11y.NowPlaying.titleButton)
+
+            // Artist — click to navigate to the artist view.
+            if !self.vm.artist.isEmpty {
+                Button {
+                    Task { await self.library.goToCurrentArtist() }
+                } label: {
+                    Text(self.trackSubtitle ?? self.vm.artist)
+                        .font(Typography.subheadline)
+                        .foregroundStyle(Color.textSecondary)
+                        .lineLimit(1)
+                        .accessibilityHidden(true)
+                }
+                .buttonStyle(.plain)
+                .disabled(self.vm.nowPlayingArtistID == nil)
+                .help(self.vm.nowPlayingArtistID != nil ? "Go to artist: \(self.vm.artist)" : self.vm.artist)
+                .keyboardShortcut(KeyBindings.goToCurrentArtist)
+                .accessibilityLabel("Go to artist \(self.vm.artist)")
+                .accessibilityIdentifier(A11y.NowPlaying.subtitleButton)
             }
         }
         .frame(minWidth: 120, maxWidth: 300, alignment: .leading)
@@ -126,6 +154,7 @@ public struct NowPlayingStrip: View {
             .disabled(self.vm.nowPlayingTrackID == nil)
             .help("Get info for current track")
             .accessibilityLabel("Track Info")
+            .accessibilityIdentifier(A11y.NowPlaying.infoButton)
 
             Button {
                 Task { await self.vm.previous() }
@@ -135,9 +164,9 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
-            .help("Previous track (or restart current)")
-            .accessibilityLabel("Previous")
-            .accessibilityIdentifier(A11y.NowPlaying.prevButton)
+            .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
+            .accessibilityLabel("Previous or restart")
+            .accessibilityIdentifier(A11y.NowPlaying.prev)
 
             Button {
                 Task { await self.vm.playPause() }
@@ -150,7 +179,7 @@ public struct NowPlayingStrip: View {
             .keyboardShortcut(KeyBindings.playPause)
             .help(self.vm.isPlaying ? "Pause" : "Play")
             .accessibilityLabel(self.vm.isPlaying ? "Pause" : "Play")
-            .accessibilityIdentifier(A11y.NowPlaying.playPauseButton)
+            .accessibilityIdentifier(A11y.NowPlaying.playPause)
 
             Button {
                 Task { await self.vm.next() }
@@ -162,7 +191,7 @@ public struct NowPlayingStrip: View {
             .foregroundStyle(Color.textPrimary)
             .help("Next track")
             .accessibilityLabel("Next")
-            .accessibilityIdentifier(A11y.NowPlaying.nextButton)
+            .accessibilityIdentifier(A11y.NowPlaying.next)
 
             Button {
                 Task { await self.vm.toggleShuffle() }
@@ -176,6 +205,7 @@ public struct NowPlayingStrip: View {
             .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
             .accessibilityHint(self.vm.shuffleOn ? "Activate to turn shuffle off" : "Activate to turn shuffle on")
             .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.shuffleButton)
 
             Button {
                 Task { await self.vm.cycleRepeat() }
@@ -200,6 +230,7 @@ public struct NowPlayingStrip: View {
                 }
             }())
             .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.repeatButton)
 
             Button {
                 Task { await self.vm.toggleStopAfterCurrent() }
@@ -214,6 +245,7 @@ public struct NowPlayingStrip: View {
             .accessibilityHint(self.vm
                 .stopAfterCurrent ? "Activate to keep playing after this track" : "Activate to stop playback after this track")
             .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.stopAfterCurrentButton)
         }
     }
 
@@ -224,16 +256,35 @@ public struct NowPlayingStrip: View {
             SleepTimerMenu(vm: self.vm)
 
             Button {
-                self.showDSP.toggle()
+                self.openWindow(id: "dsp")
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.system(size: 15, weight: .medium))
+                    .overlay(alignment: .topTrailing) {
+                        if self.dsp.isEQActive || self.dsp.hasScopedPreset {
+                            ZStack {
+                                Circle()
+                                    .fill(.background)
+                                    .frame(width: 7, height: 7)
+                                Circle()
+                                    .fill(self.dsp.hasScopedPreset ? Color.orange : Color.accentColor)
+                                    .frame(width: 5, height: 5)
+                            }
+                            .offset(x: 5, y: -4)
+                        }
+                    }
             }
             .buttonStyle(.plain)
-            .keyboardShortcut(KeyBindings.showEQPanel)
-            .foregroundStyle(self.showDSP ? Color.accentColor : Color.textPrimary)
+            .foregroundStyle(
+                (self.dsp.isEQActive || self.dsp.hasScopedPreset)
+                    ? Color.accentColor : Color.textPrimary
+            )
             .help("Equaliser & DSP (⌘⌥E)")
-            .accessibilityLabel("Equaliser & DSP")
+            .accessibilityLabel(
+                self.dsp.isEQActive || self.dsp.hasScopedPreset
+                    ? "Equaliser & DSP — active" : "Equaliser & DSP"
+            )
+            .accessibilityIdentifier(A11y.NowPlaying.dspButton)
 
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -248,7 +299,7 @@ public struct NowPlayingStrip: View {
             .help(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
             .accessibilityLabel(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
             .accessibilityAddTraits(.isToggle)
-            .accessibilityIdentifier(A11y.Visualizer.host)
+            .accessibilityIdentifier(A11y.NowPlaying.visualizerButton)
         }
     }
 
@@ -305,10 +356,18 @@ public struct NowPlayingStrip: View {
 
     private var volumeRow: some View {
         HStack(spacing: 4) {
-            Image(systemName: "speaker.fill")
-                .font(Typography.caption)
-                .foregroundStyle(Color.textTertiary)
-                .accessibilityHidden(true)
+            Button {
+                Task { await self.vm.toggleMute() }
+            } label: {
+                Image(systemName: self.vm.isMuted ? "speaker.slash.fill" : "speaker.fill")
+                    .font(Typography.caption)
+                    .foregroundStyle(self.vm.isMuted ? Color.primary : Color.textTertiary)
+            }
+            .buttonStyle(.plain)
+            .help(self.vm.isMuted ? "Unmute" : "Mute")
+            .accessibilityLabel(self.vm.isMuted ? "Unmute" : "Mute")
+            .accessibilityIdentifier(A11y.NowPlaying.muteButton)
+            .keyboardShortcut(KeyBindings.mute)
 
             Slider(value: Binding(
                 get: { Double(self.vm.volume) },

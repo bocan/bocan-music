@@ -17,7 +17,6 @@ struct BocanCommands: Commands {
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
     let visualizerVM: VisualizerViewModel
-    let dspVM: DSPViewModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -95,7 +94,28 @@ struct BocanCommands: Commands {
             .keyboardShortcut(KeyBindings.previousTrack)
             .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
 
+            Button("Restart Track") {
+                Task { await self.vm.nowPlaying.restartTrack() }
+            }
+            .keyboardShortcut(KeyBindings.restartTrack)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
             Divider()
+
+            Button(self.vm.nowPlaying.isMuted ? "Unmute" : "Mute") {
+                Task { await self.vm.nowPlaying.toggleMute() }
+            }
+            .keyboardShortcut(KeyBindings.mute)
+
+            Button("Increase Volume") {
+                Task { await self.vm.nowPlaying.increaseVolume() }
+            }
+            .keyboardShortcut(KeyBindings.increaseVolume)
+
+            Button("Decrease Volume") {
+                Task { await self.vm.nowPlaying.decreaseVolume() }
+            }
+            .keyboardShortcut(KeyBindings.decreaseVolume)
 
             // Phase 5 audit H1: keyboard-accessible mode toggles.  Labels
             // include the current state so VoiceOver announces it and so
@@ -128,6 +148,76 @@ struct BocanCommands: Commands {
                 Task { await self.vm.selectDestination(.upNext) }
             }
             .keyboardShortcut(KeyBindings.showUpNext)
+
+            Divider()
+
+            Menu("Playback Speed") {
+                ForEach(NowPlayingViewModel.quickRates, id: \.self) { rate in
+                    Button(String(format: "%.2g×", rate)) {
+                        Task { await self.vm.nowPlaying.setRate(rate) }
+                    }
+                }
+            }
+
+            Button("Increase Speed") {
+                Task { await self.vm.nowPlaying.increaseSpeed() }
+            }
+            .keyboardShortcut(KeyBindings.increaseSpeed)
+
+            Button("Decrease Speed") {
+                Task { await self.vm.nowPlaying.decreaseSpeed() }
+            }
+            .keyboardShortcut(KeyBindings.decreaseSpeed)
+
+            Button("Reset Speed to 1×") {
+                Task { await self.vm.nowPlaying.resetSpeed() }
+            }
+            .keyboardShortcut(KeyBindings.resetSpeed)
+
+            Divider()
+
+            Menu("Sleep Timer") {
+                Picker(
+                    "Sleep Timer",
+                    selection: Binding(
+                        get: { self.vm.nowPlaying.sleepTimerActiveMinutes },
+                        set: { minutes in
+                            Task {
+                                await self.vm.nowPlaying.setSleepTimer(
+                                    minutes: minutes,
+                                    fadeOut: self.vm.nowPlaying.sleepTimerFadeOut
+                                )
+                            }
+                        }
+                    )
+                ) {
+                    ForEach(NowPlayingViewModel.sleepPresets, id: \.label) { preset in
+                        Text(preset.label).tag(preset.minutes)
+                    }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+
+            Divider()
+
+            Button("Jump to Current Track") {
+                Task { await self.vm.scrollToNowPlayingTrack() }
+            }
+            .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
+            Button("Go to Current Album") {
+                Task { await self.vm.goToCurrentAlbum() }
+            }
+            .keyboardShortcut(KeyBindings.goToCurrentAlbum)
+            .disabled(self.vm.nowPlaying.nowPlayingAlbumID == nil)
+
+            Button("Go to Current Artist") {
+                Task { await self.vm.goToCurrentArtist() }
+            }
+            .keyboardShortcut(KeyBindings.goToCurrentArtist)
+            .disabled(self.vm.nowPlaying.nowPlayingArtistID == nil)
         }
 
         // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the
@@ -167,12 +257,49 @@ struct BocanCommands: Commands {
             Divider()
 
             Button("Equaliser & DSP…") {
-                self.dspVM.showDSPPanel = true
+                self.openWindow(id: "dsp")
             }
             .keyboardShortcut(KeyBindings.showEQPanel)
         }
 
         CommandMenu("Track") {
+            Button("Play Now") {
+                self.vm.playNowForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.playNow)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Play Next") {
+                self.vm.playNextForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.playNext)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Add to Queue") {
+                self.vm.addToQueueForCurrentSelection()
+            }
+            .keyboardShortcut(KeyBindings.addToQueue)
+            .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Play Album") {
+                self.vm.playAlbumForCurrentSelection(shuffle: false)
+            }
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Shuffle Album") {
+                self.vm.playAlbumForCurrentSelection(shuffle: true)
+            }
+            .disabled(!self.vm.hasTrackSelection)
+
+            Button("Play Artist") {
+                self.vm.playArtistForCurrentSelection()
+            }
+            .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
             Button("Get Info") {
                 self.vm.showTagEditorForCurrentSelection()
             }
@@ -224,6 +351,19 @@ struct BocanCommands: Commands {
             }
             .help("Analyse loudness for the selected tracks and save ReplayGain values")
             .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Select All") {
+                self.vm.selectAllTracks()
+            }
+            .keyboardShortcut(KeyBindings.selectAll)
+
+            Button("Deselect All") {
+                self.vm.deselectAllTracks()
+            }
+            .keyboardShortcut(KeyBindings.deselectAll)
+            .disabled(!self.vm.hasTrackSelection)
         }
 
         // Override the default help command to open the help page directly.
@@ -251,6 +391,11 @@ struct BocanCommands: Commands {
             .help("Find and review tracks that appear more than once in your library")
 
             Divider()
+
+            Button("Compute Missing ReplayGain") {
+                Task { await self.vm.computeMissingReplayGain() }
+            }
+            .help("Analyse loudness for tracks that don't yet have ReplayGain data")
 
             Button("Recompute ReplayGain") {
                 Task { await self.vm.recomputeAllReplayGain() }
