@@ -93,6 +93,8 @@ jobs:
           fi
 
       - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+        env:
+          SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
         run: make bundle-fpcalc
 
       - name: Generate Xcode project
