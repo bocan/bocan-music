@@ -5,6 +5,50 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0](https://github.com/bocan/bocan-music/compare/v0.4.0...v0.5.0) (2026-05-06)
+
+
+### ### Added
+
+* **ui:** add accessibilityIdentifier to all NowPlayingStrip controls ([2c20f4b](https://github.com/bocan/bocan-music/commit/2c20f4bdb4caea76214f6d857794e1f49545083f))
+* **ui:** add Compute Missing ReplayGain to Tools menu ([8b43c9f](https://github.com/bocan/bocan-music/commit/8b43c9fcb18d1bfab64f00d8f74a74fd849cafd8))
+* **ui:** add keyboard shortcuts for volume control (⌘↑/⌘↓) ([346178b](https://github.com/bocan/bocan-music/commit/346178b6ce838f170ccff8112d8adf8513281ed8))
+* **ui:** add mute button to transport bar (⌘⌥Z) ([cc46904](https://github.com/bocan/bocan-music/commit/cc469046428e4a90c00c99ad2fb302f2e54d8077))
+* **ui:** add Play Album, Shuffle Album, Play Artist to context menu and Track menu bar ([8451bbf](https://github.com/bocan/bocan-music/commit/8451bbf09c035fa0fe7dfb4ab0f13b3fb7339de5))
+* **ui:** add Play Now, Play Next, Add to Queue to Track menu bar ([9a8cc0d](https://github.com/bocan/bocan-music/commit/9a8cc0d6941d84b062273912cd2e1b782b7f80fd))
+* **ui:** add Playback Speed menu and keyboard shortcuts ([9f1aebb](https://github.com/bocan/bocan-music/commit/9f1aebb4cf4f371986d4cdafab40b36762209b6e))
+* **ui:** add Rate submenu to track context menu; remove dead ContextMenus.swift ([2d28b80](https://github.com/bocan/bocan-music/commit/2d28b804d811a79feb2463453bc10e8fd334e4e0))
+* **ui:** add Select All (⌘A) and Deselect All (⌘⇧A) to Track menu and table ([e449c60](https://github.com/bocan/bocan-music/commit/e449c60e90859c3e06e50dd8cfbcdf6edbed15c4))
+* **ui:** add Sleep Timer submenu to Playback menu bar ([4a54e16](https://github.com/bocan/bocan-music/commit/4a54e16262c51bbc6fdb065caa8c62f68d26bc6c))
+* **ui:** make artwork in NowPlayingStrip navigate to current album ([05a2ef6](https://github.com/bocan/bocan-music/commit/05a2ef608c36d39d121e1ac1e1e5fa1a8fdf7651))
+* **ui:** make track title and artist clickable in NowPlayingStrip ([23e2a5c](https://github.com/bocan/bocan-music/commit/23e2a5c39d2b8d255ad615223f369a8b72828ca7))
+* **ui:** previous button restarts track after 3 seconds (iTunes semantics) ([ff79723](https://github.com/bocan/bocan-music/commit/ff797238df61de04039eaaabefae8148df45edc8))
+* **ui:** replace DSP modal sheet with non-modal floating window ([3d1650e](https://github.com/bocan/bocan-music/commit/3d1650e2c94447c693da4fe7dc40aa40d5f85042))
+
+
+### ### Fixed
+
+* **ci:** redirect codesign stderr so hardened runtime grep works ([cf03508](https://github.com/bocan/bocan-music/commit/cf035088df8799a597d321f656c629721592bda3))
+* **persistence:** remove spurious await from DatabaseWriter.backup call ([c43e521](https://github.com/bocan/bocan-music/commit/c43e5215b8cc2ec700006a8491757fb1a9e640f3))
+* **persistence:** set GRDB targetQueue to .userInitiated to prevent priority inversion ([43ff5b2](https://github.com/bocan/bocan-music/commit/43ff5b2c74c8b6e54d9c7784c5aa5da6212d655e))
+* **scrobble:** remove spurious await from synchronous authorisationURL call ([1204638](https://github.com/bocan/bocan-music/commit/12046380c551c8375e890341a1edf34a05303db6))
+* **ui:** add VoiceOver accessibility labels to track table ([b665a18](https://github.com/bocan/bocan-music/commit/b665a18aee9320f421fe57737cd3f404b5a81c64))
+* **ui:** copy action now includes all visible track fields as TSV ([#98](https://github.com/bocan/bocan-music/issues/98)) ([ceff30c](https://github.com/bocan/bocan-music/commit/ceff30c3ac449e36f3925d9006c0aa35ead1451d))
+* **ui:** DSP button shows persistent active state when EQ is processing ([cd159cc](https://github.com/bocan/bocan-music/commit/cd159cc75da4e4698f0bad0a121e22267dd084a2))
+* **ui:** fix love context-menu label for multi-track selection ([2918bf1](https://github.com/bocan/bocan-music/commit/2918bf188bc07c16e07e3f201e2d94ea0f2d6ae5))
+* **ui:** fix Swift 6 concurrency errors in MainWindowTracker.Coordinator ([603fbaa](https://github.com/bocan/bocan-music/commit/603fbaa1802ea33af45927e88bc2991e2d80a899))
+* **ui:** migrate NowPlayingViewModel from ObservableObject to @Observable ([#113](https://github.com/bocan/bocan-music/issues/113)) ([e12e380](https://github.com/bocan/bocan-music/commit/e12e3802b0df28fc081e020201ccbec6b188b018))
+* **ui:** migrate RouteViewModel to @Observable, remove @ObservedObject from usage sites ([9d2fb83](https://github.com/bocan/bocan-music/commit/9d2fb83c48dafd71d0960c8adccea03dff6c4886))
+* **ui:** migrate TracksViewModel to @Observable to eliminate publish-during-update warnings ([b385a2b](https://github.com/bocan/bocan-music/commit/b385a2b64e2c1252f0cb20296f2f8f13fc5b2c08))
+* **ui:** persist playback rate to UserDefaults and restore on launch ([636602c](https://github.com/bocan/bocan-music/commit/636602c5002594ab876847e6b32645432a3345a7))
+* **ui:** remove duplicate fade-out toggle from custom sleep timer popover ([5e07473](https://github.com/bocan/bocan-music/commit/5e07473af77c2c727f3ac1b6f10848407392a5a1))
+* **ui:** remove redundant as? URL cast in ArtworkEditor drop handler ([c88d72b](https://github.com/bocan/bocan-music/commit/c88d72bad0ba428f8663ff00ae8d0cdc16fa42ad))
+* **ui:** replace NSAlert.runModal() with non-blocking beginSheetModal continuations ([1909661](https://github.com/bocan/bocan-music/commit/190966139b624659e6326a0d474163ddd495f8c9))
+* **ui:** silence nonisolated(unsafe) warning on RouteViewModel.consumer ([693dcf8](https://github.com/bocan/bocan-music/commit/693dcf8357b922ccd2f806a899d39899abff6128))
+* **ui:** use textTertiary for idle speed label instead of 0.4 opacity ([84caa5d](https://github.com/bocan/bocan-music/commit/84caa5d1a9b32a27d1ebd98d97f4a486232b6594))
+* **ui:** wire Love/Unlove context menu to toggleLovedForCurrentSelection ([07e25f5](https://github.com/bocan/bocan-music/commit/07e25f55a817097862a4fa8c1ec06bcff8f1709b))
+* **ui:** wire Return/Enter key to play in track table ([9ebed66](https://github.com/bocan/bocan-music/commit/9ebed66af7646a953c9a23c01a7d3e907b6743d5))
+
 ## [0.4.0](https://github.com/bocan/bocan-music/compare/v0.3.0...v0.4.0) (2026-05-04)
 
 
