@@ -3,17 +3,50 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "website/**"
+      - "phases/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "website/**"
+      - "phases/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Lint (SwiftLint + SwiftFormat)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/cache@v5
+        with:
+          path: ~/.swiftpm
+          key: ${{ runner.os }}-swiftlint-${{ hashFiles('.swiftlint.yml', '.swiftformat') }}
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --strict
+      - name: SwiftFormat (lint only)
+        run: |
+          brew install swiftformat
+          swiftformat --lint .
+
   build-and-test:
     name: Build & Test
     runs-on: macos-26
+    needs: lint
 
     steps:
       - name: Checkout
@@ -67,9 +100,6 @@ jobs:
 
       - name: Generate Xcode project
         run: make generate
-
-      - name: Lint (SwiftLint + SwiftFormat)
-        run: make lint && make format-check
 
       - name: Build & Test with coverage
         run: make test-coverage 2>&1 | xcbeautify
