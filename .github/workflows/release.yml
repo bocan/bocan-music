@@ -189,9 +189,14 @@ jobs:
             --password "$APP_SPECIFIC_PASSWORD" \
             --wait --output-format plist)
           echo "$RESULT"
+          SUBMISSION_ID=$(/usr/libexec/PlistBuddy -c "Print :id" /dev/stdin <<< "$RESULT")
           STATUS=$(/usr/libexec/PlistBuddy -c "Print :status" /dev/stdin <<< "$RESULT")
           if [[ "$STATUS" != "Accepted" ]]; then
-            echo "::error::Notarization was not accepted (status: $STATUS). Check the log above."
+            echo "::error::Notarization was not accepted (status: $STATUS). Fetching rejection log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --team-id "$APPLE_TEAM_ID" \
+              --password "$APP_SPECIFIC_PASSWORD" || true
             exit 1
           fi
 
