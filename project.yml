@@ -37,6 +37,12 @@ settings:
     GCC_TREAT_WARNINGS_AS_ERRORS: YES
     CLANG_ENABLE_OBJC_ARC: YES
     ALWAYS_SEARCH_USER_PATHS: NO
+    # Stable Homebrew prefix symlinks — version-independent, survive brew upgrades.
+    # Required so Xcode's explicit-module dependency scanner can find FFmpeg and
+    # TagLib headers without relying on pkg-config (which returns volatile
+    # /opt/homebrew/Cellar/<name>/<version>/include paths that break after upgrades).
+    HEADER_SEARCH_PATHS: /opt/homebrew/include /opt/homebrew/opt/ffmpeg/include /opt/homebrew/opt/taglib/include/taglib $(inherited)
+    LIBRARY_SEARCH_PATHS: /opt/homebrew/lib $(inherited)
     DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
     ENABLE_TESTABILITY: YES
   configs:

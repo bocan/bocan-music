@@ -49,24 +49,21 @@ public actor Database {
     /// Returns a stream that emits the current value immediately and again on every change.
     ///
     /// The stream completes only if an error occurs or the consuming `Task` is cancelled.
-    /// Task cancellation propagates into GRDB's async sequence.
+    /// Uses `.async(onQueue: .main)` scheduling to avoid a deadlock in GRDB's
+    /// `ValueConcurrentObserver` when the writer queue tries to synchronously re-enter itself.
     public func observe<T: Sendable>(
         value: @escaping @Sendable (GRDB.Database) throws -> T
     ) -> AsyncThrowingStream<T, Error> {
         let observation = ValueObservation.tracking(value)
         let writer = self.writer
         return AsyncThrowingStream { continuation in
-            let task = Task {
-                do {
-                    for try await value in observation.values(in: writer) {
-                        continuation.yield(value)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
+            let cancellable = observation.start(
+                in: writer,
+                scheduling: .async(onQueue: .main),
+                onError: { continuation.finish(throwing: $0) },
+                onChange: { continuation.yield($0) }
+            )
+            continuation.onTermination = { _ in cancellable.cancel() }
         }
     }
 
@@ -74,6 +71,8 @@ public actor Database {
     ///
     /// Use this overload when the observed region is known up front and should
     /// not be inferred from the fetch closure.
+    /// Uses `.async(onQueue: .main)` scheduling to avoid a deadlock in GRDB's
+    /// `ValueConcurrentObserver` when the writer queue tries to synchronously re-enter itself.
     public func observe<T: Sendable>(
         regions: [any DatabaseRegionConvertible],
         value: @escaping @Sendable (GRDB.Database) throws -> T
@@ -81,17 +80,13 @@ public actor Database {
         let observation = ValueObservation.tracking(regions: regions, fetch: value)
         let writer = self.writer
         return AsyncThrowingStream { continuation in
-            let task = Task {
-                do {
-                    for try await value in observation.values(in: writer) {
-                        continuation.yield(value)
-                    }
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
-            }
-            continuation.onTermination = { _ in task.cancel() }
+            let cancellable = observation.start(
+                in: writer,
+                scheduling: .async(onQueue: .main),
+                onError: { continuation.finish(throwing: $0) },
+                onChange: { continuation.yield($0) }
+            )
+            continuation.onTermination = { _ in cancellable.cancel() }
         }
     }
 
