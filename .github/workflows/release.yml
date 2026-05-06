@@ -92,11 +92,6 @@ jobs:
             /usr/bin/sed -i '' "s|^BOCAN_LASTFM_SHARED_SECRET.*|BOCAN_LASTFM_SHARED_SECRET = ${BOCAN_LASTFM_SHARED_SECRET}|" Secrets.xcconfig
           fi
 
-      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
-        env:
-          SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
-        run: make bundle-fpcalc
-
       - name: Generate Xcode project
         run: make generate
 
@@ -122,6 +117,11 @@ jobs:
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+        env:
+          SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+        run: make bundle-fpcalc
 
       - name: Stamp version into Info.plist
         run: |
