@@ -1,11 +1,11 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
     name: "UI",
     platforms: [
-        .macOS(.v15),
+        .macOS(.v26),
     ],
     products: [
         .library(name: "UI", targets: ["UI"]),
@@ -20,7 +20,7 @@ let package = Package(
         .package(path: "../Scrobble"),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
-            from: "1.17.0"
+            from: "1.19.2"
         ),
     ],
     targets: [
