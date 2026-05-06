@@ -183,14 +183,32 @@ jobs:
         run: |
           # notarytool requires a zip for .app submission.
           ditto -c -k --keepParent "build/export/Bocan.app" "build/Bocan-notarize.zip"
-          xcrun notarytool submit "build/Bocan-notarize.zip" \
+          RESULT=$(xcrun notarytool submit "build/Bocan-notarize.zip" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
             --password "$APP_SPECIFIC_PASSWORD" \
-            --wait
+            --wait --output-format plist)
+          echo "$RESULT"
+          STATUS=$(/usr/libexec/PlistBuddy -c "Print :status" /dev/stdin <<< "$RESULT")
+          if [[ "$STATUS" != "Accepted" ]]; then
+            echo "::error::Notarization was not accepted (status: $STATUS). Check the log above."
+            exit 1
+          fi
 
       - name: Staple app
-        run: xcrun stapler staple build/export/Bocan.app
+        # Apple's CloudKit CDN can take a moment to propagate the ticket
+        # even after notarytool --wait returns.  Retry up to 5 times.
+        run: |
+          for attempt in $(seq 1 5); do
+            xcrun stapler staple build/export/Bocan.app && break
+            if [[ $attempt -lt 5 ]]; then
+              echo "Staple attempt $attempt failed; waiting 30 s before retry..."
+              sleep 30
+            else
+              echo "::error::xcrun stapler failed after $attempt attempts."
+              exit 1
+            fi
+          done
 
       - name: Create DMG
         run: |
