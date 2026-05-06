@@ -5,6 +5,14 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1](https://github.com/bocan/bocan-music/compare/v0.5.0...v0.5.1) (2026-05-06)
+
+
+### ### Fixed
+
+* **build:** add stable Homebrew HEADER_SEARCH_PATHS to project.yml ([a5099da](https://github.com/bocan/bocan-music/commit/a5099dab3850602a7d5748ae837ca14cd8d3d723))
+* **persistence:** use .async(onQueue:main) scheduler to fix GRDB writer-queue deadlock ([a2a8575](https://github.com/bocan/bocan-music/commit/a2a85752d27eea53ad8c4e33276c12f75d5203c0))
+
 ## [0.5.0](https://github.com/bocan/bocan-music/compare/v0.4.0...v0.5.0) (2026-05-06)
 
 
