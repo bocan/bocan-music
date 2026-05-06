@@ -189,7 +189,16 @@ echo ""
 echo "--- signing (identity: $SIGNING_IDENTITY) ---"
 for f in "$RESOURCES/fpcalc" "$RESOURCES"/*.dylib; do
     [[ -f "$f" ]] || continue
-    codesign --force --sign "$SIGNING_IDENTITY" "$f"
+    if [[ "$SIGNING_IDENTITY" == "-" ]]; then
+        # Ad-hoc: no timestamp or hardened runtime (local dev / Debug only).
+        codesign --force --sign "$SIGNING_IDENTITY" "$f"
+    else
+        # Developer ID: hardened runtime + secure timestamp required by notarization.
+        codesign --force --sign "$SIGNING_IDENTITY" \
+            --options runtime \
+            --timestamp \
+            "$f"
+    fi
     echo "  signed  $(basename "$f")"
 done
 
