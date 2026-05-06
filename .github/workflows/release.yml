@@ -167,6 +167,11 @@ jobs:
           echo "=== Export contents ==="
           ls -la build/export/
 
+      - name: Bundle Homebrew dylibs into app (TagLib, FFmpeg, etc.)
+        env:
+          SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+        run: bash Scripts/embed-deps.sh build/export/Bocan.app
+
       - name: Verify code signature & hardened runtime
         run: |
           APP="build/export/Bocan.app"
