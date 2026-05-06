@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc brew-bundle doctor open generate build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui uitest lint format format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui uitest lint format format-check install-hooks clean
 
 ## tests: Run format, lint, full test matrix (Xcode + every SPM module)
 tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui
@@ -17,6 +17,11 @@ bootstrap: brew-bundle install-hooks bundle-fpcalc
 bundle-fpcalc:
 	bash Scripts/build-fpcalc.sh
 	xcodegen generate
+
+## embed-deps: Bundle TagLib/FFmpeg dylibs into a built Bocan.app (post-export; ad-hoc sign)
+## Usage: make embed-deps APP=build/export/Bocan.app
+embed-deps:
+	bash Scripts/embed-deps.sh "$(APP)"
 
 ## brew-bundle: Install Brewfile dependencies
 brew-bundle:

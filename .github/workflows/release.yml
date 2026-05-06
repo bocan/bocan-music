@@ -92,9 +92,6 @@ jobs:
             /usr/bin/sed -i '' "s|^BOCAN_LASTFM_SHARED_SECRET.*|BOCAN_LASTFM_SHARED_SECRET = ${BOCAN_LASTFM_SHARED_SECRET}|" Secrets.xcconfig
           fi
 
-      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
-        run: make bundle-fpcalc
-
       - name: Generate Xcode project
         run: make generate
 
@@ -120,6 +117,11 @@ jobs:
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+        env:
+          SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+        run: make bundle-fpcalc
 
       - name: Stamp version into Info.plist
         run: |
@@ -165,6 +167,11 @@ jobs:
           echo "=== Export contents ==="
           ls -la build/export/
 
+      - name: Bundle Homebrew dylibs into app (TagLib, FFmpeg, etc.)
+        env:
+          SIGNING_IDENTITY: ${{ secrets.DEVELOPER_ID_IDENTITY }}
+        run: bash Scripts/embed-deps.sh build/export/Bocan.app
+
       - name: Verify code signature & hardened runtime
         run: |
           APP="build/export/Bocan.app"
@@ -189,9 +196,14 @@ jobs:
             --password "$APP_SPECIFIC_PASSWORD" \
             --wait --output-format plist)
           echo "$RESULT"
+          SUBMISSION_ID=$(/usr/libexec/PlistBuddy -c "Print :id" /dev/stdin <<< "$RESULT")
           STATUS=$(/usr/libexec/PlistBuddy -c "Print :status" /dev/stdin <<< "$RESULT")
           if [[ "$STATUS" != "Accepted" ]]; then
-            echo "::error::Notarization was not accepted (status: $STATUS). Check the log above."
+            echo "::error::Notarization was not accepted (status: $STATUS). Fetching rejection log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" \
+              --team-id "$APPLE_TEAM_ID" \
+              --password "$APP_SPECIFIC_PASSWORD" || true
             exit 1
           fi
 
