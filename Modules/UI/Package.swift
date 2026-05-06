@@ -20,7 +20,7 @@ let package = Package(
         .package(path: "../Scrobble"),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
-            from: "1.17.0"
+            from: "1.19.2"
         ),
     ],
     targets: [
