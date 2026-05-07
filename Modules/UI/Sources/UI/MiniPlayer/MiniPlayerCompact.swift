@@ -20,16 +20,18 @@ struct MiniPlayerCompact: View {
             self.artworkThumbnail
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(self.np.title.isEmpty ? "Not playing" : self.np.title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .lineLimit(1)
-                    .foregroundStyle(self.np.title.isEmpty ? Color.textSecondary : Color.textPrimary)
+                MarqueeText(
+                    self.np.title.isEmpty ? "Not playing" : self.np.title,
+                    font: .system(size: 12, weight: .semibold),
+                    foregroundStyle: self.np.title.isEmpty ? Color.textSecondary : Color.textPrimary
+                )
 
                 if !self.np.artist.isEmpty {
-                    Text(self.np.artist)
-                        .font(.system(size: 11))
-                        .lineLimit(1)
-                        .foregroundStyle(Color.textSecondary)
+                    MarqueeText(
+                        self.np.artist,
+                        font: .system(size: 11),
+                        foregroundStyle: Color.textSecondary
+                    )
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -4,7 +4,9 @@ import SwiftUI
 
 /// Top-level `Settings` scene content.
 ///
-/// Tabbed sidebar navigation (macOS 14+ preferred style).
+/// Tabbed toolbar navigation. About is intentionally absent — it is accessible
+/// via the standard macOS "Bòcan → About Bòcan" app menu item, and including it
+/// in the tab bar caused overflow + broken tab behaviour on macOS 26.
 /// Usage in `BocanApp`:
 /// ```swift
 /// Settings { SettingsScene() }
@@ -12,9 +14,14 @@ import SwiftUI
 public struct SettingsScene: View {
     @State private var selectedTab: SettingsTab = .general
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
+    private let backupViewModel: BackupSettingsViewModel
 
-    public init(scrobbleViewModel: ScrobbleSettingsViewModel? = nil) {
+    public init(
+        backupViewModel: BackupSettingsViewModel,
+        scrobbleViewModel: ScrobbleSettingsViewModel? = nil
+    ) {
         self.scrobbleViewModel = scrobbleViewModel
+        self.backupViewModel = backupViewModel
     }
 
     public var body: some View {
@@ -39,7 +46,7 @@ public struct SettingsScene: View {
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
                 .tag(SettingsTab.appearance)
 
-            AdvancedSettingsView()
+            AdvancedSettingsView(backupVM: self.backupViewModel)
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
                 .tag(SettingsTab.advanced)
 
@@ -60,10 +67,6 @@ public struct SettingsScene: View {
                     .tabItem { Label("Scrobbling", systemImage: "dot.radiowaves.left.and.right") }
                     .tag(SettingsTab.scrobble)
             }
-
-            AboutView()
-                .tabItem { Label("About", systemImage: "info.circle") }
-                .tag(SettingsTab.about)
         }
         .frame(minWidth: 520, minHeight: 360)
     }
@@ -72,5 +75,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, about
+    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble
 }

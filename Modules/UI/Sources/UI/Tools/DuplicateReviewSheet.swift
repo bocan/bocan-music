@@ -61,9 +61,8 @@ public struct DuplicateReviewSheet: View {
     @ViewBuilder
     private var content: some View {
         if self.vm.isLoading {
-            ProgressView("Scanning library…")
+            LoadingState(title: "Scanning library…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(40)
         } else if let err = self.vm.loadError {
             ContentUnavailableView {
                 Label("Could Not Load", systemImage: "exclamationmark.triangle")

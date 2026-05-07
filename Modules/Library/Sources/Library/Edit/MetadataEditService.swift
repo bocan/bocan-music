@@ -21,6 +21,17 @@ public actor MetadataEditService {
     private let coverArtCache: CoverArtCache
     private let log = AppLogger.make(.library)
 
+    /// Dedicated queue for all TagLib disk reads triggered from the editor.
+    ///
+    /// `.background` QoS activates kernel-level I/O throttling (`IOPOL_THROTTLE`),
+    /// which tells the VFS to deprioritize I/O from this queue relative to the
+    /// real-time audio decode path — preventing VFS contention that causes the
+    /// CoreAudio IOWorkLoop to skip cycles (audible pop) on first "Get Info" use.
+    private static let tagReadQueue = DispatchQueue(
+        label: "io.cloudcauldron.bocan.metadata.tagreader",
+        qos: .background
+    )
+
     // MARK: - Init
 
     public init(database: Persistence.Database) throws {
@@ -157,14 +168,20 @@ public actor MetadataEditService {
                     )
                 }
             }) { scopedURL in
-                try await Task.detached(priority: .userInitiated) {
-                    try TagReader().read(from: scopedURL)
-                }.value
+                try await withCheckedThrowingContinuation { continuation in
+                    Self.tagReadQueue.async {
+                        do { try continuation.resume(returning: TagReader().read(from: scopedURL)) }
+                        catch { continuation.resume(throwing: error) }
+                    }
+                }
             }
         }
-        return try await Task.detached(priority: .userInitiated) {
-            try TagReader().read(from: url)
-        }.value
+        return try await withCheckedThrowingContinuation { continuation in
+            Self.tagReadQueue.async {
+                do { try continuation.resume(returning: TagReader().read(from: url)) }
+                catch { continuation.resume(throwing: error) }
+            }
+        }
     }
 
     // MARK: - Conflict resolution

@@ -19,6 +19,9 @@ import SwiftUI
 public struct MenuBarExtraScene: View {
     public var vm: NowPlayingViewModel
     @Environment(\.openWindow) private var openWindow
+    /// Holds the slider fraction while the user is dragging; seeking is deferred
+    /// to drag-end so the engine isn't bombarded with a seek per mouse-move event.
+    @State private var scrubDragFraction: Double?
 
     public init(vm: NowPlayingViewModel) {
         self.vm = vm
@@ -42,15 +45,18 @@ public struct MenuBarExtraScene: View {
 
             // Track info
             VStack(spacing: 3) {
-                Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
-                    .font(.headline)
-                    .lineLimit(1)
+                MarqueeText(
+                    self.vm.title.isEmpty ? "Not playing" : self.vm.title,
+                    font: .headline,
+                    foregroundStyle: Color.primary
+                )
 
                 if !self.vm.artist.isEmpty {
-                    Text(self.vm.artist)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    MarqueeText(
+                        self.vm.artist,
+                        font: .subheadline,
+                        foregroundStyle: Color.secondary
+                    )
                 }
             }
             .frame(maxWidth: .infinity)
@@ -59,13 +65,16 @@ public struct MenuBarExtraScene: View {
             if self.vm.duration > 0 {
                 Slider(
                     value: Binding(
-                        get: { self.vm.position / self.vm.duration },
-                        set: { fraction in
-                            Task { await self.vm.scrub(to: fraction * self.vm.duration) }
-                        }
+                        get: { self.scrubDragFraction ?? (self.vm.position / self.vm.duration) },
+                        set: { self.scrubDragFraction = $0 }
                     ),
                     in: 0 ... 1
-                )
+                ) { editing in
+                    if !editing, let fraction = self.scrubDragFraction {
+                        self.scrubDragFraction = nil
+                        Task { await self.vm.scrub(to: fraction * self.vm.duration) }
+                    }
+                }
                 .controlSize(.small)
                 .accessibilityLabel("Playback position")
             }

@@ -230,8 +230,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     }
 
     private func selectedTracks() -> [Track] {
-        let sel = self.parent.selection
-        return self.rows.filter { sel.contains($0.id) }.map(\.track)
+        // O(selection.count) via pre-built dictionary — avoids O(14k+) linear scan
+        // on every context-menu open.
+        self.parent.selection.compactMap { id in id.flatMap { self.rowsByID[$0]?.track } }
     }
 
     /// Handles Return/Enter key presses from the table.
@@ -401,7 +402,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             menu.addItem(ActionMenuItem("Delete from Disk") { acts.deleteFromDisk(track) })
         }
         menu.addItem(.separator())
-        let selectedRows = self.rows.filter { self.parent.selection.contains($0.id) }
+        let selectedRows = self.parent.selection.compactMap { id in id.flatMap { self.rowsByID[$0] } }
         let copyItem = ActionMenuItem("Copy") { acts.copy(selectedRows) }
         copyItem.isEnabled = !selectedRows.isEmpty
         menu.addItem(copyItem)
