@@ -34,6 +34,10 @@ public final class LyricsViewModel: ObservableObject {
     /// `true` while an auto-fetch or force-fetch is in progress.
     @Published public private(set) var isFetching = false
 
+    /// Controls whether the lyrics editor sheet is visible.
+    /// Set to `true` from external callers (menu bar, context menu) to open the editor.
+    @Published public var isEditorPresented = false
+
     /// Whether LRClib fetching is enabled (mirrors `lyrics.lrclibEnabled` in Settings).
     @AppStorage("lyrics.lrclibEnabled") public private(set) var lrclibEnabled = false
 
@@ -108,6 +112,38 @@ public final class LyricsViewModel: ObservableObject {
                 _ = try await self.service.forceFetch(for: trackID)
             } catch {
                 self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Fetches lyrics from LRClib for any given track ID, replacing existing lyrics.
+    /// Caller is responsible for checking whether LRClib is enabled.
+    public func forceFetch(for trackID: Int64) {
+        guard !self.isFetching else { return }
+        self.isFetching = true
+        Task {
+            defer { self.isFetching = false }
+            do {
+                _ = try await self.service.forceFetch(for: trackID)
+            } catch {
+                self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Opens the lyrics pane (if not already visible) and presents the editor sheet.
+    public func openEditor() {
+        self.paneVisible = true
+        self.isEditorPresented = true
+    }
+
+    /// Deletes stored lyrics for any given track ID.
+    public func clearLyrics(for trackID: Int64) {
+        Task {
+            do {
+                try await self.service.setLyrics(nil, for: trackID)
+            } catch {
+                self.log.error("lyrics.clear.failed", ["error": String(reflecting: error)])
             }
         }
     }
