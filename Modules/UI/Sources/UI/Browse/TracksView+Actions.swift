@@ -65,7 +65,9 @@ extension TracksView {
             },
             rescanFile: { track in
                 if let id = track.id {
-                    Task { await lib.rescanTrack(id: id) }
+                    // .utility priority gives macOS lower I/O scheduling weight,
+                    // preventing VFS contention with the CoreAudio decode path.
+                    Task(priority: .utility) { await lib.rescanTrack(id: id) }
                 }
             },
             getInfo: { tracks in

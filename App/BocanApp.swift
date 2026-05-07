@@ -19,12 +19,62 @@ private final class _InitBox<T: Sendable>: @unchecked Sendable {
 // MARK: - AppDelegate
 
 /// Handles `applicationShouldTerminateAfterLastWindowClosed`, `⌘W` hiding,
-/// and `UNUserNotificationCenter` delegate callbacks.
+/// quit-guard confirmation, and `UNUserNotificationCenter` delegate callbacks.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    // MARK: Quit-guard references
+
+    /// Set once from `BocanApp.init()` so `applicationShouldTerminate` can
+    /// inspect live scan state without importing UI types into AppKit callbacks.
+    var libraryViewModel: LibraryViewModel?
+    var dspViewModel: DSPViewModel?
+
+    // MARK: Lifecycle
+
     func applicationDidFinishLaunching(_: Notification) {
         // Register as the notification delegate early so tap-to-foreground works.
         UNUserNotificationCenter.current().delegate = self
+    }
+
+    /// Intercepts ⌘Q when a scan or ReplayGain analysis is active.
+    ///
+    /// Returns `.terminateLater` and shows a confirmation alert; the alert
+    /// calls `NSApp.reply(toApplicationShouldTerminate:)` when dismissed so
+    /// AppKit can proceed or cancel the quit.  Returns `.terminateNow`
+    /// immediately when nothing is running so normal quits are unaffected.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let isInitialScan = self.libraryViewModel?.isInitialScan == true
+        let isScanning = isInitialScan || self.libraryViewModel?.isScanning == true
+        let isAnalyzing = self.dspViewModel?.isAnalyzing == true
+
+        guard isScanning || isAnalyzing else { return .terminateNow }
+
+        let informativeText = if isInitialScan {
+            "Your music library is being built for the first time. "
+                + "Quitting now will leave it incomplete — you may need to rescan when you relaunch."
+        } else if isScanning {
+            "A library scan is in progress. "
+                + "Quitting now may leave recently added files out of your library."
+        } else {
+            "ReplayGain analysis is in progress. "
+                + "Volume normalisation data for the current batch will be lost if you quit now."
+        }
+
+        let alert = NSAlert()
+        alert.messageText = "Quit Bòcan?"
+        alert.informativeText = informativeText
+        alert.addButton(withTitle: "Quit")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+
+        // Task defers the modal until after applicationShouldTerminate returns
+        // .terminateLater; otherwise the nested run loop causes AppKit re-entrancy.
+        Task { @MainActor in
+            let reply = alert.runModal() == .alertFirstButtonReturn
+            NSApp.reply(toApplicationShouldTerminate: reply)
+        }
+
+        return .terminateLater
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -101,6 +151,7 @@ struct BocanApp: App {
     private let visualizerViewModel: VisualizerViewModel
     private let scrobbleService: ScrobbleService
     private let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
+    private let backupSettingsViewModel: BackupSettingsViewModel
     private let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
     private let routeViewModel: RouteViewModel
 
@@ -139,11 +190,14 @@ struct BocanApp: App {
             .environmentObject(self.libraryViewModel)
 
         Settings {
-            SettingsScene(scrobbleViewModel: self.scrobbleSettingsViewModel)
-                .environment(self.dspViewModel)
-                // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
-                .environmentObject(self.libraryViewModel)
-                .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
+            SettingsScene(
+                backupViewModel: self.backupSettingsViewModel,
+                scrobbleViewModel: self.scrobbleSettingsViewModel
+            )
+            .environment(self.dspViewModel)
+            // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
+            .environmentObject(self.libraryViewModel)
+            .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
 
         // MARK: Visualizer fullscreen
@@ -161,6 +215,8 @@ struct BocanApp: App {
         // the track list and transport controls stay fully interactive.
         Window("Equaliser & DSP", id: "dsp") {
             DSPSheet(vm: self.dspViewModel)
+                // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
+                .environmentObject(self.libraryViewModel)
         }
         .defaultSize(width: 600, height: 520)
         .windowResizability(.contentMinSize)
@@ -169,7 +225,16 @@ struct BocanApp: App {
 
         // MARK: Menu bar widget
 
-        MenuBarExtra("Bòcan", systemImage: "music.note", isInserted: self.$showMenuBarExtra) {
+        // Accessing isPlaying / isPaused from the @Observable NowPlayingViewModel
+        // here subscribes App.body to those two properties only — re-evaluating body
+        // at most twice per track transition (once to true, once back to false).
+        // This is safe because @Observable gives property-level granularity, unlike
+        // @StateObject/@ObservedObject which would subscribe to every objectWillChange.
+        let np = self.libraryViewModel.nowPlaying
+        let menuBarLabel: String = np.isPlaying ? "Bòcan — Playing"
+            : (np.isPaused ? "Bòcan — Paused" : "Bòcan")
+        let menuBarIcon: String = np.isPlaying ? "music.note.list" : "music.note"
+        MenuBarExtra(menuBarLabel, systemImage: menuBarIcon, isInserted: self.$showMenuBarExtra) {
             MenuBarExtraScene(vm: self.libraryViewModel.nowPlaying)
         }
         .menuBarExtraStyle(.window)
@@ -229,6 +294,7 @@ struct BocanApp: App {
         let scrobbleParts = Self.makeScrobble(database: db, log: self.log)
         self.scrobbleService = scrobbleParts.service
         self.scrobbleSettingsViewModel = scrobbleParts.viewModel
+        self.backupSettingsViewModel = BackupSettingsViewModel(database: db)
 
         let qp = QueuePlayer(engine: eng, database: db, scrobbleSink: scrobbleParts.service)
         let scanner = LibraryScanner(database: db)
@@ -256,6 +322,12 @@ struct BocanApp: App {
         // Phase 15: AirPlay routing — `routeManager` is set at declaration.
         self.routeViewModel = Self.makeRouteViewModel(manager: self.routeManager)
 
+        // Wire quit-guard references so AppDelegate can check live background-work
+        // state in applicationShouldTerminate without importing UI into AppKit code.
+        // Must come after all `private let` properties are initialised.
+        self.appDelegate.libraryViewModel = lvm
+        self.appDelegate.dspViewModel = self.dspViewModel
+
         // Forward NSWorkspace wake events to the sleep timer + install the
         // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
         // QueuePlayer lives in the Playback module and must not import AppKit,
@@ -276,7 +348,6 @@ struct BocanApp: App {
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp, database: db)
 
-        // Phase 2 audit #6: opportunistic iCloud backup, gated on settings.
         Self.scheduleLaunchBackup(database: db)
 
         // Start scrobble worker once everything is wired up.
@@ -383,18 +454,26 @@ struct BocanApp: App {
         return viewModel
     }
 
-    /// Phase 2 audit #6: schedules an opportunistic iCloud Drive backup
-    /// shortly after launch.  Detached so a stalled iCloud sign-in cannot
-    /// delay UI; failures log only and never block startup.
+    /// Schedules launch-time backups (iCloud + local), each gated on its own setting.
     private static func scheduleLaunchBackup(database db: Database) {
         Task.detached { [db] in
             let settings = SettingsRepository(database: db)
-            let enabled = await (try? settings.get(Bool.self, for: "backup.enabled")) ?? false
-            guard enabled == true else { return }
-            do {
-                _ = try await BackupService(database: db).backupToiCloudIfAvailable()
-            } catch {
-                AppLogger.make(.app).error("backup.launch_failed", ["error": String(reflecting: error)])
+            let service = BackupService(database: db)
+            let log = AppLogger.make(.app)
+            if await (try? settings.get(Bool.self, for: "backup.enabled")) ?? false {
+                do {
+                    _ = try await service.backupToiCloudIfAvailable()
+                } catch {
+                    log.error("backup.icloud.launch_failed", ["error": String(reflecting: error)])
+                }
+            }
+            if await (try? settings.get(Bool.self, for: "backup.local.enabled")) ?? true {
+                let keep = await (try? settings.get(Int.self, for: "backup.local.keepCount")) ?? 5
+                do {
+                    _ = try await service.backupToLocal(keepLast: keep)
+                } catch {
+                    log.error("backup.local.launch_failed", ["error": String(reflecting: error)])
+                }
             }
         }
     }
@@ -419,5 +498,3 @@ struct BocanApp: App {
         return ScrobbleParts(service: service, viewModel: viewModel)
     }
 }
-
-// MARK: - Helpers

@@ -18,7 +18,7 @@ public struct GenresView: View {
     public var body: some View {
         Group {
             if self.isLoading {
-                ProgressView("Loading…")
+                LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.genres.isEmpty {
                 EmptyState(
@@ -100,7 +100,7 @@ public struct ComposersView: View {
     public var body: some View {
         Group {
             if self.isLoading {
-                ProgressView("Loading…")
+                LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.composers.isEmpty {
                 EmptyState(

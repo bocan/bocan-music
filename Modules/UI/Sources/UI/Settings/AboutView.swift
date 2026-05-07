@@ -28,7 +28,7 @@ public struct AboutView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(32)
-        .frame(minWidth: 300)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("About")
     }
 }

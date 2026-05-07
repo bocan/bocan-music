@@ -66,16 +66,18 @@ struct MiniPlayerSquare: View {
         VStack(spacing: 6) {
             // Title + artist – album (white text on dark gradient)
             VStack(spacing: 2) {
-                Text(self.np.title.isEmpty ? "Not playing" : self.np.title)
-                    .font(.system(size: 13, weight: .semibold))
-                    .lineLimit(1)
-                    .foregroundStyle(.white)
+                MarqueeText(
+                    self.np.title.isEmpty ? "Not playing" : self.np.title,
+                    font: .system(size: 13, weight: .semibold),
+                    foregroundStyle: Color.white
+                )
 
                 if let subtitle = self.trackSubtitle {
-                    Text(subtitle)
-                        .font(.system(size: 11))
-                        .lineLimit(1)
-                        .foregroundStyle(.white.opacity(0.8))
+                    MarqueeText(
+                        subtitle,
+                        font: .system(size: 11),
+                        foregroundStyle: Color.white.opacity(0.8)
+                    )
                 }
             }
 

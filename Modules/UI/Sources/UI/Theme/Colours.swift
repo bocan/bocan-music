@@ -36,7 +36,31 @@ extension Color {
     // MARK: - Interactive
 
     /// Separator / hairline border.  Low-opacity overlay.
-    static let separatorAdaptive = Color(adaptiveLight: 0, 0, 0, alpha: 0.10, dark: 1, 1, 1, alpha: 0.10)
+    ///
+    /// Automatically strengthens to 0.40 opacity when macOS "Increase Contrast"
+    /// is active (detected via the `accessibilityHighContrast*` NSAppearance names).
+    static let separatorAdaptive = Color(
+        nsColor: NSColor(name: nil) { appearance in
+            let highContrastNames: [NSAppearance.Name] = [
+                .accessibilityHighContrastAqua,
+                .accessibilityHighContrastVibrantLight,
+                .accessibilityHighContrastDarkAqua,
+                .accessibilityHighContrastVibrantDark,
+            ]
+            let darkNames: [NSAppearance.Name] = [
+                .darkAqua,
+                .vibrantDark,
+                .accessibilityHighContrastDarkAqua,
+                .accessibilityHighContrastVibrantDark,
+            ]
+            let isHighContrast = highContrastNames.contains(appearance.name)
+            let isDark = darkNames.contains(appearance.name)
+            let alpha: CGFloat = isHighContrast ? 0.40 : 0.10
+            return isDark
+                ? NSColor(red: 1, green: 1, blue: 1, alpha: alpha)
+                : NSColor(red: 0, green: 0, blue: 0, alpha: alpha)
+        }
+    )
 
     /// Star / rating fill.  Light: #FF9500  Dark: #FF9F0A
     static let ratingFill = Color(adaptiveLight: 1.000, 0.584, 0.000, dark: 1.000, 0.624, 0.039)
