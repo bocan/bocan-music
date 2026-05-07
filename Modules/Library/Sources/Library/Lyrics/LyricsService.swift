@@ -16,6 +16,7 @@ public actor LyricsService {
     private let lyricsRepo: LyricsRepository
     private let trackRepo: TrackRepository
     private let artistRepo: ArtistRepository
+    private let albumRepo: AlbumRepository
     private let fetcher: (any LRClibClientProtocol)?
     private let log = AppLogger.make(.library)
 
@@ -29,6 +30,7 @@ public actor LyricsService {
         self.lyricsRepo = LyricsRepository(database: database)
         self.trackRepo = TrackRepository(database: database)
         self.artistRepo = ArtistRepository(database: database)
+        self.albumRepo = AlbumRepository(database: database)
         self.fetcher = fetcher
     }
 
@@ -141,11 +143,16 @@ public actor LyricsService {
         } else {
             ""
         }
+        let albumTitle: String? = if let aid = track.albumID, let album = try? await albumRepo.fetch(id: aid) {
+            album.title
+        } else {
+            nil
+        }
 
         let doc = try await fetcher.get(
             artist: artistName,
             title: track.title ?? "",
-            album: nil,
+            album: albumTitle,
             duration: track.duration
         )
 
@@ -184,10 +191,15 @@ public actor LyricsService {
         } else {
             ""
         }
+        let albumTitle: String? = if let aid = track.albumID, let album = try? await albumRepo.fetch(id: aid) {
+            album.title
+        } else {
+            nil
+        }
         let doc = try await fetcher.get(
             artist: artistName,
             title: track.title ?? "",
-            album: nil, // album resolved via a separate join; not available on the base Track record
+            album: albumTitle,
             duration: track.duration
         )
 
