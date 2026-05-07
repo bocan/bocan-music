@@ -5,6 +5,32 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0](https://github.com/bocan/bocan-music/compare/v0.5.1...v0.6.0) (2026-05-07)
+
+
+### ### Added
+
+* **app:** prompt before quit when scan or RG analysis is active ([321ceb4](https://github.com/bocan/bocan-music/commit/321ceb45b604cfa06d2ef0ed382cdb2587a6d909))
+* **persistence,ui:** add local backup with configurable rolling count ([4e0c879](https://github.com/bocan/bocan-music/commit/4e0c879ef1d7bcc26a4f61cd26ed718bb412c469))
+* **persistence,ui:** wire iCloud backup toggle into Advanced Settings ([2a15615](https://github.com/bocan/bocan-music/commit/2a156157cfad8d9a18d6a7c62274d34fea024eb0))
+* Phase 10 polish — mini player, quit guard, iCloud & local backups ([0c5d06e](https://github.com/bocan/bocan-music/commit/0c5d06e49f56ba3d6f4335e88d22fced83a4250f))
+* **ui:** add collapse/expand toggle to Playlists sidebar section ([d6ef432](https://github.com/bocan/bocan-music/commit/d6ef432736f581fbdc67859c7a2f9afde716b246))
+* **ui:** add LoadingState and ErrorState reusable views ([#145](https://github.com/bocan/bocan-music/issues/145)) ([812feda](https://github.com/bocan/bocan-music/commit/812fedae7284bf4e46a90d14c123e59cba7009d8))
+* **ui:** implement MarqueeText scrolling for Mini Player and menu-bar extra ([1e5e36f](https://github.com/bocan/bocan-music/commit/1e5e36f2c90a597fa177f218ade6b1cefd098cf4)), closes [#138](https://github.com/bocan/bocan-music/issues/138)
+* **ui:** show scanning progress pane during initial library scan ([854a18e](https://github.com/bocan/bocan-music/commit/854a18e2efdad52cdc746c653ed8efdec54a9867))
+* **ui:** spring-animate mini player layout transitions ([ecbed96](https://github.com/bocan/bocan-music/commit/ecbed961115d3932e05cd37e49fdac6be4c41119))
+
+
+### ### Fixed
+
+* **audio:** prevent pops from VFS contention and CPU bursts at playback start ([c12c1ce](https://github.com/bocan/bocan-music/commit/c12c1ce547f0e91074cce5f27092ccdfe2f764b1))
+* **persistence:** use requiresWriteAccess to avoid WAL snapshot deadlock ([c6fda5e](https://github.com/bocan/bocan-music/commit/c6fda5ea61bb1a810b02dccbba5c6200ea32d56a))
+* **ui:** call windowMode.restoreIfNeeded() on launch to honour restore-last-mode setting ([dc2a3f1](https://github.com/bocan/bocan-music/commit/dc2a3f18b4d32398c423e17fe1cc093e3f920025)), closes [#139](https://github.com/bocan/bocan-music/issues/139)
+* **ui:** convert HighContrastModifier comments to doc comments for SwiftFormat ([5b36fdf](https://github.com/bocan/bocan-music/commit/5b36fdf2d0a9a506e16c128bec4f400eb82bcc45))
+* **ui:** inject libraryViewModel into DSP window; remove About from Settings tabs ([6187626](https://github.com/bocan/bocan-music/commit/61876261ff463475dec1725826426230329032c9))
+* **ui:** menu bar extra icon reflects playback state ([7a311fd](https://github.com/bocan/bocan-music/commit/7a311fd9f4c299e40debfba2893cb981f0e852a8)), closes [#143](https://github.com/bocan/bocan-music/issues/143)
+* **ui:** strengthen separators and materials under accessibilityIncreaseContrast ([#141](https://github.com/bocan/bocan-music/issues/141)) ([66b4f0e](https://github.com/bocan/bocan-music/commit/66b4f0e5aa7cf31d93c0073c0ec9708325565798))
+
 ## [0.5.1](https://github.com/bocan/bocan-music/compare/v0.5.0...v0.5.1) (2026-05-06)
 
 
