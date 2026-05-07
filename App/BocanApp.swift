@@ -19,12 +19,62 @@ private final class _InitBox<T: Sendable>: @unchecked Sendable {
 // MARK: - AppDelegate
 
 /// Handles `applicationShouldTerminateAfterLastWindowClosed`, `⌘W` hiding,
-/// and `UNUserNotificationCenter` delegate callbacks.
+/// quit-guard confirmation, and `UNUserNotificationCenter` delegate callbacks.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    // MARK: Quit-guard references
+
+    /// Set once from `BocanApp.init()` so `applicationShouldTerminate` can
+    /// inspect live scan state without importing UI types into AppKit callbacks.
+    var libraryViewModel: LibraryViewModel?
+    var dspViewModel: DSPViewModel?
+
+    // MARK: Lifecycle
+
     func applicationDidFinishLaunching(_: Notification) {
         // Register as the notification delegate early so tap-to-foreground works.
         UNUserNotificationCenter.current().delegate = self
+    }
+
+    /// Intercepts ⌘Q when a scan or ReplayGain analysis is active.
+    ///
+    /// Returns `.terminateLater` and shows a confirmation alert; the alert
+    /// calls `NSApp.reply(toApplicationShouldTerminate:)` when dismissed so
+    /// AppKit can proceed or cancel the quit.  Returns `.terminateNow`
+    /// immediately when nothing is running so normal quits are unaffected.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let isInitialScan = self.libraryViewModel?.isInitialScan == true
+        let isScanning = isInitialScan || self.libraryViewModel?.isScanning == true
+        let isAnalyzing = self.dspViewModel?.isAnalyzing == true
+
+        guard isScanning || isAnalyzing else { return .terminateNow }
+
+        let informativeText = if isInitialScan {
+            "Your music library is being built for the first time. "
+                + "Quitting now will leave it incomplete — you may need to rescan when you relaunch."
+        } else if isScanning {
+            "A library scan is in progress. "
+                + "Quitting now may leave recently added files out of your library."
+        } else {
+            "ReplayGain analysis is in progress. "
+                + "Volume normalisation data for the current batch will be lost if you quit now."
+        }
+
+        let alert = NSAlert()
+        alert.messageText = "Quit Bòcan?"
+        alert.informativeText = informativeText
+        alert.addButton(withTitle: "Quit")
+        alert.addButton(withTitle: "Cancel")
+        alert.alertStyle = .warning
+
+        // Task defers the modal until after applicationShouldTerminate returns
+        // .terminateLater; otherwise the nested run loop causes AppKit re-entrancy.
+        Task { @MainActor in
+            let reply = alert.runModal() == .alertFirstButtonReturn
+            NSApp.reply(toApplicationShouldTerminate: reply)
+        }
+
+        return .terminateLater
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -266,6 +316,12 @@ struct BocanApp: App {
         self.visualizerViewModel = VisualizerViewModel(engine: eng)
         // Phase 15: AirPlay routing — `routeManager` is set at declaration.
         self.routeViewModel = Self.makeRouteViewModel(manager: self.routeManager)
+
+        // Wire quit-guard references so AppDelegate can check live background-work
+        // state in applicationShouldTerminate without importing UI into AppKit code.
+        // Must come after all `private let` properties are initialised.
+        self.appDelegate.libraryViewModel = lvm
+        self.appDelegate.dspViewModel = self.dspViewModel
 
         // Forward NSWorkspace wake events to the sleep timer + install the
         // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
