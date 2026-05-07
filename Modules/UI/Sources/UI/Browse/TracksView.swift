@@ -60,7 +60,7 @@ public struct TracksView: View {
     public var body: some View {
         Group {
             if self.vm.isLoading {
-                ProgressView("Loading…")
+                LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.rows.isEmpty {
                 EmptyState(

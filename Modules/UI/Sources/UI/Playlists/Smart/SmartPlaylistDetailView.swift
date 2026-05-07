@@ -25,7 +25,7 @@ public struct SmartPlaylistDetailView: View {
             Divider()
 
             if self.vm.isLoading {
-                ProgressView()
+                LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.tracks.isEmpty {
                 EmptyState(
