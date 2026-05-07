@@ -112,7 +112,7 @@ public struct LyricsPane: View {
                 Image(systemName: "square.and.pencil")
             }
             .buttonStyle(.plain)
-            .help("Edit lyrics (⌘⌥L)")
+            .help("Edit lyrics (⌘⌥⇧L)")
             .accessibilityLabel("Edit lyrics")
 
             Button {
