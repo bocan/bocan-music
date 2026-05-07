@@ -281,4 +281,21 @@ public enum LyricsFontSize: String, CaseIterable, Sendable {
             "XL"
         }
     }
+
+    /// Full name used in tooltips and accessibility labels.
+    public var fullName: String {
+        switch self {
+        case .small:
+            "Small"
+
+        case .medium:
+            "Medium"
+
+        case .large:
+            "Large"
+
+        case .extraLarge:
+            "Extra Large"
+        }
+    }
 }

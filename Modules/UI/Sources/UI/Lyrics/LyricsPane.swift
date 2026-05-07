@@ -160,7 +160,8 @@ public struct LyricsPane: View {
                         : Color.clear
                 )
                 .cornerRadius(4)
-                .accessibilityLabel("Font size \(size.label)")
+                .help("\(size.fullName) font size")
+                .accessibilityLabel("\(size.fullName) font size")
             }
         }
     }
