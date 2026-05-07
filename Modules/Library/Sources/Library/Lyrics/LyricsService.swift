@@ -40,11 +40,17 @@ public actor LyricsService {
     /// **preferSynced** (default): user → sidecar .lrc → embedded synced → lrclib → embedded unsynced
     /// **preferEmbedded / preferUser**: user → embedded synced → sidecar .lrc → embedded unsynced → lrclib
     public func lyrics(for trackID: Int64) async throws -> LyricsDocument? {
+        try await self.lyricsWithSource(for: trackID).0
+    }
+
+    /// Resolves the best available lyrics for `trackID` and returns it paired with
+    /// the winning source label (`"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil`).
+    public func lyricsWithSource(for trackID: Int64) async throws -> (LyricsDocument?, String?) {
         let row = try await lyricsRepo.fetch(trackID: trackID)
 
         // User edits always win regardless of priority.
         if let row, row.source == "user" {
-            return self.parse(row: row)
+            return (self.parse(row: row), "user")
         }
 
         let priority = LyricsSourcePriority(
@@ -53,19 +59,19 @@ public actor LyricsService {
 
         switch priority {
         case .preferSynced:
-            if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
-            if let row, row.source == "embedded", row.isSynced { return self.parse(row: row) }
-            if let row, row.source == "lrclib" { return self.parse(row: row) }
-            if let row, row.source == "embedded", !row.isSynced { return self.parse(row: row) }
+            if let sidecar = try await self.loadSidecar(for: trackID) { return (sidecar, "sidecar") }
+            if let row, row.source == "embedded", row.isSynced { return (self.parse(row: row), "embedded") }
+            if let row, row.source == "lrclib" { return (self.parse(row: row), "lrclib") }
+            if let row, row.source == "embedded", !row.isSynced { return (self.parse(row: row), "embedded") }
 
         case .preferEmbedded, .preferUser:
-            if let row, row.source == "embedded", row.isSynced { return self.parse(row: row) }
-            if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
-            if let row, row.source == "embedded", !row.isSynced { return self.parse(row: row) }
-            if let row, row.source == "lrclib" { return self.parse(row: row) }
+            if let row, row.source == "embedded", row.isSynced { return (self.parse(row: row), "embedded") }
+            if let sidecar = try await self.loadSidecar(for: trackID) { return (sidecar, "sidecar") }
+            if let row, row.source == "embedded", !row.isSynced { return (self.parse(row: row), "embedded") }
+            if let row, row.source == "lrclib" { return (self.parse(row: row), "lrclib") }
         }
 
-        return nil
+        return (nil, nil)
     }
 
     /// Saves `doc` as the lyrics for `trackID`.
@@ -206,6 +212,28 @@ public actor LyricsService {
                         try Task.checkCancellation()
                         let doc = try await self.lyrics(for: trackID)
                         continuation.yield(doc)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// Like ``observe(_:)`` but also yields the winning source label alongside each document.
+    ///
+    /// Source labels: `"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil` when no lyrics.
+    public func observeWithSource(_ trackID: Int64) -> AsyncThrowingStream<(LyricsDocument?, String?), Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let inner = await self.lyricsRepo.observe(trackID: trackID)
+                    for try await _ in inner {
+                        try Task.checkCancellation()
+                        let result = try await self.lyricsWithSource(for: trackID)
+                        continuation.yield(result)
                     }
                     continuation.finish()
                 } catch {
