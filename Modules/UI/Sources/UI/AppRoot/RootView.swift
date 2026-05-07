@@ -121,6 +121,7 @@ public struct BocanRootView: View {
             // while playlistSidebar.nodes is still empty.
             await self.vm.playlistSidebar.reload()
             await self.vm.restoreUIState()
+            self.windowMode.restoreIfNeeded()
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
             self.vm.triggerScan()
