@@ -23,7 +23,7 @@ public struct MiniPlayerView: View {
     public var body: some View {
         self.content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.ultraThinMaterial)
+            .adaptiveMaterial()
             .background(MiniPlayerWindowSetup().frame(width: 0, height: 0).allowsHitTesting(false))
             .onAppear {
                 self.applyWindowLevel()
