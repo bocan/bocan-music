@@ -27,7 +27,7 @@ struct SmartPresetPickerView: View {
             Divider()
 
             if self.isLoading {
-                ProgressView()
+                LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.presets.isEmpty {
                 EmptyState(

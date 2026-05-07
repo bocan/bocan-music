@@ -78,7 +78,7 @@ public struct AlbumsGridView: View {
     public var body: some View {
         Group {
             if self.vm.isLoading {
-                ProgressView("Loading…")
+                LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.albums.isEmpty {
                 // Phase 4 audit L2: offer the same Add Music Folder action as TracksView.
