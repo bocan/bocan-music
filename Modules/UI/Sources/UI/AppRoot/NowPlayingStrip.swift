@@ -47,7 +47,7 @@ public struct NowPlayingStrip: View {
         }
         .frame(height: Theme.nowPlayingStripHeight)
         .padding(.horizontal, 16)
-        .background(.ultraThinMaterial)
+        .adaptiveMaterial()
         .overlay(alignment: .top) {
             Divider()
         }
