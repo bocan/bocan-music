@@ -31,8 +31,11 @@ public final class LyricsViewModel: ObservableObject {
     /// Per-track playback offset (in milliseconds) on top of any embedded `[offset:]` tag.
     @Published public var userOffsetMS = 0
 
-    /// `true` while an auto-fetch is in progress.
+    /// `true` while an auto-fetch or force-fetch is in progress.
     @Published public private(set) var isFetching = false
+
+    /// Whether LRClib fetching is enabled (mirrors `lyrics.lrclibEnabled` in Settings).
+    @AppStorage("lyrics.lrclibEnabled") public private(set) var lrclibEnabled = false
 
     // MARK: - Internal
 
@@ -89,6 +92,22 @@ public final class LyricsViewModel: ObservableObject {
                 _ = try await self.service.autoFetchIfMissing(for: trackID)
             } catch {
                 self.log.error("lyrics.fetch.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Unconditionally fetches lyrics from LRClib for the current track, replacing
+    /// any existing lyrics regardless of source.  Does nothing when LRClib is not
+    /// enabled in Settings or no track is loaded.
+    public func forceFetch() {
+        guard let trackID = currentTrackID, !isFetching, lrclibEnabled else { return }
+        self.isFetching = true
+        Task {
+            defer { self.isFetching = false }
+            do {
+                _ = try await self.service.forceFetch(for: trackID)
+            } catch {
+                self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
             }
         }
     }
