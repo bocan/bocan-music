@@ -113,9 +113,11 @@ public final class LyricsViewModel: ObservableObject {
     }
 
     /// Saves user-edited lyrics text for the current track.
+    /// Detects LRC-formatted input (lines with `[mm:ss.xx]` timestamps) and stores
+    /// it as `.synced`; plain text is stored as `.unsynced`.
     public func save(text: String) {
         guard let trackID = currentTrackID else { return }
-        let doc: LyricsDocument = .unsynced(text)
+        let doc = LRCParser.parseDocument(text)
         let embed = self.embedOnSave
         Task {
             do {
