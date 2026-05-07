@@ -20,10 +20,11 @@ public struct LyricsPane: View {
 
     // MARK: - State
 
-    @AppStorage("lyrics.paneWidth") private var paneWidth: Double = 260
+    @AppStorage("lyrics.paneWidth") private var paneWidth: Double = 280
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var showOffsetPopover = false
+    @State private var resizeDragStart: Double?
 
     // MARK: - Init
 
@@ -56,7 +57,27 @@ public struct LyricsPane: View {
             .frame(width: self.paneWidth)
             .background(.ultraThinMaterial)
             .overlay(alignment: .leading) {
-                Divider()
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 6)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                                .onChanged { value in
+                                    if self.resizeDragStart == nil {
+                                        self.resizeDragStart = self.paneWidth
+                                    }
+                                    let newWidth = (self.resizeDragStart ?? self.paneWidth) - value.translation.width
+                                    self.paneWidth = max(220, min(600, newWidth))
+                                }
+                                .onEnded { _ in self.resizeDragStart = nil }
+                        )
+                        .onHover { hovering in
+                            if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                        }
+                    Divider()
+                }
             }
             .sheet(isPresented: self.$vm.isEditorPresented) {
                 LyricsEditorSheet(
@@ -73,62 +94,71 @@ public struct LyricsPane: View {
     // MARK: - Sub-views
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Text("Lyrics")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 4) {
+            // Row 1: title, source badge, close
+            HStack(spacing: 6) {
+                Text("Lyrics")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
 
-            if let label = self.vm.documentSourceLabel {
-                self.sourceBadge(label)
-            }
-
-            Spacer()
-
-            self.fontSizePicker
-
-            if self.vm.lrclibEnabled, self.vm.document != nil {
-                self.replaceWithLRClibButton
-            }
-
-            if case .synced = self.vm.document {
-                self.offsetButton
-            }
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    self.showSearch.toggle()
+                if let label = self.vm.documentSourceLabel {
+                    self.sourceBadge(label)
                 }
-                if !self.showSearch { self.searchText = "" }
-            } label: {
-                Image(systemName: "magnifyingglass")
-            }
-            .buttonStyle(.plain)
-            .help("Find in lyrics")
-            .accessibilityLabel("Search lyrics")
 
-            Button {
-                self.vm.isEditorPresented = true
-            } label: {
-                Image(systemName: "square.and.pencil")
-            }
-            .buttonStyle(.plain)
-            .help("Edit lyrics (⌘⌥⇧L)")
-            .accessibilityLabel("Edit lyrics")
+                Spacer()
 
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    self.vm.paneVisible = false
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.vm.paneVisible = false
+                    }
+                } label: {
+                    Image(systemName: "xmark")
                 }
-            } label: {
-                Image(systemName: "xmark")
+                .buttonStyle(.plain)
+                .help("Close lyrics pane (⌘L)")
+                .accessibilityLabel("Close lyrics pane")
+                .accessibilityIdentifier(A11y.Lyrics.closeButton)
             }
-            .buttonStyle(.plain)
-            .help("Close lyrics pane (⌘L)")
-            .accessibilityLabel("Close lyrics pane")
-            .accessibilityIdentifier(A11y.Lyrics.closeButton)
+
+            // Row 2: font-size picker + action buttons
+            HStack(spacing: 6) {
+                self.fontSizePicker
+
+                Spacer()
+
+                if self.vm.lrclibEnabled, self.vm.document != nil {
+                    self.replaceWithLRClibButton
+                }
+
+                if case .synced = self.vm.document {
+                    self.offsetButton
+                }
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        self.showSearch.toggle()
+                    }
+                    if !self.showSearch { self.searchText = "" }
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .buttonStyle(.plain)
+                .help("Find in lyrics")
+                .accessibilityLabel("Search lyrics")
+
+                Button {
+                    self.vm.isEditorPresented = true
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                }
+                .buttonStyle(.plain)
+                .help("Edit lyrics (⌘⌥⇧L)")
+                .accessibilityLabel("Edit lyrics")
+            }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
     }
 
     private func sourceBadge(_ label: String) -> some View {
