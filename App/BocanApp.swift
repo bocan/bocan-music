@@ -167,6 +167,7 @@ struct BocanApp: App {
             )
             .environment(self.dspViewModel)
             .environmentObject(self.windowMode)
+            .environmentObject(self.lyricsViewModel)
             .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
         }
         .windowResizability(.contentSize)

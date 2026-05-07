@@ -364,6 +364,31 @@ struct BocanCommands: Commands {
             }
             .keyboardShortcut(KeyBindings.deselectAll)
             .disabled(!self.vm.hasTrackSelection)
+
+            Divider()
+
+            Button("Edit Lyrics\u{2026}") {
+                self.lyricsVM.openEditor()
+            }
+            .keyboardShortcut("l", modifiers: [.command, .option, .shift])
+            .help("Open the lyrics editor for the current track")
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+
+            if self.lyricsVM.lrclibEnabled {
+                Button("Fetch Lyrics from LRClib") {
+                    self.lyricsVM.forceFetch()
+                }
+                .help("Fetch lyrics from LRClib for the current track, replacing any existing lyrics")
+                .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.isFetching)
+            }
+
+            Button("Clear Lyrics") {
+                if let id = self.vm.nowPlaying.nowPlayingTrackID {
+                    self.lyricsVM.clearLyrics(for: id)
+                }
+            }
+            .help("Delete stored lyrics for the current track")
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.document == nil)
         }
 
         // Override the default help command to open the help page directly.

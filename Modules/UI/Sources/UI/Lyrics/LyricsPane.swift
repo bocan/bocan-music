@@ -21,7 +21,6 @@ public struct LyricsPane: View {
     // MARK: - State
 
     @AppStorage("lyrics.paneWidth") private var paneWidth: Double = 260
-    @State private var showEditor = false
     @State private var searchText = ""
     @State private var showSearch = false
     @State private var showOffsetPopover = false
@@ -59,10 +58,10 @@ public struct LyricsPane: View {
             .overlay(alignment: .leading) {
                 Divider()
             }
-            .sheet(isPresented: self.$showEditor) {
+            .sheet(isPresented: self.$vm.isEditorPresented) {
                 LyricsEditorSheet(
                     vm: self.vm,
-                    isPresented: self.$showEditor,
+                    isPresented: self.$vm.isEditorPresented,
                     currentPosition: self.position
                 )
             }
@@ -104,7 +103,7 @@ public struct LyricsPane: View {
             .accessibilityLabel("Search lyrics")
 
             Button {
-                self.showEditor = true
+                self.vm.isEditorPresented = true
             } label: {
                 Image(systemName: "square.and.pencil")
             }
