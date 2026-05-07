@@ -82,6 +82,10 @@ public struct LyricsPane: View {
 
             self.fontSizePicker
 
+            if self.vm.lrclibEnabled, self.vm.document != nil {
+                self.replaceWithLRClibButton
+            }
+
             Button {
                 withAnimation(.easeInOut(duration: 0.15)) {
                     self.showSearch.toggle()
@@ -161,5 +165,27 @@ public struct LyricsPane: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+
+    /// A compact header button that force-fetches lyrics from LRClib, replacing
+    /// whatever is currently stored.  Shows a spinner while the request is live.
+    private var replaceWithLRClibButton: some View {
+        Group {
+            if self.vm.isFetching {
+                ProgressView()
+                    .controlSize(.small)
+                    .help("Fetching from LRClib\u{2026}")
+            } else {
+                Button {
+                    self.vm.forceFetch()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.plain)
+                .help("Replace with LRClib result")
+                .accessibilityLabel("Replace lyrics with LRClib result")
+                .accessibilityIdentifier(A11y.Lyrics.replaceButton)
+            }
+        }
     }
 }

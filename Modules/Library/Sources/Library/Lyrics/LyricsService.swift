@@ -114,6 +114,44 @@ public actor LyricsService {
         }
     }
 
+    /// Unconditionally fetches lyrics from LRClib for `trackID`, replacing any
+    /// existing record regardless of its source.  Skips only if no `fetcher` is
+    /// configured.
+    ///
+    /// The `lyrics.lrclibEnabled` preference is intentionally **not** checked here;
+    /// it is the caller's responsibility to gate the action on that preference.
+    ///
+    /// Returns the fetched document, or `nil` when the fetcher is absent or no
+    /// match is found on LRClib.
+    public func forceFetch(for trackID: Int64) async throws -> LyricsDocument? {
+        guard let fetcher else { return nil }
+        guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
+
+        self.log.debug("lrclib.forceFetch.start", ["track": trackID])
+
+        let artistName: String = if let aid = track.artistID,
+                                    let artist = try? await artistRepo.fetch(id: aid) {
+            artist.name
+        } else {
+            ""
+        }
+
+        let doc = try await fetcher.get(
+            artist: artistName,
+            title: track.title ?? "",
+            album: nil,
+            duration: track.duration
+        )
+
+        if let doc {
+            try await self.setLyrics(doc, for: trackID, source: "lrclib")
+            self.log.debug("lrclib.forceFetch.saved", ["track": trackID])
+        } else {
+            self.log.debug("lrclib.forceFetch.notFound", ["track": trackID])
+        }
+        return doc
+    }
+
     /// If no lyrics exist for `trackID`, the user has enabled LRClib fetch, and a
     /// `fetcher` is configured, attempts to retrieve lyrics and saves the result.
     ///

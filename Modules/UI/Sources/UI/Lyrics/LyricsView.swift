@@ -62,10 +62,26 @@ public struct LyricsView: View {
             Text("No Lyrics")
                 .font(.headline)
                 .foregroundStyle(.secondary)
-            Text("Paste lyrics in the editor or fetch from LRClib.")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
+
+            if self.vm.isFetching {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Fetching from LRClib\u{2026}")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            } else if self.vm.lrclibEnabled {
+                Button("Fetch from LRClib") {
+                    self.vm.forceFetch()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityIdentifier(A11y.Lyrics.fetchButton)
+            } else {
+                Text("Paste lyrics in the editor, or enable LRClib in Settings.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
