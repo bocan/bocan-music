@@ -151,6 +151,7 @@ struct BocanApp: App {
     private let visualizerViewModel: VisualizerViewModel
     private let scrobbleService: ScrobbleService
     private let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
+    private let backupSettingsViewModel: BackupSettingsViewModel
     private let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
     private let routeViewModel: RouteViewModel
 
@@ -189,11 +190,14 @@ struct BocanApp: App {
             .environmentObject(self.libraryViewModel)
 
         Settings {
-            SettingsScene(scrobbleViewModel: self.scrobbleSettingsViewModel)
-                .environment(self.dspViewModel)
-                // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
-                .environmentObject(self.libraryViewModel)
-                .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
+            SettingsScene(
+                backupViewModel: self.backupSettingsViewModel,
+                scrobbleViewModel: self.scrobbleSettingsViewModel
+            )
+            .environment(self.dspViewModel)
+            // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
+            .environmentObject(self.libraryViewModel)
+            .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
         }
 
         // MARK: Visualizer fullscreen
@@ -290,6 +294,7 @@ struct BocanApp: App {
         let scrobbleParts = Self.makeScrobble(database: db, log: self.log)
         self.scrobbleService = scrobbleParts.service
         self.scrobbleSettingsViewModel = scrobbleParts.viewModel
+        self.backupSettingsViewModel = BackupSettingsViewModel(database: db)
 
         let qp = QueuePlayer(engine: eng, database: db, scrobbleSink: scrobbleParts.service)
         let scanner = LibraryScanner(database: db)

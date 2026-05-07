@@ -68,18 +68,54 @@ public struct BackupService: Sendable {
             .appendingPathComponent("Documents/Bocan", isDirectory: true)
     }
 
-    /// Backs up to iCloud Drive if available.
+    /// Backs up to iCloud Drive if available, keeping at most `keepLast` recent copies.
     ///
-    /// The file is named `library-<ISO8601 timestamp>.sqlite`.
+    /// Each backup is named `library-<ISO8601 timestamp>.sqlite`.  After a
+    /// successful write any older copies beyond `keepLast` are deleted so the
+    /// folder never accumulates an unbounded number of files regardless of how
+    /// long the app runs.  `keepLast` defaults to 3.
+    ///
+    /// The backup timestamp is also recorded under `"backup.lastDate"` in the
+    /// settings table so the UI can display "Last backed up: …".
+    ///
     /// Returns `true` if the backup was performed, `false` if iCloud is unavailable.
     @discardableResult
-    public func backupToiCloudIfAvailable() async throws -> Bool {
+    public func backupToiCloudIfAvailable(keepLast: Int = 3) async throws -> Bool {
         guard let dir = iCloudBackupDirectory() else { return false }
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
         let timestamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
         let dest = dir.appendingPathComponent("library-\(timestamp).sqlite")
         try await self.backup(to: dest)
+        self.pruneBackups(in: dir, keepLast: keepLast)
+        // Record date so the UI can show "Last backed up: X ago".
+        try await SettingsRepository(database: self.database).set(
+            Date().timeIntervalSince1970,
+            for: "backup.lastDate"
+        )
         return true
+    }
+
+    // MARK: - Private helpers
+
+    /// Deletes the oldest `library-*.sqlite` files in `dir`, keeping `keepLast`.
+    private func pruneBackups(in dir: URL, keepLast: Int) {
+        let fm = FileManager.default
+        guard let items = try? fm.contentsOfDirectory(
+            at: dir,
+            includingPropertiesForKeys: [.creationDateKey],
+            options: []
+        ) else { return }
+        let backups = items
+            .filter { $0.lastPathComponent.hasPrefix("library-") && $0.pathExtension == "sqlite" }
+            .sorted {
+                let ld = (try? $0.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+                let rd = (try? $1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+                return ld > rd // newest first
+            }
+        for old in backups.dropFirst(keepLast) {
+            try? fm.removeItem(at: old)
+            self.log.debug("backup.pruned", ["file": old.lastPathComponent])
+        }
     }
 }

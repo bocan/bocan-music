@@ -14,9 +14,14 @@ import SwiftUI
 public struct SettingsScene: View {
     @State private var selectedTab: SettingsTab = .general
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
+    private let backupViewModel: BackupSettingsViewModel
 
-    public init(scrobbleViewModel: ScrobbleSettingsViewModel? = nil) {
+    public init(
+        backupViewModel: BackupSettingsViewModel,
+        scrobbleViewModel: ScrobbleSettingsViewModel? = nil
+    ) {
         self.scrobbleViewModel = scrobbleViewModel
+        self.backupViewModel = backupViewModel
     }
 
     public var body: some View {
@@ -41,7 +46,7 @@ public struct SettingsScene: View {
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
                 .tag(SettingsTab.appearance)
 
-            AdvancedSettingsView()
+            AdvancedSettingsView(backupVM: self.backupViewModel)
                 .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
                 .tag(SettingsTab.advanced)
 
