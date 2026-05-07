@@ -1,10 +1,10 @@
 import SwiftUI
 
 extension EnvironmentValues {
-    // Snapshot-test override for `colorSchemeContrast == .increased`.
-    //
-    // When `nil` (the default), views fall back to the system
-    // `colorSchemeContrast` environment value.
+    /// Snapshot-test override for `colorSchemeContrast == .increased`.
+    ///
+    /// When `nil` (the default), views fall back to the system
+    /// `colorSchemeContrast` environment value.
     @Entry var bocanHighContrast: Bool?
 }
 
