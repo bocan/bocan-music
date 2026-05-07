@@ -92,8 +92,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // MARK: UNUserNotificationCenterDelegate
 
     /// Tapping a track-change banner brings the app to the foreground.
-    /// `nonisolated` because UNUserNotificationCenter may invoke this off the main thread;
-    /// AppKit work is dispatched onto the main actor explicitly.
+    /// `nonisolated` because UNUserNotificationCenter may invoke this off the main thread.
     nonisolated func userNotificationCenter(
         _: UNUserNotificationCenter,
         didReceive _: UNNotificationResponse,
