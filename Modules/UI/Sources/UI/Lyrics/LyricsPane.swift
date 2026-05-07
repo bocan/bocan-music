@@ -24,6 +24,7 @@ public struct LyricsPane: View {
     @State private var showEditor = false
     @State private var searchText = ""
     @State private var showSearch = false
+    @State private var showOffsetPopover = false
 
     // MARK: - Init
 
@@ -84,6 +85,10 @@ public struct LyricsPane: View {
 
             if self.vm.lrclibEnabled, self.vm.document != nil {
                 self.replaceWithLRClibButton
+            }
+
+            if case .synced = self.vm.document {
+                self.offsetButton
             }
 
             Button {
@@ -165,6 +170,68 @@ public struct LyricsPane: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+
+    /// A compact header button that opens a popover for adjusting the sync offset
+    /// (−5 000 ms to +5 000 ms in 50 ms steps).  Only shown for synced documents.
+    private var offsetButton: some View {
+        Button {
+            self.showOffsetPopover.toggle()
+        } label: {
+            Image(systemName: "timer")
+                .symbolVariant(self.vm.userOffsetMS != 0 ? .fill : .none)
+                .foregroundStyle(self.vm.userOffsetMS != 0 ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+        }
+        .buttonStyle(.plain)
+        .help(self.vm
+            .userOffsetMS == 0 ? "Adjust sync offset" : "Sync offset: \(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms")
+        .accessibilityLabel("Adjust lyrics sync offset")
+        .accessibilityIdentifier(A11y.Lyrics.offsetButton)
+        .popover(isPresented: self.$showOffsetPopover, arrowEdge: .bottom) {
+            self.offsetPopover
+        }
+    }
+
+    private var offsetPopover: some View {
+        let offsetBinding = Binding<Double>(
+            get: { Double(self.vm.userOffsetMS) },
+            set: { self.vm.userOffsetMS = Int($0.rounded()) }
+        )
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Sync Offset")
+                .font(.headline)
+
+            Slider(value: offsetBinding, in: -5000 ... 5000, step: 50) {
+                Text("Offset")
+            }
+            .accessibilityIdentifier(A11y.Lyrics.offsetSlider)
+            .frame(width: 220)
+
+            HStack {
+                Text(
+                    self.vm.userOffsetMS == 0
+                        ? "0 ms"
+                        : "\(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms"
+                )
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button("Reset") {
+                    self.vm.userOffsetMS = 0
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.vm.userOffsetMS == 0 ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
+                .disabled(self.vm.userOffsetMS == 0)
+            }
+
+            Text("Shifts highlighted line timing.\nResets when the track changes.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(16)
+        .frame(width: 260)
     }
 
     /// A compact header button that force-fetches lyrics from LRClib, replacing
