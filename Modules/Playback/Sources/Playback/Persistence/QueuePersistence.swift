@@ -82,11 +82,19 @@ public actor QueuePersistence {
             repeatMode: repeatMode,
             shuffleState: shuffleState
         )
-        do {
-            try await self.repo.set(payload, for: Self.settingsKey)
-            self.log.debug("queue.saved", ["count": items.count])
-        } catch {
-            self.log.error("queue.save.failed", ["error": String(reflecting: error)])
-        }
+        let repo = self.repo
+        let log = self.log
+        let count = items.count
+        // JSON-encoding 14k+ QueueItems (each with a security-scoped bookmark blob) is
+        // CPU-heavy. Detaching at .background priority prevents the encoder from
+        // competing with the CoreAudio IOWorkLoop and causing audible drop-outs.
+        await Task.detached(priority: .background) {
+            do {
+                try await repo.set(payload, for: QueuePersistence.settingsKey)
+                log.debug("queue.saved", ["count": count])
+            } catch {
+                log.error("queue.save.failed", ["error": String(reflecting: error)])
+            }
+        }.value
     }
 }
