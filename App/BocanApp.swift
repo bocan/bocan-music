@@ -171,7 +171,16 @@ struct BocanApp: App {
 
         // MARK: Menu bar widget
 
-        MenuBarExtra("Bòcan", systemImage: "music.note", isInserted: self.$showMenuBarExtra) {
+        // Accessing isPlaying / isPaused from the @Observable NowPlayingViewModel
+        // here subscribes App.body to those two properties only — re-evaluating body
+        // at most twice per track transition (once to true, once back to false).
+        // This is safe because @Observable gives property-level granularity, unlike
+        // @StateObject/@ObservedObject which would subscribe to every objectWillChange.
+        let np = self.libraryViewModel.nowPlaying
+        let menuBarLabel: String = np.isPlaying ? "Bòcan — Playing"
+            : (np.isPaused ? "Bòcan — Paused" : "Bòcan")
+        let menuBarIcon: String = np.isPlaying ? "music.note.list" : "music.note"
+        MenuBarExtra(menuBarLabel, systemImage: menuBarIcon, isInserted: self.$showMenuBarExtra) {
             MenuBarExtraScene(vm: self.libraryViewModel.nowPlaying)
         }
         .menuBarExtraStyle(.window)
