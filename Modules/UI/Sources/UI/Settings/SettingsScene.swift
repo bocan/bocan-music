@@ -4,7 +4,9 @@ import SwiftUI
 
 /// Top-level `Settings` scene content.
 ///
-/// Tabbed sidebar navigation (macOS 14+ preferred style).
+/// Tabbed toolbar navigation. About is intentionally absent — it is accessible
+/// via the standard macOS "Bòcan → About Bòcan" app menu item, and including it
+/// in the tab bar caused overflow + broken tab behaviour on macOS 26.
 /// Usage in `BocanApp`:
 /// ```swift
 /// Settings { SettingsScene() }
@@ -60,10 +62,6 @@ public struct SettingsScene: View {
                     .tabItem { Label("Scrobbling", systemImage: "dot.radiowaves.left.and.right") }
                     .tag(SettingsTab.scrobble)
             }
-
-            AboutView()
-                .tabItem { Label("About", systemImage: "info.circle") }
-                .tag(SettingsTab.about)
         }
         .frame(minWidth: 520, minHeight: 360)
     }
@@ -72,5 +70,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, about
+    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble
 }
