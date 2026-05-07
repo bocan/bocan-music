@@ -55,32 +55,40 @@ public struct LyricsView: View {
     // MARK: - Sub-views
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "music.note")
-                .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
-            Text("No Lyrics")
-                .font(.headline)
-                .foregroundStyle(.secondary)
-
+        Group {
             if self.vm.isFetching {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Fetching from LRClib\u{2026}")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            } else if self.vm.lrclibEnabled {
-                Button("Fetch from LRClib") {
-                    self.vm.forceFetch()
+                VStack(spacing: 10) {
+                    ProgressView()
+                        .controlSize(.regular)
+                    Text("Fetching lyrics\u{2026}")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityIdentifier(A11y.Lyrics.fetchButton)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Fetching lyrics")
             } else {
-                Text("Paste lyrics in the editor, or enable LRClib in Settings.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 12) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.tertiary)
+                    Text("No Lyrics")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+
+                    if self.vm.lrclibEnabled {
+                        Button("Fetch from LRClib") {
+                            self.vm.forceFetch()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .accessibilityIdentifier(A11y.Lyrics.fetchButton)
+                    } else {
+                        Text("Paste lyrics in the editor, or enable LRClib in Settings.")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .multilineTextAlignment(.center)
+                    }
+                }
             }
         }
         .padding()
