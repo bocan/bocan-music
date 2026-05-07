@@ -170,6 +170,7 @@ public extension LibraryViewModel {
         self.scanTask = nil
         self.stopScanFlush()
         self.isScanning = false
+        self.isInitialScan = false
         self.scanCurrentPath = ""
     }
 
@@ -252,6 +253,9 @@ public extension LibraryViewModel {
     internal func triggerScan(mode: ScanMode) {
         guard let scanner else { return }
         guard !self.isScanning else { return }
+        // Flag a fresh (empty-library) scan so ContentPane can show the
+        // progress overlay instead of an empty track list.
+        self.isInitialScan = self.tracks.rows.isEmpty
         self.isScanning = true
         self.scanWalked = 0
         self.scanInserted = 0
@@ -275,6 +279,7 @@ public extension LibraryViewModel {
             if self.isScanning {
                 self.stopScanFlush()
                 self.isScanning = false
+                self.isInitialScan = false
                 self.scanCurrentPath = ""
             }
         }
@@ -319,6 +324,10 @@ public extension LibraryViewModel {
                 await self.albums.load()
                 await self.artists.load()
                 await self.refreshRoots()
+                // Clear the initial-scan overlay AFTER tracks are loaded so the
+                // transition from progress view → track list is instant rather
+                // than showing an empty list first.
+                self.isInitialScan = false
                 await self.startOrStopWatcher()
             }
 
