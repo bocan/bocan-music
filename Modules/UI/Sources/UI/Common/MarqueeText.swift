@@ -1,8 +1,11 @@
 import SwiftUI
 
+/// `EnvironmentValues` extension for ``MarqueeText`` accessibility overrides.
 public extension EnvironmentValues {
-    // Override reduce-motion for `MarqueeText`. Set to `true` or `false` in tests;
-    // leave unset in production to follow the system `accessibilityReduceMotion` value.
+    /// Override reduce-motion for ``MarqueeText``.
+    ///
+    /// Set to `true` or `false` in tests; leave `nil` (default) in production
+    /// to follow the system `accessibilityReduceMotion` value.
     @Entry var marqueeReduceMotion: Bool?
 }
 
