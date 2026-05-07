@@ -145,6 +145,8 @@ public enum A11y {
         public static let emptyState = "lyricsPane.emptyState"
         public static let fetchButton = "lyricsPane.fetchButton"
         public static let replaceButton = "lyricsPane.replaceButton"
+        public static let offsetButton = "lyricsPane.offsetButton"
+        public static let offsetSlider = "lyricsPane.offsetSlider"
         public static let unsyncedScroll = "lyricsPane.unsyncedScroll"
         public static let syncedScroll = "lyricsPane.syncedScroll"
         public static let editor = "lyricsEditor"
