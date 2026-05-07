@@ -97,7 +97,7 @@ Modules/App/Sources/App/LaunchSanity.swift
 
 ### Sparkle 2
 
-7. **SPM dependency**: `https://github.com/sparkle-project/Sparkle` pinned to 2.x.
+7. **SPM dependency**: `https://github.com/sparkle-project/Sparkle` pinned to 2.9.x
 
 8. **Public key** generated with Sparkle's `generate_keys` tool. Public `.pem` bundled in the app. Private key stored in 1Password / CI secrets only.
 
