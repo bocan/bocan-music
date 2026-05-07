@@ -48,7 +48,7 @@ public struct LyricsPane: View {
                     self.searchBar
                     Divider()
                 }
-                LyricsView(vm: self.vm, onSeek: self.onSeek)
+                LyricsView(vm: self.vm, onSeek: self.onSeek, searchText: self.searchText)
                     .onChange(of: self.position) { _, newPos in
                         self.vm.positionDidChange(newPos)
                     }
@@ -83,14 +83,16 @@ public struct LyricsPane: View {
             self.fontSizePicker
 
             Button {
-                self.showSearch.toggle()
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    self.showSearch.toggle()
+                }
+                if !self.showSearch { self.searchText = "" }
             } label: {
                 Image(systemName: "magnifyingglass")
             }
             .buttonStyle(.plain)
-            .help("Find in lyrics (⌘F)")
+            .help("Find in lyrics")
             .accessibilityLabel("Search lyrics")
-            .keyboardShortcut("f", modifiers: .command)
 
             Button {
                 self.showEditor = true
@@ -139,11 +141,23 @@ public struct LyricsPane: View {
     }
 
     private var searchBar: some View {
-        HStack {
+        HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Find", text: self.$searchText)
+                .font(.caption)
+            TextField("Find in lyrics", text: self.$searchText)
                 .textFieldStyle(.plain)
+            if !self.searchText.isEmpty {
+                Button {
+                    self.searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear search")
+                .accessibilityLabel("Clear search")
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
