@@ -15,6 +15,9 @@ public struct MiniPlayerView: View {
     @EnvironmentObject private var windowMode: WindowModeController
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
+    /// Per-app reduce-motion toggle (Appearance Settings §3 — see issue #144).
+    @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     public init(vm: MiniPlayerViewModel) {
         self.vm = vm
@@ -22,6 +25,11 @@ public struct MiniPlayerView: View {
 
     public var body: some View {
         self.content
+            // Spring-animate layout switches; skipped when reduce-motion is active.
+            .animation(
+                self.reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.8),
+                value: self.vm.layout
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .adaptiveMaterial()
             .background(MiniPlayerWindowSetup().frame(width: 0, height: 0).allowsHitTesting(false))
@@ -65,6 +73,7 @@ public struct MiniPlayerView: View {
         switch self.vm.layout {
         case .strip:
             self.stripLayout
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
 
         case .compact:
             MiniPlayerCompact(vm: self.vm)
@@ -72,6 +81,7 @@ public struct MiniPlayerView: View {
                 .overlay(alignment: .topTrailing) {
                     self.chrome.padding(6)
                 }
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
 
         case .square:
             MiniPlayerSquare(vm: self.vm)
@@ -79,6 +89,7 @@ public struct MiniPlayerView: View {
                 .overlay(alignment: .topTrailing) {
                     self.chrome.padding(6)
                 }
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
         }
     }
 
@@ -200,6 +211,11 @@ public struct MiniPlayerView: View {
 
     // MARK: - Window helpers
 
+    /// `true` when either the system-level or per-app reduce-motion preference is active.
+    private var reduceMotion: Bool {
+        self.systemReduceMotion || self.appReduceMotion
+    }
+
     private func applyWindowLevel() {
         guard let window = NSApp.windows.first(where: {
             $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
@@ -210,9 +226,18 @@ public struct MiniPlayerView: View {
     private func resizeWindow(for layout: MiniPlayerViewModel.Layout) {
         guard let win = MiniPlayerWindowTracker.shared.window else { return }
         let size = layout.defaultWindowSize
+        let targetSize = NSSize(width: size.width, height: size.height)
+        guard !self.reduceMotion else {
+            win.setContentSize(targetSize)
+            return
+        }
         NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.2
-            win.animator().setContentSize(NSSize(width: size.width, height: size.height))
+            ctx.duration = 0.35
+            // Approximate spring(response: 0.35, dampingFraction: 0.8) — slight
+            // overshoot on P2/P3 gives the same barely-perceptible spring feel
+            // that the SwiftUI .animation applies to the content inside the window.
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.2, 0.64, 1.0)
+            win.animator().setContentSize(targetSize)
         }
     }
 
