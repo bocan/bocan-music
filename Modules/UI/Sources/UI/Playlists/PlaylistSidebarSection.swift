@@ -13,6 +13,8 @@ public struct PlaylistSidebarSection: View {
     @ObservedObject public var vm: PlaylistSidebarViewModel
     public let smartPlaylistService: SmartPlaylistService
 
+    @AppStorage("ui.sidebar.playlistsCollapsed") private var isCollapsed = false
+
     public init(vm: PlaylistSidebarViewModel, smartPlaylistService: SmartPlaylistService) {
         self.vm = vm
         self.smartPlaylistService = smartPlaylistService
@@ -20,19 +22,37 @@ public struct PlaylistSidebarSection: View {
 
     public var body: some View {
         Section {
-            if self.vm.nodes.isEmpty {
-                Text("No playlists yet")
-                    .font(Typography.footnote)
-                    .foregroundStyle(Color.textTertiary)
-                    .padding(.vertical, 2)
-            } else {
-                ForEach(self.vm.flattened(), id: \.node.id) { entry in
-                    self.row(for: entry.node, depth: entry.depth)
+            if !self.isCollapsed {
+                if self.vm.nodes.isEmpty {
+                    Text("No playlists yet")
+                        .font(Typography.footnote)
+                        .foregroundStyle(Color.textTertiary)
+                        .padding(.vertical, 2)
+                } else {
+                    ForEach(self.vm.flattened(), id: \.node.id) { entry in
+                        self.row(for: entry.node, depth: entry.depth)
+                    }
                 }
             }
         } header: {
             HStack {
-                Text("Playlists")
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.isCollapsed.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Playlists")
+                        Image(systemName: self.isCollapsed ? "chevron.down" : "chevron.up")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .help(self.isCollapsed ? "Expand Playlists" : "Collapse Playlists")
+                .accessibilityLabel(self.isCollapsed ? "Expand Playlists" : "Collapse Playlists")
+                .accessibilityValue(self.isCollapsed ? "Collapsed" : "Expanded")
+
                 Spacer()
                 Menu {
                     Button("New Playlist") { self.vm.beginNewPlaylist() }
