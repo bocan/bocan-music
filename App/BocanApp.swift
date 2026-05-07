@@ -161,6 +161,8 @@ struct BocanApp: App {
         // the track list and transport controls stay fully interactive.
         Window("Equaliser & DSP", id: "dsp") {
             DSPSheet(vm: self.dspViewModel)
+                // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
+                .environmentObject(self.libraryViewModel)
         }
         .defaultSize(width: 600, height: 520)
         .windowResizability(.contentMinSize)
