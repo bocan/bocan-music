@@ -54,6 +54,44 @@ public struct BackupService: Sendable {
         }
     }
 
+    /// Returns the local backup directory: `Application Support/Bocan/Backups/`.
+    ///
+    /// The directory is always accessible (no sign-in required) and is created
+    /// lazily when the first backup is written.
+    public func localBackupDirectory() -> URL {
+        let base = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first ?? URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Application Support")
+        return base.appendingPathComponent("Bocan/Backups", isDirectory: true)
+    }
+
+    /// Backs up to `~/Library/Application Support/Bocan/Backups/`, keeping at most `keepLast` recent copies.
+    ///
+    /// Files are named `library-<ISO8601 timestamp>.sqlite`.  After each
+    /// successful write older files beyond `keepLast` are pruned.  The
+    /// timestamp is recorded under `"backup.local.lastDate"` in the settings
+    /// table so the UI can display "Last backed up: …".
+    ///
+    /// Unlike the iCloud backup this always returns `true`; local storage is
+    /// always available.
+    @discardableResult
+    public func backupToLocal(keepLast: Int = 5) async throws -> Bool {
+        let dir = self.localBackupDirectory()
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        let timestamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let dest = dir.appendingPathComponent("library-\(timestamp).sqlite")
+        try await self.backup(to: dest)
+        self.pruneBackups(in: dir, keepLast: keepLast)
+        try await SettingsRepository(database: self.database).set(
+            Date().timeIntervalSince1970,
+            for: "backup.local.lastDate"
+        )
+        return true
+    }
+
     /// Returns the iCloud Drive backup directory URL if available, otherwise `nil`.
     ///
     /// Logs a `.notice` if iCloud Drive is not configured rather than throwing.

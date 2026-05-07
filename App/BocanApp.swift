@@ -348,7 +348,6 @@ struct BocanApp: App {
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp, database: db)
 
-        // Phase 2 audit #6: opportunistic iCloud backup, gated on settings.
         Self.scheduleLaunchBackup(database: db)
 
         // Start scrobble worker once everything is wired up.
@@ -455,18 +454,26 @@ struct BocanApp: App {
         return viewModel
     }
 
-    /// Phase 2 audit #6: schedules an opportunistic iCloud Drive backup
-    /// shortly after launch.  Detached so a stalled iCloud sign-in cannot
-    /// delay UI; failures log only and never block startup.
+    /// Schedules launch-time backups (iCloud + local), each gated on its own setting.
     private static func scheduleLaunchBackup(database db: Database) {
         Task.detached { [db] in
             let settings = SettingsRepository(database: db)
-            let enabled = await (try? settings.get(Bool.self, for: "backup.enabled")) ?? false
-            guard enabled == true else { return }
-            do {
-                _ = try await BackupService(database: db).backupToiCloudIfAvailable()
-            } catch {
-                AppLogger.make(.app).error("backup.launch_failed", ["error": String(reflecting: error)])
+            let service = BackupService(database: db)
+            let log = AppLogger.make(.app)
+            if await (try? settings.get(Bool.self, for: "backup.enabled")) ?? false {
+                do {
+                    _ = try await service.backupToiCloudIfAvailable()
+                } catch {
+                    log.error("backup.icloud.launch_failed", ["error": String(reflecting: error)])
+                }
+            }
+            if await (try? settings.get(Bool.self, for: "backup.local.enabled")) ?? true {
+                let keep = await (try? settings.get(Int.self, for: "backup.local.keepCount")) ?? 5
+                do {
+                    _ = try await service.backupToLocal(keepLast: keep)
+                } catch {
+                    log.error("backup.local.launch_failed", ["error": String(reflecting: error)])
+                }
             }
         }
     }
@@ -491,5 +498,3 @@ struct BocanApp: App {
         return ScrobbleParts(service: service, viewModel: viewModel)
     }
 }
-
-// MARK: - Helpers
