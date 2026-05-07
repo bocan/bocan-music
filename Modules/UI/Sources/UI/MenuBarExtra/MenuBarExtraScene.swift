@@ -45,15 +45,18 @@ public struct MenuBarExtraScene: View {
 
             // Track info
             VStack(spacing: 3) {
-                Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
-                    .font(.headline)
-                    .lineLimit(1)
+                MarqueeText(
+                    self.vm.title.isEmpty ? "Not playing" : self.vm.title,
+                    font: .headline,
+                    foregroundStyle: Color.primary
+                )
 
                 if !self.vm.artist.isEmpty {
-                    Text(self.vm.artist)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    MarqueeText(
+                        self.vm.artist,
+                        font: .subheadline,
+                        foregroundStyle: Color.secondary
+                    )
                 }
             }
             .frame(maxWidth: .infinity)

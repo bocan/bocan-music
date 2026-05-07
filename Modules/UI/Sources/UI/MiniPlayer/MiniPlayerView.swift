@@ -86,10 +86,12 @@ public struct MiniPlayerView: View {
 
     private var stripLayout: some View {
         HStack(spacing: 10) {
-            Text(self.vm.nowPlaying.title.isEmpty ? "Not playing" : self.vm.nowPlaying.title)
-                .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
-                .foregroundStyle(Color.textPrimary)
+            MarqueeText(
+                self.vm.nowPlaying.title.isEmpty ? "Not playing" : self.vm.nowPlaying.title,
+                font: .system(size: 12, weight: .medium),
+                foregroundStyle: Color.textPrimary
+            )
+            .layoutPriority(-1)
 
             Spacer()
 
