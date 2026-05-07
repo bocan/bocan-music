@@ -22,6 +22,18 @@ public struct ContentPane: View {
     public var body: some View {
         self.destinationContent
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay {
+                if self.vm.isInitialScan {
+                    ScanProgressPane(
+                        walked: self.vm.scanWalked,
+                        inserted: self.vm.scanInserted,
+                        currentPath: self.vm.scanCurrentPath
+                    )
+                    .background(Color(nsColor: .windowBackgroundColor))
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: self.vm.isInitialScan)
     }
 
     @ViewBuilder

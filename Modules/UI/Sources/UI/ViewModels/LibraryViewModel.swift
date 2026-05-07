@@ -141,6 +141,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     // MARK: - Scan state
 
     @Published public var isScanning = false
+    /// `true` from the moment a scan begins against an empty library until the
+    /// post-scan `tracks.load()` has completed.  `ContentPane` uses this to
+    /// show a full-pane progress overlay instead of an empty tracks list —
+    /// avoiding the confusing flash of "nothing here" during a first-ever scan.
+    /// For re-scans (library already populated) this stays `false` and the
+    /// existing track list remains visible throughout.
+    @Published public var isInitialScan = false
     @Published public var scanWalked = 0
     @Published public var scanInserted = 0
     @Published public var scanUpdated = 0
