@@ -16,6 +16,9 @@ public final class LyricsViewModel: ObservableObject {
     /// The resolved lyrics for the current track, or `nil` when unavailable.
     @Published public private(set) var document: LyricsDocument?
 
+    /// The source that produced ``document``: `"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil`.
+    @Published public private(set) var documentSource: String?
+
     /// Index into `syncedLines` that corresponds to the current playback position.
     @Published public private(set) var currentLineIndex: Int?
 
@@ -58,10 +61,33 @@ public final class LyricsViewModel: ObservableObject {
 
     // MARK: - Public API
 
+    /// Human-readable label for ``documentSource``, suitable for a badge in the UI.
+    ///
+    /// Returns `nil` when no lyrics are loaded.
+    public var documentSourceLabel: String? {
+        switch self.documentSource {
+        case "embedded":
+            "Embedded"
+
+        case "sidecar":
+            "Sidecar"
+
+        case "lrclib":
+            "LRClib"
+
+        case "user":
+            "Edited"
+
+        default:
+            nil
+        }
+    }
+
     /// Called whenever the now-playing track changes.  Loads lyrics and wires observation.
     public func trackDidChange(trackID: Int64?) {
         self.currentTrackID = trackID
         self.document = nil
+        self.documentSource = nil
         self.currentLineIndex = nil
         self.userOffsetMS = 0
         self.observeTask?.cancel()
@@ -194,12 +220,13 @@ public final class LyricsViewModel: ObservableObject {
     private func startObserving(trackID: Int64) {
         self.observeTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await self.service.observe(trackID)
+            let stream = await self.service.observeWithSource(trackID)
             do {
-                for try await doc in stream {
+                for try await (doc, source) in stream {
                     try Task.checkCancellation()
                     await MainActor.run {
                         self.document = doc
+                        self.documentSource = source
                         self.currentLineIndex = nil
                         if doc != nil, self.autoShowPane {
                             self.paneVisible = true

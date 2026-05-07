@@ -78,6 +78,10 @@ public struct LyricsPane: View {
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
+            if let label = self.vm.documentSourceLabel {
+                self.sourceBadge(label)
+            }
+
             Spacer()
 
             self.fontSizePicker
@@ -125,6 +129,19 @@ public struct LyricsPane: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private func sourceBadge(_ label: String) -> some View {
+        let isSynced = if case .synced = self.vm.document { true } else { false }
+        let detail = isSynced ? "Synced" : "Plain"
+        return Text("\(label) · \(detail)")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(.quaternary, in: Capsule())
+            .help("Lyrics source: \(label) (\(detail))")
+            .accessibilityLabel("Lyrics source: \(label), \(detail)")
     }
 
     private var fontSizePicker: some View {
