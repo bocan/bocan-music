@@ -49,12 +49,21 @@ public actor Database {
     /// Returns a stream that emits the current value immediately and again on every change.
     ///
     /// The stream completes only if an error occurs or the consuming `Task` is cancelled.
-    /// Uses `.async(onQueue: .main)` scheduling to avoid a deadlock in GRDB's
-    /// `ValueConcurrentObserver` when the writer queue tries to synchronously re-enter itself.
+    /// Uses `.mainActor` scheduling so GRDB uses `ValueMainObserver` instead of
+    /// `ValueConcurrentObserver`. The latter takes a WAL snapshot via
+    /// `WALSnapshotTransaction.commitAndRelease → reentrantSync → dispatch_sync`, which
+    /// deadlocks due to a bug in GRDB 7.9.0+ (nested reentrant detection fails).
+    ///
+    /// The fix: set `requiresWriteAccess = true` so `DatabasePool._add` routes to
+    /// `_addWriteOnly → ValueWriteOnlyObserver` instead of `_addConcurrent → ValueConcurrentObserver`.
+    /// `ValueWriteOnlyObserver` fetches on the writer connection directly — no WAL snapshot,
+    /// no deadlock. Reads and writes are serialized on the writer queue, which is acceptable
+    /// because observations are infrequent and the app uses actor-isolated access anyway.
     public func observe<T: Sendable>(
         value: @escaping @Sendable (GRDB.Database) throws -> T
     ) -> AsyncThrowingStream<T, Error> {
-        let observation = ValueObservation.tracking(value)
+        var observation = ValueObservation.tracking(value)
+        observation.requiresWriteAccess = true // use ValueWriteOnlyObserver, avoid WAL snapshot deadlock
         let writer = self.writer
         return AsyncThrowingStream { continuation in
             let cancellable = observation.start(
@@ -71,13 +80,13 @@ public actor Database {
     ///
     /// Use this overload when the observed region is known up front and should
     /// not be inferred from the fetch closure.
-    /// Uses `.async(onQueue: .main)` scheduling to avoid a deadlock in GRDB's
-    /// `ValueConcurrentObserver` when the writer queue tries to synchronously re-enter itself.
+    /// Uses `requiresWriteAccess = true` — see `observe(value:)` for the full rationale.
     public func observe<T: Sendable>(
         regions: [any DatabaseRegionConvertible],
         value: @escaping @Sendable (GRDB.Database) throws -> T
     ) -> AsyncThrowingStream<T, Error> {
-        let observation = ValueObservation.tracking(regions: regions, fetch: value)
+        var observation = ValueObservation.tracking(regions: regions, fetch: value)
+        observation.requiresWriteAccess = true // use ValueWriteOnlyObserver, avoid WAL snapshot deadlock
         let writer = self.writer
         return AsyncThrowingStream { continuation in
             let cancellable = observation.start(
@@ -95,15 +104,15 @@ public actor Database {
     /// Starts a GRDB observation and returns a cancellable.
     /// Used by `AsyncObservation` to bridge from outside the actor.
     ///
-    /// Passes an explicit `.async(onQueue: .main)` scheduler so we use
-    /// the non-MainActor-isolated overload of `start(in:scheduling:…)`.
-    /// The default scheduler is `.mainActor` which requires the caller
-    /// be on `@MainActor`; we call this from the `Database` actor.
+    /// Uses `requiresWriteAccess = true` to route through `ValueWriteOnlyObserver`,
+    /// avoiding the `ValueConcurrentObserver` WAL snapshot deadlock — see `observe(value:)`.
     func startObservation<T: Sendable>(
         observation: ValueObservation<ValueReducers.Fetch<T>>,
         continuation: AsyncThrowingStream<T, Error>.Continuation
     ) -> AnyDatabaseCancellable {
-        observation.start(
+        var obs = observation
+        obs.requiresWriteAccess = true // use ValueWriteOnlyObserver, avoid WAL snapshot deadlock
+        return obs.start(
             in: self.writer,
             scheduling: .async(onQueue: .main),
             onError: { continuation.finish(throwing: $0) },
