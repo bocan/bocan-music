@@ -6,17 +6,17 @@ import UI
 
 /// Application menu commands.
 ///
-/// Stored as plain `let` references (not `@ObservedObject`) so this struct's
-/// `body` never re-evaluates due to observable publishes.  `BocanApp.body`
-/// itself is also free of `@StateObject` subscriptions, meaning the menu bar
-/// is only rebuilt on `showMenuBarExtra` changes — not on every selection or
-/// playback tick.  Track-menu items are always enabled; actions guard
-/// internally against empty selections.
+/// `vm` and `windowMode` are plain `let` so this struct's `body` never
+/// re-evaluates due to observable publishes from LibraryViewModel (selection
+/// changes, playback ticks, etc.) — the menu bar is only rebuilt when needed.
+/// `lyricsVM` and `visualizerVM` are `@ObservedObject` because they each
+/// publish only on rare user actions (toggling the pane) and their labels
+/// *must* reflect current state ("Show" vs "Hide").
 struct BocanCommands: Commands {
     let vm: LibraryViewModel
     let windowMode: WindowModeController
-    let lyricsVM: LyricsViewModel
-    let visualizerVM: VisualizerViewModel
+    @ObservedObject var lyricsVM: LyricsViewModel
+    @ObservedObject var visualizerVM: VisualizerViewModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
