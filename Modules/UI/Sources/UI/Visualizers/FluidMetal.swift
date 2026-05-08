@@ -366,15 +366,28 @@ private extension FluidMetal {
         if (id >= u.particleCount) return;
         Particle p = particles[id];
 
-        // Bass-driven outward burst from origin.
-        float2 toOrigin = -p.position;
-        float dist = max(length(toOrigin), 0.001);
-        float bassPush = u.bassEnergy * 0.06;
-        p.velocity += normalize(toOrigin) * bassPush * (1.0 - dist * 0.4);
-
-        // Per-particle swirl: offset by particle index so they don't all rotate
-        // in lock-step — creates a more organic, fluid appearance.
+        // Per-particle phase offset for unique, non-synchronised motion.
         float particlePhase = float(id) * 0.00021;
+
+        // Ambient turbulence: smooth per-particle oscillation at incommensurate
+        // frequencies so each particle drifts in its own slowly-changing direction.
+        // This keeps the field alive during quiet passages.
+        float tx = sin(u.time * 0.7  + particlePhase * 100.0) * 0.0004;
+        float ty = cos(u.time * 1.3  + particlePhase * 157.0) * 0.0004;
+        p.velocity += float2(tx, ty);
+
+        // Bass-driven outward burst from origin.
+        // (outDir points away from origin; force falls off at large radii.)
+        float2 outDir = p.position;
+        float dist = max(length(outDir), 0.001);
+        float bassPush = u.bassEnergy * 0.08;
+        p.velocity += (outDir / dist) * bassPush * (1.0 - min(dist, 1.0) * 0.4);
+
+        // Mild inward gravity: prevents permanent drift to the edges.
+        p.velocity -= (outDir / dist) * 0.0002 * min(dist, 1.0);
+
+        // Per-particle swirl: offset by particle phase so they don't all rotate
+        // in lock-step — creates a more organic, fluid appearance.
         float angle = u.time * (0.15 + u.spectralCentroid * 0.35) + particlePhase;
         float ca = cos(angle), sa = sin(angle);
         float2x2 rot = float2x2(ca, -sa, sa, ca);
