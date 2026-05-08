@@ -10,18 +10,28 @@ import SwiftUI
 /// - `Esc` closes the window.
 public struct VisualizerFullscreenView: View {
     @ObservedObject public var vm: VisualizerViewModel
+    public var nowPlayingVM: NowPlayingViewModel
     @Environment(\.dismissWindow) private var dismissWindow
 
     @State private var cursorHideTask: Task<Void, Never>?
+    @State private var overlayTrigger = 0
 
-    public init(vm: VisualizerViewModel) {
+    public init(vm: VisualizerViewModel, nowPlayingVM: NowPlayingViewModel) {
         self.vm = vm
+        self.nowPlayingVM = nowPlayingVM
     }
 
     public var body: some View {
-        ZStack {
+        ZStack(alignment: .topLeading) {
             Color.black.ignoresSafeArea()
             VisualizerHost(vm: self.vm)
+            NowPlayingOverlay(
+                title: self.nowPlayingVM.title,
+                artist: self.nowPlayingVM.artist,
+                album: self.nowPlayingVM.album,
+                fadeAfter: 2,
+                refreshTrigger: self.overlayTrigger
+            )
         }
         .ignoresSafeArea()
         .onAppear {
@@ -42,6 +52,7 @@ public struct VisualizerFullscreenView: View {
         .onContinuousHover { _ in
             // Mouse moved: cursor is already restored automatically by
             // setHiddenUntilMouseMoves. Just reschedule the next hide.
+            self.overlayTrigger += 1
             self.scheduleCursorHide()
         }
         .accessibilityLabel("Fullscreen Visualizer: \(self.vm.mode.displayName)")

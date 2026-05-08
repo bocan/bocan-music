@@ -99,7 +99,7 @@ public struct BocanRootView: View {
             // Lyrics and Visualizer panes are mutually exclusive — both occupy the
             // same trailing overlay slot. Visualizer wins when both are toggled on.
             if self.visualizerVM.paneVisible {
-                VisualizerPane(vm: self.visualizerVM)
+                VisualizerPane(vm: self.visualizerVM, nowPlayingVM: self.vm.nowPlaying)
             } else {
                 LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
                     Task { await self.vm.nowPlaying.scrub(to: pos) }
