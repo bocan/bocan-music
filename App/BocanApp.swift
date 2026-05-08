@@ -203,7 +203,7 @@ struct BocanApp: App {
         // MARK: Visualizer fullscreen
 
         Window("Visualizer", id: "visualizer-fullscreen") {
-            VisualizerFullscreenView(vm: self.visualizerViewModel)
+            VisualizerFullscreenView(vm: self.visualizerViewModel, nowPlayingVM: self.libraryViewModel.nowPlaying)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
