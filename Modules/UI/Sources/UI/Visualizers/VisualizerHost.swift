@@ -8,8 +8,8 @@ import SwiftUI
 /// - Uses `TimelineView(.animation(minimumInterval:))` to clock Canvas redraws.
 ///   Canvas content is a stateless draw call into the appropriate ``Visualizer``.
 /// - The Metal-based `FluidMetal` mode drives its own `MTKView` via `CVDisplayLink`
-///   inside ``FluidMetalView`` — `TimelineView` still ticks to update analysis state
-///   but the GPU draw happens independently.
+///   inside ``FluidMetalView``. The coordinator reads `vm.analysis` directly on
+///   every GPU frame — no SwiftUI update cycle involved.
 /// - Respects `reduceMotion`: Fluid mode is replaced by Spectrum Bars; Oscilloscope
 ///   pauses on the last rendered frame.
 public struct VisualizerHost: View {
@@ -41,15 +41,10 @@ public struct VisualizerHost: View {
                let fluid = renderer as? FluidMetal,
                fluid.isReady {
                 // Metal mode: MTKView drives the GPU draw loop.
-                // A hidden zero-size Canvas pumps live analysis state into the renderer
-                // each display tick so the compute shader receives bass energy and
-                // spectral centroid. Without this, particles drift at constant speed
-                // with no audio reactivity.
-                FluidMetalView(renderer: fluid)
+                // The Coordinator samples vm.analysis directly each frame —
+                // no SwiftUI overlay needed for analysis updates.
+                FluidMetalView(renderer: fluid, vm: self.vm)
                     .ignoresSafeArea()
-                    .overlay {
-                        self.analysisUpdateOverlay(for: fluid)
-                    }
             } else {
                 // Non-Metal modes, or Fluid mode when Metal setup failed.
                 // FluidMetal.render(into:) automatically delegates to its SpectrumBars
@@ -77,21 +72,6 @@ public struct VisualizerHost: View {
                 r.render(into: &ctx, size: size, samples: self.latestSamples, analysis: self.vm.analysis)
             }
             .drawingGroup()
-        }
-    }
-
-    /// Zero-size Canvas overlay that pumps live analysis state into the Metal renderer
-    /// each display tick. The Canvas draws nothing visible — it is used solely for the
-    /// side-effect of calling `fluid.updateAnalysis(...)` in sync with the display link,
-    /// giving the compute shader up-to-date `bassEnergy` and `spectralCentroid` values.
-    @ViewBuilder
-    private func analysisUpdateOverlay(for fluid: FluidMetal) -> some View {
-        let interval = 1.0 / Double(self.vm.effectiveFPS)
-        TimelineView(.animation(minimumInterval: interval, paused: false)) { _ in
-            Canvas { _, _ in
-                fluid.updateAnalysis(samples: self.latestSamples, analysis: self.vm.analysis)
-            }
-            .frame(width: 0, height: 0)
         }
     }
 
