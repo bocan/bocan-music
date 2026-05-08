@@ -10,7 +10,7 @@ import Testing
 struct VisualizerViewModelTests {
     // MARK: - Start / stop
 
-    @Test("start sets isRunning; stop returns analysis to silent")
+    @Test("start increments refcount; stop returns analysis to silent when count reaches zero")
     func startStopLifecycle() async throws {
         let engine = AudioEngine()
         let vm = VisualizerViewModel(engine: engine)
@@ -25,14 +25,15 @@ struct VisualizerViewModelTests {
         #expect(vm.analysis.bands.allSatisfy { $0 == 0 })
     }
 
-    @Test("calling start twice does not create duplicate tap tasks")
+    @Test("calling start twice requires two stops — tap stays alive until refcount is zero")
     func startIsDeduplicated() async throws {
         let engine = AudioEngine()
         let vm = VisualizerViewModel(engine: engine)
-        vm.start()
-        vm.start() // second call is a no-op
+        vm.start() // refcount → 1
+        vm.start() // refcount → 2
         try await Task.sleep(for: .milliseconds(20))
-        vm.stop()
+        vm.stop() // refcount → 1; tap still running
+        vm.stop() // refcount → 0; tap stopped
         // No crash = pass.
     }
 
