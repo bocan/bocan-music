@@ -59,6 +59,10 @@ public final class VisualizerViewModel: ObservableObject {
     private let fftAnalyzer = FFTAnalyzer()
     private let log = AppLogger.make(.audio)
     private var tapTask: Task<Void, Never>?
+    /// Reference count — incremented by start(), decremented by stop().
+    /// The tap loop runs while isRunning is true; isRunning is set on the
+    /// 0→1 and 1→0 transitions so the task body is identical to before.
+    private var startCount = 0
     private var isRunning = false
     private var performanceToastTask: Task<Void, Never>?
 
@@ -70,10 +74,15 @@ public final class VisualizerViewModel: ObservableObject {
 
     // MARK: - Lifecycle
 
-    /// Start the audio tap and begin producing analysis frames.
-    /// Safe to call multiple times — subsequent calls are ignored while running.
+    /// Increment the reference count and start the audio tap if this is the
+    /// first caller. Safe to call from both the pane and the fullscreen window.
     public func start() {
-        guard !self.isRunning else { return }
+        self.startCount += 1
+        guard self.startCount == 1 else {
+            let count = self.startCount
+            self.log.debug("visualizer.tap.start.shared count=\(count)")
+            return
+        }
         self.isRunning = true
         self.log.debug("visualizer.tap.start")
 
@@ -104,9 +113,16 @@ public final class VisualizerViewModel: ObservableObject {
         }
     }
 
-    /// Stop the tap and put the analysis back to silence.
+    /// Decrement the reference count and tear down the tap only when it reaches
+    /// zero. Calling stop() more times than start() is a no-op.
     public func stop() {
-        guard self.isRunning else { return }
+        guard self.startCount > 0 else { return }
+        self.startCount -= 1
+        guard self.startCount == 0 else {
+            let count = self.startCount
+            self.log.debug("visualizer.tap.stop.shared count=\(count)")
+            return
+        }
         self.isRunning = false
         self.tapTask?.cancel()
         self.tapTask = nil
