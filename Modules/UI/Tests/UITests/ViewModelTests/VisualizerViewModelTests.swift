@@ -64,6 +64,63 @@ struct VisualizerViewModelTests {
         #expect(vm.effectiveFPS == 60 || vm.effectiveFPS == 30)
     }
 
+    // MARK: - Auto-simplify
+
+    @Test("autoSimplify switches to spectrumBars and publishes toast")
+    func autoSimplify() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.autoSimplify()
+        #expect(vm.mode == .spectrumBars)
+        #expect(vm.performanceToast != nil)
+        #expect(vm.modeBeforeAutoSimplify == .oscilloscope)
+    }
+
+    @Test("autoSimplify is a no-op when mode is already spectrumBars")
+    func autoSimplifyNoOpWhenAlreadySimple() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .spectrumBars
+        vm.autoSimplify()
+        #expect(vm.performanceToast == nil)
+        #expect(vm.modeBeforeAutoSimplify == nil)
+    }
+
+    @Test("revertAutoSimplify restores previous mode and clears toast")
+    func revertAutoSimplify() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.autoSimplify()
+        vm.revertAutoSimplify()
+        #expect(vm.mode == .oscilloscope)
+        #expect(vm.performanceToast == nil)
+        #expect(vm.modeBeforeAutoSimplify == nil)
+    }
+
+    @Test("revertAutoSimplify is a no-op when no auto-simplify is active")
+    func revertNoOpWhenNotActive() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.revertAutoSimplify() // nothing to revert
+        #expect(vm.mode == .oscilloscope)
+        #expect(vm.performanceToast == nil)
+    }
+
+    @Test("performanceToast auto-clears after 6 seconds")
+    func performanceToastAutoDismisses() async throws {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.autoSimplify()
+        #expect(vm.performanceToast != nil)
+        try await Task.sleep(for: .seconds(6.2))
+        #expect(vm.performanceToast == nil)
+        #expect(vm.modeBeforeAutoSimplify == nil)
+    }
+
     // MARK: - Analysis from samples
 
     @Test("processSamples updates analysis.rms and peak")

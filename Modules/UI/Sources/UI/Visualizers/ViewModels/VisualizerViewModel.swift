@@ -37,6 +37,16 @@ public final class VisualizerViewModel: ObservableObject {
     /// Empty string means no preference — let macOS place it on the default screen.
     @AppStorage("visualizer.targetScreenName") public var targetScreenName = ""
 
+    // MARK: - Auto-simplify (sustained FPS drop)
+
+    /// Non-nil while the performance warning toast is visible.
+    /// Cleared when the user dismisses/reverts or after 6 seconds.
+    @Published public private(set) var performanceToast: ToastMessage?
+
+    /// The mode that was active before an auto-simplify. Non-nil only while
+    /// the "Revert" button is available (same lifetime as ``performanceToast``).
+    @Published public private(set) var modeBeforeAutoSimplify: VisualizerMode?
+
     /// Sensitivity multiplier applied to band values before normalisation (0.1…3.0).
     public var sensitivity: Float {
         get { Float(self.sensitivityRaw) }
@@ -50,6 +60,7 @@ public final class VisualizerViewModel: ObservableObject {
     private let log = AppLogger.make(.audio)
     private var tapTask: Task<Void, Never>?
     private var isRunning = false
+    private var performanceToastTask: Task<Void, Never>?
 
     // MARK: - Init
 
@@ -117,6 +128,39 @@ public final class VisualizerViewModel: ObservableObject {
         }
         self.latestSamples = samples
         self.analysis = Analysis(bands: rawBands, rms: samples.rms, peak: samples.peak)
+    }
+
+    // MARK: - Auto-simplify API
+
+    /// Called by ``VisualizerHost`` when the rolling FPS average falls below
+    /// 30 fps for ≥ 3 consecutive seconds. Switches to `.spectrumBars` and
+    /// shows a toast with a "Revert" option. No-op if already on `.spectrumBars`.
+    public func autoSimplify() {
+        guard self.mode != .spectrumBars else { return }
+        let previous = self.mode
+        self.modeBeforeAutoSimplify = previous
+        self.mode = .spectrumBars
+        self.log.info("visualizer.autoSimplify: switched from \(previous.rawValue) to spectrumBars due to sustained FPS drop")
+        let toast = ToastMessage(text: "Switched to Spectrum Bars for performance.", kind: .info)
+        self.performanceToast = toast
+        self.performanceToastTask?.cancel()
+        self.performanceToastTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard let self, self.performanceToast?.id == toast.id else { return }
+            self.performanceToast = nil
+            self.modeBeforeAutoSimplify = nil
+        }
+    }
+
+    /// Reverts the mode to what it was before the auto-simplify and dismisses
+    /// the toast. Calling when no auto-simplify is active is a no-op.
+    public func revertAutoSimplify() {
+        guard let previous = modeBeforeAutoSimplify else { return }
+        self.mode = previous
+        self.modeBeforeAutoSimplify = nil
+        self.performanceToastTask?.cancel()
+        self.performanceToast = nil
+        self.log.info("visualizer.autoSimplify.reverted: restored mode \(previous.rawValue)")
     }
 
     // MARK: - FPS effective
