@@ -67,10 +67,10 @@ actor BufferPump {
     /// Running count of successfully scheduled buffers (for diagnostics).
     private var scheduledCount = 0
 
-    /// Number of times the pump has stalled waiting for a free slot.
-    /// Non-zero means the render thread may be draining buffers faster than
-    /// the pump can refill — a risk factor for HALC IOWorkLoop overloads.
-    private var starvationCount = 0
+    /// Number of times the pump blocked waiting for a free slot.
+    /// At steady state this is expected — it simply means the window is full and
+    /// the pump is throttling itself to playback speed.  Reported at pump.stop/eof.
+    private var throttleCount = 0
 
     // MARK: - Init
 
@@ -110,7 +110,7 @@ actor BufferPump {
         self.log.debug("pump.stop", [
             "id": self.id,
             "scheduled": self.scheduledCount,
-            "starvations": self.starvationCount,
+            "throttled": self.throttleCount,
         ])
         self.task?.cancel()
         // Resume the slot continuation BEFORE awaiting the task result.
@@ -167,7 +167,7 @@ actor BufferPump {
                 self.log.debug("pump.eof", [
                     "id": self.id,
                     "scheduled": self.scheduledCount,
-                    "starvations": self.starvationCount,
+                    "throttled": self.throttleCount,
                 ])
                 let cb = self.onEnded
                 Task { @MainActor in cb?() }
@@ -187,17 +187,11 @@ actor BufferPump {
         }
     }
 
-    /// Suspends until a buffer slot is released, logging a starvation warning
-    /// each time. A non-zero starvation count in `pump.stop` or `pump.eof` logs
-    /// indicates the pump fell behind the render thread — a risk factor for
-    /// `HALC_ProxyIOContext: skipping cycle due to overload` audio pops.
+    /// Suspends until a buffer slot is released by a `dataPlayedBack` callback.
+    /// This is the normal steady-state path — the pump fills all slots quickly,
+    /// then waits ~200 ms for each one to drain.
     private func waitForSlot() async throws {
-        self.starvationCount += 1
-        self.log.warning("pump.starvation", [
-            "id": self.id,
-            "count": self.starvationCount,
-            "scheduled": self.scheduledCount,
-        ])
+        self.throttleCount += 1
         await withCheckedContinuation { continuation in
             self.slotContinuation = continuation
         }
