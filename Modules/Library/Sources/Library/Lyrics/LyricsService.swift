@@ -16,6 +16,7 @@ public actor LyricsService {
     private let lyricsRepo: LyricsRepository
     private let trackRepo: TrackRepository
     private let artistRepo: ArtistRepository
+    private let albumRepo: AlbumRepository
     private let fetcher: (any LRClibClientProtocol)?
     private let log = AppLogger.make(.library)
 
@@ -29,6 +30,7 @@ public actor LyricsService {
         self.lyricsRepo = LyricsRepository(database: database)
         self.trackRepo = TrackRepository(database: database)
         self.artistRepo = ArtistRepository(database: database)
+        self.albumRepo = AlbumRepository(database: database)
         self.fetcher = fetcher
     }
 
@@ -40,11 +42,17 @@ public actor LyricsService {
     /// **preferSynced** (default): user → sidecar .lrc → embedded synced → lrclib → embedded unsynced
     /// **preferEmbedded / preferUser**: user → embedded synced → sidecar .lrc → embedded unsynced → lrclib
     public func lyrics(for trackID: Int64) async throws -> LyricsDocument? {
+        try await self.lyricsWithSource(for: trackID).0
+    }
+
+    /// Resolves the best available lyrics for `trackID` and returns it paired with
+    /// the winning source label (`"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil`).
+    public func lyricsWithSource(for trackID: Int64) async throws -> (LyricsDocument?, String?) {
         let row = try await lyricsRepo.fetch(trackID: trackID)
 
         // User edits always win regardless of priority.
         if let row, row.source == "user" {
-            return self.parse(row: row)
+            return (self.parse(row: row), "user")
         }
 
         let priority = LyricsSourcePriority(
@@ -53,19 +61,19 @@ public actor LyricsService {
 
         switch priority {
         case .preferSynced:
-            if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
-            if let row, row.source == "embedded", row.isSynced { return self.parse(row: row) }
-            if let row, row.source == "lrclib" { return self.parse(row: row) }
-            if let row, row.source == "embedded", !row.isSynced { return self.parse(row: row) }
+            if let sidecar = try await self.loadSidecar(for: trackID) { return (sidecar, "sidecar") }
+            if let row, row.source == "embedded", row.isSynced { return (self.parse(row: row), "embedded") }
+            if let row, row.source == "lrclib" { return (self.parse(row: row), "lrclib") }
+            if let row, row.source == "embedded", !row.isSynced { return (self.parse(row: row), "embedded") }
 
         case .preferEmbedded, .preferUser:
-            if let row, row.source == "embedded", row.isSynced { return self.parse(row: row) }
-            if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
-            if let row, row.source == "embedded", !row.isSynced { return self.parse(row: row) }
-            if let row, row.source == "lrclib" { return self.parse(row: row) }
+            if let row, row.source == "embedded", row.isSynced { return (self.parse(row: row), "embedded") }
+            if let sidecar = try await self.loadSidecar(for: trackID) { return (sidecar, "sidecar") }
+            if let row, row.source == "embedded", !row.isSynced { return (self.parse(row: row), "embedded") }
+            if let row, row.source == "lrclib" { return (self.parse(row: row), "lrclib") }
         }
 
-        return nil
+        return (nil, nil)
     }
 
     /// Saves `doc` as the lyrics for `trackID`.
@@ -114,6 +122,49 @@ public actor LyricsService {
         }
     }
 
+    /// Unconditionally fetches lyrics from LRClib for `trackID`, replacing any
+    /// existing record regardless of its source.  Skips only if no `fetcher` is
+    /// configured.
+    ///
+    /// The `lyrics.lrclibEnabled` preference is intentionally **not** checked here;
+    /// it is the caller's responsibility to gate the action on that preference.
+    ///
+    /// Returns the fetched document, or `nil` when the fetcher is absent or no
+    /// match is found on LRClib.
+    public func forceFetch(for trackID: Int64) async throws -> LyricsDocument? {
+        guard let fetcher else { return nil }
+        guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
+
+        self.log.debug("lrclib.forceFetch.start", ["track": trackID])
+
+        let artistName: String = if let aid = track.artistID,
+                                    let artist = try? await artistRepo.fetch(id: aid) {
+            artist.name
+        } else {
+            ""
+        }
+        let albumTitle: String? = if let aid = track.albumID, let album = try? await albumRepo.fetch(id: aid) {
+            album.title
+        } else {
+            nil
+        }
+
+        let doc = try await fetcher.get(
+            artist: artistName,
+            title: track.title ?? "",
+            album: albumTitle,
+            duration: track.duration
+        )
+
+        if let doc {
+            try await self.setLyrics(doc, for: trackID, source: "lrclib")
+            self.log.debug("lrclib.forceFetch.saved", ["track": trackID])
+        } else {
+            self.log.debug("lrclib.forceFetch.notFound", ["track": trackID])
+        }
+        return doc
+    }
+
     /// If no lyrics exist for `trackID`, the user has enabled LRClib fetch, and a
     /// `fetcher` is configured, attempts to retrieve lyrics and saves the result.
     ///
@@ -140,10 +191,15 @@ public actor LyricsService {
         } else {
             ""
         }
+        let albumTitle: String? = if let aid = track.albumID, let album = try? await albumRepo.fetch(id: aid) {
+            album.title
+        } else {
+            nil
+        }
         let doc = try await fetcher.get(
             artist: artistName,
             title: track.title ?? "",
-            album: nil, // album resolved via a separate join; not available on the base Track record
+            album: albumTitle,
             duration: track.duration
         )
 
@@ -168,6 +224,28 @@ public actor LyricsService {
                         try Task.checkCancellation()
                         let doc = try await self.lyrics(for: trackID)
                         continuation.yield(doc)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// Like ``observe(_:)`` but also yields the winning source label alongside each document.
+    ///
+    /// Source labels: `"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil` when no lyrics.
+    public func observeWithSource(_ trackID: Int64) -> AsyncThrowingStream<(LyricsDocument?, String?), Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    let inner = await self.lyricsRepo.observe(trackID: trackID)
+                    for try await _ in inner {
+                        try Task.checkCancellation()
+                        let result = try await self.lyricsWithSource(for: trackID)
+                        continuation.yield(result)
                     }
                     continuation.finish()
                 } catch {

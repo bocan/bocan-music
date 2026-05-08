@@ -11,14 +11,19 @@ public struct VisualizerPane: View {
 
     @ObservedObject public var vm: VisualizerViewModel
 
+    public var nowPlayingVM: NowPlayingViewModel
+
     // MARK: - State
 
     @AppStorage("visualizer.paneWidth") private var paneWidth: Double = 300
+    @State private var resizeDragStart: Double?
+    @State private var overlayTrigger = 0
 
     // MARK: - Init
 
-    public init(vm: VisualizerViewModel) {
+    public init(vm: VisualizerViewModel, nowPlayingVM: NowPlayingViewModel) {
         self.vm = vm
+        self.nowPlayingVM = nowPlayingVM
     }
 
     // MARK: - Body
@@ -28,11 +33,43 @@ public struct VisualizerPane: View {
             VStack(spacing: 0) {
                 self.header
                 Divider()
-                VisualizerHost(vm: self.vm)
+                ZStack(alignment: .topLeading) {
+                    VisualizerHost(vm: self.vm)
+                    NowPlayingOverlay(
+                        title: self.nowPlayingVM.title,
+                        artist: self.nowPlayingVM.artist,
+                        album: self.nowPlayingVM.album,
+                        fadeAfter: 3,
+                        refreshTrigger: self.overlayTrigger
+                    )
+                }
+                .onHover { _ in self.overlayTrigger += 1 }
             }
             .frame(width: self.paneWidth)
             .background(Color.black)
-            .overlay(alignment: .leading) { Divider() }
+            .overlay(alignment: .leading) {
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 6)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                                .onChanged { value in
+                                    if self.resizeDragStart == nil {
+                                        self.resizeDragStart = self.paneWidth
+                                    }
+                                    let newWidth = (self.resizeDragStart ?? self.paneWidth) - value.translation.width
+                                    self.paneWidth = max(220, min(600, newWidth))
+                                }
+                                .onEnded { _ in self.resizeDragStart = nil }
+                        )
+                        .onHover { hovering in
+                            if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                        }
+                    Divider()
+                }
+            }
             .accessibilityIdentifier(A11y.Visualizer.pane)
             .accessibilityLabel("Visualizer pane, \(self.vm.mode.displayName)")
             .transition(.move(edge: .trailing))

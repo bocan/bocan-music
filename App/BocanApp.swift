@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import AppKit
 import AudioEngine
 import Library
@@ -92,8 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     // MARK: UNUserNotificationCenterDelegate
 
     /// Tapping a track-change banner brings the app to the foreground.
-    /// `nonisolated` because UNUserNotificationCenter may invoke this off the main thread;
-    /// AppKit work is dispatched onto the main actor explicitly.
+    /// `nonisolated` because UNUserNotificationCenter may invoke this off the main thread.
     nonisolated func userNotificationCenter(
         _: UNUserNotificationCenter,
         didReceive _: UNNotificationResponse,
@@ -163,10 +163,12 @@ struct BocanApp: App {
                 vm: self.libraryViewModel,
                 lyricsVM: self.lyricsViewModel,
                 visualizerVM: self.visualizerViewModel,
-                routeVM: self.routeViewModel
+                routeVM: self.routeViewModel,
+                scrobbleSettingsVM: self.scrobbleSettingsViewModel
             )
             .environment(self.dspViewModel)
             .environmentObject(self.windowMode)
+            .environmentObject(self.lyricsViewModel)
             .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
         }
         .windowResizability(.contentSize)
@@ -203,7 +205,7 @@ struct BocanApp: App {
         // MARK: Visualizer fullscreen
 
         Window("Visualizer", id: "visualizer-fullscreen") {
-            VisualizerFullscreenView(vm: self.visualizerViewModel)
+            VisualizerFullscreenView(vm: self.visualizerViewModel, nowPlayingVM: self.libraryViewModel.nowPlaying)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
@@ -303,7 +305,7 @@ struct BocanApp: App {
         self.engine = eng
         self.player = qp
 
-        let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
+        let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner, scrobbleRepository: scrobbleParts.service.queueRepository)
         self.libraryViewModel = lvm
         self.dspViewModel = DSPViewModel(
             engine: eng,

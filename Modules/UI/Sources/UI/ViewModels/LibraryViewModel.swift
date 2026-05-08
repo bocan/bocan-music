@@ -8,6 +8,7 @@ import Library
 import Observability
 import Persistence
 import Playback
+import Scrobble
 import UniformTypeIdentifiers
 
 // MARK: - UIStateV2
@@ -220,7 +221,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     // MARK: - Init
 
-    public init(database: Database, engine: any Transport, scanner: LibraryScanner? = nil) {
+    public init(
+        database: Database,
+        engine: any Transport,
+        scanner: LibraryScanner? = nil,
+        scrobbleRepository: ScrobbleQueueRepository? = nil
+    ) {
         self.database = database
         self.engine = engine
         self.scanner = scanner
@@ -253,7 +259,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.playlistImporter = importer
         self.playlistExporter = exporter
         self.artists = ArtistsViewModel(repository: artistRepo)
-        self.nowPlaying = NowPlayingViewModel(engine: engine, database: database)
+        self.nowPlaying = NowPlayingViewModel(engine: engine, database: database, scrobbleRepository: scrobbleRepository)
 
         // React to search query changes: debounce 250 ms, then reload the current
         // destination with filtered data.  Clearing the query restores the full list.

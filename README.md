@@ -8,6 +8,8 @@
 
 A native macOS music player built the old-fashioned way — no Catalyst, no Electron, no cross-platform abstractions. Swift 6 strict concurrency, SwiftUI, GRDB, AVFoundation, and FFmpeg under the hood; every module ships its own test suite.
 
+![Bòcan — Songs view](website/static/screenshots/Screenshot%202026-05-07%20at%2020.35.08.png)
+
 ## On the name
 
 **Bòcan** (Scottish Gaelic, roughly *BAW-khan*) is a hobgoblin — the household spirit that curates your music library while you sleep. See [spec.md](spec.md) for the full etymology; the short version is that computers don't like `ò`, so the binary, bundle, and repository all use `bocan`.
@@ -41,6 +43,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - **Live FSEvents watcher** — after each scan Bòcan watches every library root for file-system changes and automatically re-imports any supported audio file that is created or modified. Toggled by the "Watch folders for new files" preference in Library settings.
 - **Add Files / Add Folder** pickers available from the File menu and from Library settings.
 - **Deduplication** at file-fingerprint level — importing the same file twice doesn't create duplicates.
+- **Quit guard** — if a library scan or ReplayGain analysis is running when you quit, Bòcan shows a contextual confirmation alert rather than abandoning the operation silently.
 - **Tag-aware change detection** — when you edit tags in an external app, the next scan picks up the change. When you edit tags *in* Bòcan, a `user_edited` flag prevents a rescan from overwriting your work.
 - Cover art is cached in a content-addressed store under `~/Library/Application Support` so artwork loads instantly.
 
@@ -104,6 +107,8 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - **Sortable, filterable track table** — click any column header to sort; type to filter instantly.
 - **Now Playing strip** along the bottom of every main view: artwork, title, artist, album, scrubber with timestamps, volume, transport, speed picker, sleep timer badge.
 - The info (`ⓘ`) button in the transport opens the full tag editor for the current track in one click.
+- **AirPlay routing** — an `AVRoutePickerView`-backed button in the Now Playing strip opens the system picker; a live route chip next to it shows the current output device (built-in speakers, HomePod, Apple TV, Bluetooth headphones…) and updates automatically when the device changes, including switches made from Control Centre.
+- **Scan progress view** — during the initial library scan a dedicated progress pane shows what is being scanned; the browser becomes available the moment the first batch of tracks has been indexed.
 
 ### Mini Player
 
@@ -113,6 +118,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - Compact and Square layouts show **artist – album** below the track title.
 - The info button on any mini-player layout **raises the main window** and opens the tag editor immediately — no manual window-switching required.
 - Accent colour for toggle-button highlight respects the app's own colour palette (not just the macOS system accent).
+- Long titles and artist names **scroll as marquee text** in the Strip and Compact layouts rather than truncating.
 - Window size remembers your last drag; cycling layouts snaps back to sensible defaults (Strip 420×72, Compact 450×145, Square 310×310).
 
 ### Appearance & theming
@@ -126,6 +132,11 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 - Optional **menu bar extra** with now-playing title and quick transport controls — hide or show it in General preferences.
 - **On-track-change notifications** — a banner shows the artwork, title, and artist when a new track starts, silenced while the app is frontmost.
 - **Dock tile** shows the current album artwork as a live badge.
+
+### Data safety
+
+- **Local backups** — Bòcan takes a rolling snapshot of its SQLite database on each launch (on by default). The number of snapshots to keep is configurable (default: 5); old ones are pruned automatically. A **Back Up Now** button and Finder reveal are in **Advanced preferences**.
+- **iCloud Drive backup** (opt-in) — an automatic backup on launch copies the database to iCloud Drive, capped at 3 files to avoid runaway storage. Enable and manage it from **Advanced preferences**.
 
 ### Settings
 
@@ -150,7 +161,7 @@ A native macOS music player built the old-fashioned way — no Catalyst, no Elec
 
 ## Features on the roadmap
 
-Phases 15–16 bring: **AirPlay 2 / Google Cast** support, and full **App Store distribution** with notarisation and sandboxing hardening.
+Phase 16 brings full **App Store distribution** with notarisation and sandboxing hardening. (AirPlay routing shipped in Phase 15; Google Cast is excluded — no maintained macOS Cast SDK exists.)
 
 See [`phases/`](phases/README.md) for the full roadmap.
 
