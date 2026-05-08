@@ -9,6 +9,7 @@ public struct ScrobbleSettingsView: View {
     @ObservedObject var viewModel: ScrobbleSettingsViewModel
     @State private var showLastFmSheet = false
     @State private var showListenBrainzSheet = false
+    @State private var showRecentSheet = false
 
     public init(viewModel: ScrobbleSettingsViewModel) {
         self.viewModel = viewModel
@@ -55,6 +56,10 @@ public struct ScrobbleSettingsView: View {
                             }
                         }
                     }
+                    Button("Recent Scrobbles…") {
+                        self.showRecentSheet = true
+                    }
+                    .help("View the last 50 scrobbled tracks and their submission status")
                 }
             }
         }
@@ -67,6 +72,9 @@ public struct ScrobbleSettingsView: View {
         }
         .sheet(isPresented: self.$showListenBrainzSheet) {
             ConnectListenBrainzSheet(viewModel: self.viewModel, isPresented: self.$showListenBrainzSheet)
+        }
+        .sheet(isPresented: self.$showRecentSheet) {
+            RecentScrobblesView(viewModel: self.viewModel)
         }
         .accessibilityIdentifier("scrobble-settings")
     }
