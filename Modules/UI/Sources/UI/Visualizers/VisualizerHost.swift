@@ -37,14 +37,23 @@ public struct VisualizerHost: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            if self.vm.mode == .fluidMetal, let fluid = renderer as? FluidMetal {
-                // Metal mode: MTKView drives GPU; TimelineView updates analysis.
+            if self.vm.mode == .fluidMetal,
+               let fluid = renderer as? FluidMetal,
+               fluid.isReady {
+                // Metal mode: MTKView drives the GPU draw loop.
+                // A hidden zero-size Canvas pumps live analysis state into the renderer
+                // each display tick so the compute shader receives bass energy and
+                // spectral centroid. Without this, particles drift at constant speed
+                // with no audio reactivity.
                 FluidMetalView(renderer: fluid)
                     .ignoresSafeArea()
                     .overlay {
-                        self.timelineOverlay
+                        self.analysisUpdateOverlay(for: fluid)
                     }
             } else {
+                // Non-Metal modes, or Fluid mode when Metal setup failed.
+                // FluidMetal.render(into:) automatically delegates to its SpectrumBars
+                // fallback when isReady == false, so the user always sees something.
                 self.timelineCanvas
             }
         }
@@ -71,12 +80,18 @@ public struct VisualizerHost: View {
         }
     }
 
-    /// For Metal mode: a zero-size TimelineView that just pumps `analysis` updates.
+    /// Zero-size Canvas overlay that pumps live analysis state into the Metal renderer
+    /// each display tick. The Canvas draws nothing visible — it is used solely for the
+    /// side-effect of calling `fluid.updateAnalysis(...)` in sync with the display link,
+    /// giving the compute shader up-to-date `bassEnergy` and `spectralCentroid` values.
     @ViewBuilder
-    private var timelineOverlay: some View {
+    private func analysisUpdateOverlay(for fluid: FluidMetal) -> some View {
         let interval = 1.0 / Double(self.vm.effectiveFPS)
         TimelineView(.animation(minimumInterval: interval, paused: false)) { _ in
-            Color.clear.frame(width: 0, height: 0)
+            Canvas { _, _ in
+                fluid.updateAnalysis(samples: self.latestSamples, analysis: self.vm.analysis)
+            }
+            .frame(width: 0, height: 0)
         }
     }
 
