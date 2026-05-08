@@ -200,6 +200,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         self.addLoveItem(to: menu, selected: selected, acts: acts)
         self.addRateItem(to: menu, selected: selected, acts: acts)
         self.addNavigationItems(to: menu, selected: selected, first: first, acts: acts)
+        self.addLyricsItems(to: menu, selected: selected, first: first, acts: acts)
         self.addFileItems(to: menu, selected: selected, first: first, acts: acts)
         return menu
     }
@@ -363,6 +364,27 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             hasNav = true
         }
         if hasNav { menu.addItem(.separator()) }
+    }
+
+    private func addLyricsItems(
+        to menu: NSMenu,
+        selected: [Track],
+        first: Track?,
+        acts: TrackContextMenuActions
+    ) {
+        guard first != nil else { return }
+        guard acts.editLyrics != nil || acts.fetchLyricsFromLRClib != nil else { return }
+        menu.addItem(.separator())
+        if let editLyrics = acts.editLyrics, let track = first {
+            let item = ActionMenuItem("Edit Lyrics\u{2026}") { editLyrics(track) }
+            item.isEnabled = selected.count == 1
+            menu.addItem(item)
+        }
+        if let fetchLyrics = acts.fetchLyricsFromLRClib, let track = first {
+            let item = ActionMenuItem("Fetch Lyrics from LRClib") { fetchLyrics(track) }
+            item.isEnabled = selected.count == 1
+            menu.addItem(item)
+        }
     }
 
     private func addFileItems(

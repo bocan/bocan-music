@@ -111,7 +111,16 @@ extension TracksView {
             rate: { tracks, stars in
                 lib.setRating(stars: stars, for: tracks)
             },
-            removeFromPlaylist: removeFromPlaylistAction
+            removeFromPlaylist: removeFromPlaylistAction,
+            editLyrics: { [lyricsEnv] track in
+                _ = track // lyrics editor operates on the current pane track
+                lyricsEnv.openEditor()
+            },
+            fetchLyricsFromLRClib: self.lyricsEnv.lrclibEnabled ? { [lyricsEnv] track in
+                if let id = track.id {
+                    lyricsEnv.forceFetch(for: id)
+                }
+            } : nil
         )
     }
 

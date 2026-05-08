@@ -16,6 +16,9 @@ public final class LyricsViewModel: ObservableObject {
     /// The resolved lyrics for the current track, or `nil` when unavailable.
     @Published public private(set) var document: LyricsDocument?
 
+    /// The source that produced ``document``: `"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil`.
+    @Published public private(set) var documentSource: String?
+
     /// Index into `syncedLines` that corresponds to the current playback position.
     @Published public private(set) var currentLineIndex: Int?
 
@@ -31,8 +34,15 @@ public final class LyricsViewModel: ObservableObject {
     /// Per-track playback offset (in milliseconds) on top of any embedded `[offset:]` tag.
     @Published public var userOffsetMS = 0
 
-    /// `true` while an auto-fetch is in progress.
+    /// `true` while an auto-fetch or force-fetch is in progress.
     @Published public private(set) var isFetching = false
+
+    /// Controls whether the lyrics editor sheet is visible.
+    /// Set to `true` from external callers (menu bar, context menu) to open the editor.
+    @Published public var isEditorPresented = false
+
+    /// Whether LRClib fetching is enabled (mirrors `lyrics.lrclibEnabled` in Settings).
+    @AppStorage("lyrics.lrclibEnabled") public private(set) var lrclibEnabled = false
 
     // MARK: - Internal
 
@@ -51,10 +61,33 @@ public final class LyricsViewModel: ObservableObject {
 
     // MARK: - Public API
 
+    /// Human-readable label for ``documentSource``, suitable for a badge in the UI.
+    ///
+    /// Returns `nil` when no lyrics are loaded.
+    public var documentSourceLabel: String? {
+        switch self.documentSource {
+        case "embedded":
+            "Embedded"
+
+        case "sidecar":
+            "Sidecar"
+
+        case "lrclib":
+            "LRClib"
+
+        case "user":
+            "Edited"
+
+        default:
+            nil
+        }
+    }
+
     /// Called whenever the now-playing track changes.  Loads lyrics and wires observation.
     public func trackDidChange(trackID: Int64?) {
         self.currentTrackID = trackID
         self.document = nil
+        self.documentSource = nil
         self.currentLineIndex = nil
         self.userOffsetMS = 0
         self.observeTask?.cancel()
@@ -93,10 +126,60 @@ public final class LyricsViewModel: ObservableObject {
         }
     }
 
+    /// Unconditionally fetches lyrics from LRClib for the current track, replacing
+    /// any existing lyrics regardless of source.  Does nothing when LRClib is not
+    /// enabled in Settings or no track is loaded.
+    public func forceFetch() {
+        guard let trackID = currentTrackID, !isFetching, lrclibEnabled else { return }
+        self.isFetching = true
+        Task {
+            defer { self.isFetching = false }
+            do {
+                _ = try await self.service.forceFetch(for: trackID)
+            } catch {
+                self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Fetches lyrics from LRClib for any given track ID, replacing existing lyrics.
+    /// Caller is responsible for checking whether LRClib is enabled.
+    public func forceFetch(for trackID: Int64) {
+        guard !self.isFetching else { return }
+        self.isFetching = true
+        Task {
+            defer { self.isFetching = false }
+            do {
+                _ = try await self.service.forceFetch(for: trackID)
+            } catch {
+                self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
+    /// Opens the lyrics pane (if not already visible) and presents the editor sheet.
+    public func openEditor() {
+        self.paneVisible = true
+        self.isEditorPresented = true
+    }
+
+    /// Deletes stored lyrics for any given track ID.
+    public func clearLyrics(for trackID: Int64) {
+        Task {
+            do {
+                try await self.service.setLyrics(nil, for: trackID)
+            } catch {
+                self.log.error("lyrics.clear.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
     /// Saves user-edited lyrics text for the current track.
+    /// Detects LRC-formatted input (lines with `[mm:ss.xx]` timestamps) and stores
+    /// it as `.synced`; plain text is stored as `.unsynced`.
     public func save(text: String) {
         guard let trackID = currentTrackID else { return }
-        let doc: LyricsDocument = .unsynced(text)
+        let doc = LRCParser.parseDocument(text)
         let embed = self.embedOnSave
         Task {
             do {
@@ -137,12 +220,13 @@ public final class LyricsViewModel: ObservableObject {
     private func startObserving(trackID: Int64) {
         self.observeTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await self.service.observe(trackID)
+            let stream = await self.service.observeWithSource(trackID)
             do {
-                for try await doc in stream {
+                for try await (doc, source) in stream {
                     try Task.checkCancellation()
                     await MainActor.run {
                         self.document = doc
+                        self.documentSource = source
                         self.currentLineIndex = nil
                         if doc != nil, self.autoShowPane {
                             self.paneVisible = true
@@ -195,6 +279,23 @@ public enum LyricsFontSize: String, CaseIterable, Sendable {
 
         case .extraLarge:
             "XL"
+        }
+    }
+
+    /// Full name used in tooltips and accessibility labels.
+    public var fullName: String {
+        switch self {
+        case .small:
+            "Small"
+
+        case .medium:
+            "Medium"
+
+        case .large:
+            "Large"
+
+        case .extraLarge:
+            "Extra Large"
         }
     }
 }
