@@ -174,7 +174,7 @@ struct QueuePlayerTests {
         #expect(mode == .one)
     }
 
-    @Test("play(items:shuffle:true) pre-shuffles queue so first item differs from original first")
+    @Test("play(items:shuffle:true) enables shuffle state and keeps all items")
     func playItemsWithShufflePreShuffles() async throws {
         let engine = AudioEngine()
         let db = try await Database(location: .inMemory)
@@ -194,7 +194,6 @@ struct QueuePlayerTests {
                 sourceFormat: sourceFormat
             )
         }
-        let originalFirstID = items[0].trackID
 
         // play(items:shuffle:true) pre-shuffles before loading audio.
         // Fake paths cause the engine.play() step to throw — that's expected.
@@ -210,11 +209,51 @@ struct QueuePlayerTests {
         let queueItems = await player.queue.items
         #expect(queueItems.count == 20)
 
-        // The current item (index 0) is very unlikely to still be the original
-        // first track after two independent shuffles (p ≈ 1/400 for N=20).
-        // If this assertion is ever flaky, increase the item count above.
-        let firstID = queueItems.first?.trackID
-        #expect(firstID != originalFirstID, "Expected pre-shuffle to change the first track")
+        // When startingAt defaults to 0, items[0] is pinned first. The remaining
+        // 19 items are shuffled behind it — verify they are not all in original order.
+        let originalFirstID = items[0].trackID
+        #expect(queueItems.first?.trackID == originalFirstID, "Default startingAt:0 should pin items[0] first")
+        let restIDs = queueItems.dropFirst().map(\.trackID)
+        let originalRestIDs = items.dropFirst().map(\.trackID)
+        // Very unlikely (1/19! chance) all remaining items are still in order.
+        #expect(restIDs != originalRestIDs, "Remaining items behind the pinned track should be shuffled")
+    }
+
+    @Test("play(items:startingAt:shuffle:true) pins chosen track at position 0")
+    func playItemsShuffleHonoursStartingAt() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+
+        let sourceFormat = AudioSourceFormat(
+            sampleRate: 44100, bitDepth: 16, channelCount: 2,
+            isInterleaved: false, codec: "flac"
+        )
+        let items: [QueueItem] = (1 ... 20).map { i in
+            QueueItem(
+                trackID: Int64(i),
+                bookmark: nil,
+                fileURL: "/tmp/pinned\(i).flac",
+                duration: 200,
+                sourceFormat: sourceFormat
+            )
+        }
+        // Double-click on item at index 7 (trackID == 8).
+        let chosenIndex = 7
+        let chosenID = items[chosenIndex].trackID
+
+        // Engine will throw on fake paths — that's fine; the queue is populated
+        // before loadCurrentItem() fails.
+        try? await player.play(items: items, startingAt: chosenIndex, shuffle: true)
+
+        let queueItems = await player.queue.items
+        #expect(queueItems.count == 20, "All items must be present after shuffle")
+        #expect(queueItems.first?.trackID == chosenID, "Chosen track must be at position 0 when shuffle is enabled")
+
+        // All other items still present (no drops).
+        let queueIDs = Set(queueItems.map(\.trackID))
+        let originalIDs = Set(items.map(\.trackID))
+        #expect(queueIDs == originalIDs)
     }
 
     // MARK: - Helpers
