@@ -53,7 +53,7 @@ public final class FFTAnalyzer {
 
     private let attackAlpha: Float = 0.6
     private let releaseAlpha: Float = 0.08
-    private let peakDecay: Float = 0.9985
+    private let peakDecay: Float = 0.995 // ~3 s half-life at 43 fps; was 0.9985 (11 s)
 
     // MARK: - Init
 
@@ -87,6 +87,17 @@ public final class FFTAnalyzer {
     }
 
     // MARK: - Public API
+
+    /// Reset all transient analysis state.
+    ///
+    /// Call this before starting to analyze a new audio stream (e.g., after a
+    /// track change or tap restart) so that adaptive normalisation peaks from
+    /// the previous track do not pollute the new one.
+    public func reset() {
+        self.smoothed = [Float](repeating: 0, count: Self.bandCount)
+        self.bandPeaks = [Float](repeating: 0, count: Self.bandCount)
+        self.overlapBuffer = [Float](repeating: 0, count: Self.fftSize / 2)
+    }
 
     // swiftlint:disable cyclomatic_complexity function_body_length
     /// Analyse one buffer of audio, updating the overlap buffer and returning

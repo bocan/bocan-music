@@ -63,10 +63,26 @@ public final class VisualizerViewModel: ObservableObject {
 
         self.tapTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await engine.startTap()
-            for await samples in stream {
-                guard !Task.isCancelled else { break }
-                self.processSamples(samples)
+            // Restart loop: when the engine reconfigures (sample-rate change, device
+            // change) AVAudioEngine silently removes the tap. AudioEngine's config-change
+            // observer calls stopTap() which finishes the AsyncStream, exiting the
+            // inner for-await. We then reset the FFT analyser (clearing stale peaks
+            // from the old track) and reinstall the tap on the rebuilt graph.
+            while self.isRunning, !Task.isCancelled {
+                let stream = await self.engine.startTap()
+                // Reset before consuming the new stream so adaptive-normalisation peaks
+                // from the previous stream don't pollute the first few seconds.
+                self.fftAnalyzer.reset()
+                for await samples in stream {
+                    guard !Task.isCancelled else { return }
+                    self.processSamples(samples)
+                }
+                if self.isRunning, !Task.isCancelled {
+                    // Stream ended unexpectedly — engine is reconfiguring.
+                    // Brief pause lets the graph reconnect before we re-tap.
+                    self.log.debug("visualizer.tap.stream.reconnecting")
+                    try? await Task.sleep(nanoseconds: 150_000_000) // 150 ms
+                }
             }
             self.log.debug("visualizer.tap.end")
         }
