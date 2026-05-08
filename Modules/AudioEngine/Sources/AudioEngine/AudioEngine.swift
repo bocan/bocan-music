@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 // @preconcurrency: AVFoundation node types (AVAudioPlayerNode etc.) lack Sendable;
 // thread-safety is provided by AudioEngine's actor isolation.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
