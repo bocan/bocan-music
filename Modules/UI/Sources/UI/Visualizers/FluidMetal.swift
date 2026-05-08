@@ -40,6 +40,10 @@ public final class FluidMetal: Visualizer {
 
     var bassEnergy: Float = 0
     var spectralCentroid: Float = 0
+    /// Smoothed overall energy (EMA of RMS). Fast attack, slow release so particles
+    /// gradually slow to a stop a second or two after audio ceases, rather than
+    /// snapping off immediately or running forever.
+    var energy: Float = 0
 
     // MARK: - Init
 
@@ -101,6 +105,12 @@ public final class FluidMetal: Visualizer {
             totalWeight += b
         }
         self.spectralCentroid = totalWeight > 0 ? weightedSum / (totalWeight * Float(bandCount)) : 0
+        // Smoothed energy: fast attack (α=0.3) so the visualizer responds quickly
+        // to new audio; slow release (α=0.05, ~3 s half-life at 60 fps) so particles
+        // decelerate gracefully instead of snapping off when music stops.
+        let raw = analysis.rms
+        let alpha: Float = raw > self.energy ? 0.3 : 0.05
+        self.energy = alpha * raw + (1 - alpha) * self.energy
     }
 
     // MARK: - Private: canvas fallback (used in snapshots + non-Metal environments)
@@ -194,7 +204,7 @@ public final class FluidMetal: Visualizer {
 
     // MARK: - MTKView bridge (used by FluidMetalView)
 
-    func updateUniforms(bassEnergy: Float, centroid: Float, time: Float) {
+    func updateUniforms(bassEnergy: Float, centroid: Float, time: Float, energy: Float) {
         guard let ptr = uniformBuffer?.contents().bindMemory(
             to: FluidUniforms.self, capacity: 1
         ) else { return }
@@ -202,6 +212,7 @@ public final class FluidMetal: Visualizer {
             bassEnergy: bassEnergy,
             spectralCentroid: centroid,
             time: time,
+            energy: energy,
             particleCount: UInt32(Self.particleCount)
         )
     }
@@ -260,6 +271,7 @@ private struct FluidUniforms {
     var bassEnergy: Float
     var spectralCentroid: Float
     var time: Float
+    var energy: Float
     var particleCount: UInt32
 }
 
@@ -329,7 +341,8 @@ struct FluidMetalView: NSViewRepresentable {
             self.renderer.updateUniforms(
                 bassEnergy: self.renderer.bassEnergy,
                 centroid: self.renderer.spectralCentroid,
-                time: elapsed
+                time: elapsed,
+                energy: self.renderer.energy
             )
             self.renderer.submitComputeAndRender(
                 commandBuffer: commandBuffer,
@@ -359,6 +372,7 @@ private extension FluidMetal {
         float    bassEnergy;
         float    spectralCentroid;
         float    time;
+        float    energy;
         uint     particleCount;
     };
 
@@ -383,9 +397,12 @@ private extension FluidMetal {
 
         // Ambient turbulence: smooth per-particle oscillation at incommensurate
         // frequencies so each particle drifts in its own slowly-changing direction.
-        // This keeps the field alive during quiet passages.
-        float tx = sin(u.time * 0.7  + particlePhase * 100.0) * 0.0004;
-        float ty = cos(u.time * 1.3  + particlePhase * 157.0) * 0.0004;
+        // Scaled by smoothed energy so turbulence fades to zero when no audio is
+        // present — particles gradually slow to a stop in ~2 s after music stops.
+        // clamp(energy * 50, 0, 1) means: silent=0, RMS≥0.02=full turbulence.
+        float turbScale = clamp(u.energy * 50.0, 0.0, 1.0);
+        float tx = sin(u.time * 0.7  + particlePhase * 100.0) * 0.0004 * turbScale;
+        float ty = cos(u.time * 1.3  + particlePhase * 157.0) * 0.0004 * turbScale;
         p.velocity += float2(tx, ty);
 
         // Bass-driven outward burst from origin.
