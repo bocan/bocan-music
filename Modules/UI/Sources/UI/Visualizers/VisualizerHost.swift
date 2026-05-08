@@ -36,7 +36,7 @@ public struct VisualizerHost: View {
 
     public var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.black
             self.timelineCanvas
         }
         .overlay(alignment: .bottom) {
