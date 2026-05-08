@@ -21,7 +21,7 @@ public struct NowPlayingStrip: View {
     /// updates coming from the engine.  Seeking happens once on release.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
-    @State private var showRecentScrobbles = false
+    @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
     @Environment(\.openWindow) private var openWindow
 
     /// Optional — only the main window injects a `ScrobbleSettingsViewModel`.
