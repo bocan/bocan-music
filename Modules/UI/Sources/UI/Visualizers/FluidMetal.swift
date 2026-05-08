@@ -70,12 +70,12 @@ public final class FluidMetal: Visualizer {
             return
         }
 
-        self.updateAnalysis(samples: samples, analysis: analysis)
+        self.updateAnalysis(analysis: analysis)
 
         // The actual GPU work (compute + render passes) is performed by `FluidMetalView`
         // (MTKView subclass) which drives its own CVDisplayLink-synced draw loop.
         // `FluidMetal.render(into:)` is called only in the canvas/fallback path; in the
-        // Metal path `VisualizerHost` calls `updateAnalysis` directly each display tick.
+        // Metal path the Coordinator reads `vm.analysis` directly each frame.
         //
         // For the Canvas snapshot (used in tests and reduceMotion/fallback mode), we draw
         // a simple energy blob so the code path is exercised.
@@ -84,10 +84,10 @@ public final class FluidMetal: Visualizer {
 
     /// Updates the analysis state consumed by the Metal compute shader.
     ///
-    /// Called by `VisualizerHost` every display tick when the MTKView is active,
-    /// so the GPU receives live `bassEnergy` and `spectralCentroid` values each frame.
+    /// Called by `FluidMetalView.Coordinator.drawFrame` immediately before each GPU
+    /// submission so `bassEnergy` and `spectralCentroid` are always current.
     /// Safe to call even when `isReady == false`.
-    func updateAnalysis(samples _: AudioSamples, analysis: Analysis) {
+    func updateAnalysis(analysis: Analysis) {
         let bands = analysis.bands
         let bandCount = bands.count
         if bandCount >= 4 {
@@ -268,6 +268,9 @@ private struct FluidUniforms {
 /// NSViewRepresentable drop-down to AppKit: MTKView requires AppKit; no SwiftUI equivalent exists.
 struct FluidMetalView: NSViewRepresentable {
     let renderer: FluidMetal
+    /// Direct reference to the view model so analysis can be sampled each GPU frame,
+    /// bypassing SwiftUI's update cycle entirely for maximum audio reactivity.
+    let vm: VisualizerViewModel
 
     func makeNSView(context: Context) -> MTKView {
         let view = MTKView()
@@ -284,7 +287,7 @@ struct FluidMetalView: NSViewRepresentable {
     func updateNSView(_ view: MTKView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(renderer: self.renderer)
+        Coordinator(renderer: self.renderer, vm: self.vm)
     }
 
     // MARK: - Coordinator
@@ -293,10 +296,12 @@ struct FluidMetalView: NSViewRepresentable {
     final class Coordinator: NSObject, MTKViewDelegate, @unchecked Sendable {
         // @unchecked Sendable: all access is from the main thread (MTKView delegate callbacks).
         private let renderer: FluidMetal
+        private let vm: VisualizerViewModel
         private var startTime = Date()
 
-        init(renderer: FluidMetal) {
+        init(renderer: FluidMetal, vm: VisualizerViewModel) {
             self.renderer = renderer
+            self.vm = vm
         }
 
         nonisolated func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
@@ -314,6 +319,11 @@ struct FluidMetalView: NSViewRepresentable {
                   let drawable = view.currentDrawable,
                   let rpd = view.currentRenderPassDescriptor,
                   let commandBuffer = commandQueue.makeCommandBuffer() else { return }
+
+            // Sample the latest analysis directly from the view model on every GPU frame.
+            // This is the authoritative path for audio reactivity — it runs at display rate
+            // (up to 60fps) and is not subject to SwiftUI's coalesced update cycle.
+            self.renderer.updateAnalysis(analysis: self.vm.analysis)
 
             let elapsed = Float(Date().timeIntervalSince(self.startTime))
             self.renderer.updateUniforms(
@@ -366,8 +376,10 @@ private extension FluidMetal {
         if (id >= u.particleCount) return;
         Particle p = particles[id];
 
-        // Per-particle phase offset for unique, non-synchronised motion.
-        float particlePhase = float(id) * 0.00021;
+        // Per-particle phase offset uniformly distributed over [0, 2π] so the
+        // combined turbulence of all 3 000 particles averages to zero at all times
+        // — no coherent speed bursts every 20–40 seconds.
+        float particlePhase = float(id) / float(u.particleCount) * 6.28318;
 
         // Ambient turbulence: smooth per-particle oscillation at incommensurate
         // frequencies so each particle drifts in its own slowly-changing direction.

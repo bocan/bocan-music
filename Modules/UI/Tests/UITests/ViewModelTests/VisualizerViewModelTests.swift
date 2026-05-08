@@ -134,18 +134,6 @@ struct VisualizerModeTests {
 @Suite("FluidMetal updateAnalysis")
 @MainActor
 struct FluidMetalUpdateAnalysisTests {
-    private static func silentSamples() -> AudioSamples {
-        AudioSamples(
-            timeStamp: .init(),
-            sampleRate: 44100,
-            mono: [],
-            left: [],
-            right: [],
-            rms: 0,
-            peak: 0
-        )
-    }
-
     @Test("updateAnalysis sets bassEnergy from the first four bands")
     func bassEnergyFromLowBands() {
         let fluid = FluidMetal()
@@ -156,7 +144,7 @@ struct FluidMetalUpdateAnalysisTests {
         bands[3] = 0.2
         let analysis = Analysis(bands: bands, rms: 0, peak: 0)
 
-        fluid.updateAnalysis(samples: Self.silentSamples(), analysis: analysis)
+        fluid.updateAnalysis(analysis: analysis)
 
         let expected: Float = (0.8 + 0.6 + 0.4 + 0.2) / 4
         #expect(fluid.bassEnergy == expected)
@@ -170,7 +158,7 @@ struct FluidMetalUpdateAnalysisTests {
         bands[16] = 1.0
         let analysis = Analysis(bands: bands, rms: 0, peak: 0)
 
-        fluid.updateAnalysis(samples: Self.silentSamples(), analysis: analysis)
+        fluid.updateAnalysis(analysis: analysis)
 
         let expected: Float = 16.0 / Float(FFTAnalyzer.bandCount)
         #expect(abs(fluid.spectralCentroid - expected) < 1e-6)
@@ -181,7 +169,7 @@ struct FluidMetalUpdateAnalysisTests {
         let fluid = FluidMetal()
         let analysis = Analysis.silent
 
-        fluid.updateAnalysis(samples: Self.silentSamples(), analysis: analysis)
+        fluid.updateAnalysis(analysis: analysis)
 
         #expect(fluid.spectralCentroid == 0)
     }
@@ -195,7 +183,7 @@ struct FluidMetalUpdateAnalysisTests {
         let analysis = Analysis(bands: bands, rms: 0.5, peak: 0.8)
 
         // Must not crash regardless of isReady state.
-        fluid.updateAnalysis(samples: Self.silentSamples(), analysis: analysis)
+        fluid.updateAnalysis(analysis: analysis)
         #expect(fluid.bassEnergy > 0)
     }
 }
