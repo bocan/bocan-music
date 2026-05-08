@@ -138,26 +138,31 @@ public final class DSPChain: @unchecked Sendable {
 
     /// Apply a complete `DSPState` snapshot to the chain.
     public func apply(_ state: DSPState, presets: PresetStore) {
-        // EQ bypass transitions: ramp gains to/from 0 dB to prevent the IIR
-        // delay-line discontinuity that causes an audible pop on bypass toggling.
+        let resolvedPreset: EQPreset? = state.eqPresetID.flatMap { presets.preset(forID: $0) }
+
+        // EQ bypass logic:
+        // - Disabled by user → bypass
+        // - Enabled but preset is flat (all 0 dB) → bypass (saves 10 IIR biquads from the RT chain)
+        // - Enabled with non-flat preset → active
         let eqWasActive = !self.eq.bypass
-        let eqWillBeActive = state.eqEnabled
+        let eqWillBeActive = state.eqEnabled && !(resolvedPreset?.isFlat ?? true)
+
         if eqWasActive, !eqWillBeActive {
-            // Disabling: ramp all bands to 0 dB then engage bypass so the
-            // IIR delay-line drains cleanly before it is discarded.
+            // Disabling (or switching to Flat): ramp all bands to 0 dB then engage bypass
+            // so the IIR delay-line drains cleanly before it is discarded.
             self.rampToFlatThenBypass()
         } else if !eqWasActive, eqWillBeActive {
-            // Enabling: zero the bands so the freshly un-bypassed IIR filter
-            // starts at flat response (no discontinuity), then ramp to target.
+            // Enabling with a non-flat preset: zero the bands so the freshly un-bypassed
+            // IIR filter starts at flat response (no discontinuity), then ramp to target.
             self.eqRampTask?.cancel()
             self.eqRampTask = nil
             self.eq.reset()
             self.eq.bypass = false
-            if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
+            if let preset = resolvedPreset {
                 self.rampEQ(to: preset)
             }
-        } else if let id = state.eqPresetID, let preset = presets.preset(forID: id) {
-            // No bypass state change: update the preset.
+        } else if let preset = resolvedPreset {
+            // No bypass state change: update the preset if needed.
             if eqWillBeActive {
                 self.rampEQ(to: preset)
             } else {
@@ -199,6 +204,14 @@ public final class DSPChain: @unchecked Sendable {
         let startGlobal = Double(self.eq.node.globalGain)
         let targetGains = target.bandGainsDB
         let targetGlobal = target.outputGainDB
+
+        // Skip the ramp entirely when gains already match — avoids 12 Task
+        // wakeups on redundant pushToEngine() calls (e.g. settings re-apply).
+        let gainsMatch = startGlobal == targetGlobal
+            && startGains.count == targetGains.count
+            && zip(startGains, targetGains).allSatisfy { abs($0 - $1) < 1e-4 }
+        if gainsMatch { return }
+
         let steps = 12
         self.eqRampTask = Task { [weak self] in
             for step in 1 ... steps {
