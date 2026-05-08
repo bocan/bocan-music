@@ -215,6 +215,18 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         var continuation: AsyncStream<PlaybackState>.Continuation?
         self.state = AsyncStream { continuation = $0 }
         self.stateContinuation = continuation
+
+        // When AVAudioEngine reconfigures itself (sample-rate change, device plug/unplug)
+        // it silently removes all installed taps from the mixer. We must tear down the
+        // AudioTap ourselves so the AsyncStream continuation is properly finished,
+        // allowing the VisualizerViewModel's restart loop to reconnect cleanly.
+        NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: self.graph.engine,
+            queue: nil
+        ) { [weak self] _ in
+            Task { [weak self] in await self?.stopTap() }
+        }
     }
 
     // MARK: - Transport conformance
