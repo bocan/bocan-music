@@ -26,6 +26,8 @@ struct BocanCommands: Commands {
     @AppStorage("lyrics.lrclibEnabled") private var lyricsLrclibEnabled = false
     /// Mirrors `VisualizerViewModel.paneVisible` (`@AppStorage("visualizer.paneVisible")`).
     @AppStorage("visualizer.paneVisible") private var visualizerPaneVisible = false
+    /// Mirrors `NowPlayingStrip.showRecentScrobbles` (`@AppStorage("scrobble.showRecentSheet")`).
+    @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -262,6 +264,14 @@ struct BocanCommands: Commands {
                 self.windowMode.toggleMiniPlayer()
             }
             .keyboardShortcut("m", modifiers: [.command, .option])
+
+            Divider()
+
+            Button("Show Recent Scrobbles") {
+                self.showRecentScrobbles = true
+            }
+            .keyboardShortcut("s", modifiers: [.command, .option, .shift])
+            .help("Show the list of recently scrobbled tracks and their submission status")
 
             Divider()
 
