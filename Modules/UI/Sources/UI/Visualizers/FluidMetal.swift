@@ -70,7 +70,24 @@ public final class FluidMetal: Visualizer {
             return
         }
 
-        // Update analysis state used by the compute pass.
+        self.updateAnalysis(samples: samples, analysis: analysis)
+
+        // The actual GPU work (compute + render passes) is performed by `FluidMetalView`
+        // (MTKView subclass) which drives its own CVDisplayLink-synced draw loop.
+        // `FluidMetal.render(into:)` is called only in the canvas/fallback path; in the
+        // Metal path `VisualizerHost` calls `updateAnalysis` directly each display tick.
+        //
+        // For the Canvas snapshot (used in tests and reduceMotion/fallback mode), we draw
+        // a simple energy blob so the code path is exercised.
+        self.renderCanvasFallback(into: &context, size: size, analysis: analysis)
+    }
+
+    /// Updates the analysis state consumed by the Metal compute shader.
+    ///
+    /// Called by `VisualizerHost` every display tick when the MTKView is active,
+    /// so the GPU receives live `bassEnergy` and `spectralCentroid` values each frame.
+    /// Safe to call even when `isReady == false`.
+    func updateAnalysis(samples _: AudioSamples, analysis: Analysis) {
         let bands = analysis.bands
         let bandCount = bands.count
         if bandCount >= 4 {
@@ -84,15 +101,6 @@ public final class FluidMetal: Visualizer {
             totalWeight += b
         }
         self.spectralCentroid = totalWeight > 0 ? weightedSum / (totalWeight * Float(bandCount)) : 0
-
-        // The actual GPU work (compute + render passes) is performed by `FluidMetalView`
-        // (MTKView subclass) which drives its own CVDisplayLink-synced draw loop.
-        // `FluidMetal.render(into:)` is called by VisualizerHost's TimelineView and
-        // only updates analysis state here; GPU submission happens in the MTKView delegate.
-        //
-        // For the Canvas snapshot (used in tests and reduceMotion mode), we draw a
-        // simple energy blob so the code path is exercised.
-        self.renderCanvasFallback(into: &context, size: size, analysis: analysis)
     }
 
     // MARK: - Private: canvas fallback (used in snapshots + non-Metal environments)
