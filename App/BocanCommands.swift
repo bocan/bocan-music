@@ -6,17 +6,26 @@ import UI
 
 /// Application menu commands.
 ///
-/// `vm` and `windowMode` are plain `let` so this struct's `body` never
-/// re-evaluates due to observable publishes from LibraryViewModel (selection
-/// changes, playback ticks, etc.) — the menu bar is only rebuilt when needed.
-/// `lyricsVM` and `visualizerVM` are `@ObservedObject` because they each
-/// publish only on rare user actions (toggling the pane) and their labels
-/// *must* reflect current state ("Show" vs "Hide").
+/// All four VMs are plain `let` so this struct's `body` is never invalidated by
+/// observable publishes — LibraryViewModel fires on every playback tick,
+/// VisualizerViewModel fires `analysis` at 60 fps, and LyricsViewModel fires
+/// `currentLineIndex` on every lyric scroll.  Rebuilding the macOS menu bar at
+/// those rates causes audio buffer starvation (audible pops).
+///
+/// For labels that must reflect live state ("Show" vs "Hide"), we read the
+/// AppStorage keys directly — those same keys back the VMs' paneVisible
+/// properties, so they stay in sync without requiring @ObservedObject.
 struct BocanCommands: Commands {
     let vm: LibraryViewModel
     let windowMode: WindowModeController
-    @ObservedObject var lyricsVM: LyricsViewModel
-    @ObservedObject var visualizerVM: VisualizerViewModel
+    let lyricsVM: LyricsViewModel
+    let visualizerVM: VisualizerViewModel
+    /// Mirrors `LyricsViewModel.paneVisible` (`@AppStorage("lyrics.paneVisible")`).
+    @AppStorage("lyrics.paneVisible") private var lyricsPaneVisible = false
+    /// Mirrors `LyricsViewModel.lrclibEnabled` (`@AppStorage("lyrics.lrclibEnabled")`).
+    @AppStorage("lyrics.lrclibEnabled") private var lyricsLrclibEnabled = false
+    /// Mirrors `VisualizerViewModel.paneVisible` (`@AppStorage("visualizer.paneVisible")`).
+    @AppStorage("visualizer.paneVisible") private var visualizerPaneVisible = false
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -232,14 +241,14 @@ struct BocanCommands: Commands {
         CommandGroup(after: .windowArrangement) {
             // Phase 4 audit C1: ⌘L is reserved for "Love" (the Track menu);
             // Show Lyrics moves to ⌘⌥L so the two don't collide.
-            Button(self.lyricsVM.paneVisible ? "Hide Lyrics" : "Show Lyrics") {
-                self.lyricsVM.paneVisible.toggle()
+            Button(self.lyricsPaneVisible ? "Hide Lyrics" : "Show Lyrics") {
+                self.lyricsPaneVisible.toggle()
             }
             .keyboardShortcut("l", modifiers: [.command, .option])
 
-            Button(self.visualizerVM.paneVisible ? "Hide Visualizer" : "Show Visualizer") {
+            Button(self.visualizerPaneVisible ? "Hide Visualizer" : "Show Visualizer") {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    self.visualizerVM.paneVisible.toggle()
+                    self.visualizerPaneVisible.toggle()
                 }
             }
             .keyboardShortcut("v", modifiers: [.command, .shift])
@@ -374,7 +383,7 @@ struct BocanCommands: Commands {
             .help("Open the lyrics editor for the current track")
             .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
 
-            if self.lyricsVM.lrclibEnabled {
+            if self.lyricsLrclibEnabled {
                 Button("Fetch Lyrics from LRClib") {
                     self.lyricsVM.forceFetch()
                 }
