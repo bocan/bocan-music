@@ -14,6 +14,7 @@ public struct VisualizerPane: View {
     // MARK: - State
 
     @AppStorage("visualizer.paneWidth") private var paneWidth: Double = 300
+    @State private var resizeDragStart: Double?
 
     // MARK: - Init
 
@@ -32,7 +33,29 @@ public struct VisualizerPane: View {
             }
             .frame(width: self.paneWidth)
             .background(Color.black)
-            .overlay(alignment: .leading) { Divider() }
+            .overlay(alignment: .leading) {
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 6)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                                .onChanged { value in
+                                    if self.resizeDragStart == nil {
+                                        self.resizeDragStart = self.paneWidth
+                                    }
+                                    let newWidth = (self.resizeDragStart ?? self.paneWidth) - value.translation.width
+                                    self.paneWidth = max(220, min(600, newWidth))
+                                }
+                                .onEnded { _ in self.resizeDragStart = nil }
+                        )
+                        .onHover { hovering in
+                            if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                        }
+                    Divider()
+                }
+            }
             .accessibilityIdentifier(A11y.Visualizer.pane)
             .accessibilityLabel("Visualizer pane, \(self.vm.mode.displayName)")
             .transition(.move(edge: .trailing))
