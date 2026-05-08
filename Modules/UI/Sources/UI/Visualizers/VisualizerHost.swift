@@ -5,13 +5,8 @@ import SwiftUI
 
 /// Container view that drives the active visualizer mode at display rate.
 ///
-/// - Uses `TimelineView(.animation(minimumInterval:))` to clock Canvas redraws.
-///   Canvas content is a stateless draw call into the appropriate ``Visualizer``.
-/// - The Metal-based `FluidMetal` mode drives its own `MTKView` via `CVDisplayLink`
-///   inside ``FluidMetalView``. The coordinator reads `vm.analysis` directly on
-///   every GPU frame — no SwiftUI update cycle involved.
-/// - Respects `reduceMotion`: Fluid mode is replaced by Spectrum Bars; Oscilloscope
-///   pauses on the last rendered frame.
+/// Uses `TimelineView(.animation(minimumInterval:))` to clock Canvas redraws.
+/// Canvas content is a stateless draw call into the appropriate ``Visualizer``.
 public struct VisualizerHost: View {
     // MARK: - Dependencies
 
@@ -36,21 +31,7 @@ public struct VisualizerHost: View {
     public var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-
-            if self.vm.mode == .fluidMetal,
-               let fluid = renderer as? FluidMetal,
-               fluid.isReady {
-                // Metal mode: MTKView drives the GPU draw loop.
-                // The Coordinator samples vm.analysis directly each frame —
-                // no SwiftUI overlay needed for analysis updates.
-                FluidMetalView(renderer: fluid, vm: self.vm)
-                    .ignoresSafeArea()
-            } else {
-                // Non-Metal modes, or Fluid mode when Metal setup failed.
-                // FluidMetal.render(into:) automatically delegates to its SpectrumBars
-                // fallback when isReady == false, so the user always sees something.
-                self.timelineCanvas
-            }
+            self.timelineCanvas
         }
         .accessibilityLabel(self.accessibilityLabel)
         .onAppear { self.rebuildRenderer() }
@@ -82,23 +63,12 @@ public struct VisualizerHost: View {
         guard key != self.rendererKey else { return }
         self.rendererKey = key
 
-        let effectiveMode: VisualizerMode = self.reduceMotion && self.vm.mode.isMetalBased
-            ? .spectrumBars
-            : self.vm.mode
-
-        switch effectiveMode {
+        switch self.vm.mode {
         case .spectrumBars:
             self.renderer = SpectrumBars(palette: self.vm.palette, reduceMotion: self.reduceMotion)
 
         case .oscilloscope:
             self.renderer = Oscilloscope(palette: self.vm.palette, reduceMotion: self.reduceMotion)
-
-        case .fluidMetal:
-            self.renderer = FluidMetal(
-                palette: self.vm.palette,
-                reduceMotion: self.reduceMotion,
-                reduceTransparency: self.reduceTransparency
-            )
         }
     }
 
