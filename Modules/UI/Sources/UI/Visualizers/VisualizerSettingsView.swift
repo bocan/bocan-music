@@ -40,6 +40,7 @@ public struct VisualizerSettingsView: View {
 
                 Toggle("Use simpler visualizer on battery", isOn: self.$simplifyOnBattery)
                     .help("Caps to 30 fps and switches to Spectrum Bars when running on battery power")
+                    .accessibilityHint("Caps frame rate to 30 fps and switches to Spectrum Bars on battery")
             }
 
             Section("Sensitivity") {
@@ -48,12 +49,15 @@ public struct VisualizerSettingsView: View {
                     Spacer()
                     Slider(value: self.$sensitivityRaw, in: 0.1 ... 3.0, step: 0.1)
                         .frame(width: 160)
+                        .accessibilityLabel("Audio sensitivity")
+                        .accessibilityValue(String(format: "%.1f×", self.sensitivityRaw))
                     Text(String(format: "%.1g×", self.sensitivityRaw))
                         .monospacedDigit()
                         .frame(width: 36)
                 }
                 Button("Reset to 1×") { self.sensitivityRaw = 1.0 }
                     .controlSize(.small)
+                    .help("Reset sensitivity to default (1×)")
             }
         }
         .formStyle(.grouped)
