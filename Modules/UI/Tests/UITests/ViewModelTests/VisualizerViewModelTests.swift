@@ -57,7 +57,8 @@ struct VisualizerViewModelTests {
         let engine = AudioEngine()
         let vm = VisualizerViewModel(engine: engine)
         vm.fpsCap = .thirty
-        // Not on battery (ProcessInfo.isLowPowerModeEnabled is false in tests).
+        // Battery state is determined by IOKit (real power source), not LPM.
+        // Allow both outcomes since the test machine may or may not be on battery.
         #expect(vm.effectiveFPS == 30 || vm.effectiveFPS == 60)
         vm.fpsCap = .sixty
         #expect(vm.effectiveFPS == 60 || vm.effectiveFPS == 30)

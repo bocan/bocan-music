@@ -1,6 +1,7 @@
 import AudioEngine
 import Combine
 import Foundation
+import IOKit.ps
 import Observability
 import SwiftUI
 
@@ -125,7 +126,14 @@ public final class VisualizerViewModel: ObservableObject {
     }
 
     private var isOnBattery: Bool {
-        ProcessInfo.processInfo.isLowPowerModeEnabled
+        guard
+            let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+            let sourceList = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else { return false }
+        return sourceList.contains { source in
+            guard let desc = IOPSGetPowerSourceDescription(snapshot, source)
+                .takeUnretainedValue() as? [String: Any] else { return false }
+            return (desc[kIOPSPowerSourceStateKey] as? String) == kIOPSBatteryPowerValue
+        }
     }
 }
 
