@@ -58,8 +58,10 @@ public final class DSPChain: @unchecked Sendable {
 
     public init() {
         self.timePitch = AVAudioUnitTimePitch()
-        // AVAudioUnitTimePitch always uses a high-quality spectral (phase-vocoder)
-        // algorithm internally — no algorithm property to set.
+        // Bypass the spectral phase-vocoder immediately so it does not burn CPU
+        // on every render cycle at unity rate. setRate(_:) un-bypasses it only
+        // when the user actually requests a rate other than 1.0×.
+        self.timePitch.bypass = true
         self.gainStage = GainStage()
         self.eq = EQUnit()
         self.bassBoost = BassBoostUnit()
