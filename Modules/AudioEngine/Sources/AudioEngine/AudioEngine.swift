@@ -1,4 +1,3 @@
-// swiftlint:disable file_length
 // @preconcurrency: AVFoundation node types (AVAudioPlayerNode etc.) lack Sendable;
 // thread-safety is provided by AudioEngine's actor isolation.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
@@ -33,7 +32,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     let graph: EngineGraph
     let deviceRouter: DeviceRouter
-    private let presets: PresetStore
+    let presets: PresetStore
     private var decoder: (any Decoder)?
     var pump: BufferPump?
     private var _currentTime: TimeInterval = 0
@@ -154,57 +153,10 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.log.debug("engine.gapless.cancelled")
     }
 
-    // MARK: - Tap public API
+    // MARK: - Tap state
 
     /// The active audio tap, or `nil` when visualization is off.
-    private var tap: AudioTap?
-
-    /// Install a new `AudioTap` on the main mixer and return its sample stream.
-    ///
-    /// Calling this when a tap is already installed is a no-op; the existing stream
-    /// is returned.  The stream ends when `stopTap()` is called.
-    public func startTap() -> AsyncStream<AudioSamples> {
-        if let existing = tap {
-            return existing.samples
-        }
-        let newTap = AudioTap(bufferSize: 1024)
-        self.tap = newTap
-        // Install on the main mixer; format:nil → hardware format.
-        newTap.install(on: self.graph.mixer)
-        self.log.debug("tap.started")
-        return newTap.samples
-    }
-
-    /// Remove the current tap from the mixer.  The stream returned by ``startTap()``
-    /// will finish naturally on the consumer side after this call.
-    public func stopTap() {
-        guard let current = tap else { return }
-        current.remove(from: self.graph.mixer)
-        self.tap = nil
-        self.log.debug("tap.stopped")
-    }
-
-    // MARK: - DSP public API
-
-    /// The DSP chain for this engine. Use to apply presets, adjust effects, and set gain.
-    public var dsp: DSPChain {
-        self.graph.dsp
-    }
-
-    /// Apply a complete `DSPState` snapshot (EQ, bass boost, crossfeed, width, etc.).
-    public func applyDSPState(_ state: DSPState) {
-        self.graph.dsp.apply(state, presets: self.presets)
-    }
-
-    /// Apply the ReplayGain compensation gain in dB.
-    public func applyReplayGain(db: Double) {
-        self.graph.dsp.applyGain(db: db)
-    }
-
-    /// Set the playback rate (0.5×–2.0×). Pitch is preserved via the spectral algorithm.
-    public func setRate(_ rate: Float) {
-        self.graph.dsp.setRate(rate)
-    }
+    var tap: AudioTap?
 
     // MARK: - Init
 
