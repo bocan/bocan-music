@@ -262,7 +262,10 @@ public final class DSPChain: @unchecked Sendable {
         if self.bassBoost.node.bypass, targetClamped == 0 { return }
 
         // Un-bypass at gain=0 so the filter starts from a flat (zero-gain) state.
+        // Reset the IIR delay lines first — without this, stale state from the
+        // previous active period causes a transient pop on the first render cycle.
         if self.bassBoost.node.bypass, targetClamped > 0 {
+            self.bassBoost.reset()
             self.bassBoost.node.bypass = false
         }
 
@@ -298,6 +301,7 @@ public final class DSPChain: @unchecked Sendable {
         self.gainStage.reset()
         self.eq.reset()
         self.eq.bypass = false
+        self.bassBoost.reset()
         self.bassBoost.setGainDB(0)
         self.crossfeed.bypass = true
         self.stereoExpander.bypass = true
