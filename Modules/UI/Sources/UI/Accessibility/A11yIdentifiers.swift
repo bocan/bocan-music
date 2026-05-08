@@ -61,6 +61,7 @@ public enum A11y {
         public static let sleepTimer = "nowPlayingStrip.sleepTimer"
         public static let dspButton = "nowPlayingStrip.dsp"
         public static let visualizerButton = "nowPlayingStrip.visualizer"
+        public static let scrobblePendingButton = "nowPlayingStrip.scrobblePending"
     }
 
     // MARK: - Search

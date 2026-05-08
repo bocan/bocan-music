@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import AppKit
 import AudioEngine
 import Library
@@ -162,7 +163,8 @@ struct BocanApp: App {
                 vm: self.libraryViewModel,
                 lyricsVM: self.lyricsViewModel,
                 visualizerVM: self.visualizerViewModel,
-                routeVM: self.routeViewModel
+                routeVM: self.routeViewModel,
+                scrobbleSettingsVM: self.scrobbleSettingsViewModel
             )
             .environment(self.dspViewModel)
             .environmentObject(self.windowMode)
@@ -303,7 +305,7 @@ struct BocanApp: App {
         self.engine = eng
         self.player = qp
 
-        let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner)
+        let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner, scrobbleRepository: scrobbleParts.service.queueRepository)
         self.libraryViewModel = lvm
         self.dspViewModel = DSPViewModel(
             engine: eng,
