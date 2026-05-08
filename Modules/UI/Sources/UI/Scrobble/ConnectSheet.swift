@@ -19,7 +19,9 @@ struct ConnectLastFmSheet: View {
 
             if self.viewModel.isAuthenticatingLastFm {
                 HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
+                    ProgressView()
+                        .controlSize(.small)
+                        .accessibilityLabel("Waiting for Last.fm authorisation")
                     Text("Waiting for browser authorisation…")
                         .foregroundStyle(.secondary)
                 }
@@ -32,6 +34,7 @@ struct ConnectLastFmSheet: View {
 
             HStack {
                 Button("Cancel", role: .cancel) { self.isPresented = false }
+                    .help("Cancel the Last.fm connection flow")
                 Spacer()
                 Button(self.viewModel.lastFm.isConnected ? "Done" : "Open last.fm") {
                     if self.viewModel.lastFm.isConnected {
@@ -47,6 +50,9 @@ struct ConnectLastFmSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.viewModel.isAuthenticatingLastFm)
+                .help(self.viewModel.lastFm.isConnected
+                    ? "Close this sheet"
+                    : "Open last.fm in your browser to authorise Bòcan")
             }
         }
         .padding(24)
@@ -85,6 +91,7 @@ struct ConnectListenBrainzSheet: View {
 
             HStack {
                 Button("Cancel", role: .cancel) { self.isPresented = false }
+                    .help("Cancel the ListenBrainz connection flow")
                 Spacer()
                 Button("Connect") {
                     self.submitting = true
@@ -98,6 +105,7 @@ struct ConnectListenBrainzSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.token.isEmpty || self.submitting)
+                .help("Submit your ListenBrainz token and connect your account")
             }
         }
         .padding(24)
