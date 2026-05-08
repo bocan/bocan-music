@@ -21,11 +21,18 @@ public struct NowPlayingStrip: View {
     /// updates coming from the engine.  Seeking happens once on release.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
+    @State private var showRecentScrobbles = false
     @Environment(\.openWindow) private var openWindow
 
-    public init(vm: NowPlayingViewModel, route: RouteViewModel? = nil) {
+    /// Optional — only the main window injects a `ScrobbleSettingsViewModel`.
+    /// When non-nil and `vm.pendingScrobbleCount > 0`, a pending-scrobbles
+    /// indicator is shown in the panel-buttons area.
+    var scrobbleSettingsVM: ScrobbleSettingsViewModel?
+
+    public init(vm: NowPlayingViewModel, route: RouteViewModel? = nil, scrobbleSettingsVM: ScrobbleSettingsViewModel? = nil) {
         self.vm = vm
         self.route = route ?? RouteViewModel.placeholder
+        self.scrobbleSettingsVM = scrobbleSettingsVM
     }
 
     public var body: some View {
@@ -53,6 +60,11 @@ public struct NowPlayingStrip: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(A11y.NowPlaying.strip)
+        .sheet(isPresented: self.$showRecentScrobbles) {
+            if let ssvm = self.scrobbleSettingsVM {
+                RecentScrobblesView(viewModel: ssvm)
+            }
+        }
     }
 
     // MARK: - Sub-views
@@ -254,6 +266,33 @@ public struct NowPlayingStrip: View {
             SpeedPickerView(vm: self.vm)
 
             SleepTimerMenu(vm: self.vm)
+
+            if self.vm.pendingScrobbleCount > 0, self.scrobbleSettingsVM != nil {
+                Button {
+                    self.showRecentScrobbles = true
+                } label: {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 15, weight: .medium))
+                        .overlay(alignment: .topTrailing) {
+                            ZStack {
+                                Circle()
+                                    .fill(.background)
+                                    .frame(width: 9, height: 9)
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 6, height: 6)
+                            }
+                            .offset(x: 5, y: -4)
+                        }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.orange)
+                .help("Scrobbles pending: \(self.vm.pendingScrobbleCount) — click to view")
+                .accessibilityLabel("Scrobbles pending")
+                .accessibilityValue("\(self.vm.pendingScrobbleCount)")
+                .accessibilityHint("Click to view recent scrobbles")
+                .accessibilityIdentifier(A11y.NowPlaying.scrobblePendingButton)
+            }
 
             Button {
                 self.openWindow(id: "dsp")
