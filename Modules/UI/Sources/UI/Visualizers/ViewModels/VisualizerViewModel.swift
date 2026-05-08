@@ -33,6 +33,10 @@ public final class VisualizerViewModel: ObservableObject {
     @AppStorage("visualizer.sensitivityRaw") private var sensitivityRaw = 1.0
     @AppStorage("visualizer.simplifyOnBattery") public var simplifyOnBattery = true
 
+    /// The `localizedName` of the screen to use for the fullscreen window.
+    /// Empty string means no preference — let macOS place it on the default screen.
+    @AppStorage("visualizer.targetScreenName") public var targetScreenName = ""
+
     /// Sensitivity multiplier applied to band values before normalisation (0.1…3.0).
     public var sensitivity: Float {
         get { Float(self.sensitivityRaw) }
