@@ -21,6 +21,7 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     @Published public private(set) var lastFm: ProviderStatus
     @Published public private(set) var listenBrainz: ProviderStatus
     @Published public private(set) var stats: ScrobbleQueueRepository.Stats?
+    @Published public private(set) var recentScrobbles: [ScrobbleQueueRepository.RecentRow] = []
     @Published public var isAuthenticatingLastFm = false
     @Published public var lastFmAuthError: String?
     @Published public var listenBrainzTokenError: String?
@@ -30,6 +31,7 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     private let openURL: @Sendable (URL) -> Void
     private let log = AppLogger.make(.scrobble)
     private var statsTask: Task<Void, Never>?
+    private var recentTask: Task<Void, Never>?
 
     public init(
         service: ScrobbleService,
@@ -46,6 +48,7 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     public func appear() {
         Task { await self.refreshConnectionState() }
         self.statsTask?.cancel()
+        self.recentTask?.cancel()
         let repo = self.service.queueRepository
         self.statsTask = Task { [weak self] in
             do {
@@ -56,11 +59,22 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
                 AppLogger.make(.scrobble).warning("scrobble.stats.stream.failed", ["error": String(reflecting: error)])
             }
         }
+        self.recentTask = Task { [weak self] in
+            do {
+                for try await rows in repo.observeRecent(limit: 50) {
+                    await MainActor.run { self?.recentScrobbles = rows }
+                }
+            } catch {
+                AppLogger.make(.scrobble).warning("scrobble.recent.stream.failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 
     public func disappear() {
         self.statsTask?.cancel()
         self.statsTask = nil
+        self.recentTask?.cancel()
+        self.recentTask = nil
     }
 
     // MARK: Connection state
