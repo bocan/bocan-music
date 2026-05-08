@@ -58,6 +58,12 @@ public struct TrackContextMenuActions {
     /// Remove the selected tracks from the current playlist.
     /// `nil` means this view is not inside a playlist — the menu item is hidden.
     public let removeFromPlaylist: (([Track]) -> Void)?
+    /// Open the lyrics editor pane for the selected track.
+    /// `nil` disables the menu item.
+    public let editLyrics: ((Track) -> Void)?
+    /// Fetch lyrics from LRClib for the selected track, replacing any existing lyrics.
+    /// `nil` means LRClib is not enabled or the feature is not wired — the menu item is hidden.
+    public let fetchLyricsFromLRClib: ((Track) -> Void)?
 }
 
 // MARK: - TrackTable
