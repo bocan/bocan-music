@@ -39,11 +39,13 @@ public struct PlaylistExportSheet: View {
                     Text("PLS").tag(PlaylistFormat.pls)
                     Text("XSPF").tag(PlaylistFormat.xspf)
                 }
+                .help("Choose the playlist file format to export")
 
                 Picker("Paths", selection: self.$pathStyle) {
                     Text("Absolute").tag(PathStyle.absolute)
                     Text("Relative").tag(PathStyle.relative)
                 }
+                .help("Absolute paths work on any machine; relative paths are portable if you move the playlist alongside the music folder")
 
                 if self.pathStyle == .relative {
                     HStack {
@@ -52,6 +54,8 @@ public struct PlaylistExportSheet: View {
                             .lineLimit(1)
                         Spacer()
                         Button("Choose…") { self.pickRoot() }
+                            .help("Choose the root folder that relative paths will be calculated from")
+                            .accessibilityLabel("Choose relative root folder")
                     }
                 }
             }
@@ -65,9 +69,18 @@ public struct PlaylistExportSheet: View {
                 Spacer()
                 Button("Cancel", role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
+                    .help("Dismiss this sheet without exporting")
                 Button("Export…") { Task { await self.runExport() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.isExporting || (self.pathStyle == .relative && self.relativeRoot == nil))
+                    .help(
+                        self.pathStyle == .relative && self.relativeRoot == nil
+                            ? "Choose a relative root folder before exporting"
+                            : "Choose a save location and export the playlist"
+                    )
+                    .accessibilityLabel(
+                        self.isExporting ? "Exporting, please wait" : "Export playlist"
+                    )
             }
         }
         .padding(24)

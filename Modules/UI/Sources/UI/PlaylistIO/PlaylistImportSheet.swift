@@ -41,12 +41,23 @@ public struct PlaylistImportSheet: View {
 
             HStack {
                 Button("Choose Files…") { self.pickFiles() }
+                    .help("Open a file picker to select one or more playlist files to import")
+                    .accessibilityLabel("Choose playlist files")
                 Spacer()
                 Button("Cancel", role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
+                    .help("Dismiss this sheet without importing")
                 Button("Import") { Task { await self.runImport() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.pickedURLs.isEmpty || self.isImporting)
+                    .help(
+                        self.pickedURLs.isEmpty
+                            ? "Select at least one playlist file before importing"
+                            : "Import the selected playlist files into your library"
+                    )
+                    .accessibilityLabel(
+                        self.isImporting ? "Importing, please wait" : "Import selected playlists"
+                    )
             }
         }
         .padding(24)
@@ -84,8 +95,16 @@ public struct PlaylistImportSheet: View {
                         .font(.caption2).foregroundStyle(.orange)
                 }
             }
+            .accessibilityLabel(Self.rowAccessibilityLabel(for: row))
         }
         .frame(minHeight: 200)
+    }
+
+    private static func rowAccessibilityLabel(for row: PreviewRow) -> String {
+        var parts = [row.url.lastPathComponent, row.summary]
+        if row.matched > 0 { parts.append("\(row.matched) matched") }
+        if row.missed > 0 { parts.append("\(row.missed) missing") }
+        return parts.joined(separator: ", ")
     }
 
     // MARK: - Actions
