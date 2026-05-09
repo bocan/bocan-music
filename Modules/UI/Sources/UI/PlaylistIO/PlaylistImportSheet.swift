@@ -138,7 +138,8 @@ public struct PlaylistImportSheet: View {
                 case nil:
                     "Unknown format"
                 }
-                rows.append(PreviewRow(id: url, url: url, summary: summary, matched: 0, missed: 0))
+                let counts = await self.importer.previewFile(at: url)
+                rows.append(PreviewRow(id: url, url: url, summary: summary, matched: counts.matched, missed: counts.missed))
             } catch {
                 rows.append(PreviewRow(id: url, url: url, summary: "Could not read", matched: 0, missed: 0))
             }
