@@ -75,6 +75,40 @@ public actor PlaylistImportService {
         return try await self.importPayload(payload, parentID: parentID)
     }
 
+    // MARK: - Preview (no DB writes)
+
+    /// Parses `url` and runs the resolver without persisting anything.
+    /// Returns `(matched, missed)` counts for display in the import preview sheet.
+    /// Never throws — errors are swallowed and return `(0, 0)` so the UI degrades gracefully.
+    public func previewFile(at url: URL) async -> (matched: Int, missed: Int) {
+        do {
+            let data = try Data(contentsOf: url)
+            let format = PlaylistFormat.sniff(data: data, fallback: url.pathExtension) ??
+                PlaylistFormat.fromExtension(url.pathExtension) ?? .m3u
+            switch format {
+            case .m3u, .m3u8:
+                return try await self.resolvePreview(M3UReader.parse(data: data, sourceURL: url))
+            case .pls:
+                return try await self.resolvePreview(PLSReader.parse(data: data, sourceURL: url))
+            case .xspf:
+                return try await self.resolvePreview(XSPFReader.parse(data: data, sourceURL: url))
+            case .cue:
+                let cueSheet = try CUESheetReader.parse(data: data, sourceURL: url)
+                return (matched: cueSheet.files.flatMap(\.tracks).count, missed: 0)
+            case .itunesXML:
+                // iTunes import is not yet wired — show neutral counts.
+                return (matched: 0, missed: 0)
+            }
+        } catch {
+            return (matched: 0, missed: 0)
+        }
+    }
+
+    private func resolvePreview(_ payload: PlaylistPayload) async -> (matched: Int, missed: Int) {
+        let resolution = await resolver.resolve(payload)
+        return (matched: resolution.matches.count, missed: resolution.misses.count)
+    }
+
     // MARK: - CUE sheet import
 
     /// Parse a CUE sheet and materialise each TRACK block as a virtual `Track`
