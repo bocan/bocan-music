@@ -54,6 +54,16 @@ public actor TrackResolver {
             }
         }
 
+        // Step 3: filename match — catches re-tagged files whose path changed.
+        if let url = entry.absoluteURL {
+            let filename = url.lastPathComponent
+            if !filename.isEmpty,
+               let candidate = try? await self.trackRepo.findByFilename(filename),
+               let id = candidate.id {
+                return id
+            }
+        }
+
         // Step 4: fuzzy by metadata.
         if let title = entry.titleHint, !title.isEmpty {
             if let candidate = try? await self.trackRepo.findByMetadata(
