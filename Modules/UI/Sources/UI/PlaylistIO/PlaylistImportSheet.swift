@@ -91,15 +91,22 @@ public struct PlaylistImportSheet: View {
     // MARK: - Actions
 
     private func pickFiles() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        let exts = ["m3u", "m3u8", "pls", "xspf"]
-        panel.allowedContentTypes = exts.compactMap { UTType(filenameExtension: $0) }
-        guard panel.runModal() == .OK else { return }
-        self.pickedURLs = panel.urls
-        Task { await self.refreshPreview() }
+        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
+        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        Task { @MainActor in
+            let panel = NSOpenPanel()
+            panel.allowsMultipleSelection = true
+            panel.canChooseDirectories = false
+            panel.canChooseFiles = true
+            let exts = ["m3u", "m3u8", "pls", "xspf"]
+            panel.allowedContentTypes = exts.compactMap { UTType(filenameExtension: $0) }
+            let result = await withCheckedContinuation { cont in
+                panel.begin { cont.resume(returning: $0) }
+            }
+            guard result == .OK else { return }
+            self.pickedURLs = panel.urls
+            await self.refreshPreview()
+        }
     }
 
     private func refreshPreview() async {

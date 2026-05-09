@@ -77,11 +77,18 @@ public struct PlaylistExportSheet: View {
     enum PathStyle: Hashable { case absolute, relative }
 
     private func pickRoot() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        if panel.runModal() == .OK { self.relativeRoot = panel.url }
+        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
+        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        Task { @MainActor in
+            let panel = NSOpenPanel()
+            panel.canChooseDirectories = true
+            panel.canChooseFiles = false
+            panel.allowsMultipleSelection = false
+            let result = await withCheckedContinuation { cont in
+                panel.begin { cont.resume(returning: $0) }
+            }
+            if result == .OK { self.relativeRoot = panel.url }
+        }
     }
 
     private func runExport() async {
@@ -90,7 +97,12 @@ public struct PlaylistExportSheet: View {
         if let type = UTType(filenameExtension: self.format.preferredExtension) {
             save.allowedContentTypes = [type]
         }
-        guard save.runModal() == .OK, let dest = save.url else { return }
+        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
+        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        let saveResult = await withCheckedContinuation { cont in
+            save.begin { cont.resume(returning: $0) }
+        }
+        guard saveResult == .OK, let dest = save.url else { return }
         self.isExporting = true
         defer { self.isExporting = false }
 
