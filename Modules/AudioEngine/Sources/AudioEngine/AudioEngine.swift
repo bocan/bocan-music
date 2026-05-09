@@ -60,6 +60,13 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     /// Crossfade volume ramp task. Cancelled in `load()` and `stop()`.
     var crossfadeTask: Task<Void, Never>?
 
+    /// Start offset in the source file for the current CUE segment (seconds).
+    /// Zero for ordinary non-CUE tracks.
+    private var segmentStart: TimeInterval = 0
+    /// End offset in the source file for the current CUE segment (seconds).
+    /// `nil` means play to decoder EOF (last CUE track or ordinary tracks).
+    private var segmentEndTime: TimeInterval?
+
     // MARK: - Transport: state stream
 
     public nonisolated let state: AsyncStream<PlaybackState>
@@ -224,6 +231,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             self.decoder = dec
             self._duration = dec.duration
             self._currentTime = 0
+            self.segmentStart = 0
+            self.segmentEndTime = nil
             self.emit(.ready)
             self.log.debug("engine.load.end", ["ms": -start.timeIntervalSinceNow * 1000])
         } catch {
@@ -280,7 +289,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         let newPump = try BufferPump(
             decoder: dec,
             playerNode: playerNode,
-            outputFormat: outputFmt
+            outputFormat: outputFmt,
+            maxDuration: segmentEndTime.map { $0 - self.segmentStart }
         )
         self.pump = newPump
 
@@ -359,6 +369,31 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         if wasPlaying {
             try await self.play()
         }
+    }
+
+    // MARK: - CUE segment support
+
+    /// Configure the engine to play a specific segment [start, end) of the
+    /// already-loaded audio file.
+    ///
+    /// Call this after `load(_:)` and before `play()`. The method seeks the decoder
+    /// to `start`, resets `currentTime` to zero (NowPlaying shows 0-based progress
+    /// within the segment), and clamps `duration` to the segment length.
+    ///
+    /// Passing `end: nil` means play to the decoder's natural EOF (last CUE track).
+    public func setSegment(start: TimeInterval, end: TimeInterval?) async throws {
+        guard let dec = self.decoder else { return }
+        let fileDuration = dec.duration
+        try await dec.seek(to: start)
+        self.segmentStart = start
+        self.segmentEndTime = end
+        self._currentTime = 0
+        self._duration = (end ?? fileDuration) - start
+        self.log.debug("engine.setSegment", [
+            "start": start,
+            "end": end as Any,
+            "virtualDuration": self._duration,
+        ])
     }
 
     // MARK: - Private helpers

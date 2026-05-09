@@ -359,7 +359,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         playlistService: PlaylistService
     ) -> (PlaylistImportService, PlaylistExportService) {
         let resolver = TrackResolver(trackRepo: trackRepo)
-        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService)
+        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService, trackRepo: trackRepo)
         let exporter = PlaylistExportService(database: database)
         return (importer, exporter)
     }
