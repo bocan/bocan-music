@@ -72,18 +72,25 @@ actor BufferPump {
     /// the pump is throttling itself to playback speed.  Reported at pump.stop/eof.
     private var throttleCount = 0
 
+    /// When non-nil, the pump stops after this many output frames have been
+    /// scheduled.  Used to enforce the `endOffsetMs` of a CUE virtual track
+    /// without relying on the underlying decoder reaching true EOF.
+    private let maxFrames: AVAudioFrameCount?
+
     // MARK: - Init
 
     init(
         decoder: any Decoder,
         playerNode: AVAudioPlayerNode,
-        outputFormat: AVAudioFormat
+        outputFormat: AVAudioFormat,
+        maxDuration: TimeInterval? = nil
     ) throws {
         self.decoder = decoder
         self.playerNode = playerNode
         self.outputFormat = outputFormat
         self.availableSlots = BufferPump.windowSize
         self.id = String(UUID().uuidString.prefix(4))
+        self.maxFrames = maxDuration.map { AVAudioFrameCount($0 * outputFormat.sampleRate) }
         if decoder.sourceFormat.sampleRate != outputFormat.sampleRate {
             self.converter = try FormatConverter(sourceFormat: decoder.sourceFormat, targetFormat: outputFormat)
             self.pumpFormat = decoder.sourceFormat
@@ -128,24 +135,16 @@ actor BufferPump {
     // MARK: - Private pump loop
 
     private func run() async throws {
-        let frameCapacity = AVAudioFrameCount(
-            pumpFormat.sampleRate * BufferPump.bufferDuration
-        )
+        let frameCapacity = AVAudioFrameCount(pumpFormat.sampleRate * BufferPump.bufferDuration)
+        var framesPumped: AVAudioFrameCount = 0
 
         while !Task.isCancelled {
-            // Wait until a slot is available in the in-flight window.
-            if self.availableSlots <= 0 {
-                try await self.waitForSlot()
+            if self.availableSlots <= 0 { try await self.waitForSlot()
                 continue
             }
-
             try Task.checkCancellation()
 
-            // Allocate and fill a buffer at the decoder's native rate.
-            guard let buffer = AVAudioPCMBuffer(
-                pcmFormat: pumpFormat,
-                frameCapacity: frameCapacity
-            ) else {
+            guard let buffer = AVAudioPCMBuffer(pcmFormat: pumpFormat, frameCapacity: frameCapacity) else {
                 self.log.error("buffer.alloc.failed", ["id": self.id])
                 break
             }
@@ -155,35 +154,55 @@ actor BufferPump {
                 framesRead = try await self.decoder.read(into: buffer)
             } catch {
                 self.log.error("pump.read.failed", [
-                    "id": self.id,
-                    "afterScheduled": self.scheduledCount,
+                    "id": self.id, "afterScheduled": self.scheduledCount,
                     "error": String(reflecting: error),
                 ])
                 throw error
             }
 
             if framesRead == 0 {
-                // EOF — signal the engine.
-                self.log.debug("pump.eof", [
-                    "id": self.id,
-                    "scheduled": self.scheduledCount,
-                    "throttled": self.throttleCount,
-                ])
+                self.log.debug("pump.eof", ["id": self.id, "scheduled": self.scheduledCount])
                 let cb = self.onEnded
                 Task { @MainActor in cb?() }
                 break
             }
 
-            // Resample if needed, then schedule.
-            guard let scheduleBuffer = try resampledBuffer(buffer) else { continue }
-
-            // Claim a slot and schedule.
-            self.availableSlots -= 1
-            self.scheduledCount += 1
-            let selfCapture = self
-            self.playerNode.scheduleBuffer(scheduleBuffer, completionCallbackType: .dataPlayedBack) { _ in
-                Task { await selfCapture.releaseSlot() }
+            // Enforce segment boundary for CUE virtual tracks.
+            if let limit = self.maxFrames {
+                let remaining = limit - framesPumped
+                if framesRead >= remaining {
+                    try self.scheduleSegmentEnd(buffer: buffer, trimTo: remaining)
+                    break
+                }
+                framesPumped += framesRead
             }
+
+            try self.scheduleBuffer(buffer)
+        }
+    }
+
+    /// Schedule the final partial buffer at the CUE segment boundary, then signal EOF.
+    private func scheduleSegmentEnd(buffer: AVAudioPCMBuffer, trimTo frameCount: AVAudioFrameCount) throws {
+        buffer.frameLength = frameCount
+        guard let resampled = try resampledBuffer(buffer) else { return }
+        self.claimSlotAndSchedule(resampled)
+        self.log.debug("pump.segment.end", ["id": self.id, "scheduled": self.scheduledCount])
+        let cb = self.onEnded
+        Task { @MainActor in cb?() }
+    }
+
+    /// Resample (if needed) then claim a window slot and hand the buffer to AVAudioPlayerNode.
+    private func scheduleBuffer(_ buffer: AVAudioPCMBuffer) throws {
+        guard let resampled = try resampledBuffer(buffer) else { return }
+        self.claimSlotAndSchedule(resampled)
+    }
+
+    private func claimSlotAndSchedule(_ buffer: AVAudioPCMBuffer) {
+        self.availableSlots -= 1
+        self.scheduledCount += 1
+        let selfCapture = self
+        self.playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
+            Task { await selfCapture.releaseSlot() }
         }
     }
 
