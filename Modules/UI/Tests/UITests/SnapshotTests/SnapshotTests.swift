@@ -217,9 +217,6 @@ struct UISnapshotTests {
 
     // MARK: - VisualizerSnapshotTests
 
-    // Note: Metal render paths (FluidMetal) are exempt from snapshot testing
-    // because MTKView requires a GPU, which is unavailable in headless environments.
-
     @Suite("Visualizer Snapshots")
     @MainActor
     struct VisualizerSnapshotTests {

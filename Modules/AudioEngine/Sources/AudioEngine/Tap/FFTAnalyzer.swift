@@ -53,7 +53,7 @@ public final class FFTAnalyzer {
 
     private let attackAlpha: Float = 0.6
     private let releaseAlpha: Float = 0.08
-    private let peakDecay: Float = 0.9985
+    private let peakDecay: Float = 0.995 // ~3 s half-life at 43 fps; was 0.9985 (11 s)
 
     // MARK: - Init
 
@@ -87,6 +87,17 @@ public final class FFTAnalyzer {
     }
 
     // MARK: - Public API
+
+    /// Reset all transient analysis state.
+    ///
+    /// Call this before starting to analyze a new audio stream (e.g., after a
+    /// track change or tap restart) so that adaptive normalisation peaks from
+    /// the previous track do not pollute the new one.
+    public func reset() {
+        self.smoothed = [Float](repeating: 0, count: Self.bandCount)
+        self.bandPeaks = [Float](repeating: 0, count: Self.bandCount)
+        self.overlapBuffer = [Float](repeating: 0, count: Self.fftSize / 2)
+    }
 
     // swiftlint:disable cyclomatic_complexity function_body_length
     /// Analyse one buffer of audio, updating the overlap buffer and returning
@@ -212,6 +223,14 @@ public final class FFTAnalyzer {
 
     /// Returns 32 `(from: binIndex, to: binIndex)` pairs covering 20 Hz – 20 kHz
     /// on a log scale, given the current sample rate.
+    ///
+    /// At 44.1 kHz, each FFT bin covers ~21.5 Hz, which means the three lowest
+    /// log-spaced bands all map to the same two bins ([1, 2]) and would show
+    /// identical bar heights.  To avoid this, each band's `fromBin` is clamped
+    /// to at least `prevBand.toBin + 1`, so every band reads from a unique bin
+    /// range.  Once the log-spaced calculation naturally produces a `fromBin`
+    /// larger than the previous `toBin` (around 280 Hz at 44.1 kHz), both
+    /// calculations agree and all higher-frequency bands are unaffected.
     static func makeBandBins(sampleRate: Double) -> [(from: Int, to: Int)] {
         let binCount = Self.binCount
         let freqPerBin = sampleRate / Double(Self.fftSize)
@@ -221,12 +240,19 @@ public final class FFTAnalyzer {
         let logMax = log10(maxFreq)
         let count = Self.bandCount
 
-        return (0 ..< count).map { i in
+        var result: [(from: Int, to: Int)] = []
+        result.reserveCapacity(count)
+        var prevToBin = 0
+        for i in 0 ..< count {
             let lowFreq = pow(10, logMin + Double(i) * (logMax - logMin) / Double(count))
             let highFreq = pow(10, logMin + Double(i + 1) * (logMax - logMin) / Double(count))
-            let fromBin = max(1, Int((lowFreq / freqPerBin).rounded(.down)))
-            let toBin = min(binCount - 1, Int((highFreq / freqPerBin).rounded(.up)))
-            return (from: fromBin, to: max(fromBin, toBin))
+            let naturalFrom = max(1, Int((lowFreq / freqPerBin).rounded(.down)))
+            // Ensure this band starts at a new bin so adjacent bars can't be identical.
+            let fromBin = i == 0 ? naturalFrom : max(naturalFrom, prevToBin + 1)
+            let toBin = min(binCount - 1, max(fromBin, Int((highFreq / freqPerBin).rounded(.up))))
+            result.append((from: fromBin, to: toBin))
+            prevToBin = toBin
         }
+        return result
     }
 }

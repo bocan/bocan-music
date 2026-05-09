@@ -21,6 +21,7 @@ public struct LyricsEditorSheet: View {
     @State private var text = ""
     @FocusState private var editorFocused: Bool
     @State private var showSaveConfirmation = false
+    @State private var showDeleteConfirm = false
     @AppStorage("lyrics.embedOnSave") private var embedOnSave = false
 
     // MARK: - Init
@@ -55,6 +56,19 @@ public struct LyricsEditorSheet: View {
             guard event.modifiers == .command else { return .ignored }
             self.insertTimestamp()
             return .handled
+        }
+        .confirmationDialog(
+            "Delete Lyrics?",
+            isPresented: self.$showDeleteConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Lyrics", role: .destructive) {
+                self.vm.deleteLyrics()
+                self.isPresented = false
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently remove all stored lyrics for the current track.")
         }
     }
 
@@ -98,11 +112,9 @@ public struct LyricsEditorSheet: View {
                 .toggleStyle(.checkbox)
                 .help("Write lyrics back into the audio file on save (requires write permission)")
 
-            Button("Delete") {
-                self.vm.deleteLyrics()
-                self.isPresented = false
+            Button("Delete", role: .destructive) {
+                self.showDeleteConfirm = true
             }
-            .foregroundStyle(.red)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

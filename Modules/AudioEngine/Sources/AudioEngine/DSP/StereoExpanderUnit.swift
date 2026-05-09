@@ -95,12 +95,15 @@ final class StereoExpanderAudioUnit: AUAudioUnit {
             let status = pull(&flags, timestamp, frameCount, 0, outputData)
             guard status == noErr else { return status }
 
+            let width = st.pointee.width
+            // At unity width the M/S transform is an identity — skip per-sample math.
+            guard abs(width - 1.0) > 1e-4 else { return noErr }
+
             let abl = UnsafeMutableAudioBufferListPointer(outputData)
             guard abl.count >= 2,
                   let lPtr = abl[0].mData?.assumingMemoryBound(to: Float.self),
                   let rPtr = abl[1].mData?.assumingMemoryBound(to: Float.self) else { return noErr }
 
-            let width = st.pointee.width
             let n = Int(frameCount)
 
             for i in 0 ..< n {

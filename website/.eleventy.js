@@ -20,6 +20,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "static/CNAME": "CNAME" });
   eleventyConfig.addPassthroughCopy({ "static/.well-known": ".well-known" });
   eleventyConfig.addPassthroughCopy({ "static/robots.txt": "robots.txt" });
+  eleventyConfig.addPassthroughCopy({ "static/screenshots": "screenshots" });
 
   // Watch CSS for re-rebuilds.
   eleventyConfig.addWatchTarget("./src/assets/css/");

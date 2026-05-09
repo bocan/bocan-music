@@ -9,6 +9,7 @@ public struct ScrobbleSettingsView: View {
     @ObservedObject var viewModel: ScrobbleSettingsViewModel
     @State private var showLastFmSheet = false
     @State private var showListenBrainzSheet = false
+    @State private var showRecentSheet = false
 
     public init(viewModel: ScrobbleSettingsViewModel) {
         self.viewModel = viewModel
@@ -43,18 +44,27 @@ public struct ScrobbleSettingsView: View {
             if let stats = viewModel.stats {
                 Section("Queue") {
                     LabeledContent("Pending", value: "\(stats.pending)")
+                        .accessibilityHint("Number of scrobbles waiting to be submitted")
                     LabeledContent("Failed (dead)", value: "\(stats.dead)")
+                        .accessibilityHint("Scrobbles that have exhausted all retry attempts")
                     LabeledContent("Sent today", value: "\(stats.submittedToday)")
+                        .accessibilityHint("Scrobbles successfully submitted in the last 24 hours")
                     if stats.dead > 0 {
                         HStack {
                             Button("Retry failed") {
                                 Task { await self.viewModel.resubmitDeadLetters() }
                             }
+                            .help("Re-queue all dead scrobbles and attempt immediate resubmission")
                             Button("Discard failed", role: .destructive) {
                                 Task { await self.viewModel.purgeDeadLetters() }
                             }
+                            .help("Permanently delete all failed scrobbles from the queue")
                         }
                     }
+                    Button("Recent Scrobbles…") {
+                        self.showRecentSheet = true
+                    }
+                    .help("View the last 50 scrobbled tracks and their submission status")
                 }
             }
         }
@@ -67,6 +77,9 @@ public struct ScrobbleSettingsView: View {
         }
         .sheet(isPresented: self.$showListenBrainzSheet) {
             ConnectListenBrainzSheet(viewModel: self.viewModel, isPresented: self.$showListenBrainzSheet)
+        }
+        .sheet(isPresented: self.$showRecentSheet) {
+            RecentScrobblesView(viewModel: self.viewModel)
         }
         .accessibilityIdentifier("scrobble-settings")
     }
@@ -93,8 +106,10 @@ public struct ScrobbleSettingsView: View {
             Spacer()
             if status.isConnected {
                 Button("Disconnect", role: .destructive, action: disconnectAction)
+                    .help("Disconnect \(status.displayName) and remove stored credentials")
             } else {
                 Button("Connect…", action: connectAction)
+                    .help("Connect your \(status.displayName) account")
             }
         }
     }

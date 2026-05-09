@@ -1,6 +1,7 @@
 import AudioEngine
 import Combine
 import Foundation
+import IOKit.ps
 import Observability
 import SwiftUI
 
@@ -32,6 +33,20 @@ public final class VisualizerViewModel: ObservableObject {
     @AppStorage("visualizer.sensitivityRaw") private var sensitivityRaw = 1.0
     @AppStorage("visualizer.simplifyOnBattery") public var simplifyOnBattery = true
 
+    /// The `localizedName` of the screen to use for the fullscreen window.
+    /// Empty string means no preference — let macOS place it on the default screen.
+    @AppStorage("visualizer.targetScreenName") public var targetScreenName = ""
+
+    // MARK: - Auto-simplify (sustained FPS drop)
+
+    /// Non-nil while the performance warning toast is visible.
+    /// Cleared when the user dismisses/reverts or after 6 seconds.
+    @Published public private(set) var performanceToast: ToastMessage?
+
+    /// The mode that was active before an auto-simplify. Non-nil only while
+    /// the "Revert" button is available (same lifetime as ``performanceToast``).
+    @Published public private(set) var modeBeforeAutoSimplify: VisualizerMode?
+
     /// Sensitivity multiplier applied to band values before normalisation (0.1…3.0).
     public var sensitivity: Float {
         get { Float(self.sensitivityRaw) }
@@ -44,7 +59,12 @@ public final class VisualizerViewModel: ObservableObject {
     private let fftAnalyzer = FFTAnalyzer()
     private let log = AppLogger.make(.audio)
     private var tapTask: Task<Void, Never>?
+    /// Reference count — incremented by start(), decremented by stop().
+    /// The tap loop runs while isRunning is true; isRunning is set on the
+    /// 0→1 and 1→0 transitions so the task body is identical to before.
+    private var startCount = 0
     private var isRunning = false
+    private var performanceToastTask: Task<Void, Never>?
 
     // MARK: - Init
 
@@ -54,27 +74,55 @@ public final class VisualizerViewModel: ObservableObject {
 
     // MARK: - Lifecycle
 
-    /// Start the audio tap and begin producing analysis frames.
-    /// Safe to call multiple times — subsequent calls are ignored while running.
+    /// Increment the reference count and start the audio tap if this is the
+    /// first caller. Safe to call from both the pane and the fullscreen window.
     public func start() {
-        guard !self.isRunning else { return }
+        self.startCount += 1
+        guard self.startCount == 1 else {
+            let count = self.startCount
+            self.log.debug("visualizer.tap.start.shared count=\(count)")
+            return
+        }
         self.isRunning = true
         self.log.debug("visualizer.tap.start")
 
         self.tapTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await engine.startTap()
-            for await samples in stream {
-                guard !Task.isCancelled else { break }
-                self.processSamples(samples)
+            // Restart loop: when the engine reconfigures (sample-rate change, device
+            // change) AVAudioEngine silently removes the tap. AudioEngine's config-change
+            // observer calls stopTap() which finishes the AsyncStream, exiting the
+            // inner for-await. We then reset the FFT analyser (clearing stale peaks
+            // from the old track) and reinstall the tap on the rebuilt graph.
+            while self.isRunning, !Task.isCancelled {
+                let stream = await self.engine.startTap()
+                // Reset before consuming the new stream so adaptive-normalisation peaks
+                // from the previous stream don't pollute the first few seconds.
+                self.fftAnalyzer.reset()
+                for await samples in stream {
+                    guard !Task.isCancelled else { return }
+                    self.processSamples(samples)
+                }
+                if self.isRunning, !Task.isCancelled {
+                    // Stream ended unexpectedly — engine is reconfiguring.
+                    // Brief pause lets the graph reconnect before we re-tap.
+                    self.log.debug("visualizer.tap.stream.reconnecting")
+                    try? await Task.sleep(nanoseconds: 150_000_000) // 150 ms
+                }
             }
             self.log.debug("visualizer.tap.end")
         }
     }
 
-    /// Stop the tap and put the analysis back to silence.
+    /// Decrement the reference count and tear down the tap only when it reaches
+    /// zero. Calling stop() more times than start() is a no-op.
     public func stop() {
-        guard self.isRunning else { return }
+        guard self.startCount > 0 else { return }
+        self.startCount -= 1
+        guard self.startCount == 0 else {
+            let count = self.startCount
+            self.log.debug("visualizer.tap.stop.shared count=\(count)")
+            return
+        }
         self.isRunning = false
         self.tapTask?.cancel()
         self.tapTask = nil
@@ -98,6 +146,39 @@ public final class VisualizerViewModel: ObservableObject {
         self.analysis = Analysis(bands: rawBands, rms: samples.rms, peak: samples.peak)
     }
 
+    // MARK: - Auto-simplify API
+
+    /// Called by ``VisualizerHost`` when the rolling FPS average falls below
+    /// 30 fps for ≥ 3 consecutive seconds. Switches to `.spectrumBars` and
+    /// shows a toast with a "Revert" option. No-op if already on `.spectrumBars`.
+    public func autoSimplify() {
+        guard self.mode != .spectrumBars else { return }
+        let previous = self.mode
+        self.modeBeforeAutoSimplify = previous
+        self.mode = .spectrumBars
+        self.log.info("visualizer.autoSimplify: switched from \(previous.rawValue) to spectrumBars due to sustained FPS drop")
+        let toast = ToastMessage(text: "Switched to Spectrum Bars for performance.", kind: .info)
+        self.performanceToast = toast
+        self.performanceToastTask?.cancel()
+        self.performanceToastTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            guard let self, self.performanceToast?.id == toast.id else { return }
+            self.performanceToast = nil
+            self.modeBeforeAutoSimplify = nil
+        }
+    }
+
+    /// Reverts the mode to what it was before the auto-simplify and dismisses
+    /// the toast. Calling when no auto-simplify is active is a no-op.
+    public func revertAutoSimplify() {
+        guard let previous = modeBeforeAutoSimplify else { return }
+        self.mode = previous
+        self.modeBeforeAutoSimplify = nil
+        self.performanceToastTask?.cancel()
+        self.performanceToast = nil
+        self.log.info("visualizer.autoSimplify.reverted: restored mode \(previous.rawValue)")
+    }
+
     // MARK: - FPS effective
 
     /// Effective frame rate target considering battery state and user setting.
@@ -109,7 +190,14 @@ public final class VisualizerViewModel: ObservableObject {
     }
 
     private var isOnBattery: Bool {
-        ProcessInfo.processInfo.isLowPowerModeEnabled
+        guard
+            let snapshot = IOPSCopyPowerSourcesInfo()?.takeRetainedValue(),
+            let sourceList = IOPSCopyPowerSourcesList(snapshot)?.takeRetainedValue() as? [CFTypeRef] else { return false }
+        return sourceList.contains { source in
+            guard let desc = IOPSGetPowerSourceDescription(snapshot, source)
+                .takeUnretainedValue() as? [String: Any] else { return false }
+            return (desc[kIOPSPowerSourceStateKey] as? String) == kIOPSBatteryPowerValue
+        }
     }
 }
 

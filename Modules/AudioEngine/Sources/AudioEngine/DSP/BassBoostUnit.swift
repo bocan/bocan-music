@@ -37,6 +37,12 @@ public final class BassBoostUnit: @unchecked Sendable {
         Double(self.node.bands.first?.gain ?? 0)
     }
 
+    /// Flush the IIR delay lines so a subsequent un-bypass doesn't produce a pop
+    /// from stale filter state.
+    public func reset() {
+        AudioUnitReset(self.node.audioUnit, kAudioUnitScope_Global, 0)
+    }
+
     // MARK: - Private
 
     private func configureBand() {

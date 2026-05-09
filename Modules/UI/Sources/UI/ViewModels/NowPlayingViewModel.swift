@@ -1,9 +1,11 @@
+// swiftlint:disable file_length
 import AppKit
 import AudioEngine
 import Foundation
 import Observability
 import Persistence
 import Playback
+import Scrobble
 import UserNotifications
 
 // MARK: - NowPlayingViewModel
@@ -59,6 +61,9 @@ public final class NowPlayingViewModel {
     /// The number of minutes the active sleep timer was set to, or `nil` when off.
     /// Used by the Playback menu to show a checkmark next to the active preset.
     public private(set) var sleepTimerActiveMinutes: Int?
+    /// Number of scrobbles pending submission. Sourced from `ScrobbleQueueRepository.observeStats()`.
+    /// Zero when scrobbling is not configured. Used to drive the strip indicator.
+    public private(set) var pendingScrobbleCount = 0
 
     // MARK: - Callbacks
 
@@ -72,13 +77,19 @@ public final class NowPlayingViewModel {
     private var stateTask: Task<Void, Never>?
     private var positionTask: Task<Void, Never>?
     private var sleepTimerTask: Task<Void, Never>?
+    private var scrobbleStatsTask: Task<Void, Never>?
     private var currentTrack: Track?
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
     /// Creates a new `NowPlayingViewModel` bound to the given transport and database.
-    public init(engine: any Transport, database: Database) {
+    /// Pass `scrobbleRepository` to show the pending-scrobbles indicator in the strip.
+    public init(
+        engine: any Transport,
+        database: Database,
+        scrobbleRepository: ScrobbleQueueRepository? = nil
+    ) {
         self.engine = engine
         self.database = database
         self.startObservingState()
@@ -90,6 +101,24 @@ public final class NowPlayingViewModel {
             let r = max(0.5, min(2.0, Float(storedRate)))
             self.playbackRate = r
             Task { await self.setRate(r) }
+        }
+        if let repo = scrobbleRepository {
+            self.startObservingScrobbleStats(repo)
+        }
+    }
+
+    private func startObservingScrobbleStats(_ repo: ScrobbleQueueRepository) {
+        self.scrobbleStatsTask = Task { [weak self] in
+            do {
+                for try await stats in repo.observeStats() {
+                    self?.pendingScrobbleCount = stats.pending
+                }
+            } catch {
+                AppLogger.make(.scrobble).warning(
+                    "scrobble.nowPlaying.stats.failed",
+                    ["error": String(reflecting: error)]
+                )
+            }
         }
     }
 

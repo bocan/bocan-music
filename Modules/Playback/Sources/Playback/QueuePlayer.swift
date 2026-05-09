@@ -293,7 +293,15 @@ public actor QueuePlayer: Transport {
         let ordered: [QueueItem]
         if shuffle {
             let seed = UInt64.random(in: .min ... .max)
-            ordered = FisherYatesShuffle().shuffled(items, seed: seed)
+            let clampedIndex = items.indices.contains(index) ? index : 0
+            // Pin the chosen track at position 0 so double-clicking a track in shuffle
+            // mode plays that track first, then shuffles the rest behind it.
+            // This matches the behaviour of iTunes / Music / Spotify.
+            let chosen = items[clampedIndex]
+            var rest = items
+            rest.remove(at: clampedIndex)
+            let shuffledRest = FisherYatesShuffle().shuffled(rest, seed: seed)
+            ordered = [chosen] + shuffledRest
         } else {
             ordered = items
         }

@@ -1,5 +1,6 @@
 import Acoustics
 import Library
+import Scrobble
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -21,6 +22,10 @@ public struct BocanRootView: View {
     @ObservedObject private var lyricsVM: LyricsViewModel
     @ObservedObject private var visualizerVM: VisualizerViewModel
     private var routeVM: RouteViewModel
+    /// Held as a plain reference (not @ObservedObject) so `BocanRootView` does
+    /// not re-render on every scrobble-settings change. Only the sheet content
+    /// (`RecentScrobblesView`) subscribes to it as @ObservedObject.
+    private let scrobbleSettingsVM: ScrobbleSettingsViewModel?
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
     @Environment(\.openWindow) private var openWindow
@@ -40,12 +45,14 @@ public struct BocanRootView: View {
         vm: LibraryViewModel,
         lyricsVM: LyricsViewModel,
         visualizerVM: VisualizerViewModel,
-        routeVM: RouteViewModel
+        routeVM: RouteViewModel,
+        scrobbleSettingsVM: ScrobbleSettingsViewModel? = nil
     ) {
         _vm = StateObject(wrappedValue: vm)
         self.lyricsVM = lyricsVM
         self.visualizerVM = visualizerVM
         self.routeVM = routeVM
+        self.scrobbleSettingsVM = scrobbleSettingsVM
     }
 
     public var body: some View {
@@ -92,14 +99,14 @@ public struct BocanRootView: View {
                     }
                 }
 
-                NowPlayingStrip(vm: self.vm.nowPlaying, route: self.routeVM)
+                NowPlayingStrip(vm: self.vm.nowPlaying, route: self.routeVM, scrobbleSettingsVM: self.scrobbleSettingsVM)
                     .environmentObject(self.visualizerVM)
             }
 
             // Lyrics and Visualizer panes are mutually exclusive — both occupy the
             // same trailing overlay slot. Visualizer wins when both are toggled on.
             if self.visualizerVM.paneVisible {
-                VisualizerPane(vm: self.visualizerVM)
+                VisualizerPane(vm: self.visualizerVM, nowPlayingVM: self.vm.nowPlaying)
             } else {
                 LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
                     Task { await self.vm.nowPlaying.scrub(to: pos) }

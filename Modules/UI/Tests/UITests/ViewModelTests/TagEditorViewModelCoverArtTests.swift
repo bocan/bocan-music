@@ -61,7 +61,9 @@ struct TagEditorViewModelCoverArtTests {
         vm.coverArtFetchVM.search()
 
         // Allow the Task inside search() to run.
-        try await Task.sleep(for: .milliseconds(100))
+        // Use a generous timeout: the Task may be delayed if the main actor is
+        // busy when many suites execute in parallel.
+        try await Task.sleep(for: .milliseconds(1000))
 
         #expect(mock.searchCallCount == 1)
         #expect(mock.lastSearchArtist == "The Beatles")

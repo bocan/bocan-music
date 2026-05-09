@@ -13,6 +13,14 @@ public struct EQPreset: Sendable, Codable, Hashable, Identifiable {
     public let outputGainDB: Double
     public let isBuiltIn: Bool
 
+    /// `true` when every band gain and the output gain are all 0 dB.
+    /// Used to bypass the EQ node entirely when the Flat preset (or an equivalent
+    /// user preset) is active — eliminating 10 IIR biquad filters from the
+    /// real-time render chain.
+    public var isFlat: Bool {
+        self.outputGainDB == 0 && self.bandGainsDB.allSatisfy { $0 == 0 }
+    }
+
     public init(
         id: String,
         name: String,

@@ -39,6 +39,7 @@ public struct TracksView: View {
     @State var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
     @EnvironmentObject private var libraryEnv: LibraryViewModel
+    @EnvironmentObject var lyricsEnv: LyricsViewModel
 
     public init(
         vm: TracksViewModel,
