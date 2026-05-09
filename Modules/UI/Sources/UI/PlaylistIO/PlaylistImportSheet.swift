@@ -98,7 +98,7 @@ public struct PlaylistImportSheet: View {
             panel.allowsMultipleSelection = true
             panel.canChooseDirectories = false
             panel.canChooseFiles = true
-            let exts = ["m3u", "m3u8", "pls", "xspf"]
+            let exts = ["m3u", "m3u8", "pls", "xspf", "cue"]
             panel.allowedContentTypes = exts.compactMap { UTType(filenameExtension: $0) }
             let result = await withCheckedContinuation { cont in
                 panel.begin { cont.resume(returning: $0) }
