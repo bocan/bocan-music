@@ -3,6 +3,7 @@
 xcuserdata/
 *.xccheckout
 *.moved-aside
+WorkspaceSettings.xcsettings
 DerivedData/
 *.hmap
 *.ipa
