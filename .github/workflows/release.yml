@@ -301,7 +301,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.RELEASE_VERSION }}
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           body_path: ${{ steps.notes.outputs.notes_path }}
           files: |
             build/Bocan.dmg
