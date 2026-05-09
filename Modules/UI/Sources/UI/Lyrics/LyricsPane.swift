@@ -20,10 +20,11 @@ public struct LyricsPane: View {
 
     // MARK: - State
 
-    @AppStorage("lyrics.paneWidth") private var paneWidth: Double = 260
-    @State private var showEditor = false
+    @AppStorage("lyrics.paneWidth") private var paneWidth: Double = 280
     @State private var searchText = ""
     @State private var showSearch = false
+    @State private var showOffsetPopover = false
+    @State private var resizeDragStart: Double?
 
     // MARK: - Init
 
@@ -48,7 +49,7 @@ public struct LyricsPane: View {
                     self.searchBar
                     Divider()
                 }
-                LyricsView(vm: self.vm, onSeek: self.onSeek)
+                LyricsView(vm: self.vm, onSeek: self.onSeek, searchText: self.searchText)
                     .onChange(of: self.position) { _, newPos in
                         self.vm.positionDidChange(newPos)
                     }
@@ -56,12 +57,32 @@ public struct LyricsPane: View {
             .frame(width: self.paneWidth)
             .background(.ultraThinMaterial)
             .overlay(alignment: .leading) {
-                Divider()
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 6)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                                .onChanged { value in
+                                    if self.resizeDragStart == nil {
+                                        self.resizeDragStart = self.paneWidth
+                                    }
+                                    let newWidth = (self.resizeDragStart ?? self.paneWidth) - value.translation.width
+                                    self.paneWidth = max(220, min(600, newWidth))
+                                }
+                                .onEnded { _ in self.resizeDragStart = nil }
+                        )
+                        .onHover { hovering in
+                            if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                        }
+                    Divider()
+                }
             }
-            .sheet(isPresented: self.$showEditor) {
+            .sheet(isPresented: self.$vm.isEditorPresented) {
                 LyricsEditorSheet(
                     vm: self.vm,
-                    isPresented: self.$showEditor,
+                    isPresented: self.$vm.isEditorPresented,
                     currentPosition: self.position
                 )
             }
@@ -73,48 +94,84 @@ public struct LyricsPane: View {
     // MARK: - Sub-views
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Text("Lyrics")
-                .font(.headline)
-                .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 4) {
+            // Row 1: title, source badge, close
+            HStack(spacing: 6) {
+                Text("Lyrics")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
 
-            Spacer()
-
-            self.fontSizePicker
-
-            Button {
-                self.showSearch.toggle()
-            } label: {
-                Image(systemName: "magnifyingglass")
-            }
-            .buttonStyle(.plain)
-            .help("Find in lyrics (⌘F)")
-            .accessibilityLabel("Search lyrics")
-            .keyboardShortcut("f", modifiers: .command)
-
-            Button {
-                self.showEditor = true
-            } label: {
-                Image(systemName: "square.and.pencil")
-            }
-            .buttonStyle(.plain)
-            .help("Edit lyrics (⌘⌥L)")
-            .accessibilityLabel("Edit lyrics")
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    self.vm.paneVisible = false
+                if let label = self.vm.documentSourceLabel {
+                    self.sourceBadge(label)
                 }
-            } label: {
-                Image(systemName: "xmark")
+
+                Spacer()
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.vm.paneVisible = false
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.plain)
+                .help("Close lyrics pane (⌘L)")
+                .accessibilityLabel("Close lyrics pane")
+                .accessibilityIdentifier(A11y.Lyrics.closeButton)
             }
-            .buttonStyle(.plain)
-            .help("Close lyrics pane (⌘L)")
-            .accessibilityLabel("Close lyrics pane")
-            .accessibilityIdentifier(A11y.Lyrics.closeButton)
+
+            // Row 2: font-size picker + action buttons
+            HStack(spacing: 6) {
+                self.fontSizePicker
+
+                Spacer()
+
+                if self.vm.lrclibEnabled, self.vm.document != nil {
+                    self.replaceWithLRClibButton
+                }
+
+                if case .synced = self.vm.document {
+                    self.offsetButton
+                }
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        self.showSearch.toggle()
+                    }
+                    if !self.showSearch { self.searchText = "" }
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                }
+                .buttonStyle(.plain)
+                .help("Find in lyrics")
+                .accessibilityLabel("Search lyrics")
+
+                Button {
+                    self.vm.isEditorPresented = true
+                } label: {
+                    Image(systemName: "square.and.pencil")
+                }
+                .buttonStyle(.plain)
+                .help("Edit lyrics (⌘⌥⇧L)")
+                .accessibilityLabel("Edit lyrics")
+            }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+    }
+
+    private func sourceBadge(_ label: String) -> some View {
+        let isSynced = if case .synced = self.vm.document { true } else { false }
+        let detail = isSynced ? "Synced" : "Plain"
+        return Text("\(label) · \(detail)")
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(.quaternary, in: Capsule())
+            .help("Lyrics source: \(label) (\(detail))")
+            .accessibilityLabel("Lyrics source: \(label), \(detail)")
     }
 
     private var fontSizePicker: some View {
@@ -133,19 +190,116 @@ public struct LyricsPane: View {
                         : Color.clear
                 )
                 .cornerRadius(4)
-                .accessibilityLabel("Font size \(size.label)")
+                .help("\(size.fullName) font size")
+                .accessibilityLabel("\(size.fullName) font size")
             }
         }
     }
 
     private var searchBar: some View {
-        HStack {
+        HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
-            TextField("Find", text: self.$searchText)
+                .font(.caption)
+            TextField("Find in lyrics", text: self.$searchText)
                 .textFieldStyle(.plain)
+            if !self.searchText.isEmpty {
+                Button {
+                    self.searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear search")
+                .accessibilityLabel("Clear search")
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+
+    /// A compact header button that opens a popover for adjusting the sync offset
+    /// (−5 000 ms to +5 000 ms in 50 ms steps).  Only shown for synced documents.
+    private var offsetButton: some View {
+        Button {
+            self.showOffsetPopover.toggle()
+        } label: {
+            Image(systemName: "timer")
+                .symbolVariant(self.vm.userOffsetMS != 0 ? .fill : .none)
+                .foregroundStyle(self.vm.userOffsetMS != 0 ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+        }
+        .buttonStyle(.plain)
+        .help(self.vm
+            .userOffsetMS == 0 ? "Adjust sync offset" : "Sync offset: \(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms")
+        .accessibilityLabel("Adjust lyrics sync offset")
+        .accessibilityIdentifier(A11y.Lyrics.offsetButton)
+        .popover(isPresented: self.$showOffsetPopover, arrowEdge: .bottom) {
+            self.offsetPopover
+        }
+    }
+
+    private var offsetPopover: some View {
+        let offsetBinding = Binding<Double>(
+            get: { Double(self.vm.userOffsetMS) },
+            set: { self.vm.userOffsetMS = Int($0.rounded()) }
+        )
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Sync Offset")
+                .font(.headline)
+
+            Slider(value: offsetBinding, in: -5000 ... 5000, step: 50) {
+                Text("Offset")
+            }
+            .accessibilityIdentifier(A11y.Lyrics.offsetSlider)
+            .frame(width: 220)
+
+            HStack {
+                Text(
+                    self.vm.userOffsetMS == 0
+                        ? "0 ms"
+                        : "\(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms"
+                )
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button("Reset") {
+                    self.vm.userOffsetMS = 0
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.vm.userOffsetMS == 0 ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
+                .disabled(self.vm.userOffsetMS == 0)
+            }
+
+            Text("Shifts highlighted line timing.\nResets when the track changes.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(16)
+        .frame(width: 260)
+    }
+
+    /// A compact header button that force-fetches lyrics from LRClib, replacing
+    /// whatever is currently stored.  Shows a spinner while the request is live.
+    private var replaceWithLRClibButton: some View {
+        Group {
+            if self.vm.isFetching {
+                ProgressView()
+                    .controlSize(.small)
+                    .help("Fetching from LRClib\u{2026}")
+            } else {
+                Button {
+                    self.vm.forceFetch()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.plain)
+                .help("Replace with LRClib result")
+                .accessibilityLabel("Replace lyrics with LRClib result")
+                .accessibilityIdentifier(A11y.Lyrics.replaceButton)
+            }
+        }
     }
 }

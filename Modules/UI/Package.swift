@@ -40,6 +40,9 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
+            ],
+            linkerSettings: [
+                .linkedFramework("IOKit"),
             ]
         ),
         .testTarget(

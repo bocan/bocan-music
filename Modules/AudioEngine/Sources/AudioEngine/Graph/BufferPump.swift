@@ -24,7 +24,10 @@ actor BufferPump {
 
     // MARK: - Configuration
 
-    private static let windowSize = 4 // number of buffers in flight
+    /// Number of buffers kept in-flight ahead of the render thread.
+    /// 8 × 200 ms = 1.6 s of headroom — enough to survive a scheduler hiccup
+    /// without starving the AVAudioPlayerNode.
+    private static let windowSize = 8 // number of buffers in flight
     private static let bufferDuration = 0.2 // seconds per buffer
 
     // MARK: - Dependencies
@@ -64,6 +67,11 @@ actor BufferPump {
     /// Running count of successfully scheduled buffers (for diagnostics).
     private var scheduledCount = 0
 
+    /// Number of times the pump blocked waiting for a free slot.
+    /// At steady state this is expected — it simply means the window is full and
+    /// the pump is throttling itself to playback speed.  Reported at pump.stop/eof.
+    private var throttleCount = 0
+
     // MARK: - Init
 
     init(
@@ -99,7 +107,11 @@ actor BufferPump {
 
     /// Stop the pump and wait for the background task to finish.
     func stop() async {
-        self.log.debug("pump.stop", ["id": self.id, "scheduled": self.scheduledCount])
+        self.log.debug("pump.stop", [
+            "id": self.id,
+            "scheduled": self.scheduledCount,
+            "throttled": self.throttleCount,
+        ])
         self.task?.cancel()
         // Resume the slot continuation BEFORE awaiting the task result.
         // If the pump loop is suspended in withCheckedContinuation waiting for a
@@ -123,9 +135,7 @@ actor BufferPump {
         while !Task.isCancelled {
             // Wait until a slot is available in the in-flight window.
             if self.availableSlots <= 0 {
-                await withCheckedContinuation { continuation in
-                    self.slotContinuation = continuation
-                }
+                try await self.waitForSlot()
                 continue
             }
 
@@ -154,7 +164,11 @@ actor BufferPump {
 
             if framesRead == 0 {
                 // EOF — signal the engine.
-                self.log.debug("pump.eof", ["id": self.id, "scheduled": self.scheduledCount])
+                self.log.debug("pump.eof", [
+                    "id": self.id,
+                    "scheduled": self.scheduledCount,
+                    "throttled": self.throttleCount,
+                ])
                 let cb = self.onEnded
                 Task { @MainActor in cb?() }
                 break
@@ -171,6 +185,17 @@ actor BufferPump {
                 Task { await selfCapture.releaseSlot() }
             }
         }
+    }
+
+    /// Suspends until a buffer slot is released by a `dataPlayedBack` callback.
+    /// This is the normal steady-state path — the pump fills all slots quickly,
+    /// then waits ~200 ms for each one to drain.
+    private func waitForSlot() async throws {
+        self.throttleCount += 1
+        await withCheckedContinuation { continuation in
+            self.slotContinuation = continuation
+        }
+        try Task.checkCancellation()
     }
 
     /// Returns `source` unchanged when no sample-rate conversion is needed;

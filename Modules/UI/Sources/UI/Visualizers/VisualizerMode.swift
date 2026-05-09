@@ -6,7 +6,6 @@ import Foundation
 public enum VisualizerMode: String, CaseIterable, Sendable {
     case spectrumBars
     case oscilloscope
-    case fluidMetal
 
     /// Human-readable name shown in the settings picker.
     public var displayName: String {
@@ -16,9 +15,6 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .oscilloscope:
             "Oscilloscope"
-
-        case .fluidMetal:
-            "Fluid"
         }
     }
 
@@ -30,14 +26,6 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .oscilloscope:
             "waveform"
-
-        case .fluidMetal:
-            "sparkles"
         }
-    }
-
-    /// Whether this mode uses Metal (and can be disabled by `reduceMotion`).
-    public var isMetalBased: Bool {
-        self == .fluidMetal
     }
 }
