@@ -116,11 +116,15 @@ public extension LibraryViewModel {
 
     /// Handles a drag-and-drop of URLs onto the main window.
     ///
-    /// Directories are added directly.  Audio files are added as individual roots
-    /// so the sandbox grant for each file is preserved.
+    /// Playlist files (`.m3u`, `.m3u8`, `.pls`, `.xspf`, `.cue`) are routed to
+    /// ``PlaylistImportService``; audio files/directories go to the scanner.
     func addDroppedURLs(_ urls: [URL]) async {
         guard scanner != nil else { return }
-        await self.addURLs(urls)
+        let playlistExts: Set = ["m3u", "m3u8", "pls", "xspf", "cue"]
+        let playlists = urls.filter { playlistExts.contains($0.pathExtension.lowercased()) }
+        let audio = urls.filter { !playlistExts.contains($0.pathExtension.lowercased()) }
+        if !audio.isEmpty { await self.addURLs(audio) }
+        if !playlists.isEmpty { await self.importDroppedPlaylists(playlists) }
     }
 
     /// Removes a library root by its database ID.
