@@ -1,4 +1,5 @@
 @preconcurrency import AVFoundation
+import CoreAudio
 import Foundation
 import Observability
 
@@ -94,6 +95,14 @@ public final class EngineGraph: @unchecked Sendable {
             )
         }
 
+        // Request a larger hardware I/O buffer to tolerate scheduling jitter
+        // from WindowServer activity (menu tracking, window compositing, new
+        // window creation). Default is typically 512 frames ≈ 10.7 ms at 48 kHz —
+        // tight enough that a single missed cycle produces an audible pop.
+        // 1024 frames ≈ 21.3 ms: doubles the HAL deadline with no perceptible
+        // latency increase for music playback (not a real-time DAW).
+        self.configureIOBufferSize(frames: 1024)
+
         self.engine.prepare()
         do {
             try self.engine.start()
@@ -101,6 +110,51 @@ public final class EngineGraph: @unchecked Sendable {
             self.log.debug("engine.started", ["sampleRate": self.outputSampleRate])
         } catch {
             throw AudioEngineError.engineStartFailed(underlying: error)
+        }
+    }
+
+    // MARK: - I/O buffer configuration
+
+    /// Set the output device's hardware buffer frame size.
+    ///
+    /// A larger buffer gives the CoreAudio HAL more time per render cycle,
+    /// reducing the chance of `HALC_ProxyIOContext::IOWorkLoop: skipping cycle
+    /// due to overload` errors that cause audible pops during heavy UI activity.
+    ///
+    /// This affects the system-wide buffer for the output device. For a music
+    /// player (no real-time monitoring) this is safe — 1024 frames at 48 kHz is
+    /// only 21 ms, well below the threshold of perceptible latency.
+    private func configureIOBufferSize(frames: UInt32) {
+        guard let device = DeviceRouter.defaultOutputDevice() else { return }
+
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyBufferFrameSize,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        // Read current size first — only change if smaller than requested.
+        var currentSize: UInt32 = 0
+        var dataSize = UInt32(MemoryLayout<UInt32>.size)
+        if AudioObjectGetPropertyData(device.id, &address, 0, nil, &dataSize, &currentSize) == noErr,
+           currentSize >= frames {
+            self.log.debug("engine.ioBuffer.ok", ["current": currentSize])
+            return
+        }
+
+        var requestedFrames = frames
+        let status = AudioObjectSetPropertyData(
+            device.id,
+            &address,
+            0,
+            nil,
+            UInt32(MemoryLayout<UInt32>.size),
+            &requestedFrames
+        )
+        if status == noErr {
+            self.log.debug("engine.ioBuffer.set", ["frames": frames, "was": currentSize])
+        } else {
+            self.log.warning("engine.ioBuffer.failed", ["status": status, "requested": frames])
         }
     }
 

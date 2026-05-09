@@ -31,6 +31,55 @@ public actor ScrobbleQueueRepository {
         public let submittedToday: Int
     }
 
+    // MARK: - RecentRow
+
+    /// One row per scrobble-queue entry, carrying per-provider submission status.
+    /// Used by `RecentScrobblesView` to display the last N scrobbles.
+    public struct RecentRow: Sendable, Hashable {
+        /// Per-provider submission state mirroring the `scrobble_submissions.status` column.
+        public enum SubmissionStatus: String, Sendable, Hashable, CaseIterable {
+            case pending
+            case retry
+            case sent
+            case failed
+            case ignored
+
+            /// Human-readable label shown in the UI.
+            public var displayLabel: String {
+                switch self {
+                case .pending: "Queued"
+                case .retry: "Retrying"
+                case .sent: "Sent"
+                case .failed: "Failed"
+                case .ignored: "Ignored"
+                }
+            }
+
+            /// `true` for terminal states (no more work expected).
+            public var isTerminal: Bool {
+                self == .sent || self == .failed || self == .ignored
+            }
+        }
+
+        public let queueID: Int64
+        public let playedAt: Date
+        public let title: String
+        public let artist: String
+        public let album: String?
+        /// Submission status keyed by provider ID ("lastfm", "listenbrainz").
+        public let statusByProvider: [String: SubmissionStatus]
+
+        /// The "worst" aggregate status across all providers (most actionable first).
+        public var aggregateStatus: SubmissionStatus {
+            let statuses = self.statusByProvider.values
+            if statuses.contains(.failed) { return .failed }
+            if statuses.contains(.retry) { return .retry }
+            if statuses.contains(.pending) { return .pending }
+            if statuses.contains(.ignored) { return .ignored }
+            return .sent
+        }
+    }
+
     private let db: Persistence.Database
 
     public init(database: Persistence.Database) {
@@ -261,6 +310,105 @@ public actor ScrobbleQueueRepository {
              WHERE status = 'sent' AND submitted_at >= ?
             """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
             return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
+        }
+    }
+
+    // MARK: - Recent scrobbles
+
+    /// Fetch the most recent `limit` scrobble-queue entries, optionally filtered to a single
+    /// provider. Returns one `RecentRow` per queue entry with per-provider statuses attached.
+    public func fetchRecent(limit: Int = 50, providerID: String? = nil) async throws -> [RecentRow] {
+        try await self.db.read { db in
+            try Self.queryRecent(db: db, limit: limit, providerID: providerID)
+        }
+    }
+
+    /// Live stream of recent scrobbles. Re-emits whenever `scrobble_queue` or
+    /// `scrobble_submissions` change (e.g. a pending item becomes sent).
+    public nonisolated func observeRecent(limit: Int = 50, providerID: String? = nil) -> AsyncThrowingStream<[RecentRow], Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task { [database = self.db] in
+                let upstream = await database.observe(value: { db -> [RecentRow] in
+                    try Self.queryRecent(db: db, limit: limit, providerID: providerID)
+                })
+                do {
+                    for try await value in upstream {
+                        continuation.yield(value)
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    // MARK: - Private helpers
+
+    /// Shared implementation for `fetchRecent` and `observeRecent`.
+    private static func queryRecent(
+        db: GRDB.Database,
+        limit: Int,
+        providerID: String?
+    ) throws -> [RecentRow] {
+        // Build the queue-row query, optionally restricting to a provider.
+        var queueSQL = """
+        SELECT q.id AS queue_id, q.played_at,
+               t.title,
+               a.name AS artist_name,
+               al.title AS album_title
+          FROM scrobble_queue q
+          JOIN tracks t ON t.id = q.track_id
+          LEFT JOIN artists a ON a.id = t.artist_id
+          LEFT JOIN albums al ON al.id = t.album_id
+        """
+        var queueArgs: StatementArguments = []
+        if let pid = providerID {
+            queueSQL += """
+             WHERE EXISTS (
+               SELECT 1 FROM scrobble_submissions s
+                WHERE s.queue_id = q.id AND s.provider_id = ?
+             )
+            """
+            queueArgs = [pid]
+        }
+        queueSQL += " ORDER BY q.played_at DESC LIMIT ?"
+        queueArgs += [limit]
+
+        let queueRows = try Row.fetchAll(db, sql: queueSQL, arguments: queueArgs)
+        guard !queueRows.isEmpty else { return [] }
+
+        // Gather all matching queue IDs.
+        let queueIDs: [Int64] = queueRows.map { $0["queue_id"] }
+
+        // Fetch per-provider submission statuses in one query.
+        let placeholders = queueIDs.map { _ in "?" }.joined(separator: ",")
+        let subRows = try Row.fetchAll(
+            db,
+            sql: "SELECT queue_id, provider_id, status FROM scrobble_submissions WHERE queue_id IN (\(placeholders))",
+            arguments: StatementArguments(queueIDs)
+        )
+
+        // Group statuses by queue_id.
+        var statusMap: [Int64: [String: RecentRow.SubmissionStatus]] = [:]
+        for sub in subRows {
+            let qid: Int64 = sub["queue_id"]
+            let pid: String = sub["provider_id"]
+            let rawStatus: String = sub["status"] ?? "pending"
+            statusMap[qid, default: [:]][pid] = RecentRow.SubmissionStatus(rawValue: rawStatus) ?? .pending
+        }
+
+        return queueRows.map { row in
+            let qid: Int64 = row["queue_id"]
+            return RecentRow(
+                queueID: qid,
+                playedAt: Date(timeIntervalSince1970: TimeInterval(row["played_at"] as Int)),
+                title: row["title"] ?? "",
+                artist: row["artist_name"] ?? "",
+                album: row["album_title"],
+                statusByProvider: statusMap[qid] ?? [:]
+            )
         }
     }
 

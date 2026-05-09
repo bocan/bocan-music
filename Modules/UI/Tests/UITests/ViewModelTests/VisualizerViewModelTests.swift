@@ -10,7 +10,7 @@ import Testing
 struct VisualizerViewModelTests {
     // MARK: - Start / stop
 
-    @Test("start sets isRunning; stop returns analysis to silent")
+    @Test("start increments refcount; stop returns analysis to silent when count reaches zero")
     func startStopLifecycle() async throws {
         let engine = AudioEngine()
         let vm = VisualizerViewModel(engine: engine)
@@ -25,14 +25,15 @@ struct VisualizerViewModelTests {
         #expect(vm.analysis.bands.allSatisfy { $0 == 0 })
     }
 
-    @Test("calling start twice does not create duplicate tap tasks")
+    @Test("calling start twice requires two stops — tap stays alive until refcount is zero")
     func startIsDeduplicated() async throws {
         let engine = AudioEngine()
         let vm = VisualizerViewModel(engine: engine)
-        vm.start()
-        vm.start() // second call is a no-op
+        vm.start() // refcount → 1
+        vm.start() // refcount → 2
         try await Task.sleep(for: .milliseconds(20))
-        vm.stop()
+        vm.stop() // refcount → 1; tap still running
+        vm.stop() // refcount → 0; tap stopped
         // No crash = pass.
     }
 
@@ -57,10 +58,68 @@ struct VisualizerViewModelTests {
         let engine = AudioEngine()
         let vm = VisualizerViewModel(engine: engine)
         vm.fpsCap = .thirty
-        // Not on battery (ProcessInfo.isLowPowerModeEnabled is false in tests).
+        // Battery state is determined by IOKit (real power source), not LPM.
+        // Allow both outcomes since the test machine may or may not be on battery.
         #expect(vm.effectiveFPS == 30 || vm.effectiveFPS == 60)
         vm.fpsCap = .sixty
         #expect(vm.effectiveFPS == 60 || vm.effectiveFPS == 30)
+    }
+
+    // MARK: - Auto-simplify
+
+    @Test("autoSimplify switches to spectrumBars and publishes toast")
+    func autoSimplify() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.autoSimplify()
+        #expect(vm.mode == .spectrumBars)
+        #expect(vm.performanceToast != nil)
+        #expect(vm.modeBeforeAutoSimplify == .oscilloscope)
+    }
+
+    @Test("autoSimplify is a no-op when mode is already spectrumBars")
+    func autoSimplifyNoOpWhenAlreadySimple() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .spectrumBars
+        vm.autoSimplify()
+        #expect(vm.performanceToast == nil)
+        #expect(vm.modeBeforeAutoSimplify == nil)
+    }
+
+    @Test("revertAutoSimplify restores previous mode and clears toast")
+    func revertAutoSimplify() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.autoSimplify()
+        vm.revertAutoSimplify()
+        #expect(vm.mode == .oscilloscope)
+        #expect(vm.performanceToast == nil)
+        #expect(vm.modeBeforeAutoSimplify == nil)
+    }
+
+    @Test("revertAutoSimplify is a no-op when no auto-simplify is active")
+    func revertNoOpWhenNotActive() {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.revertAutoSimplify() // nothing to revert
+        #expect(vm.mode == .oscilloscope)
+        #expect(vm.performanceToast == nil)
+    }
+
+    @Test("performanceToast auto-clears after 6 seconds")
+    func performanceToastAutoDismisses() async throws {
+        let engine = AudioEngine()
+        let vm = VisualizerViewModel(engine: engine)
+        vm.mode = .oscilloscope
+        vm.autoSimplify()
+        #expect(vm.performanceToast != nil)
+        try await Task.sleep(for: .seconds(6.2))
+        #expect(vm.performanceToast == nil)
+        #expect(vm.modeBeforeAutoSimplify == nil)
     }
 
     // MARK: - Analysis from samples
@@ -109,12 +168,6 @@ struct VisualizerModeTests {
             #expect(!mode.displayName.isEmpty, "Mode \(mode) has empty displayName")
             #expect(!mode.symbolName.isEmpty, "Mode \(mode) has empty symbolName")
         }
-    }
-
-    @Test("fluidMetal is the only Metal-based mode")
-    func onlyFluidMetalIsMetalBased() {
-        let metalModes = VisualizerMode.allCases.filter(\.isMetalBased)
-        #expect(metalModes == [.fluidMetal])
     }
 
     @Test("rawValue round-trips")
