@@ -5,6 +5,63 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0](https://github.com/bocan/bocan-music/compare/v0.6.0...v0.7.0) (2026-05-09)
+
+
+### ### Added
+
+* **scrobble:** add pending indicator to transport strip ([#175](https://github.com/bocan/bocan-music/issues/175)) ([38b6dd1](https://github.com/bocan/bocan-music/commit/38b6dd17190af486f12f1e4350a8ee438fc29fde))
+* **scrobble:** add Show Recent Scrobbles menu item and keyboard shortcut ([#176](https://github.com/bocan/bocan-music/issues/176)) ([f56c484](https://github.com/bocan/bocan-music/commit/f56c48446dbb4812005c64baa8ad6dcf6445946f))
+* **scrobble:** implement RecentScrobblesView ([#174](https://github.com/bocan/bocan-music/issues/174)) ([5a120c3](https://github.com/bocan/bocan-music/commit/5a120c34561f353a7188678c0d4a63d95e924510))
+* **ui:** add drag-to-resize handle to VisualizerPane ([#168](https://github.com/bocan/bocan-music/issues/168)) ([5c57be3](https://github.com/bocan/bocan-music/commit/5c57be35557b0ddf00c1ccb5536f4edda91730d2))
+* **ui:** add now-playing overlay to visualizer pane and fullscreen ([#169](https://github.com/bocan/bocan-music/issues/169)) ([fea3627](https://github.com/bocan/bocan-music/commit/fea36271f6d9a65899391fd84f0ce90c1c4afa6f))
+* **ui:** auto-simplify visualizer mode on sustained FPS drop ([#172](https://github.com/bocan/bocan-music/issues/172)) ([15134b1](https://github.com/bocan/bocan-music/commit/15134b18109e79dfa0ea4e03a005e85311f2e63b))
+* **ui:** multi-display screen picker for fullscreen visualizer ([#171](https://github.com/bocan/bocan-music/issues/171)) ([94f9947](https://github.com/bocan/bocan-music/commit/94f99479c02f9e709651b00885b8b474c08bbff2))
+* **ui:** remove Fluid Metal visualizer ([fe50923](https://github.com/bocan/bocan-music/commit/fe5092370d03d66cbc837916889a5c3bcad0a73d))
+* **ui:** show lyrics source badge in pane header ([eadc958](https://github.com/bocan/bocan-music/commit/eadc95813dfe8251661094dddb467030b141bec8))
+
+
+### ### Fixed
+
+* **audio:** bypass EQ at Flat preset; skip redundant ramp tasks ([d38dc5d](https://github.com/bocan/bocan-music/commit/d38dc5dee6ba6c76d7b7b6950d7b2201c1098624))
+* **audio:** bypass TimePitch at unity rate by default; add pump starvation logging ([75b9770](https://github.com/bocan/bocan-music/commit/75b977053f784bcb8d53839b92af1508c9852e14))
+* **audio:** eliminate CoreAudio render-thread pops + community health files ([978c0ad](https://github.com/bocan/bocan-music/commit/978c0ad30f2af66f65d66a534547bf0d86a67867))
+* **audio:** eliminate render-thread overhead and IIR pop sources ([7bade91](https://github.com/bocan/bocan-music/commit/7bade91c1c42eb6f19cc92ec2ef28c56209d112f))
+* **audio:** ensure each spectrum bar reads unique FFT bins ([902c9df](https://github.com/bocan/bocan-music/commit/902c9dfb64c8e6ba711b1f75eaa7158e9afc1e3e))
+* **audio:** increase I/O buffer size to 1024 frames for pop resilience ([1b398e6](https://github.com/bocan/bocan-music/commit/1b398e6eb0420d451c02095070eff45ff4fedb43))
+* **audio:** suppress file_length lint violation in AudioEngine.swift ([f751bfb](https://github.com/bocan/bocan-music/commit/f751bfbb93018536557a72237ce71187172d4391))
+* **library:** pass resolved album title to LRClib fetch ([218f01a](https://github.com/bocan/bocan-music/commit/218f01ab1f0df6d2bd244b695ff785e24e0e433d))
+* **playback:** honour startingAt when shuffle is enabled ([a317121](https://github.com/bocan/bocan-music/commit/a317121b00240ea12608011ed7fcbfa12c898e54))
+* **playback:** strip BookmarkBlob from queue persistence payload to prevent audio pops ([255d7a8](https://github.com/bocan/bocan-music/commit/255d7a84b3431d4fec30a0d231827d51d969782a))
+* **ui:** add .help() tooltips and .accessibilityHint to ScrobbleSettingsView ([105363d](https://github.com/bocan/bocan-music/commit/105363d56a659744105063adfc87068a7408609f))
+* **ui:** add .help() tooltips and full accessibility labels to font size picker ([d5381c1](https://github.com/bocan/bocan-music/commit/d5381c10df742699f4770aca9bc2eff0bd3d5146))
+* **ui:** add accessibility labels and tooltips to ConnectSheet ([bd43b60](https://github.com/bocan/bocan-music/commit/bd43b6008cd603faa550dd3e1a739ee2fce25785))
+* **ui:** add lyrics actions to context menu and menu bar ([c26c692](https://github.com/bocan/bocan-music/commit/c26c692b3452e4b579a4e1a73bcec5fbf9acb391))
+* **ui:** add lyrics sync-offset slider to pane header ([f3d878f](https://github.com/bocan/bocan-music/commit/f3d878fa6cf084f6ca8fa0c817ed460de627ff8f))
+* **ui:** add manual LRClib fetch and replace-lyrics buttons ([a99e3db](https://github.com/bocan/bocan-music/commit/a99e3db2fb8b3470a9ba72dd53c8342a6d5f92b2))
+* **ui:** correct Edit Lyrics tooltip shortcut hint in pane header ([a89c3cd](https://github.com/bocan/bocan-music/commit/a89c3cd3ab27a422ed4387e5ea052cbcac1611cd))
+* **ui:** detect LRC format when saving editor lyrics ([7f1da9e](https://github.com/bocan/bocan-music/commit/7f1da9e6716321aed26c170d379f4f21a2f10fcb))
+* **ui:** fix Fluid Metal particle physics — correct bass direction, add ambient turbulence ([9432d9c](https://github.com/bocan/bocan-music/commit/9432d9c70d4757ff5a791f26e28e0205561b8b6f))
+* **ui:** fix visualizer disconnect after track changes and size flutter ([c352c6e](https://github.com/bocan/bocan-music/commit/c352c6ea660826ec82afc0d985aa75b79692e82f))
+* **ui:** make Fluid Metal audio reactivity direct and eliminate 30s burst ([84c1ed2](https://github.com/bocan/bocan-music/commit/84c1ed268a7c318e7fda9de50fae2a03ed1664c1))
+* **ui:** observe lyricsVM and visualizerVM in BocanCommands so menu labels update ([7f5cf71](https://github.com/bocan/bocan-music/commit/7f5cf71143d2d0f9923e1b196b82ec0f3e4998b2))
+* **ui:** ref-count tap so closing fullscreen doesn't disconnect pane audio ([1ecf01a](https://github.com/bocan/bocan-music/commit/1ecf01aa1e02f6bfdd05da4c01d47b64f30e9e43))
+* **ui:** remove ignoresSafeArea from VisualizerHost black fill ([e03d212](https://github.com/bocan/bocan-music/commit/e03d2129074c702754b44bd7a51e2c2be7f0cd85))
+* **ui:** require confirmation before deleting lyrics in editor sheet ([f131e9e](https://github.com/bocan/bocan-music/commit/f131e9e4cbe3d5350b9758e5fdf7a3dc0c1e0434))
+* **ui:** show spinner instead of empty state while fetching lyrics ([a48449f](https://github.com/bocan/bocan-music/commit/a48449fb91cdc62079136d9b83433ae5bf452b95))
+* **ui:** split lyrics pane header into two rows, add drag-to-resize handle ([9b4fc61](https://github.com/bocan/bocan-music/commit/9b4fc619190c75895d10d20d97c54064db1460ac))
+* **ui:** stop 60fps menu rebuilds from causing audio pops ([902c9df](https://github.com/bocan/bocan-music/commit/902c9dfb64c8e6ba711b1f75eaa7158e9afc1e3e))
+* **ui:** stop Fluid Metal particles when no audio is playing ([642ccbb](https://github.com/bocan/bocan-music/commit/642ccbb72958b9ad4a3e809f5ceb0194a7d175bc))
+* **ui:** unify lyrics font-size AppStorage key ([6927e13](https://github.com/bocan/bocan-music/commit/6927e1388d5c8451c54eccc7592b3aff3a8c54f3))
+* **ui:** use IOKit power source for battery detection in VisualizerViewModel ([#170](https://github.com/bocan/bocan-music/issues/170)) ([befa8c3](https://github.com/bocan/bocan-music/commit/befa8c309df53698c5c282257a08e20c5eb32806))
+* **ui:** wire audio analysis into Fluid Metal renderer each display tick ([050daa3](https://github.com/bocan/bocan-music/commit/050daa3606a39d70a04b54cac313a85efc327d98)), closes [#167](https://github.com/bocan/bocan-music/issues/167)
+* **ui:** wire lyrics pane search bar to LyricsView filtering ([ad01607](https://github.com/bocan/bocan-music/commit/ad01607eb79982f438fcefb2580207b3aaa601d6))
+
+
+### ### Changed
+
+* **audio:** split AudioEngine.swift into extension files to fix file_length lint ([d6942b8](https://github.com/bocan/bocan-music/commit/d6942b86c0cc569e4088dc49bdad574d2bfaf71b))
+
 ## [0.6.0](https://github.com/bocan/bocan-music/compare/v0.5.1...v0.6.0) (2026-05-07)
 
 
