@@ -56,12 +56,14 @@ echo "=== Building DMG ==="
 DMG_ATTEMPT=0
 until run create-dmg \
     --volname "Bòcan ${VERSION}" \
+    --background "Resources/Distribution/dmg-background.png" \
     --window-pos 200 120 \
-    --window-size 600 400 \
+    --window-size 540 380 \
     --icon-size 128 \
-    --icon "Bocan.app" 175 190 \
+    --icon "Bocan.app" 140 195 \
     --hide-extension "Bocan.app" \
-    --app-drop-link 425 190 \
+    --app-drop-link 400 195 \
+    --volicon "Resources/Distribution/VolumeIcon.icns" \
     "$OUTPUT" \
     "$STAGING/" ; do
     DMG_ATTEMPT=$((DMG_ATTEMPT + 1))
