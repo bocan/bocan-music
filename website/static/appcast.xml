@@ -8,5 +8,20 @@
     <description>Bòcan stable release update feed</description>
     <language>en</language>
     <!-- Releases are prepended here by the CI pipeline (newest first) -->
+    <item>
+      <title>Bòcan 0.9.0</title>
+      <pubDate>Sun, 10 May 2026 21:54:46 +0000</pubDate>
+      <sparkle:channel>stable</sparkle:channel>
+      <sparkle:version>1778449802</sparkle:version>
+      <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.9.0</sparkle:releaseNotesLink>
+      <enclosure
+        url="https://github.com/bocan/bocan-music/releases/download/v0.9.0/Bocan.dmg"
+        sparkle:edSignature="sparkle:edSignature="El8fCKV6YMaQQGUY5IWCXJyaPz8LgdQrhlyLGdPHw6Zl4kLne5z2V31JDqRC0w5LINR24mp5PlB024/WgqL+CQ==" length="37899831""
+        length="37899831"
+        type="application/octet-stream" />
+    </item>
+
   </channel>
 </rss>
