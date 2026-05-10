@@ -1,5 +1,6 @@
 import Acoustics
 import Library
+import Observability
 import Scrobble
 import SwiftUI
 import UniformTypeIdentifiers
@@ -40,6 +41,8 @@ public struct BocanRootView: View {
     /// when the user toggles "Watch folders for new files" in Settings,
     /// instead of waiting for the next launch.
     @AppStorage("library.watchForChanges") private var watchForChanges = true
+    /// Show the first-launch consent banner until the user responds (issue #209).
+    @AppStorage(MetricKitListener.consentAskedKey) private var diagnosticsConsentAsked = false
 
     public init(
         vm: LibraryViewModel,
@@ -115,6 +118,13 @@ public struct BocanRootView: View {
         }
         .onChange(of: self.vm.nowPlaying.nowPlayingTrackID) { _, trackID in
             self.lyricsVM.trackDidChange(trackID: trackID)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            // Non-modal first-launch consent prompt (issue #209).
+            // Collapses automatically once the user responds; never grabs focus.
+            if !self.diagnosticsConsentAsked {
+                DiagnosticsConsentBanner()
+            }
         }
         .environmentObject(self.vm)
         .task {
