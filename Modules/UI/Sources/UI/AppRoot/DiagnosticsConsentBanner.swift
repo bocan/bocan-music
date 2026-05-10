@@ -25,7 +25,8 @@ struct DiagnosticsConsentBanner: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 Text(
-                    "Reports are stored locally and only shared when you choose to. No personal data leaves your Mac without your permission."
+                    "Reports are stored locally and only shared when you choose to."
+                        + " No personal data leaves your Mac without your permission."
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)

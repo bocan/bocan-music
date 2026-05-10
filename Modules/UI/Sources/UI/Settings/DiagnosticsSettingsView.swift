@@ -27,7 +27,8 @@ public struct DiagnosticsSettingsView: View {
             Section {
                 Toggle("Share crash reports with the developer", isOn: self.$consented)
                     .help(
-                        "Diagnostic reports are stored locally on this Mac and only shared when you choose to. No personal data leaves your Mac without your permission."
+                        "Diagnostic reports are stored locally on this Mac and only shared"
+                            + " when you choose to. No personal data leaves your Mac without your permission."
                     )
                     .onChange(of: self.consented) { _, enabled in
                         self.consentAsked = true
