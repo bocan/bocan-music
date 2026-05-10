@@ -117,6 +117,8 @@ targets:
     sources:
       - path: Modules/Observability/Tests/ObservabilityTests
       - path: Modules/UI/Tests/UITests/ViewModelTests
+      - path: App/SingleInstance.swift   # compile directly so tests can verify constants
+      - path: Tests/AppTests
     settings:
       base:
         PRODUCT_MODULE_NAME: BocanTests
