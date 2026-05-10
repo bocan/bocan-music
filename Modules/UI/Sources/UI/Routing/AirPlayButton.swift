@@ -1,6 +1,18 @@
 import AVKit
 import SwiftUI
 
+// MARK: - Notification
+
+/// Notification names posted by Bòcan for cross-component coordination.
+public extension Notification.Name {
+    /// Posted to programmatically open the system AirPlay route picker.
+    ///
+    /// `AirPlayButton`'s `Coordinator` observes this and forwards a simulated
+    /// click to the `AVRoutePickerView`'s underlying `NSButton` subview.
+    /// Post from the main thread only (e.g. a menu-item action or keyboard shortcut).
+    static let bocanActivateRoutePicker = Notification.Name("io.cloudcauldron.bocan.activateRoutePicker")
+}
+
 // MARK: - AirPlayButton
 
 /// Wraps `AVRoutePickerView` so a SwiftUI button presents the system AirPlay picker.
@@ -8,20 +20,64 @@ import SwiftUI
 /// We deliberately don't restyle the view — picking AirPlay devices is a
 /// system-owned interaction and Apple's HIG asks us to keep the standard
 /// button shape. We only constrain its size to fit the transport strip.
+///
+/// Listens for `Notification.Name.bocanActivateRoutePicker` so the Playback
+/// menu item (⌘⇧U) and keyboard shortcut can open the picker without a mouse.
 public struct AirPlayButton: NSViewRepresentable {
     public init() {}
 
-    public func makeNSView(context _: Context) -> AVRoutePickerView {
+    public func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    public func makeNSView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView()
         view.isRoutePickerButtonBordered = false
         view.setRoutePickerButtonColor(.controlAccentColor, for: .normal)
         view.setRoutePickerButtonColor(.controlAccentColor, for: .active)
         view.setAccessibilityLabel("AirPlay")
         view.toolTip = "Choose AirPlay output"
+        context.coordinator.attach(to: view)
         return view
     }
 
     public func updateNSView(_: AVRoutePickerView, context _: Context) {
         // Stateless — system manages the picker.
+    }
+
+    // MARK: - Coordinator
+
+    /// Holds a weak reference to the live `AVRoutePickerView` and opens the
+    /// system picker in response to `Notification.Name.bocanActivateRoutePicker`.
+    public final class Coordinator {
+        private weak var pickerView: AVRoutePickerView?
+        private var observer: NSObjectProtocol?
+
+        /// Called once from `makeNSView` to wire up the view and the notification.
+        func attach(to view: AVRoutePickerView) {
+            self.pickerView = view
+            self.observer = NotificationCenter.default.addObserver(
+                forName: .bocanActivateRoutePicker,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                self?.trigger()
+            }
+        }
+
+        /// `AVRoutePickerView` contains a system `NSButton` subview; forwarding
+        /// `performClick` to it opens the route-picker popup programmatically.
+        private func trigger() {
+            guard let view = pickerView else { return }
+            if let button = view.subviews.first(where: { $0 is NSButton }) as? NSButton {
+                button.performClick(nil)
+            }
+        }
+
+        deinit {
+            if let observer {
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
     }
 }
