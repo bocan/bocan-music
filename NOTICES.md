@@ -176,8 +176,8 @@ SOFTWARE.
 
 MIT License
 
-Copyright (c) 2006–2013 Andy Matuschak  
-Copyright (c) 2009–2013 Sparkle Project Contributors  
+Copyright (c) 2006–2013 Andy Matuschak
+Copyright (c) 2009–2013 Sparkle Project Contributors
 All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
