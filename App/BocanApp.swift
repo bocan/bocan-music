@@ -441,6 +441,9 @@ struct BocanApp: App {
             "playback.rate": 1.0,
             "playback.gaplessPrerollSeconds": 5.0,
             "playback.resumeOnWake": false,
+            "general.showAlbumArtInDock": true,
+            "general.showPlaybackBadge": true,
+            "general.showDockProgress": true,
         ])
     }
 
