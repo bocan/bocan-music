@@ -1,0 +1,45 @@
+{
+  "HOMEBREW_VERSION": "5.1.10",
+  "entries": {
+    "formulae": [
+      "swiftlint",
+      "swiftformat",
+      "xcbeautify",
+      "ffmpeg",
+      "chromaprint",
+      "taglib",
+      "create-dmg",
+      "gh",
+      "xcodegen"
+    ]
+  },
+  "formulae": {
+    "swiftlint": {
+      "version": "0.63.2"
+    },
+    "swiftformat": {
+      "version": "0.61.1"
+    },
+    "xcbeautify": {
+      "version": "3.2.1"
+    },
+    "ffmpeg": {
+      "version": "8.1.1"
+    },
+    "chromaprint": {
+      "version": "1.6.0"
+    },
+    "taglib": {
+      "version": "2.2.1"
+    },
+    "create-dmg": {
+      "version": "1.2.3"
+    },
+    "gh": {
+      "version": "2.92.0"
+    },
+    "xcodegen": {
+      "version": "2.45.4"
+    }
+  }
+}
