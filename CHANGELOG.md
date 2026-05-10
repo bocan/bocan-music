@@ -5,6 +5,31 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0](https://github.com/bocan/bocan-music/compare/v0.8.0...v0.9.0) (2026-05-10)
+
+
+### ### Added
+
+* **app:** crash recovery via LaunchSanity sentinel and recovery banner ([#208](https://github.com/bocan/bocan-music/issues/208)) ([866e9ca](https://github.com/bocan/bocan-music/commit/866e9caf178a8e7a836c7b62538448e42e65c91d))
+* **app:** single-instance enforcement via lock file and distributed notification ([#207](https://github.com/bocan/bocan-music/issues/207)) ([1b6de51](https://github.com/bocan/bocan-music/commit/1b6de51d8206de4e86c574151ddb6d8a932120cf))
+* **distribution:** add PrivacyInfo.xcprivacy privacy manifest ([#211](https://github.com/bocan/bocan-music/issues/211)) ([e3fc5e8](https://github.com/bocan/bocan-music/commit/e3fc5e8d42883dfcdda4ddf75a602a1fcbd16bf4))
+* **distribution:** add Sparkle EdDSA public key and SUFeedURL to Info.plist ([56c0377](https://github.com/bocan/bocan-music/commit/56c0377ac5ee94c5f9a2b765cac1b2d21e1148f6)), closes [#219](https://github.com/bocan/bocan-music/issues/219)
+* **distribution:** branded DMG background and volume icon ([#212](https://github.com/bocan/bocan-music/issues/212)) ([b7044eb](https://github.com/bocan/bocan-music/commit/b7044eb8977fdefbd615df4cc714996f68ee0966))
+* **distribution:** deploy appcast.xml to bocan.app on release ([#216](https://github.com/bocan/bocan-music/issues/216)) ([9bdd554](https://github.com/bocan/bocan-music/commit/9bdd554adb2feeec2721156d4aabad8a2789ce35))
+* **ui:** add third-party credits and Notices & Licences menu item ([#210](https://github.com/bocan/bocan-music/issues/210)) ([f626da3](https://github.com/bocan/bocan-music/commit/f626da3421c7b06bf65f5d3b412fea4c895fcf93))
+* **ui:** wire About window and Check for Updates button ([#206](https://github.com/bocan/bocan-music/issues/206)) ([e86a115](https://github.com/bocan/bocan-music/commit/e86a115c80f16c1f60c4731d1e6f287322951863))
+* **updates:** integrate Sparkle 2 — dependency, UpdateController, menu item ([87fce62](https://github.com/bocan/bocan-music/commit/87fce620e6f76d50a8741c9d74120c339f3e72ec)), closes [#205](https://github.com/bocan/bocan-music/issues/205)
+
+
+### ### Fixed
+
+* **distribution:** use CURRENT_PROJECT_VERSION for CFBundleVersion ([1c74b93](https://github.com/bocan/bocan-music/commit/1c74b93664a36d5115204e19d6d7f0c27ab2d1e1)), closes [#217](https://github.com/bocan/bocan-music/issues/217)
+* **lint:** resolve force-unwrap and line-length violations ([512a649](https://github.com/bocan/bocan-music/commit/512a649d86a5c23f0e2ec1c7a1f2fc2b5a928d36))
+* **lint:** shorten fatalError message to survive swiftformat collapse ([3afda99](https://github.com/bocan/bocan-music/commit/3afda99e7e95d6536b30600852d8d72b68d69b48))
+* **observability:** crash reporter — consent, disk writes, path redaction, report viewer ([#209](https://github.com/bocan/bocan-music/issues/209)) ([0f4f93b](https://github.com/bocan/bocan-music/commit/0f4f93ba399213225a9b236e82cea7a8f55508ad))
+* **ui:** inject toastDismissalDuration to eliminate 6-second flaky test ([dcb5e78](https://github.com/bocan/bocan-music/commit/dcb5e7846d8e53ed3d601e3d4f07a7a980908159))
+* **updates:** wire Sparkle product to Bocan target in project.yml ([237f713](https://github.com/bocan/bocan-music/commit/237f71350a32261d6a4bbc6dcb60b230838f9d31))
+
 ## [0.8.0](https://github.com/bocan/bocan-music/compare/v0.7.0...v0.8.0) (2026-05-10)
 
 
