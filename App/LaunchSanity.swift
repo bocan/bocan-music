@@ -29,7 +29,7 @@ final class LaunchSanity {
 
     private nonisolated static var sentinelURL: URL {
         guard let base = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { fatalError("Application Support directory unavailable") }
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { fatalError("Application Support not found") }
         return base.appendingPathComponent("Bocan/.running")
     }
 
