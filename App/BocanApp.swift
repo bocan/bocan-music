@@ -165,6 +165,7 @@ struct BocanApp: App {
     private let backupSettingsViewModel: BackupSettingsViewModel
     private let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
     private let routeViewModel: RouteViewModel
+    private let updateController = UpdateController()
 
     var body: some Scene {
         // MARK: Main window
@@ -191,7 +192,8 @@ struct BocanApp: App {
                 vm: self.libraryViewModel,
                 windowMode: self.windowMode,
                 lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel
+                visualizerVM: self.visualizerViewModel,
+                updateController: self.updateController
             )
         }
 
