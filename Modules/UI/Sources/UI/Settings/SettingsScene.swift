@@ -67,6 +67,10 @@ public struct SettingsScene: View {
                     .tabItem { Label("Scrobbling", systemImage: "dot.radiowaves.left.and.right") }
                     .tag(SettingsTab.scrobble)
             }
+
+            DiagnosticsSettingsView()
+                .tabItem { Label("Diagnostics", systemImage: "stethoscope") }
+                .tag(SettingsTab.diagnostics)
         }
         .frame(minWidth: 520, minHeight: 360)
     }
@@ -75,5 +79,5 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String {
-    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble
+    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
 }
