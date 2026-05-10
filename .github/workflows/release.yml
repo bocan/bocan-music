@@ -321,3 +321,30 @@ jobs:
           fail_on_unmatched_files: false
           draft: false
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
+
+      - name: Update appcast.xml
+        if: env.HAS_SPARKLE_KEY == 'true'
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          FEED="website/static/appcast.xml"
+          if [[ "$GITHUB_REF_NAME" == *"-beta"* || "$GITHUB_REF_NAME" == *"-rc"* ]]; then
+            FEED="website/static/appcast-beta.xml"
+          fi
+          chmod +x Scripts/sparkle-update.sh
+          Scripts/sparkle-update.sh \
+            --dmg build/Bocan.dmg \
+            --version "${RELEASE_VERSION}" \
+            --build "${BUILD_NUMBER}" \
+            --prepend-to "$FEED"
+          echo "APPCAST_FEED=$FEED" >> "$GITHUB_ENV"
+
+      - name: Commit and push updated appcast
+        if: env.HAS_SPARKLE_KEY == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add website/static/appcast.xml website/static/appcast-beta.xml
+          git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
+          git commit -m "chore(release): update appcast for v${RELEASE_VERSION}"
+          git push origin HEAD:main

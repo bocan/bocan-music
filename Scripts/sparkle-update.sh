@@ -23,28 +23,39 @@ DMG=""
 VERSION=""
 BUILD=""
 OUTPUT=""
+PREPEND_TO=""
 CHANNEL="stable"
 DRY_RUN=0
 
 while (( $# > 0 )); do
     case "$1" in
-        --dmg)     DMG="$2"; shift 2 ;;
-        --version) VERSION="${2#v}"; shift 2 ;;
-        --build)   BUILD="$2"; shift 2 ;;
-        --output)  OUTPUT="$2"; shift 2 ;;
-        --channel) CHANNEL="$2"; shift 2 ;;
-        --dry-run) DRY_RUN=1; shift ;;
+        --dmg)        DMG="$2"; shift 2 ;;
+        --version)    VERSION="${2#v}"; shift 2 ;;
+        --build)      BUILD="$2"; shift 2 ;;
+        --output)     OUTPUT="$2"; shift 2 ;;
+        --prepend-to) PREPEND_TO="$2"; shift 2 ;;
+        --channel)    CHANNEL="$2"; shift 2 ;;
+        --dry-run)    DRY_RUN=1; shift ;;
         -*) echo "unknown option: $1" >&2; exit 2 ;;
         *)  echo "unexpected: $1" >&2; exit 2 ;;
     esac
 done
 
-for var in DMG VERSION BUILD OUTPUT; do
+for var in DMG VERSION BUILD; do
     if [[ -z "${!var}" ]]; then
         echo "error: --${var,,} is required" >&2
         exit 2
     fi
 done
+if [[ -z "$OUTPUT" && -z "$PREPEND_TO" ]]; then
+    echo "error: --output or --prepend-to is required" >&2
+    exit 2
+fi
+# When only --prepend-to is given, write the item to a temp file.
+if [[ -z "$OUTPUT" ]]; then
+    OUTPUT="$(mktemp /tmp/appcast-entry.XXXXXX.xml)"
+    trap 'rm -f "$OUTPUT"' EXIT
+fi
 
 if [[ ! -f "$DMG" ]] && (( DRY_RUN == 0 )); then
     echo "error: $DMG not found" >&2
@@ -106,3 +117,23 @@ XML
 } > "$OUTPUT"
 
 echo "wrote $OUTPUT"
+
+# If --prepend-to was given, insert the item into the feed file (newest first).
+if [[ -n "$PREPEND_TO" ]]; then
+    if [[ ! -f "$PREPEND_TO" ]]; then
+        echo "error: feed file not found: $PREPEND_TO" >&2
+        exit 1
+    fi
+    python3 - "$OUTPUT" "$PREPEND_TO" <<'PY'
+import sys, pathlib
+entry_file, feed_file = sys.argv[1], sys.argv[2]
+entry = pathlib.Path(entry_file).read_text()
+# Indent to match <channel> child depth (4 spaces).
+indented = "\n".join(("    " + ln) if ln.strip() else "" for ln in entry.strip().splitlines())
+feed = pathlib.Path(feed_file)
+content = feed.read_text()
+content = content.replace("  </channel>", indented + "\n\n  </channel>", 1)
+feed.write_text(content)
+print(f"prepended entry to {feed_file}")
+PY
+fi

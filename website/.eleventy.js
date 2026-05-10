@@ -21,6 +21,8 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "static/.well-known": ".well-known" });
   eleventyConfig.addPassthroughCopy({ "static/robots.txt": "robots.txt" });
   eleventyConfig.addPassthroughCopy({ "static/screenshots": "screenshots" });
+  eleventyConfig.addPassthroughCopy({ "static/appcast.xml": "appcast.xml" });
+  eleventyConfig.addPassthroughCopy({ "static/appcast-beta.xml": "appcast-beta.xml" });
 
   // Watch CSS for re-rebuilds.
   eleventyConfig.addWatchTarget("./src/assets/css/");
