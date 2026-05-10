@@ -435,6 +435,13 @@ struct BocanCommands: Commands {
                 }
             }
             .keyboardShortcut("?", modifiers: .command)
+
+            Button("Notices \u{26} Licences\u{2026}") {
+                if let url = Bundle.main.url(forResource: "NOTICES", withExtension: "md") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            .help("View third-party licence notices for open-source components used by Bòcan")
         }
 
         CommandMenu("Tools") {
