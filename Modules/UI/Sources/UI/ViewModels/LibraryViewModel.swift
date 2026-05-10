@@ -717,8 +717,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// matching Up Next toolbar / context-menu surfaces.
     public func clearQueue() async {
         guard let qp = engine as? QueuePlayer else { return }
-        await qp.stop()
-        await qp.queue.clear()
+        await qp.clearSavedState()
     }
 
     /// Jumps to and starts playing the queue item at `index` in the existing

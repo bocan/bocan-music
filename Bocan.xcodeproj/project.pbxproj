@@ -21,6 +21,7 @@
 		2442A15E49DA0BC61C7B38E5 /* libdav1d.7.dylib in Resources */ = {isa = PBXBuildFile; fileRef = A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */; };
 		251364DE7069EC1D663C49E1 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
 		2F10190EBC449B79B6806730 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = E05BB587A6FC66933F79D585 /* Playback */; };
+		4048626C7584950E6D201081 /* LaunchSanity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DE49AE8BEADA5F7A3D8406 /* LaunchSanity.swift */; };
 		497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */; };
 		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
 		53AE8C17F55F8BDC0BCD4BDD /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 441F05155B692DC6D6F30264 /* AudioEngine */; };
@@ -112,6 +113,7 @@
 		B6A9FE99C1399ECBBA9D4681 /* Lifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lifecycle.swift; sourceTree = "<group>"; };
 		B9F344DDAC11E38DE1697304 /* Acoustics */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Acoustics; path = Modules/Acoustics; sourceTree = SOURCE_ROOT; };
 		BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmokeTests.swift; sourceTree = "<group>"; };
+		C1DE49AE8BEADA5F7A3D8406 /* LaunchSanity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSanity.swift; sourceTree = "<group>"; };
 		C4262BE7B022BB4DC4BDA75C /* SingleInstance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleInstance.swift; sourceTree = "<group>"; };
 		C8B44F463A6E3D8189D6553D /* libavformat.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavformat.62.dylib; sourceTree = "<group>"; };
 		CC0A39F8A3F03E93D2B4B849 /* libx265.216.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libx265.216.dylib; sourceTree = "<group>"; };
@@ -128,7 +130,7 @@
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_21FF19F3-1FCA-4FE8-9BED-88ABADF096B6" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_97ABEB87-846C-4E3D-9A55-687757A81DB0" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -315,6 +317,7 @@
 				8A1792042403A11B4E098A3A /* BocanCommands.swift */,
 				E86C2B2FF5D1DDE98868F4E4 /* DebugAudioView.swift */,
 				D83A27BDC0A44ED576CBDE8C /* LaunchAtLoginController.swift */,
+				C1DE49AE8BEADA5F7A3D8406 /* LaunchSanity.swift */,
 				B6A9FE99C1399ECBBA9D4681 /* Lifecycle.swift */,
 				3D8E8EC191BDB21827F3BBAE /* RootView.swift */,
 				C4262BE7B022BB4DC4BDA75C /* SingleInstance.swift */,
@@ -354,10 +357,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_D4EFBB5E-BB1F-4483-9E34-32D97EB7738A" /* bocan-music */ = {
+		"TEMP_C49652DD-36C0-4289-BDEF-EB2A0C6910E9" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_21FF19F3-1FCA-4FE8-9BED-88ABADF096B6" /* Secrets.xcconfig */,
+				"TEMP_97ABEB87-846C-4E3D-9A55-687757A81DB0" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -567,6 +570,7 @@
 				B8271C1D9DA274E689DACA81 /* BocanCommands.swift in Sources */,
 				83D1988AE70AF6C6F97FC1A3 /* DebugAudioView.swift in Sources */,
 				AFC2291506F5C92F46B51EA3 /* LaunchAtLoginController.swift in Sources */,
+				4048626C7584950E6D201081 /* LaunchSanity.swift in Sources */,
 				CCA52E05E1A09E45F6450688 /* Lifecycle.swift in Sources */,
 				DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */,
 				8898D5F54BEE976BF1FB21AD /* SingleInstance.swift in Sources */,
@@ -619,7 +623,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_21FF19F3-1FCA-4FE8-9BED-88ABADF096B6" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_97ABEB87-846C-4E3D-9A55-687757A81DB0" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -755,7 +759,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_21FF19F3-1FCA-4FE8-9BED-88ABADF096B6" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_97ABEB87-846C-4E3D-9A55-687757A81DB0" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
