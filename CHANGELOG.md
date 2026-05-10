@@ -5,6 +5,13 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.3](https://github.com/bocan/bocan-music/compare/v0.9.2...v0.9.3) (2026-05-10)
+
+
+### ### Fixed
+
+* **audio:** call AudioUnitReset before zeroing EQ band gains in reset() ([fa6783b](https://github.com/bocan/bocan-music/commit/fa6783bcdbc9fa3cf3126df75b8dc03cc4b3d751))
+
 ## [0.9.2](https://github.com/bocan/bocan-music/compare/v0.9.1...v0.9.2) (2026-05-10)
 
 
