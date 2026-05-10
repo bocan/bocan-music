@@ -137,9 +137,8 @@ final class SingleInstance {
     }
 
     private static func lockFileURL() -> URL {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent("Bocan/bocan.lock")
+        guard let base = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { fatalError("Application Support directory unavailable") }
+        return base.appendingPathComponent("Bocan/bocan.lock")
     }
 }
