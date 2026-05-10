@@ -243,6 +243,11 @@ jobs:
 
       - name: Create DMG
         run: |
+          # Stage only the .app — xcodebuild -exportArchive also writes
+          # DistributionSummary.plist, ExportOptions.plist, and Packaging.log
+          # into build/export/, and we don't want those inside the DMG.
+          mkdir -p build/dmg-staging
+          cp -R build/export/Bocan.app build/dmg-staging/
           create-dmg \
             --volname "Bòcan ${RELEASE_VERSION}" \
             --background "Resources/Distribution/dmg-background.png" \
@@ -254,7 +259,7 @@ jobs:
             --app-drop-link 400 195 \
             --volicon "Resources/Distribution/VolumeIcon.icns" \
             "build/Bocan.dmg" \
-            "build/export/" \
+            "build/dmg-staging/" \
           || (sleep 5 && create-dmg \
             --volname "Bòcan ${RELEASE_VERSION}" \
             --background "Resources/Distribution/dmg-background.png" \
@@ -266,7 +271,7 @@ jobs:
             --app-drop-link 400 195 \
             --volicon "Resources/Distribution/VolumeIcon.icns" \
             "build/Bocan.dmg" \
-            "build/export/")
+            "build/dmg-staging/")
 
       - name: Sign DMG
         run: |
