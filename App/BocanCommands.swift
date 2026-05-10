@@ -20,6 +20,7 @@ struct BocanCommands: Commands {
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
     let visualizerVM: VisualizerViewModel
+    let updateController: UpdateController
     /// Mirrors `LyricsViewModel.paneVisible` (`@AppStorage("lyrics.paneVisible")`).
     @AppStorage("lyrics.paneVisible") private var lyricsPaneVisible = false
     /// Mirrors `LyricsViewModel.lrclibEnabled` (`@AppStorage("lyrics.lrclibEnabled")`).
@@ -31,6 +32,13 @@ struct BocanCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        // "Check for Updates…" belongs in the Apple (app) menu, after "About Bòcan".
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates\u{2026}") {
+                self.updateController.checkForUpdates()
+            }
+        }
+
         CommandGroup(replacing: .newItem) {
             Button("New Playlist…") {
                 self.vm.playlistSidebar.beginNewPlaylist()
