@@ -128,6 +128,12 @@ struct BocanCommands: Commands {
             }
             .keyboardShortcut(KeyBindings.decreaseVolume)
 
+            Button("Choose Audio Output…") {
+                NotificationCenter.default.post(name: .bocanActivateRoutePicker, object: nil)
+            }
+            .keyboardShortcut(KeyBindings.chooseAudioOutput)
+            .help("Open the AirPlay / audio output picker")
+
             // Phase 5 audit H1: keyboard-accessible mode toggles.  Labels
             // include the current state so VoiceOver announces it and so
             // users can confirm without opening the strip.

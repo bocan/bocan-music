@@ -59,6 +59,9 @@ public enum KeyBindings {
     /// `⌘⌥U` — Reveal the Up Next sidebar destination.
     public static let showUpNext = KeyboardShortcut("u", modifiers: [.command, .option])
 
+    /// `⌘⇧U` — Open the audio output / AirPlay route picker.
+    public static let chooseAudioOutput = KeyboardShortcut("u", modifiers: [.command, .shift])
+
     /// `⌘⇧N` — New playlist (Phase 6).
     public static let newPlaylist = KeyboardShortcut("n", modifiers: [.command, .shift])
 
