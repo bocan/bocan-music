@@ -83,7 +83,10 @@ if (( DRY_RUN == 0 )); then
             : > /tmp/sparkle.key
             chmod 600 /tmp/sparkle.key
             printf '%s\n' "$SPARKLE_ED_PRIVATE_KEY" > /tmp/sparkle.key
-            SIGNATURE="$("$SIGN_TOOL" --ed-key-file /tmp/sparkle.key "$DMG" 2>/dev/null || true)"
+            # sign_update outputs: sparkle:edSignature="BASE64" length="N"
+            # Extract just the base64 value so we can embed it cleanly in the XML.
+            RAW_SIG="$("$SIGN_TOOL" --ed-key-file /tmp/sparkle.key "$DMG" 2>/dev/null || true)"
+            SIGNATURE="$(echo "$RAW_SIG" | sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p')"
             shred -u /tmp/sparkle.key 2>/dev/null || rm -f /tmp/sparkle.key
         else
             echo "warning: sign_update not located — emitting unsigned entry" >&2
