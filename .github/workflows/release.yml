@@ -356,10 +356,19 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # We may be in detached HEAD (checked out at the tag).
+          # Save the updated feed files, switch to main, reapply, then push.
+          cp website/static/appcast.xml /tmp/appcast.xml
+          cp website/static/appcast-beta.xml /tmp/appcast-beta.xml 2>/dev/null || true
+          git fetch origin main
+          git checkout main
+          git pull origin main --ff-only
+          cp /tmp/appcast.xml website/static/appcast.xml
+          cp /tmp/appcast-beta.xml website/static/appcast-beta.xml 2>/dev/null || true
           git add website/static/appcast.xml website/static/appcast-beta.xml
           git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
           git commit -m "chore(release): update appcast for v${RELEASE_VERSION}"
-          git push origin HEAD:main
+          git push origin main
 
       - name: Trigger cask update
         uses: peter-evans/repository-dispatch@v4
