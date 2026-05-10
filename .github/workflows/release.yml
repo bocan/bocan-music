@@ -60,6 +60,14 @@ jobs:
       - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode_26.4.app
 
+      - name: Cache Homebrew packages
+        uses: actions/cache@v5
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: ${{ runner.os }}-brew-${{ hashFiles('Brewfile.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-brew-
+
       - name: Cache SPM packages
         uses: actions/cache@v5
         with:
@@ -72,7 +80,7 @@ jobs:
             ${{ runner.os }}-spm-
 
       - name: Install Brewfile dependencies
-        run: brew bundle
+        run: brew bundle install --no-upgrade
 
       - name: Set pkg-config path for FFmpeg and TagLib
         run: |
