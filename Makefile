@@ -41,6 +41,9 @@ doctor:
 	@printf 'fpcalc     '; fpcalc -version 2>/dev/null | head -1 || echo '(missing)'
 	@printf 'taglib     '; pkg-config --modversion taglib 2>/dev/null || echo '(missing)'
 	@echo "=============================="
+	@if [ ! -f Brewfile.lock.json ]; then \
+		echo "⚠️  WARNING: Brewfile.lock.json is missing. Run 'brew bundle install' then commit the lock file."; \
+	fi
 
 ## open: Open the Xcode project
 open:
