@@ -5,6 +5,14 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.2](https://github.com/bocan/bocan-music/compare/v0.9.1...v0.9.2) (2026-05-10)
+
+
+### ### Fixed
+
+* **ci:** trigger website redeploy via workflow_run instead of gh workflow run ([eafbec1](https://github.com/bocan/bocan-music/commit/eafbec1c2a29e45b77e6ecb2036035f97bc9d37d))
+* **release:** strip 300dpi metadata from DMG background, stage only .app into DMG ([0cb754a](https://github.com/bocan/bocan-music/commit/0cb754a72ac30f1618667c6f394e0b5f8c999ec3))
+
 ## [0.9.1](https://github.com/bocan/bocan-music/compare/v0.9.0...v0.9.1) (2026-05-10)
 
 
