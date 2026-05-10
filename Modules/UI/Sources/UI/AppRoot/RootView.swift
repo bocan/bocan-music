@@ -43,6 +43,8 @@ public struct BocanRootView: View {
     @AppStorage("library.watchForChanges") private var watchForChanges = true
     /// Show the first-launch consent banner until the user responds (issue #209).
     @AppStorage(MetricKitListener.consentAskedKey) private var diagnosticsConsentAsked = false
+    /// Show the crash-recovery banner when the previous session ended abnormally (issue #208).
+    @AppStorage("launch.didCrashPreviously") private var didCrashPreviously = false
 
     public init(
         vm: LibraryViewModel,
@@ -120,9 +122,13 @@ public struct BocanRootView: View {
             self.lyricsVM.trackDidChange(trackID: trackID)
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            // Non-modal first-launch consent prompt (issue #209).
-            // Collapses automatically once the user responds; never grabs focus.
-            if !self.diagnosticsConsentAsked {
+            // Crash-recovery banner takes priority over the diagnostics consent
+            // banner (issue #208).  Collapses once the user picks Recover or
+            // Start Fresh; never grabs focus so it can't cause an audio pop.
+            if self.didCrashPreviously {
+                CrashRecoveryBanner()
+            } else if !self.diagnosticsConsentAsked {
+                // Non-modal first-launch consent prompt (issue #209).
                 DiagnosticsConsentBanner()
             }
         }

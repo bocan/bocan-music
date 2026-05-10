@@ -253,6 +253,22 @@ public actor QueuePlayer: Transport {
         self.log.debug("queueplayer.position.saved", ["position": position])
     }
 
+    /// Stops playback, clears the queue, and erases all persisted queue and
+    /// position state.  Called when the user taps "Start Fresh" in the
+    /// crash-recovery banner so the next launch begins with an empty queue.
+    public func clearSavedState() async {
+        await self.stop()
+        await self.queue.clear()
+        await self.persistence.scheduleSave(
+            items: [],
+            currentIndex: nil,
+            repeatMode: .off,
+            shuffleState: .off
+        )
+        UserDefaults.standard.removeObject(forKey: "playback.resumePosition")
+        self.log.info("queueplayer.saved_state.cleared")
+    }
+
     // MARK: - Queue operations
 
     /// Replace the queue with `trackIDs` and begin playing at `index`.

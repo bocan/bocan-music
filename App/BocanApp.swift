@@ -86,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// consumer are torn down in a deterministic order rather than whenever
     /// ARC happens to deallocate them.
     func applicationWillTerminate(_: Notification) {
+        LaunchSanity.shared.markCleanExit()
         SingleInstance.shared.stop()
         self.routeViewModel?.stop()
     }
@@ -291,6 +292,11 @@ struct BocanApp: App {
 
     // swiftlint:disable:next function_body_length
     init() {
+        // Detect unclean exit from the previous session (crash / force-quit).
+        // Must run before any UI is constructed so the recovery banner state
+        // is in UserDefaults before SwiftUI reads it via @AppStorage.
+        LaunchSanity.shared.markRunning()
+
         // Enforce single-instance *before* any subsystem is initialised.
         // If another instance is already running this call exits immediately.
         SingleInstance.shared.start()
