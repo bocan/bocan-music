@@ -31,6 +31,10 @@ run() {
     if (( DRY_RUN == 0 )); then "$@"; fi
 }
 
+# arm64-only: Bòcan requires macOS 26+, which Apple ships exclusively on Apple Silicon (arm64).
+# Intel Macs cannot run macOS 26, so a universal binary is unnecessary and would double
+# build time for zero additional users. FFmpeg dylibs and fpcalc bundled in Resources/ are
+# also arm64-only. If the deployment target is ever lowered below macOS 15, revisit this.
 echo "=== Archiving (arm64) ==="
 run xcodebuild archive \
     -project Bocan.xcodeproj \

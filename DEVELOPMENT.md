@@ -95,6 +95,14 @@ Never commit these to the repo.
 | `APPLE_TEAM_ID` | 10-character Team ID |
 | `APP_SPECIFIC_PASSWORD` | App-specific password for notarytool |
 
+## Platform support
+
+| Dimension | Decision | Rationale |
+|-----------|----------|-----------|
+| **Minimum macOS** | macOS 26 | Targets the latest Apple APIs (Swift 6.2, new concurrency features). Only Apple Silicon Macs can run macOS 26. |
+| **Architecture** | arm64 only | macOS 26 is not available on Intel Macs, so there is no x86_64 user base to support. Building a universal binary would double CI build time and require rebuilding all bundled FFmpeg dylibs and `fpcalc` as universal binaries — significant extra work for zero gain. |
+| **Intel (x86_64)** | Not supported | If the deployment target is ever lowered to macOS 14 or 15 to support Intel, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, and all bundled dylibs rebuilt with `lipo`. |
+
 ## Phases
 
 Implementation phases are documented in [`phases/`](phases/README.md).
