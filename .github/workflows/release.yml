@@ -309,7 +309,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Sign appcast entry (Sparkle EdDSA)
-        if: env.HAS_SPARKLE_KEY == 'true'
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
@@ -335,7 +334,6 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
 
       - name: Update appcast.xml
-        if: env.HAS_SPARKLE_KEY == 'true'
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
@@ -352,7 +350,6 @@ jobs:
           echo "APPCAST_FEED=$FEED" >> "$GITHUB_ENV"
 
       - name: Commit and push updated appcast
-        if: env.HAS_SPARKLE_KEY == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
