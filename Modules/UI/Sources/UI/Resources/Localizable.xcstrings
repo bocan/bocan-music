@@ -290,6 +290,127 @@
           }
         }
       }
+    },
+    "Aggregate" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggregate"
+          }
+        }
+      }
+    },
+    "AirPlay" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AirPlay"
+          }
+        }
+      }
+    },
+    "Bluetooth" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth"
+          }
+        }
+      }
+    },
+    "Current output: %@" : {
+      "comment" : "Accessibility label for the active route chip. %@ is replaced with the device name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current output: %@"
+          }
+        }
+      }
+    },
+    "DisplayPort" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DisplayPort"
+          }
+        }
+      }
+    },
+    "External" : {
+      "comment" : "Audio output transport type label for unknown/unclassified devices.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "External"
+          }
+        }
+      }
+    },
+    "HDMI" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "HDMI"
+          }
+        }
+      }
+    },
+    "Thunderbolt" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thunderbolt"
+          }
+        }
+      }
+    },
+    "To change output, click the AirPlay button next to this chip, or use the AirPlay menu in Control Centre." : {
+      "comment" : "Hint shown in the route chip popover explaining how to switch audio outputs.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To change output, click the AirPlay button next to this chip, or use the AirPlay menu in Control Centre."
+          }
+        }
+      }
+    },
+    "USB" : {
+      "comment" : "Audio output transport type label shown in the route chip popover.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "USB"
+          }
+        }
+      }
+    },
+    "Virtual" : {
+      "comment" : "Audio output transport type label for virtual/software audio devices.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Virtual"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

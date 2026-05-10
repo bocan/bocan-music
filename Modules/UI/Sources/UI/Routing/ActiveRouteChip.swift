@@ -42,7 +42,7 @@ public struct ActiveRouteChip: View {
         }
         .buttonStyle(.plain)
         .help(self.helpText)
-        .accessibilityLabel("Current output: \(self.vm.current.displayName)")
+        .accessibilityLabel(Text("Current output: \(self.vm.current.displayName)", bundle: .module))
         .popover(isPresented: self.$showPopover, arrowEdge: .top) {
             self.popoverContent
                 .padding(14)
@@ -66,15 +66,18 @@ public struct ActiveRouteChip: View {
                     .font(.headline)
             }
             if let subtitle = vm.current.subtitle {
-                Text(subtitle)
+                Text(LocalizedStringKey(subtitle), bundle: .module)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             Divider()
-            Text("To change output, click the AirPlay button next to this chip, or use the AirPlay menu in Control Centre.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                "To change output, click the AirPlay button next to this chip, or use the AirPlay menu in Control Centre.",
+                bundle: .module
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

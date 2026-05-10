@@ -41,12 +41,23 @@ public struct PlaylistImportSheet: View {
 
             HStack {
                 Button("Choose Files…") { self.pickFiles() }
+                    .help("Open a file picker to select one or more playlist files to import")
+                    .accessibilityLabel("Choose playlist files")
                 Spacer()
                 Button("Cancel", role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
+                    .help("Dismiss this sheet without importing")
                 Button("Import") { Task { await self.runImport() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.pickedURLs.isEmpty || self.isImporting)
+                    .help(
+                        self.pickedURLs.isEmpty
+                            ? "Select at least one playlist file before importing"
+                            : "Import the selected playlist files into your library"
+                    )
+                    .accessibilityLabel(
+                        self.isImporting ? "Importing, please wait" : "Import selected playlists"
+                    )
             }
         }
         .padding(24)
@@ -84,22 +95,37 @@ public struct PlaylistImportSheet: View {
                         .font(.caption2).foregroundStyle(.orange)
                 }
             }
+            .accessibilityLabel(Self.rowAccessibilityLabel(for: row))
         }
         .frame(minHeight: 200)
+    }
+
+    private static func rowAccessibilityLabel(for row: PreviewRow) -> String {
+        var parts = [row.url.lastPathComponent, row.summary]
+        if row.matched > 0 { parts.append("\(row.matched) matched") }
+        if row.missed > 0 { parts.append("\(row.missed) missing") }
+        return parts.joined(separator: ", ")
     }
 
     // MARK: - Actions
 
     private func pickFiles() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        let exts = ["m3u", "m3u8", "pls", "xspf"]
-        panel.allowedContentTypes = exts.compactMap { UTType(filenameExtension: $0) }
-        guard panel.runModal() == .OK else { return }
-        self.pickedURLs = panel.urls
-        Task { await self.refreshPreview() }
+        // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
+        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        Task { @MainActor in
+            let panel = NSOpenPanel()
+            panel.allowsMultipleSelection = true
+            panel.canChooseDirectories = false
+            panel.canChooseFiles = true
+            let exts = ["m3u", "m3u8", "pls", "xspf", "cue"]
+            panel.allowedContentTypes = exts.compactMap { UTType(filenameExtension: $0) }
+            let result = await withCheckedContinuation { cont in
+                panel.begin { cont.resume(returning: $0) }
+            }
+            guard result == .OK else { return }
+            self.pickedURLs = panel.urls
+            await self.refreshPreview()
+        }
     }
 
     private func refreshPreview() async {
@@ -131,7 +157,8 @@ public struct PlaylistImportSheet: View {
                 case nil:
                     "Unknown format"
                 }
-                rows.append(PreviewRow(id: url, url: url, summary: summary, matched: 0, missed: 0))
+                let counts = await self.importer.previewFile(at: url)
+                rows.append(PreviewRow(id: url, url: url, summary: summary, matched: counts.matched, missed: counts.missed))
             } catch {
                 rows.append(PreviewRow(id: url, url: url, summary: "Could not read", matched: 0, missed: 0))
             }

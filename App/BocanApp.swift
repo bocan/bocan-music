@@ -29,6 +29,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// inspect live scan state without importing UI types into AppKit callbacks.
     var libraryViewModel: LibraryViewModel?
     var dspViewModel: DSPViewModel?
+    /// Held weakly so `applicationWillTerminate` can cancel the HAL observation
+    /// task before deallocation order becomes non-deterministic.
+    var routeViewModel: RouteViewModel?
 
     // MARK: Lifecycle
 
@@ -76,6 +79,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 
         return .terminateLater
+    }
+
+    /// Called by AppKit immediately before the process exits.  Cancel the
+    /// routing subsystem here so the HAL listener block and AsyncStream
+    /// consumer are torn down in a deterministic order rather than whenever
+    /// ARC happens to deallocate them.
+    func applicationWillTerminate(_: Notification) {
+        self.routeViewModel?.stop()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -329,6 +340,7 @@ struct BocanApp: App {
         // Must come after all `private let` properties are initialised.
         self.appDelegate.libraryViewModel = lvm
         self.appDelegate.dspViewModel = self.dspViewModel
+        self.appDelegate.routeViewModel = self.routeViewModel
 
         // Forward NSWorkspace wake events to the sleep timer + install the
         // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
@@ -441,6 +453,9 @@ struct BocanApp: App {
             "playback.rate": 1.0,
             "playback.gaplessPrerollSeconds": 5.0,
             "playback.resumeOnWake": false,
+            "general.showAlbumArtInDock": true,
+            "general.showPlaybackBadge": true,
+            "general.showDockProgress": true,
         ])
     }
 

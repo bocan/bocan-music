@@ -343,6 +343,26 @@ public struct TrackRepository: Sendable {
         }
     }
 
+    // MARK: - Filename matching
+
+    /// Looks up the first non-disabled track whose `file_url` ends with `filename`
+    /// (case-insensitive). Used as a step-3 fallback in playlist resolution when
+    /// the full URL no longer matches (e.g. the file was moved or re-tagged).
+    public func findByFilename(_ filename: String) async throws -> Track? {
+        guard !filename.isEmpty else { return nil }
+        let normalised = filename.precomposedStringWithCanonicalMapping
+        return try await self.database.read { db in
+            // SQLite LIKE is case-insensitive for ASCII; use the `%/` prefix so we
+            // don't accidentally match a different file that shares the same suffix.
+            let pattern = "%/" + normalised.replacingOccurrences(of: "%", with: "\\%")
+                .replacingOccurrences(of: "_", with: "\\_")
+            return try Track
+                .filter(Column("disabled") == false)
+                .filter(sql: "file_url LIKE ? ESCAPE '\\'", arguments: [pattern])
+                .fetchOne(db)
+        }
+    }
+
     // MARK: - Metadata-driven matching
 
     /// Looks up a single track by artist + title, optionally constrained by

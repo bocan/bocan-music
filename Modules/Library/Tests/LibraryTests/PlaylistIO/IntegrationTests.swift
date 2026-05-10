@@ -81,7 +81,7 @@ struct PlaylistIOIntegrationTests {
         ])
         let resolver = TrackResolver(trackRepo: TrackRepository(database: db))
         let playlistService = PlaylistService(database: db)
-        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService)
+        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService, trackRepo: TrackRepository(database: db))
         let report = try await importer.importPayload(payload)
         #expect(report.resolution.matches.count == 3)
 
