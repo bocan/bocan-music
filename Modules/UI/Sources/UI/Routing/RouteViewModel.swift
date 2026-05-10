@@ -34,6 +34,13 @@ public final class RouteViewModel {
         self.manager = nil
     }
 
+    /// Inert view model with a specific initial route, for snapshot tests.
+    /// Never starts a consumer task.
+    init(initialRoute: Route) {
+        self.manager = nil
+        self.current = initialRoute
+    }
+
     /// Inert view model used by previews and snapshot tests that don't care
     /// about route changes. Never starts a consumer task.
     public static let placeholder = RouteViewModel()
