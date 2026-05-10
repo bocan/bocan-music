@@ -86,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// consumer are torn down in a deterministic order rather than whenever
     /// ARC happens to deallocate them.
     func applicationWillTerminate(_: Notification) {
+        SingleInstance.shared.stop()
         self.routeViewModel?.stop()
     }
 
@@ -99,6 +100,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             (sender.mainWindow ?? sender.windows.first { $0.canBecomeMain })?.makeKeyAndOrderFront(nil)
         }
         return true
+    }
+
+    /// Handles files dragged onto the Dock icon or opened via "Open With…".
+    ///
+    /// Forwards audio files and playlists to `LibraryViewModel.addDroppedURLs`.
+    func application(_: NSApplication, openFiles filenames: [String]) {
+        let urls = filenames.map { URL(fileURLWithPath: $0) }
+        guard !urls.isEmpty, let lvm = self.libraryViewModel else { return }
+        Task { await lvm.addDroppedURLs(urls) }
     }
 
     // MARK: UNUserNotificationCenterDelegate
@@ -281,6 +291,10 @@ struct BocanApp: App {
 
     // swiftlint:disable:next function_body_length
     init() {
+        // Enforce single-instance *before* any subsystem is initialised.
+        // If another instance is already running this call exits immediately.
+        SingleInstance.shared.start()
+
         Self.registerDefaults()
 
         self.log.info("app.launched", ["version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"])
