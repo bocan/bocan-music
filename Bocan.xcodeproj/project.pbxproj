@@ -61,6 +61,7 @@
 		E97F656EB92A9BEF410F136A /* TagEditorViewModelCoverArtTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE4418B4A2222EEC024FF83 /* TagEditorViewModelCoverArtTests.swift */; };
 		F15BD1977564114CD73DEA3F /* LibraryViewModelDeleteFromDiskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */; };
 		F3D833ADDEE61DD7224FEC9B /* RuleBuilderViewValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */; };
+		FB5FF711E8BD55C735CF5F0D /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD18A2E69E819F5845E511F3 /* UpdateController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -116,7 +117,8 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
+		"TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -285,6 +287,7 @@
 		B087DD42CE6797CF29123E28 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				FB1D4271F6C19DB4C67ED551 /* Updates */,
 				1ACE57B7C3E8393E36758EBA /* AppDelegate+DockMenu.swift */,
 				B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */,
 				8A1792042403A11B4E098A3A /* BocanCommands.swift */,
@@ -312,10 +315,18 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_BE74ABF0-D17B-491D-AC8B-53EA44BEA945" /* bocan-music */ = {
+		FB1D4271F6C19DB4C67ED551 /* Updates */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */,
+				FD18A2E69E819F5845E511F3 /* UpdateController.swift */,
+			);
+			path = Updates;
+			sourceTree = "<group>";
+		};
+		"TEMP_9C5A6AB7-E01F-41BF-BC66-439D93F80280" /* bocan-music */ = {
+			isa = PBXGroup;
+			children = (
+				"TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -415,6 +426,7 @@
 			mainGroup = 5D04F17B59F05CEBF50A5476;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				989A8700FC0094AE2DD92144 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				88F22A7297DE63DC36E97CB5 /* XCLocalSwiftPackageReference "Modules/Acoustics" */,
 				A17D0542DA503F381C619312 /* XCLocalSwiftPackageReference "Modules/AudioEngine" */,
 				29FFCEC96A9AD74E175B26CD /* XCLocalSwiftPackageReference "Modules/Library" */,
@@ -521,6 +533,7 @@
 				AFC2291506F5C92F46B51EA3 /* LaunchAtLoginController.swift in Sources */,
 				CCA52E05E1A09E45F6450688 /* Lifecycle.swift in Sources */,
 				DDC6FD5FC258C4D93149F2AF /* RootView.swift in Sources */,
+				FB5FF711E8BD55C735CF5F0D /* UpdateController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,7 +582,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -705,7 +718,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -869,6 +882,17 @@
 			relativePath = Modules/UI;
 		};
 /* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		989A8700FC0094AE2DD92144 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		441F05155B692DC6D6F30264 /* AudioEngine */ = {

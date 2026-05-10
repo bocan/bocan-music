@@ -141,6 +141,9 @@ targets:
         ENABLE_HARDENED_RUNTIME: NO
 
 packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.9.1"
   Observability:
     path: Modules/Observability
   AudioEngine:

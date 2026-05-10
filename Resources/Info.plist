@@ -51,7 +51,11 @@
     <key>SUPublicEDKey</key>
     <string>L17IpHoHjtd5af8IXwaHxSLzQYzmay0vEp/HASVmnU8=</string>
     <key>SUFeedURL</key>
-    <string>https://bocan.github.io/bocan-music/appcast.xml</string>
+    <string>https://bocan.app/appcast.xml</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUAutomaticallyUpdate</key>
+    <false/>
     <key>NSSupportsAutomaticTermination</key>
     <false/>
     <key>NSSupportsSuddenTermination</key>
