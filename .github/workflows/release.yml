@@ -348,3 +348,15 @@ jobs:
           git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
           git commit -m "chore(release): update appcast for v${RELEASE_VERSION}"
           git push origin HEAD:main
+
+      - name: Trigger cask update
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          repository: bocan/homebrew-bocan
+          event-type: new-release
+          client-payload: |
+            {
+              "version": "${{ env.RELEASE_VERSION }}",
+              "sha256": "${{ steps.checksums.outputs.sha256 }}"
+            }
