@@ -113,11 +113,11 @@ struct VisualizerViewModelTests {
     @Test("performanceToast auto-clears after 6 seconds")
     func performanceToastAutoDismisses() async throws {
         let engine = AudioEngine()
-        let vm = VisualizerViewModel(engine: engine)
+        let vm = VisualizerViewModel(engine: engine, toastDismissalDuration: .milliseconds(200))
         vm.mode = .oscilloscope
         vm.autoSimplify()
         #expect(vm.performanceToast != nil)
-        try await Task.sleep(for: .seconds(6.2))
+        try await Task.sleep(for: .milliseconds(400))
         #expect(vm.performanceToast == nil)
         #expect(vm.modeBeforeAutoSimplify == nil)
     }

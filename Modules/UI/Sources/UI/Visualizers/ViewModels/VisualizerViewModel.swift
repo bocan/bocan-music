@@ -65,11 +65,13 @@ public final class VisualizerViewModel: ObservableObject {
     private var startCount = 0
     private var isRunning = false
     private var performanceToastTask: Task<Void, Never>?
+    private let toastDismissalDuration: Duration
 
     // MARK: - Init
 
-    public init(engine: AudioEngine) {
+    public init(engine: AudioEngine, toastDismissalDuration: Duration = .seconds(6)) {
         self.engine = engine
+        self.toastDismissalDuration = toastDismissalDuration
     }
 
     // MARK: - Lifecycle
@@ -161,7 +163,7 @@ public final class VisualizerViewModel: ObservableObject {
         self.performanceToast = toast
         self.performanceToastTask?.cancel()
         self.performanceToastTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(6))
+            try? await Task.sleep(for: self?.toastDismissalDuration ?? .seconds(6))
             guard let self, self.performanceToast?.id == toast.id else { return }
             self.performanceToast = nil
             self.modeBeforeAutoSimplify = nil
