@@ -9,18 +9,18 @@
 /* Begin PBXBuildFile section */
 		03AC0A68F60F1F314B6A68FA /* libx265.216.dylib in Resources */ = {isa = PBXBuildFile; fileRef = CC0A39F8A3F03E93D2B4B849 /* libx265.216.dylib */; };
 		0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 186F049CE6669E44D287954A /* SearchViewModelTests.swift */; };
-		0930C3F6FA5F345B5A26F234 /* Acoustics in Frameworks */ = {isa = PBXBuildFile; productRef = 66DA699183F712D5B228B317 /* Acoustics */; };
+		0930C3F6FA5F345B5A26F234 /* Library in Frameworks */ = {isa = PBXBuildFile; productRef = D12DF4C04E3DB095C79E72AA /* Library */; };
 		0AAC9D550A9EDA832050335F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3AB7C159C37D262541974E75 /* Assets.xcassets */; };
 		0F2FCA653E60B83CF8AA8469 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 8F629E8B78D37805428363DA /* Observability */; };
 		117F164AC803AC6C6C2EC42C /* libswresample.6.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 96DE902847E1307A6BBABDDC /* libswresample.6.dylib */; };
 		146E67FA9E1B65EC2CB4F01E /* libSvtAv1Enc.4.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 10497567C431D6A1E5AE1805 /* libSvtAv1Enc.4.dylib */; };
-		171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
+		171ED43E8939DABF4D9DB1E8 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 4BD8C9A8D2F5753BB057397D /* Sparkle */; };
 		1A7E5FA27ADE29289C39EC19 /* LibraryViewModelToastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */; };
 		1EFDD9F88E80C58502A416CC /* libssl.3.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 12537730024981AF312B087F /* libssl.3.dylib */; };
 		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
 		2442A15E49DA0BC61C7B38E5 /* libdav1d.7.dylib in Resources */ = {isa = PBXBuildFile; fileRef = A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */; };
-		251364DE7069EC1D663C49E1 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
-		2F10190EBC449B79B6806730 /* Library in Frameworks */ = {isa = PBXBuildFile; productRef = D12DF4C04E3DB095C79E72AA /* Library */; };
+		251364DE7069EC1D663C49E1 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
+		2F10190EBC449B79B6806730 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = E05BB587A6FC66933F79D585 /* Playback */; };
 		497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */; };
 		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
 		53AE8C17F55F8BDC0BCD4BDD /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = 441F05155B692DC6D6F30264 /* AudioEngine */; };
@@ -34,10 +34,11 @@
 		7A3494AA7B3FEA6EDBCFDD1B /* libvpx.12.dylib in Resources */ = {isa = PBXBuildFile; fileRef = DF5ADAFD0499127461E0702F /* libvpx.12.dylib */; };
 		7FA36AE37C84A3C2924AFBB2 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = 725067C07C4341529B60581F /* Playback */; };
 		83D1988AE70AF6C6F97FC1A3 /* DebugAudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86C2B2FF5D1DDE98868F4E4 /* DebugAudioView.swift */; };
-		8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = EE0BAD633E96C7812391D0FE /* AudioEngine */; };
-		905B83A145C60C115F496A91 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = E05BB587A6FC66933F79D585 /* Playback */; };
-		9C385BADF495477668F1AA60 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EFCF37422883F3C0CF718D56 /* Persistence */; };
-		AE7DBDB3DD4836389E11BAC5 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
+		8648C9B6A91C206B360C67EB /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
+		905B83A145C60C115F496A91 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EFCF37422883F3C0CF718D56 /* Persistence */; };
+		9B60DEC59F8E4D4A133B1CAF /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
+		9C385BADF495477668F1AA60 /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = EE0BAD633E96C7812391D0FE /* AudioEngine */; };
+		AE7DBDB3DD4836389E11BAC5 /* Acoustics in Frameworks */ = {isa = PBXBuildFile; productRef = 66DA699183F712D5B228B317 /* Acoustics */; };
 		AE83F7B52E3E141F29952E6D /* AppDelegate+DockMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACE57B7C3E8393E36758EBA /* AppDelegate+DockMenu.swift */; };
 		AFC2291506F5C92F46B51EA3 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83A27BDC0A44ED576CBDE8C /* LaunchAtLoginController.swift */; };
 		B8271C1D9DA274E689DACA81 /* BocanCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1792042403A11B4E098A3A /* BocanCommands.swift */; };
@@ -118,7 +119,7 @@
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_22C2F3A8-7783-449E-91FC-B72762F38ECE" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -126,14 +127,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				171ED43E8939DABF4D9DB1E8 /* Observability in Frameworks */,
-				8648C9B6A91C206B360C67EB /* AudioEngine in Frameworks */,
-				9C385BADF495477668F1AA60 /* Persistence in Frameworks */,
-				905B83A145C60C115F496A91 /* Playback in Frameworks */,
-				2F10190EBC449B79B6806730 /* Library in Frameworks */,
-				0930C3F6FA5F345B5A26F234 /* Acoustics in Frameworks */,
-				AE7DBDB3DD4836389E11BAC5 /* Scrobble in Frameworks */,
-				251364DE7069EC1D663C49E1 /* UI in Frameworks */,
+				171ED43E8939DABF4D9DB1E8 /* Sparkle in Frameworks */,
+				8648C9B6A91C206B360C67EB /* Observability in Frameworks */,
+				9C385BADF495477668F1AA60 /* AudioEngine in Frameworks */,
+				905B83A145C60C115F496A91 /* Persistence in Frameworks */,
+				2F10190EBC449B79B6806730 /* Playback in Frameworks */,
+				0930C3F6FA5F345B5A26F234 /* Library in Frameworks */,
+				AE7DBDB3DD4836389E11BAC5 /* Acoustics in Frameworks */,
+				251364DE7069EC1D663C49E1 /* Scrobble in Frameworks */,
+				9B60DEC59F8E4D4A133B1CAF /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -323,10 +325,10 @@
 			path = Updates;
 			sourceTree = "<group>";
 		};
-		"TEMP_9C5A6AB7-E01F-41BF-BC66-439D93F80280" /* bocan-music */ = {
+		"TEMP_9994868F-4B63-42E6-AC60-B78EE5771203" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */,
+				"TEMP_22C2F3A8-7783-449E-91FC-B72762F38ECE" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -349,6 +351,7 @@
 			);
 			name = Bocan;
 			packageProductDependencies = (
+				4BD8C9A8D2F5753BB057397D /* Sparkle */,
 				4471527EBD815A0F4817C396 /* Observability */,
 				EE0BAD633E96C7812391D0FE /* AudioEngine */,
 				EFCF37422883F3C0CF718D56 /* Persistence */,
@@ -582,7 +585,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_22C2F3A8-7783-449E-91FC-B72762F38ECE" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -718,7 +721,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_307B386A-7930-48E7-8BE1-29391D8F9283" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_22C2F3A8-7783-449E-91FC-B72762F38ECE" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -902,6 +905,11 @@
 		4471527EBD815A0F4817C396 /* Observability */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Observability;
+		};
+		4BD8C9A8D2F5753BB057397D /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 989A8700FC0094AE2DD92144 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 		4C4CFA157601C8EA52079F84 /* Persistence */ = {
 			isa = XCSwiftPackageProductDependency;

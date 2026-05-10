@@ -78,6 +78,8 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: "Bòcan"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.music"
     dependencies:
+      - package: Sparkle
+        product: Sparkle
       - package: Observability
       - package: AudioEngine
       - package: Persistence
