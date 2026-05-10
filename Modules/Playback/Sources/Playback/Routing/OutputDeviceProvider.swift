@@ -141,7 +141,9 @@ public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @uncheck
     private let lock = NSLock()
     private var continuations: [UUID: AsyncStream<OutputDeviceInfo>.Continuation] = [:]
     private var systemListenerInstalled = false
+    private var systemListenerBlock: AudioObjectPropertyListenerBlock?
     private var deviceListenerInstalledFor: AudioObjectID = 0
+    private var deviceListenerBlocks: [AudioObjectID: [AudioObjectPropertySelector: AudioObjectPropertyListenerBlock]] = [:]
 
     public init() {}
 
@@ -252,20 +254,43 @@ public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @uncheck
             mScope: kAudioObjectPropertyScopeGlobal,
             mElement: kAudioObjectPropertyElementMain
         )
+        let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+            self?.handleDefaultDeviceChanged()
+        }
         let status = AudioObjectAddPropertyListenerBlock(
             AudioObjectID(kAudioObjectSystemObject),
             &addr,
-            DispatchQueue.global(qos: .utility)
-        ) { [weak self] _, _ in
-            self?.handleDefaultDeviceChanged()
-        }
+            DispatchQueue.global(qos: .utility),
+            block
+        )
         if status == noErr {
             self.lock.lock()
             self.systemListenerInstalled = true
+            self.systemListenerBlock = block
             self.lock.unlock()
         } else {
             self.log.error("routing.hal.systemListener.fail", ["status": Int(status)])
         }
+    }
+
+    private func removeSystemListener() {
+        self.lock.lock()
+        let block = self.systemListenerBlock
+        self.systemListenerBlock = nil
+        self.systemListenerInstalled = false
+        self.lock.unlock()
+        guard let block else { return }
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        _ = AudioObjectRemovePropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &addr,
+            DispatchQueue.global(qos: .utility),
+            block
+        )
     }
 
     private func handleDefaultDeviceChanged() {
@@ -293,35 +318,59 @@ public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @uncheck
     }
 
     private func installDeviceListener(deviceID: AudioObjectID) {
+        var blocks: [AudioObjectPropertySelector: AudioObjectPropertyListenerBlock] = [:]
         for selector in [kAudioObjectPropertyName, kAudioDevicePropertyTransportType] {
             var addr = AudioObjectPropertyAddress(
                 mSelector: selector,
                 mScope: kAudioObjectPropertyScopeGlobal,
                 mElement: kAudioObjectPropertyElementMain
             )
+            let block: AudioObjectPropertyListenerBlock = { [weak self] _, _ in
+                self?.handleDevicePropertyChanged()
+            }
             _ = AudioObjectAddPropertyListenerBlock(
                 deviceID,
                 &addr,
-                DispatchQueue.global(qos: .utility)
-            ) { [weak self] _, _ in
-                self?.handleDevicePropertyChanged()
-            }
+                DispatchQueue.global(qos: .utility),
+                block
+            )
+            blocks[selector] = block
         }
+        self.lock.lock()
+        self.deviceListenerBlocks[deviceID] = blocks
+        self.lock.unlock()
     }
 
     private func removeDeviceListener(deviceID: AudioObjectID) {
-        // We can't remove a block listener without keeping the original block
-        // reference. Best we can do is rely on the device going away when its
-        // CoreAudio object is released. In practice the listener will fire
-        // briefly until that happens — the snapshot will contain the new device,
-        // so the spurious event is harmless.
+        self.lock.lock()
+        let blocks = self.deviceListenerBlocks.removeValue(forKey: deviceID) ?? [:]
+        self.lock.unlock()
+        for (selector, block) in blocks {
+            var addr = AudioObjectPropertyAddress(
+                mSelector: selector,
+                mScope: kAudioObjectPropertyScopeGlobal,
+                mElement: kAudioObjectPropertyElementMain
+            )
+            _ = AudioObjectRemovePropertyListenerBlock(
+                deviceID,
+                &addr,
+                DispatchQueue.global(qos: .utility),
+                block
+            )
+        }
     }
 
     private func removeListeners() {
         self.lock.lock()
-        self.systemListenerInstalled = false
+        let deviceID = self.deviceListenerInstalledFor
         self.deviceListenerInstalledFor = 0
+        self.systemListenerInstalled = false
         self.lock.unlock()
+
+        if deviceID != 0 {
+            self.removeDeviceListener(deviceID: deviceID)
+        }
+        self.removeSystemListener()
     }
 
     private func broadcastSnapshot() {
