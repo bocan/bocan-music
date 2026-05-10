@@ -50,11 +50,11 @@ public final class EQUnit: @unchecked Sendable {
     /// before un-bypassing so the filter re-starts from a known-zero state
     /// rather than from stale samples held from the previous active period.
     public func reset() {
+        // Flush IIR delay lines first. AudioUnitReset can restore parameter
+        // state on some AVFoundation versions, so zero the gains afterwards.
+        AudioUnitReset(self.node.audioUnit, kAudioUnitScope_Global, 0)
         self.node.bands.forEach { $0.gain = 0 }
         self.node.globalGain = 0
-        // Flush IIR delay lines — must be called while the unit is still
-        // bypassed (no audio flowing through it) to be a silent operation.
-        AudioUnitReset(self.node.audioUnit, kAudioUnitScope_Global, 0)
     }
 
     /// When `true`, the EQ node is completely bypassed (zero floating-point noise).
