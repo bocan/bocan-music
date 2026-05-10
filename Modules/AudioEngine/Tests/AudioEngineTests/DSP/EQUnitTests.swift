@@ -34,7 +34,11 @@ struct EQUnitTests {
 
     @Test("apply(preset:) writes all band gains")
     func applyPreset() {
+        // Attach to an AVAudioEngine so AVAudioUnitEQ band property writes
+        // are retained on headless CI runners (no audio hardware).
+        let engine = AVAudioEngine()
         let eq = EQUnit()
+        engine.attach(eq.node)
         eq.apply(preset: BuiltInPresets.rock)
         let expected = BuiltInPresets.rock.bandGainsDB
         for (i, db) in expected.enumerated() {
@@ -44,7 +48,9 @@ struct EQUnitTests {
 
     @Test("reset() clears all gains")
     func resetClearsGains() {
+        let engine = AVAudioEngine()
         let eq = EQUnit()
+        engine.attach(eq.node)
         eq.apply(preset: BuiltInPresets.rock)
         eq.reset()
         for band in eq.node.bands {
