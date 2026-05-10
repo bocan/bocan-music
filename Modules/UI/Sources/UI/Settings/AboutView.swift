@@ -6,7 +6,13 @@ public struct AboutView: View {
     private let version: String = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
     private let build: String = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "—"
 
-    public init() {}
+    private let onCheckForUpdates: () -> Void
+    private let canCheckForUpdates: Bool
+
+    public init(onCheckForUpdates: @escaping () -> Void = {}, canCheckForUpdates: Bool = true) {
+        self.onCheckForUpdates = onCheckForUpdates
+        self.canCheckForUpdates = canCheckForUpdates
+    }
 
     public var body: some View {
         VStack(spacing: 16) {
@@ -26,6 +32,13 @@ public struct AboutView: View {
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
+
+            Button("Check for Updates\u{2026}") {
+                self.onCheckForUpdates()
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(!self.canCheckForUpdates)
+            .help("Check whether a newer version of Bòcan is available.")
 
             Divider()
 
