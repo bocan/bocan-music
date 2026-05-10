@@ -76,3 +76,57 @@ Manual verification + sample capture (pending local run):
 Status:
 - Static audit + hardening complete.
 - Manual runtime verification and sample capture remain required on a local desktop session.
+
+## Phase 14 Audit — Playlist Import / Export
+
+Date: 2026-05-09
+
+Scope reviewed:
+- `Modules/Library/Sources/Library/PlaylistIO/` (all files)
+- `Modules/UI/Sources/UI/PlaylistIO/` (all files)
+- `App/BocanCommands.swift` (menu wiring)
+- `Modules/UI/Sources/UI/ViewModels/LibraryViewModel+Scanning.swift` (drag-drop routing)
+- `Modules/UI/Sources/UI/AppRoot/RootView.swift` (sheet presentation, drop handler)
+- `Modules/UI/Sources/UI/Settings/` (preferences coverage)
+- `Modules/AudioEngine/Sources/` + `Modules/Playback/Sources/` (CUE offset playback)
+
+### What is implemented and working
+
+- `PlaylistFormat` enum with extension detection and content sniffing ✅
+- `M3UReader` / `M3UWriter` — full EXTINF/EXTART/EXTALB support, BOM/CRLF handling ✅
+- `PLSReader` / `PLSWriter` ✅
+- `XSPFReader` / `XSPFWriter` ✅
+- `CUESheetReader` — parser only ✅
+- `ITunesLibraryReader` — parser only ✅
+- `TrackResolver` — steps 1, 2, 4 (skips step 3) ✅
+- `PlaylistImportService` — M3U/PLS/XSPF import ✅
+- `PlaylistExportService` — single playlist and smart-snapshot export ✅
+- `PlaylistImportSheet` — file picker and format preview ✅
+- `PlaylistExportSheet` — format/path-mode picker ✅
+- Playlist context menu "Export…" wired ✅
+- File ▸ Import Playlist… (⌘⌥⇧O) in menu ✅  
+  *(note: spec says ⌘⇧O but Phase 4 audit reserved that for "Add Folder"; deviation is intentional and documented)*
+- M013 migration for CUE `start_offset_ms` / `end_offset_ms` columns ✅
+- Integration and unit tests for M3U, PLS, XSPF, ITunes reader, round-trip ✅
+
+### Issues filed
+
+| # | Severity | Title |
+|---|----------|-------|
+| [#187](https://github.com/bocan/bocan-music/issues/187) | P0 — Audio Pop | `NSOpenPanel`/`NSSavePanel` `runModal()` in import/export sheets — blocks main thread |
+| [#188](https://github.com/bocan/bocan-music/issues/188) | P1 | Drag-and-drop `.m3u8`/`.pls`/`.xspf` routes to library scanner instead of importer |
+| [#189](https://github.com/bocan/bocan-music/issues/189) | P1 | `ResolutionReviewSheet` missing — unresolved import tracks silently dropped |
+| [#190](https://github.com/bocan/bocan-music/issues/190) | P1 | iTunes Library import flow entirely missing — no menu item, no sheet, no wiring |
+| [#191](https://github.com/bocan/bocan-music/issues/191) | P1 | "Export All Playlists…" missing from Tools menu — not implemented |
+| [#192](https://github.com/bocan/bocan-music/issues/192) | P2 | CUE sheet import not wired; AudioEngine/Playback don't honour `start/end_offset_ms` |
+| [#193](https://github.com/bocan/bocan-music/issues/193) | P2 | "Bòcan Backup" snapshot export (playlists + CSV of plays/ratings) not implemented |
+| [#194](https://github.com/bocan/bocan-music/issues/194) | P2 | ImportSheet preview always shows "0 matched / 0 missing" — resolver not called during preview |
+| [#195](https://github.com/bocan/bocan-music/issues/195) | P2 | Smart playlist export option (XSPF criteria embedding) not implemented |
+| [#196](https://github.com/bocan/bocan-music/issues/196) | P2 | `TrackResolver` skips step 3 (filename-only fallback) — re-tagged tracks fail to match |
+| [#197](https://github.com/bocan/bocan-music/issues/197) | P3 | `PlaylistImportSheet` / `PlaylistExportSheet` missing `.help()` and `accessibilityLabel` |
+| [#198](https://github.com/bocan/bocan-music/issues/198) | P3 | No Preferences setting for "import play counts/ratings from iTunes Library" |
+
+### Unverified acceptance criteria (from phase file)
+
+- [ ] iTunes Library.xml import brings in playlists and (optionally) play stats — blocked by #190 and #198
+- [ ] CUE sheet lets me play individual tracks from a single-file rip — blocked by #192
