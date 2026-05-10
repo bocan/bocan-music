@@ -70,6 +70,8 @@ targets:
         excludes:
           - Info.plist
           - Bocan.entitlements
+      - path: NOTICES.md
+        buildPhase: resources
     settings:
       base:
         PRODUCT_NAME: Bocan
