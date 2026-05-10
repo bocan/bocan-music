@@ -116,7 +116,7 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
-		"TEMP_86C0546C-3E8D-4BDE-A875-CD6D4BC1CF6E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -312,10 +312,10 @@
 			path = Tests;
 			sourceTree = "<group>";
 		};
-		"TEMP_D6472C3A-212A-448C-9C67-566EF6950A09" /* bocan-music */ = {
+		"TEMP_BE74ABF0-D17B-491D-AC8B-53EA44BEA945" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_86C0546C-3E8D-4BDE-A875-CD6D4BC1CF6E" /* Secrets.xcconfig */,
+				"TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -569,7 +569,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_86C0546C-3E8D-4BDE-A875-CD6D4BC1CF6E" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -604,6 +604,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = Resources/Bocan.entitlements;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -704,7 +705,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_86C0546C-3E8D-4BDE-A875-CD6D4BC1CF6E" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_CBF3F985-C612-4431-B0DD-E641066E924C" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -739,6 +740,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_ENTITLEMENTS = Resources/Bocan.entitlements;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
