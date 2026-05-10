@@ -32,11 +32,20 @@ struct BocanCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        // "Check for Updates…" belongs in the Apple (app) menu, after "About Bòcan".
-        CommandGroup(after: .appInfo) {
+        // Replace the default "About Bòcan" system item with our custom About
+        // window (which includes the credits section and Check for Updates button).
+        // We also keep "Check for Updates…" here in the application menu per
+        // the macOS convention (iTunes / Logic / Xcode all put it here).
+        CommandGroup(replacing: .appInfo) {
+            Button("About Bòcan") {
+                self.openWindow(id: "about")
+            }
+
             Button("Check for Updates\u{2026}") {
                 self.updateController.checkForUpdates()
             }
+            .disabled(!self.updateController.canCheckForUpdates)
+            .help("Check whether a newer version of Bòcan is available.")
         }
 
         CommandGroup(replacing: .newItem) {

@@ -204,6 +204,18 @@ struct BocanApp: App {
             // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
             .environmentObject(self.libraryViewModel)
 
+        // MARK: About window
+
+        Window("About Bòcan", id: "about") {
+            AboutView(
+                onCheckForUpdates: { self.updateController.checkForUpdates() },
+                canCheckForUpdates: self.updateController.canCheckForUpdates
+            )
+        }
+        .windowResizability(.contentSize)
+        .defaultSize(width: 360, height: 520)
+        .restorationBehavior(.disabled)
+
         Settings {
             SettingsScene(
                 backupViewModel: self.backupSettingsViewModel,
