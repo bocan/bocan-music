@@ -48,6 +48,10 @@
     <string>Bocan Help</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>SUPublicEDKey</key>
+    <string>L17IpHoHjtd5af8IXwaHxSLzQYzmay0vEp/HASVmnU8=</string>
+    <key>SUFeedURL</key>
+    <string>https://bocan.github.io/bocan-music/appcast.xml</string>
     <key>NSSupportsAutomaticTermination</key>
     <false/>
     <key>NSSupportsSuddenTermination</key>
