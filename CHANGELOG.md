@@ -5,6 +5,30 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0](https://github.com/bocan/bocan-music/compare/v0.7.0...v0.8.0) (2026-05-10)
+
+
+### ### Added
+
+* playlist import/export fixes, routing teardown, dock menu, and Phase 16 audit ([ed8129b](https://github.com/bocan/bocan-music/commit/ed8129b6d8091c9d7474da8293fba478c9c11081))
+* **ui:** add 'Choose Audio Output…' menu item with ⌘⇧U shortcut ([#202](https://github.com/bocan/bocan-music/issues/202)) ([5893fe5](https://github.com/bocan/bocan-music/commit/5893fe5d7ebf9521fda91f945f805760251a9a6f))
+* **ui:** dock right-click menu, play/pause badge, and album-art preference ([06a14a2](https://github.com/bocan/bocan-music/commit/06a14a2eb408f62b9461097440655d3cd5695765))
+* **ui:** route dropped playlist files to importer instead of scanner ([257df06](https://github.com/bocan/bocan-music/commit/257df06c86a145d18b4eef2af283a3227dd6ed11)), closes [#188](https://github.com/bocan/bocan-music/issues/188)
+
+
+### ### Fixed
+
+* **app:** cleanly shut down routing subsystem on app termination ([d5cc1ff](https://github.com/bocan/bocan-music/commit/d5cc1ff719c930665f1e1c5818f1b671a22d48f7))
+* **audio-engine:** attach EQUnit node to AVAudioEngine in tests ([9207b3e](https://github.com/bocan/bocan-music/commit/9207b3ebf7e18b259ba082e1caa6a53cd0464048))
+* **ci:** use workflow_dispatch tag input for GitHub Release tag_name ([560243a](https://github.com/bocan/bocan-music/commit/560243ab9615c0cebcb529673ccf0ba2501a3b0e))
+* **library,persistence:** add step 3 filename-only fallback to TrackResolver ([33b2599](https://github.com/bocan/bocan-music/commit/33b259977b007c5fee54361f775d54acfd315dc4)), closes [#196](https://github.com/bocan/bocan-music/issues/196)
+* **library,playback:** wire CUE sheet import and honour start/end offsets ([868ad25](https://github.com/bocan/bocan-music/commit/868ad254b52e924c46aa441f55601b5475d3e472)), closes [#192](https://github.com/bocan/bocan-music/issues/192)
+* **library,ui:** populate matched/missed counts in import preview ([e25e881](https://github.com/bocan/bocan-music/commit/e25e881b613d13546be7dac907d98be0a62253d5)), closes [#194](https://github.com/bocan/bocan-music/issues/194)
+* **playback:** properly store and remove CoreAudio HAL listener blocks ([#200](https://github.com/bocan/bocan-music/issues/200)) ([54191e4](https://github.com/bocan/bocan-music/commit/54191e49c625e8ed02b601902f0d808e1f6142ce))
+* **ui:** add accessibility labels and help tooltips to import/export sheets ([d28ab2f](https://github.com/bocan/bocan-music/commit/d28ab2f84cfcc09a75a8324d1b25367ef11f1629)), closes [#197](https://github.com/bocan/bocan-music/issues/197)
+* **ui:** localize ActiveRouteChip strings via xcstrings ([1e24c89](https://github.com/bocan/bocan-music/commit/1e24c89139a61af79f2c6e1ec6b82dc30ca93a2d))
+* **ui:** replace runModal() with async panel.begin in import/export sheets ([dfea923](https://github.com/bocan/bocan-music/commit/dfea923c50218ec2fb6cfbda269c3a800a68edd8)), closes [#187](https://github.com/bocan/bocan-music/issues/187)
+
 ## [0.7.0](https://github.com/bocan/bocan-music/compare/v0.6.0...v0.7.0) (2026-05-09)
 
 
