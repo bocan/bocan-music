@@ -5,6 +5,16 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1](https://github.com/bocan/bocan-music/compare/v0.9.0...v0.9.1) (2026-05-10)
+
+
+### ### Fixed
+
+* **ci:** checkout actual tagged commit on workflow_dispatch, not main HEAD ([3c8e074](https://github.com/bocan/bocan-music/commit/3c8e074c7ee8c39df34eddc3243ae33cc631c0e4))
+* **ci:** switch to main before pushing appcast — detached HEAD at tag caused rejection ([e8e57b4](https://github.com/bocan/bocan-music/commit/e8e57b4570a09c8cfa35d851c571892ed6866bac))
+* **release:** fix doubled edSignature in appcast, trigger website redeploy after push ([1ee7c82](https://github.com/bocan/bocan-music/commit/1ee7c829b8930d983d6186ed16698db5b8336e11))
+* **release:** make appcast update unconditional — was gated on SPARKLE_ED_PRIVATE_KEY ([d12f5df](https://github.com/bocan/bocan-music/commit/d12f5df830cdd99b6225159c1669af8b372ca738))
+
 ## [0.9.0](https://github.com/bocan/bocan-music/compare/v0.8.0...v0.9.0) (2026-05-10)
 
 
