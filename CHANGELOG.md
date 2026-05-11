@@ -5,6 +5,19 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.4](https://github.com/bocan/bocan-music/compare/v0.9.3...v0.9.4) (2026-05-11)
+
+
+### ### Fixed
+
+* **ui:** add missing Foundation import in LibraryViewModel+Delete.swift ([f17b10b](https://github.com/bocan/bocan-music/commit/f17b10ba276d31ee56919633eb5969e731e474cd))
+* **ui:** batch multi-select Delete from Disk with single DB reload ([14c2a54](https://github.com/bocan/bocan-music/commit/14c2a5411569d3d377d2b41a7f9bb2cf96a190e4))
+
+
+### ### Changed
+
+* **ui:** extract delete methods to LibraryViewModel+Delete.swift ([57842bd](https://github.com/bocan/bocan-music/commit/57842bded1ab8a1c227369529da24cb0600f62de))
+
 ## [0.9.3](https://github.com/bocan/bocan-music/compare/v0.9.2...v0.9.3) (2026-05-10)
 
 
