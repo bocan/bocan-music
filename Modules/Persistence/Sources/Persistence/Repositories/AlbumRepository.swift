@@ -186,4 +186,22 @@ public struct AlbumRepository: Sendable {
                 .fetchAll(db)
         }
     }
+
+    /// Fetches all albums that contain at least one non-disabled track by the given track artist.
+    ///
+    /// This is broader than `fetchAll(albumArtistID:)`: it includes compilation albums where
+    /// the album artist is "Various Artists" but individual tracks belong to `trackArtistID`.
+    public func fetchAll(trackArtistID: Int64) async throws -> [Album] {
+        try await self.database.read { db in
+            let sql = """
+            SELECT DISTINCT al.*
+            FROM albums al
+            JOIN tracks t ON t.album_id = al.id
+            WHERE t.artist_id = ? AND t.disabled = 0
+            ORDER BY al.year DESC, al.title
+            """
+            let rows = try Row.fetchAll(db, sql: sql, arguments: [trackArtistID])
+            return try rows.map { try Album(row: $0) }
+        }
+    }
 }
