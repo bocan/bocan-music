@@ -10,6 +10,7 @@ public struct ArtistDetailView: View {
 
     @State private var artist: Artist?
     @State private var albums: [Album] = []
+    @State private var albumTrackCounts: [Int64: Int] = [:]
 
     private let albumColumns = [GridItem(.adaptive(minimum: Theme.albumGridMinWidth), spacing: Theme.albumGridSpacing)]
 
@@ -39,7 +40,7 @@ public struct ArtistDetailView: View {
                 ScrollView {
                     LazyVGrid(columns: self.albumColumns, spacing: Theme.albumGridSpacing) {
                         ForEach(self.albums, id: \.id) { album in
-                            self.albumCell(album)
+                            self.albumCell(album, trackCount: album.id.flatMap { self.albumTrackCounts[$0] })
                         }
                     }
                     .padding(Theme.albumGridSpacing)
@@ -110,7 +111,7 @@ public struct ArtistDetailView: View {
             .background(Color.bgSecondary)
     }
 
-    private func albumCell(_ album: Album) -> some View {
+    private func albumCell(_ album: Album, trackCount: Int?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Group {
                 if let path = album.coverArtPath {
@@ -130,8 +131,12 @@ public struct ArtistDetailView: View {
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
 
-            if let year = album.year {
-                Text(String(year))
+            // Year · track count
+            let yearString = album.year.map { String($0) }
+            let countString = trackCount.map { "\($0) \($0 == 1 ? "song" : "songs")" }
+            let subtitle = [yearString, countString].compactMap(\.self).joined(separator: " · ")
+            if !subtitle.isEmpty {
+                Text(subtitle)
                     .font(Typography.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
@@ -155,12 +160,14 @@ public struct ArtistDetailView: View {
             database: self.library.database
         ).fetchAll(albumArtistID: self.artistID)) ?? []
         async let artistFetch = try? await ArtistRepository(database: self.library.database).fetch(id: self.artistID)
+        async let trackCountsFetch = try? await AlbumRepository(database: self.library.database).fetchTrackCounts()
         // Load tracks via the shared TracksViewModel so TracksView gets full column data,
         // context menus, drag-to-playlist, sorting, and selection for free.
         async let trackLoad: Void = self.library.tracks.load(artistID: self.artistID)
 
         self.albums = await albumsFetch
         self.artist = await artistFetch
+        self.albumTrackCounts = await trackCountsFetch ?? [:]
         _ = await trackLoad
     }
 }
