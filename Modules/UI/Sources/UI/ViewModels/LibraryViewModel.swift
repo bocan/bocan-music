@@ -481,11 +481,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.canGoForward = false
         }
 
-        // Clear search when drilling into a detail page (album or artist).
-        // For top-level browse views (songs/albums/artists/etc) keep the active
-        // query so the new view shows filtered results immediately.
+        // Clear search only when navigating to destinations that have their
+        // own unrelated content (playlists, smart playlists, folders).
+        // Do NOT clear when drilling into album/artist detail — the user may
+        // want to go back and see the same filtered results they came from.
         switch destination {
-        case .album, .artist, .playlist, .smartPlaylist, .folder:
+        case .playlist, .smartPlaylist, .folder:
             self.searchQuery = ""
 
         default:
