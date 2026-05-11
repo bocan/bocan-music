@@ -150,8 +150,63 @@ public struct ArtistDetailView: View {
                 Task { await self.library.selectDestination(.album(id)) }
             }
         }
+        .contextMenu {
+            self.albumContextMenu(album: album)
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(album.title)
+    }
+
+    @ViewBuilder
+    private func albumContextMenu(album: Album) -> some View {
+        Button("Play Album") {
+            if let id = album.id {
+                Task { await self.library.selectDestination(.album(id)) }
+            }
+        }
+        .disabled(album.id == nil)
+
+        Divider()
+        Toggle("Force Gapless Playback", isOn: Binding(
+            get: { album.forceGapless },
+            set: { forced in
+                if let id = album.id {
+                    Task { await self.library.setAlbumForceGapless(albumID: id, forced: forced) }
+                }
+            }
+        ))
+        Toggle("Exclude from Shuffle", isOn: Binding(
+            get: { album.excludedFromShuffle },
+            set: { excluded in
+                if let id = album.id {
+                    Task { await self.library.setAlbumExcludedFromShuffle(albumID: id, excluded: excluded) }
+                }
+            }
+        ))
+
+        Divider()
+        Button("Get Info") {
+            if let id = album.id {
+                Task { await self.openInspector(forAlbumID: id) }
+            }
+        }
+        .disabled(album.id == nil)
+
+        Divider()
+        Button("Remove Album from Library", role: .destructive) {
+            if let id = album.id {
+                Task { await self.library.removeAlbumsFromLibrary(albumIDs: [id]) }
+            }
+        }
+        .disabled(album.id == nil)
+    }
+
+    private func openInspector(forAlbumID id: Int64) async {
+        let repo = TrackRepository(database: self.library.database)
+        guard let tracks = try? await repo.fetchAll(albumID: id) else { return }
+        await MainActor.run {
+            self.library.showTagEditor(tracks: tracks)
+        }
     }
 
     // MARK: - Data loading
