@@ -68,7 +68,18 @@ public extension LibraryViewModel {
             track.loved = loved
             do {
                 try await repo.update(track)
-                if let id = track.id { updatedIDs.append(id) }
+                if let id = track.id {
+                    updatedIDs.append(id)
+                    // Keep the now-playing strip in sync without a round-trip.
+                    if id == self.nowPlaying.nowPlayingTrackID {
+                        self.nowPlaying.updateNowPlayingLoved(loved)
+                    }
+                    // Fan out to remote scrobble services (Last.fm, ListenBrainz).
+                    // Fire-and-forget — network failures are logged inside ScrobbleService.
+                    if let svc = self.scrobbleService {
+                        Task { await svc.love(trackID: id, loved: loved) }
+                    }
+                }
             } catch {
                 self.log.error("library.love.failed", ["error": String(reflecting: error)])
             }

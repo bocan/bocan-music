@@ -156,6 +156,25 @@ public actor ScrobbleService: ScrobbleSink {
         }
     }
 
+    /// Look up track metadata from the database, then toggle the loved flag.
+    ///
+    /// Mirrors `nowPlaying(trackID:)` — lets callers pass only a database ID
+    /// without needing to resolve artist/title/MBID themselves. Silently skips
+    /// if no providers are authenticated or the track row is missing.
+    public func love(trackID: Int64, loved: Bool) async {
+        guard await !(self.activeProviderIDs().isEmpty) else { return }
+        do {
+            guard let row = try await self.repository.fetchTrackMetadata(trackID: trackID) else {
+                self.log.debug("scrobble.service.love.skip", ["reason": "track not found", "trackID": trackID])
+                return
+            }
+            let identity = TrackIdentity(artist: row.artist, title: row.title, mbid: row.mbid)
+            await self.love(track: identity, loved: loved)
+        } catch {
+            self.log.warning("scrobble.service.love.lookup.fail", ["trackID": trackID, "err": String(reflecting: error)])
+        }
+    }
+
     /// Provider lookup so the UI can drive auth flows directly.
     public func provider(id: String) -> (any ScrobbleProvider)? {
         self.providers[id]

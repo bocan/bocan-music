@@ -64,6 +64,8 @@ public final class NowPlayingViewModel {
     /// Number of scrobbles pending submission. Sourced from `ScrobbleQueueRepository.observeStats()`.
     /// Zero when scrobbling is not configured. Used to drive the strip indicator.
     public private(set) var pendingScrobbleCount = 0
+    /// `true` when the currently-playing (or paused) track is marked as loved.
+    public private(set) var nowPlayingIsLoved = false
 
     // MARK: - Callbacks
 
@@ -131,6 +133,7 @@ public final class NowPlayingViewModel {
         self.nowPlayingTrackID = track.id
         self.nowPlayingAlbumID = track.albumID
         self.nowPlayingArtistID = track.artistID
+        self.nowPlayingIsLoved = track.loved
         self.title = track.title ?? "Unknown Track"
         self.artist = ""
         self.album = ""
@@ -140,6 +143,12 @@ public final class NowPlayingViewModel {
         Task {
             await self.resolveMetadata(for: track)
         }
+    }
+
+    /// Updates the loved state for the currently-playing track.
+    /// Called by `LibraryViewModel.applyLoved` when the now-playing track is in the updated set.
+    public func updateNowPlayingLoved(_ loved: Bool) {
+        self.nowPlayingIsLoved = loved
     }
 
     /// Toggles play/pause on the engine.
