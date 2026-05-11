@@ -52,6 +52,8 @@
     <string>L17IpHoHjtd5af8IXwaHxSLzQYzmay0vEp/HASVmnU8=</string>
     <key>SUFeedURL</key>
     <string>https://bocan.app/appcast.xml</string>
+    <key>SUChannel</key>
+    <string>stable</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUAutomaticallyUpdate</key>
