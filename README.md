@@ -177,7 +177,22 @@ See [`phases/`](phases/README.md) for the full roadmap.
 | Log subsystem | `io.cloudcauldron.bocan` |
 | Minimum macOS | 26.0 (Tahoe) |
 
-## Requirements
+## Install
+
+**Download the DMG** from [bocan.app/download](https://bocan.app/download) or the [GitHub Releases](https://github.com/bocan/bocan-music/releases) page. Open it, drag Bòcan to Applications, done.
+
+**Homebrew** — add the tap once, then install:
+
+```bash
+brew tap bocan/bocan
+brew install bocan
+```
+
+Sparkle keeps the app current automatically. `brew upgrade --greedy bocan` does the same from the terminal if you prefer.
+
+---
+
+## Requirements (for building from source)
 
 - macOS 26.0+
 - Xcode 26+
