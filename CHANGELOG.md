@@ -5,6 +5,19 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0](https://github.com/bocan/bocan-music/compare/v0.10.0...v0.11.0) (2026-05-11)
+
+
+### ### Added
+
+* **ui:** show song count on album cells in ArtistDetailView ([18881ef](https://github.com/bocan/bocan-music/commit/18881efe293dab1b3be17dc44af925d25918ad1f))
+
+
+### ### Fixed
+
+* **ui:** Edit Lyrics context menu now edits the right-clicked track ([f6b7135](https://github.com/bocan/bocan-music/commit/f6b7135de4608dfdd4f227ce8920b0125995ddce))
+* **ui:** preserve search after delete, prune orphan albums/artists, add Remove context menus ([5bea2fc](https://github.com/bocan/bocan-music/commit/5bea2fcb55e721c821fd0389ea5fbdbf4074222a))
+
 ## [0.10.0](https://github.com/bocan/bocan-music/compare/v0.9.4...v0.10.0) (2026-05-11)
 
 
