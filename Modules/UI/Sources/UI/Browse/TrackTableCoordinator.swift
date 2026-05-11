@@ -65,6 +65,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             return self.shuffleCell(for: row, in: tableView)
         }
 
+        if column.identifier == .loved {
+            return self.loveCell(for: row, in: tableView)
+        }
+
         let cellID = NSUserInterfaceItemIdentifier("textCell.\(column.identifier.rawValue)")
         let cell: NSTableCellView = if let reused = tableView.makeView(withIdentifier: cellID, owner: nil) as? NSTableCellView {
             reused
@@ -111,6 +115,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? ShuffleCheckCell)
             ?? ShuffleCheckCell()
         cell.configure(row: row, action: self.parent.actions.toggleShuffle)
+        return cell
+    }
+
+    private func loveCell(for row: TrackRow, in tableView: NSTableView) -> NSView {
+        let cellID = NSUserInterfaceItemIdentifier("loveCell.loved")
+        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? LoveButtonCell)
+            ?? LoveButtonCell()
+        cell.configure(row: row, action: self.parent.actions.love)
         return cell
     }
 

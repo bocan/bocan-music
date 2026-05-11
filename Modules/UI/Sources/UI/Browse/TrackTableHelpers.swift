@@ -63,6 +63,57 @@ final class ShuffleCheckCell: NSTableCellView {
     }
 }
 
+// MARK: - LoveButtonCell
+
+/// `NSTableCellView` subclass for the Loved (♥) column.
+/// Shows a filled red heart when loved and a faint outline heart when not.
+/// Clicking the cell toggles the loved state on just that one track.
+final class LoveButtonCell: NSTableCellView {
+    private static let lovedColor = NSColor(red: 1.0, green: 0.176, blue: 0.333, alpha: 1.0)
+    private static let lovedFont = NSFont.systemFont(ofSize: 13)
+
+    private let button = NSButton(frame: .zero)
+    private var track: Track?
+    private var onToggle: (([Track]) -> Void)?
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        identifier = NSUserInterfaceItemIdentifier("loveCell.loved")
+        self.button.translatesAutoresizingMaskIntoConstraints = false
+        self.button.isBordered = false
+        self.button.bezelStyle = .inline
+        self.button.target = self
+        self.button.action = #selector(self.tapped)
+        addSubview(self.button)
+        NSLayoutConstraint.activate([
+            self.button.centerXAnchor.constraint(equalTo: centerXAnchor),
+            self.button.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("unavailable")
+    }
+
+    func configure(row: TrackRow, action: @escaping ([Track]) -> Void) {
+        self.track = row.track
+        self.onToggle = action
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: Self.lovedFont,
+            .foregroundColor: row.loved ? Self.lovedColor : NSColor.tertiaryLabelColor,
+        ]
+        self.button.attributedTitle = NSAttributedString(string: row.loved ? "\u{2665}" : "\u{2661}", attributes: attrs)
+        self.button.setAccessibilityLabel(row.loved ? "Loved" : "Not loved")
+        self.button.toolTip = row.loved ? "Loved — click to unlove" : "Click to love"
+    }
+
+    @objc private func tapped() {
+        guard let track else { return }
+        self.onToggle?([track])
+    }
+}
+
 // MARK: - TrackDiffableDataSource
 
 /// Subclass of `NSTableViewDiffableDataSource` that adds drag-to-playlist
