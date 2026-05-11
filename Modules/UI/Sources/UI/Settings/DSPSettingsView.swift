@@ -4,26 +4,69 @@ import SwiftUI
 
 /// Full DSP panel embedded in the Settings window.
 ///
-/// Mirrors the tabbed layout of `DSPSheet` so users can configure the EQ,
-/// effects, and ReplayGain from the standard Settings window (⌘,) without
-/// needing the Now Playing strip's DSP sheet to be open.
+/// Uses a segmented picker (not a nested `TabView`) to switch between the three
+/// sub-sections.  A nested `TabView` inside the macOS 26 Settings `TabView`
+/// causes inner tab items to leak into the outer toolbar, producing duplicates
+/// and an inaccessible overflow area.
 public struct DSPSettingsView: View {
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
+    @State private var section: DSPSection = .equaliser
 
     public init() {}
 
     public var body: some View {
-        TabView {
-            EQView(vm: self.dsp)
-                .tabItem { Label("Equaliser", systemImage: "slider.vertical.3") }
+        VStack(spacing: 0) {
+            Picker("", selection: self.$section) {
+                ForEach(DSPSection.allCases) { s in
+                    Text(s.label).tag(s)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
 
-            DSPView(vm: self.dsp)
-                .tabItem { Label("Effects", systemImage: "waveform") }
+            Divider()
 
-            ReplayGainSettingsView(vm: self.dsp)
-                .tabItem { Label("ReplayGain", systemImage: "chart.bar.fill") }
+            Group {
+                switch self.section {
+                case .equaliser:
+                    EQView(vm: self.dsp)
+
+                case .effects:
+                    DSPView(vm: self.dsp)
+
+                case .replayGain:
+                    ReplayGainSettingsView(vm: self.dsp)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 560, minHeight: 480)
+        .frame(minWidth: 560, minHeight: 500)
         .navigationTitle("DSP & EQ")
+    }
+}
+
+// MARK: - DSPSection
+
+private enum DSPSection: String, CaseIterable, Identifiable {
+    case equaliser, effects, replayGain
+
+    var id: String {
+        self.rawValue
+    }
+
+    var label: String {
+        switch self {
+        case .equaliser:
+            "Equaliser"
+
+        case .effects:
+            "Effects"
+
+        case .replayGain:
+            "ReplayGain"
+        }
     }
 }
