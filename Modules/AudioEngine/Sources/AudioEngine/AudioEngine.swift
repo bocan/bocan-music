@@ -37,6 +37,13 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     var pump: BufferPump?
     private var _currentTime: TimeInterval = 0
     private var _duration: TimeInterval = 0
+    /// Sample-time offset recorded at each gapless transition.
+    ///
+    /// `AVAudioPlayerNode.playerTime(forNodeTime:).sampleTime` is cumulative from
+    /// the moment the node first started playing — it never resets during a gapless
+    /// transition.  Subtracting this offset gives a 0-based position for each new
+    /// track. Reset to 0 whenever the node is stopped (load / stop / seek).
+    private var _playerTimeOffset: AVAudioFramePosition = 0
     private var _state: PlaybackState = .idle
     private var lastState: PlaybackState?
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
@@ -81,7 +88,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
                   let playerTime = playerNode.playerTime(forNodeTime: renderTime) else { return self._currentTime }
 
             let rate = playerNode.outputFormat(forBus: 0).sampleRate
-            return self._currentTime + AudioTime.timeInterval(for: playerTime.sampleTime, sampleRate: rate)
+            let adjustedFrames = playerTime.sampleTime - self._playerTimeOffset
+            return self._currentTime + AudioTime.timeInterval(for: adjustedFrames, sampleRate: rate)
         }
     }
 
@@ -231,6 +239,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             self.decoder = dec
             self._duration = dec.duration
             self._currentTime = 0
+            self._playerTimeOffset = 0
             self.segmentStart = 0
             self.segmentEndTime = nil
             self.emit(.ready)
@@ -318,7 +327,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         if let time = playerNode.lastRenderTime,
            let playerTime = playerNode.playerTime(forNodeTime: time) {
             let rate = playerNode.outputFormat(forBus: 0).sampleRate
-            self._currentTime += AudioTime.timeInterval(for: playerTime.sampleTime, sampleRate: rate)
+            let adjustedFrames = playerTime.sampleTime - self._playerTimeOffset
+            self._currentTime += AudioTime.timeInterval(for: adjustedFrames, sampleRate: rate)
         }
         await self.fadePlayerNode(to: 0)
         playerNode.pause()
@@ -340,6 +350,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.pump = nil
         self.graph.stop()
         self._currentTime = 0
+        self._playerTimeOffset = 0
         self.emit(.stopped)
     }
 
@@ -365,6 +376,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         // Seek the decoder.
         try await dec.seek(to: time)
         self._currentTime = time
+        self._playerTimeOffset = 0
 
         if wasPlaying {
             try await self.play()
@@ -438,6 +450,15 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.pump = next
         self.pendingNextPump = nil
         self._currentTime = 0
+        // Capture the cumulative sample position so currentTime restarts from 0
+        // for the new track without stopping the player node.
+        let playerNode = self.graph.playerNode
+        if let renderTime = playerNode.lastRenderTime,
+           let playerTime = playerNode.playerTime(forNodeTime: renderTime) {
+            self._playerTimeOffset = playerTime.sampleTime
+        } else {
+            self._playerTimeOffset = 0
+        }
         self._duration = self.pendingNextDuration
         // The pending decoder becomes the active decoder.
         self.decoder = self.pendingNextDecoder
