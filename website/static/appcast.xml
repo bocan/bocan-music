@@ -11,7 +11,6 @@
     <item>
       <title>Bòcan 0.9.0</title>
       <pubDate>Sun, 10 May 2026 23:04:13 +0000</pubDate>
-      <sparkle:channel>stable</sparkle:channel>
       <sparkle:version>1778453967</sparkle:version>
       <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
@@ -26,7 +25,6 @@
     <item>
       <title>Bòcan 0.9.1</title>
       <pubDate>Sun, 10 May 2026 23:27:58 +0000</pubDate>
-      <sparkle:channel>stable</sparkle:channel>
       <sparkle:version>1778455392</sparkle:version>
       <sparkle:shortVersionString>0.9.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
@@ -41,7 +39,6 @@
     <item>
       <title>Bòcan 0.9.3</title>
       <pubDate>Mon, 11 May 2026 00:06:00 +0000</pubDate>
-      <sparkle:channel>stable</sparkle:channel>
       <sparkle:version>1778457689</sparkle:version>
       <sparkle:shortVersionString>0.9.3</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
@@ -56,7 +53,6 @@
     <item>
       <title>Bòcan 0.9.4</title>
       <pubDate>Mon, 11 May 2026 13:59:24 +0000</pubDate>
-      <sparkle:channel>stable</sparkle:channel>
       <sparkle:version>1778507657</sparkle:version>
       <sparkle:shortVersionString>0.9.4</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>

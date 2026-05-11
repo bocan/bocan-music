@@ -99,14 +99,22 @@ PUBDATE="$(date -u +"%a, %d %b %Y %H:%M:%S +0000")"
 URL="https://github.com/bocan/bocan-music/releases/download/v${VERSION}/$(basename "$DMG")"
 NOTES_URL="https://github.com/bocan/bocan-music/releases/tag/v${VERSION}"
 
+# Only include <sparkle:channel> for non-default (non-stable) channels.
+# Entries with an explicit channel are invisible to apps that lack a matching
+# SUChannel key, so we omit it for stable releases to keep updates working
+# for DMG/Homebrew installs that don't carry SUChannel at all.
+CHANNEL_LINE=""
+if [[ "$CHANNEL" != "stable" ]]; then
+    CHANNEL_LINE="  <sparkle:channel>${CHANNEL}</sparkle:channel>"
+fi
+
 mkdir -p "$(dirname "$OUTPUT")"
 {
     cat <<XML
 <item>
   <title>Bòcan ${VERSION}</title>
   <pubDate>${PUBDATE}</pubDate>
-  <sparkle:channel>${CHANNEL}</sparkle:channel>
-  <sparkle:version>${BUILD}</sparkle:version>
+${CHANNEL_LINE:+${CHANNEL_LINE}$'\n'}  <sparkle:version>${BUILD}</sparkle:version>
   <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
   <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
   <sparkle:releaseNotesLink>${NOTES_URL}</sparkle:releaseNotesLink>
