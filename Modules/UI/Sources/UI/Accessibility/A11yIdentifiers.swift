@@ -54,6 +54,7 @@ public enum A11y {
         public static let titleButton = "nowPlayingStrip.title.button"
         public static let subtitleButton = "nowPlayingStrip.subtitle.button"
         public static let infoButton = "nowPlayingStrip.info"
+        public static let loveButton = "nowPlayingStrip.love"
         public static let shuffleButton = "nowPlayingStrip.shuffle"
         public static let repeatButton = "nowPlayingStrip.repeat"
         public static let stopAfterCurrentButton = "nowPlayingStrip.stopAfterCurrent"

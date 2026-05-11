@@ -218,6 +218,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var searchQueryCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
+    /// Scrobble service used to fan out loved-flag changes to remote services.
+    let scrobbleService: ScrobbleService?
 
     // MARK: - Init
 
@@ -225,11 +227,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         database: Database,
         engine: any Transport,
         scanner: LibraryScanner? = nil,
-        scrobbleRepository: ScrobbleQueueRepository? = nil
+        scrobbleRepository: ScrobbleQueueRepository? = nil,
+        scrobbleService: ScrobbleService? = nil
     ) {
         self.database = database
         self.engine = engine
         self.scanner = scanner
+        self.scrobbleService = scrobbleService
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
 
@@ -377,6 +381,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public func showTagEditorForNowPlaying() {
         guard let id = self.nowPlaying.nowPlayingTrackID else { return }
         self.tagEditorTrackIDs = [id]
+    }
+
+    /// Toggles the loved flag on the track currently loaded in the player.
+    public func toggleLovedForNowPlaying() {
+        guard let id = self.nowPlaying.nowPlayingTrackID else { return }
+        let newValue = !self.nowPlaying.nowPlayingIsLoved
+        Task {
+            let repo = TrackRepository(database: self.database)
+            if var track = try? await repo.fetch(id: id) {
+                track.loved = newValue
+                try? await repo.update(track)
+                self.nowPlaying.updateNowPlayingLoved(newValue)
+                if let svc = self.scrobbleService {
+                    Task { await svc.love(trackID: id, loved: newValue) }
+                }
+                await self.refreshTracks(ids: [id])
+            }
+        }
     }
 
     /// Navigates the sidebar to the album of the currently-playing track.

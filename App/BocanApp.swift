@@ -350,7 +350,13 @@ struct BocanApp: App {
         self.engine = eng
         self.player = qp
 
-        let lvm = LibraryViewModel(database: db, engine: qp, scanner: scanner, scrobbleRepository: scrobbleParts.service.queueRepository)
+        let lvm = LibraryViewModel(
+            database: db,
+            engine: qp,
+            scanner: scanner,
+            scrobbleRepository: scrobbleParts.service.queueRepository,
+            scrobbleService: scrobbleParts.service
+        )
         self.libraryViewModel = lvm
         self.dspViewModel = DSPViewModel(
             engine: eng,

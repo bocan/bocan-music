@@ -156,6 +156,25 @@ public struct NowPlayingStrip: View {
     private var transport: some View {
         HStack(spacing: 20) {
             Button {
+                self.library.toggleLovedForNowPlaying()
+            } label: {
+                Image(systemName: self.vm.nowPlayingIsLoved ? "heart.fill" : "heart")
+                    .font(.system(size: 15, weight: .medium))
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(
+                self.vm.nowPlayingIsLoved
+                    ? Color(red: 1.0, green: 0.176, blue: 0.333)
+                    : (self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
+            )
+            .disabled(self.vm.nowPlayingTrackID == nil)
+            .help(self.vm.nowPlayingIsLoved ? "Unlove current track (⌘L)" : "Love current track (⌘L)")
+            .accessibilityLabel(self.vm.nowPlayingIsLoved ? "Loved" : "Not Loved")
+            .accessibilityHint(self.vm.nowPlayingIsLoved ? "Activate to unlove" : "Activate to love")
+            .accessibilityAddTraits(.isToggle)
+            .accessibilityIdentifier(A11y.NowPlaying.loveButton)
+
+            Button {
                 self.library.showTagEditorForNowPlaying()
             } label: {
                 Image(systemName: "info.circle")
