@@ -23,6 +23,8 @@ public struct DSPSettingsView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+            .accessibilityLabel("DSP section")
+            .help("Switch between Equaliser (10-band EQ), Effects (bass boost, stereo width), and ReplayGain.")
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 8)

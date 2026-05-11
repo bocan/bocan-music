@@ -18,6 +18,7 @@ public struct AppearanceSettingsView: View {
                     Text("Dark").tag("dark")
                 }
                 .pickerStyle(.segmented)
+                .help("System follows your macOS system appearance setting. Light or Dark overrides it for Bòcan only.")
             }
 
             Section("Accent Colour") {
@@ -31,6 +32,7 @@ public struct AppearanceSettingsView: View {
                     Text("Spacious").tag("spacious")
                 }
                 .pickerStyle(.segmented)
+                .help("Compact fits more tracks on screen; Spacious is easier to read at a distance.")
             }
         }
         .formStyle(.grouped)
