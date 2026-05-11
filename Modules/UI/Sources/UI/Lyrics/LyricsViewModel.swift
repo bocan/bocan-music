@@ -39,7 +39,23 @@ public final class LyricsViewModel: ObservableObject {
 
     /// Controls whether the lyrics editor sheet is visible.
     /// Set to `true` from external callers (menu bar, context menu) to open the editor.
-    @Published public var isEditorPresented = false
+    @Published public var isEditorPresented = false {
+        didSet {
+            // When the editor closes, restore observation to the now-playing track if
+            // we temporarily overrode it to edit a non-playing track.
+            if !self.isEditorPresented {
+                if let nowPlaying = self.nowPlayingTrackID, nowPlaying != self.currentTrackID {
+                    self.currentTrackID = nowPlaying
+                    self.document = nil
+                    self.documentSource = nil
+                    self.currentLineIndex = nil
+                    self.observeTask?.cancel()
+                    self.startObserving(trackID: nowPlaying)
+                }
+                self.nowPlayingTrackID = nil
+            }
+        }
+    }
 
     /// Whether LRClib fetching is enabled (mirrors `lyrics.lrclibEnabled` in Settings).
     @AppStorage("lyrics.lrclibEnabled") public private(set) var lrclibEnabled = false
@@ -52,6 +68,9 @@ public final class LyricsViewModel: ObservableObject {
     private var observeTask: Task<Void, Never>?
     private var positionTask: Task<Void, Never>?
     private var currentTrackID: Int64?
+    /// Stores the now-playing track ID when the editor is temporarily overridden
+    /// to show a non-playing track via `openEditor(for:)`.
+    private var nowPlayingTrackID: Int64?
 
     // MARK: - Init
 
@@ -85,6 +104,11 @@ public final class LyricsViewModel: ObservableObject {
 
     /// Called whenever the now-playing track changes.  Loads lyrics and wires observation.
     public func trackDidChange(trackID: Int64?) {
+        // If the editor is open for a non-playing track, close it before switching context.
+        if self.isEditorPresented {
+            self.isEditorPresented = false
+        }
+        self.nowPlayingTrackID = nil
         self.currentTrackID = trackID
         self.document = nil
         self.documentSource = nil
@@ -157,8 +181,29 @@ public final class LyricsViewModel: ObservableObject {
         }
     }
 
-    /// Opens the lyrics pane (if not already visible) and presents the editor sheet.
+    /// Opens the lyrics pane (if not already visible) and presents the editor sheet
+    /// for the currently observed (now-playing) track.
     public func openEditor() {
+        self.paneVisible = true
+        self.isEditorPresented = true
+    }
+
+    /// Opens the lyrics editor for a specific track, regardless of what is currently
+    /// playing.  When the editor is dismissed the pane reverts to the now-playing track.
+    public func openEditor(for trackID: Int64) {
+        guard trackID != self.currentTrackID else {
+            // Already observing the right track — just open the sheet.
+            self.openEditor()
+            return
+        }
+        // Remember the now-playing track so we can restore after editing.
+        self.nowPlayingTrackID = self.currentTrackID
+        self.currentTrackID = trackID
+        self.document = nil
+        self.documentSource = nil
+        self.currentLineIndex = nil
+        self.observeTask?.cancel()
+        self.startObserving(trackID: trackID)
         self.paneVisible = true
         self.isEditorPresented = true
     }
