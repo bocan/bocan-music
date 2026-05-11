@@ -102,6 +102,27 @@ public struct ArtistRepository: Sendable {
         }
     }
 
+    /// Returns a dictionary mapping artist ID → enabled track count.
+    ///
+    /// Only counts non-disabled tracks. Artists with no tracks are absent from the result.
+    public func fetchTrackCounts() async throws -> [Int64: Int] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(db, sql: """
+                SELECT artist_id, COUNT(*) AS cnt
+                FROM tracks
+                WHERE disabled = 0 AND artist_id IS NOT NULL
+                GROUP BY artist_id
+            """)
+            var counts: [Int64: Int] = [:]
+            for row in rows {
+                if let id: Int64 = row["artist_id"], let cnt: Int = row["cnt"] {
+                    counts[id] = cnt
+                }
+            }
+            return counts
+        }
+    }
+
     // MARK: - Search
 
     /// Full-text search across artist name field.

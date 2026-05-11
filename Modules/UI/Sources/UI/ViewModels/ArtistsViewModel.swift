@@ -10,8 +10,8 @@ public final class ArtistsViewModel: ObservableObject {
     // MARK: - Published state
 
     @Published public private(set) var artists: [Artist] = []
-    @Published public private(set) var albumCounts: [Int64: Int] = [:]
-    @Published public private(set) var isLoading = false
+    @Published public private(set) var albumCounts: [Int64: Int] = [:] @Published public private(set) var trackCounts: [Int64: Int] =
+        [] @Published public private(set) var isLoading = false
     @Published public var selectedArtistID: Int64?
 
     // MARK: - Internal
@@ -33,9 +33,11 @@ public final class ArtistsViewModel: ObservableObject {
         self.log.debug("artists.load.start", [:])
         do {
             async let artistsFetch = self.repository.fetchAll()
-            async let countsFetch = self.repository.fetchAlbumCounts()
+            async let albumCountsFetch = self.repository.fetchAlbumCounts()
+            async let trackCountsFetch = self.repository.fetchTrackCounts()
             self.artists = try await artistsFetch
-            self.albumCounts = await (try? countsFetch) ?? [:]
+            self.albumCounts = await (try? albumCountsFetch) ?? [:]
+            self.trackCounts = await (try? trackCountsFetch) ?? [:]
             self.log.debug("artists.load.end", ["count": self.artists.count])
         } catch {
             self.log.error("artists.load.failed", ["error": String(reflecting: error)])
