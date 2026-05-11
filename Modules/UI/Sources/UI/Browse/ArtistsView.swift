@@ -36,7 +36,7 @@ public struct ArtistDetailView: View {
 
             // Albums section — scrollable, capped so Songs table gets most of the space
             if !self.albums.isEmpty {
-                self.sectionLabel("Albums")
+                self.sectionLabel("Albums", count: self.albums.count)
                 ScrollView {
                     LazyVGrid(columns: self.albumColumns, spacing: Theme.albumGridSpacing) {
                         ForEach(self.albums, id: \.id) { album in
@@ -50,7 +50,7 @@ public struct ArtistDetailView: View {
             }
 
             // Songs — full TracksView with context menus, drag, columns, sorting
-            self.sectionLabel("Songs")
+            self.sectionLabel("Songs", count: self.library.tracks.rows.count)
             TracksView(vm: self.library.tracks, library: self.library, sortable: true)
         }
         .task {
@@ -101,8 +101,9 @@ public struct ArtistDetailView: View {
         }
     }
 
-    private func sectionLabel(_ title: String) -> some View {
-        Text(title)
+    private func sectionLabel(_ title: String, count: Int? = nil) -> some View {
+        let label = count.map { "\(title) (\($0))" } ?? title
+        return Text(label)
             .font(Typography.title)
             .foregroundStyle(Color.textPrimary)
             .padding(.horizontal, 20)
@@ -225,8 +226,11 @@ public struct ArtistsView: View {
                         .font(Typography.body)
                         .foregroundStyle(Color.textPrimary)
 
-                    if let id = artist.id, let count = self.vm.albumCounts[id], count > 0 {
-                        Text(count == 1 ? "1 album" : "\(count) albums")
+                    if let id = artist.id, let albumCount = self.vm.albumCounts[id], albumCount > 0 {
+                        let trackCount = self.vm.trackCounts[id] ?? 0
+                        let albumPart = albumCount == 1 ? "1 album" : "\(albumCount) albums"
+                        let songPart = trackCount == 1 ? "1 song" : "\(trackCount) songs"
+                        Text("\(albumPart), \(songPart)")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textSecondary)
                     }
