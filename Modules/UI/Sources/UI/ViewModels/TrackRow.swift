@@ -40,6 +40,16 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
     public let sampleRate: Int
     public let excludedFromShuffle: Bool
     public let loved: Bool
+    public let composer: String
+    public let bpm: Double
+    public let key: String
+    public let bitDepth: Int
+    public let channelCount: Int
+    public let isLossless: Int
+    public let skipCount: Int
+    public let lastPlayedAt: Int64
+    public let fileSize: Int64
+    public let fileMtime: Int64
 
     // MARK: - Identifiable
 
@@ -80,6 +90,16 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.sampleRate = track.sampleRate ?? 0
         self.excludedFromShuffle = track.excludedFromShuffle
         self.loved = track.loved
+        self.composer = track.composer ?? ""
+        self.bpm = track.bpm ?? 0
+        self.key = track.key ?? ""
+        self.bitDepth = track.bitDepth ?? 0
+        self.channelCount = track.channelCount ?? 0
+        self.isLossless = (track.isLossless ?? false) ? 1 : 0
+        self.skipCount = track.skipCount
+        self.lastPlayedAt = track.lastPlayedAt ?? 0
+        self.fileSize = track.fileSize
+        self.fileMtime = track.fileMtime
     }
 
     /// Integer key for header-sort on the Shuffle Exclude column (Bool isn't Comparable).
