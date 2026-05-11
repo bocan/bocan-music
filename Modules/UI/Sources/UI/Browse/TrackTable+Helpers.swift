@@ -23,6 +23,16 @@ extension NSUserInterfaceItemIdentifier {
     static let sampleRate = NSUserInterfaceItemIdentifier("col.sampleRate")
     static let shuffleExclude = NSUserInterfaceItemIdentifier("col.shuffleExclude")
     static let loved = NSUserInterfaceItemIdentifier("col.loved")
+    static let composer = NSUserInterfaceItemIdentifier("col.composer")
+    static let bpm = NSUserInterfaceItemIdentifier("col.bpm")
+    static let key = NSUserInterfaceItemIdentifier("col.key")
+    static let bitDepth = NSUserInterfaceItemIdentifier("col.bitDepth")
+    static let channelCount = NSUserInterfaceItemIdentifier("col.channelCount")
+    static let isLossless = NSUserInterfaceItemIdentifier("col.isLossless")
+    static let skipCount = NSUserInterfaceItemIdentifier("col.skipCount")
+    static let lastPlayedAt = NSUserInterfaceItemIdentifier("col.lastPlayedAt")
+    static let fileSize = NSUserInterfaceItemIdentifier("col.fileSize")
+    static let fileMtime = NSUserInterfaceItemIdentifier("col.fileMtime")
 }
 
 // MARK: - TrackTable static helpers
@@ -106,11 +116,22 @@ extension TrackTable {
         if comparator == KeyPathComparator(\TrackRow.sampleRate, order: ord) { return "sampleRate" }
         if comparator == KeyPathComparator(\TrackRow.shuffleSortKey, order: ord) { return "shuffleSortKey" }
         if comparator == KeyPathComparator(\TrackRow.lovedSortKey, order: ord) { return "lovedSortKey" }
+        if comparator == KeyPathComparator(\TrackRow.composer, comparator: .localizedStandard, order: ord) { return "composer" }
+        if comparator == KeyPathComparator(\TrackRow.bpm, order: ord) { return "bpm" }
+        if comparator == KeyPathComparator(\TrackRow.key, comparator: .localizedStandard, order: ord) { return "key" }
+        if comparator == KeyPathComparator(\TrackRow.bitDepth, order: ord) { return "bitDepth" }
+        if comparator == KeyPathComparator(\TrackRow.channelCount, order: ord) { return "channelCount" }
+        if comparator == KeyPathComparator(\TrackRow.isLossless, order: ord) { return "isLossless" }
+        if comparator == KeyPathComparator(\TrackRow.skipCount, order: ord) { return "skipCount" }
+        if comparator == KeyPathComparator(\TrackRow.lastPlayedAt, order: ord) { return "lastPlayedAt" }
+        if comparator == KeyPathComparator(\TrackRow.fileSize, order: ord) { return "fileSize" }
+        if comparator == KeyPathComparator(\TrackRow.fileMtime, order: ord) { return "fileMtime" }
         return nil
     }
 
     // swiftlint:enable cyclomatic_complexity
 
+    // swiftlint:disable function_body_length
     /// Maps a sort descriptor back to a `KeyPathComparator<TrackRow>`.
     static func comparator(from descriptor: NSSortDescriptor) -> KeyPathComparator<TrackRow>? {
         let order: SortOrder = descriptor.ascending ? .forward : .reverse
@@ -172,11 +193,44 @@ extension TrackTable {
         case "lovedSortKey":
             return KeyPathComparator(\TrackRow.lovedSortKey, order: order)
 
+        case "composer":
+            return KeyPathComparator(\TrackRow.composer, comparator: .localizedStandard, order: order)
+
+        case "bpm":
+            return KeyPathComparator(\TrackRow.bpm, order: order)
+
+        case "key":
+            return KeyPathComparator(\TrackRow.key, comparator: .localizedStandard, order: order)
+
+        case "bitDepth":
+            return KeyPathComparator(\TrackRow.bitDepth, order: order)
+
+        case "channelCount":
+            return KeyPathComparator(\TrackRow.channelCount, order: order)
+
+        case "isLossless":
+            return KeyPathComparator(\TrackRow.isLossless, order: order)
+
+        case "skipCount":
+            return KeyPathComparator(\TrackRow.skipCount, order: order)
+
+        case "lastPlayedAt":
+            return KeyPathComparator(\TrackRow.lastPlayedAt, order: order)
+
+        case "fileSize":
+            return KeyPathComparator(\TrackRow.fileSize, order: order)
+
+        case "fileMtime":
+            return KeyPathComparator(\TrackRow.fileMtime, order: order)
+
         default:
             return nil
         }
     }
 
+    // swiftlint:enable function_body_length
+
+    // swiftlint:disable function_body_length
     /// Returns the display string for a column/row combination.
     static func displayValue(for colID: NSUserInterfaceItemIdentifier, row: TrackRow) -> String {
         switch colID {
@@ -236,10 +290,55 @@ extension TrackTable {
             // Rendered by LoveButtonCell; text fallback for accessibility/copy.
             return row.loved ? "♥" : ""
 
+        case .composer:
+            return row.composer
+
+        case .bpm:
+            return row.bpm > 0 ? String(format: "%.0f", row.bpm) : ""
+
+        case .key:
+            return row.key
+
+        case .bitDepth:
+            return row.bitDepth > 0 ? "\(row.bitDepth)-bit" : ""
+
+        case .channelCount:
+            switch row.channelCount {
+            case 0:
+                return ""
+
+            case 1:
+                return "Mono"
+
+            case 2:
+                return "Stereo"
+
+            default:
+                return "\(row.channelCount) ch"
+            }
+
+        case .isLossless:
+            guard row.bitDepth > 0 || !row.fileFormat.isEmpty else { return "" }
+            return row.isLossless == 1 ? "✓" : "✗"
+
+        case .skipCount:
+            return row.skipCount == 0 ? "" : String(row.skipCount)
+
+        case .lastPlayedAt:
+            return Formatters.shortDate(epochSeconds: row.lastPlayedAt)
+
+        case .fileSize:
+            return Formatters.fileSize(row.fileSize)
+
+        case .fileMtime:
+            return Formatters.shortDate(epochSeconds: row.fileMtime)
+
         default:
             return ""
         }
     }
+
+    // swiftlint:enable function_body_length
 
     static func formatSampleRate(_ hz: Int) -> String {
         guard hz > 0 else { return "" }
