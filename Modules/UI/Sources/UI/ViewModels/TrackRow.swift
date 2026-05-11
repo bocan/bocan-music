@@ -37,6 +37,7 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
     public let bitrate: Int
     public let sampleRate: Int
     public let excludedFromShuffle: Bool
+    public let loved: Bool
 
     // MARK: - Identifiable
 
@@ -74,11 +75,17 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.bitrate = track.bitrate ?? 0
         self.sampleRate = track.sampleRate ?? 0
         self.excludedFromShuffle = track.excludedFromShuffle
+        self.loved = track.loved
     }
 
     /// Integer key for header-sort on the Shuffle Exclude column (Bool isn't Comparable).
     public var shuffleSortKey: Int {
         self.excludedFromShuffle ? 1 : 0
+    }
+
+    /// Integer key for header-sort on the Loved column (Bool isn't Comparable).
+    public var lovedSortKey: Int {
+        self.loved ? 1 : 0
     }
 
     // MARK: - Hashable

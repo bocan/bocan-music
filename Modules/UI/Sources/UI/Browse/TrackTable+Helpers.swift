@@ -20,6 +20,7 @@ extension NSUserInterfaceItemIdentifier {
     static let bitrate = NSUserInterfaceItemIdentifier("col.bitrate")
     static let sampleRate = NSUserInterfaceItemIdentifier("col.sampleRate")
     static let shuffleExclude = NSUserInterfaceItemIdentifier("col.shuffleExclude")
+    static let loved = NSUserInterfaceItemIdentifier("col.loved")
 }
 
 // MARK: - TrackTable static helpers
@@ -100,6 +101,7 @@ extension TrackTable {
         if comparator == KeyPathComparator(\TrackRow.bitrate, order: ord) { return "bitrate" }
         if comparator == KeyPathComparator(\TrackRow.sampleRate, order: ord) { return "sampleRate" }
         if comparator == KeyPathComparator(\TrackRow.shuffleSortKey, order: ord) { return "shuffleSortKey" }
+        if comparator == KeyPathComparator(\TrackRow.lovedSortKey, order: ord) { return "lovedSortKey" }
         return nil
     }
 
@@ -157,6 +159,9 @@ extension TrackTable {
         case "shuffleSortKey":
             return KeyPathComparator(\TrackRow.shuffleSortKey, order: order)
 
+        case "lovedSortKey":
+            return KeyPathComparator(\TrackRow.lovedSortKey, order: order)
+
         default:
             return nil
         }
@@ -210,6 +215,10 @@ extension TrackTable {
 
         case .sampleRate:
             return self.formatSampleRate(row.sampleRate)
+
+        case .loved:
+            // Rendered by LoveButtonCell; text fallback for accessibility/copy.
+            return row.loved ? "♥" : ""
 
         default:
             return ""

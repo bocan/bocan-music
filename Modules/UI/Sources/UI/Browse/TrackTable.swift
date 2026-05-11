@@ -397,6 +397,15 @@ public struct TrackTable: NSViewRepresentable {
             hidden: false
         ),
         ColSpec(
+            id: .loved,
+            title: "\u{2665}",
+            minWidth: 24,
+            idealWidth: 32,
+            maxWidth: 40,
+            sortKey: "lovedSortKey",
+            hidden: false
+        ),
+        ColSpec(
             id: .addedAt,
             title: "Date Added",
             minWidth: 72,
