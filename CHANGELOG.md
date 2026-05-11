@@ -5,6 +5,19 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0](https://github.com/bocan/bocan-music/compare/v0.9.4...v0.10.0) (2026-05-11)
+
+
+### ### Added
+
+* **scrobble,ui:** wire loved toggle to scrobble services + add love button to play bar ([db454d5](https://github.com/bocan/bocan-music/commit/db454d59c2fbff2598aa8b9231f81002553e6e07))
+* **ui:** add ♥ Loved column to track list (on by default) ([e4ab248](https://github.com/bocan/bocan-music/commit/e4ab248a311490510c73843f9dc39e8ad36af1d4))
+
+
+### ### Fixed
+
+* **sparkle:** remove channel tag from stable appcast entries ([37fec24](https://github.com/bocan/bocan-music/commit/37fec246b655ddecdf436acb6e010eefda88a54b))
+
 ## [0.9.4](https://github.com/bocan/bocan-music/compare/v0.9.3...v0.9.4) (2026-05-11)
 
 
