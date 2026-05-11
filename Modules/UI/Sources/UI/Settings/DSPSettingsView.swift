@@ -29,17 +29,20 @@ public struct DSPSettingsView: View {
 
             Divider()
 
-            Group {
-                switch self.section {
-                case .equaliser:
-                    EQView(vm: self.dsp)
+            ScrollView {
+                Group {
+                    switch self.section {
+                    case .equaliser:
+                        EQView(vm: self.dsp)
 
-                case .effects:
-                    DSPView(vm: self.dsp)
+                    case .effects:
+                        DSPView(vm: self.dsp)
 
-                case .replayGain:
-                    ReplayGainSettingsView(vm: self.dsp)
+                    case .replayGain:
+                        ReplayGainSettingsView(vm: self.dsp)
+                    }
                 }
+                .frame(maxWidth: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
