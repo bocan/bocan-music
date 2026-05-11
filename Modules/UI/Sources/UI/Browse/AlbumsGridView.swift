@@ -205,6 +205,12 @@ public struct AlbumsGridView: View {
             Task { await self.openInspector(forAlbumIDs: ids) }
         }
         .disabled(ids.isEmpty)
+
+        Divider()
+        Button(multi ? "Remove \(ids.count) Albums from Library" : "Remove Album from Library", role: .destructive) {
+            Task { await self.library.removeAlbumsFromLibrary(albumIDs: ids) }
+        }
+        .disabled(ids.isEmpty)
     }
 
     /// Loads every track for the given album IDs and opens the writable tag editor.

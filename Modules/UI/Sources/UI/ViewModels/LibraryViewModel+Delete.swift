@@ -82,8 +82,9 @@ public extension LibraryViewModel {
             }
         }
 
-        // Single reload for the whole batch.
-        await self.tracks.load()
+        // Single reload for the whole batch, preserving any active search.
+        await self.pruneOrphanAlbumsAndArtists()
+        await self.loadCurrentDestination()
         return failures
     }
 
@@ -115,7 +116,8 @@ public extension LibraryViewModel {
             }
             track.disabled = true
             try await trackRepo.update(track)
-            await self.tracks.load()
+            await self.pruneOrphanAlbumsAndArtists()
+            await self.loadCurrentDestination()
             self.log.debug("library.deleteFromDisk", ["id": id])
             return .trashed
         } catch {
@@ -143,7 +145,8 @@ public extension LibraryViewModel {
             try fileOps.remove(url)
             track.disabled = true
             try await trackRepo.update(track)
-            await self.tracks.load()
+            await self.pruneOrphanAlbumsAndArtists()
+            await self.loadCurrentDestination()
             self.log.debug("library.permanentlyDeleteFromDisk", ["id": id])
         } catch {
             self.log.error(
@@ -151,6 +154,85 @@ public extension LibraryViewModel {
                 ["id": id, "error": String(reflecting: error)]
             )
             self.playbackErrorMessage = "Could not permanently delete the file: \(error.localizedDescription)"
+        }
+    }
+
+    // MARK: - Remove from Library (soft-delete by album / artist)
+
+    /// Soft-deletes every track in the given albums and prunes orphan metadata rows.
+    func removeAlbumsFromLibrary(albumIDs: [Int64]) async {
+        let trackRepo = TrackRepository(database: self.database)
+        for albumID in albumIDs {
+            do {
+                let albumTracks = try await trackRepo.fetchAll(albumID: albumID)
+                for var track in albumTracks {
+                    track.disabled = true
+                    try await trackRepo.update(track)
+                }
+                self.log.debug("library.removeAlbum", ["albumID": albumID])
+            } catch {
+                self.log.error("library.removeAlbum.failed", ["albumID": albumID, "error": String(reflecting: error)])
+            }
+        }
+        await self.pruneOrphanAlbumsAndArtists()
+        await self.albums.load()
+        await self.loadCurrentDestination()
+    }
+
+    /// Soft-deletes every track by this artist and prunes orphan metadata rows.
+    func removeArtistFromLibrary(artistID: Int64) async {
+        let trackRepo = TrackRepository(database: self.database)
+        do {
+            let artistTracks = try await trackRepo.fetchAll(artistID: artistID)
+            for var track in artistTracks {
+                track.disabled = true
+                try await trackRepo.update(track)
+            }
+            self.log.debug("library.removeArtist", ["artistID": artistID])
+        } catch {
+            self.log.error("library.removeArtist.failed", ["artistID": artistID, "error": String(reflecting: error)])
+        }
+        await self.pruneOrphanAlbumsAndArtists()
+        await self.artists.load()
+        await self.loadCurrentDestination()
+    }
+
+    // MARK: - Private helpers
+
+    /// Removes album and artist rows that have no remaining active (non-disabled) tracks.
+    private func pruneOrphanAlbumsAndArtists() async {
+        do {
+            let (prunedAlbums, prunedArtists): (Int, Int) = try await self.database.write { db in
+                try db.execute(sql: """
+                DELETE FROM albums
+                WHERE id NOT IN (
+                    SELECT DISTINCT album_id FROM tracks
+                    WHERE album_id IS NOT NULL
+                      AND (disabled IS NULL OR disabled = 0)
+                )
+                """)
+                let albums = db.changesCount
+                try db.execute(sql: """
+                DELETE FROM artists
+                WHERE id NOT IN (
+                    SELECT DISTINCT artist_id FROM tracks
+                    WHERE artist_id IS NOT NULL
+                      AND (disabled IS NULL OR disabled = 0)
+                    UNION
+                    SELECT DISTINCT album_artist_id FROM tracks
+                    WHERE album_artist_id IS NOT NULL
+                      AND (disabled IS NULL OR disabled = 0)
+                    UNION
+                    SELECT DISTINCT album_artist_id FROM albums
+                    WHERE album_artist_id IS NOT NULL
+                )
+                """)
+                let artists = db.changesCount
+                return (albums, artists)
+            }
+            self.log.debug("library.pruneOrphans", ["albums": prunedAlbums, "artists": prunedArtists])
+        } catch {
+            self.log.error("library.pruneOrphans.failed", ["error": String(reflecting: error)])
         }
     }
 }

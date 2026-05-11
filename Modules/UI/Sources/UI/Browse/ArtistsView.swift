@@ -25,6 +25,11 @@ public struct ArtistDetailView: View {
                 self.artistHeader(artist)
                     .padding(20)
                     .background(Color.bgSecondary)
+                    .contextMenu {
+                        Button("Remove Artist from Library", role: .destructive) {
+                            Task { await self.library.removeArtistFromLibrary(artistID: self.artistID) }
+                        }
+                    }
                 Divider()
             }
 
@@ -229,6 +234,13 @@ public struct ArtistsView: View {
             }
             .contentShape(Rectangle())
             .accessibilityLabel(artist.name)
+            .contextMenu {
+                if let id = artist.id {
+                    Button("Remove Artist from Library", role: .destructive) {
+                        Task { await self.library.removeArtistFromLibrary(artistID: id) }
+                    }
+                }
+            }
         }
         // Reset to nil so the same artist can be re-selected on the next tap.
         .onChange(of: self.vm.selectedArtistID) { _, id in
