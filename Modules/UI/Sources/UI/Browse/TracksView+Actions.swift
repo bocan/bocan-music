@@ -113,8 +113,11 @@ extension TracksView {
             },
             removeFromPlaylist: removeFromPlaylistAction,
             editLyrics: { [lyricsEnv] track in
-                _ = track // lyrics editor operates on the current pane track
-                lyricsEnv.openEditor()
+                if let id = track.id {
+                    lyricsEnv.openEditor(for: id)
+                } else {
+                    lyricsEnv.openEditor()
+                }
             },
             fetchLyricsFromLRClib: self.lyricsEnv.lrclibEnabled ? { [lyricsEnv] track in
                 if let id = track.id {
