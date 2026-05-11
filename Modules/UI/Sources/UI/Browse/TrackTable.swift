@@ -45,8 +45,8 @@ public struct TrackContextMenuActions {
     public let identify: (Track) -> Void
     /// Remove tracks from the library without deleting files.
     public let removeFromLibrary: ([Track]) -> Void
-    /// Delete a track's file from disk and remove it from the library.
-    public let deleteFromDisk: (Track) -> Void
+    /// Delete the selected tracks' files from disk and remove them from the library.
+    public let deleteFromDisk: ([Track]) -> Void
     /// Copy track metadata to the clipboard.
     public let copy: ([TrackRow]) -> Void
     /// Set or clear the shuffle-exclusion flag for a track.
