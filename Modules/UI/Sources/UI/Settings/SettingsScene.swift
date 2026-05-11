@@ -72,7 +72,7 @@ public struct SettingsScene: View {
                 .tabItem { Label("Diagnostics", systemImage: "stethoscope") }
                 .tag(SettingsTab.diagnostics)
         }
-        .frame(minWidth: 520, minHeight: 360)
+        .frame(minWidth: 560, minHeight: 500)
     }
 }
 
