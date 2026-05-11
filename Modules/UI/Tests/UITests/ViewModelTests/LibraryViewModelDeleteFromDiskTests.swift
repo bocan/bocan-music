@@ -10,21 +10,19 @@ import Testing
 private final class MockTrackFileDeleter: TrackFileDeleter, @unchecked Sendable {
     var trashError: (any Error)?
     var removeError: (any Error)?
+    var trashErrorURLs: [URL: any Error] = [:]
     private(set) var trashedURLs: [URL] = []
     private(set) var removedURLs: [URL] = []
 
     func trash(_ url: URL) throws {
         self.trashedURLs.append(url)
-        if let trashError {
-            throw trashError
-        }
+        if let err = trashErrorURLs[url] { throw err }
+        if let trashError { throw trashError }
     }
 
     func remove(_ url: URL) throws {
         self.removedURLs.append(url)
-        if let removeError {
-            throw removeError
-        }
+        if let removeError { throw removeError }
     }
 }
 
@@ -128,5 +126,57 @@ struct LibraryViewModelDeleteFromDiskTests {
         #expect(vm.playbackErrorMessage != nil)
         let after = try await repo.fetch(id: id)
         #expect(after.disabled == false)
+    }
+
+    @Test("Batch delete trashes all files and calls tracks.load once")
+    func batchDeleteAllSucceed() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        let id1 = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/a.flac"))
+        let id2 = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/b.flac"))
+        let id3 = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/c.flac"))
+        let vm = LibraryViewModel(database: db, engine: MockTransport())
+        let deleter = MockTrackFileDeleter()
+        let tracks = try await [
+            repo.fetch(id: id1),
+            repo.fetch(id: id2),
+            repo.fetch(id: id3),
+        ]
+
+        let failures = await vm.deleteTracksFromDisk(tracks: tracks, using: deleter)
+
+        #expect(failures.isEmpty)
+        #expect(deleter.trashedURLs.count == 3)
+        #expect(deleter.removedURLs.isEmpty)
+        for id in [id1, id2, id3] {
+            let updated = try await repo.fetch(id: id)
+            #expect(updated.disabled == true)
+        }
+    }
+
+    @Test("Batch delete returns only failed tracks, succeeds soft-deletes the rest")
+    func batchDeletePartialFailure() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        let id1 = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/a.flac"))
+        let id2 = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/b.flac"))
+        let vm = LibraryViewModel(database: db, engine: MockTransport())
+        let deleter = MockTrackFileDeleter()
+        struct FakeTrashError: Error {}
+        // First trash call will fail; second will succeed.
+        deleter.trashErrorURLs = try [#require(URL(string: "file:///tmp/a.flac")): FakeTrashError()]
+        let tracks = try await [
+            repo.fetch(id: id1),
+            repo.fetch(id: id2),
+        ]
+
+        let failures = await vm.deleteTracksFromDisk(tracks: tracks, using: deleter)
+
+        #expect(failures.count == 1)
+        #expect(failures[0].0.id == id1)
+        let row1 = try await repo.fetch(id: id1)
+        #expect(row1.disabled == false) // trash failed — row untouched
+        let row2 = try await repo.fetch(id: id2)
+        #expect(row2.disabled == true) // trash succeeded — row soft-deleted
     }
 }

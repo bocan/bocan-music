@@ -420,9 +420,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let removeItem = ActionMenuItem("Remove from Library") { acts.removeFromLibrary(selected) }
         removeItem.isEnabled = !selected.isEmpty
         menu.addItem(removeItem)
-        if let track = first {
-            menu.addItem(ActionMenuItem("Delete from Disk") { acts.deleteFromDisk(track) })
-        }
+        let deleteItem = ActionMenuItem("Delete from Disk") { acts.deleteFromDisk(selected) }
+        deleteItem.isEnabled = !selected.isEmpty
+        menu.addItem(deleteItem)
         menu.addItem(.separator())
         let selectedRows = self.parent.selection.compactMap { id in id.flatMap { self.rowsByID[$0] } }
         let copyItem = ActionMenuItem("Copy") { acts.copy(selectedRows) }

@@ -382,6 +382,48 @@ public extension LibraryViewModel {
         }
     }
 
+    /// Moves multiple tracks' backing files to Trash and soft-deletes their
+    /// library rows in one pass, calling `tracks.load()` exactly once at the end.
+    ///
+    /// Returns an array of `(track, error)` pairs for any files that could not
+    /// be trashed, so the caller can offer a secondary "Delete Permanently"
+    /// confirmation for each failure.
+    func deleteTracksFromDisk(
+        tracks: [Track],
+        using fileOps: any TrackFileDeleter = SystemTrackFileDeleter()
+    ) async -> [(Track, any Error)] {
+        let trackRepo = TrackRepository(database: self.database)
+        var failures: [(Track, any Error)] = []
+
+        for track in tracks {
+            guard let id = track.id else { continue }
+            do {
+                var row = try await trackRepo.fetch(id: id)
+                if let url = URL(string: row.fileURL) {
+                    do {
+                        try fileOps.trash(url)
+                    } catch {
+                        self.log.error(
+                            "library.deleteFromDisk.trashFailed",
+                            ["id": id, "error": String(reflecting: error)]
+                        )
+                        failures.append((track, error))
+                        continue
+                    }
+                }
+                row.disabled = true
+                try await trackRepo.update(row)
+                self.log.debug("library.deleteFromDisk", ["id": id])
+            } catch {
+                self.log.error("library.deleteFromDisk.failed", ["id": id, "error": String(reflecting: error)])
+            }
+        }
+
+        // Single reload for the whole batch.
+        await self.tracks.load()
+        return failures
+    }
+
     /// Moves a track's backing file to Trash and soft-deletes the library row.
     ///
     /// Returns an outcome so the caller can offer a secondary "Delete

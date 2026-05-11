@@ -79,8 +79,8 @@ extension TracksView {
             removeFromLibrary: { tracks in
                 Task { await Self.confirmRemoveFromLibrary(tracks: tracks, library: lib) }
             },
-            deleteFromDisk: { track in
-                Task { await Self.confirmDeleteFromDisk(track: track, library: lib) }
+            deleteFromDisk: { tracks in
+                Task { await Self.confirmDeleteFromDisk(tracks: tracks, library: lib) }
             },
             copy: { rows in
                 let header = ["Title", "Artist", "Album", "Track", "Year", "Genre", "Duration", "Rating"]
@@ -191,17 +191,22 @@ extension TracksView {
         }
     }
 
-    /// Presents the trash-and-remove confirmation for a single track. Always
-    /// asks — there's no "don't ask again" path because the action is
+    /// Presents the trash-and-remove confirmation for one or more tracks. Always
+    /// asks — there’s no “don’t ask again” path because the action is
     /// destructive on disk.
     @MainActor
-    static func confirmDeleteFromDisk(track: Track, library: LibraryViewModel) async {
-        guard let id = track.id else { return }
-        let title = track.title ?? "this track"
+    static func confirmDeleteFromDisk(tracks: [Track], library: LibraryViewModel) async {
+        guard !tracks.isEmpty else { return }
 
         let alert = NSAlert()
-        alert.messageText = "Move “\(title)” to Trash and remove from Bòcan?"
-        alert.informativeText = "The file will be moved to the Trash. You can restore it from the Trash until you empty it."
+        if tracks.count == 1 {
+            let title = tracks[0].title ?? "this track"
+            alert.messageText = "Move “\(title)” to Trash and remove from Bòcan?"
+            alert.informativeText = "The file will be moved to the Trash. You can restore it from the Trash until you empty it."
+        } else {
+            alert.messageText = "Move \(tracks.count) tracks to Trash and remove from Bòcan?"
+            alert.informativeText = "The files will be moved to the Trash. You can restore them from the Trash until you empty it."
+        }
         alert.alertStyle = .warning
         let trashButton = alert.addButton(withTitle: "Move to Trash")
         trashButton.hasDestructiveAction = true
@@ -211,12 +216,10 @@ extension TracksView {
         guard response == .alertFirstButtonReturn else { return }
 
         Task { @MainActor in
-            let outcome = await library.deleteTrackFromDisk(id: id)
-            // Phase 5.5 audit M3: when trashing fails (external volume,
-            // permission denied, …) we used to silently log and leave the
-            // file on disk. Offer an explicit fallback to permanent deletion
-            // so the user actually finds out and can choose what to do.
-            if case let .trashFailed(error, _) = outcome {
+            let failures = await library.deleteTracksFromDisk(tracks: tracks)
+            // Phase 5.5 audit M3: offer permanent-delete fallback for any files
+            // that could not be trashed (external volume, permissions…).
+            for (track, error) in failures {
                 await Self.confirmPermanentDelete(track: track, error: error, library: library)
             }
         }
