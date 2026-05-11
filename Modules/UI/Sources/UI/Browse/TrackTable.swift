@@ -379,6 +379,24 @@ public struct TrackTable: NSViewRepresentable {
             hidden: false
         ),
         ColSpec(
+            id: .discNumber,
+            title: "Disc",
+            minWidth: 28,
+            idealWidth: 40,
+            maxWidth: 56,
+            sortKey: "discNumber",
+            hidden: true
+        ),
+        ColSpec(
+            id: .discTotal,
+            title: "Discs",
+            minWidth: 28,
+            idealWidth: 40,
+            maxWidth: 56,
+            sortKey: "discTotal",
+            hidden: true
+        ),
+        ColSpec(
             id: .playCount,
             title: "Plays",
             minWidth: 36,

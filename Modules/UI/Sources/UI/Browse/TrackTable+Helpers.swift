@@ -7,6 +7,8 @@ extension NSUserInterfaceItemIdentifier {
     static let databaseID = NSUserInterfaceItemIdentifier("col.databaseID")
     static let trackNumber = NSUserInterfaceItemIdentifier("col.trackNumber")
     static let trackTotal = NSUserInterfaceItemIdentifier("col.trackTotal")
+    static let discNumber = NSUserInterfaceItemIdentifier("col.discNumber")
+    static let discTotal = NSUserInterfaceItemIdentifier("col.discTotal")
     static let title = NSUserInterfaceItemIdentifier("col.title")
     static let artist = NSUserInterfaceItemIdentifier("col.artist")
     static let album = NSUserInterfaceItemIdentifier("col.album")
@@ -87,6 +89,8 @@ extension TrackTable {
         let ord = comparator.order
         if comparator == KeyPathComparator(\TrackRow.trackNumber, order: ord) { return "trackNumber" }
         if comparator == KeyPathComparator(\TrackRow.trackTotal, order: ord) { return "trackTotal" }
+        if comparator == KeyPathComparator(\TrackRow.discNumber, order: ord) { return "discNumber" }
+        if comparator == KeyPathComparator(\TrackRow.discTotal, order: ord) { return "discTotal" }
         if comparator == KeyPathComparator(\TrackRow.databaseID, order: ord) { return "databaseID" }
         if comparator == KeyPathComparator(\TrackRow.title, comparator: .localizedStandard, order: ord) { return "title" }
         if comparator == KeyPathComparator(\TrackRow.artistName, comparator: .localizedStandard, order: ord) { return "artistName" }
@@ -116,6 +120,12 @@ extension TrackTable {
 
         case "trackTotal":
             return KeyPathComparator(\TrackRow.trackTotal, order: order)
+
+        case "discNumber":
+            return KeyPathComparator(\TrackRow.discNumber, order: order)
+
+        case "discTotal":
+            return KeyPathComparator(\TrackRow.discTotal, order: order)
 
         case "databaseID":
             return KeyPathComparator(\TrackRow.databaseID, order: order)
@@ -178,6 +188,12 @@ extension TrackTable {
 
         case .trackTotal:
             return row.trackTotal == 0 ? "" : String(row.trackTotal)
+
+        case .discNumber:
+            return row.discNumber == 0 ? "" : String(row.discNumber)
+
+        case .discTotal:
+            return row.discTotal == 0 ? "" : String(row.discTotal)
 
         case .title:
             return row.title.isEmpty ? "Unknown" : row.title
