@@ -81,20 +81,22 @@ public struct ArtistRepository: Sendable {
         }
     }
 
-    /// Returns a dictionary mapping artist ID → album count (as album artist).
+    /// Returns a dictionary mapping artist ID → album count.
     ///
-    /// Only counts non-disabled albums. Artists with no albums are absent from the result.
+    /// Counts distinct albums that contain at least one non-disabled track by this artist,
+    /// regardless of who the album artist is.  This correctly handles compilation albums
+    /// where the album artist is "Various Artists" but individual tracks have a real artist.
     public func fetchAlbumCounts() async throws -> [Int64: Int] {
         try await self.database.read { db in
             let rows = try Row.fetchAll(db, sql: """
-                SELECT album_artist_id, COUNT(*) AS cnt
-                FROM albums
-                WHERE album_artist_id IS NOT NULL
-                GROUP BY album_artist_id
+                SELECT artist_id, COUNT(DISTINCT album_id) AS cnt
+                FROM tracks
+                WHERE disabled = 0 AND artist_id IS NOT NULL AND album_id IS NOT NULL
+                GROUP BY artist_id
             """)
             var counts: [Int64: Int] = [:]
             for row in rows {
-                if let id: Int64 = row["album_artist_id"], let cnt: Int = row["cnt"] {
+                if let id: Int64 = row["artist_id"], let cnt: Int = row["cnt"] {
                     counts[id] = cnt
                 }
             }

@@ -157,9 +157,11 @@ public struct ArtistDetailView: View {
     // MARK: - Data loading
 
     private func load() async {
+        // Fetch albums by track artist (not album artist) so compilation appearances
+        // show up — e.g. "A Day to Remember" on "Various Artists" compilation albums.
         async let albumsFetch: [Album] = await (try? AlbumRepository(
             database: self.library.database
-        ).fetchAll(albumArtistID: self.artistID)) ?? []
+        ).fetchAll(trackArtistID: self.artistID)) ?? []
         async let artistFetch = try? await ArtistRepository(database: self.library.database).fetch(id: self.artistID)
         async let trackCountsFetch = try? await AlbumRepository(database: self.library.database).fetchTrackCounts()
         // Load tracks via the shared TracksViewModel so TracksView gets full column data,
@@ -226,13 +228,16 @@ public struct ArtistsView: View {
                         .font(Typography.body)
                         .foregroundStyle(Color.textPrimary)
 
-                    if let id = artist.id, let albumCount = self.vm.albumCounts[id], albumCount > 0 {
+                    if let id = artist.id {
+                        let albumCount = self.vm.albumCounts[id] ?? 0
                         let trackCount = self.vm.trackCounts[id] ?? 0
-                        let albumPart = albumCount == 1 ? "1 album" : "\(albumCount) albums"
-                        let songPart = trackCount == 1 ? "1 song" : "\(trackCount) songs"
-                        Text("\(albumPart), \(songPart)")
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textSecondary)
+                        if albumCount > 0 || trackCount > 0 {
+                            let albumPart = albumCount == 1 ? "1 album" : "\(albumCount) albums"
+                            let songPart = trackCount == 1 ? "1 song" : "\(trackCount) songs"
+                            Text("\(albumPart), \(songPart)")
+                                .font(Typography.caption)
+                                .foregroundStyle(Color.textSecondary)
+                        }
                     }
                 }
 
