@@ -33,37 +33,39 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     let graph: EngineGraph
     let deviceRouter: DeviceRouter
     let presets: PresetStore
-    private var decoder: (any Decoder)?
+    var decoder: (any Decoder)?
     var pump: BufferPump?
-    private var _currentTime: TimeInterval = 0
-    private var _duration: TimeInterval = 0
+    // swiftlint:disable identifier_name
+    var _currentTime: TimeInterval = 0
+    var _duration: TimeInterval = 0
     /// Sample-time offset recorded at each gapless transition.
     ///
     /// `AVAudioPlayerNode.playerTime(forNodeTime:).sampleTime` is cumulative from
     /// the moment the node first started playing — it never resets during a gapless
     /// transition.  Subtracting this offset gives a 0-based position for each new
     /// track. Reset to 0 whenever the node is stopped (load / stop / seek).
-    private var _playerTimeOffset: AVAudioFramePosition = 0
-    private var _state: PlaybackState = .idle
-    private var lastState: PlaybackState?
+    var _playerTimeOffset: AVAudioFramePosition = 0
+    var _state: PlaybackState = .idle
+    // swiftlint:enable identifier_name
+    var lastState: PlaybackState?
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
     let log = AppLogger.make(.audio)
 
     // MARK: - Gapless state
 
     /// The pre-loaded pump for the next track. Non-nil while a gapless preload is in progress.
-    private var pendingNextPump: BufferPump?
+    var pendingNextPump: BufferPump?
     /// Duration of the pending next track (read from its decoder).
-    private var pendingNextDuration: TimeInterval = 0
+    var pendingNextDuration: TimeInterval = 0
     /// Decoder for the pending next track (becomes `decoder` on transition).
-    private var pendingNextDecoder: (any Decoder)?
+    var pendingNextDecoder: (any Decoder)?
     /// Caller-supplied callback fired when the engine seamlessly transitions to the next track.
-    private var pendingNextTransition: (@Sendable () -> Void)?
+    var pendingNextTransition: (@Sendable () -> Void)?
     /// Timestamp of the most recent gapless transition.  Used to suppress a
     /// spurious second `.ended` that can fire when the just-swapped-in pump
     /// reports EOF before its first buffer has rendered (e.g. a race where the
     /// pump's decoder sees an empty read at activation time).
-    private var lastGaplessTransitionAt: Date?
+    var lastGaplessTransitionAt: Date?
     /// Crossfade volume ramp task. Cancelled in `load()` and `stop()`.
     var crossfadeTask: Task<Void, Never>?
 
@@ -410,111 +412,10 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     // MARK: - Private helpers
 
-    private func emit(_ newState: PlaybackState) {
+    func emit(_ newState: PlaybackState) {
         guard newState != self.lastState else { return }
         self.lastState = newState
         self._state = newState
         self.stateContinuation?.yield(newState)
-    }
-
-    private func handleEnded(firedBy pumpID: String) {
-        let currentID = self.pump?.id ?? "nil"
-        let pendingID = self.pendingNextPump?.id ?? "nil"
-        // Ignore EOF signals from pumps that are neither the active nor the
-        // pending-next pump.  Stale signals arise after a seek (which replaces
-        // the pump) or after the user triggers a rapid load/skip.
-        guard pumpID == currentID || pumpID == pendingID else {
-            self.log.debug("engine.handleEnded.stale", [
-                "firedBy": pumpID, "current": currentID, "pending": pendingID,
-            ])
-            return
-        }
-        self.log.debug("engine.handleEnded.entry", [
-            "firedBy": pumpID, "current": currentID, "pending": pendingID,
-        ])
-        if let next = pendingNextPump, next !== pump {
-            self.performGaplessTransition(to: next)
-        } else {
-            self.finalizeTrackEnded(firedBy: currentID)
-        }
-    }
-
-    private func performGaplessTransition(to next: BufferPump) {
-        // At this moment the outgoing pump has scheduled its complete tail on
-        // the player node (that's what its EOF means); ~4 buffers are still
-        // in flight and will play out over ~800 ms.  Start the incoming pump
-        // NOW — its scheduleBuffer calls land strictly after the outgoing
-        // buffers in the node's queue, which is what makes the transition
-        // gapless without audio interleaving.
-        let prevPump = self.pump
-        self.pump = next
-        self.pendingNextPump = nil
-        self._currentTime = 0
-        // Capture the cumulative sample position so currentTime restarts from 0
-        // for the new track without stopping the player node.
-        let playerNode = self.graph.playerNode
-        if let renderTime = playerNode.lastRenderTime,
-           let playerTime = playerNode.playerTime(forNodeTime: renderTime) {
-            self._playerTimeOffset = playerTime.sampleTime
-        } else {
-            self._playerTimeOffset = 0
-        }
-        self._duration = self.pendingNextDuration
-        // The pending decoder becomes the active decoder.
-        self.decoder = self.pendingNextDecoder
-        self.pendingNextDecoder = nil
-
-        let transition = self.pendingNextTransition
-        self.pendingNextTransition = nil
-
-        // Force re-emit .playing for the new track's timeline.
-        self.lastState = nil
-        self.emit(.playing)
-        transition?()
-
-        // Start the deferred pump task; its buffers queue after the outgoing pump's tail.
-        let newPumpID = next.id
-        Task { [self] in
-            await next.start {
-                Task { await self.handleEnded(firedBy: newPumpID) }
-            }
-        }
-
-        // Stop (clean up) the old pump; it has already finished scheduling.
-        let oldPump = prevPump
-        Task { await oldPump?.stop() }
-
-        self.lastGaplessTransitionAt = Date()
-        self.log.debug("engine.gapless.transition", [
-            "old": prevPump?.id ?? "nil", "new": next.id,
-        ])
-    }
-
-    private func finalizeTrackEnded(firedBy currentID: String) {
-        // Suppress a spurious second `.ended` arriving within the gapless
-        // settle window: the just-activated pump can report EOF before its
-        // first buffer has rendered, which would tear down the player node
-        // and silently stop playback of a track that just started.
-        if let t = self.lastGaplessTransitionAt, Date().timeIntervalSince(t) < 1.5 {
-            self.log.debug("engine.ended.spurious.afterGapless.ignored", [
-                "firedBy": currentID,
-            ])
-            return
-        }
-        // No gapless next, or degenerate case (new pump finished before old).
-        // Clean up any stale pending state.
-        let staleNext = self.pendingNextPump
-        let staleDecoder = self.pendingNextDecoder
-        self.pendingNextPump = nil
-        self.pendingNextDecoder = nil
-        self.pendingNextTransition = nil
-        Task {
-            await staleNext?.stop()
-            await staleDecoder?.close()
-        }
-
-        self.graph.playerNode.stop()
-        self.emit(.ended)
-        self.log.debug("engine.playback.ended")
     }
 }

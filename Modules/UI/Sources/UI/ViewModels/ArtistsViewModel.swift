@@ -10,8 +10,9 @@ public final class ArtistsViewModel: ObservableObject {
     // MARK: - Published state
 
     @Published public private(set) var artists: [Artist] = []
-    @Published public private(set) var albumCounts: [Int64: Int] = [:] @Published public private(set) var trackCounts: [Int64: Int] =
-        [] @Published public private(set) var isLoading = false
+    @Published public private(set) var albumCounts: [Int64: Int] = [:]
+    @Published public private(set) var trackCounts: [Int64: Int] = [:]
+    @Published public private(set) var isLoading = false
     @Published public var selectedArtistID: Int64?
 
     // MARK: - Internal
