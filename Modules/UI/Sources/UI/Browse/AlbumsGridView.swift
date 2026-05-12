@@ -57,6 +57,74 @@ private struct AlbumCell: View {
     }
 }
 
+// MARK: - AlbumInteractiveCell
+
+/// Wraps `AlbumCell` with interaction: tap, cmd-tap, keyboard focus ring,
+/// and arrow-key / return-key callbacks.  Extracted into its own struct so the
+/// Swift type-checker never times out on the heavy modifier chain.
+private struct AlbumInteractiveCell<Menu: View>: View {
+    let album: Album
+    let artistName: String?
+    let trackCount: Int?
+    let isSelected: Bool
+    let isFocused: Bool
+    @FocusState.Binding var focusedAlbumID: Int64?
+    let onTap: () -> Void
+    let onCmdTap: () -> Void
+    let onOpen: () -> Void
+    let onMoveLeft: () -> Void
+    let onMoveRight: () -> Void
+    let onMoveUp: () -> Void
+    let onMoveDown: () -> Void
+    @ViewBuilder let contextMenuContent: () -> Menu
+
+    var body: some View {
+        AlbumCell(album: self.album, artistName: self.artistName, trackCount: self.trackCount)
+            .padding(4)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(self.isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.accentColor, lineWidth: self.isFocused ? 2 : 0)
+            )
+            .contentShape(Rectangle())
+            .focusable()
+            .focused(self.$focusedAlbumID, equals: self.album.id)
+            .focusEffectDisabled()
+            .highPriorityGesture(TapGesture().modifiers(.command).onEnded { self.onCmdTap() })
+            .onTapGesture { self.onTap() }
+            .contextMenu { self.contextMenuContent() }
+            .onKeyPress(keys: [.return, .space, .leftArrow, .rightArrow, .upArrow, .downArrow]) {
+                self.handleKeyPress($0)
+            }
+    }
+
+    private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
+        switch press.key {
+        case .return, .space:
+            self.onOpen()
+
+        case .leftArrow:
+            self.onMoveLeft()
+
+        case .rightArrow:
+            self.onMoveRight()
+
+        case .upArrow:
+            self.onMoveUp()
+
+        case .downArrow:
+            self.onMoveDown()
+
+        default:
+            return .ignored
+        }
+        return .handled
+    }
+}
+
 // MARK: - AlbumsGridView
 
 /// Adaptive `LazyVGrid` of album cells.
@@ -67,6 +135,10 @@ public struct AlbumsGridView: View {
     public var library: LibraryViewModel
     /// Phase 4 audit L3: Cmd-click multi-select for albums.
     @State private var selection: Set<Int64> = []
+    /// Phase 5: keyboard focus — which album cell has keyboard focus.
+    @FocusState private var focusedAlbumID: Int64?
+    /// Tracks the number of columns in the adaptive grid for arrow-key navigation.
+    @State private var gridColumnCount = 3
 
     public init(vm: AlbumsViewModel, library: LibraryViewModel) {
         self.vm = vm
@@ -100,57 +172,85 @@ public struct AlbumsGridView: View {
     // MARK: - Grid
 
     private var albumGrid: some View {
-        ScrollView {
-            LazyVGrid(columns: self.columns, spacing: Theme.albumGridSpacing) {
-                ForEach(self.vm.albums, id: \.id) { album in
-                    let artistName = album.albumArtistID.flatMap { self.vm.artistNames[$0] }
-                    let trackCount = album.id.flatMap { self.vm.trackCounts[$0] }
-                    let isSelected = album.id.map { self.selection.contains($0) } ?? false
-                    AlbumCell(album: album, artistName: artistName, trackCount: trackCount)
-                        .padding(4)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
-                        )
-                        .contentShape(Rectangle())
-                        // Phase 4 audit L3: Cmd-click toggles into the multi-selection set
-                        // without navigating; plain click clears the selection and drills in.
-                        .highPriorityGesture(
-                            TapGesture().modifiers(.command).onEnded {
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                LazyVGrid(columns: self.columns, spacing: Theme.albumGridSpacing) {
+                    ForEach(self.vm.albums, id: \.id) { album in
+                        AlbumInteractiveCell(
+                            album: album,
+                            artistName: album.albumArtistID.flatMap { self.vm.artistNames[$0] },
+                            trackCount: album.id.flatMap { self.vm.trackCounts[$0] },
+                            isSelected: album.id.map { self.selection.contains($0) } ?? false,
+                            isFocused: self.focusedAlbumID == album.id && album.id != nil,
+                            focusedAlbumID: self.$focusedAlbumID,
+                            onTap: {
+                                guard let id = album.id else { return }
+                                self.selection = []
+                                self.vm.selectedAlbumID = id
+                            },
+                            onCmdTap: {
                                 guard let id = album.id else { return }
                                 if self.selection.contains(id) {
                                     self.selection.remove(id)
                                 } else {
                                     self.selection.insert(id)
                                 }
-                            }
-                        )
-                        .onTapGesture {
-                            if let id = album.id {
+                            },
+                            onOpen: {
+                                guard let id = album.id else { return }
                                 self.selection = []
                                 self.vm.selectedAlbumID = id
-                            }
-                        }
-                        .contextMenu {
-                            self.albumContextMenu(album: album)
-                        }
+                            },
+                            onMoveLeft: { self.moveFocus(by: -1) },
+                            onMoveRight: { self.moveFocus(by: +1) },
+                            onMoveUp: { self.moveFocus(by: -self.gridColumnCount) },
+                            onMoveDown: { self.moveFocus(by: +self.gridColumnCount) },
+                            contextMenuContent: { self.albumContextMenu(album: album) }
+                        )
+                    }
+                }
+                .padding(Theme.albumGridSpacing)
+            }
+            .onGeometryChange(
+                for: Int.self,
+                of: {
+                    let usable = $0.size.width - 2 * Theme.albumGridSpacing
+                    return max(1, Int((usable + Theme.albumGridSpacing) /
+                            (Theme.albumGridMinWidth + Theme.albumGridSpacing)))
+                },
+                action: { self.gridColumnCount = $0 }
+            )
+            .onChange(of: self.focusedAlbumID) { _, newID in
+                guard newID != nil else { return }
+                withAnimation { scrollProxy.scrollTo(newID, anchor: .center) }
+            }
+            .navigationDestination(for: Int64.self) { albumID in
+                AlbumDetailView(albumID: albumID, library: self.library)
+            }
+            .accessibilityIdentifier(A11y.AlbumsGrid.grid)
+            // Navigate to selected album.
+            // Reset to nil after each navigation so that tapping the same
+            // album a second time always fires (onChange fires on *change* only).
+            .onChange(of: self.vm.selectedAlbumID) { _, newID in
+                if let id = newID {
+                    self.vm.selectedAlbumID = nil
+                    Task { await self.library.selectDestination(.album(id)) }
                 }
             }
-            .padding(Theme.albumGridSpacing)
         }
-        .navigationDestination(for: Int64.self) { albumID in
-            AlbumDetailView(albumID: albumID, library: self.library)
+    }
+
+    /// Moves keyboard focus by `delta` positions in the album list.
+    private func moveFocus(by delta: Int) {
+        let albums = self.vm.albums
+        guard !albums.isEmpty else { return }
+        guard let currentID = self.focusedAlbumID,
+              let currentIdx = albums.firstIndex(where: { $0.id == currentID }) else {
+            self.focusedAlbumID = albums.first?.id
+            return
         }
-        .accessibilityIdentifier(A11y.AlbumsGrid.grid)
-        // Navigate to selected album.
-        // Reset to nil after each navigation so that tapping the same
-        // album a second time always fires (onChange fires on *change* only).
-        .onChange(of: self.vm.selectedAlbumID) { _, newID in
-            if let id = newID {
-                self.vm.selectedAlbumID = nil
-                Task { await self.library.selectDestination(.album(id)) }
-            }
-        }
+        let newIdx = max(0, min(albums.count - 1, currentIdx + delta))
+        self.focusedAlbumID = albums[newIdx].id
     }
 
     // MARK: - Context menu

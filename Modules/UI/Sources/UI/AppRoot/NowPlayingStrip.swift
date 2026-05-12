@@ -278,6 +278,7 @@ public struct NowPlayingStrip: View {
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.stopAfterCurrentButton)
         }
+        .focusSection()
     }
 
     private var panelButtons: some View {
@@ -402,6 +403,7 @@ public struct NowPlayingStrip: View {
             .id(self.accentColorKey)
             .help("Scrub to position")
             .accessibilityLabel("Playback position")
+            .accessibilityValue(Formatters.duration(self.displayPosition) + " of " + Formatters.duration(self.vm.duration))
             .accessibilityIdentifier(A11y.NowPlaying.scrubber)
 
             Text(Formatters.duration(self.vm.duration))
