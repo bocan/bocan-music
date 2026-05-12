@@ -36,7 +36,7 @@ public actor LRClibClient: LRClibClientProtocol {
     // MARK: - Constants
 
     private static let baseURL = URL(string: "https://lrclib.net/api/")!
-    private static let userAgent = "Bocan/1.0 (https://github.com/bocan-music; mailto:chris@cloudcauldron.io)"
+    private static let userAgent = "Bocan/1.0 (https://github.com/bocan/bocan-music; mailto:chris@funderburg.me)"
 
     // MARK: - Dependencies
 
