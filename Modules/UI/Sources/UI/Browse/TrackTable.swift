@@ -116,6 +116,7 @@ public struct TrackTable: NSViewRepresentable {
         tableView.allowsColumnResizing = true
         tableView.allowsColumnSelection = false
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
+        tableView.refusesFirstResponder = false // Ensure Tab key can reach the table.
 
         // When reorder is enabled, allow move locally and copy externally.
         if self.onMove != nil {
