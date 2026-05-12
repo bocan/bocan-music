@@ -12,7 +12,7 @@ public actor MusicBrainzClient {
 
     private static let baseURL = URL(string: "https://musicbrainz.org/ws/2/")!
     /// User-Agent required by MusicBrainz: Name/Version (Contact)
-    private static let userAgent = "Bocan/1.0 ( mailto:chris@cloudcauldron.io )"
+    private static let userAgent = "Bocan/1.0 ( mailto:chris@funderburg.me )"
 
     // MARK: - Dependencies
 
