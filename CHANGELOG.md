@@ -5,6 +5,45 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0](https://github.com/bocan/bocan-music/compare/v0.12.0...v0.13.0) (2026-05-13)
+
+
+### ### Added
+
+* **ui:** add read-only track info floating panel ([353b7e5](https://github.com/bocan/bocan-music/commit/353b7e5291d08b56b0e38bba47f233499c21edfd))
+* **ui:** complete keyboard focus phase — settings nav, sheet focus restore, tests ([71045b7](https://github.com/bocan/bocan-music/commit/71045b79c9f981c34f3b11f11dd787076bf9835d))
+* **ui:** Dynamic Type support — semantic fonts, @ScaledMetric grid, NSTableView cell fonts ([4467185](https://github.com/bocan/bocan-music/commit/4467185ec63c43f417bace1c6359dfb4c80b181b))
+* **ui:** keyboard focus — album grid arrow nav, transport focusSection, scrubber a11yValue ([5d85ca3](https://github.com/bocan/bocan-music/commit/5d85ca30f685257686bfe73ed5c8c296ccfd703c))
+* **ui:** replace Help Viewer with in-app Help and Notices windows ([3ca7a80](https://github.com/bocan/bocan-music/commit/3ca7a803fc4e30783ccac0fa57a24685d7722ba6))
+* **ui:** respect Reduce Motion — freeze visualiser, instant track transitions ([c1d9eb7](https://github.com/bocan/bocan-music/commit/c1d9eb7eb0b55e1556ad852423693e4da707ec02))
+* **ui:** respect Reduce Transparency — solid backgrounds for mini-player, strip, lyrics ([0e7bbb4](https://github.com/bocan/bocan-music/commit/0e7bbb4da8990db20186ad32a7ad9a5f35292a1d))
+* **ui:** VoiceOver support — row labels, live track announcements, combined album cells ([7eb709c](https://github.com/bocan/bocan-music/commit/7eb709c14034fb9b5777c5a7910025cd97bc9df8))
+* **ui:** warm light-mode backgrounds from cold white to cream/linen ([0faa95e](https://github.com/bocan/bocan-music/commit/0faa95e3ff243cfeb173982480d2661a3e78b393))
+* **ui:** WCAG AA colour contrast audit and token adjustments ([8d4ec14](https://github.com/bocan/bocan-music/commit/8d4ec147066accfb66d475161bdeea9f409b0a56))
+* **ui:** wire native Help Book — move to Bocan.help bundle, replace GitHub fallback ([b82acec](https://github.com/bocan/bocan-music/commit/b82acecef9ad51f649972365a073d33793889e4f))
+
+
+### ### Fixed
+
+* **ci:** guard Sparkle steps, point DMG at export/ directly ([8e25bac](https://github.com/bocan/bocan-music/commit/8e25bac71bf668b489a44d49a6fd98945fd9e79b))
+* **metadata:** use stable taglib opt symlink instead of versioned Cellar path ([5662434](https://github.com/bocan/bocan-music/commit/5662434599238417585f83328e916695caf98f5b))
+* **playback:** lower activate() Task priority to .default to silence GRDB QoS inversion warning ([2e5be75](https://github.com/bocan/bocan-music/commit/2e5be7587e0f157baaad055dc28ba4ab0cde9f3d))
+* **test:** tighten VisualizerViewModel performance toast timing ([305084d](https://github.com/bocan/bocan-music/commit/305084ded35dcb3754379fbd7ee28fe57a0d7ed8))
+* **ui:** consolidate toggleLovedForNowPlaying into Rating extension ([3255859](https://github.com/bocan/bocan-music/commit/32558594bfeb4f6218fcae26a9eaf0c523da0c99))
+* **ui:** fix DSP settings layout — use safeAreaInset for segmented picker header ([030dca1](https://github.com/bocan/bocan-music/commit/030dca1e5976b26c9cd753f4a2aa8e6c2152803c))
+* **ui:** move DSP section picker into toolbar principal slot ([f4e60b6](https://github.com/bocan/bocan-music/commit/f4e60b65c9d6277abafb41402c29e7cc5cbb48fa))
+* **ui:** push fullscreen visualizer overlay below traffic-light buttons ([33daa34](https://github.com/bocan/bocan-music/commit/33daa340fe1bc39ce53bf5500f8c7801394b7f23))
+* **ui:** remove focusable TabView causing blue focus ring; increase Settings minHeight to 415 ([88c4c6e](https://github.com/bocan/bocan-music/commit/88c4c6ecdd7f53dde3970289120843cb6d315cac))
+* **ui:** remove grey toolbar bar from mini-player window ([46a5fca](https://github.com/bocan/bocan-music/commit/46a5fca4ef0310e4703d440a8019366d568c952a))
+* **ui:** remove iOS min-touch-target frames from playbar — restores icon density ([c0cd107](https://github.com/bocan/bocan-music/commit/c0cd1072b6ff287c87f4cf36e0564bb9564758db))
+* **ui:** render About Third-Party Notices as HTML; extract shared NoticesHTMLView ([6310289](https://github.com/bocan/bocan-music/commit/63102896a64cd4c20a88c08b21204b4f102f8ed2))
+* **ui:** render Notices & Licences window as HTML — headings, links, bold ([def4690](https://github.com/bocan/bocan-music/commit/def4690df6fe009a53ee0df791fc25819dee70f8))
+* **ui:** resolve Swift 6 concurrency errors in AirPlayButton.Coordinator ([eed641f](https://github.com/bocan/bocan-music/commit/eed641f80b790e0d4e945735bec91d22d2490162))
+* **ui:** restore original transport icon sizes — 24pt play, 18pt prev/next, 15pt secondary ([09be29c](https://github.com/bocan/bocan-music/commit/09be29cb30f4475417a7ebc96146fd152b734e9d))
+* **ui:** silence IUO coercion warning — explicitly unwrap NSApp in accessibility post ([94f7f43](https://github.com/bocan/bocan-music/commit/94f7f43a42c7942695516f1f80f387b99a709283))
+* **ui:** silence swiftlint violations — file/type length, force_unwrap, multiline_arguments ([e39a5c0](https://github.com/bocan/bocan-music/commit/e39a5c024f6a382e309af89731f1eba2b5f24967))
+* **ui:** split DSP & EQ into three separate Settings tabs ([a81132f](https://github.com/bocan/bocan-music/commit/a81132f66106d2dfbab2af4142a586e0d094af6f))
+
 ## [0.12.0](https://github.com/bocan/bocan-music/compare/v0.11.0...v0.12.0) (2026-05-12)
 
 
