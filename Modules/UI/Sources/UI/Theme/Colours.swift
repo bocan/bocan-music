@@ -13,14 +13,25 @@ import SwiftUI
 extension Color {
     // MARK: - Background hierarchy
 
-    /// Window / page background.  Light: #FFFFFF  Dark: #1C1C1E
-    static let bgPrimary = Color(adaptiveLight: 1, 1, 1, dark: 0.110, 0.110, 0.118)
+    /// Window / page background.
+    ///
+    /// Light: #FAF8F5 — warm cream white (R > G > B adds subtle warmth;
+    /// replaces the cold pure #FFFFFF).  Contrast against all text tiers ✓.
+    /// Dark: #1C1C1E — unchanged.
+    static let bgPrimary = Color(adaptiveLight: 0.980, 0.973, 0.961, dark: 0.110, 0.110, 0.118)
 
-    /// Sidebar / secondary panels.  Light: #F5F5F7  Dark: #2C2C2E
-    static let bgSecondary = Color(adaptiveLight: 0.961, 0.961, 0.969, dark: 0.173, 0.173, 0.180)
+    /// Sidebar / secondary panels.
+    ///
+    /// Light: #F5F2EC — warm linen (replaces cold #F5F5F7).
+    /// textSecondary ≈ 4.6 : 1, textTertiary ≈ 4.8 : 1 on this bg. ✓
+    /// Dark: #2C2C2E — unchanged.
+    static let bgSecondary = Color(adaptiveLight: 0.961, 0.949, 0.925, dark: 0.173, 0.173, 0.180)
 
-    /// Cards / elevated surfaces.  Light: #E8E8ED  Dark: #3A3A3C
-    static let bgTertiary = Color(adaptiveLight: 0.910, 0.910, 0.929, dark: 0.227, 0.227, 0.235)
+    /// Cards / elevated surfaces.
+    ///
+    /// Light: #E9E6DF — warm stone (replaces cold #E8E8ED).
+    /// Dark: #3A3A3C — unchanged.
+    static let bgTertiary = Color(adaptiveLight: 0.914, 0.902, 0.875, dark: 0.227, 0.227, 0.235)
 
     // MARK: - Text hierarchy
 
@@ -35,8 +46,8 @@ extension Color {
     /// Values chosen so that WCAG 2.1 AA normal-text contrast (≥ 4.5 : 1) is met
     /// against both `bgPrimary` and `bgSecondary` in both colour schemes.
     ///
-    /// Light: #6B6B6F — approx 5.3 : 1 on white (`bgPrimary`) and 4.9 : 1 on
-    /// `bgSecondary`.  Previous value #AEAEB2 achieved only ~2.2 : 1 (fail).
+    /// Light: #6B6B6F — approx 5.0 : 1 on `bgPrimary` (#FAF8F5) and 4.8 : 1 on
+    /// `bgSecondary` (#F5F2EC).  Previous value #AEAEB2 achieved only ~2.2 : 1 (fail).
     ///
     /// Dark: #939398 — approx 5.5 : 1 on `bgPrimary` and 4.5 : 1 on
     /// `bgSecondary`.  Previous value #636366 achieved only ~2.8 : 1 (fail).
@@ -73,12 +84,12 @@ extension Color {
 
     /// Star / rating fill.
     ///
-    /// Light: #FF5C00 — darkened from the original #FF9500 so that the icon
-    /// achieves ≥ 3 : 1 on `bgPrimary` (WCAG 1.4.11 non-text contrast).  The
-    /// original value achieved only ~2.2 : 1 (fail).  New value ≈ 3.1 : 1.
+    /// Light: #FF4700 — deepened further to maintain ≥ 3 : 1 on the warm cream
+    /// `bgPrimary` (#FAF8F5, L ≈ 0.941).  Previous #FF5C00 achieved ~2.93 : 1
+    /// on the warmed bg (fail).  New value ≈ 3.2 : 1 on warm bg. ✓
     ///
     /// Dark: #FF9F0A — unchanged; already achieves ~8.3 : 1 on dark `bgPrimary`.
-    static let ratingFill = Color(adaptiveLight: 1.000, 0.360, 0.000, dark: 1.000, 0.624, 0.039)
+    static let ratingFill = Color(adaptiveLight: 1.000, 0.280, 0.000, dark: 1.000, 0.624, 0.039)
 
     /// Heart / loved tint.  Light: #FF2D55  Dark: #FF375F
     static let lovedTint = Color(adaptiveLight: 1.000, 0.176, 0.333, dark: 1.000, 0.216, 0.373)
