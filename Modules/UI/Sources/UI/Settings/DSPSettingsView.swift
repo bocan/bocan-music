@@ -15,38 +15,43 @@ public struct DSPSettingsView: View {
     public init() {}
 
     public var body: some View {
-        VStack(spacing: 0) {
-            Picker("", selection: self.$section) {
-                ForEach(DSPSection.allCases) { s in
-                    Text(s.label).tag(s)
+        ScrollView {
+            Group {
+                switch self.section {
+                case .equaliser:
+                    EQView(vm: self.dsp)
+
+                case .effects:
+                    DSPView(vm: self.dsp)
+
+                case .replayGain:
+                    ReplayGainSettingsView(vm: self.dsp)
                 }
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .accessibilityLabel("DSP section")
-            .help("Switch between Equaliser (10-band EQ), Effects (bass boost, stereo width), and ReplayGain.")
-            .padding(.horizontal, 20)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-
-            Divider()
-
-            ScrollView {
-                Group {
-                    switch self.section {
-                    case .equaliser:
-                        EQView(vm: self.dsp)
-
-                    case .effects:
-                        DSPView(vm: self.dsp)
-
-                    case .replayGain:
-                        ReplayGainSettingsView(vm: self.dsp)
+            .frame(maxWidth: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .top, spacing: 0) {
+            VStack(spacing: 0) {
+                Picker("", selection: self.$section) {
+                    ForEach(DSPSection.allCases) { s in
+                        Text(s.label).tag(s)
                     }
                 }
-                .frame(maxWidth: .infinity)
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel("DSP section")
+                .help(
+                    "Switch between Equaliser (10-band EQ),"
+                        + " Effects (bass boost, stereo width), and ReplayGain."
+                )
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+
+                Divider()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.bar)
         }
         .frame(minWidth: 560, minHeight: 500)
         .navigationTitle("DSP & EQ")
