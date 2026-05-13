@@ -74,6 +74,22 @@ public struct DiagnosticsSettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
+
+            // MARK: Colour contrast audit
+
+            Section {
+                ContrastAuditView()
+                    .listRowInsets(EdgeInsets())
+            } header: {
+                Text("Colour Contrast Audit (WCAG 2.1 AA)")
+            } footer: {
+                Text(
+                    "Normal text requires ≥ 4.5 : 1; non-text UI components require ≥ 3 : 1."
+                        + " Green ✓ = pass, Red ✗ = fail."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
         .navigationTitle("Diagnostics")
