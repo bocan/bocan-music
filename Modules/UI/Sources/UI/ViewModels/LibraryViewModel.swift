@@ -205,6 +205,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     let albumRepo: AlbumRepository
     let artistRepo: ArtistRepository
     let scanner: LibraryScanner?
+    let scrobbleService: ScrobbleService?
     var scanTask: Task<Void, Never>?
     /// Phase 5.5 audit L2: scan progress is coalesced into these "pending"
     /// counters and flushed to the `@Published` properties at ~4 Hz so a
@@ -218,8 +219,6 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var searchQueryCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     let log = AppLogger.make(.ui)
-    /// Scrobble service used to fan out loved-flag changes to remote services.
-    let scrobbleService: ScrobbleService?
 
     // MARK: - Init
 
@@ -383,24 +382,6 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.tagEditorTrackIDs = [id]
     }
 
-    /// Toggles the loved flag on the track currently loaded in the player.
-    public func toggleLovedForNowPlaying() {
-        guard let id = self.nowPlaying.nowPlayingTrackID else { return }
-        let newValue = !self.nowPlaying.nowPlayingIsLoved
-        Task {
-            let repo = TrackRepository(database: self.database)
-            if var track = try? await repo.fetch(id: id) {
-                track.loved = newValue
-                try? await repo.update(track)
-                self.nowPlaying.updateNowPlayingLoved(newValue)
-                if let svc = self.scrobbleService {
-                    Task { await svc.love(trackID: id, loved: newValue) }
-                }
-                await self.refreshTracks(ids: [id])
-            }
-        }
-    }
-
     /// Navigates the sidebar to the album of the currently-playing track.
     ///
     /// No-op when nothing is playing or when the playing track has no album ID.
@@ -481,12 +462,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.canGoForward = false
         }
 
-        // Clear search only when navigating to destinations that have their
-        // own unrelated content (playlists, smart playlists, folders).
-        // Do NOT clear when drilling into album/artist detail — the user may
-        // want to go back and see the same filtered results they came from.
+        // Clear search when drilling into a detail page (album or artist).
+        // For top-level browse views (songs/albums/artists/etc) keep the active
+        // query so the new view shows filtered results immediately.
         switch destination {
-        case .playlist, .smartPlaylist, .folder:
+        case .album, .artist, .playlist, .smartPlaylist, .folder:
             self.searchQuery = ""
 
         default:
