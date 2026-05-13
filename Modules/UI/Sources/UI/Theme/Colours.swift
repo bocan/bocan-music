@@ -30,8 +30,17 @@ extension Color {
     /// Secondary / metadata text.  Light: #6E6E73  Dark: #98989D
     static let textSecondary = Color(adaptiveLight: 0.431, 0.431, 0.451, dark: 0.596, 0.596, 0.616)
 
-    /// Tertiary / timestamps.  Light: #AEAEB2  Dark: #636366
-    static let textTertiary = Color(adaptiveLight: 0.682, 0.682, 0.698, dark: 0.388, 0.388, 0.400)
+    /// Tertiary / timestamps.
+    ///
+    /// Values chosen so that WCAG 2.1 AA normal-text contrast (≥ 4.5 : 1) is met
+    /// against both `bgPrimary` and `bgSecondary` in both colour schemes.
+    ///
+    /// Light: #6B6B6F — approx 5.3 : 1 on white (`bgPrimary`) and 4.9 : 1 on
+    /// `bgSecondary`.  Previous value #AEAEB2 achieved only ~2.2 : 1 (fail).
+    ///
+    /// Dark: #939398 — approx 5.5 : 1 on `bgPrimary` and 4.5 : 1 on
+    /// `bgSecondary`.  Previous value #636366 achieved only ~2.8 : 1 (fail).
+    static let textTertiary = Color(adaptiveLight: 0.420, 0.420, 0.435, dark: 0.576, 0.576, 0.592)
 
     // MARK: - Interactive
 
@@ -62,8 +71,14 @@ extension Color {
         }
     )
 
-    /// Star / rating fill.  Light: #FF9500  Dark: #FF9F0A
-    static let ratingFill = Color(adaptiveLight: 1.000, 0.584, 0.000, dark: 1.000, 0.624, 0.039)
+    /// Star / rating fill.
+    ///
+    /// Light: #FF5C00 — darkened from the original #FF9500 so that the icon
+    /// achieves ≥ 3 : 1 on `bgPrimary` (WCAG 1.4.11 non-text contrast).  The
+    /// original value achieved only ~2.2 : 1 (fail).  New value ≈ 3.1 : 1.
+    ///
+    /// Dark: #FF9F0A — unchanged; already achieves ~8.3 : 1 on dark `bgPrimary`.
+    static let ratingFill = Color(adaptiveLight: 1.000, 0.360, 0.000, dark: 1.000, 0.624, 0.039)
 
     /// Heart / loved tint.  Light: #FF2D55  Dark: #FF375F
     static let lovedTint = Color(adaptiveLight: 1.000, 0.176, 0.333, dark: 1.000, 0.216, 0.373)
