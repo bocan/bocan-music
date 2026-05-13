@@ -1,74 +1,55 @@
 import SwiftUI
 
-// MARK: - DSPSettingsView
+// MARK: - EQSettingsView
 
-/// Full DSP panel embedded in the Settings window.
+/// Equaliser settings tab.
 ///
-/// Uses a segmented picker (not a nested `TabView`) to switch between the three
-/// sub-sections.  A nested `TabView` inside the macOS 26 Settings `TabView`
-/// causes inner tab items to leak into the outer toolbar, producing duplicates
-/// and an inaccessible overflow area.
-public struct DSPSettingsView: View {
+/// `EQView` is a plain `VStack`, so we wrap it in `Form { }.formStyle(.grouped)`
+/// to get the same safe-area inset handling that every other Settings tab
+/// receives automatically from their own `Form { }.formStyle(.grouped)` body.
+public struct EQSettingsView: View {
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
-    @State private var section: DSPSection = .equaliser
 
     public init() {}
 
     public var body: some View {
-        Group {
-            switch self.section {
-            case .equaliser:
+        Form {
+            Section {
                 EQView(vm: self.dsp)
-                    .frame(maxWidth: .infinity)
-
-            case .effects:
-                DSPView(vm: self.dsp)
-
-            case .replayGain:
-                ReplayGainSettingsView(vm: self.dsp)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(.init())
+                    .listRowBackground(Color.clear)
             }
         }
-        .frame(minWidth: 560, minHeight: 500)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Picker("", selection: self.$section) {
-                    ForEach(DSPSection.allCases) { s in
-                        Text(s.label).tag(s)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(minWidth: 280)
-                .accessibilityLabel("DSP section")
-                .help(
-                    "Switch between Equaliser (10-band EQ),"
-                        + " Effects (bass boost, stereo width), and ReplayGain."
-                )
-            }
-        }
-        .navigationTitle("DSP & EQ")
+        .formStyle(.grouped)
+        .navigationTitle("Equaliser")
     }
 }
 
-// MARK: - DSPSection
+// MARK: - EffectsSettingsView
 
-private enum DSPSection: String, CaseIterable, Identifiable {
-    case equaliser, effects, replayGain
+/// Effects settings tab (bass boost, crossfeed, stereo width, crossfade).
+public struct EffectsSettingsView: View {
+    @Environment(DSPViewModel.self) private var dsp: DSPViewModel
 
-    var id: String {
-        self.rawValue
+    public init() {}
+
+    public var body: some View {
+        DSPView(vm: self.dsp)
+            .navigationTitle("Effects")
     }
+}
 
-    var label: String {
-        switch self {
-        case .equaliser:
-            "Equaliser"
+// MARK: - ReplayGainSettingsTabView
 
-        case .effects:
-            "Effects"
+/// ReplayGain settings tab.
+public struct ReplayGainSettingsTabView: View {
+    @Environment(DSPViewModel.self) private var dsp: DSPViewModel
 
-        case .replayGain:
-            "ReplayGain"
-        }
+    public init() {}
+
+    public var body: some View {
+        ReplayGainSettingsView(vm: self.dsp)
+            .navigationTitle("ReplayGain")
     }
 }

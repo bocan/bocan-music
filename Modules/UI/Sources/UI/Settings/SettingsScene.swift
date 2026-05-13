@@ -30,8 +30,8 @@ public struct SettingsScene: View {
     /// Ordered list of tabs that are actually visible (scrobble tab is conditional).
     private var visibleTabs: [SettingsTab] {
         var tabs: [SettingsTab] = [
-            .general, .library, .playback, .dsp, .appearance,
-            .advanced, .lyrics, .visualizer, .smartPlaylists,
+            .general, .library, .playback, .equaliser, .effects, .replayGain,
+            .appearance, .advanced, .lyrics, .visualizer, .smartPlaylists,
         ]
         if self.scrobbleViewModel != nil { tabs.append(.scrobble) }
         tabs.append(.diagnostics)
@@ -52,9 +52,17 @@ public struct SettingsScene: View {
                 .tabItem { Label("Playback", systemImage: "play.circle") }
                 .tag(SettingsTab.playback)
 
-            DSPSettingsView()
-                .tabItem { Label("DSP & EQ", systemImage: "slider.horizontal.3") }
-                .tag(SettingsTab.dsp)
+            EQSettingsView()
+                .tabItem { Label("Equaliser", systemImage: "slider.vertical.3") }
+                .tag(SettingsTab.equaliser)
+
+            EffectsSettingsView()
+                .tabItem { Label("Effects", systemImage: "waveform.badge.magnifyingglass") }
+                .tag(SettingsTab.effects)
+
+            ReplayGainSettingsTabView()
+                .tabItem { Label("ReplayGain", systemImage: "chart.bar.fill") }
+                .tag(SettingsTab.replayGain)
 
             AppearanceSettingsView()
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
@@ -112,5 +120,6 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String, CaseIterable {
-    case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
+    case general, library, playback, equaliser, effects, replayGain
+    case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
 }
