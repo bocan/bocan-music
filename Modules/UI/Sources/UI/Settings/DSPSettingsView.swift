@@ -15,24 +15,22 @@ public struct DSPSettingsView: View {
     public init() {}
 
     public var body: some View {
-        ScrollView {
-            Group {
-                switch self.section {
-                case .equaliser:
-                    EQView(vm: self.dsp)
+        Group {
+            switch self.section {
+            case .equaliser:
+                EQView(vm: self.dsp)
+                    .frame(maxWidth: .infinity)
 
-                case .effects:
-                    DSPView(vm: self.dsp)
+            case .effects:
+                DSPView(vm: self.dsp)
 
-                case .replayGain:
-                    ReplayGainSettingsView(vm: self.dsp)
-                }
+            case .replayGain:
+                ReplayGainSettingsView(vm: self.dsp)
             }
-            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            VStack(spacing: 0) {
+        .frame(minWidth: 560, minHeight: 500)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
                 Picker("", selection: self.$section) {
                     ForEach(DSPSection.allCases) { s in
                         Text(s.label).tag(s)
@@ -40,20 +38,14 @@ public struct DSPSettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .frame(minWidth: 280)
                 .accessibilityLabel("DSP section")
                 .help(
                     "Switch between Equaliser (10-band EQ),"
                         + " Effects (bass boost, stereo width), and ReplayGain."
                 )
-                .padding(.horizontal, 20)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-
-                Divider()
             }
-            .background(.bar)
         }
-        .frame(minWidth: 560, minHeight: 500)
         .navigationTitle("DSP & EQ")
     }
 }
