@@ -145,7 +145,11 @@ public actor QueuePlayer: Transport {
         )
 
         // Kick off async activation after init completes.
-        Task { await self.activate() }
+        // Use .default priority so GRDB's internal DispatchQueue.sync calls
+        // don't trigger the Thread Performance Checker priority-inversion warning
+        // (GRDB pool uses sync dispatch internally; .userInitiated inherited from
+        // @MainActor would cause the checker to flag an inversion).
+        Task(priority: .default) { await self.activate() }
     }
 
     // MARK: - Async activation
