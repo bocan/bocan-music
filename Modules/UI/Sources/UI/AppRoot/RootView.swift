@@ -29,6 +29,9 @@ public struct BocanRootView: View {
     private let scrobbleSettingsVM: ScrobbleSettingsViewModel?
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
+    /// Restored to `true` whenever any modal sheet closes so keyboard focus
+    /// returns to the main content area rather than being stranded.
+    @FocusState private var mainContentFocused: Bool
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
     @State private var tagEditorVM: TagEditorViewModel?
@@ -60,7 +63,19 @@ public struct BocanRootView: View {
         self.scrobbleSettingsVM = scrobbleSettingsVM
     }
 
-    public var body: some View {
+    /// `true` while any modal sheet is presented over the main window.
+    private var anySheetOpen: Bool {
+        self.tagEditorVM != nil
+            || self.identifyVM != nil
+            || self.vm.isPlaylistImportSheetPresented
+            || self.vm.playlistExportRequest != nil
+            || self.vm.isBatchCoverArtSheetPresented
+            || self.vm.isDuplicateReviewSheetPresented
+    }
+
+    /// Main window chrome — split out from `body` to keep the modifier chain short
+    /// enough for the Swift type-checker (which times out on very long chains).
+    private var windowContent: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
                 NavigationSplitView {
@@ -179,164 +194,174 @@ public struct BocanRootView: View {
             }
             return true
         }
-        .frame(minWidth: 900, minHeight: 550)
-        .accessibilityIdentifier("BocanMainWindow")
-        .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
-        .background(
-            // Phase 4 audit H2: persist sidebar divider position via NSSplitView
-            // autosave + a settings-key fallback held on LibraryViewModel.
-            SidebarWidthAutosave(initialWidth: self.vm.sidebarWidth) { width in
-                self.vm.sidebarWidth = width
-            }
-            .frame(width: 0, height: 0)
-            .allowsHitTesting(false)
-        )
-        .onChange(of: self.vm.searchFocusRequestID) { _, _ in
-            // Phase 4 audit H5: ⌘F (Find) focuses the search field.
-            self.searchFocused = true
-        }
-        .onChange(of: self.watchForChanges) { _, _ in
-            // Phase 4 audit M8: live-toggle the FSEvents watcher when the
-            // Settings switch flips, instead of waiting for next launch.
-            Task { await self.vm.startOrStopWatcher() }
-        }
-        .alert(
-            "Playback Error",
-            isPresented: self.playbackErrorBinding
-        ) {
-            Button("OK") { self.vm.playbackErrorMessage = nil }
-        } message: {
-            Text(self.vm.playbackErrorMessage ?? "")
-        }
-        .alert(
-            "Re-scan Failed",
-            isPresented: self.rescanErrorBinding
-        ) {
-            Button("OK") { self.vm.rescanErrorMessage = nil }
-        } message: {
-            Text(self.vm.rescanErrorMessage ?? "")
-        }
-        .overlay(alignment: .top) {
-            // Phase 5.5 audit M2: lightweight toast surface for transient
-            // confirmations (e.g. "Re-scanned «Title»"). Auto-dismisses
-            // via LibraryViewModel.showToast after 2 seconds.
-            if let toast = self.vm.toast {
-                ToastBanner(message: toast)
-                    .padding(.top, 12)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityAddTraits(.isStaticText)
-                    .accessibilityLabel(toast.text)
-            }
-        }
-        .animation(.easeInOut(duration: 0.18), value: self.vm.toast)
-        .onChange(of: self.vm.tagEditorTrackIDs) { _, ids in
-            if let ids, !ids.isEmpty, let svc = self.vm.metadataEditService {
-                self.tagEditorVM = TagEditorViewModel(service: svc, trackIDs: ids)
-            } else {
-                self.tagEditorVM = nil
-            }
-        }
-        .sheet(isPresented: self.tagEditorBinding) {
-            if let tagVM = self.tagEditorVM {
-                TagEditorSheet(vm: tagVM, isPresented: self.tagEditorBinding)
-            }
-        }
-        .onChange(of: self.vm.identifyTrack?.id) { _, _ in
-            if let track = self.vm.identifyTrack,
-               let queue = self.vm.fingerprintQueue,
-               let svc = self.vm.metadataEditService {
-                self.identifyVM = IdentifyTrackViewModel(
-                    track: track,
-                    queue: queue,
-                    editService: svc,
-                    artistRepo: self.vm.artistRepo,
-                    albumRepo: self.vm.albumRepo
-                )
-            } else {
-                self.identifyVM = nil
-            }
-        }
-        .sheet(item: self.$identifyVM) { identVM in
-            IdentifyTrackSheet(vm: identVM)
-                .onDisappear {
-                    let didApply = identVM.didApply
-                    let openTagEditor = identVM.openTagEditorAfterDismiss
-                    // Capture the track ID before clearing identifyTrack.
-                    let trackID = self.vm.identifyTrack?.id
-                    self.vm.identifyTrack = nil
-                    if didApply, let id = trackID {
-                        Task { await self.vm.refreshTracks(ids: [id]) }
-                    }
-                    if openTagEditor, let id = trackID {
-                        self.vm.tagEditorTrackIDs = [id]
-                    }
+    }
+
+    public var body: some View {
+        self.windowContent
+            .focused(self.$mainContentFocused)
+            .frame(minWidth: 900, minHeight: 550)
+            .accessibilityIdentifier("BocanMainWindow")
+            .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
+            .background(
+                // Phase 4 audit H2: persist sidebar divider position via NSSplitView
+                // autosave + a settings-key fallback held on LibraryViewModel.
+                SidebarWidthAutosave(initialWidth: self.vm.sidebarWidth) { width in
+                    self.vm.sidebarWidth = width
                 }
-        }
-        .sheet(isPresented: self.$vm.isPlaylistImportSheetPresented) {
-            PlaylistImportSheet(
-                isPresented: self.$vm.isPlaylistImportSheetPresented,
-                importer: self.vm.playlistImporter
-            ) { id in
-                Task { await self.vm.playlistSidebar.reload() }
-                self.vm.selectedDestination = .playlist(id)
-            }
-        }
-        .sheet(item: self.$vm.playlistExportRequest) { req in
-            PlaylistExportSheet(
-                isPresented: Binding(
-                    get: { self.vm.playlistExportRequest != nil },
-                    set: { if !$0 { self.vm.playlistExportRequest = nil } }
-                ),
-                exporter: self.vm.playlistExporter,
-                playlistID: req.id,
-                playlistName: req.name
+                .frame(width: 0, height: 0)
+                .allowsHitTesting(false)
             )
-        }
-        .onChange(of: self.vm.isBatchCoverArtSheetPresented) { _, presented in
-            if presented {
-                self.batchCoverArtVM = BatchCoverArtViewModel(
-                    database: self.vm.database,
-                    albumRepo: self.vm.albumRepo,
-                    artistRepo: self.vm.artistRepo
-                )
-            } else {
-                self.batchCoverArtVM = nil
+            .onChange(of: self.vm.searchFocusRequestID) { _, _ in
+                // Phase 4 audit H5: ⌘F (Find) focuses the search field.
+                self.searchFocused = true
             }
-        }
-        .sheet(isPresented: self.$vm.isBatchCoverArtSheetPresented) {
-            if let batchVM = self.batchCoverArtVM {
-                BatchCoverArtSheet(
-                    vm: batchVM,
-                    isPresented: self.$vm.isBatchCoverArtSheetPresented
+            .onChange(of: self.anySheetOpen) { _, isOpen in
+                // Keyboard focus phase: return focus to the main content area when
+                // any modal sheet closes so Tab / arrow keys remain reachable.
+                if !isOpen { self.mainContentFocused = true }
+            }
+            .onChange(of: self.watchForChanges) { _, _ in
+                // Phase 4 audit M8: live-toggle the FSEvents watcher when the
+                // Settings switch flips, instead of waiting for next launch.
+                Task { await self.vm.startOrStopWatcher() }
+            }
+            .alert(
+                "Playback Error",
+                isPresented: self.playbackErrorBinding
+            ) {
+                Button("OK") { self.vm.playbackErrorMessage = nil }
+            } message: {
+                Text(self.vm.playbackErrorMessage ?? "")
+            }
+            .alert(
+                "Re-scan Failed",
+                isPresented: self.rescanErrorBinding
+            ) {
+                Button("OK") { self.vm.rescanErrorMessage = nil }
+            } message: {
+                Text(self.vm.rescanErrorMessage ?? "")
+            }
+            .overlay(alignment: .top) {
+                // Phase 5.5 audit M2: lightweight toast surface for transient
+                // confirmations (e.g. "Re-scanned «Title»"). Auto-dismisses
+                // via LibraryViewModel.showToast after 2 seconds.
+                if let toast = self.vm.toast {
+                    ToastBanner(message: toast)
+                        .padding(.top, 12)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .accessibilityAddTraits(.isStaticText)
+                        .accessibilityLabel(toast.text)
+                }
+            }
+            .animation(.easeInOut(duration: 0.18), value: self.vm.toast)
+            .onChange(of: self.vm.tagEditorTrackIDs) { _, ids in
+                if let ids, !ids.isEmpty, let svc = self.vm.metadataEditService {
+                    self.tagEditorVM = TagEditorViewModel(service: svc, trackIDs: ids)
+                } else {
+                    self.tagEditorVM = nil
+                }
+            }
+            .sheet(isPresented: self.tagEditorBinding) {
+                if let tagVM = self.tagEditorVM {
+                    TagEditorSheet(vm: tagVM, isPresented: self.tagEditorBinding)
+                }
+            }
+            .onChange(of: self.vm.identifyTrack?.id) { _, _ in
+                if let track = self.vm.identifyTrack,
+                   let queue = self.vm.fingerprintQueue,
+                   let svc = self.vm.metadataEditService {
+                    self.identifyVM = IdentifyTrackViewModel(
+                        track: track,
+                        queue: queue,
+                        editService: svc,
+                        artistRepo: self.vm.artistRepo,
+                        albumRepo: self.vm.albumRepo
+                    )
+                } else {
+                    self.identifyVM = nil
+                }
+            }
+            .sheet(item: self.$identifyVM) { identVM in
+                IdentifyTrackSheet(vm: identVM)
+                    .onDisappear {
+                        let didApply = identVM.didApply
+                        let openTagEditor = identVM.openTagEditorAfterDismiss
+                        // Capture the track ID before clearing identifyTrack.
+                        let trackID = self.vm.identifyTrack?.id
+                        self.vm.identifyTrack = nil
+                        if didApply, let id = trackID {
+                            Task { await self.vm.refreshTracks(ids: [id]) }
+                        }
+                        if openTagEditor, let id = trackID {
+                            self.vm.tagEditorTrackIDs = [id]
+                        }
+                    }
+            }
+            .sheet(isPresented: self.$vm.isPlaylistImportSheetPresented) {
+                PlaylistImportSheet(
+                    isPresented: self.$vm.isPlaylistImportSheetPresented,
+                    importer: self.vm.playlistImporter
+                ) { id in
+                    Task { await self.vm.playlistSidebar.reload() }
+                    self.vm.selectedDestination = .playlist(id)
+                }
+            }
+            .sheet(item: self.$vm.playlistExportRequest) { req in
+                PlaylistExportSheet(
+                    isPresented: Binding(
+                        get: { self.vm.playlistExportRequest != nil },
+                        set: { if !$0 { self.vm.playlistExportRequest = nil } }
+                    ),
+                    exporter: self.vm.playlistExporter,
+                    playlistID: req.id,
+                    playlistName: req.name
                 )
             }
-        }
-        .onChange(of: self.vm.isDuplicateReviewSheetPresented) { _, presented in
-            if presented {
-                self.duplicateReviewVM = DuplicateReviewViewModel(
-                    database: self.vm.database,
-                    library: self.vm
-                )
-            } else {
-                self.duplicateReviewVM = nil
+            .onChange(of: self.vm.isBatchCoverArtSheetPresented) { _, presented in
+                if presented {
+                    self.batchCoverArtVM = BatchCoverArtViewModel(
+                        database: self.vm.database,
+                        albumRepo: self.vm.albumRepo,
+                        artistRepo: self.vm.artistRepo
+                    )
+                } else {
+                    self.batchCoverArtVM = nil
+                }
             }
-        }
-        .sheet(isPresented: self.$vm.isDuplicateReviewSheetPresented) {
-            if let dupVM = self.duplicateReviewVM {
-                DuplicateReviewSheet(
-                    vm: dupVM,
-                    isPresented: self.$vm.isDuplicateReviewSheetPresented
-                )
+            .sheet(isPresented: self.$vm.isBatchCoverArtSheetPresented) {
+                if let batchVM = self.batchCoverArtVM {
+                    BatchCoverArtSheet(
+                        vm: batchVM,
+                        isPresented: self.$vm.isBatchCoverArtSheetPresented
+                    )
+                }
             }
-        }
-        .onKeyPress(.init("i"), phases: .down) { event in
-            guard event.modifiers == [.command, .option] else { return .ignored }
-            self.vm.showIdentifyTrackForCurrentSelection()
-            return .handled
-        }
-        .onAppear { self.applyAppearance(self.colorSchemeKey) }
-        .onChange(of: self.colorSchemeKey) { _, newKey in self.applyAppearance(newKey) }
-        .tint(AccentPalette.color(for: self.accentColorKey))
+            .onChange(of: self.vm.isDuplicateReviewSheetPresented) { _, presented in
+                if presented {
+                    self.duplicateReviewVM = DuplicateReviewViewModel(
+                        database: self.vm.database,
+                        library: self.vm
+                    )
+                } else {
+                    self.duplicateReviewVM = nil
+                }
+            }
+            .sheet(isPresented: self.$vm.isDuplicateReviewSheetPresented) {
+                if let dupVM = self.duplicateReviewVM {
+                    DuplicateReviewSheet(
+                        vm: dupVM,
+                        isPresented: self.$vm.isDuplicateReviewSheetPresented
+                    )
+                }
+            }
+            .onKeyPress(.init("i"), phases: .down) { event in
+                guard event.modifiers == [.command, .option] else { return .ignored }
+                self.vm.showIdentifyTrackForCurrentSelection()
+                return .handled
+            }
+            .onAppear { self.applyAppearance(self.colorSchemeKey) }
+            .onChange(of: self.colorSchemeKey) { _, newKey in self.applyAppearance(newKey) }
+            .tint(AccentPalette.color(for: self.accentColorKey))
     }
 
     // MARK: - Helpers
