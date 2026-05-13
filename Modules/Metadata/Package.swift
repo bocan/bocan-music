@@ -36,7 +36,7 @@ let package = Package(
                 .linkedLibrary("z"),
                 .unsafeFlags([
                     "-L/opt/homebrew/lib",
-                    "-L/opt/homebrew/Cellar/taglib/2.2.1/lib",
+                    "-L/opt/homebrew/opt/taglib/lib",
                 ]),
             ]
         ),
