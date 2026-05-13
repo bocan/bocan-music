@@ -28,7 +28,7 @@ public struct AboutView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text("A thoughtful music player for macOS.")
+            Text("A thoughtful local music player for macOS.")
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
