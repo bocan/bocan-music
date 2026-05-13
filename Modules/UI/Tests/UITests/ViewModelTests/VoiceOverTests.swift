@@ -31,6 +31,39 @@ struct VoiceOverTests {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
+    /// Returns a `TrackContextMenuActions` with all handlers set to no-ops.
+    /// Shared by tests that need a valid `TrackTable` parent but don't exercise actions.
+    private func makeNoopActions() -> TrackContextMenuActions {
+        let noop: (Track) -> Void = { _ in }
+        return TrackContextMenuActions(
+            playNow: noop,
+            playSingle: noop,
+            playAlbum: noop,
+            shuffleAlbum: noop,
+            playArtist: noop,
+            playNext: { _ in },
+            addToQueue: { _ in },
+            addToPlaylist: { _, _ in },
+            newPlaylistFromSelection: { _ in },
+            love: { _ in },
+            goToArtist: { _ in },
+            goToAlbum: { _ in },
+            showInFinder: noop,
+            rescanFile: noop,
+            getInfo: { _ in },
+            identify: noop,
+            removeFromLibrary: { _ in },
+            deleteFromDisk: { _ in },
+            copy: { _ in },
+            toggleShuffle: { _, _ in },
+            computeReplayGain: { _ in },
+            rate: { _, _ in },
+            removeFromPlaylist: nil,
+            editLyrics: nil,
+            fetchLyricsFromLRClib: nil
+        )
+    }
+
     // MARK: - TrackTableCoordinator
 
     @MainActor
@@ -49,38 +82,8 @@ struct VoiceOverTests {
         )
         let row = TrackRow(track: track, artistName: "The Beatles", albumName: "Rubber Soul")
 
-        // Build a minimal coordinator. The TrackTable parent is needed for init;
-        // we only exercise the rows array — no SwiftUI rendering occurs.
         var selectionStub = Set<Track.ID>()
         var sortStub = [KeyPathComparator<TrackRow>]()
-        let noopTrack: (Track) -> Void = { _ in }
-        let actions = TrackContextMenuActions(
-            playNow: noopTrack,
-            playSingle: noopTrack,
-            playAlbum: noopTrack,
-            shuffleAlbum: noopTrack,
-            playArtist: noopTrack,
-            playNext: { _ in },
-            addToQueue: { _ in },
-            addToPlaylist: { _, _ in },
-            newPlaylistFromSelection: { _ in },
-            love: { _ in },
-            goToArtist: { _ in },
-            goToAlbum: { _ in },
-            showInFinder: noopTrack,
-            rescanFile: noopTrack,
-            getInfo: { _ in },
-            identify: noopTrack,
-            removeFromLibrary: { _ in },
-            deleteFromDisk: { _ in },
-            copy: { _ in },
-            toggleShuffle: { _, _ in },
-            computeReplayGain: { _ in },
-            rate: { _, _ in },
-            removeFromPlaylist: nil,
-            editLyrics: nil,
-            fetchLyricsFromLRClib: nil
-        )
         let table = TrackTable(
             rows: [],
             selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
@@ -88,7 +91,7 @@ struct VoiceOverTests {
             nowPlayingTrackID: nil,
             sortable: false,
             playlistNodes: [],
-            actions: actions,
+            actions: self.makeNoopActions(),
             scrollRequest: 0,
             onMove: nil
         )
@@ -105,23 +108,16 @@ struct VoiceOverTests {
     func trackRowAccessibilityLabelOutOfBounds() {
         var selectionStub = Set<Track.ID>()
         var sortStub = [KeyPathComparator<TrackRow>]()
-        let noop: (Track) -> Void = { _ in }
-        let actions = TrackContextMenuActions(
-            playNow: noop, playSingle: noop, playAlbum: noop, shuffleAlbum: noop,
-            playArtist: noop, playNext: { _ in }, addToQueue: { _ in },
-            addToPlaylist: { _, _ in }, newPlaylistFromSelection: { _ in }, love: { _ in },
-            goToArtist: { _ in }, goToAlbum: { _ in }, showInFinder: noop, rescanFile: noop,
-            getInfo: { _ in }, identify: noop, removeFromLibrary: { _ in },
-            deleteFromDisk: { _ in }, copy: { _ in }, toggleShuffle: { _, _ in },
-            computeReplayGain: { _ in }, rate: { _, _ in },
-            removeFromPlaylist: nil, editLyrics: nil, fetchLyricsFromLRClib: nil
-        )
         let table = TrackTable(
             rows: [],
             selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
             sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
-            nowPlayingTrackID: nil, sortable: false, playlistNodes: [],
-            actions: actions, scrollRequest: 0, onMove: nil
+            nowPlayingTrackID: nil,
+            sortable: false,
+            playlistNodes: [],
+            actions: self.makeNoopActions(),
+            scrollRequest: 0,
+            onMove: nil
         )
         let coordinator = TrackTableCoordinator(parent: table)
         // rows is empty — row 0 is out of bounds
