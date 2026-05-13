@@ -225,9 +225,12 @@ This one curates your music library while you sleep. The short version is that c
 
 ## Features on the roadmap
 
-Phase 16 brings full **App Store distribution** with notarisation and sandboxing hardening. (AirPlay routing shipped in Phase 15; Google Cast is excluded — no maintained macOS Cast SDK exists.)
-
-See [`phases/`](phases/README.md) for the full roadmap.
+- A tool to manage and organise files in the library.
+- More visualisations.
+- Remote control apps for iPhone and Android. To control the app on the mac - not to play remotely.
+- Observability improvement.  Maybe a log _console_ in Tools.
+- Very interested in improving accessiblity.
+- Ideas very very welcome!
 
 ---
 
@@ -305,3 +308,22 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed setup, the build system, FFmpe
 ## Licence
 
 See [LICENSE](LICENSE).
+
+## And Last but Not Least
+
+Much love to the giants whose shoulders I stand on:
+
+- [Christopher Snowhill](https://kode54.net/), maintainer of of the excellent [Cog](https://cog.losno.co/).  The patron saint of native macOS music players and Cog is the direct spiritual ancestor of what I've built here.
+- [Fabrice Bellard](https://bellard.org/), creator of [FFmpeg](https://ffmpeg.org/), and QEMU, and TinyCC, and a dozen other earth-shaking projects. The reason Bòcan can play Ogg, Opus, APE, WavPack, and DSD without making users install plugins.
+- [Christopher "Monty" Montgomery](https://people.xiph.org/~xiphmont/) and the [Xiph.Org Foundation](https://xiph.org/) — Vorbis, FLAC, Opus, Speex. The entire free codec stack on which lossless audio on the open web is built.
+- [Peter Pawlowski](https://www.foobar2000.org/), maintainer of [foobar2000](https://www.foobar2000.org/) — solo since 2002. Even though no foobar code touches Bòcan, foobar's design DNA (modular DSP, smart playlists, gapless, format breadth) is the spiritual blueprint of every audiophile-flavour music player that has followed.
+- [Lukáš Lalinský](https://oxygene.sk/), creator of [Chromaprint](https://acoustid.org/chromaprint) and [AcoustID](https://acoustid.org/) — the entire fingerprinting and auto-tagging pipeline in Bòcan exists because of his work. Also a long-time TagLib contributor. A one-person open-source music-metadata hero.
+- [Scott Wheeler](https://github.com/wheels/) and the [TagLib](https://taglib.org/) contributors — without TagLib, I'd be reimplementing ID3v2.4 + Vorbis comments + APE tags + MP4 atoms by hand.
+- [Robert Kaye](https://blog.metabrainz.org/author/robert/) and the [MetaBrainz Foundation](https://metabrainz.org/) — [MusicBrainz](https://musicbrainz.org/), [ListenBrainz](https://listenbrainz.org/), [Cover Art Archive](https://coverartarchive.org/). Bòcan's auto-tagging, lookup, and open scrobbling all sit on this stack.
+- [Gwendal Roué](https://github.com/groue), maintainer of [GRDB.swift](https://github.com/groue/GRDB.swift) — quietly one of the best-maintained Swift libraries in existence, solo for over a decade. My entire persistence layer is built on it.
+- [Justin Frankel](https://www.cockos.com/~justin/), co-creator of [Winamp](https://en.wikipedia.org/wiki/Winamp) (back in his Nullsoft days), later [REAPER](https://www.reaper.fm/), NSIS, gnutella, and most of [Cockos](https://www.cockos.com/). Winamp basically invented the modern desktop music player. Anyone building one stands on this work whether they realise it or not.
+- [Jean-Marc Valin](https://jmvalin.dreamwidth.org/), primary author of [Opus](https://opus-codec.org/) (and Speex before that) — one of the great open codec achievements of the last twenty years.
+- [Yonas Kolb](https://github.com/yonaskolb), creator of [XcodeGen](https://github.com/yonaskolb/XcodeGen) — saved me (and everyone else) from hand-editing `.pbxproj` and weeping in merge conflicts.
+- [Nick Lockwood](https://github.com/nicklockwood), author of [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) — keeps my codebase from looking like it was written by seven different people on seven different keyboards.
+- [JP Simard](https://github.com/jpsim), creator of [SwiftLint](https://github.com/realm/SwiftLint) — the linter that enforces my `.swiftlint.yml` on every commit.
+
