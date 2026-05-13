@@ -37,6 +37,7 @@ public struct VisualizerFullscreenView: View {
                 fadeAfter: 2,
                 refreshTrigger: self.overlayTrigger
             )
+            .padding(.top, 20) // clear the traffic-light buttons
         }
         .overlay(alignment: .topTrailing) {
             if NSScreen.screens.count > 1 {
