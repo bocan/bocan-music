@@ -1,3 +1,5 @@
+// swiftlint:disable file_length
+// swiftlint:disable type_body_length
 import AppKit
 import SwiftUI
 
@@ -152,7 +154,7 @@ public struct NowPlayingStrip: View {
                 ? self.vm.title
                 : "\(self.vm.title) by \(self.vm.artist)"
             NSAccessibility.post(
-                element: NSApp!,
+                element: NSApplication.shared,
                 notification: .announcementRequested,
                 userInfo: [
                     .announcement: msg,
@@ -500,3 +502,5 @@ public struct NowPlayingStrip: View {
         return self.vm.position
     }
 }
+
+// swiftlint:enable type_body_length
