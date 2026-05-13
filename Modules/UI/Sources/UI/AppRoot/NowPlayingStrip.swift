@@ -190,7 +190,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: self.vm.nowPlayingIsLoved ? "heart.fill" : "heart")
                     .font(.system(.body, weight: .medium))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -211,7 +210,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "info.circle")
                     .font(.system(.body, weight: .medium))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -226,7 +224,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "backward.fill")
                     .font(.system(.title3, weight: .semibold))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -240,7 +237,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: self.vm.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(.title2, weight: .bold))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -255,7 +251,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "forward.fill")
                     .font(.system(.title3, weight: .semibold))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -269,7 +264,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "shuffle")
                     .font(.system(.body, weight: .medium))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -286,7 +280,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: self.vm.repeatMode == .one ? "repeat.1" : "repeat")
                     .font(.system(.body, weight: .medium))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -314,7 +307,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "stop.circle\(self.vm.stopAfterCurrent ? ".fill" : "")")
                     .font(.system(.body, weight: .medium))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -352,7 +344,6 @@ public struct NowPlayingStrip: View {
                             }
                             .offset(x: 5, y: -4)
                         }
-                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -382,7 +373,6 @@ public struct NowPlayingStrip: View {
                             .offset(x: 5, y: -4)
                         }
                     }
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -408,7 +398,6 @@ public struct NowPlayingStrip: View {
             } label: {
                 Image(systemName: "waveform")
                     .font(.system(.body, weight: .medium))
-                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
