@@ -158,7 +158,12 @@ public struct ArtistDetailView: View {
             self.albumContextMenu(album: album)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(album.title)
+        .accessibilityLabel(
+            [album.title, self.artist?.name, album.year.map(String.init)]
+                .compactMap(\.self)
+                .joined(separator: ", ")
+        )
+        .accessibilityHint("Double-tap to open album")
     }
 
     @ViewBuilder
@@ -308,6 +313,7 @@ public struct ArtistsView: View {
                     .accessibilityHidden(true)
             }
             .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
             .accessibilityLabel(artist.name)
             .contextMenu {
                 if let id = artist.id {

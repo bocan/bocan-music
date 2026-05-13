@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - NowPlayingStrip
@@ -122,6 +123,7 @@ public struct NowPlayingStrip: View {
                     ? "Jump to \(self.vm.title) in track list"
                     : "Not playing"
             )
+            .accessibilityAddTraits(.updatesFrequently)
             .accessibilityIdentifier(A11y.NowPlaying.titleButton)
 
             // Artist — click to navigate to the artist view.
@@ -144,6 +146,20 @@ public struct NowPlayingStrip: View {
             }
         }
         .frame(minWidth: 120, maxWidth: 300, alignment: .leading)
+        .onChange(of: self.vm.nowPlayingTrackID) { _, trackID in
+            guard trackID != nil, !self.vm.title.isEmpty else { return }
+            let msg = self.vm.artist.isEmpty
+                ? self.vm.title
+                : "\(self.vm.title) by \(self.vm.artist)"
+            NSAccessibility.post(
+                element: NSApp,
+                notification: .announcementRequested,
+                userInfo: [
+                    .announcement: msg,
+                    .priority: NSAccessibilityPriorityLevel.medium.rawValue,
+                ]
+            )
+        }
     }
 
     private var trackSubtitle: String? {
@@ -231,7 +247,7 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
             .help("Next track")
-            .accessibilityLabel("Next")
+            .accessibilityLabel("Next track")
             .accessibilityIdentifier(A11y.NowPlaying.next)
 
             Button {
@@ -245,7 +261,8 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
-            .accessibilityLabel(self.vm.shuffleOn ? "Shuffle On" : "Shuffle Off")
+            .accessibilityLabel("Shuffle")
+            .accessibilityValue(self.vm.shuffleOn ? "on" : "off")
             .accessibilityHint(self.vm.shuffleOn ? "Activate to turn shuffle off" : "Activate to turn shuffle on")
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.shuffleButton)
@@ -261,7 +278,8 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
             .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
-            .accessibilityLabel("Repeat \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One")")
+            .accessibilityLabel("Repeat")
+            .accessibilityValue(self.vm.repeatMode == .off ? "off" : self.vm.repeatMode == .all ? "all" : "one")
             .accessibilityHint({
                 switch self.vm.repeatMode {
                 case .off:
@@ -460,6 +478,7 @@ public struct NowPlayingStrip: View {
                 .id(self.accentColorKey)
                 .help("Volume: \(Int(self.vm.volume * 100))%")
                 .accessibilityLabel("Volume")
+                .accessibilityValue("\(Int(self.vm.volume * 100)) percent")
                 .accessibilityIdentifier(A11y.NowPlaying.volumeSlider)
 
             Image(systemName: "speaker.wave.3.fill")
