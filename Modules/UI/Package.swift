@@ -43,6 +43,7 @@ let package = Package(
             ],
             linkerSettings: [
                 .linkedFramework("IOKit"),
+                .linkedFramework("WebKit"),
             ]
         ),
         .testTarget(

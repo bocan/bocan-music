@@ -48,27 +48,14 @@ public struct AboutView: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                ScrollView {
-                    Text(self.creditsText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .textSelection(.enabled)
-                        .padding(.horizontal, 4)
-                }
-                .frame(maxHeight: 160)
-                .background(.background.secondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                NoticesHTMLView()
+                    .frame(maxHeight: 160)
+                    .background(.background.secondary)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .navigationTitle("About")
-    }
-
-    private var creditsText: String {
-        guard let url = Bundle.main.url(forResource: "NOTICES", withExtension: "md"),
-              let text = try? String(contentsOf: url, encoding: .utf8) else { return "See NOTICES.md for third-party licence information." }
-        return text
     }
 }
