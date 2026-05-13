@@ -2,7 +2,7 @@
 
 > Prerequisites: Phases 0–11 complete. `AudioEngine` exposes a tap point (Phase 1).
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

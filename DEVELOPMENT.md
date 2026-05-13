@@ -105,8 +105,8 @@ Never commit these to the repo.
 
 ## Phases
 
-Implementation phases are documented in [`phases/`](phases/README.md).
-Start with `phases/_standards.md`, then tackle one phase at a time.
+Implementation phases are documented in [`docs/design-spec/`](docs/design-spec/README.md).
+Start with `docs/design-spec/_standards.md`, then tackle one phase at a time.
 
 ## FFmpeg (AudioEngine module)
 

@@ -2,7 +2,7 @@
 
 > Prerequisites: Phase 0 complete. `Observability` available. Phase 1 is independent but can be in progress.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

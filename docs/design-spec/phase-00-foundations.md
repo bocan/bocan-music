@@ -2,7 +2,7 @@
 
 > Prerequisites: none. This is the chassis.
 >
-> Read `phases/_standards.md` first. Every later phase assumes this one is finished.
+> Read `docs/design-spec/_standards.md` first. Every later phase assumes this one is finished.
 
 ## Goal
 
@@ -52,7 +52,7 @@ bocan-music/
 │   │   ├── bug_report.md
 │   │   └── feature_request.md
 │   └── pull_request_template.md
-├── phases/                       # This folder of specs (already exists)
+├── docs/design-spec/               # This folder of specs (already exists)
 ├── .gitignore                    # Swift/Xcode/macOS
 ├── .gitattributes                # LF, text=auto
 ├── .editorconfig
@@ -183,7 +183,7 @@ bocan-music/
 
 18. **CHANGELOG.md** — "Keep a Changelog" template seeded with `## [Unreleased]` section and `### Added / Changed / Fixed / Removed` subsections.
 
-19. **DEVELOPMENT.md** — prereqs (Xcode version, Homebrew), clone → bootstrap → build → test, pointer to `phases/`.
+19. **DEVELOPMENT.md** — prereqs (Xcode version, Homebrew), clone → bootstrap → build → test, pointer to `docs/design-spec/`.
 
 ## Definitions the assistant must produce verbatim
 

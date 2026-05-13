@@ -1,6 +1,6 @@
 # Accessibility Phases — Overview
 
-> Read `phases/_standards.md` before starting any phase here.
+> Read `docs/design-spec/_standards.md` before starting any phase here.
 
 These phases address the six main macOS accessibility considerations for Bòcan V1.
 They are independent of each other and can be done in any order, but the priority

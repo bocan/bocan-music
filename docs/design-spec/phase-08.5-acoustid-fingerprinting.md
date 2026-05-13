@@ -2,7 +2,7 @@
 
 > Prerequisites: Phase 8 (Metadata Editor) complete. Phase 3 TagLib bridge includes writing support.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

@@ -2,7 +2,7 @@
 
 > Prerequisites: Phases 0–5 complete. Queue works. UI context-menu stubs exist.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

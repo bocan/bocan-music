@@ -2,7 +2,7 @@
 
 > Prerequisites: Core app phases complete. Phase accessibility/phase1-voiceover.md recommended.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

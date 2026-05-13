@@ -2,7 +2,7 @@
 
 > Prerequisites: Phases 0–6 complete. Manual playlists work.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

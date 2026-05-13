@@ -2,7 +2,7 @@
 
 > Prerequisites: v1.0.0 has shipped. The current pipeline (`ci.yml` + `release-please.yml` + `release.yml` + `website.yml` + the `homebrew-bocan` cross-repo dispatch) **must be replaced**, not extended.
 >
-> Read `phases/_standards.md` first. This phase replaces the entire `.github/workflows/` directory.
+> Read `docs/design-spec/_standards.md` first. This phase replaces the entire `.github/workflows/` directory.
 
 ## Why this phase exists
 
