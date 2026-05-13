@@ -243,11 +243,6 @@ jobs:
 
       - name: Create DMG
         run: |
-          # Stage only the .app — xcodebuild -exportArchive also writes
-          # DistributionSummary.plist, ExportOptions.plist, and Packaging.log
-          # into build/export/, and we don't want those inside the DMG.
-          mkdir -p build/dmg-staging
-          cp -R build/export/Bocan.app build/dmg-staging/
           create-dmg \
             --volname "Bòcan ${RELEASE_VERSION}" \
             --background "Resources/Distribution/dmg-background.png" \
@@ -259,7 +254,7 @@ jobs:
             --app-drop-link 400 195 \
             --volicon "Resources/Distribution/VolumeIcon.icns" \
             "build/Bocan.dmg" \
-            "build/dmg-staging/" \
+            "build/export/" \
           || (sleep 5 && create-dmg \
             --volname "Bòcan ${RELEASE_VERSION}" \
             --background "Resources/Distribution/dmg-background.png" \
@@ -271,7 +266,7 @@ jobs:
             --app-drop-link 400 195 \
             --volicon "Resources/Distribution/VolumeIcon.icns" \
             "build/Bocan.dmg" \
-            "build/dmg-staging/")
+            "build/export/")
 
       - name: Sign DMG
         run: |
@@ -314,6 +309,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Sign appcast entry (Sparkle EdDSA)
+        if: env.HAS_SPARKLE_KEY == 'true'
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
@@ -339,6 +335,7 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
 
       - name: Update appcast.xml
+        if: env.HAS_SPARKLE_KEY == 'true'
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
@@ -355,6 +352,7 @@ jobs:
           echo "APPCAST_FEED=$FEED" >> "$GITHUB_ENV"
 
       - name: Commit and push updated appcast
+        if: env.HAS_SPARKLE_KEY == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -362,7 +360,6 @@ jobs:
           git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
           git commit -m "chore(release): update appcast for v${RELEASE_VERSION}"
           git push origin HEAD:main
-          # Note: the Website workflow redeploys via workflow_run trigger on Release completion.
 
       - name: Trigger cask update
         uses: peter-evans/repository-dispatch@v4
