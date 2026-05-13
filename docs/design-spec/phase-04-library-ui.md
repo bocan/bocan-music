@@ -2,7 +2,7 @@
 
 > Prerequisites: Phases 0–3 complete. A populated DB and working scanner.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

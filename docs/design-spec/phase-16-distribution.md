@@ -2,7 +2,7 @@
 
 > Prerequisites: All prior phases complete. The app builds, tests pass, and it runs nicely in Debug and Release.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

@@ -5,7 +5,7 @@ Thank you for your interest in contributing.
 ## Before you start
 
 - Read `DEVELOPMENT.md` for environment setup.
-- Read `phases/_standards.md` — all code must comply.
+- Read `docs/design-spec/_standards.md` — all code must comply.
 - Check for an existing issue or open one to discuss your idea first.
 
 ## Commit conventions
