@@ -49,9 +49,19 @@ public struct AirPlayButton: NSViewRepresentable {
 
     /// Holds a weak reference to the live `AVRoutePickerView` and opens the
     /// system picker in response to `Notification.Name.bocanActivateRoutePicker`.
+    ///
+    /// `@MainActor` because all state and methods touch AppKit views.
+    /// The isolation also makes `Coordinator` implicitly `Sendable`, satisfying
+    /// Swift 6's requirement for captures in `@Sendable` notification closures.
+    @MainActor
     public final class Coordinator {
         private weak var pickerView: AVRoutePickerView?
-        private var observer: NSObjectProtocol?
+        /// `NSObjectProtocol` (the opaque observer token from NotificationCenter) is not
+        /// `Sendable`. Marking it `nonisolated(unsafe)` lets `deinit` (which is always
+        /// nonisolated) call `removeObserver` without a concurrency error.  The token is
+        /// only written once on the main actor during `attach(to:)` and only read in
+        /// `deinit`, so there is no real data race.
+        private nonisolated(unsafe) var observer: NSObjectProtocol?
 
         /// Called once from `makeNSView` to wire up the view and the notification.
         func attach(to view: AVRoutePickerView) {
@@ -61,7 +71,10 @@ public struct AirPlayButton: NSViewRepresentable {
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
-                self?.trigger()
+                // Delivery is already on the main queue (queue: .main above).
+                // `assumeIsolated` lets Swift 6 verify the main-actor isolation
+                // statically without a redundant async hop.
+                MainActor.assumeIsolated { self?.trigger() }
             }
         }
 
