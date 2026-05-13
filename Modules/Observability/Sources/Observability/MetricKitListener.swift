@@ -96,7 +96,7 @@ import os
         }
 
         /// Write a diagnostic payload to disk, redacting the user's home directory path.
-        private nonisolated static func writePayload(_ data: Data) {
+        nonisolated static func writePayload(_ data: Data) {
             let dir = Self.reportsDirectory
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             let name = ISO8601DateFormatter()

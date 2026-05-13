@@ -181,5 +181,84 @@ struct TelemetryTests {
             let payloads: [MXDiagnosticPayload] = []
             listener.didReceive(payloads)
         }
+
+        @Test("reportsDirectory URL contains expected path components")
+        func reportsDirectoryComponents() {
+            let dir = MetricKitListener.reportsDirectory
+            #expect(dir.path.contains("Logs"))
+            #expect(dir.path.contains("Bocan"))
+            #expect(dir.path.contains("diagnostics"))
+        }
+
+        @Test("listReports returns only JSON files and exercises the sort closure")
+        func listReportsFiltersAndSorts() throws {
+            let dir = MetricKitListener.reportsDirectory
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            let json1 = dir.appendingPathComponent("tip-a.json")
+            let json2 = dir.appendingPathComponent("tip-b.json")
+            let txt = dir.appendingPathComponent("tip-c.txt")
+            defer {
+                try? FileManager.default.removeItem(at: json1)
+                try? FileManager.default.removeItem(at: json2)
+                try? FileManager.default.removeItem(at: txt)
+            }
+            try "{}".write(to: json1, atomically: true, encoding: .utf8)
+            try "{}".write(to: json2, atomically: true, encoding: .utf8)
+            try "x".write(to: txt, atomically: true, encoding: .utf8)
+
+            let reports = MetricKitListener.listReports()
+            let names = reports.map(\.lastPathComponent)
+            #expect(reports.allSatisfy { $0.pathExtension == "json" })
+            #expect(names.contains("tip-a.json"))
+            #expect(names.contains("tip-b.json"))
+            #expect(!names.contains("tip-c.txt"))
+        }
+
+        @Test("writePayload creates a redacted JSON file discoverable via listReports")
+        func writePayloadCreatesRedactedFile() {
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            let testJSON = "{\"path\": \"\(home)/test.flac\"}"
+            let data = Data(testJSON.utf8)
+
+            let before = Set(MetricKitListener.listReports().map(\.lastPathComponent))
+            MetricKitListener.writePayload(data)
+            let after = MetricKitListener.listReports()
+
+            let newFiles = after.filter { !before.contains($0.lastPathComponent) }
+            defer {
+                for file in newFiles {
+                    try? FileManager.default.removeItem(at: file)
+                }
+            }
+
+            #expect(!newFiles.isEmpty, "writePayload should create a new file")
+            if let written = newFiles.first,
+               let content = try? String(contentsOf: written, encoding: .utf8) {
+                #expect(!content.contains(home), "Home directory path should be redacted")
+                #expect(content.contains("~"), "Home path should be replaced with ~")
+            }
+        }
+
+        @Test("start subscribes when consent is granted and is idempotent")
+        func startIdempotentWithConsent() {
+            UserDefaults.standard.set(true, forKey: MetricKitListener.consentKey)
+            defer {
+                UserDefaults.standard.removeObject(forKey: MetricKitListener.consentKey)
+                MetricKitListener.shared.stop()
+            }
+            MetricKitListener.shared.start()
+            // Second call hits the already-subscribed guard — should be a no-op
+            MetricKitListener.shared.start()
+        }
+
+        @Test("stop after subscribing does not crash; double-stop is idempotent")
+        func stopIdempotentAfterSubscribe() {
+            UserDefaults.standard.set(true, forKey: MetricKitListener.consentKey)
+            defer { UserDefaults.standard.removeObject(forKey: MetricKitListener.consentKey) }
+            MetricKitListener.shared.start()
+            MetricKitListener.shared.stop()
+            // Second stop hits the not-subscribed guard — should be a no-op
+            MetricKitListener.shared.stop()
+        }
     }
 #endif
