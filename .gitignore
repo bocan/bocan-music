@@ -70,6 +70,3 @@ Secrets.xcconfig
 /website/node_modules/
 /website/_site/
 /website/.cache/
-
-# Local documentation (personal learning notes — not committed)
-/docs/

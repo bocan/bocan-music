@@ -2,7 +2,7 @@
 
 > Prerequisites: Phases 0–13 complete. Playlist CRUD (Phase 6) and smart playlists (Phase 7) stable.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

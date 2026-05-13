@@ -2,7 +2,7 @@
 
 > Prerequisites: Phases 0–14 complete. AudioEngine survives system output device changes.
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 

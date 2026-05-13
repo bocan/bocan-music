@@ -19,7 +19,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 ### 🔊 It sounds better
 
 - **True gapless playback** with nanosecond `AVAudioTime` anchoring — classical transitions, live albums, and DJ mixes play as the artist intended, with zero silence and zero clicks.
-- **10-band parametric EQ**, bass boost, stereo expander, binaural crossfeed, and a **peak limiter** — a full DSP chain between your files and your ears.
+- **10-band graphic EQ**, bass boost, stereo expander, binaural crossfeed, and a **peak limiter** — a full DSP chain between your files and your ears.
 - **ReplayGain** applied at playback time; analyses missing tags in the background using EBU R128 loudness.
 - **Configurable crossfade** (0–12 s), **playback speed** (0.5×–2.0×) with pitch correction, and a **sleep timer** that fades gracefully rather than cutting mid-note.
 
@@ -43,7 +43,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Real-time visualisers** — spectrum bars, oscilloscope, and a Metal GPU fluid shader — dockable or full-screen with `⌘⇧F`.
 - **Mini Player** in three layouts (Strip, Compact, Square) with always-on-top mode.
 - **Last.fm and ListenBrainz** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
-- **AirPlay** routing via the system picker; a live route chip shows what you're playing to.
+- **AirPlay** routing via the system picker; a live route chip shows the current output device.
 
 ### ♿ It's accessible
 
@@ -70,13 +70,13 @@ Bòcan is designed to be fully navigable without a mouse or a screen:
 
 ## On the name
 
-**Bòcan** Naming things is hard. I was up from midnight to almost 3am trying to figure out a name that wasn't already taken for another app.  In the end, I couldn't find one. So I went with the name I've used on the internet since the internet existed.
+**Bòcan** Naming things is hard. I was up from midnight to almost 3 am trying to figure out a name that wasn’t already taken for another app. In the end, I couldn’t find one that was free, so I went with the name I’ve used on the internet since the internet existed.
 
 Bocán (Old Irish) means a young male deer, the root of which is cognate with the Welsh "boc" and the Breton "bok", both meaning "buck".
 
 Bòcan (Scottish Gaelic, roughly *BAW-khan*) is a hobgoblin or a household spirit.
 
-This one curates your music library while you sleep. The short version is that computers don't like `ò`, so the binary, bundle, and repository all use `bocan`.
+Bòcan curates your music library while you sleep. The short version is that computers don't like `ò`, so the binary, bundle, and repository all use `bocan`.
 
 ---
 

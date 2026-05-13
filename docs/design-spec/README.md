@@ -5,7 +5,7 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 ## How to use
 
 1. Open a **fresh session** per phase (keeps context lean).
-2. Tell the assistant: *"Read `phases/phase-NN-<name>.md` and `phases/_standards.md`. Implement exactly what is specified. Use Context7 for every listed lookup. Write tests as you go. Commit with Conventional Commits. Stop when every acceptance-criteria box is checked."*
+2. Tell the assistant: *"Read `docs/design-spec/phase-NN-<name>.md` and `docs/design-spec/_standards.md`. Implement exactly what is specified. Use Context7 for every listed lookup. Write tests as you go. Commit with Conventional Commits. Stop when every acceptance-criteria box is checked."*
 3. Run `make lint && make test-coverage` before declaring the phase done.
 4. Open a PR. Only move to the next phase once CI is green and the checklist is fully ticked.
 

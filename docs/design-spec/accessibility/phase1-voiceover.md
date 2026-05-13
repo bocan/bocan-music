@@ -2,7 +2,7 @@
 
 > Prerequisites: Core app phases complete (Phases 0–13 recommended).
 >
-> Read `phases/_standards.md` first.
+> Read `docs/design-spec/_standards.md` first.
 
 ## Goal
 
