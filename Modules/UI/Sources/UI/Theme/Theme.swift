@@ -75,3 +75,30 @@ public enum Theme {
         public static let slow: SwiftUI.Animation = Theme.animationSlow
     }
 }
+
+// MARK: - Reduce Transparency tokens
+
+/// Semantic colour tokens that adapt between translucent and solid surfaces
+/// based on the system Reduce Transparency preference.
+public extension Theme {
+    /// Opaque alternative to a translucent or vibrancy panel surface.
+    ///
+    /// Returns the window background colour when `reduceTransparency` is on,
+    /// or `.clear` (so the caller can layer a material) when it is off.
+    static func panelBackground(reduceTransparency: Bool) -> Color {
+        reduceTransparency ? Color(nsColor: .windowBackgroundColor) : Color.clear
+    }
+
+    /// Overlay background for content layered over artwork or media.
+    ///
+    /// Returns an opaque window-background colour when `reduceTransparency` is on,
+    /// or a semi-transparent black at the requested `opacity` when it is off.
+    static func overlayBackground(
+        reduceTransparency: Bool,
+        opacity: Double = 0.6
+    ) -> Color {
+        reduceTransparency
+            ? Color(nsColor: .windowBackgroundColor)
+            : Color.black.opacity(opacity)
+    }
+}

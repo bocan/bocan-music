@@ -23,6 +23,8 @@ public struct ToastMessage: Identifiable, Equatable, Sendable {
 public struct ToastBanner: View {
     public let message: ToastMessage
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     public init(message: ToastMessage) {
         self.message = message
     }
@@ -40,7 +42,11 @@ public struct ToastBanner: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(
+                    self.reduceTransparency
+                        ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                        : AnyShapeStyle(Material.ultraThin)
+                )
                 .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
         )
     }

@@ -26,6 +26,7 @@ public struct LyricsPane: View {
     @State private var showOffsetPopover = false
     @State private var resizeDragStart: Double?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     // MARK: - Init
 
@@ -56,7 +57,13 @@ public struct LyricsPane: View {
                     }
             }
             .frame(width: self.paneWidth)
-            .background(.ultraThinMaterial)
+            .background {
+                if self.reduceTransparency {
+                    Color(nsColor: .windowBackgroundColor)
+                } else {
+                    Color.clear.background(.ultraThinMaterial)
+                }
+            }
             .overlay(alignment: .leading) {
                 HStack(spacing: 0) {
                     Rectangle()

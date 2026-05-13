@@ -36,6 +36,7 @@ public enum VisualizerPalette: String, CaseIterable, Sendable {
 /// - Gradient tint selected by ``VisualizerPalette``.
 /// - Respects `reduceMotion` by pausing peak-fall animation and using a calm
 ///   low-saturation style.
+/// - Respects `reduceTransparency` by rendering bars at full opacity.
 @MainActor
 public final class SpectrumBars: Visualizer {
     // MARK: - State
@@ -48,16 +49,22 @@ public final class SpectrumBars: Visualizer {
 
     private let palette: VisualizerPalette
     private let reduceMotion: Bool
+    private let reduceTransparency: Bool
 
     // MARK: - Init
 
-    public init(palette: VisualizerPalette = .accent, reduceMotion: Bool = false) {
+    public init(
+        palette: VisualizerPalette = .accent,
+        reduceMotion: Bool = false,
+        reduceTransparency: Bool = false
+    ) {
         let n = FFTAnalyzer.bandCount
         self.peakHold = [Float](repeating: 0, count: n)
         self.peakVelocity = [Float](repeating: 0, count: n)
         self.peakHoldCounter = [Int](repeating: 0, count: n)
         self.palette = palette
         self.reduceMotion = reduceMotion
+        self.reduceTransparency = reduceTransparency
     }
 
     // MARK: - Visualizer
@@ -88,7 +95,9 @@ public final class SpectrumBars: Visualizer {
                 .path(in: barRect)
 
             // Gradient from bar colour (top) to slightly darker (bottom)
-            context.fill(barPath, with: .color(barColor.opacity(self.reduceMotion ? 0.5 : 1.0)))
+            context.fill(barPath, with: .color(barColor.opacity(
+                self.reduceTransparency ? 1.0 : (self.reduceMotion ? 0.5 : 1.0)
+            )))
 
             // Peak-hold marker
             if !self.reduceMotion {

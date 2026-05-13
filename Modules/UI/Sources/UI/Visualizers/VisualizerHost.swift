@@ -113,7 +113,11 @@ public struct VisualizerHost: View {
 
         switch self.vm.mode {
         case .spectrumBars:
-            self.renderer = SpectrumBars(palette: self.vm.palette, reduceMotion: self.reduceMotion)
+            self.renderer = SpectrumBars(
+                palette: self.vm.palette,
+                reduceMotion: self.reduceMotion,
+                reduceTransparency: self.reduceTransparency
+            )
 
         case .oscilloscope:
             self.renderer = Oscilloscope(palette: self.vm.palette, reduceMotion: self.reduceMotion)
@@ -157,7 +161,13 @@ public struct VisualizerHost: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .background(
+            RoundedRectangle(cornerRadius: 10).fill(
+                self.reduceTransparency
+                    ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                    : AnyShapeStyle(Material.ultraThin)
+            )
+        )
         .foregroundStyle(.white)
     }
 }
