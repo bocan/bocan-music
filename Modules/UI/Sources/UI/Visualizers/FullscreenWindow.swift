@@ -15,6 +15,7 @@ public struct VisualizerFullscreenView: View {
     @ObservedObject public var vm: VisualizerViewModel
     public var nowPlayingVM: NowPlayingViewModel
     @Environment(\.dismissWindow) private var dismissWindow
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     @State private var hideTask: Task<Void, Never>?
     @State private var overlayTrigger = 0
@@ -96,7 +97,13 @@ public struct VisualizerFullscreenView: View {
             Label(self.pickerLabel, systemImage: "display")
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .background(
+                    RoundedRectangle(cornerRadius: 8).fill(
+                        self.reduceTransparency
+                            ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                            : AnyShapeStyle(Material.ultraThin)
+                    )
+                )
                 .foregroundStyle(.white)
         }
         .help("Move visualizer to a different display")

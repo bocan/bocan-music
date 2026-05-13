@@ -16,6 +16,7 @@ struct NowPlayingOverlay: View {
 
     @State private var isVisible = true
     @State private var fadeTask: Task<Void, Never>?
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         if !self.title.isEmpty {
@@ -39,7 +40,13 @@ struct NowPlayingOverlay: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .background(
+                RoundedRectangle(cornerRadius: 10).fill(
+                    self.reduceTransparency
+                        ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                        : AnyShapeStyle(Material.ultraThin)
+                )
+            )
             .padding(12)
             .opacity(self.isVisible ? 1 : 0)
             .animation(.easeOut(duration: 0.5), value: self.isVisible)

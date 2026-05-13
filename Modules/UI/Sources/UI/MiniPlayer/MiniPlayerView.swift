@@ -18,6 +18,7 @@ public struct MiniPlayerView: View {
     /// Per-app reduce-motion toggle (Appearance Settings §3 — see issue #144).
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     public init(vm: MiniPlayerViewModel) {
         self.vm = vm
@@ -166,6 +167,7 @@ public struct MiniPlayerView: View {
 
     /// Frosted-glass pill containing the layout and pin buttons.  The material
     /// backdrop keeps them readable over both artwork and solid backgrounds.
+    /// Becomes a solid system surface when Reduce Transparency is on.
     private var chrome: some View {
         HStack(spacing: 4) {
             self.layoutButton
@@ -173,7 +175,13 @@ public struct MiniPlayerView: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .background(
+            RoundedRectangle(cornerRadius: 8).fill(
+                self.reduceTransparency
+                    ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
+                    : AnyShapeStyle(Material.ultraThin)
+            )
+        )
     }
 
     // MARK: - Buttons
