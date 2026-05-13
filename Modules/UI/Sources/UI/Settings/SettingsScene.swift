@@ -13,6 +13,9 @@ import SwiftUI
 /// ```
 public struct SettingsScene: View {
     @State private var selectedTab: SettingsTab = .general
+    /// Sentinel that gives the settings window initial keyboard focus on first appear.
+    /// Without this, the window opens but no control has focus and Tab does nothing.
+    @FocusState private var tabViewFocused: Bool
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
     private let backupViewModel: BackupSettingsViewModel
 
@@ -22,6 +25,17 @@ public struct SettingsScene: View {
     ) {
         self.scrobbleViewModel = scrobbleViewModel
         self.backupViewModel = backupViewModel
+    }
+
+    /// Ordered list of tabs that are actually visible (scrobble tab is conditional).
+    private var visibleTabs: [SettingsTab] {
+        var tabs: [SettingsTab] = [
+            .general, .library, .playback, .dsp, .appearance,
+            .advanced, .lyrics, .visualizer, .smartPlaylists,
+        ]
+        if self.scrobbleViewModel != nil { tabs.append(.scrobble) }
+        tabs.append(.diagnostics)
+        return tabs
     }
 
     public var body: some View {
@@ -72,12 +86,31 @@ public struct SettingsScene: View {
                 .tabItem { Label("Diagnostics", systemImage: "stethoscope") }
                 .tag(SettingsTab.diagnostics)
         }
-        .frame(minWidth: 560, minHeight: 500)
+        // Make the tab view itself focusable so it enters the keyboard focus chain.
+        // defaultFocus establishes initial first-responder when the window opens.
+        .focusable()
+        .focused(self.$tabViewFocused)
+        .defaultFocus(self.$tabViewFocused, true)
+        // Left / right arrows switch between tabs when the tab view has focus.
+        // When a control inside a tab (e.g. Slider) has focus it handles its own
+        // arrow keys first and the event never reaches this handler.
+        .onKeyPress(keys: [.leftArrow, .rightArrow]) { press in
+            self.shiftTab(by: press.key == .leftArrow ? -1 : 1)
+            return .handled
+        }
+        .frame(minWidth: 520, minHeight: 360)
+    }
+
+    private func shiftTab(by delta: Int) {
+        let tabs = self.visibleTabs
+        guard let idx = tabs.firstIndex(of: self.selectedTab) else { return }
+        let newIdx = (idx + delta + tabs.count) % tabs.count
+        self.selectedTab = tabs[newIdx]
     }
 }
 
 // MARK: - SettingsTab
 
-private enum SettingsTab: String {
+private enum SettingsTab: String, CaseIterable {
     case general, library, playback, dsp, appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
 }

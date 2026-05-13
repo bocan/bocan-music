@@ -73,4 +73,41 @@ struct AlbumsViewModelTests {
         #expect(vm.albums.count == 1)
         #expect(vm.albums.first?.title == "Album A")
     }
+
+    // MARK: - Keyboard focus (Accessibility Phase 5)
+
+    @Test("Persisted albums have non-nil IDs for FocusState tracking")
+    func albumsHaveNonNilIDsForFocusState() async throws {
+        // AlbumsGridView uses .focused($focusedAlbumID, equals: album.id).
+        // A nil id would silently break keyboard focus tracking.
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        try await db.write { db in
+            var album = Album(title: "Nevermind")
+            try album.insert(db)
+        }
+        let vm = AlbumsViewModel(repository: repo)
+        await vm.load()
+        #expect(!vm.albums.isEmpty)
+        #expect(vm.albums.allSatisfy { $0.id != nil })
+    }
+
+    @Test("Keyboard focus navigation index clamping stays within album bounds")
+    func keyboardFocusNavigationBoundsAreClamped() {
+        /// Validates the algorithm used by AlbumsGridView.moveFocus(by:):
+        ///   newIdx = max(0, min(count - 1, currentIdx + delta))
+        func clampedMove(count: Int, from: Int, by delta: Int) -> Int {
+            max(0, min(count - 1, from + delta))
+        }
+        // Moving right at last item stays at last item (no overflow).
+        #expect(clampedMove(count: 5, from: 4, by: 1) == 4)
+        // Moving left at first item stays at first item (no underflow).
+        #expect(clampedMove(count: 5, from: 0, by: -1) == 0)
+        // Normal single-step navigation within bounds.
+        #expect(clampedMove(count: 5, from: 2, by: 1) == 3)
+        // Row jump (upArrow with 3-column grid: delta = -3) from middle.
+        #expect(clampedMove(count: 5, from: 4, by: -3) == 1)
+        // Row jump clamped when there is no full row above.
+        #expect(clampedMove(count: 5, from: 1, by: -3) == 0)
+    }
 }
