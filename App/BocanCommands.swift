@@ -433,19 +433,15 @@ struct BocanCommands: Commands {
             .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.document == nil)
         }
 
-        // Open the bundled Help Book via NSHelpManager.  The Help Book bundle
-        // lives at Bocan.app/Contents/Resources/Bocan.help and is copied there
-        // by the "Copy and Index Help Book" pre-build script.
+        // Both items open dedicated in-app windows — no browser or external viewer.
         CommandGroup(replacing: .help) {
             Button("Bòcan Music Help") {
-                NSHelpManager.shared.openHelpAnchor("", inBook: "Bocan Help")
+                self.openWindow(id: "bocan-help")
             }
             .keyboardShortcut("?", modifiers: .command)
 
             Button("Notices \u{26} Licences\u{2026}") {
-                if let url = Bundle.main.url(forResource: "NOTICES", withExtension: "md") {
-                    NSWorkspace.shared.open(url)
-                }
+                self.openWindow(id: "notices")
             }
             .help("View third-party licence notices for open-source components used by Bòcan")
         }
