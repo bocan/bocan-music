@@ -128,6 +128,17 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         return cell
     }
 
+    // MARK: NSTableViewDelegate — accessibility
+
+    /// Gives VoiceOver a single spoken sentence per row instead of reading
+    /// each column value individually.  Format: "Title, Artist, Album, Duration".
+    public func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
+        guard row < self.rows.count else { return nil }
+        let r = self.rows[row]
+        let duration = Formatters.duration(r.duration)
+        return "\(r.title), \(r.artistName), \(r.albumName), \(duration)"
+    }
+
     // MARK: NSTableViewDelegate — sort / selection / layout
 
     public func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {

@@ -291,7 +291,7 @@ private struct BandSliderView: View {
                 .disabled(!self.isEnabled)
                 .help("\(self.label) Hz band: ±12 dB")
                 .accessibilityLabel("\(self.label) Hz EQ band")
-                .accessibilityValue(String(format: "%+.0f dB", self.gain))
+                .accessibilityValue(String(format: "%+.1f dB", self.gain))
             Text(self.label)
                 .font(.system(size: 9))
                 .foregroundStyle(.secondary)

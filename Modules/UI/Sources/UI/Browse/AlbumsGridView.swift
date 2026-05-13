@@ -53,7 +53,12 @@ private struct AlbumCell: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.album.title), \(displayArtist)")
+        .accessibilityLabel(
+            [self.album.title, displayArtist, self.album.year.map(String.init)]
+                .compactMap(\.self)
+                .joined(separator: ", ")
+        )
+        .accessibilityHint("Double-tap to open album")
     }
 }
 
