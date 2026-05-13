@@ -152,7 +152,7 @@ public struct NowPlayingStrip: View {
                 ? self.vm.title
                 : "\(self.vm.title) by \(self.vm.artist)"
             NSAccessibility.post(
-                element: NSApp,
+                element: NSApp!,
                 notification: .announcementRequested,
                 userInfo: [
                     .announcement: msg,
