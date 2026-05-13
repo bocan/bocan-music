@@ -227,6 +227,24 @@ struct BocanApp: App {
         .defaultSize(width: 360, height: 520)
         .restorationBehavior(.disabled)
 
+        // MARK: Help window
+
+        Window("Bòcan Help", id: "bocan-help") {
+            HelpWindowView()
+        }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 760, height: 540)
+        .restorationBehavior(.disabled)
+
+        // MARK: Notices window
+
+        Window("Notices \u{26} Licences", id: "notices") {
+            NoticesWindowView()
+        }
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 640, height: 560)
+        .restorationBehavior(.disabled)
+
         Settings {
             SettingsScene(
                 backupViewModel: self.backupSettingsViewModel,
