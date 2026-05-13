@@ -46,7 +46,7 @@ public struct VisualizerHost: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: self.vm.performanceToast?.id)
+        .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.25), value: self.vm.performanceToast?.id)
         .accessibilityLabel(self.accessibilityLabel)
         .onAppear { self.rebuildRenderer() }
         .onChange(of: self.vm.mode) { _, _ in

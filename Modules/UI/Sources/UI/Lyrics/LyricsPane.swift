@@ -25,6 +25,7 @@ public struct LyricsPane: View {
     @State private var showSearch = false
     @State private var showOffsetPopover = false
     @State private var resizeDragStart: Double?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: - Init
 
@@ -87,7 +88,7 @@ public struct LyricsPane: View {
                 )
             }
             .accessibilityIdentifier(A11y.Lyrics.pane)
-            .transition(.move(edge: .trailing))
+            .transition(self.reduceMotion ? .opacity : .move(edge: .trailing))
         }
     }
 
@@ -108,8 +109,12 @@ public struct LyricsPane: View {
                 Spacer()
 
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    if self.reduceMotion {
                         self.vm.paneVisible = false
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            self.vm.paneVisible = false
+                        }
                     }
                 } label: {
                     Image(systemName: "xmark")
@@ -135,8 +140,12 @@ public struct LyricsPane: View {
                 }
 
                 Button {
-                    withAnimation(.easeInOut(duration: 0.15)) {
+                    if self.reduceMotion {
                         self.showSearch.toggle()
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            self.showSearch.toggle()
+                        }
                     }
                     if !self.showSearch { self.searchText = "" }
                 } label: {
