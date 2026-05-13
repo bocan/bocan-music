@@ -5,6 +5,26 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0](https://github.com/bocan/bocan-music/compare/v0.11.0...v0.12.0) (2026-05-12)
+
+
+### ### Added
+
+* **ui:** add album context menu in Artist view (play, gapless, shuffle, get info, remove) ([a2557ce](https://github.com/bocan/bocan-music/commit/a2557ce207b6b6af4efb4d2b47b8cd0085eb61d2))
+* **ui:** add Composer, BPM, Key, Bit Depth, Channels, Lossless, Skips, Last Played, File Size, Date Modified columns (hidden by default) ([4d565a7](https://github.com/bocan/bocan-music/commit/4d565a7bc6ec3cf64a818b6f9b02f644d95b69a0))
+* **ui:** add Disc and Discs columns to track table (hidden by default) ([a47e29b](https://github.com/bocan/bocan-music/commit/a47e29b0747d28b40d6e2453a56ee99da8b564f2))
+* **ui:** add song counts to Artists list and detail section headers ([9aab293](https://github.com/bocan/bocan-music/commit/9aab2938973d1984b1866b16efdfe4ea70c81856))
+
+
+### ### Fixed
+
+* **audio:** correct gapless position bar by tracking per-track sample offset ([2b47ceb](https://github.com/bocan/bocan-music/commit/2b47ceb95b0dec12e45cd604ceee0cbef5ab7df2))
+* **ci:** split AudioEngine to pass file_length lint; fix ArtistsViewModel syntax ([b5a638c](https://github.com/bocan/bocan-music/commit/b5a638ca32c90dea3ba42664b60585c38a1c5a01))
+* **ui:** make DSP settings pane scrollable so all sections are accessible ([d74a59f](https://github.com/bocan/bocan-music/commit/d74a59f0f876d780434de322955ac566df54dc90))
+* **ui:** preserve search query when drilling into album/artist detail ([135e663](https://github.com/bocan/bocan-music/commit/135e663a855850e2178d343d99358465910fcde8))
+* **ui:** replace nested TabView in DSPSettingsView with segmented picker ([9b95b40](https://github.com/bocan/bocan-music/commit/9b95b40728d5b065652e155308cd209c311456ec))
+* **ui:** show compilation albums/songs for track artists in Artists view ([09c4af3](https://github.com/bocan/bocan-music/commit/09c4af3f6872474a0c9a61d0f64ff728218e8620))
+
 ## [0.11.0](https://github.com/bocan/bocan-music/compare/v0.10.0...v0.11.0) (2026-05-11)
 
 
