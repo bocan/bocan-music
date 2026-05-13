@@ -433,15 +433,12 @@ struct BocanCommands: Commands {
             .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.document == nil)
         }
 
-        // Override the default help command to open the help page directly.
-        // Apple's Help Book system requires the bundle to be indexed with
-        // hiutil before the Help Viewer can display it; during development
-        // that never runs, so we redirect to GitHub instead.
+        // Open the bundled Help Book via NSHelpManager.  The Help Book bundle
+        // lives at Bocan.app/Contents/Resources/Bocan.help and is copied there
+        // by the "Copy and Index Help Book" pre-build script.
         CommandGroup(replacing: .help) {
             Button("Bòcan Music Help") {
-                if let url = URL(string: "https://github.com/bocan/bocan-music") {
-                    NSWorkspace.shared.open(url)
-                }
+                NSHelpManager.shared.openHelpAnchor("", inBook: "Bocan Help")
             }
             .keyboardShortcut("?", modifiers: .command)
 
