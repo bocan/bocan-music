@@ -70,7 +70,13 @@ Bòcan is designed to be fully navigable without a mouse or a screen:
 
 ## On the name
 
-**Bòcan** (Scottish Gaelic, roughly *BAW-khan*) is a hobgoblin — the household spirit that curates your music library while you sleep. See [spec.md](spec.md) for the full etymology; the short version is that computers don't like `ò`, so the binary, bundle, and repository all use `bocan`.
+**Bòcan** Naming things is hard. I was up from midnight to almost 3am trying to figure out a name that wasn't already taken for another app.  In the end, I couldn't find one. So I went with the name I've used on the internet since the internet existed.
+
+Bocán (Old Irish) means a young male deer, the root of which is cognate with the Welsh "boc" and the Breton "bok", both meaning "buck".
+
+Bòcan (Scottish Gaelic, roughly *BAW-khan*) is a hobgoblin or a household spirit.
+
+This one curates your music library while you sleep. The short version is that computers don't like `ò`, so the binary, bundle, and repository all use `bocan`.
 
 ---
 
