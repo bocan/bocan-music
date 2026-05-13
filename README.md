@@ -6,9 +6,67 @@
 ![Swift 6](https://img.shields.io/badge/Swift-6.0-orange)
 ![Xcode 26](https://img.shields.io/badge/Xcode-26-1575F9)
 
-A native macOS music player built the old-fashioned way — no Catalyst, no Electron, no cross-platform abstractions. Swift 6 strict concurrency, SwiftUI, GRDB, AVFoundation, and FFmpeg under the hood; every module ships its own test suite.
+**The music player macOS deserves.** No Electron. No Catalyst. No subscription. No cloud. Just your music, played beautifully.
 
 ![Bòcan — Songs view](website/static/screenshots/Screenshot%202026-05-07%20at%2020.35.08.png)
+
+---
+
+## Why Bòcan?
+
+Most Mac music players are either abandoned, Electron-wrapped, or stripped-down streaming clients that barely tolerate local files. Bòcan is the answer to all three — a **native Swift 6 app** built entirely around owning and enjoying your own library, the way iTunes used to before it became a content storefront.
+
+### 🔊 It sounds better
+
+- **True gapless playback** with nanosecond `AVAudioTime` anchoring — classical transitions, live albums, and DJ mixes play as the artist intended, with zero silence and zero clicks.
+- **10-band parametric EQ**, bass boost, stereo expander, binaural crossfeed, and a **peak limiter** — a full DSP chain between your files and your ears.
+- **ReplayGain** applied at playback time; analyses missing tags in the background using EBU R128 loudness.
+- **Configurable crossfade** (0–12 s), **playback speed** (0.5×–2.0×) with pitch correction, and a **sleep timer** that fades gracefully rather than cutting mid-note.
+
+### 📻 It plays everything
+
+- Everything AVFoundation handles natively: **FLAC, ALAC, AAC, MP3, WAV, AIFF, CAF, M4A**.
+- The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD** — no plug-ins, no extra installs.
+
+### 📚 It respects your library
+
+- **Folder-based, non-destructive** — point it at your music directory and it indexes without touching a single file.
+- **Live FSEvents watcher** picks up new or changed files automatically; **mtime + fingerprint deduplication** keeps your library clean.
+- **AcoustID fingerprinting** against MusicBrainz — identify any track, preview every proposed tag change side-by-side with what you have now, tick the fields you want to update, and apply.
+- **In-app tag editor** with multi-track batch editing, embedded cover-art drag-and-drop, and undo.
+
+### 🎨 It's a pleasure to use
+
+- **Three-pane browser** — Albums grid, Tracks list, Artists view, and Recently Added.
+- **Smart Playlists** built from a rule editor, compiled to live SQL and updated automatically as your library changes.
+- **Import / export** M3U, PLS, and XSPF playlists, with fuzzy track matching on import.
+- **Real-time visualisers** — spectrum bars, oscilloscope, and a Metal GPU fluid shader — dockable or full-screen with `⌘⇧F`.
+- **Mini Player** in three layouts (Strip, Compact, Square) with always-on-top mode.
+- **Last.fm and ListenBrainz** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
+- **AirPlay** routing via the system picker; a live route chip shows what you're playing to.
+
+### ♿ It's accessible
+
+Bòcan is designed to be fully navigable without a mouse or a screen:
+
+- **VoiceOver-first track list** — each row announces *"Title, Artist, Album, Duration"* as a single spoken sentence rather than reading every column individually.
+- **Live now-playing announcements** — when the track changes, VoiceOver speaks the new track name automatically, without you having to navigate to the transport bar.
+- **Full keyboard navigation** with logical focus sections and no focus traps.
+- **Dynamic Type** throughout — every label, badge, and table cell scales with your macOS text size setting.
+- Album cells, artist rows, and genre chips are grouped with `.combine` so VoiceOver reads them as single logical elements.
+- Transport controls carry state via `accessibilityValue` (e.g. *"Shuffle, on, button"*) so you always know what you're toggling.
+- EQ band sliders report their gain in the format *"80 Hz, +3.0 dB"* rather than a raw number.
+
+### 🏗️ It's engineered properly
+
+- **Swift 6 strict concurrency** — `@MainActor` isolation, `Sendable` everywhere it matters, zero data races by design.
+- **Seven clean SPM modules** with no upward imports and their own test suites.
+- **80% line-coverage gate** in CI; the build fails if coverage drops.
+- **GRDB 7** with typed repositories, FTS5 full-text search, and `ValueObservation`-based reactive streams.
+- **XcodeGen** project generation — no hand-edited `.pbxproj` files in the repo.
+- **CodeQL, SwiftLint, SwiftFormat, and Dependabot** on every pull request.
+
+---
 
 ## On the name
 
