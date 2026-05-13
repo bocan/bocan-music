@@ -215,6 +215,16 @@ struct BocanApp: App {
             // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
             .environmentObject(self.libraryViewModel)
 
+        // MARK: Track info panel
+
+        Window("Track Info", id: "track-info") {
+            TrackInfoPanel()
+                .environmentObject(self.libraryViewModel)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.topTrailing)
+        .restorationBehavior(.disabled)
+
         // MARK: About window
 
         Window("About Bòcan", id: "about") {

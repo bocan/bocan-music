@@ -80,7 +80,9 @@ public final class NowPlayingViewModel {
     private var positionTask: Task<Void, Never>?
     private var sleepTimerTask: Task<Void, Never>?
     private var scrobbleStatsTask: Task<Void, Never>?
-    private var currentTrack: Track?
+    /// The full `Track` record for the currently-playing item, or `nil` when idle.
+    /// Populated by `setCurrentTrack(_:)` and used by `TrackInfoPanel`.
+    public private(set) var currentTrack: Track?
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init

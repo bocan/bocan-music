@@ -7,6 +7,7 @@ import SwiftUI
 struct MiniPlayerSquare: View {
     @ObservedObject var vm: MiniPlayerViewModel
     @EnvironmentObject private var library: LibraryViewModel
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var dragPosition: Double?
 
@@ -103,11 +104,7 @@ struct MiniPlayerSquare: View {
             // Transport
             HStack(spacing: 16) {
                 Button {
-                    self.library.showTagEditorForNowPlaying()
-                    if let win = MainWindowTracker.shared.window {
-                        win.makeKeyAndOrderFront(nil)
-                    }
-                    NSApp.activate(ignoringOtherApps: true)
+                    self.openWindow(id: "track-info")
                 } label: {
                     Image(systemName: "info.circle")
                         .font(.system(size: 13, weight: .medium))
