@@ -70,7 +70,6 @@ final class ShuffleCheckCell: NSTableCellView {
 /// Clicking the cell toggles the loved state on just that one track.
 final class LoveButtonCell: NSTableCellView {
     private static let lovedColor = NSColor(red: 1.0, green: 0.176, blue: 0.333, alpha: 1.0)
-    private static let lovedFont = NSFont.systemFont(ofSize: 13)
 
     private let button = NSButton(frame: .zero)
     private var track: Track?
@@ -99,8 +98,10 @@ final class LoveButtonCell: NSTableCellView {
     func configure(row: TrackRow, action: @escaping ([Track]) -> Void) {
         self.track = row.track
         self.onToggle = action
+        // Use preferredFont so the heart scales with macOS text size settings.
+        let bodyFont = NSFont.preferredFont(forTextStyle: .body)
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: Self.lovedFont,
+            .font: bodyFont,
             .foregroundColor: row.loved ? Self.lovedColor : NSColor.tertiaryLabelColor,
         ]
         self.button.attributedTitle = NSAttributedString(string: row.loved ? "\u{2665}" : "\u{2661}", attributes: attrs)

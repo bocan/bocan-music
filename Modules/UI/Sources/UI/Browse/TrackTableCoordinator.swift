@@ -76,9 +76,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             self.makeTextCell(cellID: cellID)
         }
         cell.textField?.stringValue = TrackTable.displayValue(for: column.identifier, row: row)
+        // preferredFont(forTextStyle:) scales with macOS text size settings.
+        let baseFont = NSFont.preferredFont(forTextStyle: .body)
         cell.textField?.font = isNowPlaying
-            ? .boldSystemFont(ofSize: NSFont.systemFontSize)
-            : .systemFont(ofSize: NSFont.systemFontSize)
+            ? NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
+            : baseFont
         // Give VoiceOver context by prefixing the column name.
         // Rating uses a spoken form ("3 stars") instead of the star glyphs.
         let colTitle = TrackTable.columnSpecs.first { $0.id == column.identifier }?.title ?? column.title

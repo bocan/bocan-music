@@ -1,0 +1,145 @@
+import Foundation
+import Testing
+@testable import UI
+
+// MARK: - DynamicTypeTests
+
+/// Verifies that Bòcan respects macOS Dynamic Type by using semantic font
+/// styles instead of hard-coded point sizes throughout the UI module.
+///
+/// These are source-convention tests: they read the compiled source tree and
+/// fail if a hardcoded `Font.system(size:)` or `NSFont.systemFont(ofSize:)` /
+/// `NSFont.boldSystemFont(ofSize:)` call is introduced.  Fast and zero-cost at
+/// runtime; no AppKit/SwiftUI rendering required.
+@Suite("Dynamic Type — semantic fonts")
+struct DynamicTypeTests {
+    // MARK: Helpers
+
+    /// Root of the UI package Sources directory, derived from the path of this
+    /// test file at compile time so it works regardless of working directory.
+    private var uiSourcesURL: URL {
+        // #filePath: .../Modules/UI/Tests/UITests/ViewModelTests/DynamicTypeTests.swift
+        URL(filePath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI")
+    }
+
+    /// Returns the combined Swift source of every `.swift` file under `url`.
+    private func allSwiftSource(under url: URL) throws -> String {
+        let fm = FileManager.default
+        guard let enumerator = fm.enumerator(
+            at: url,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return ""
+        }
+        var combined = ""
+        for case let fileURL as URL in enumerator where fileURL.pathExtension == "swift" {
+            combined += (try? String(contentsOf: fileURL, encoding: .utf8)) ?? ""
+        }
+        return combined
+    }
+
+    // MARK: Typography.swift uses only semantic styles
+
+    @Test("Typography.swift contains no hardcoded Font.system(size:) calls")
+    func typographyUsesSemanticStyles() throws {
+        let typographyURL = self.uiSourcesURL.appendingPathComponent("Theme/Typography.swift")
+        let source = try String(contentsOf: typographyURL, encoding: .utf8)
+        #expect(
+            !source.contains("Font.system(size:"),
+            "Typography.swift must not use hardcoded point sizes"
+        )
+    }
+
+    // MARK: No hardcoded SwiftUI font sizes across the whole UI module
+
+    @Test("UI module contains no Font.system(size:) calls")
+    func noHardcodedSwiftUIFontSizes() throws {
+        let source = try allSwiftSource(under: uiSourcesURL)
+        #expect(
+            !source.contains("Font.system(size:"),
+            "All SwiftUI font sizes must use semantic TextStyle variants, not raw point sizes"
+        )
+    }
+
+    // MARK: No hardcoded NSFont sizes in UI module
+
+    @Test("UI module contains no NSFont.systemFont(ofSize:) calls")
+    func noHardcodedNSFontSystemFont() throws {
+        let source = try allSwiftSource(under: uiSourcesURL)
+        #expect(
+            !source.contains("NSFont.systemFont(ofSize:"),
+            "NSFont sizes must use NSFont.preferredFont(forTextStyle:), not hardcoded ofSize:"
+        )
+    }
+
+    @Test("UI module contains no NSFont.boldSystemFont(ofSize:) calls")
+    func noHardcodedNSFontBoldSystemFont() throws {
+        let source = try allSwiftSource(under: uiSourcesURL)
+        #expect(
+            !source.contains("boldSystemFont(ofSize:"),
+            "NSFont bold sizes must use NSFontManager.convert(_:toHaveTrait:), not hardcoded ofSize:"
+        )
+    }
+
+    // MARK: TrackTable uses preferredFont for Dynamic Type
+
+    @Test("TrackTableCoordinator uses NSFont.preferredFont(forTextStyle:) for cell fonts")
+    func trackTableCoordinatorUsesPreferredFont() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Browse/TrackTableCoordinator.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("NSFont.preferredFont(forTextStyle:"),
+            "TrackTableCoordinator must use NSFont.preferredFont(forTextStyle:) for scalable cell fonts"
+        )
+    }
+
+    @Test("TrackTableCoordinator uses NSFont.preferredFont for body text cells")
+    func trackTableCoordinatorBodyCellUsesPreferredFont() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Browse/TrackTableCoordinator.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("NSFont.preferredFont(forTextStyle: .body)"),
+            "TrackTableCoordinator must use NSFont.preferredFont(forTextStyle: .body) for scalable body text cells"
+        )
+    }
+
+    // MARK: LoveButtonCell uses preferredFont
+
+    @Test("LoveButtonCell uses NSFont.preferredFont(forTextStyle:) for the heart glyph")
+    func loveButtonCellUsesPreferredFont() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Browse/TrackTableHelpers.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("NSFont.preferredFont(forTextStyle: .body)"),
+            "LoveButtonCell must use NSFont.preferredFont(forTextStyle: .body) for the heart glyph"
+        )
+    }
+
+    // MARK: Album grids use @ScaledMetric
+
+    @Test("AlbumsGridView uses @ScaledMetric for adaptive grid minimum width")
+    func albumsGridViewUsesScaledMetric() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Browse/AlbumsGridView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("@ScaledMetric"),
+            "AlbumsGridView must use @ScaledMetric so the grid adapts to the user's text size"
+        )
+    }
+
+    @Test("ArtistDetailView uses @ScaledMetric for adaptive grid minimum width")
+    func artistDetailViewUsesScaledMetric() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Browse/ArtistsView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("@ScaledMetric"),
+            "ArtistDetailView must use @ScaledMetric so the album grid adapts to the user's text size"
+        )
+    }
+}

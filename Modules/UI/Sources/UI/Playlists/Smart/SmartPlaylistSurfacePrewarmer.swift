@@ -14,7 +14,8 @@ enum SmartPlaylistSurfacePrewarmer {
         guard !self.didPrewarm else { return }
         self.didPrewarm = true
 
-        _ = NSFont.systemFont(ofSize: 13)
+        // Use preferredFont so the warm-up exercises the same code path as real cells.
+        _ = NSFont.preferredFont(forTextStyle: .body)
         let host = NSHostingView(rootView: SmartPlaylistWarmupProbeView())
         let panel = NSPanel(
             contentRect: NSRect(x: -20000, y: -20000, width: 24, height: 24),
