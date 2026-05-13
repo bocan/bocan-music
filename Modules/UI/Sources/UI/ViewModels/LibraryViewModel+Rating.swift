@@ -32,6 +32,21 @@ public extension LibraryViewModel {
         Task { await self.applyLoved(newValue, to: selected) }
     }
 
+    /// Toggles the `loved` flag on the currently-playing track.
+    ///
+    /// No-op if nothing is playing.
+    func toggleLovedForNowPlaying() {
+        guard let trackID = self.nowPlaying.nowPlayingTrackID else { return }
+        let currentlyLoved = self.nowPlaying.nowPlayingIsLoved
+        let newValue = !currentlyLoved
+        Task {
+            let repo = Persistence.TrackRepository(database: self.database)
+            guard var track = try? await repo.fetch(id: trackID) else { return }
+            track.loved = newValue
+            await self.applyLoved(newValue, to: [track])
+        }
+    }
+
     /// Sets the rating (0–5 stars, stored as 0–100) on every track in the
     /// current selection.
     ///
