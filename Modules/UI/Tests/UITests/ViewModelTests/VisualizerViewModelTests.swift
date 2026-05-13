@@ -117,7 +117,9 @@ struct VisualizerViewModelTests {
         vm.mode = .oscilloscope
         vm.autoSimplify()
         #expect(vm.performanceToast != nil)
-        try await Task.sleep(for: .milliseconds(400))
+        // Sleep for 2 s (10× the dismissal duration) to give the @MainActor timer
+        // task enough headroom on loaded CI runners without slowing down local runs.
+        try await Task.sleep(for: .seconds(2))
         #expect(vm.performanceToast == nil)
         #expect(vm.modeBeforeAutoSimplify == nil)
     }
