@@ -83,6 +83,9 @@ private struct AlbumInteractiveCell<Menu: View>: View {
     let onMoveDown: () -> Void
     @ViewBuilder let contextMenuContent: () -> Menu
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovered = false
+
     var body: some View {
         AlbumCell(album: self.album, artistName: self.artistName, trackCount: self.trackCount)
             .padding(4)
@@ -95,11 +98,14 @@ private struct AlbumInteractiveCell<Menu: View>: View {
                     .stroke(Color.accentColor, lineWidth: self.isFocused ? 2 : 0)
             )
             .contentShape(Rectangle())
+            .scaleEffect(self.isHovered && !self.reduceMotion ? 1.04 : 1.0)
+            .animation(self.reduceMotion ? nil : .easeOut(duration: 0.15), value: self.isHovered)
             .focusable()
             .focused(self.$focusedAlbumID, equals: self.album.id)
             .focusEffectDisabled()
             .highPriorityGesture(TapGesture().modifiers(.command).onEnded { self.onCmdTap() })
             .onTapGesture { self.onTap() }
+            .onHover { self.isHovered = $0 }
             .contextMenu { self.contextMenuContent() }
             .onKeyPress(keys: [.return, .space, .leftArrow, .rightArrow, .upArrow, .downArrow]) {
                 self.handleKeyPress($0)

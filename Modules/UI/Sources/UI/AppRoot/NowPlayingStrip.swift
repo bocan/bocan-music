@@ -26,6 +26,7 @@ public struct NowPlayingStrip: View {
     @State private var scrubDragFraction: Double?
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Optional — only the main window injects a `ScrobbleSettingsViewModel`.
     /// When non-nil and `vm.pendingScrobbleCount > 0`, a pending-scrobbles
@@ -41,7 +42,17 @@ public struct NowPlayingStrip: View {
     public var body: some View {
         HStack(spacing: 12) {
             self.artwork
+                .id(self.vm.nowPlayingTrackID)
+                .transition(self.reduceMotion ? .opacity : .asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
             self.trackInfo
+                .id(self.vm.nowPlayingTrackID)
+                .transition(self.reduceMotion ? .opacity : .asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
             Spacer(minLength: 16)
             self.transport
             Spacer(minLength: 16)
@@ -55,6 +66,7 @@ public struct NowPlayingStrip: View {
                 .padding(.horizontal, 4)
             self.panelButtons
         }
+        .animation(.easeInOut(duration: 0.25), value: self.vm.nowPlayingTrackID)
         .frame(height: Theme.nowPlayingStripHeight)
         .padding(.horizontal, 16)
         .adaptiveMaterial()
@@ -386,8 +398,12 @@ public struct NowPlayingStrip: View {
             .accessibilityIdentifier(A11y.NowPlaying.dspButton)
 
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                if self.reduceMotion {
                     self.visualizer.paneVisible.toggle()
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.visualizer.paneVisible.toggle()
+                    }
                 }
             } label: {
                 Image(systemName: "waveform")

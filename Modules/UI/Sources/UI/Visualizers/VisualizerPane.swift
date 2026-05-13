@@ -18,6 +18,7 @@ public struct VisualizerPane: View {
     @AppStorage("visualizer.paneWidth") private var paneWidth: Double = 300
     @State private var resizeDragStart: Double?
     @State private var overlayTrigger = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // MARK: - Init
 
@@ -72,7 +73,7 @@ public struct VisualizerPane: View {
             }
             .accessibilityIdentifier(A11y.Visualizer.pane)
             .accessibilityLabel("Visualizer pane, \(self.vm.mode.displayName)")
-            .transition(.move(edge: .trailing))
+            .transition(self.reduceMotion ? .opacity : .move(edge: .trailing))
             .onAppear { self.vm.start() }
             .onDisappear { self.vm.stop() }
         }
@@ -100,8 +101,12 @@ public struct VisualizerPane: View {
             .accessibilityLabel("Open fullscreen visualizer")
 
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                if self.reduceMotion {
                     self.vm.paneVisible = false
+                } else {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.vm.paneVisible = false
+                    }
                 }
             } label: {
                 Image(systemName: "xmark")

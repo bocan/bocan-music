@@ -48,6 +48,7 @@ public struct BocanRootView: View {
     @AppStorage(MetricKitListener.consentAskedKey) private var diagnosticsConsentAsked = false
     /// Show the crash-recovery banner when the previous session ended abnormally (issue #208).
     @AppStorage("launch.didCrashPreviously") private var didCrashPreviously = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         vm: LibraryViewModel,
@@ -105,8 +106,12 @@ public struct BocanRootView: View {
                             self.lyricsVM.paneVisible ? "Hide Lyrics" : "Show Lyrics",
                             systemImage: "text.quote"
                         ) {
-                            withAnimation(.easeInOut(duration: 0.2)) {
+                            if self.reduceMotion {
                                 self.lyricsVM.paneVisible.toggle()
+                            } else {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    self.lyricsVM.paneVisible.toggle()
+                                }
                             }
                         }
                         .help("Toggle lyrics pane (⌥⌘L)")
@@ -248,12 +253,12 @@ public struct BocanRootView: View {
                 if let toast = self.vm.toast {
                     ToastBanner(message: toast)
                         .padding(.top, 12)
-                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .transition(self.reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                         .accessibilityAddTraits(.isStaticText)
                         .accessibilityLabel(toast.text)
                 }
             }
-            .animation(.easeInOut(duration: 0.18), value: self.vm.toast)
+            .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.18), value: self.vm.toast)
             .onChange(of: self.vm.tagEditorTrackIDs) { _, ids in
                 if let ids, !ids.isEmpty, let svc = self.vm.metadataEditService {
                     self.tagEditorVM = TagEditorViewModel(service: svc, trackIDs: ids)
