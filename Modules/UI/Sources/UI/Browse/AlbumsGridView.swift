@@ -139,13 +139,17 @@ public struct AlbumsGridView: View {
     @FocusState private var focusedAlbumID: Int64?
     /// Tracks the number of columns in the adaptive grid for arrow-key navigation.
     @State private var gridColumnCount = 3
+    /// Scales the minimum album cell width proportionally to the user's text size setting.
+    @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
     public init(vm: AlbumsViewModel, library: LibraryViewModel) {
         self.vm = vm
         self.library = library
     }
 
-    private let columns = [GridItem(.adaptive(minimum: Theme.albumGridMinWidth), spacing: Theme.albumGridSpacing)]
+    private var columns: [GridItem] {
+        [GridItem(.adaptive(minimum: self.scaledAlbumMinWidth), spacing: Theme.albumGridSpacing)]
+    }
 
     public var body: some View {
         Group {

@@ -158,7 +158,8 @@ private enum PlaylistSidebarSurfacePrewarmer {
         // Warm commonly-lazy AppKit work (font + first NSWindow-backed surface)
         // off-screen so first visible sheet/dialog presentation is less likely to
         // stall audio render callbacks during active playback.
-        _ = NSFont.systemFont(ofSize: 13)
+        // Use preferredFont so the warm-up exercises the same code path as real cells.
+        _ = NSFont.preferredFont(forTextStyle: .body)
         let host = NSHostingView(rootView: Color.clear.frame(width: 1, height: 1))
         let panel = NSPanel(
             contentRect: NSRect(x: -20000, y: -20000, width: 16, height: 16),

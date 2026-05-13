@@ -11,8 +11,12 @@ public struct ArtistDetailView: View {
     @State private var artist: Artist?
     @State private var albums: [Album] = []
     @State private var albumTrackCounts: [Int64: Int] = [:]
+    /// Scales the minimum album cell width proportionally to the user's text size setting.
+    @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
-    private let albumColumns = [GridItem(.adaptive(minimum: Theme.albumGridMinWidth), spacing: Theme.albumGridSpacing)]
+    private var albumColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: self.scaledAlbumMinWidth), spacing: Theme.albumGridSpacing)]
+    }
 
     public init(artistID: Int64, library: LibraryViewModel) {
         self.artistID = artistID
