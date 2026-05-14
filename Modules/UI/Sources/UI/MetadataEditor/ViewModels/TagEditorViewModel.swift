@@ -388,6 +388,14 @@ public final class TagEditorViewModel: ObservableObject {
         self.composer = Self.fieldState(allTags.map(\.composer))
         self.comment = Self.fieldState(allTags.map(\.comment))
         self.year = Self.fieldState(allTags.map(\.year))
+        // If the raw date stored in the file is a full date (e.g. "2024-03-15") rather
+        // than a bare 4-digit year, pre-mark the field as edited so that Save will
+        // write the year back as a plain number, normalising the DATE tag.
+        if allTags.count == 1,
+           let rawDate = allTags[0].dateText,
+           !(rawDate.count == 4 && rawDate.allSatisfy(\.isNumber)) {
+            self.year = .edited(allTags[0].year)
+        }
         self.trackNumber = Self.fieldState(allTags.map(\.trackNumber))
         self.trackTotal = Self.fieldState(allTags.map(\.trackTotal))
         self.discNumber = Self.fieldState(allTags.map(\.discNumber))
