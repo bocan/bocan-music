@@ -114,18 +114,38 @@ public extension LibraryViewModel {
     func startOrStopWatcher() async {
         guard let scanner else { return }
         if UserDefaults.standard.bool(forKey: "library.watchForChanges") {
-            // Reload all views whenever FSEvents picks up a new or changed file.
+            // Debounce FSEvents bursts: rapid back-to-back file changes (e.g.
+            // a bulk tag-edit session touching 30+ files) each fire onFileImported
+            // once per batch.  Without coalescing, every batch queues an independent
+            // full-library reload (~360 ms each), creating a cascade of 60+ concurrent
+            // load tasks.  scheduleWatcherReload() cancels any pending reload and
+            // reschedules it 500 ms into the future so only one reload fires after the
+            // burst settles.
             await scanner.setOnFileImported { [weak self] in
                 guard let self else { return }
-                await self.tracks.load()
-                await self.albums.load()
-                await self.artists.load()
-                await self.loadCurrentDestination()
+                await self.scheduleWatcherReload()
             }
             await scanner.startWatching()
         } else {
             await scanner.setOnFileImported(nil)
             await scanner.stopWatching()
+        }
+    }
+
+    /// Debounces FSEvents-triggered library reloads.
+    ///
+    /// Cancels any previously scheduled reload and starts a new one after a
+    /// 500 ms quiet period.  If more FSEvents arrive within that window the
+    /// timer resets, ensuring only one full reload runs per burst.
+    func scheduleWatcherReload() {
+        watcherReloadTask?.cancel()
+        watcherReloadTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard let self, !Task.isCancelled else { return }
+            await self.tracks.load()
+            await self.albums.load()
+            await self.artists.load()
+            await self.loadCurrentDestination()
         }
     }
 
