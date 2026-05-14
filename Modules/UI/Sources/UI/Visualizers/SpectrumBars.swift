@@ -80,7 +80,7 @@ public final class SpectrumBars: Visualizer {
 
         let barSpacing: CGFloat = 2
         let barWidth = (size.width - barSpacing * CGFloat(bandCount + 1)) / CGFloat(bandCount)
-        let maxBarHeight = size.height - 12 // leave room for peak markers
+        let maxBarHeight = size.height - 4 // minimal padding for peak markers
 
         for i in 0 ..< bandCount {
             let x = barSpacing + CGFloat(i) * (barWidth + barSpacing)
