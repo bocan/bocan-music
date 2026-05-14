@@ -207,6 +207,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     let scanner: LibraryScanner?
     let scrobbleService: ScrobbleService?
     var scanTask: Task<Void, Never>?
+    /// Pending debounced reload task scheduled by `scheduleWatcherReload()`.
+    /// Cancelled and replaced whenever a new FSEvents batch arrives so that
+    /// a burst of back-to-back file changes collapses into a single refresh.
+    var watcherReloadTask: Task<Void, Never>?
     /// Phase 5.5 audit L2: scan progress is coalesced into these "pending"
     /// counters and flushed to the `@Published` properties at ~4 Hz so a
     /// 50k-file scan doesn't drown the main actor in objectWillChange ticks
