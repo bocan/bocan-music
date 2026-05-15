@@ -41,7 +41,8 @@ public struct DecoderFactory: Sendable {
                 throw error
             }
 
-        case .ogg, .opus, .dsf, .dff, .ape, .wavpack:
+        case .ogg, .opus, .dsf, .dff, .ape, .wavpack,
+             .mp2, .au, .wave64, .rf64, .matroska, .ac3, .dts, .wma:
             return try FFmpegDecoder(url: url)
 
         case let .unknown(magic):
