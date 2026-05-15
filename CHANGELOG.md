@@ -5,6 +5,15 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1](https://github.com/bocan/bocan-music/compare/v1.0.0...v1.0.1) (2026-05-15)
+
+
+### ### Fixed
+
+* **ui:** debounce FSEvents watcher reloads to prevent cascade ([8563099](https://github.com/bocan/bocan-music/commit/8563099c21bcf19143a59ab0ad283e805b698ca9))
+* **ui:** pre-mark year as edited when file stores a full date string ([b0f14db](https://github.com/bocan/bocan-music/commit/b0f14db0dd299cae6ab81e0aa811ac517a273a3c))
+* **ui:** reduce spectrum bars top padding from 12 to 4 points ([74bce4c](https://github.com/bocan/bocan-music/commit/74bce4cd94ce4302c88818194432be4fce9d6a9c))
+
 ## [1.0.0](https://github.com/bocan/bocan-music/compare/v0.12.0...v1.0.0) (2026-05-13)
 
 
