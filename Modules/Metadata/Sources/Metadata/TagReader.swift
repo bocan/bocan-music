@@ -15,9 +15,10 @@ public struct TagReader: Sendable {
 
     /// File extensions supported by TagLib (lowercase, no leading dot).
     public static let supportedExtensions: Set = [
-        "mp3", "flac", "ogg", "opus", "m4a", "m4b", "mp4",
+        "mp3", "mp2", "mp1", "flac", "ogg", "opus", "m4a", "m4b", "mp4",
         "aac", "alac", "wav", "aiff", "aif", "wv", "ape",
         "mpc", "wma", "dsf", "dff", "tta", "mka",
+        "ac3", "dts", "au", "snd", "w64", "mkv", "webm",
     ]
 
     /// Returns `true` if `url`'s path extension is in `supportedExtensions`.

@@ -85,7 +85,7 @@ Bòcan curates your music library while you sleep. The short version is that com
 ### Formats
 
 - Plays every format AVFoundation knows about out of the box: **FLAC, ALAC, AAC, MP3, WAV, AIFF, CAF, M4A**.
-- Also plays **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, and DSD** via a fully-integrated FFmpeg bridge — the formats every other Mac player makes you install a plug-in for.
+- Also plays **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD, MP2/MP1, AC-3, DTS, WMA, Wave64, RF64, Matroska/MKV/WebM, and AU/SND** via a fully-integrated FFmpeg bridge — the formats every other Mac player makes you install a plug-in for.
 - Embedded cover art is extracted from all supported containers and displayed everywhere.
 
 ### Playback

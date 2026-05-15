@@ -36,11 +36,11 @@ echo "  - TagLib: ${TAGLIB_VERSION}"
 extract_spm_version() {
     local package_name="$1"
     local module_path="$2"
-    
+
     if [[ ! -f "${module_path}/Package.resolved" ]]; then
         return
     fi
-    
+
     # Try to extract from Package.resolved JSON using grep+sed
     grep -i "\"identity\"\s*:\s*\".*${package_name}\"" "${module_path}/Package.resolved" 2>/dev/null | head -1 | \
         grep -o '"version"\s*:\s*"[^"]*"' | cut -d'"' -f4 || true

@@ -5,13 +5,21 @@ public enum Codec: Sendable, Equatable, Hashable {
     case wav
     case flac
     case mp3
+    case mp2 // MPEG Layer 1 and 2 (MP1 & MP2) — decoded by FFmpeg
     case m4a // covers both AAC and ALAC; AVFoundation handles both
-    case ogg // Vorbis or Opus inside an Ogg container
+    case ogg // Vorbis, Speex, or Ogg FLAC inside an Ogg container
     case opus // raw Opus
     case dsf // DSD Stream File (Sony)
     case dff // DSDIFF (Philips)
     case ape // Monkey's Audio
     case wavpack
+    case au // Sun/NeXT AU and SND
+    case wave64 // Sony Wave64 (.w64)
+    case rf64 // RF64 / Broadcast Wave extended WAV
+    case matroska // Matroska, MKV, and WebM containers
+    case ac3 // Dolby AC-3
+    case dts // DTS audio
+    case wma // Windows Media Audio (ASF container)
     case unknown(Data)
 }
 
@@ -65,18 +73,46 @@ public struct FormatSniffer: Sendable {
 
 private extension FormatSniffer {
     func detectContainerCodec(from b: Data) -> Codec? {
-        // WAV: "RIFF" at offset 0
+        // WAV: "RIFF" at offset 0 (uppercase — distinct from Wave64's lowercase "riff")
         if b.hasPrefix("RIFF") { return .wav }
+
+        // Wave64: "riff" (lowercase GUID prefix) at offset 0
+        if b.hasPrefix("riff") { return .wave64 }
+
+        // RF64 extended WAV: "RF64" at offset 0
+        if b.hasPrefix("RF64") { return .rf64 }
 
         // FLAC: "fLaC" at offset 0
         if b.hasPrefix("fLaC") { return .flac }
 
-        // MP3: ID3 tag or sync word
+        // MP3: ID3 tag (ID3-tagged MPEG files are Layer 3 in virtually all practice)
         if b.hasPrefix("ID3") { return .mp3 }
-        if b[0] == 0xFF, (b[1] & 0xE0) == 0xE0 { return .mp3 }
+
+        // MPEG sync word — distinguish layer from bits [2:1] of byte 1:
+        //   0x02 = Layer 3 (MP3) → AVFoundation
+        //   0x04 = Layer 2 (MP2), 0x06 = Layer 1 (MP1) → FFmpeg
+        if b[0] == 0xFF, (b[1] & 0xE0) == 0xE0 {
+            return (b[1] & 0x06) == 0x02 ? .mp3 : .mp2
+        }
 
         // M4A / MP4: "ftyp" at offset 4
         if b.count >= 8, b[4 ..< 8] == Data([0x66, 0x74, 0x79, 0x70]) { return .m4a }
+
+        // AU/SND: ".snd" magic at offset 0
+        if b.hasPrefix(".snd") { return .au }
+
+        // Matroska / MKV / WebM: EBML header magic
+        if b[0] == 0x1A, b[1] == 0x45, b[2] == 0xDF, b[3] == 0xA3 { return .matroska }
+
+        // AC-3 (Dolby Digital): sync word 0x0B77
+        if b[0] == 0x0B, b[1] == 0x77 { return .ac3 }
+
+        // DTS: sync word 0x7FFE8001 (big-endian) or 0xFE7F0180 (little-endian)
+        if b[0] == 0x7F, b[1] == 0xFE, b[2] == 0x80, b[3] == 0x01 { return .dts }
+        if b[0] == 0xFE, b[1] == 0x7F, b[2] == 0x01, b[3] == 0x80 { return .dts }
+
+        // WMA / ASF: first 4 bytes of ASF Header Object GUID (0x30 0x26 0xB2 0x75)
+        if b[0] == 0x30, b[1] == 0x26, b[2] == 0xB2, b[3] == 0x75 { return .wma }
 
         return self.detectDsdCodec(from: b)
     }
