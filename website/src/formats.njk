@@ -1,0 +1,201 @@
+---
+layout: base.njk
+title: Formats
+description: Every audio format Bòcan can play, and which engine decodes it.
+permalink: /formats/
+---
+
+<div class="container container--narrow">
+  <h1>Supported formats</h1>
+  <p>
+    {{ site.title }} detects audio formats by <strong>magic bytes</strong>,
+    not file extensions — so a renamed file plays correctly without any
+    guessing. Decoding uses two back-ends:
+    <strong>AVFoundation</strong> (Apple's native stack) and
+    <strong>FFmpeg</strong> (bundled LGPL build, no GPL codecs).
+  </p>
+
+  <h2 id="lossless-pcm">Lossless PCM</h2>
+  <table>
+    <thead>
+      <tr><th>Format</th><th>Extensions</th><th>Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>WAV / RIFF PCM</td>
+        <td><code>.wav</code></td>
+        <td>AVFoundation</td>
+      </tr>
+      <tr>
+        <td>AIFF / AIFF-C</td>
+        <td><code>.aiff</code> <code>.aif</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>AU / SND</td>
+        <td><code>.au</code> <code>.snd</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>Wave64</td>
+        <td><code>.w64</code></td>
+        <td>FFmpeg — removes the 4&nbsp;GB WAV size cap</td>
+      </tr>
+      <tr>
+        <td>RF64 / Broadcast Wave</td>
+        <td><code>.wav</code> <code>.bwf</code></td>
+        <td>FFmpeg — identified by magic bytes, not extension</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="lossless-compressed">Lossless compressed</h2>
+  <table>
+    <thead>
+      <tr><th>Format</th><th>Extensions</th><th>Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>FLAC</td>
+        <td><code>.flac</code></td>
+        <td>AVFoundation (FFmpeg fallback for unusual streams)</td>
+      </tr>
+      <tr>
+        <td>ALAC (Apple Lossless)</td>
+        <td><code>.m4a</code> <code>.alac</code> <code>.mp4</code></td>
+        <td>AVFoundation</td>
+      </tr>
+      <tr>
+        <td>Monkey's Audio</td>
+        <td><code>.ape</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>WavPack</td>
+        <td><code>.wv</code></td>
+        <td>FFmpeg — lossless, hybrid-lossy, and DSD modes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="lossy">Lossy</h2>
+  <table>
+    <thead>
+      <tr><th>Format</th><th>Extensions</th><th>Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>MP3 (MPEG Layer&nbsp;3)</td>
+        <td><code>.mp3</code></td>
+        <td>AVFoundation</td>
+      </tr>
+      <tr>
+        <td>MP2 (MPEG Layer&nbsp;2)</td>
+        <td><code>.mp2</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>MP1 (MPEG Layer&nbsp;1)</td>
+        <td><code>.mp1</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>AAC</td>
+        <td><code>.aac</code> <code>.m4a</code> <code>.m4b</code> <code>.mp4</code></td>
+        <td>AVFoundation</td>
+      </tr>
+      <tr>
+        <td>OGG Vorbis / Speex / Ogg FLAC</td>
+        <td><code>.ogg</code></td>
+        <td>FFmpeg — content type detected automatically</td>
+      </tr>
+      <tr>
+        <td>Opus</td>
+        <td><code>.opus</code> <code>.ogg</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>WMA (Windows Media Audio)</td>
+        <td><code>.wma</code></td>
+        <td>FFmpeg (ASF container)</td>
+      </tr>
+      <tr>
+        <td>Musepack</td>
+        <td><code>.mpc</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>AC-3 / Dolby Digital</td>
+        <td><code>.ac3</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>DTS</td>
+        <td><code>.dts</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>TTA (True Audio)</td>
+        <td><code>.tta</code></td>
+        <td>FFmpeg</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="dsd">DSD</h2>
+  <p>
+    DSD files are decoded to PCM via DoP (DSD over PCM) for output to
+    standard DACs.
+  </p>
+  <table>
+    <thead>
+      <tr><th>Format</th><th>Extensions</th><th>Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>DSF (Sony DSD Stream File)</td>
+        <td><code>.dsf</code></td>
+        <td>FFmpeg</td>
+      </tr>
+      <tr>
+        <td>DFF / DSDIFF (Philips)</td>
+        <td><code>.dff</code></td>
+        <td>FFmpeg</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="containers">Containers</h2>
+  <table>
+    <thead>
+      <tr><th>Format</th><th>Extensions</th><th>Engine</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Matroska / MKV / WebM</td>
+        <td><code>.mkv</code> <code>.mka</code> <code>.webm</code></td>
+        <td>FFmpeg — audio tracks extracted automatically</td>
+      </tr>
+      <tr>
+        <td>MP4 / M4A</td>
+        <td><code>.mp4</code> <code>.m4a</code> <code>.m4b</code></td>
+        <td>AVFoundation</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2 id="output">Output</h2>
+  <p>
+    All formats are decoded internally to <strong>32-bit float PCM</strong>.
+    Output to hardware supports up to <strong>32-bit&nbsp;/&nbsp;384&nbsp;kHz</strong>.
+    DSD is output via DoP. Gapless playback is guaranteed for all formats.
+  </p>
+
+  <h2 id="not-supported">What isn't supported</h2>
+  <ul>
+    <li><strong>TAK</strong> — patent-encumbered; no LGPL-safe decoder available</li>
+    <li><strong>SACD ISO</strong> — raw disc images; individual DSF/DFF tracks play fine</li>
+    <li><strong>RealAudio</strong> (<code>.ra</code>, <code>.rm</code>) — no LGPL-safe decoder</li>
+    <li><strong>Encrypted files</strong> — Apple DRM (FairPlay) and WMA DRM files cannot be decoded</li>
+  </ul>
+</div>
