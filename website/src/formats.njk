@@ -9,7 +9,7 @@ permalink: /formats/
   <h1>Supported formats</h1>
   <p>
     {{ site.title }} detects audio formats by <strong>magic bytes</strong>,
-    not file extensions — so a renamed file plays correctly without any
+    not file extensions, so a renamed file plays correctly without any
     guessing. Decoding uses two back-ends:
     <strong>AVFoundation</strong> (Apple's native stack) and
     <strong>FFmpeg</strong> (bundled LGPL build, no GPL codecs).
@@ -39,12 +39,12 @@ permalink: /formats/
       <tr>
         <td>Wave64</td>
         <td><code>.w64</code></td>
-        <td>FFmpeg — removes the 4&nbsp;GB WAV size cap</td>
+        <td>FFmpeg (removes the 4&nbsp;GB WAV size cap)</td>
       </tr>
       <tr>
         <td>RF64 / Broadcast Wave</td>
         <td><code>.wav</code> <code>.bwf</code></td>
-        <td>FFmpeg — identified by magic bytes, not extension</td>
+        <td>FFmpeg (identified by magic bytes, not extension)</td>
       </tr>
     </tbody>
   </table>
@@ -73,7 +73,7 @@ permalink: /formats/
       <tr>
         <td>WavPack</td>
         <td><code>.wv</code></td>
-        <td>FFmpeg — lossless, hybrid-lossy, and DSD modes</td>
+        <td>FFmpeg (lossless, hybrid-lossy, and DSD modes)</td>
       </tr>
     </tbody>
   </table>
@@ -107,7 +107,7 @@ permalink: /formats/
       <tr>
         <td>OGG Vorbis / Speex / Ogg FLAC</td>
         <td><code>.ogg</code></td>
-        <td>FFmpeg — content type detected automatically</td>
+        <td>FFmpeg (content type detected automatically)</td>
       </tr>
       <tr>
         <td>Opus</td>
@@ -174,7 +174,7 @@ permalink: /formats/
       <tr>
         <td>Matroska / MKV / WebM</td>
         <td><code>.mkv</code> <code>.mka</code> <code>.webm</code></td>
-        <td>FFmpeg — audio tracks extracted automatically</td>
+        <td>FFmpeg (audio tracks extracted automatically)</td>
       </tr>
       <tr>
         <td>MP4 / M4A</td>
@@ -193,9 +193,9 @@ permalink: /formats/
 
   <h2 id="not-supported">What isn't supported</h2>
   <ul>
-    <li><strong>TAK</strong> — patent-encumbered; no LGPL-safe decoder available</li>
-    <li><strong>SACD ISO</strong> — raw disc images; individual DSF/DFF tracks play fine</li>
-    <li><strong>RealAudio</strong> (<code>.ra</code>, <code>.rm</code>) — no LGPL-safe decoder</li>
-    <li><strong>Encrypted files</strong> — Apple DRM (FairPlay) and WMA DRM files cannot be decoded</li>
+    <li><strong>TAK</strong>: patent-encumbered; no LGPL-safe decoder available</li>
+    <li><strong>SACD ISO</strong>: raw disc images. Individual DSF/DFF tracks play fine.</li>
+    <li><strong>RealAudio</strong> (<code>.ra</code>, <code>.rm</code>): no LGPL-safe decoder</li>
+    <li><strong>Encrypted files</strong>: Apple DRM (FairPlay) and WMA DRM files cannot be decoded</li>
   </ul>
 </div>
