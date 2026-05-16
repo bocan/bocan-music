@@ -5,6 +5,18 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/bocan/bocan-music/compare/v1.0.1...v1.1.0) (2026-05-16)
+
+
+### ### Added
+
+* **audio:** add MP2/MP1, AC-3, DTS, WMA, Wave64, RF64, Matroska, AU support ([5850066](https://github.com/bocan/bocan-music/commit/58500664c2399701589042ea3a9ee05520dd8e56))
+
+
+### ### Fixed
+
+* **lint:** wrap long FFmpeg format string, extract sync-word checks to reduce cyclomatic complexity ([480e5de](https://github.com/bocan/bocan-music/commit/480e5deaac087286faf19c5a7552948915084323))
+
 ## [1.0.1](https://github.com/bocan/bocan-music/compare/v1.0.0...v1.0.1) (2026-05-15)
 
 
