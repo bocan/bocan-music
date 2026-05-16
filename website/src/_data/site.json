@@ -14,6 +14,6 @@
     "latest_download": "https://github.com/bocan/bocan-music/releases/latest/download/Bocan.dmg",
     "all_releases_url": "https://github.com/bocan/bocan-music/releases"
   },
-  "minimumMacOS": "macOS 26 Tahoe",
+  "minimumMacOS": "macOS 15 Sequoia",
   "architecture": "Apple Silicon (arm64)"
 }

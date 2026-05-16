@@ -40,11 +40,11 @@ jobs:
     if: needs.check-signing.outputs.enabled == 'true'
     runs-on: macos-26
 
-    # arm64-only: Bòcan targets macOS 26+, which runs exclusively on Apple Silicon.
-    # Intel Macs cannot run macOS 26, so there is no x86_64 user base to support.
-    # A universal binary would double CI build time with no benefit. FFmpeg dylibs
-    # and fpcalc in Resources/ are arm64-only as well. Revisit if the deployment
-    # target is ever lowered to macOS 14 or 15.
+    # arm64-only: Bòcan targets Apple Silicon (macOS 15+). Intel Macs are not
+    # supported because the bundled FFmpeg dylibs and fpcalc binary in Resources/
+    # are arm64-only. A universal binary would require rebuilding those as fat
+    # binaries, which is non-trivial. The app will simply refuse to launch on
+    # x86_64 hardware.
     env:
       ARCHS: arm64
       ONLY_ACTIVE_ARCH: "NO"
