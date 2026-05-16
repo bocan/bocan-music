@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml)
-![macOS 26+](https://img.shields.io/badge/macOS-26%2B-blue)
+![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue)
 ![Swift 6](https://img.shields.io/badge/Swift-6.0-orange)
 ![Xcode 26](https://img.shields.io/badge/Xcode-26-1575F9)
 
@@ -243,7 +243,7 @@ Contributions and ideas welcome. Open an issue or a pull request.
 | Binary / package name | `bocan` |
 | Bundle ID | `io.cloudcauldron.bocan` |
 | Log subsystem | `io.cloudcauldron.bocan` |
-| Minimum macOS | 26.0 (Tahoe) |
+| Minimum macOS | 15.0 (Sequoia) |
 
 ## Install
 
@@ -262,7 +262,7 @@ Sparkle keeps the app current automatically. `brew upgrade --greedy bocan` does 
 
 ## Requirements (for building from source)
 
-- macOS 26.0+
+- macOS 15.0+ (Apple Silicon)
 - Xcode 26+
 - Homebrew (for FFmpeg, Chromaprint, TagLib, swiftlint, swiftformat, xcodegen, xcbeautify)
 

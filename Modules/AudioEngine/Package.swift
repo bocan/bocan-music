@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "AudioEngine",
     platforms: [
-        .macOS(.v26),
+        .macOS(.v15),
     ],
     products: [
         .library(name: "AudioEngine", targets: ["AudioEngine"]),
