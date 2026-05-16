@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ### Added
 
+* **build:** re-establish macOS 15 Sequoia compatibility
 * **audio:** add MP2/MP1, AC-3, DTS, WMA, Wave64, RF64, Matroska, AU support ([5850066](https://github.com/bocan/bocan-music/commit/58500664c2399701589042ea3a9ee05520dd8e56))
 
 
