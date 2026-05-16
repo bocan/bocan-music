@@ -223,14 +223,15 @@ Bòcan curates your music library while you sleep. The short version is that com
 
 ---
 
-## Features on the roadmap
+## What's next
 
-- A tool to manage and organise files in the library.
-- More visualisations.
-- Remote control apps for iPhone and Android. To control the app on the mac - not to play remotely.
-- Observability improvement.  Maybe a log _console_ in Tools.
-- Very interested in improving accessiblity.
-- Ideas very very welcome!
+- **File management tools** — move, rename, and organise files directly from the library.
+- **More visualisers** — new render modes beyond spectrum bars, oscilloscope, and the fluid shader.
+- **Remote control** — iPhone and Android apps to control playback on the Mac (not AirPlay; the Mac stays the source).
+- **Observability** — structured log viewer in the Tools menu, in-app diagnostic export.
+- **Accessibility** — ongoing work; VoiceOver coverage is good but there's more to do.
+
+Contributions and ideas welcome. Open an issue or a pull request.
 
 ---
 
