@@ -215,7 +215,9 @@ private struct FormatsSection: View {
                 )
                 FormatRow(
                     engine: "FFmpeg engine",
-                    formats: "OGG Vorbis / Speex / Ogg FLAC, Opus, MP2/MP1, AC-3, DTS, WMA, Wave64, RF64, Matroska/MKV/WebM, AU/SND, APE (Monkey's Audio), WavPack, DSD (DSF/DFF)"
+                    formats: "OGG Vorbis / Speex / Ogg FLAC, Opus, MP2/MP1, AC-3, DTS, WMA,"
+                        + " Wave64, RF64, Matroska/MKV/WebM, AU/SND,"
+                        + " APE (Monkey's Audio), WavPack, DSD (DSF/DFF)"
                 )
             }
             .padding(.bottom, 20)
