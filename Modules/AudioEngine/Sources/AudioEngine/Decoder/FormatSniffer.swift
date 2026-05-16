@@ -101,6 +101,12 @@ private extension FormatSniffer {
         // AU/SND: ".snd" magic at offset 0
         if b.hasPrefix(".snd") { return .au }
 
+        return self.detectSyncMagicCodec(from: b) ?? self.detectDsdCodec(from: b)
+    }
+
+    /// Binary sync-word checks extracted to keep `detectContainerCodec` under the
+    /// cyclomatic-complexity limit.
+    func detectSyncMagicCodec(from b: Data) -> Codec? {
         // Matroska / MKV / WebM: EBML header magic
         if b[0] == 0x1A, b[1] == 0x45, b[2] == 0xDF, b[3] == 0xA3 { return .matroska }
 
@@ -114,7 +120,7 @@ private extension FormatSniffer {
         // WMA / ASF: first 4 bytes of ASF Header Object GUID (0x30 0x26 0xB2 0x75)
         if b[0] == 0x30, b[1] == 0x26, b[2] == 0xB2, b[3] == 0x75 { return .wma }
 
-        return self.detectDsdCodec(from: b)
+        return nil
     }
 
     func detectDsdCodec(from b: Data) -> Codec? {
