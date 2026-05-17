@@ -58,7 +58,7 @@ public actor LastFmProvider: ScrobbleProvider {
     private var lastNowPlayingAt: Date?
 
     private let config: LastFmConfig
-    private let http: HTTPClient
+    private let transport: LastFmCompatibleTransport
     private let credentials: any LastFmCredentialsStore
     private let log = AppLogger.make(.scrobble)
     private let now: @Sendable () -> Date
@@ -70,7 +70,7 @@ public actor LastFmProvider: ScrobbleProvider {
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.config = config
-        self.http = http
+        self.transport = LastFmCompatibleTransport(http: http, endpoint: config.endpoint)
         self.credentials = credentials
         self.now = now
     }
@@ -225,96 +225,11 @@ public actor LastFmProvider: ScrobbleProvider {
     // MARK: HTTP
 
     private func signedPost(_ params: [String: String]) async throws -> [String: Any] {
-        try await self.send(params: params, method: "POST")
+        try await self.transport.signedPost(params, sharedSecret: self.config.sharedSecret, providerID: self.id)
     }
 
     private func signedGet(_ params: [String: String]) async throws -> [String: Any] {
-        try await self.send(params: params, method: "GET")
-    }
-
-    private func send(params: [String: String], method: String) async throws -> [String: Any] {
-        var p = params
-        p["api_sig"] = LastFmSignature.sign(p, secret: self.config.sharedSecret)
-        p["format"] = "json"
-
-        let request = try self.makeRequest(params: p, method: method)
-        let (data, response) = try await self.http.data(for: request)
-        let http = response as? HTTPURLResponse
-        let status = http?.statusCode ?? 0
-        let retryAfter = http?.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init)
-
-        if status >= 500 {
-            throw ScrobbleError.transient(provider: self.id, reason: "http \(status)", retryAfter: retryAfter)
-        }
-
-        let parsed: Any
-        do {
-            parsed = try JSONSerialization.jsonObject(with: data, options: [])
-        } catch {
-            throw ScrobbleError.malformedResponse(provider: self.id, reason: "invalid json")
-        }
-        guard var json = parsed as? [String: Any] else {
-            throw ScrobbleError.malformedResponse(provider: self.id, reason: "not an object")
-        }
-
-        if let errCode = json["error"] as? Int {
-            let msg = (json["message"] as? String) ?? "error \(errCode)"
-            // Codes per https://www.last.fm/api/errorcodes
-            switch errCode {
-            case 11, 16: // Service offline / Service temporarily unavailable
-                throw ScrobbleError.transient(provider: self.id, reason: msg, retryAfter: retryAfter)
-            case 29: // Rate limit exceeded
-                throw ScrobbleError.transient(provider: self.id, reason: msg, retryAfter: retryAfter ?? 60)
-            case 9: // Invalid session key — re-auth required
-                throw ScrobbleError.invalidCredentials(provider: self.id)
-            case 4, 13, 14, 17, 18, 22, 23: // Auth failed / token invalid / unauthorised
-                throw ScrobbleError.invalidCredentials(provider: self.id)
-            default:
-                throw ScrobbleError.permanent(provider: self.id, reason: msg)
-            }
-        }
-
-        // Status 2xx, no `error` key → success. Strip outer envelope if present.
-        if let single = json.first, json.count == 1, let nested = single.value as? [String: Any] {
-            json = nested
-        }
-        return json
-    }
-
-    private func makeRequest(params: [String: String], method: String) throws -> URLRequest {
-        let body = self.formEncode(params)
-        if method == "GET" {
-            var components = URLComponents(url: self.config.endpoint, resolvingAgainstBaseURL: true)
-                ?? URLComponents(string: self.config.endpoint.absoluteString)!
-            components.queryItems = params.map { URLQueryItem(name: $0.key, value: $0.value) }
-            guard let url = components.url else {
-                throw ScrobbleError.malformedResponse(provider: self.id, reason: "bad url")
-            }
-            var req = URLRequest(url: url)
-            req.httpMethod = "GET"
-            req.setValue("application/json", forHTTPHeaderField: "Accept")
-            return req
-        } else {
-            var req = URLRequest(url: self.config.endpoint)
-            req.httpMethod = "POST"
-            req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            req.setValue("application/json", forHTTPHeaderField: "Accept")
-            req.httpBody = Data(body.utf8)
-            return req
-        }
-    }
-
-    private func formEncode(_ params: [String: String]) -> String {
-        params
-            .sorted { $0.key < $1.key }
-            .map { "\(self.escape($0.key))=\(self.escape($0.value))" }
-            .joined(separator: "&")
-    }
-
-    private func escape(_ s: String) -> String {
-        var allowed = CharacterSet.urlQueryAllowed
-        allowed.remove(charactersIn: "+&=?#")
-        return s.addingPercentEncoding(withAllowedCharacters: allowed) ?? s
+        try await self.transport.signedGet(params, sharedSecret: self.config.sharedSecret, providerID: self.id)
     }
 }
 

@@ -14,7 +14,7 @@ import Playback
 ///   - `nowPlaying(_:)` from `QueuePlayer` when a track starts (best-effort),
 ///   - `love(_:loved:)` from the UI when the user toggles the loved flag.
 public actor ScrobbleService: ScrobbleSink {
-    public static let providerIDs: [String] = ["lastfm", "listenbrainz"]
+    public static let providerIDs: [String] = ["lastfm", "listenbrainz", "rocksky"]
 
     private let providers: [String: any ScrobbleProvider]
     private let workers: [String: ScrobbleQueueWorker]
