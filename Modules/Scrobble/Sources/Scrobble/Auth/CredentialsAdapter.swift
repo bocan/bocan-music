@@ -6,11 +6,12 @@ import Foundation
 /// that `LastFmProvider` and `ListenBrainzProvider` consume. Keeping the
 /// per-provider stores narrow lets the providers be tested with simple
 /// in-memory fixtures and keeps the keychain account names in one place.
-public actor CredentialsAdapter: LastFmCredentialsStore, ListenBrainzCredentialsStore {
+public actor CredentialsAdapter: LastFmCredentialsStore, ListenBrainzCredentialsStore, RockskyCredentialsStore {
     public static let lastFmSessionKeyAccount = "lastfm.session"
     public static let lastFmUsernameAccount = "lastfm.username"
     public static let listenBrainzTokenAccount = "listenbrainz.token"
     public static let listenBrainzUsernameAccount = "listenbrainz.username"
+    public static let rockskyApiKeyAccount = "rocksky.apikey"
 
     private let store: Credentials
 
@@ -56,5 +57,19 @@ public actor CredentialsAdapter: LastFmCredentialsStore, ListenBrainzCredentials
 
     public func listenBrainzUsername() async throws -> String? {
         try await self.store.string(for: Self.listenBrainzUsernameAccount)
+    }
+
+    // MARK: Rocksky
+
+    public func rockskyApiKey() async throws -> String? {
+        try await self.store.string(for: Self.rockskyApiKeyAccount)
+    }
+
+    public func setRocksky(apiKey: String) async throws {
+        try await self.store.set(apiKey, for: Self.rockskyApiKeyAccount)
+    }
+
+    public func clearRocksky() async throws {
+        try await self.store.remove(account: Self.rockskyApiKeyAccount)
     }
 }
