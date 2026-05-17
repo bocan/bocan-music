@@ -166,3 +166,23 @@ actor StubListenBrainzCreds: ListenBrainzCredentialsStore {
         self.username
     }
 }
+
+actor StubRockskyCreds: RockskyCredentialsStore {
+    var apiKey: String?
+
+    init(apiKey: String? = nil) {
+        self.apiKey = apiKey
+    }
+
+    func rockskyApiKey() async throws -> String? {
+        self.apiKey
+    }
+
+    func setRocksky(apiKey: String) async throws {
+        self.apiKey = apiKey
+    }
+
+    func clearRocksky() async throws {
+        self.apiKey = nil
+    }
+}
