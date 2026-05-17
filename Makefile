@@ -1,7 +1,7 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback uitest lint format format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble uitest lint format format-check install-hooks clean
 
 ## tests: Run format, lint, full test matrix (Xcode + every SPM module)
-tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback
+tests: format lint build test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble
 
 ## help: Print all available targets
 help:
@@ -145,6 +145,13 @@ test-playback:
 	@echo "= Executing Playback Test"
 	@echo "=============================="
 	cd Modules/Playback && swift test --enable-code-coverage
+
+## test-scrobble: Run Scrobble SPM package tests
+test-scrobble:
+	@echo "=============================="
+	@echo "= Executing Scrobble Test"
+	@echo "=============================="
+	cd Modules/Scrobble && swift test --enable-code-coverage
 
 ## uitest: Run UI smoke tests (BocanUITests scheme target)
 uitest:
