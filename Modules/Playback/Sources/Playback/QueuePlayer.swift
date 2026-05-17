@@ -106,6 +106,10 @@ public actor QueuePlayer: Transport {
     /// Set during `performGaplessPrefetch` when `crossfadeAllowed` returns `true`.
     private var crossfadePendingForNextTransition = false
 
+    /// Periodic task that calls `historyRecorder.update(elapsed:)` while playing
+    /// so that scrobbles fire at the 50 % threshold even before a track ends.
+    private var scrobbleUpdateTask: Task<Void, Never>?
+
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
@@ -145,11 +149,11 @@ public actor QueuePlayer: Transport {
         )
 
         // Kick off async activation after init completes.
-        // Use .default priority so GRDB's internal DispatchQueue.sync calls
+        // Use .medium priority so GRDB's internal DispatchQueue.sync calls
         // don't trigger the Thread Performance Checker priority-inversion warning
         // (GRDB pool uses sync dispatch internally; .userInitiated inherited from
         // @MainActor would cause the checker to flag an inversion).
-        Task(priority: .default) { await self.activate() }
+        Task(priority: .medium) { await self.activate() }
     }
 
     // MARK: - Async activation
@@ -626,19 +630,39 @@ public actor QueuePlayer: Transport {
         for await engineState in self.engine.state {
             switch engineState {
             case .ended:
+                self.stopScrobbleUpdateLoop()
                 await self.handleTrackEnded()
             case .playing:
                 self.lastEmittedState = .playing
                 self.stateContinuation?.yield(.playing)
                 await self.gaplessScheduler.start()
+                self.startScrobbleUpdateLoop()
             case .paused:
                 self.lastEmittedState = .paused
                 self.stateContinuation?.yield(.paused)
+                self.stopScrobbleUpdateLoop()
             default:
                 self.lastEmittedState = engineState
                 self.stateContinuation?.yield(engineState)
             }
         }
+    }
+
+    private func startScrobbleUpdateLoop() {
+        self.scrobbleUpdateTask?.cancel()
+        self.scrobbleUpdateTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(5))
+                guard let self, !Task.isCancelled else { break }
+                let elapsed = await self.engine.currentTime
+                await self.historyRecorder.update(elapsed: elapsed)
+            }
+        }
+    }
+
+    private func stopScrobbleUpdateLoop() {
+        self.scrobbleUpdateTask?.cancel()
+        self.scrobbleUpdateTask = nil
     }
 
     /// Visible to tests so they can drive the end-of-track flow without needing a
