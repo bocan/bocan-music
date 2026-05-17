@@ -9,6 +9,7 @@ public struct ScrobbleSettingsView: View {
     @ObservedObject var viewModel: ScrobbleSettingsViewModel
     @State private var showLastFmSheet = false
     @State private var showListenBrainzSheet = false
+    @State private var showRockskySheet = false
     @State private var showRecentSheet = false
 
     public init(viewModel: ScrobbleSettingsViewModel) {
@@ -36,6 +37,18 @@ public struct ScrobbleSettingsView: View {
                     disconnectAction: { Task { await self.viewModel.disconnectListenBrainz() } }
                 )
                 if let err = viewModel.listenBrainzTokenError {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+            Section("Rocksky") {
+                self.providerRow(
+                    status: self.viewModel.rocksky,
+                    connectAction: { self.showRockskySheet = true },
+                    disconnectAction: { Task { await self.viewModel.disconnectRocksky() } }
+                )
+                if let err = viewModel.rockskyConnectError {
                     Text(err)
                         .font(.caption)
                         .foregroundStyle(.red)
@@ -78,6 +91,9 @@ public struct ScrobbleSettingsView: View {
         .sheet(isPresented: self.$showListenBrainzSheet) {
             ConnectListenBrainzSheet(viewModel: self.viewModel, isPresented: self.$showListenBrainzSheet)
         }
+        .sheet(isPresented: self.$showRockskySheet) {
+            ConnectRockskySheet(viewModel: self.viewModel, isPresented: self.$showRockskySheet)
+        }
         .sheet(isPresented: self.$showRecentSheet) {
             RecentScrobblesView(viewModel: self.viewModel)
         }
@@ -93,10 +109,16 @@ public struct ScrobbleSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(status.displayName)
                     .font(.headline)
-                if status.isConnected, let user = status.username {
-                    Text("Connected as \(user)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if status.isConnected {
+                    if let user = status.username {
+                        Text("Connected as \(user)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Connected")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 } else {
                     Text("Not connected")
                         .font(.caption)

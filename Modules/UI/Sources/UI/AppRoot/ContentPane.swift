@@ -34,6 +34,11 @@ public struct ContentPane: View {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: self.vm.isInitialScan)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if !self.vm.isInitialScan {
+                    ScanBanner(vm: self.vm)
+                }
+            }
     }
 
     @ViewBuilder

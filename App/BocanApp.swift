@@ -574,6 +574,7 @@ struct BocanApp: App {
             log.info("scrobble.lastfm.disabled", ["reason": "no api key in Info.plist"])
         }
         providers.append(ListenBrainzProvider(http: http, credentials: adapter))
+        providers.append(RockskyProvider(http: http, credentials: adapter))
         let repo = ScrobbleQueueRepository(database: db)
         let reachability = SystemReachability()
         let service = ScrobbleService(providers: providers, repository: repo, reachability: reachability)
