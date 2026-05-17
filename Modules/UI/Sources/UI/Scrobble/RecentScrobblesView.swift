@@ -12,6 +12,7 @@ import SwiftUI
 public struct RecentScrobblesView: View {
     @ObservedObject var viewModel: ScrobbleSettingsViewModel
     @State private var filter: ProviderFilter = .all
+    @Environment(\.dismiss) private var dismiss
 
     public init(viewModel: ScrobbleSettingsViewModel) {
         self.viewModel = viewModel
@@ -23,6 +24,7 @@ public struct RecentScrobblesView: View {
         case all = "All"
         case lastfm = "Last.fm"
         case listenbrainz = "ListenBrainz"
+        case rocksky = "Rocksky"
 
         var id: String {
             self.rawValue
@@ -38,6 +40,9 @@ public struct RecentScrobblesView: View {
 
             case .listenbrainz:
                 "listenbrainz"
+
+            case .rocksky:
+                "rocksky"
             }
         }
     }
@@ -55,19 +60,22 @@ public struct RecentScrobblesView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            // Toolbar with title + filter picker
-            HStack {
+            // Toolbar with title + filter picker + done button
+            HStack(spacing: 12) {
                 Text("Recent Scrobbles")
                     .font(.headline)
                 Spacer()
-                Picker("Provider", selection: self.$filter) {
+                Picker(selection: self.$filter) {
                     ForEach(ProviderFilter.allCases) { option in
                         Text(option.rawValue).tag(option)
                     }
-                }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 240)
-                .accessibilityLabel("Filter by provider")
+                } label: { EmptyView() }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 300)
+                    .accessibilityLabel("Filter by provider")
+                Button("Done") { self.dismiss() }
+                    .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -90,7 +98,14 @@ public struct RecentScrobblesView: View {
                 .listStyle(.inset)
             }
         }
-        .frame(minWidth: 480, minHeight: 360)
+        .frame(
+            minWidth: 620,
+            idealWidth: 720,
+            maxWidth: .infinity,
+            minHeight: 400,
+            idealHeight: 520,
+            maxHeight: .infinity
+        )
         .accessibilityIdentifier("recent-scrobbles")
     }
 
@@ -98,7 +113,7 @@ public struct RecentScrobblesView: View {
 
     @ViewBuilder
     private func rowView(_ row: ScrobbleQueueRepository.RecentRow) -> some View {
-        let visibleProviderIDs: [String] = self.filter.providerID.map { [$0] } ?? ["lastfm", "listenbrainz"]
+        let visibleProviderIDs: [String] = self.filter.providerID.map { [$0] } ?? ["lastfm", "listenbrainz", "rocksky"]
 
         HStack(alignment: .center, spacing: 10) {
             // Track info
@@ -153,7 +168,7 @@ public struct RecentScrobblesView: View {
         providerID: String
     ) -> some View {
         let (imageName, color) = Self.badgeAppearance(for: status)
-        let providerName = providerID == "lastfm" ? "Last.fm" : "ListenBrainz"
+        let providerName = Self.providerDisplayName(providerID)
 
         Image(systemName: imageName)
             .foregroundStyle(color)
@@ -161,6 +176,15 @@ public struct RecentScrobblesView: View {
             .help("\(providerName): \(status.displayLabel)")
             .accessibilityLabel("\(providerName)")
             .accessibilityValue(status.displayLabel)
+    }
+
+    private static func providerDisplayName(_ providerID: String) -> String {
+        switch providerID {
+        case "lastfm": "Last.fm"
+        case "listenbrainz": "ListenBrainz"
+        case "rocksky": "Rocksky"
+        default: providerID
+        }
     }
 
     private static func badgeAppearance(
