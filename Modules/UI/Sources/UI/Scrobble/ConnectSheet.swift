@@ -60,7 +60,59 @@ struct ConnectLastFmSheet: View {
     }
 }
 
-// MARK: - ConnectListenBrainzSheet
+// MARK: - ConnectRockskySheet
+
+struct ConnectRockskySheet: View {
+    @ObservedObject var viewModel: ScrobbleSettingsViewModel
+    @Binding var isPresented: Bool
+    @State private var apiKey = ""
+    @State private var submitting = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Connect Rocksky")
+                .font(.title2.weight(.semibold))
+            Text(
+                "Enter your API key from your Rocksky account settings at rocksky.app/apikeys."
+            )
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+            LabeledContent("API Key") {
+                SecureField("API key", text: self.$apiKey)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("Rocksky API key")
+            }
+
+            if let err = viewModel.rockskyConnectError {
+                Text(err)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+
+            HStack {
+                Button("Cancel", role: .cancel) { self.isPresented = false }
+                    .help("Cancel the Rocksky connection")
+                Spacer()
+                Button("Connect") {
+                    self.submitting = true
+                    Task {
+                        await self.viewModel.connectRocksky(apiKey: self.apiKey)
+                        self.submitting = false
+                        if self.viewModel.rocksky.isConnected {
+                            self.isPresented = false
+                        }
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(self.apiKey.isEmpty || self.submitting)
+                .help("Save your Rocksky API key and connect your account")
+            }
+        }
+        .padding(24)
+        .frame(width: 460)
+    }
+}
 
 struct ConnectListenBrainzSheet: View {
     @ObservedObject var viewModel: ScrobbleSettingsViewModel
