@@ -20,11 +20,13 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
 
     @Published public private(set) var lastFm: ProviderStatus
     @Published public private(set) var listenBrainz: ProviderStatus
+    @Published public private(set) var rocksky: ProviderStatus
     @Published public private(set) var stats: ScrobbleQueueRepository.Stats?
     @Published public private(set) var recentScrobbles: [ScrobbleQueueRepository.RecentRow] = []
     @Published public var isAuthenticatingLastFm = false
     @Published public var lastFmAuthError: String?
     @Published public var listenBrainzTokenError: String?
+    @Published public var rockskyConnectError: String?
 
     private let service: ScrobbleService
     private let credentials: CredentialsAdapter
@@ -43,6 +45,7 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
         self.openURL = openURL
         self.lastFm = .init(id: "lastfm", displayName: "Last.fm", isConnected: false, username: nil)
         self.listenBrainz = .init(id: "listenbrainz", displayName: "ListenBrainz", isConnected: false, username: nil)
+        self.rocksky = .init(id: "rocksky", displayName: "Rocksky", isConnected: false, username: nil)
     }
 
     public func appear() {
@@ -95,6 +98,13 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
             displayName: "ListenBrainz",
             isConnected: !(listenToken?.isEmpty ?? true),
             username: listenUser
+        )
+        let rockskyKey: String? = await self.tryFetch { try await self.credentials.rockskyApiKey() }
+        self.rocksky = .init(
+            id: "rocksky",
+            displayName: "Rocksky",
+            isConnected: !(rockskyKey?.isEmpty ?? true),
+            username: nil
         )
     }
 
@@ -152,6 +162,24 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
 
     public func disconnectListenBrainz() async {
         try? await self.credentials.clearListenBrainz()
+        await self.refreshConnectionState()
+    }
+
+    // MARK: Rocksky flow
+
+    public func connectRocksky(apiKey: String) async {
+        self.rockskyConnectError = nil
+        do {
+            try await self.credentials.setRocksky(apiKey: apiKey)
+            await self.refreshConnectionState()
+        } catch {
+            self.log.error("scrobble.rocksky.connect.failed", ["error": String(reflecting: error)])
+            self.rockskyConnectError = self.message(for: error)
+        }
+    }
+
+    public func disconnectRocksky() async {
+        try? await self.credentials.clearRocksky()
         await self.refreshConnectionState()
     }
 
