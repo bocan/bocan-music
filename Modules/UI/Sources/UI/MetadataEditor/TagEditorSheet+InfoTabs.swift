@@ -48,6 +48,38 @@ extension TagEditorSheet {
                     }
                 }
 
+                if track.replaygainTrackGain != nil
+                    || track.replaygainAlbumGain != nil
+                    || track.replaygainTrackPeak != nil
+                    || track.replaygainAlbumPeak != nil {
+                    Section("ReplayGain") {
+                        if let tg = track.replaygainTrackGain {
+                            LabeledContent("Track Gain") {
+                                Text(Self.formatGain(tg))
+                            }
+                            .help("EBU R128 / ReplayGain track-level loudness adjustment")
+                        }
+                        if let tp = track.replaygainTrackPeak {
+                            LabeledContent("Track Peak") {
+                                Text(Self.formatPeak(tp))
+                            }
+                            .help("Sample peak level for this track")
+                        }
+                        if let ag = track.replaygainAlbumGain {
+                            LabeledContent("Album Gain") {
+                                Text(Self.formatGain(ag))
+                            }
+                            .help("EBU R128 / ReplayGain album-level loudness adjustment")
+                        }
+                        if let ap = track.replaygainAlbumPeak {
+                            LabeledContent("Album Peak") {
+                                Text(Self.formatPeak(ap))
+                            }
+                            .help("Sample peak level for the album")
+                        }
+                    }
+                }
+
                 Section("File") {
                     LabeledContent("Size") {
                         Text(Self.formatFileSize(track.fileSize))
@@ -170,5 +202,13 @@ extension TagEditorSheet {
     private static func formatDate(_ epochSeconds: Int64) -> String {
         let date = Date(timeIntervalSince1970: Double(epochSeconds))
         return date.formatted(date: .abbreviated, time: .shortened)
+    }
+
+    private static func formatGain(_ dB: Double) -> String {
+        String(format: "%+.2f dB", dB)
+    }
+
+    private static func formatPeak(_ peak: Double) -> String {
+        String(format: "%.6f", peak)
     }
 }

@@ -114,7 +114,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     TagLib::FileRef fileRef(
         [path fileSystemRepresentation],
         /* readAudioProperties */ true,
-        TagLib::AudioProperties::Fast
+        TagLib::AudioProperties::Accurate
     );
 
     if (fileRef.isNull() || !fileRef.tag()) {
