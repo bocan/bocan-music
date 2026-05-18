@@ -180,10 +180,17 @@ public struct RecentScrobblesView: View {
 
     private static func providerDisplayName(_ providerID: String) -> String {
         switch providerID {
-        case "lastfm": "Last.fm"
-        case "listenbrainz": "ListenBrainz"
-        case "rocksky": "Rocksky"
-        default: providerID
+        case "lastfm":
+            "Last.fm"
+
+        case "listenbrainz":
+            "ListenBrainz"
+
+        case "rocksky":
+            "Rocksky"
+
+        default:
+            providerID
         }
     }
 
