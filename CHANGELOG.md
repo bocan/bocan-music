@@ -5,6 +5,21 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/bocan/bocan-music/compare/v1.1.0...v1.2.0) (2026-05-18)
+
+
+### ### Added
+
+* **scrobble:** register Rocksky provider and wire up UI ([f329956](https://github.com/bocan/bocan-music/commit/f3299561b676bf51ce40a6a8a766f2717c95e2d3))
+* **scrobble:** switch Rocksky to ListenBrainz-compatible API ([c9ca221](https://github.com/bocan/bocan-music/commit/c9ca221f087b5ac72a16423d480214ed1ff3a802))
+
+
+### ### Fixed
+
+* **playback:** wire up periodic scrobble threshold check ([556a438](https://github.com/bocan/bocan-music/commit/556a438c305b9dc48a33710a160ce0e947dc5b46))
+* **scrobble:** simplify Rocksky connect UI to API key only ([72b9d00](https://github.com/bocan/bocan-music/commit/72b9d00e4a557264158657b551e21cc32d642810))
+* **ui:** add Rocksky to Recent Scrobbles view and fix layout ([30a7768](https://github.com/bocan/bocan-music/commit/30a7768ec833028ddae51ac394300ac605146335))
+
 ## [1.1.0](https://github.com/bocan/bocan-music/compare/v1.0.1...v1.1.0) (2026-05-16)
 
 
