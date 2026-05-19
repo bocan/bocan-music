@@ -64,13 +64,23 @@ public struct TracksView: View {
                 LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.rows.isEmpty {
-                EmptyState(
-                    symbol: "music.note",
-                    title: "No Songs",
-                    message: "Add a music folder to start building your library.",
-                    actionLabel: "Add Music Folder"
-                ) {
-                    Task { await self.libraryEnv.addFolderByPicker() }
+                let trimmedQuery = self.libraryEnv.searchQuery.trimmingCharacters(in: .whitespaces)
+                let activeQuery = trimmedQuery.isEmpty ? self.vm.filterText : trimmedQuery
+                if !activeQuery.isEmpty {
+                    EmptyState(
+                        symbol: "magnifyingglass",
+                        title: "No Results",
+                        message: "No songs match \u{201C}\(activeQuery)\u{201D}."
+                    )
+                } else {
+                    EmptyState(
+                        symbol: "music.note",
+                        title: "No Songs",
+                        message: "Add a music folder to start building your library.",
+                        actionLabel: "Add Music Folder"
+                    ) {
+                        Task { await self.libraryEnv.addFolderByPicker() }
+                    }
                 }
             } else {
                 self.trackTable
