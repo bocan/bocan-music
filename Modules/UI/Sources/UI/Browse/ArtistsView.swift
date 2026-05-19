@@ -257,14 +257,22 @@ public struct ArtistsView: View {
                 LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.artists.isEmpty {
-                // Phase 4 audit L2: offer the same Add Music Folder action as TracksView.
-                EmptyState(
-                    symbol: "music.mic",
-                    title: "No Artists",
-                    message: "Add a music folder to start building your library.",
-                    actionLabel: "Add Music Folder"
-                ) {
-                    Task { await self.library.addFolderByPicker() }
+                let activeQuery = self.library.searchQuery.trimmingCharacters(in: .whitespaces)
+                if !activeQuery.isEmpty {
+                    EmptyState(
+                        symbol: "magnifyingglass",
+                        title: "No Results",
+                        message: "No artists match \u{201C}\(activeQuery)\u{201D}."
+                    )
+                } else {
+                    EmptyState(
+                        symbol: "music.mic",
+                        title: "No Artists",
+                        message: "Add a music folder to start building your library.",
+                        actionLabel: "Add Music Folder"
+                    ) {
+                        Task { await self.library.addFolderByPicker() }
+                    }
                 }
             } else {
                 self.artistList

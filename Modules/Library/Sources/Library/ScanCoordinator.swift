@@ -99,27 +99,27 @@ actor ScanCoordinator {
         // when a partial scan (e.g. a single newly-added file) completes.
         // Disabled tracks are intentionally excluded from the seed so they are
         // treated as new and re-imported (clearing their disabled flag).
-        if mode == .quick {
-            let allTracks = await (try? self.trackRepo.fetchAllIncludingDisabled()) ?? []
-            // Normalize roots to filesystem paths with symlinks resolved (e.g.
-            // `/var` → `/private/var`).  Without this, a root URL of
-            // `file:///var/folders/...` never prefix-matches a stored track URL
-            // of `file:///private/var/folders/...` and the seed becomes empty,
-            // disabling removal detection.  We use `realpath(3)` because
-            // `URL.resolvingSymlinksInPath()` only normalizes when the target
-            // file actually exists, which is unreliable for tracks whose files
-            // have been removed since import.
-            let rootPaths: [String] = roots.compactMap { Self.canonicalPath($0.url.path) }
-            let scopedEnabledTracks = allTracks.filter { track in
-                guard !track.disabled else { return false }
-                guard let trackURL = URL(string: track.fileURL) else { return false }
-                let trackPath = Self.canonicalPath(trackURL.path) ?? trackURL.path
-                return rootPaths.contains { trackPath.hasPrefix($0) }
-            }
-            await self.changeDetector.seed(scopedEnabledTracks.map {
-                (url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
-            })
+        // Both quick and full scans seed so that deleted files are pruned in
+        // either mode.
+        let allTracks = await (try? self.trackRepo.fetchAllIncludingDisabled()) ?? []
+        // Normalize roots to filesystem paths with symlinks resolved (e.g.
+        // `/var` → `/private/var`).  Without this, a root URL of
+        // `file:///var/folders/...` never prefix-matches a stored track URL
+        // of `file:///private/var/folders/...` and the seed becomes empty,
+        // disabling removal detection.  We use `realpath(3)` because
+        // `URL.resolvingSymlinksInPath()` only normalizes when the target
+        // file actually exists, which is unreliable for tracks whose files
+        // have been removed since import.
+        let rootPaths: [String] = roots.compactMap { Self.canonicalPath($0.url.path) }
+        let scopedEnabledTracks = allTracks.filter { track in
+            guard !track.disabled else { return false }
+            guard let trackURL = URL(string: track.fileURL) else { return false }
+            let trackPath = Self.canonicalPath(trackURL.path) ?? trackURL.path
+            return rootPaths.contains { trackPath.hasPrefix($0) }
         }
+        await self.changeDetector.seed(scopedEnabledTracks.map {
+            (url: $0.fileURL, mtime: $0.fileMtime, size: $0.fileSize)
+        })
 
         let supported = TagReader.supportedExtensions
         let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 4)
@@ -193,7 +193,7 @@ actor ScanCoordinator {
         }
 
         // Mark removed tracks
-        if mode == .quick, !Task.isCancelled {
+        if !Task.isCancelled {
             let removedURLs = await changeDetector.removedURLs()
             for urlString in removedURLs {
                 guard let track = try? await trackRepo.fetchOne(fileURL: urlString) else { continue }

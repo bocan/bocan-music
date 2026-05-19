@@ -287,40 +287,60 @@ public actor LibraryScanner {
     /// event per file inside it.  We recursively enumerate such directories so
     /// every audio file they contain is picked up automatically.
     private func handleFSChange(urls: [URL]) async {
-        var didImport = false
+        var didChange = false
+        let trackRepo = TrackRepository(database: self.database)
         for raw in urls {
             // NFC-normalise — APFS may deliver decomposed UTF-8.
             let url = URL(fileURLWithPath: raw.path.precomposedStringWithCanonicalMapping)
             guard !url.lastPathComponent.hasPrefix(".") else { continue }
 
             var isDir: ObjCBool = false
-            FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
+            let exists = FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
 
-            if isDir.boolValue {
+            if !exists {
+                // File or directory was deleted — disable matching tracks.
+                if TagReader.isSupported(url) {
+                    // Single audio file: look it up by URL and mark disabled.
+                    if let track = try? await trackRepo.fetchOne(fileURL: url.absoluteString),
+                       let id = track.id {
+                        var disabled = track
+                        disabled.disabled = true
+                        try? await trackRepo.update(disabled)
+                        self.log.info("fsevents.file_removed", ["id": id, "path": url.lastPathComponent])
+                        didChange = true
+                    }
+                } else {
+                    // Directory (or unrecognised path): disable all tracks whose
+                    // file_url starts with this URL.  This is a no-op if nothing
+                    // in the DB lives under this path.
+                    try? await trackRepo.disableAll(underPath: url.absoluteString)
+                    self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent])
+                    didChange = true
+                }
+            } else if isDir.boolValue {
                 // A whole directory was moved/created — enumerate it recursively.
                 let audioFiles = self.audioFiles(under: url)
                 for fileURL in audioFiles {
                     do {
                         _ = try await self.scanSingleFile(url: fileURL)
                         self.log.debug("fsevents.file_rescanned", ["path": fileURL.lastPathComponent])
-                        didImport = true
+                        didChange = true
                     } catch {
                         self.log.warning("fsevents.rescan_failed", ["path": fileURL.path, "error": "\(error)"])
                     }
                 }
             } else {
                 guard TagReader.isSupported(url) else { continue }
-                guard FileManager.default.fileExists(atPath: url.path) else { continue }
                 do {
                     _ = try await self.scanSingleFile(url: url)
                     self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
-                    didImport = true
+                    didChange = true
                 } catch {
                     self.log.warning("fsevents.rescan_failed", ["path": url.path, "error": "\(error)"])
                 }
             }
         }
-        if didImport, let callback = self.onFileImported {
+        if didChange, let callback = self.onFileImported {
             await callback()
         }
     }
