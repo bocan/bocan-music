@@ -137,7 +137,12 @@ public extension LibraryViewModel {
     /// Cancels any previously scheduled reload and starts a new one after a
     /// 500 ms quiet period.  If more FSEvents arrive within that window the
     /// timer resets, ensuring only one full reload runs per burst.
+    ///
+    /// A no-op while a scan is running — the scan's `.finished` handler
+    /// performs the authoritative post-scan reload, so FSEvents-driven
+    /// reloads during a scan are redundant and cause visible tracklist churn.
     func scheduleWatcherReload() {
+        guard !self.isScanning else { return }
         watcherReloadTask?.cancel()
         watcherReloadTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(500))
