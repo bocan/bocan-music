@@ -158,13 +158,17 @@ public final class NowPlayingViewModel {
         do {
             if self.isPlaying {
                 await self.engine.pause()
-            } else if self.isPaused {
-                // Resume a song that was explicitly paused mid-playback.
+            } else if self.isPaused || self.nowPlayingTrackID != nil {
+                // Resume: either explicitly paused mid-playback, or stopped after a
+                // session restore (engine loaded a track but never called play()).
+                // QueuePlayer.play() handles the stopped-with-queue case internally,
+                // so this correctly resumes the restored (possibly shuffled) queue
+                // without discarding it.
                 try await self.engine.play()
             } else {
-                // Nothing is playing and nothing was paused — hand off to the
-                // library callback so it queues the full current browse view.
-                // This covers: first launch, queue exhausted, stale persisted queue.
+                // Nothing is playing, nothing was paused, and no track has ever been
+                // loaded — hand off to the library callback so it queues the full
+                // current browse view.  Covers first launch and cleared queues.
                 self.onPlayFromEmptyQueue?()
             }
         } catch {
