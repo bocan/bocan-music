@@ -281,24 +281,64 @@ public actor LibraryScanner {
 
     /// Handles a batch of FS-event URLs: filters to known audio extensions and
     /// triggers `scanSingleFile` for each matching, non-hidden file.
+    ///
+    /// When FSEvents reports a directory (e.g. when an entire folder is moved
+    /// into a watched root) the event carries only the directory path — not one
+    /// event per file inside it.  We recursively enumerate such directories so
+    /// every audio file they contain is picked up automatically.
     private func handleFSChange(urls: [URL]) async {
         var didImport = false
         for raw in urls {
             // NFC-normalise — APFS may deliver decomposed UTF-8.
             let url = URL(fileURLWithPath: raw.path.precomposedStringWithCanonicalMapping)
             guard !url.lastPathComponent.hasPrefix(".") else { continue }
-            guard TagReader.isSupported(url) else { continue }
-            guard FileManager.default.fileExists(atPath: url.path) else { continue }
-            do {
-                _ = try await self.scanSingleFile(url: url)
-                self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
-                didImport = true
-            } catch {
-                self.log.warning("fsevents.rescan_failed", ["path": url.path, "error": "\(error)"])
+
+            var isDir: ObjCBool = false
+            FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir)
+
+            if isDir.boolValue {
+                // A whole directory was moved/created — enumerate it recursively.
+                let audioFiles = self.audioFiles(under: url)
+                for fileURL in audioFiles {
+                    do {
+                        _ = try await self.scanSingleFile(url: fileURL)
+                        self.log.debug("fsevents.file_rescanned", ["path": fileURL.lastPathComponent])
+                        didImport = true
+                    } catch {
+                        self.log.warning("fsevents.rescan_failed", ["path": fileURL.path, "error": "\(error)"])
+                    }
+                }
+            } else {
+                guard TagReader.isSupported(url) else { continue }
+                guard FileManager.default.fileExists(atPath: url.path) else { continue }
+                do {
+                    _ = try await self.scanSingleFile(url: url)
+                    self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
+                    didImport = true
+                } catch {
+                    self.log.warning("fsevents.rescan_failed", ["path": url.path, "error": "\(error)"])
+                }
             }
         }
         if didImport, let callback = self.onFileImported {
             await callback()
         }
+    }
+
+    /// Returns all supported audio files found recursively under `directory`.
+    ///
+    /// Hidden files and hidden directories are skipped.
+    func audioFiles(under directory: URL) -> [URL] {
+        guard let enumerator = FileManager.default.enumerator(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else { return [] }
+        var results: [URL] = []
+        for case let fileURL as URL in enumerator {
+            guard TagReader.isSupported(fileURL) else { continue }
+            results.append(fileURL)
+        }
+        return results
     }
 }

@@ -225,6 +225,55 @@ struct LibraryScannerTests {
         let summary = try await scanner.scanSingleFile(url: url)
         #expect(summary.errors >= 1)
     }
+
+    // MARK: - audioFiles(under:)
+
+    @Test("audioFiles(under:) returns audio files from fixture directory")
+    func audioFilesFindsAudioInDirectory() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+        let dir = try sampleLibraryURL
+
+        let found = await scanner.audioFiles(under: dir)
+        #expect(!found.isEmpty, "Expected audio files in the fixture directory")
+        #expect(found.allSatisfy { TagReader.isSupported($0) })
+    }
+
+    @Test("audioFiles(under:) returns empty for a directory with no audio")
+    func audioFilesEmptyForNonAudioDirectory() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("bocan_empty_\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let found = await scanner.audioFiles(under: dir)
+        #expect(found.isEmpty)
+    }
+
+    @Test("audioFiles(under:) recursively finds files in subdirectories")
+    func audioFilesRecursive() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+
+        let root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("bocan_recursive_\(UUID().uuidString)")
+        let sub = root.appendingPathComponent("Artist/Album")
+        try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        // Create two stub audio files (zero-byte — just testing enumeration, not tag reading)
+        let f1 = sub.appendingPathComponent("track1.mp3")
+        let f2 = sub.appendingPathComponent("track2.flac")
+        FileManager.default.createFile(atPath: f1.path, contents: nil)
+        FileManager.default.createFile(atPath: f2.path, contents: nil)
+
+        let found = await scanner.audioFiles(under: root)
+        #expect(found.count == 2)
+        #expect(found.contains(f1))
+        #expect(found.contains(f2))
+    }
 }
 
 // MARK: - LibraryLocation tests
