@@ -282,7 +282,8 @@ public extension LibraryViewModel {
             self.pendingScanCurrentPath = URL(fileURLWithPath: path).lastPathComponent
             self.pendingScanWalked = walked
 
-        case let .processed(_, outcome):
+        case let .processed(url, outcome):
+            self.pendingScanCurrentPath = url.lastPathComponent
             switch outcome {
             case .inserted:
                 self.pendingScanInserted += 1
