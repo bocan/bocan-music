@@ -5,6 +5,21 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1](https://github.com/bocan/bocan-music/compare/v1.2.0...v1.2.1) (2026-05-20)
+
+
+### ### Fixed
+
+* **library:** expand FSEvent directory events and suppress watcher reloads during scan ([f27849b](https://github.com/bocan/bocan-music/commit/f27849bb252f7bcf5ad5c94c777c98143198712f))
+* **library:** fix two test failures in LibraryScannerTests ([9e152ea](https://github.com/bocan/bocan-music/commit/9e152ea89ffbf03d586f82b1d9a99e5b17205a6a))
+* **library:** handle FSEvent deletions and prune missing files on full scan ([ed701b9](https://github.com/bocan/bocan-music/commit/ed701b949c24f669326a5398670f2320150e619a))
+* **playback:** filter excludedFromShuffle tracks when building a new shuffle queue ([18eadc0](https://github.com/bocan/bocan-music/commit/18eadc0d2a18869797d302a055208781d324554c))
+* **playback:** restore session resumes shuffled queue instead of replacing it ([1a2002d](https://github.com/bocan/bocan-music/commit/1a2002d5d66bf9a2f78d133592bc87a73a0ad1dc))
+* **ui:** allow FSEvents reloads during scan in scheduleWatcherReload ([ad4b15b](https://github.com/bocan/bocan-music/commit/ad4b15ba316cc7292954f9420b83cebb64a360de))
+* **ui:** remove redundant @EnvironmentObject libraryEnv from TracksView ([9ead8d5](https://github.com/bocan/bocan-music/commit/9ead8d5148be2913786fcdfea213b256e1120666))
+* **ui:** switch case newline style in RecentScrobblesView ([dd54311](https://github.com/bocan/bocan-music/commit/dd54311a48e31c28ce5085cb000db6d8b9c6b505))
+* **ui:** update scanCurrentPath during the processing phase of a scan ([4bf3a89](https://github.com/bocan/bocan-music/commit/4bf3a895b15502665960e7f51db161aa9b063b9a))
+
 ## [1.2.0](https://github.com/bocan/bocan-music/compare/v1.1.0...v1.2.0) (2026-05-18)
 
 
