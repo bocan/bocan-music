@@ -214,6 +214,7 @@ struct BocanApp: App {
             .environmentObject(self.windowMode)
             // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
             .environmentObject(self.libraryViewModel)
+            .environmentObject(self.visualizerViewModel)
 
         // MARK: Track info panel
 

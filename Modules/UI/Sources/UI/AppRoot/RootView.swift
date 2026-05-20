@@ -103,6 +103,14 @@ public struct BocanRootView: View {
                         .keyboardShortcut("]", modifiers: .command)
 
                         Button(
+                            self.windowMode.miniPlayerOpen ? "Hide Mini Player" : "Show Mini Player",
+                            systemImage: "pip.enter"
+                        ) {
+                            self.windowMode.toggleMiniPlayer()
+                        }
+                        .help("Toggle mini player (⌥⌘M)")
+
+                        Button(
                             self.lyricsVM.paneVisible ? "Hide Lyrics" : "Show Lyrics",
                             systemImage: "text.quote"
                         ) {
@@ -115,6 +123,20 @@ public struct BocanRootView: View {
                             }
                         }
                         .help("Toggle lyrics pane (⌥⌘L)")
+
+                        Button(
+                            self.visualizerVM.paneVisible ? "Hide Visualizer" : "Show Visualizer",
+                            systemImage: "waveform"
+                        ) {
+                            if self.reduceMotion {
+                                self.visualizerVM.paneVisible.toggle()
+                            } else {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    self.visualizerVM.paneVisible.toggle()
+                                }
+                            }
+                        }
+                        .help("Toggle visualizer pane (⇧⌘V)")
 
                         Button("Identify Track", systemImage: "waveform.badge.magnifyingglass") {
                             self.vm.showIdentifyTrackForCurrentSelection()
