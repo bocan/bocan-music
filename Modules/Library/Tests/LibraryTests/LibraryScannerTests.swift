@@ -1,4 +1,5 @@
 import Foundation
+import Metadata
 import Persistence
 import Testing
 @testable import Library
@@ -269,10 +270,13 @@ struct LibraryScannerTests {
         FileManager.default.createFile(atPath: f1.path, contents: nil)
         FileManager.default.createFile(atPath: f2.path, contents: nil)
 
+        // FileManager.enumerator returns canonical (symlink-resolved) paths, e.g.
+        // /private/var/... on macOS where /var is a symlink.  Normalise both sides.
         let found = await scanner.audioFiles(under: root)
+        let foundPaths = Set(found.map { ($0.path as NSString).standardizingPath })
         #expect(found.count == 2)
-        #expect(found.contains(f1))
-        #expect(found.contains(f2))
+        #expect(foundPaths.contains((f1.path as NSString).standardizingPath))
+        #expect(foundPaths.contains((f2.path as NSString).standardizingPath))
     }
 }
 
