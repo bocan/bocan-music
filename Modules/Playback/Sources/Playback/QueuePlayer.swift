@@ -321,9 +321,14 @@ public actor QueuePlayer: Transport {
             // Pin the chosen track at position 0 so double-clicking a track in shuffle
             // mode plays that track first, then shuffles the rest behind it.
             // This matches the behaviour of iTunes / Music / Spotify.
+            // The explicitly chosen track is always kept even if it is marked
+            // excludedFromShuffle — exclusion means "don't surface randomly", not
+            // "never play".  All other excluded tracks are removed from the pool.
             let chosen = items[clampedIndex]
-            var rest = items
-            rest.remove(at: clampedIndex)
+            let rest = items
+                .enumerated()
+                .filter { $0.offset != clampedIndex && !$0.element.excludedFromShuffle }
+                .map(\.element)
             let shuffledRest = FisherYatesShuffle().shuffled(rest, seed: seed)
             ordered = [chosen] + shuffledRest
         } else {
@@ -380,7 +385,10 @@ public actor QueuePlayer: Transport {
         let ordered: [QueueItem]
         if shuffle {
             let seed = UInt64.random(in: .min ... .max)
-            ordered = FisherYatesShuffle().shuffled(items, seed: seed)
+            // Fall back to the full list if every track is excluded, so the user
+            // isn't left with an empty queue after explicitly choosing this album.
+            let eligible = items.filter { !$0.excludedFromShuffle }
+            ordered = FisherYatesShuffle().shuffled(eligible.isEmpty ? items : eligible, seed: seed)
         } else {
             ordered = items
         }
@@ -408,7 +416,10 @@ public actor QueuePlayer: Transport {
         let ordered: [QueueItem]
         if shuffle {
             let seed = UInt64.random(in: .min ... .max)
-            ordered = FisherYatesShuffle().shuffled(items, seed: seed)
+            // Fall back to the full list if every track is excluded, so the user
+            // isn't left with an empty queue after explicitly choosing this artist.
+            let eligible = items.filter { !$0.excludedFromShuffle }
+            ordered = FisherYatesShuffle().shuffled(eligible.isEmpty ? items : eligible, seed: seed)
         } else {
             ordered = items
         }
