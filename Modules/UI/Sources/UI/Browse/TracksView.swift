@@ -38,7 +38,6 @@ public struct TracksView: View {
     /// on `TracksViewModel`.  Pushed into the VM via `.onChange` below.
     @State var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
-    @EnvironmentObject private var libraryEnv: LibraryViewModel
     @EnvironmentObject var lyricsEnv: LyricsViewModel
 
     public init(
@@ -64,7 +63,7 @@ public struct TracksView: View {
                 LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.rows.isEmpty {
-                let trimmedQuery = self.libraryEnv.searchQuery.trimmingCharacters(in: .whitespaces)
+                let trimmedQuery = self.library.searchQuery.trimmingCharacters(in: .whitespaces)
                 let activeQuery = trimmedQuery.isEmpty ? self.vm.filterText : trimmedQuery
                 if !activeQuery.isEmpty {
                     EmptyState(
@@ -79,7 +78,7 @@ public struct TracksView: View {
                         message: "Add a music folder to start building your library.",
                         actionLabel: "Add Music Folder"
                     ) {
-                        Task { await self.libraryEnv.addFolderByPicker() }
+                        Task { await self.library.addFolderByPicker() }
                     }
                 }
             } else {
