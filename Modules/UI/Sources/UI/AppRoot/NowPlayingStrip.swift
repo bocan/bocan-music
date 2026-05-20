@@ -14,7 +14,6 @@ public struct NowPlayingStrip: View {
     public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
-    @EnvironmentObject private var visualizer: VisualizerViewModel
     /// Optional — only the main window injects a `RouteViewModel`. Snapshot
     /// tests and other ad-hoc surfaces can skip it.
     private var route: RouteViewModel
@@ -386,26 +385,6 @@ public struct NowPlayingStrip: View {
                     ? "Equaliser & DSP — active" : "Equaliser & DSP"
             )
             .accessibilityIdentifier(A11y.NowPlaying.dspButton)
-
-            Button {
-                if self.reduceMotion {
-                    self.visualizer.paneVisible.toggle()
-                } else {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.visualizer.paneVisible.toggle()
-                    }
-                }
-            } label: {
-                Image(systemName: "waveform")
-                    .font(.system(size: 15, weight: .medium))
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(self.visualizer.paneVisible ? Color.accentColor : Color.textPrimary)
-            .help(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
-            .accessibilityLabel(self.visualizer.paneVisible ? "Hide Visualizer" : "Show Visualizer")
-            .accessibilityAddTraits(.isToggle)
-            .accessibilityIdentifier(A11y.NowPlaying.visualizerButton)
         }
     }
 
