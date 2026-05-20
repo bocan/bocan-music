@@ -13,6 +13,7 @@ import SwiftUI
 public struct MiniPlayerView: View {
     @ObservedObject public var vm: MiniPlayerViewModel
     @EnvironmentObject private var windowMode: WindowModeController
+    @EnvironmentObject private var visualizerVM: VisualizerViewModel
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     /// Per-app reduce-motion toggle (Appearance Settings §3 — see issue #144).
@@ -91,6 +92,14 @@ public struct MiniPlayerView: View {
                     self.chrome.padding(6)
                 }
                 .transition(.opacity.combined(with: .scale(scale: 0.97)))
+
+        case .visualizer:
+            MiniPlayerVisualizer(vm: self.vm)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .topTrailing) {
+                    self.chrome.padding(6)
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.97)))
         }
     }
 
@@ -158,6 +167,7 @@ public struct MiniPlayerView: View {
 
             self.layoutButton
             self.pinButton
+            self.dismissButton
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -172,6 +182,7 @@ public struct MiniPlayerView: View {
         HStack(spacing: 4) {
             self.layoutButton
             self.pinButton
+            self.dismissButton
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
@@ -198,7 +209,7 @@ public struct MiniPlayerView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Layout: \(self.vm.layout.rawValue.capitalized) — click to cycle Strip → Compact → Square")
+        .help("Layout: \(self.vm.layout.rawValue.capitalized) — click to cycle Strip → Compact → Square → Visualizer")
         .accessibilityLabel("Cycle mini player layout, currently \(self.vm.layout.rawValue)")
     }
 
@@ -215,6 +226,21 @@ public struct MiniPlayerView: View {
         .buttonStyle(.plain)
         .help(self.vm.alwaysOnTop ? "Unpin — stop floating above other windows" : "Pin — float above other windows")
         .accessibilityLabel(self.vm.alwaysOnTop ? "Unpin mini player" : "Pin mini player above other windows")
+    }
+
+    private var dismissButton: some View {
+        Button {
+            self.windowMode.toggleMiniPlayer()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Color.textTertiary)
+                .padding(6)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Return to main window")
+        .accessibilityLabel("Return to main window")
     }
 
     // MARK: - Window helpers

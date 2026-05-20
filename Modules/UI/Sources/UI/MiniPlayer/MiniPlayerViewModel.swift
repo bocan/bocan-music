@@ -13,7 +13,7 @@ public final class MiniPlayerViewModel: ObservableObject {
     // MARK: - Layout
 
     public enum Layout: String, CaseIterable {
-        case strip, compact, square
+        case strip, compact, square, visualizer
 
         /// SF Symbol representing this layout, shown on the cycle button.
         var icon: String {
@@ -26,6 +26,9 @@ public final class MiniPlayerViewModel: ObservableObject {
 
             case .square:
                 "square"
+
+            case .visualizer:
+                "waveform"
             }
         }
 
@@ -40,6 +43,9 @@ public final class MiniPlayerViewModel: ObservableObject {
 
             case .square:
                 CGSize(width: 310, height: 310)
+
+            case .visualizer:
+                CGSize(width: 310, height: 310)
             }
         }
 
@@ -52,6 +58,9 @@ public final class MiniPlayerViewModel: ObservableObject {
                 .square
 
             case .square:
+                .visualizer
+
+            case .visualizer:
                 .strip
             }
         }
