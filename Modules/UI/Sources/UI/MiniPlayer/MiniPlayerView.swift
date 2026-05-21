@@ -14,6 +14,7 @@ public struct MiniPlayerView: View {
     @ObservedObject public var vm: MiniPlayerViewModel
     @EnvironmentObject private var windowMode: WindowModeController
     @EnvironmentObject private var visualizerVM: VisualizerViewModel
+    @Environment(\.colorScheme) private var colorScheme
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     /// Per-app reduce-motion toggle (Appearance Settings §3 — see issue #144).
@@ -175,9 +176,11 @@ public struct MiniPlayerView: View {
 
     // MARK: - Chrome overlay (compact + square)
 
-    /// Frosted-glass pill containing the layout and pin buttons.  The material
-    /// backdrop keeps them readable over both artwork and solid backgrounds.
-    /// Becomes a solid system surface when Reduce Transparency is on.
+    /// Inverted-colour pill containing the layout, pin, and dismiss buttons.
+    /// Uses a dark background in light mode and a light background in dark mode
+    /// so the icons (white / black via the inverted colorScheme environment)
+    /// remain fully legible over any album art colour.  Opacity increases to
+    /// 100 % when Reduce Transparency is on.
     private var chrome: some View {
         HStack(spacing: 4) {
             self.layoutButton
@@ -188,11 +191,15 @@ public struct MiniPlayerView: View {
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 8).fill(
-                self.reduceTransparency
-                    ? AnyShapeStyle(Color(nsColor: .windowBackgroundColor))
-                    : AnyShapeStyle(Material.ultraThin)
+                self.colorScheme == .light
+                    ? AnyShapeStyle(Color.black.opacity(self.reduceTransparency ? 1 : 0.62))
+                    : AnyShapeStyle(Color.white.opacity(self.reduceTransparency ? 1 : 0.78))
             )
         )
+        // Invert the colour-scheme environment so Color.primary inside the
+        // buttons is white on the dark pill (light mode) and black on the
+        // light pill (dark mode), giving maximum contrast over any artwork.
+        .environment(\.colorScheme, self.colorScheme == .light ? .dark : .light)
     }
 
     // MARK: - Buttons
@@ -204,7 +211,7 @@ public struct MiniPlayerView: View {
         } label: {
             Image(systemName: self.vm.layout.icon)
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.textSecondary)
+                .foregroundStyle(Color.primary)
                 .padding(6)
                 .contentShape(Rectangle())
         }
@@ -219,7 +226,7 @@ public struct MiniPlayerView: View {
         } label: {
             Image(systemName: self.vm.alwaysOnTop ? "pin.fill" : "pin")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(self.vm.alwaysOnTop ? Color.accentColor : Color.textTertiary)
+                .foregroundStyle(self.vm.alwaysOnTop ? Color.accentColor : Color.primary)
                 .padding(6)
                 .contentShape(Rectangle())
         }
@@ -234,7 +241,7 @@ public struct MiniPlayerView: View {
         } label: {
             Image(systemName: "xmark")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(Color.textTertiary)
+                .foregroundStyle(Color.primary)
                 .padding(6)
                 .contentShape(Rectangle())
         }
