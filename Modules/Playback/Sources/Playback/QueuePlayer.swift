@@ -721,9 +721,83 @@ public actor QueuePlayer: Transport {
         do {
             try await self.loadAndPlay(item: next)
         } catch {
-            self.log.error("queueplayer.advance.failed", ["error": String(reflecting: error)])
-            self.stateContinuation?.yield(.failed(AudioEngineError.decoderFailure(codec: "unknown", underlying: error)))
+            await self.skipMissingFileAndContinue(failedItem: next, error: error)
         }
+    }
+
+    /// Returns `true` when `error` indicates the track's file is missing or
+    /// its bookmark can no longer be resolved — cases where skipping and
+    /// disabling the track is the right recovery rather than surfacing a failure.
+    private static func isMissingFileError(_ error: Error) -> Bool {
+        if case AudioEngineError.fileNotFound = error { return true }
+        if case PlaybackError.bookmarkResolutionFailed = error { return true }
+        return false
+    }
+
+    /// Called when `handleTrackEnded` fails to load the next track.
+    ///
+    /// If the error is a missing-file / unresolvable-bookmark error, the failed
+    /// track is disabled in the database, removed from the queue, and the next
+    /// item is attempted. The loop repeats until a loadable track is found, the
+    /// queue is exhausted, or a safety cap of 50 consecutive failures is reached
+    /// (guards against a library where every file has been deleted).
+    ///
+    /// Non-missing-file errors fall through immediately as a `.failed` state.
+    private func skipMissingFileAndContinue(failedItem: QueueItem, error: Error) async {
+        var item = failedItem
+        var loadError = error
+        let maxSkips = 50
+
+        for skipped in 1 ... maxSkips {
+            guard Self.isMissingFileError(loadError) else {
+                self.log.error("queueplayer.advance.failed", ["error": String(reflecting: loadError)])
+                self.stateContinuation?.yield(.failed(
+                    AudioEngineError.decoderFailure(codec: "unknown", underlying: loadError)
+                ))
+                return
+            }
+
+            self.log.warning("queueplayer.skip.missing", [
+                "trackID": item.trackID, "url": item.fileURL, "skip": skipped,
+            ])
+
+            // Peek ahead while the queue still contains the failed item, so
+            // currentIndex lines up with the item we're about to remove.
+            let next = await self.queue.peekNextIgnoringRepeatOne()
+
+            // Disable in DB — best effort; a write failure must not stop us.
+            try? await self.trackRepo.disable(id: item.trackID)
+
+            // Remove from queue. PlaybackQueue.remove advances currentIndex to
+            // what was physically next, matching what peekNextIgnoringRepeatOne
+            // returned above.
+            await self.queue.remove(ids: [item.id])
+
+            guard let next else {
+                self.stateContinuation?.yield(.ended)
+                await self.nowPlayingCentre?.setPlaying(false)
+                await self.nowPlayingCentre?.clear()
+                return
+            }
+
+            // Mirror what next() does before loadAndPlay to keep gapless state clean.
+            await self.gaplessScheduler.reset()
+
+            self.stateContinuation?.yield(.loading)
+            do {
+                try await self.loadAndPlay(item: next)
+                return
+            } catch {
+                item = next
+                loadError = error
+            }
+        }
+
+        // Safety cap reached.
+        self.log.error("queueplayer.skip.exhausted", ["skipped": maxSkips])
+        self.stateContinuation?.yield(.failed(
+            AudioEngineError.decoderFailure(codec: "unknown", underlying: loadError)
+        ))
     }
 
     // MARK: Gapless next URL resolution
