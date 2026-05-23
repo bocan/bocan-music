@@ -32,6 +32,7 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 14 | [phase-14-playlist-import-export.md](phase-14-playlist-import-export.md) | M3U/M3U8/PLS/XSPF |
 | 15 | [phase-15-casting.md](phase-15-casting.md) | AirPlay 2 + Google Cast |
 | 16 | [phase-16-distribution.md](phase-16-distribution.md) | Sign, notarize, DMG, Sparkle |
+| 18 | [phase-18-remote-control.md](phase-18-remote-control.md) | Remote control server — Bonjour discovery, PIN pairing, REST/WebSocket API |
 
 ## Conventions used in every phase file
 
