@@ -283,6 +283,20 @@ public actor PlaybackQueue {
         }
     }
 
+    /// Like `peekNext()` but treats `.one` the same as `.off` — never returns
+    /// the current item. Used by the missing-file skip logic so repeat-one mode
+    /// advances past an unloadable track instead of re-queuing it.
+    public func peekNextIgnoringRepeatOne() -> QueueItem? {
+        let next = (currentIndex ?? -1) + 1
+        switch self.repeatMode {
+        case .one, .off:
+            return next < self.items.count ? self.items[next] : nil
+        case .all:
+            guard !self.items.isEmpty else { return nil }
+            return self.items[next % self.items.count]
+        }
+    }
+
     /// The currently playing item, or `nil` if nothing is loaded.
     public var currentItem: QueueItem? {
         self.currentIndex.map { self.items[$0] }
