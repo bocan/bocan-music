@@ -31,18 +31,33 @@ public actor PlaybackQueue {
 
     // MARK: - Change stream
 
-    public nonisolated let changes: AsyncStream<QueueChange>
-    private var changeContinuation: AsyncStream<QueueChange>.Continuation?
+    /// Per-subscriber continuations: a single shared AsyncStream races between consumers.
+    private var subscribers: [UUID: AsyncStream<QueueChange>.Continuation] = [:]
+
+    /// Subscribe to queue change events. Each call returns an independent stream.
+    public nonisolated func changes() -> AsyncStream<QueueChange> {
+        AsyncStream { continuation in
+            let id = UUID()
+            Task { await self.addSubscriber(id: id, continuation: continuation) }
+            continuation.onTermination = { _ in
+                Task { await self.removeSubscriber(id: id) }
+            }
+        }
+    }
+
+    private func addSubscriber(id: UUID, continuation: AsyncStream<QueueChange>.Continuation) {
+        self.subscribers[id] = continuation
+    }
+
+    private func removeSubscriber(id: UUID) {
+        self.subscribers.removeValue(forKey: id)
+    }
 
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
 
-    public init() {
-        var continuation: AsyncStream<QueueChange>.Continuation?
-        self.changes = AsyncStream { continuation = $0 }
-        self.changeContinuation = continuation
-    }
+    public init() {}
 
     // MARK: - Queue mutations
 
@@ -374,6 +389,8 @@ public actor PlaybackQueue {
     }
 
     private func emit(_ change: QueueChange) {
-        self.changeContinuation?.yield(change)
+        for continuation in self.subscribers.values {
+            continuation.yield(change)
+        }
     }
 }

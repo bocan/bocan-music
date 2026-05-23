@@ -114,7 +114,7 @@ struct QueuePlayerTests {
         let flag = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
             let queue = player.queue
             Task {
-                for await change in await queue.changes {
+                for await change in await queue.changes() {
                     if case let .stopAfterCurrentChanged(enabled) = change {
                         cont.resume(returning: enabled)
                         break
