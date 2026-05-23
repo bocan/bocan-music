@@ -256,6 +256,62 @@ struct QueuePlayerTests {
         #expect(queueIDs == originalIDs)
     }
 
+    @Test("handleTrackEnded skips missing-file track, disables it in DB, and ends cleanly")
+    func handleTrackEndedSkipsMissingFileAndEnds() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+        let repo = TrackRepository(database: db)
+
+        // Two tracks: A (index 0, current/finished), B (index 1, file missing).
+        // Both use fake paths that the audio engine will refuse to load.
+        let idA = try await repo.insert(self.makeTrack(n: 1))
+        let idB = try await repo.insert(self.makeTrack(n: 2))
+
+        try await player.addToQueue([idA, idB])
+        let items = await player.queue.items
+        await player.queue.replace(with: items, startAt: 0) // A is current
+
+        await player.handleTrackEnded()
+
+        // B must be disabled in the database.
+        let allTracks = try await repo.fetchAllIncludingDisabled()
+        let trackB = allTracks.first(where: { $0.id == idB })
+        #expect(trackB?.disabled == true, "Track B must be disabled after file-not-found")
+
+        // B must be removed from the queue.
+        let queueItems = await player.queue.items
+        #expect(!queueItems.contains(where: { $0.trackID == idB }), "Track B must be removed from queue")
+    }
+
+    @Test("handleTrackEnded skips multiple consecutive missing-file tracks and ends cleanly")
+    func handleTrackEndedSkipsMultipleMissingFilesAndEnds() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+        let repo = TrackRepository(database: db)
+
+        // Three tracks: A (current/finished), B (missing), C (missing).
+        let idA = try await repo.insert(self.makeTrack(n: 1))
+        let idB = try await repo.insert(self.makeTrack(n: 2))
+        let idC = try await repo.insert(self.makeTrack(n: 3))
+
+        try await player.addToQueue([idA, idB, idC])
+        let items = await player.queue.items
+        await player.queue.replace(with: items, startAt: 0)
+
+        await player.handleTrackEnded()
+
+        let allTracks = try await repo.fetchAllIncludingDisabled()
+        let disabledIDs = allTracks.filter(\.disabled).compactMap(\.id)
+        #expect(disabledIDs.contains(idB), "Track B must be disabled")
+        #expect(disabledIDs.contains(idC), "Track C must be disabled")
+
+        let queueItems = await player.queue.items
+        #expect(!queueItems.contains(where: { $0.trackID == idB }), "Track B must be removed from queue")
+        #expect(!queueItems.contains(where: { $0.trackID == idC }), "Track C must be removed from queue")
+    }
+
     // MARK: - Helpers
 
     private func makeTrack(n: Int) -> Track {

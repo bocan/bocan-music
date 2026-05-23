@@ -115,6 +115,18 @@ public struct TrackRepository: Sendable {
         self.log.info("track.disableAll", ["prefix": prefix, "count": count])
     }
 
+    /// Marks a single track as disabled (file no longer available on disk).
+    /// Excluded from all library queries until re-enabled by a re-scan.
+    public func disable(id: Int64) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE tracks SET disabled = 1 WHERE id = ?",
+                arguments: [id]
+            )
+        }
+        self.log.warning("track.disabled", ["id": id])
+    }
+
     // MARK: - Read
 
     /// Fetches the track with `id`, or throws `.notFound` if absent.
