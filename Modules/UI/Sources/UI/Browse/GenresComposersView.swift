@@ -35,8 +35,10 @@ public struct GenresView: View {
             let repo = TrackRepository(database: self.library.database)
             async let genresFetch = try? repo.allGenres()
             async let countsFetch = try? repo.genreTrackCounts()
-            self.genres = await genresFetch ?? []
-            self.trackCounts = await countsFetch ?? [:]
+            let allGenres = await genresFetch ?? []
+            let counts = await countsFetch ?? [:]
+            self.trackCounts = counts
+            self.genres = allGenres.sorted { (counts[$0] ?? 0) > (counts[$1] ?? 0) }
             self.isLoading = false
         }
     }
