@@ -1,5 +1,5 @@
 {
-  "originHash" : "e110be0e3bf4c46ddf0aeb4440403ea08848c15f9971021d936c1585a4bf2c30",
+  "originHash" : "a2013f8bf7ca7a492a0a45744b41f96b08b2e21dc5d2286a6abea701d213549d",
   "pins" : [
     {
       "identity" : "grdb.swift",
@@ -44,6 +44,15 @@
       "state" : {
         "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
         "version" : "603.0.1"
+      }
+    },
+    {
+      "identity" : "swiftsonic",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/MathieuDubart/swiftsonic.git",
+      "state" : {
+        "revision" : "d3e7b5fbee546a39108b48b6ed933dfd4ab41359",
+        "version" : "0.8.2"
       }
     },
     {

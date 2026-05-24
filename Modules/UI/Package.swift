@@ -18,6 +18,7 @@ let package = Package(
         .package(path: "../Library"),
         .package(path: "../Acoustics"),
         .package(path: "../Scrobble"),
+        .package(path: "../Subsonic"),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
             from: "1.19.2"
@@ -34,6 +35,7 @@ let package = Package(
                 .product(name: "Library", package: "Library"),
                 .product(name: "Acoustics", package: "Acoustics"),
                 .product(name: "Scrobble", package: "Scrobble"),
+                .product(name: "Subsonic", package: "Subsonic"),
             ],
             resources: [
                 .process("Resources"),
@@ -53,6 +55,7 @@ let package = Package(
                 .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "Library", package: "Library"),
+                .product(name: "Subsonic", package: "Subsonic"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             swiftSettings: [
