@@ -28,6 +28,9 @@ struct UIStateV2: Codable {
     var sidebarWidth: Double?
     /// Persisted IDs of expanded playlist folders in the sidebar tree.
     var expandedPlaylistFolders: Set<Int64> = []
+    /// Phase 19 step 9: expand/collapse state for top-level sidebar
+    /// sections plus per-Subsonic-server disclosure state.
+    var sectionExpansion: SidebarSectionExpansion = .init()
 
     private enum CodingKeys: String, CodingKey {
         case selectedDestination
@@ -35,6 +38,7 @@ struct UIStateV2: Codable {
         case sortAscending
         case sidebarWidth
         case expandedPlaylistFolders
+        case sectionExpansion
     }
 
     init(
@@ -42,17 +46,19 @@ struct UIStateV2: Codable {
         sortColumn: TrackSortColumn = .artist,
         sortAscending: Bool = true,
         sidebarWidth: Double? = nil,
-        expandedPlaylistFolders: Set<Int64> = []
+        expandedPlaylistFolders: Set<Int64> = [],
+        sectionExpansion: SidebarSectionExpansion = .init()
     ) {
         self.selectedDestination = selectedDestination
         self.sortColumn = sortColumn
         self.sortAscending = sortAscending
         self.sidebarWidth = sidebarWidth
         self.expandedPlaylistFolders = expandedPlaylistFolders
+        self.sectionExpansion = sectionExpansion
     }
 
     /// Forward-compatible decoder for old payloads (V1) that do not include
-    /// `expandedPlaylistFolders`.
+    /// `expandedPlaylistFolders` or `sectionExpansion`.
     init(from decoder: any Swift.Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.selectedDestination = try c.decode(SidebarDestination.self, forKey: .selectedDestination)
@@ -60,6 +66,8 @@ struct UIStateV2: Codable {
         self.sortAscending = try c.decode(Bool.self, forKey: .sortAscending)
         self.sidebarWidth = try c.decodeIfPresent(Double.self, forKey: .sidebarWidth)
         self.expandedPlaylistFolders = try c.decodeIfPresent(Set<Int64>.self, forKey: .expandedPlaylistFolders) ?? []
+        self.sectionExpansion = try c.decodeIfPresent(SidebarSectionExpansion.self, forKey: .sectionExpansion)
+            ?? .init()
     }
 }
 
@@ -74,6 +82,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     @Published public var selectedDestination: SidebarDestination = .songs
     @Published public var searchQuery = ""
+
+    /// Phase 19 step 9: expand/collapse state for top-level sidebar
+    /// sections, plus per-Subsonic-server disclosure state. Mutated directly
+    /// by `Sidebar` via SwiftUI bindings; persistence is driven by a
+    /// debounced Combine sink installed in `init`.
+    @Published public var sectionExpansion: SidebarSectionExpansion = .init()
+
+    /// Phase 19 step 9: Subsonic servers the user has chosen to show in the
+    /// sidebar. Empty until `reloadSubsonicServers()` runs (no-op when no
+    /// `SubsonicSidebarListing` was supplied at init).
+    @Published public private(set) var subsonicServers: [SubsonicSidebarServer] = []
 
     // MARK: - Navigation history
 
@@ -222,6 +241,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     var scanFlushTask: Task<Void, Never>?
     private var searchQueryCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
+    private var sectionExpansionCancellable: AnyCancellable?
+    /// Source of Subsonic servers for the sidebar (Phase 19 step 9). `nil`
+    /// when running without the Subsonic module wired in (tests, snapshots).
+    private let subsonicSidebarListing: SubsonicSidebarListing?
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -231,12 +254,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         engine: any Transport,
         scanner: LibraryScanner? = nil,
         scrobbleRepository: ScrobbleQueueRepository? = nil,
-        scrobbleService: ScrobbleService? = nil
+        scrobbleService: ScrobbleService? = nil,
+        subsonicSidebarListing: SubsonicSidebarListing? = nil
     ) {
         self.database = database
         self.engine = engine
         self.scanner = scanner
         self.scrobbleService = scrobbleService
+        self.subsonicSidebarListing = subsonicSidebarListing
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
 
@@ -290,6 +315,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
         self.observeTracksSelection()
         self.wireExpandedFoldersPersistence()
+        self.wireSectionExpansionPersistence()
     }
 
     /// Bridges `TracksViewModel` (`@Observable`) selection state into the
@@ -320,6 +346,30 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 guard let self else { return }
                 Task { await self.saveUIState() }
             }
+    }
+
+    private func wireSectionExpansionPersistence() {
+        // Phase 19 step 9: persist sidebar section collapse + per-server
+        // disclosure with the same debounce strategy as expanded folders.
+        self.sectionExpansionCancellable = self.$sectionExpansion
+            .dropFirst()
+            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task { await self.saveUIState() }
+            }
+    }
+
+    /// Phase 19 step 9: reload the Subsonic server list from the supplied
+    /// `SubsonicSidebarListing`. No-op when no listing was injected.
+    public func reloadSubsonicServers() async {
+        guard let listing = self.subsonicSidebarListing else { return }
+        do {
+            let servers = try await listing.fetchSidebarServers()
+            self.subsonicServers = servers
+        } catch {
+            self.log.error("library.subsonic.reload.failed", ["error": String(reflecting: error)])
+        }
     }
 
     private func wirePlaylistCallbacks() {
@@ -803,7 +853,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             sortColumn: tracks.sortColumn,
             sortAscending: self.tracks.sortAscending,
             sidebarWidth: self.sidebarWidth,
-            expandedPlaylistFolders: self.playlistSidebar.expandedFolders
+            expandedPlaylistFolders: self.playlistSidebar.expandedFolders,
+            sectionExpansion: self.sectionExpansion
         )
         do {
             try await self.settingsRepo.set(state, for: "ui.state.v2")
@@ -841,6 +892,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.tracks.setSort(column: state.sortColumn, ascending: state.sortAscending)
             self.sidebarWidth = state.sidebarWidth
             self.playlistSidebar.setExpandedFolders(state.expandedPlaylistFolders)
+            self.sectionExpansion = state.sectionExpansion
         } catch {
             self.log.error("library.restoreState.failed", ["error": String(reflecting: error)])
         }

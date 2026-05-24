@@ -61,6 +61,11 @@ extension LibraryViewModel {
             } else {
                 await self.tracks.search(query: trimmed)
             }
+
+        case .subsonicSongs, .subsonicAlbums, .subsonicArtists, .subsonicGenres:
+            // Phase 19 step 10 wires the per-server browse data; step 9 only
+            // tags the sidebar rows and routes selection to a placeholder.
+            break
         }
     }
 
