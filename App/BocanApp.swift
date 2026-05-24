@@ -392,7 +392,33 @@ struct BocanApp: App {
         self.scrobbleSettingsViewModel = scrobbleParts.viewModel
         self.backupSettingsViewModel = BackupSettingsViewModel(database: db)
 
-        let qp = QueuePlayer(engine: eng, database: db, scrobbleSink: scrobbleParts.service)
+        // Phase 19: build the Subsonic stream cache (and resolver) so QueuePlayer
+        // can turn a `.subsonic` PlayableSource into a local file URL the engine
+        // can decode. Cache lives under the user's Caches directory so macOS
+        // can reclaim space under pressure.
+        let cachesRoot = (try? FileManager.default.url(
+            for: .cachesDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )) ?? FileManager.default.temporaryDirectory
+        let streamCacheDir = cachesRoot
+            .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
+            .appendingPathComponent("SubsonicStreams", isDirectory: true)
+        let subsonicStreamCache: SubsonicStreamCache? = try? SubsonicStreamCache(
+            configuration: SubsonicStreamCache.Configuration(rootDirectory: streamCacheDir),
+            loader: RemoteTrackLoader(transport: URLSessionHTTPTransport())
+        )
+        let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
+            SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
+        }
+
+        let qp = QueuePlayer(
+            engine: eng,
+            database: db,
+            scrobbleSink: scrobbleParts.service,
+            subsonicResolver: subsonicStreamResolver
+        )
         let scanner = LibraryScanner(database: db)
 
         self.database = db

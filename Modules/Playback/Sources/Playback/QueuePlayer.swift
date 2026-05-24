@@ -22,6 +22,7 @@ public actor QueuePlayer: Transport {
 
     private let engine: AudioEngine
     private let database: Database
+    private let subsonicResolver: (any SubsonicStreamResolving)?
 
     // MARK: - Sub-systems
 
@@ -114,9 +115,15 @@ public actor QueuePlayer: Transport {
 
     // MARK: - Init
 
-    public init(engine: AudioEngine, database: Database, scrobbleSink: (any ScrobbleSink)? = nil) {
+    public init(
+        engine: AudioEngine,
+        database: Database,
+        scrobbleSink: (any ScrobbleSink)? = nil,
+        subsonicResolver: (any SubsonicStreamResolving)? = nil
+    ) {
         self.engine = engine
         self.database = database
+        self.subsonicResolver = subsonicResolver
         self.queue = PlaybackQueue()
         self.historyRecorder = PlayHistoryRecorder(database: database, scrobbleSink: scrobbleSink)
         self.persistence = QueuePersistence(database: database)
@@ -528,8 +535,10 @@ public actor QueuePlayer: Transport {
         // Resolve a playable URL.
         //
         // Priority order:
-        //  1. Per-file security-scoped bookmark (stored at scan time).
-        //  2. Root-folder security-scoped bookmark (covers all files under the root).
+        //  1. Remote `.subsonic` source — resolved via `SubsonicStreamResolving`
+        //     to a local file URL backed by `SubsonicStreamCache`.
+        //  2. Per-file security-scoped bookmark (stored at scan time).
+        //  3. Root-folder security-scoped bookmark (covers all files under the root).
         //
         // We go directly to the root scope when the per-file bookmark is absent (nil)
         // because the raw file:// URL is inaccessible in the sandbox without a scope.
@@ -537,7 +546,25 @@ public actor QueuePlayer: Transport {
         var rootScope: RootScopeHandle? = nil
         let url: URL
 
-        if item.bookmark != nil {
+        if case let .subsonic(serverID, songID) = item.playableSource {
+            guard let resolver = self.subsonicResolver else {
+                self.log.error("queueplayer.subsonic.no_resolver", ["songID": songID])
+                throw PlaybackError.bookmarkResolutionFailed(
+                    trackID: item.trackID,
+                    underlying: URLError(.unsupportedURL)
+                )
+            }
+            self.log.debug("queueplayer.subsonic.resolve.start", ["serverID": serverID, "songID": songID])
+            do {
+                url = try await resolver.localFileURL(serverID: serverID, songID: songID)
+            } catch {
+                self.log.error(
+                    "queueplayer.subsonic.resolve.failed",
+                    ["serverID": serverID, "songID": songID, "error": String(reflecting: error)]
+                )
+                throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+            }
+        } else if item.bookmark != nil {
             // Attempt per-file bookmark first.
             do {
                 url = try item.resolvedURL()
@@ -633,6 +660,16 @@ public actor QueuePlayer: Transport {
         }
 
         self.log.debug("queueplayer.loaded", ["trackID": item.trackID])
+
+        // Fire-and-forget pre-cache of the next item if it's a Subsonic source.
+        // The resolver itself checks the server's `precacheNext` flag.
+        if let resolver = self.subsonicResolver,
+           let next = await self.queue.peekNextIgnoringRepeatOne(),
+           case let .subsonic(nextServerID, nextSongID) = next.playableSource {
+            Task.detached(priority: .utility) {
+                await resolver.precache(serverID: nextServerID, songID: nextSongID)
+            }
+        }
     }
 
     /// Dispatches start-of-track notifications to the history recorder using
