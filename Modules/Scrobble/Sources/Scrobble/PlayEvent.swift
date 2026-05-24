@@ -22,6 +22,10 @@ public struct PlayEvent: Sendable, Codable, Hashable {
     /// UTC start-of-play timestamp. Last.fm rejects timestamps more than
     /// 14 days in the past or in the future.
     public let playedAt: Date
+    /// Source server ID when the play originated from a Subsonic library.
+    public let subsonicServerID: UUID?
+    /// Source song ID when the play originated from a Subsonic library.
+    public let subsonicSongID: String?
 
     public init(
         queueID: Int64,
@@ -32,7 +36,9 @@ public struct PlayEvent: Sendable, Codable, Hashable {
         title: String,
         duration: TimeInterval,
         mbid: String? = nil,
-        playedAt: Date
+        playedAt: Date,
+        subsonicServerID: UUID? = nil,
+        subsonicSongID: String? = nil
     ) {
         self.queueID = queueID
         self.trackID = trackID
@@ -43,6 +49,8 @@ public struct PlayEvent: Sendable, Codable, Hashable {
         self.duration = duration
         self.mbid = mbid
         self.playedAt = playedAt
+        self.subsonicServerID = subsonicServerID
+        self.subsonicSongID = subsonicSongID
     }
 }
 

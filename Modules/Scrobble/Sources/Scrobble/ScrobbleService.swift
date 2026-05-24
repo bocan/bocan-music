@@ -14,7 +14,7 @@ import Playback
 ///   - `nowPlaying(_:)` from `QueuePlayer` when a track starts (best-effort),
 ///   - `love(_:loved:)` from the UI when the user toggles the loved flag.
 public actor ScrobbleService: ScrobbleSink {
-    public static let providerIDs: [String] = ["lastfm", "listenbrainz", "rocksky"]
+    public static let providerIDs: [String] = ["lastfm", "listenbrainz", "rocksky", "subsonic"]
 
     private let providers: [String: any ScrobbleProvider]
     private let workers: [String: ScrobbleQueueWorker]
@@ -129,6 +129,65 @@ public actor ScrobbleService: ScrobbleSink {
         } catch {
             self.log.warning("scrobble.service.nowplaying.lookup.fail", ["err": String(reflecting: error)])
         }
+    }
+
+    /// `ScrobbleSink` entry point for Subsonic-sourced plays. Enqueues a
+    /// queue row carrying the Subsonic identity + payload metadata so the
+    /// downstream workers (including `SubsonicScrobbleProvider`) can submit
+    /// without joining the local `tracks` table.
+    public func recordSubsonicPlay(
+        context: SubsonicPlayContext,
+        playedAt: Date,
+        durationPlayed: TimeInterval
+    ) async {
+        let activeProviders = await self.activeProviderIDs()
+        guard !activeProviders.isEmpty else {
+            self.log.debug("scrobble.service.skip.subsonic", ["reason": "no providers connected"])
+            return
+        }
+        guard ScrobbleRules.isWithinBackdateWindow(playedAt) else {
+            self.log.warning("scrobble.service.backdated.subsonic", ["played_at": playedAt.timeIntervalSince1970])
+            return
+        }
+        do {
+            let queueID = try await self.repository.enqueueSubsonic(
+                serverID: context.serverID,
+                songID: context.songID,
+                playedAt: playedAt,
+                durationPlayed: durationPlayed,
+                title: context.title,
+                artist: context.artist,
+                album: context.album,
+                albumArtist: context.albumArtist,
+                duration: context.duration,
+                providerIDs: activeProviders
+            )
+            self.log.info("scrobble.service.enqueued.subsonic", [
+                "queue_id": queueID ?? -1,
+                "providers": activeProviders.joined(separator: ","),
+            ])
+            for pid in activeProviders {
+                await self.workers[pid]?.kick()
+            }
+        } catch {
+            self.log.error("scrobble.service.enqueue.subsonic.fail", ["err": String(reflecting: error)])
+        }
+    }
+
+    /// Best-effort now-playing for Subsonic-sourced plays. Dispatched directly
+    /// to providers without a database lookup since Subsonic songs have no
+    /// row in the local `tracks` table.
+    public func nowPlayingSubsonic(context: SubsonicPlayContext) async {
+        guard await !(self.activeProviderIDs().isEmpty) else { return }
+        let event = PlayEvent(
+            queueID: -1, trackID: -1,
+            artist: context.artist, albumArtist: context.albumArtist, album: context.album,
+            title: context.title, duration: context.duration, mbid: nil,
+            playedAt: Date(),
+            subsonicServerID: context.serverID,
+            subsonicSongID: context.songID
+        )
+        await self.dispatchNowPlaying(event)
     }
 
     private func dispatchNowPlaying(_ event: PlayEvent) async {

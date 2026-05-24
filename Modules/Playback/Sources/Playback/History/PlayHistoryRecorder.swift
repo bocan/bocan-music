@@ -4,6 +4,37 @@ import Persistence
 
 // MARK: - ScrobbleSink
 
+/// Snapshot of a Subsonic-sourced play. Carries everything a remote provider
+/// needs since Subsonic songs are never written to the local `tracks` table
+/// and so cannot be looked up by `trackID` later in the pipeline.
+public struct SubsonicPlayContext: Sendable, Equatable {
+    public let serverID: UUID
+    public let songID: String
+    public let title: String
+    public let artist: String
+    public let albumArtist: String?
+    public let album: String?
+    public let duration: TimeInterval
+
+    public init(
+        serverID: UUID,
+        songID: String,
+        title: String,
+        artist: String,
+        albumArtist: String? = nil,
+        album: String? = nil,
+        duration: TimeInterval
+    ) {
+        self.serverID = serverID
+        self.songID = songID
+        self.title = title
+        self.artist = artist
+        self.albumArtist = albumArtist
+        self.album = album
+        self.duration = duration
+    }
+}
+
 /// Downstream consumer of recorded plays. The `Scrobble` module supplies the
 /// production implementation; tests can pass a no-op or capture for assertions.
 ///
@@ -13,10 +44,25 @@ public protocol ScrobbleSink: Sendable {
     /// Best-effort "now playing" hint sent when a track starts. Defaults to no-op
     /// so existing test sinks don't need updating.
     func nowPlaying(trackID: Int64) async
+    /// Subsonic-sourced play. Default implementation is a no-op so existing
+    /// sinks don't need updating.
+    func recordSubsonicPlay(
+        context: SubsonicPlayContext,
+        playedAt: Date,
+        durationPlayed: TimeInterval
+    ) async
+    /// Subsonic-sourced now-playing hint. Default implementation is a no-op.
+    func nowPlayingSubsonic(context: SubsonicPlayContext) async
 }
 
 public extension ScrobbleSink {
     func nowPlaying(trackID _: Int64) async {}
+    func recordSubsonicPlay(
+        context _: SubsonicPlayContext,
+        playedAt _: Date,
+        durationPlayed _: TimeInterval
+    ) async {}
+    func nowPlayingSubsonic(context _: SubsonicPlayContext) async {}
 }
 
 // MARK: - PlayHistoryRecorder
@@ -48,6 +94,7 @@ public actor PlayHistoryRecorder {
     private var trackDuration: TimeInterval = 0
     private var playStartedAt: Date?
     private var hasScrobbled = false
+    private var currentSubsonicContext: SubsonicPlayContext?
 
     // MARK: - Init
 
@@ -65,6 +112,7 @@ public actor PlayHistoryRecorder {
         self.trackDuration = duration
         self.playStartedAt = Date()
         self.hasScrobbled = false
+        self.currentSubsonicContext = nil
         self.log.debug("history.start", ["trackID": trackID, "duration": duration])
         // Fire-and-forget: the Now Playing hint to scrobbling services is best-effort
         // and must never block the playback hot path (engine.play() follows immediately).
@@ -73,27 +121,58 @@ public actor PlayHistoryRecorder {
         }
     }
 
+    /// Call when a Subsonic-sourced track starts playing. The full context is
+    /// retained because Subsonic songs have no row in the local `tracks` table
+    /// for downstream lookup.
+    public func trackDidStart(subsonic context: SubsonicPlayContext) async {
+        self.currentTrackID = nil
+        self.trackDuration = context.duration
+        self.playStartedAt = Date()
+        self.hasScrobbled = false
+        self.currentSubsonicContext = context
+        self.log.debug("history.start.subsonic", [
+            "server": context.serverID.uuidString,
+            "song": context.songID,
+            "duration": context.duration,
+        ])
+        if let sink = scrobbleSink {
+            let ctx = context
+            Task { await sink.nowPlayingSubsonic(context: ctx) }
+        }
+    }
+
     /// Call periodically (or at track end) with the elapsed time so far.
     public func update(elapsed: TimeInterval) async {
-        guard let id = currentTrackID, !hasScrobbled else { return }
+        guard !self.hasScrobbled else { return }
         let shouldScrobble = self.meetsThreshold(elapsed: elapsed, duration: self.trackDuration)
-        if shouldScrobble {
+        guard shouldScrobble else { return }
+        if let ctx = currentSubsonicContext {
+            await self.scrobbleSubsonic(context: ctx, durationPlayed: elapsed)
+        } else if let id = currentTrackID {
             await self.scrobble(trackID: id, durationPlayed: elapsed, source: "queue")
         }
     }
 
     /// Call when the user skips before the threshold. Records a skip event.
     public func trackSkipped(elapsed: TimeInterval) async {
-        guard let id = currentTrackID else { return }
         defer {
             currentTrackID = nil
+            currentSubsonicContext = nil
             trackDuration = 0
             playStartedAt = nil
             hasScrobbled = false
         }
 
-        if self.meetsThreshold(elapsed: elapsed, duration: self.trackDuration) {
-            // Technically met threshold before skip — still scrobble.
+        let metThreshold = self.meetsThreshold(elapsed: elapsed, duration: self.trackDuration)
+        if let ctx = currentSubsonicContext {
+            if metThreshold {
+                await self.scrobbleSubsonic(context: ctx, durationPlayed: elapsed)
+            }
+            // Subsonic plays have no local tracks row to bump skip_count against.
+            return
+        }
+        guard let id = currentTrackID else { return }
+        if metThreshold {
             await self.scrobble(trackID: id, durationPlayed: elapsed, source: "queue")
         } else {
             await self.recordSkip(trackID: id, elapsed: elapsed)
@@ -102,14 +181,19 @@ public actor PlayHistoryRecorder {
 
     /// Call when the track ends naturally (completes playing).
     public func trackDidEnd(elapsed: TimeInterval) async {
-        guard let id = currentTrackID else { return }
-        if !self.hasScrobbled {
+        defer {
+            currentTrackID = nil
+            currentSubsonicContext = nil
+            trackDuration = 0
+            playStartedAt = nil
+            hasScrobbled = false
+        }
+        if self.hasScrobbled { return }
+        if let ctx = currentSubsonicContext {
+            await self.scrobbleSubsonic(context: ctx, durationPlayed: elapsed)
+        } else if let id = currentTrackID {
             await self.scrobble(trackID: id, durationPlayed: elapsed, source: "queue")
         }
-        self.currentTrackID = nil
-        self.trackDuration = 0
-        self.playStartedAt = nil
-        self.hasScrobbled = false
     }
 
     /// Call when a gapless handoff has occurred — the outgoing track played
@@ -168,6 +252,23 @@ public actor PlayHistoryRecorder {
         // Notify the scrobble pipeline so it can fan-out to remote services.
         if let sink = scrobbleSink {
             await sink.recordPlay(trackID: trackID, playedAt: playedAtDate, durationPlayed: durationPlayed)
+        }
+    }
+
+    /// Scrobble path for Subsonic-sourced plays. Skips the local
+    /// `play_history` insert and `tracks` UPDATE entirely (the song has no
+    /// row in either) and just hands the play to the scrobble pipeline.
+    private func scrobbleSubsonic(context: SubsonicPlayContext, durationPlayed: TimeInterval) async {
+        guard !self.hasScrobbled else { return }
+        self.hasScrobbled = true
+        let playedAt = Date()
+        self.log.debug("history.scrobbled.subsonic", [
+            "server": context.serverID.uuidString,
+            "song": context.songID,
+            "duration": durationPlayed,
+        ])
+        if let sink = scrobbleSink {
+            await sink.recordSubsonicPlay(context: context, playedAt: playedAt, durationPlayed: durationPlayed)
         }
     }
 

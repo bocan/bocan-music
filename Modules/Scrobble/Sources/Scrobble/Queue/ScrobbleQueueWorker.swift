@@ -126,7 +126,9 @@ public actor ScrobbleQueueWorker {
                 title: row.title,
                 duration: row.duration,
                 mbid: row.mbid,
-                playedAt: row.playedAt
+                playedAt: row.playedAt,
+                subsonicServerID: row.subsonicServerID,
+                subsonicSongID: row.subsonicSongID
             )
         }
 

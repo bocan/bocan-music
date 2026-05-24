@@ -139,4 +139,59 @@ struct ScrobbleQueueRepositoryTests {
         let row = try await repo.fetchTrackMetadata(trackID: 999)
         #expect(row == nil)
     }
+
+    @Test("enqueueSubsonic round-trips identity + payload through fetchPending")
+    func subsonicRoundTrip() async throws {
+        let db = try await self.makeDB()
+        let repo = ScrobbleQueueRepository(database: db)
+        let server = UUID()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let qid = try await repo.enqueueSubsonic(
+            serverID: server,
+            songID: "song-42",
+            playedAt: now,
+            durationPlayed: 200,
+            title: "Faded",
+            artist: "Alan Walker",
+            album: "Different World",
+            albumArtist: nil,
+            duration: 212,
+            providerIDs: ["subsonic", "listenbrainz"]
+        )
+        #expect(qid != nil)
+
+        let pending = try await repo.fetchPending(providerID: "subsonic", now: now)
+        #expect(pending.count == 1)
+        let row = try #require(pending.first)
+        #expect(row.trackID == -1)
+        #expect(row.title == "Faded")
+        #expect(row.artist == "Alan Walker")
+        #expect(row.album == "Different World")
+        #expect(row.duration == 212)
+        #expect(row.subsonicServerID == server)
+        #expect(row.subsonicSongID == "song-42")
+    }
+
+    @Test("enqueueSubsonic is idempotent on (serverID, songID, playedAt)")
+    func subsonicEnqueueIdempotent() async throws {
+        let db = try await self.makeDB()
+        let repo = ScrobbleQueueRepository(database: db)
+        let server = UUID()
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let first = try await repo.enqueueSubsonic(
+            serverID: server, songID: "s",
+            playedAt: now, durationPlayed: 100,
+            title: "T", artist: "A", album: nil, albumArtist: nil,
+            duration: 200, providerIDs: ["subsonic"]
+        )
+        let second = try await repo.enqueueSubsonic(
+            serverID: server, songID: "s",
+            playedAt: now, durationPlayed: 100,
+            title: "T", artist: "A", album: nil, albumArtist: nil,
+            duration: 200, providerIDs: ["subsonic"]
+        )
+        #expect(first == second)
+        let pending = try await repo.fetchPending(providerID: "subsonic", now: now)
+        #expect(pending.count == 1)
+    }
 }

@@ -625,7 +625,7 @@ public actor QueuePlayer: Transport {
             )
         }
 
-        await self.historyRecorder.trackDidStart(trackID: item.trackID, duration: item.duration)
+        await self.notifyHistoryStart(for: item)
 
         if autoPlay {
             try await self.engine.play()
@@ -633,6 +633,27 @@ public actor QueuePlayer: Transport {
         }
 
         self.log.debug("queueplayer.loaded", ["trackID": item.trackID])
+    }
+
+    /// Dispatches start-of-track notifications to the history recorder using
+    /// the Subsonic-specific overload when the item streams from a remote
+    /// server. Subsonic items don't have a row in the local `tracks` table,
+    /// so the recorder must skip its usual local-DB writes.
+    private func notifyHistoryStart(for item: QueueItem) async {
+        if case let .subsonic(serverID, songID) = item.playableSource {
+            let context = SubsonicPlayContext(
+                serverID: serverID,
+                songID: songID,
+                title: item.title ?? "",
+                artist: item.artistName ?? "",
+                albumArtist: nil,
+                album: nil,
+                duration: item.duration
+            )
+            await self.historyRecorder.trackDidStart(subsonic: context)
+        } else {
+            await self.historyRecorder.trackDidStart(trackID: item.trackID, duration: item.duration)
+        }
     }
 
     // MARK: Engine state subscription
@@ -977,7 +998,7 @@ public actor QueuePlayer: Transport {
             )
         }
 
-        await self.historyRecorder.trackDidStart(trackID: item.trackID, duration: item.duration)
+        await self.notifyHistoryStart(for: item)
 
         // Begin crossfade-in if one was scheduled during prefetch.
         if self.crossfadePendingForNextTransition {

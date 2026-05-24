@@ -1,4 +1,5 @@
 import Foundation
+import GRDB
 import Persistence
 import Testing
 @testable import Playback
@@ -8,12 +9,26 @@ import Testing
 private actor CapturingScrobbleSink: ScrobbleSink {
     private(set) var calls: [(trackID: Int64, playedAt: Date, duration: TimeInterval)] = []
     private(set) var nowPlayingCalls: [Int64] = []
+    private(set) var subsonicCalls: [SubsonicPlayContext] = []
+    private(set) var nowPlayingSubsonicCalls: [SubsonicPlayContext] = []
     func recordPlay(trackID: Int64, playedAt: Date, durationPlayed: TimeInterval) async {
         self.calls.append((trackID, playedAt, durationPlayed))
     }
 
     func nowPlaying(trackID: Int64) async {
         self.nowPlayingCalls.append(trackID)
+    }
+
+    func recordSubsonicPlay(
+        context: SubsonicPlayContext,
+        playedAt _: Date,
+        durationPlayed _: TimeInterval
+    ) async {
+        self.subsonicCalls.append(context)
+    }
+
+    func nowPlayingSubsonic(context: SubsonicPlayContext) async {
+        self.nowPlayingSubsonicCalls.append(context)
     }
 }
 
@@ -99,6 +114,36 @@ struct HistoryRecorderTests {
         #expect(calls == [99])
     }
 
+    @Test("Subsonic trackDidStart fires nowPlayingSubsonic and trackDidEnd forwards subsonic play")
+    func subsonicPathBypassesLocalDB() async throws {
+        let sink = CapturingScrobbleSink()
+        let db = await makeDatabase()
+        let serverID = UUID()
+        let context = SubsonicPlayContext(
+            serverID: serverID, songID: "s-1",
+            title: "Song", artist: "Artist",
+            duration: 180
+        )
+        let recorder = await PlayHistoryRecorder(database: db, scrobbleSink: sink)
+        await recorder.trackDidStart(subsonic: context)
+        await Task.yield()
+        let nowPlaying = await sink.nowPlayingSubsonicCalls
+        #expect(nowPlaying == [context])
+
+        await recorder.trackDidEnd(elapsed: 180)
+        let played = await sink.subsonicCalls
+        #expect(played == [context])
+
+        // play_history must remain empty — Subsonic plays never insert there.
+        let count = try await db.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM play_history") ?? -1
+        }
+        #expect(count == 0)
+        // No local trackID-based recordPlay either.
+        let localCalls = await sink.calls
+        #expect(localCalls.isEmpty)
+    }
+
     // MARK: - Helpers
 
     /// Mirror of the private threshold logic for testing.
@@ -110,13 +155,13 @@ struct HistoryRecorderTests {
         return elapsed >= 240.0
     }
 
-    private func makeDatabase() async -> Database {
+    private func makeDatabase() async -> Persistence.Database {
         // A fully in-memory database suitable for tests.
         // We don't actually write during these unit tests (DB is not used for threshold logic).
         try! await Database(location: .inMemory)
     }
 
-    static func insertTrack(id: Int64, in db: Database) async throws {
+    static func insertTrack(id: Int64, in db: Persistence.Database) async throws {
         try await db.write { db in
             try db.execute(
                 sql: """
