@@ -6,6 +6,7 @@ import Observability
 import Persistence
 import Playback
 import Scrobble
+import Subsonic
 import UserNotifications
 
 // MARK: - NowPlayingViewModel
@@ -76,6 +77,7 @@ public final class NowPlayingViewModel {
 
     private let engine: any Transport
     private let database: Database
+    private let subsonicCoverArtProvider: SubsonicCoverArtProvider?
     private var stateTask: Task<Void, Never>?
     private var positionTask: Task<Void, Never>?
     private var sleepTimerTask: Task<Void, Never>?
@@ -92,10 +94,12 @@ public final class NowPlayingViewModel {
     public init(
         engine: any Transport,
         database: Database,
-        scrobbleRepository: ScrobbleQueueRepository? = nil
+        scrobbleRepository: ScrobbleQueueRepository? = nil,
+        subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil
     ) {
         self.engine = engine
         self.database = database
+        self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.startObservingState()
         if let qp = engine as? QueuePlayer {
             self.startObservingCurrentTrack(qp)
@@ -343,6 +347,9 @@ public final class NowPlayingViewModel {
                     self.album = item.albumName ?? ""
                     self.duration = item.duration
                     self.artwork = nil
+                    if case let .subsonic(serverID, songID) = item.playableSource {
+                        await self.loadSubsonicArtwork(serverID: serverID, songID: songID)
+                    }
                 } else {
                     self.nowPlayingTrackID = nil
                     self.nowPlayingAlbumID = nil
@@ -459,6 +466,29 @@ public final class NowPlayingViewModel {
 // MARK: - NowPlayingViewModel private helpers
 
 private extension NowPlayingViewModel {
+    func loadSubsonicArtwork(serverID: UUID, songID: String) async {
+        guard let provider = self.subsonicCoverArtProvider else { return }
+        do {
+            guard let url = try await provider.coverArtURL(serverID: serverID, entityID: songID) else {
+                return
+            }
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let image = NSImage(data: data) else { return }
+            // Only apply if the same Subsonic song is still current.
+            if let qp = self.engine as? QueuePlayer,
+               let item = await qp.queue.currentItem,
+               case let .subsonic(_, currentSongID) = item.playableSource,
+               currentSongID == songID {
+                self.artwork = image
+            }
+        } catch {
+            self.log.warning(
+                "nowplaying.subsonic.artwork.failed",
+                ["songID": songID, "error": String(reflecting: error)]
+            )
+        }
+    }
+
     func resolveMetadata(for track: Track) async {
         let trackID = track.id
         var artworkPath: String?

@@ -283,6 +283,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     // MARK: - Init
 
+    // swiftlint:disable:next function_body_length
     public init(
         database: Database,
         engine: any Transport,
@@ -336,7 +337,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.playlistImporter = importer
         self.playlistExporter = exporter
         self.artists = ArtistsViewModel(repository: artistRepo)
-        self.nowPlaying = NowPlayingViewModel(engine: engine, database: database, scrobbleRepository: scrobbleRepository)
+        self.nowPlaying = NowPlayingViewModel(
+            engine: engine,
+            database: database,
+            scrobbleRepository: scrobbleRepository,
+            subsonicCoverArtProvider: subsonicCoverArtProvider
+        )
 
         self.searchQueryCancellable = self.makeSearchQuerySubscription()
 
