@@ -20,6 +20,10 @@ let package = Package(
         .package(path: "../Scrobble"),
         .package(path: "../Subsonic"),
         .package(
+            url: "https://github.com/MathieuDubart/swiftsonic.git",
+            from: "0.8.2"
+        ),
+        .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
             from: "1.19.2"
         ),
@@ -36,6 +40,7 @@ let package = Package(
                 .product(name: "Acoustics", package: "Acoustics"),
                 .product(name: "Scrobble", package: "Scrobble"),
                 .product(name: "Subsonic", package: "Subsonic"),
+                .product(name: "SwiftSonic", package: "swiftsonic"),
             ],
             resources: [
                 .process("Resources"),
@@ -56,6 +61,7 @@ let package = Package(
                 .product(name: "Persistence", package: "Persistence"),
                 .product(name: "Library", package: "Library"),
                 .product(name: "Subsonic", package: "Subsonic"),
+                .product(name: "SwiftSonic", package: "swiftsonic"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             swiftSettings: [

@@ -9,6 +9,7 @@ import Observability
 import Persistence
 import Playback
 import Scrobble
+import Subsonic
 import UniformTypeIdentifiers
 
 // MARK: - UIStateV2
@@ -245,6 +246,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Source of Subsonic servers for the sidebar (Phase 19 step 9). `nil`
     /// when running without the Subsonic module wired in (tests, snapshots).
     private let subsonicSidebarListing: SubsonicSidebarListing?
+
+    /// Phase 19 step 10: data source for per-server browse view models
+    /// (Songs / Albums / Artists / Genres). `nil` in tests / snapshots that
+    /// don't wire the Subsonic module.
+    public let subsonicDataSource: (any SubsonicBrowseDataSource)?
+
+    /// Phase 19 step 10: cover-art URL resolver used by Subsonic browse
+    /// views. `nil` when Subsonic isn't wired in.
+    public let subsonicCoverArtProvider: SubsonicCoverArtProvider?
+
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -255,13 +266,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         scanner: LibraryScanner? = nil,
         scrobbleRepository: ScrobbleQueueRepository? = nil,
         scrobbleService: ScrobbleService? = nil,
-        subsonicSidebarListing: SubsonicSidebarListing? = nil
+        subsonicSidebarListing: SubsonicSidebarListing? = nil,
+        subsonicDataSource: (any SubsonicBrowseDataSource)? = nil,
+        subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil
     ) {
         self.database = database
         self.engine = engine
         self.scanner = scanner
         self.scrobbleService = scrobbleService
         self.subsonicSidebarListing = subsonicSidebarListing
+        self.subsonicDataSource = subsonicDataSource
+        self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
 

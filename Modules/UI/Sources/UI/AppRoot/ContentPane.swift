@@ -113,14 +113,61 @@ public struct ContentPane: View {
             // Treat as Songs view; LibraryViewModel filters by the active query.
             TracksView(vm: self.vm.tracks, library: self.vm)
 
-        case let .subsonicSongs(serverID),
-             let .subsonicAlbums(serverID),
-             let .subsonicArtists(serverID),
-             let .subsonicGenres(serverID):
-            SubsonicPlaceholderView(
-                serverID: serverID,
-                destination: self.vm.selectedDestination
-            )
+        case let .subsonicSongs(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicSongsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicAlbums(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicAlbumsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicArtists(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicArtistsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicGenres(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicGenresView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
         }
+    }
+
+    private var subsonicUnavailable: some View {
+        ContentUnavailableView(
+            "Subsonic Unavailable",
+            systemImage: "exclamationmark.icloud",
+            description: Text("Sources aren't wired in to this build.")
+        )
     }
 }
