@@ -211,6 +211,8 @@ public final class SubsonicSettingsViewModel: ObservableObject {
 
 // MARK: - Editor model
 
+/// Editor types used by `SubsonicSettingsViewModel` to model an in-progress
+/// edit of a single Subsonic server.
 public extension SubsonicSettingsViewModel {
     /// Mutable working copy of one server while the user edits it.
     struct ServerEditor: Equatable {
@@ -334,8 +336,11 @@ public extension SubsonicSettingsViewModel {
 
         var bitrate: SubsonicBitrate {
             switch self.editor.bitrateKind {
-            case .original: .original
-            case .kbps: .kbps(self.editor.bitrateKbps)
+            case .original:
+                .original
+
+            case .kbps:
+                .kbps(self.editor.bitrateKbps)
             }
         }
 

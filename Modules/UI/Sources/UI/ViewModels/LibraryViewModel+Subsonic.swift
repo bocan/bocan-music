@@ -5,6 +5,8 @@ import SwiftSonic
 
 // MARK: - LibraryViewModel + Subsonic playback
 
+/// Subsonic playback helpers on `LibraryViewModel`. Bridges Subsonic song
+/// lists into the shared `QueuePlayer` via `.subsonic` `PlayableSource` items.
 public extension LibraryViewModel {
     /// Plays a list of Subsonic songs by enqueuing them as `.subsonic`
     /// `PlayableSource` items (Phase 19 step 10).

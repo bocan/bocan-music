@@ -137,8 +137,8 @@ public struct SubsonicBookmarksView: View {
     private static func formatPosition(_ seconds: TimeInterval) -> String {
         guard seconds > 0 else { return "—" }
         let total = Int(seconds.rounded())
-        let m = total / 60
-        let s = total % 60
-        return String(format: "%d:%02d", m, s)
+        let mins = total / 60
+        let secs = total % 60
+        return String(format: "%d:%02d", mins, secs)
     }
 }

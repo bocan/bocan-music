@@ -145,11 +145,20 @@ private struct SubsonicServerRow: View {
 
     private var statusColor: Color {
         switch self.status {
-        case .online: .green
-        case .connecting: .yellow
-        case .authFailed: .orange
-        case .unreachable, .serverError: .red
-        case .unknown: .secondary
+        case .online:
+            .green
+
+        case .connecting:
+            .yellow
+
+        case .authFailed:
+            .orange
+
+        case .unreachable, .serverError:
+            .red
+
+        case .unknown:
+            .secondary
         }
     }
 }
@@ -314,11 +323,20 @@ private struct SubsonicServerEditorView: View {
 
     private func label(for format: SubsonicStreamFormat) -> String {
         switch format {
-        case .original: "Original (no transcode)"
-        case .mp3: "MP3"
-        case .opus: "Opus"
-        case .aac: "AAC"
-        case .flac: "FLAC"
+        case .original:
+            "Original (no transcode)"
+
+        case .mp3:
+            "MP3"
+
+        case .opus:
+            "Opus"
+
+        case .aac:
+            "AAC"
+
+        case .flac:
+            "FLAC"
         }
     }
 }

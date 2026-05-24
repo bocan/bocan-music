@@ -72,7 +72,9 @@ struct LibrarySidebarExpansionTests {
         let serverID = UUID()
         let initial = SubsonicSidebarServer(id: serverID, name: "Lab", sortIndex: 0)
         let upgraded = SubsonicSidebarServer(
-            id: serverID, name: "Lab", sortIndex: 0,
+            id: serverID,
+            name: "Lab",
+            sortIndex: 0,
             supportsPodcasts: true
         )
         let listing = MutableStubListing(servers: [initial])
