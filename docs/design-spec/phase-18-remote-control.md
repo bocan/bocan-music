@@ -1,4 +1,4 @@
-# Phase 18 — Remote Control (Bocan Player side)
+# Phase 18: Remote Control (Bocan Player side)
 
 > Prerequisites: Phases 0–16 complete. `QueuePlayer` exposes the full `Transport`
 > protocol. Persistence layer is stable. Settings UI exists.
@@ -32,7 +32,7 @@ and the settings UI. The companion app designs are separate documents.
 Modules/Remote/
 ├── Package.swift
 ├── Sources/Remote/
-│   ├── RemoteServer.swift             # Actor — owns NWListener, routes requests
+│   ├── RemoteServer.swift             # Actor, owns NWListener, routes requests
 │   ├── BonjourAdvertiser.swift        # Registers / withdraws _bocan-remote._tcp.
 │   ├── TLSIdentity.swift              # Generates + persists self-signed TLS cert
 │   ├── Pairing/
@@ -45,7 +45,7 @@ Modules/Remote/
 │   │   ├── PlaybackHandler.swift      # POST /v1/playback/* (commands)
 │   │   └── StateHandler.swift         # GET /v1/playback/state
 │   ├── Events/
-│   │   ├── EventBus.swift             # Actor — fan-out playback events
+│   │   ├── EventBus.swift             # Actor, fan-out playback events
 │   │   └── WebSocketSession.swift     # One per connected remote
 │   └── Errors.swift
 └── Tests/RemoteTests/
@@ -236,13 +236,13 @@ Response `403` on wrong PIN. Response `410` on expired session.
 
 ---
 
-### Library — Songs
+### Library: Songs
 
 #### `GET /v1/library/songs`
 
 | Query param | Type | Default | Description |
 |---|---|---|---|
-| `q` | string | — | Full-text search |
+| `q` | string |, | Full-text search |
 | `limit` | int | 50 | Max results (1–200) |
 | `offset` | int | 0 | Pagination offset |
 | `sort` | string | `title` | `title` \| `artist` \| `album` \| `added_at` |
@@ -270,16 +270,16 @@ Response `200`:
 
 ---
 
-### Library — Albums
+### Library: Albums
 
 #### `GET /v1/library/albums`
 
 | Query param | Type | Default | Description |
 |---|---|---|---|
-| `q` | string | — | Full-text search |
+| `q` | string |, | Full-text search |
 | `limit` | int | 50 | Max results (1–200) |
 | `offset` | int | 0 | Pagination offset |
-| `artistID` | int | — | Filter to one artist |
+| `artistID` | int |, | Filter to one artist |
 
 Response items include `id`, `title`, `artist`, `year`, `trackCount`,
 `artURL` (relative path, see below).
@@ -291,13 +291,13 @@ plus `discNum`.
 
 ---
 
-### Library — Artists
+### Library: Artists
 
 #### `GET /v1/library/artists`
 
 | Query param | Type | Default |
 |---|---|---|
-| `q` | string | — |
+| `q` | string |, |
 | `limit` | int | 50 |
 | `offset` | int | 0 |
 
@@ -309,7 +309,7 @@ Returns albums for one artist. Same shape as `/v1/library/albums` items.
 
 ---
 
-### Library — Genres
+### Library: Genres
 
 #### `GET /v1/library/genres`
 
@@ -330,7 +330,7 @@ Supports `limit`, `offset`, `sort`. Same item shape as `/v1/library/songs`.
 
 ---
 
-### Library — Playlists
+### Library: Playlists
 
 #### `GET /v1/library/playlists`
 
@@ -354,7 +354,7 @@ app-level cache is the caller's responsibility.
 
 ---
 
-### Playback — State
+### Playback: State
 
 #### `GET /v1/playback/state`
 
@@ -385,7 +385,7 @@ Returns current playback state without subscribing to the event stream:
 
 ---
 
-### Playback — Commands
+### Playback: Commands
 
 All commands return `204 No Content` on success.
 
@@ -448,7 +448,7 @@ volume).
 
 ---
 
-### Real-time events — WebSocket
+### Real-time events: WebSocket
 
 #### `GET /v1/events` (WebSocket upgrade)
 
@@ -515,7 +515,7 @@ public actor RemoteClientRepository {
 
 ## Implementation plan
 
-### Step 1 — Persistence layer
+### Step 1: Persistence layer
 
 1. Add `M0xx_RemoteClients.swift` migration following the existing numbered
    migration pattern in `Modules/Persistence/`.
@@ -523,7 +523,7 @@ public actor RemoteClientRepository {
 3. Add `RemoteClientRepository.swift`.
 4. Write repository tests (insert, fetch-by-token-hash, delete, last-used update).
 
-### Step 2 — TLS identity
+### Step 2: TLS identity
 
 5. Add `Modules/Remote/Package.swift` depending on `Observability` and
    `Persistence`.
@@ -537,7 +537,7 @@ public actor RemoteClientRepository {
 7. Write a test that calls `TLSIdentity.shared` twice and verifies the same
    fingerprint is returned (key persistence).
 
-### Step 3 — Core server
+### Step 3: Core server
 
 8. Implement `RemoteServer.swift` actor:
    - `NWListener` on the configured port with TLS using `NWProtocolTLS.Options`
@@ -553,7 +553,7 @@ public actor RemoteClientRepository {
 10. Write server integration test: start server on port 0, make a `URLSession`
     request (with self-signed cert trust), verify `401` without token.
 
-### Step 4 — Pairing
+### Step 4: Pairing
 
 11. Implement `PairingSession.swift` value type: holds `deviceID`, `deviceName`,
     `platform`, `pin`, `sessionToken`, `expiresAt`.
@@ -567,7 +567,7 @@ public actor RemoteClientRepository {
     - Expire sessions older than 120 s in a lightweight `Task.sleep` loop.
 13. Write pairing flow tests using the server integration harness.
 
-### Step 5 — Library handlers
+### Step 5: Library handlers
 
 14. Implement `LibraryHandler.swift`, injected with `TrackRepository`,
     `AlbumRepository`, `ArtistRepository`, `PlaylistRepository`.
@@ -576,7 +576,7 @@ public actor RemoteClientRepository {
     location the main app uses; resize to 512×512 using `CoreImage` if larger.
 17. Write handler unit tests with an in-memory database seeded with fixture data.
 
-### Step 6 — Playback handlers
+### Step 6: Playback handlers
 
 18. Implement `PlaybackHandler.swift` injected with `QueuePlayer`.
 19. `POST /v1/playback/play` calls `QueuePlayer.play(items:shuffle:)`.
@@ -584,7 +584,7 @@ public actor RemoteClientRepository {
     `QueuePlayer` methods.
 21. Write handler tests using a mock `Transport` conformance.
 
-### Step 7 — State + WebSocket events
+### Step 7: State + WebSocket events
 
 22. Implement `EventBus.swift` actor:
     - Holds a `[UUID: AsyncStream<ServerEvent>.Continuation]` for connected clients.
@@ -601,7 +601,7 @@ public actor RemoteClientRepository {
 24. Implement `StateHandler.swift` for `GET /v1/playback/state`.
 25. Write event bus tests: verify fan-out, verify disconnected clients are cleaned up.
 
-### Step 8 — Bonjour advertisement
+### Step 8: Bonjour advertisement
 
 26. Implement `BonjourAdvertiser.swift`:
     - Uses `NWListener` service registration (set `service` on the listener
@@ -614,7 +614,7 @@ public actor RemoteClientRepository {
 28. Write a test that starts the advertiser and verifies the service appears via
     `NWBrowser` within 5 seconds.
 
-### Step 9 — App wiring
+### Step 9: App wiring
 
 29. In `BocanApp.swift`, construct `RemoteServer` after `QueuePlayer` is ready.
 30. Inject `RemoteServer` as an environment object so the Settings view can toggle
@@ -624,7 +624,7 @@ public actor RemoteClientRepository {
 32. Show the configured port number and a "Pair a remote" button (triggers the
     pairing PIN flow manually without waiting for a remote to initiate).
 
-### Step 10 — Management UI
+### Step 10: Management UI
 
 33. Implement `RemoteClientsView.swift` in `Modules/UI/`:
     - `List` of bonded remotes from `RemoteClientRepository.fetchAll()`.
@@ -636,7 +636,7 @@ public actor RemoteClientRepository {
 34. Accessible: each row has `accessibilityLabel` combining name + platform +
     last-used date.
 
-### Step 11 — Hardening
+### Step 11: Hardening
 
 35. Rate-limit pairing: after 5 failed PIN attempts from the same `sessionToken`,
     discard the session and return `429 Too Many Requests`.
@@ -646,7 +646,7 @@ public actor RemoteClientRepository {
 38. Audit all `RemoteServer` code paths for information leakage in error responses
     (error messages must not reveal internal paths or DB structure).
 
-### Step 12 — Tests & CI gate
+### Step 12: Tests & CI gate
 
 39. Unit tests for every handler, `PairingSession` expiry, `EventBus` fan-out,
     and `TLSIdentity` persistence.
