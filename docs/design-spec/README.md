@@ -33,6 +33,7 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 15 | [phase-15-casting.md](phase-15-casting.md) | AirPlay 2 + Google Cast |
 | 16 | [phase-16-distribution.md](phase-16-distribution.md) | Sign, notarize, DMG, Sparkle |
 | 18 | [phase-18-remote-control.md](phase-18-remote-control.md) | Remote control server — Bonjour discovery, PIN pairing, REST/WebSocket API |
+| 19 | [phase-19-subsonic.md](phase-19-subsonic.md) | Subsonic / Navidrome / OpenSubsonic client — sidebar "Sources" section, federated search, streaming cache, write-through annotations |
 
 ## Conventions used in every phase file
 
