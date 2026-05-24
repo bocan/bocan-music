@@ -73,3 +73,31 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
 
     case search(String)
 }
+
+/// Phase 19 step 17 helpers — Subsonic-server projection for routing.
+public extension SidebarDestination {
+    /// The Subsonic server ID this destination targets, if any. Used by
+    /// `ContentPane` (Phase 19 step 17) to surface a per-server offline
+    /// banner above the destination content.
+    var subsonicServerID: UUID? {
+        switch self {
+        case let .subsonicSongs(id),
+             let .subsonicAlbums(id),
+             let .subsonicArtists(id),
+             let .subsonicGenres(id),
+             let .subsonicPlaylists(id),
+             let .subsonicPlaylist(id, _),
+             let .subsonicStarred(id),
+             let .subsonicRandom(id),
+             let .subsonicRecentlyAdded(id),
+             let .subsonicMostPlayed(id),
+             let .subsonicInternetRadio(id),
+             let .subsonicPodcasts(id),
+             let .subsonicBookmarks(id):
+            id
+
+        default:
+            nil
+        }
+    }
+}

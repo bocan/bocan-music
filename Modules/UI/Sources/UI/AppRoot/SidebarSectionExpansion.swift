@@ -81,6 +81,78 @@ public struct SubsonicSidebarServer: Identifiable, Hashable, Sendable {
     }
 }
 
+// MARK: - SubsonicSidebarConnectionState
+
+/// UI-side mirror of `SubsonicConnectionStatus` (Subsonic module). Kept
+/// separate so the `UI` package does not depend on `Subsonic`; the App
+/// layer maps between the two.
+public enum SubsonicSidebarConnectionState: Sendable, Hashable {
+    case unknown
+    case connecting
+    case online
+    case authFailed(String)
+    case unreachable(String)
+    case serverError(String)
+
+    /// Short status label spoken by VoiceOver and shown in tooltips.
+    public var displayLabel: String {
+        switch self {
+        case .unknown:
+            "Not yet connected"
+
+        case .connecting:
+            "Connecting\u{2026}"
+
+        case .online:
+            "Online"
+
+        case let .authFailed(msg):
+            "Authentication failed: \(msg)"
+
+        case let .unreachable(msg):
+            "Unreachable: \(msg)"
+
+        case let .serverError(msg):
+            "Server error: \(msg)"
+        }
+    }
+
+    /// `true` when the server is reachable and authenticated.
+    public var isOnline: Bool {
+        if case .online = self { return true }
+        return false
+    }
+
+    /// `true` when the user should see an offline banner with a retry button.
+    public var isOffline: Bool {
+        switch self {
+        case .authFailed, .unreachable, .serverError:
+            true
+
+        case .unknown, .connecting, .online:
+            false
+        }
+    }
+}
+
+// MARK: - SubsonicConnectionObserving
+
+/// Phase 19 step 17: per-server connection-status surface used by the
+/// sidebar status dot and the per-view offline banner with "Retry now".
+/// Implemented by the App layer against `SubsonicConnectionMonitor`; UI
+/// consumes the protocol so the module stays decoupled from `Subsonic`.
+public protocol SubsonicConnectionObserving: Sendable {
+    /// Snapshot of every monitored server's current state.
+    func currentStates() async -> [UUID: SubsonicSidebarConnectionState]
+
+    /// Stream of per-server state changes. Each emission carries the new
+    /// state for one server.
+    func stateUpdates() -> AsyncStream<(UUID, SubsonicSidebarConnectionState)>
+
+    /// Force an immediate re-ping for the given server (powers "Retry now").
+    func retry(serverID: UUID) async
+}
+
 // MARK: - SubsonicSidebarListing
 
 /// Source of sidebar-visible Subsonic servers. Implemented by the app layer

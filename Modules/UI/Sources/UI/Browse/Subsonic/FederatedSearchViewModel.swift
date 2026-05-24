@@ -144,9 +144,9 @@ public final class FederatedSearchViewModel: ObservableObject {
                     let result = try await dataSource.search3(
                         serverID: serverID,
                         query: query,
-                        artistCount: FederatedSearchViewModel.artistCount,
-                        albumCount: FederatedSearchViewModel.albumCount,
-                        songCount: FederatedSearchViewModel.songCount
+                        artistCount: Self.artistCount,
+                        albumCount: Self.albumCount,
+                        songCount: Self.songCount
                     )
                     return .success(result)
                 } catch is CancellationError {
@@ -166,7 +166,7 @@ public final class FederatedSearchViewModel: ObservableObject {
                 if Task.isCancelled { return nil }
                 return .timedOut
             }
-            let first = await group.next() ?? nil
+            let first = await (group.next()).flatMap(\.self)
             group.cancelAll()
             return first ?? .timedOut
         }

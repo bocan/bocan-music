@@ -50,9 +50,11 @@ public struct SubsonicSettingsView: View {
                         Button("Edit") {
                             Task { await self.vm.selectServer(server.id) }
                         }
+                        .accessibilityLabel("Edit \(server.name)")
                         Button("Reveal Credential in Keychain") {
-                            SubsonicSettingsView.revealInKeychain()
+                            Self.revealInKeychain()
                         }
+                        .accessibilityLabel("Reveal \(server.name) credential in Keychain Access")
                         Divider()
                         Button("Remove", role: .destructive) {
                             Task {
@@ -60,6 +62,7 @@ public struct SubsonicSettingsView: View {
                                 await self.vm.deleteSelected()
                             }
                         }
+                        .accessibilityLabel("Remove \(server.name)")
                     }
                 }
             }
@@ -73,6 +76,7 @@ public struct SubsonicSettingsView: View {
                     Label("Add Server", systemImage: "plus")
                 }
                 .help("Add a new Subsonic-compatible server")
+                .accessibilityLabel("Add new source server")
 
                 Spacer()
 
@@ -81,6 +85,7 @@ public struct SubsonicSettingsView: View {
                 }
                 .disabled(self.vm.servers.isEmpty || self.vm.isTesting)
                 .help("Ping every configured server")
+                .accessibilityLabel("Test all configured source connections")
             }
             .padding(8)
         }
@@ -91,7 +96,7 @@ public struct SubsonicSettingsView: View {
     @ViewBuilder
     private var detail: some View {
         if self.vm.servers.isEmpty, self.vm.editor.id == nil, self.vm.editor.name.isEmpty {
-            SubsonicEmptyState(onAdd: { self.vm.beginAddServer() })
+            SubsonicEmptyState { self.vm.beginAddServer() }
         } else {
             SubsonicServerEditorView(vm: self.vm)
         }
@@ -120,6 +125,7 @@ private struct SubsonicServerRow: View {
                 .fill(self.statusColor)
                 .frame(width: 8, height: 8)
                 .help(self.status.localizedDescription)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text(self.server.name)
                     .font(.body)
@@ -132,6 +138,9 @@ private struct SubsonicServerRow: View {
             Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(self.server.name), \(self.server.serverURL.host ?? self.server.serverURL.absoluteString)")
+        .accessibilityValue(self.status.localizedDescription)
     }
 
     private var statusColor: Color {
@@ -277,6 +286,8 @@ private struct SubsonicServerEditorView: View {
                         Task { await self.vm.testCurrentEditor() }
                     }
                     .disabled(self.vm.isTesting)
+                    .help("Ping this server and report its capabilities")
+                    .accessibilityLabel("Test connection to this server")
 
                     Spacer()
 
@@ -284,6 +295,8 @@ private struct SubsonicServerEditorView: View {
                         Button("Delete", role: .destructive) {
                             Task { await self.vm.deleteSelected() }
                         }
+                        .help("Remove this server and its Keychain credential")
+                        .accessibilityLabel("Delete this server")
                     }
 
                     Button("Save") {
@@ -291,6 +304,8 @@ private struct SubsonicServerEditorView: View {
                     }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.vm.editor.firstValidationError != nil)
+                    .help("Save changes to this server (\u{2318}\u{21A9})")
+                    .accessibilityLabel("Save server settings")
                 }
             }
         }

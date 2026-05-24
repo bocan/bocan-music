@@ -243,6 +243,7 @@ public extension SubsonicSettingsViewModel {
             switch server.maxBitrate {
             case .original:
                 self.bitrateKind = .original
+
             case let .kbps(n):
                 self.bitrateKind = .kbps
                 self.bitrateKbps = n
@@ -256,8 +257,8 @@ public extension SubsonicSettingsViewModel {
             self.syncRatings = server.syncRatings
         }
 
-        public static func blankNew() -> ServerEditor {
-            var editor = ServerEditor()
+        public static func blankNew() -> Self {
+            var editor = Self()
             editor.name = "New Server"
             editor.serverURLText = "https://"
             return editor
@@ -272,6 +273,7 @@ public extension SubsonicSettingsViewModel {
             switch self.authKind {
             case .tokenSalt where self.username.trimmingCharacters(in: .whitespaces).isEmpty:
                 return nil
+
             default:
                 break
             }

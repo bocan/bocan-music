@@ -95,6 +95,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `SubsonicSidebarListing` was supplied at init).
     @Published public private(set) var subsonicServers: [SubsonicSidebarServer] = []
 
+    /// Phase 19 step 17: live connection state per Subsonic server, used by
+    /// the sidebar status dot and the per-view offline banner. Updated by
+    /// the optional `SubsonicConnectionObserving` injected at init.
+    @Published public private(set) var subsonicConnectionStates: [UUID: SubsonicSidebarConnectionState] = [:]
+
     // MARK: - Navigation history
 
     @Published public private(set) var canGoBack = false
@@ -252,6 +257,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private let subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)?
     private var subsonicCapabilityTask: Task<Void, Never>?
 
+    /// Phase 19 step 17: emits per-server connection-state changes so the
+    /// sidebar status dot and per-view offline banner stay current.
+    private let subsonicConnectionObserver: (any SubsonicConnectionObserving)?
+    private var subsonicConnectionTask: Task<Void, Never>?
+
     /// Phase 19 step 10: data source for per-server browse view models
     /// (Songs / Albums / Artists / Genres). `nil` in tests / snapshots that
     /// don't wire the Subsonic module.
@@ -283,7 +293,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicDataSource: (any SubsonicBrowseDataSource)? = nil,
         subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil,
         subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil,
-        subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil
+        subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil,
+        subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil
     ) {
         self.database = database
         self.engine = engine
@@ -291,6 +302,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.scrobbleService = scrobbleService
         self.subsonicSidebarListing = subsonicSidebarListing
         self.subsonicCapabilityObserver = subsonicCapabilityObserver
+        self.subsonicConnectionObserver = subsonicConnectionObserver
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.federatedSearch = subsonicDataSource.map { FederatedSearchViewModel(dataSource: $0) }
@@ -326,18 +338,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.artists = ArtistsViewModel(repository: artistRepo)
         self.nowPlaying = NowPlayingViewModel(engine: engine, database: database, scrobbleRepository: scrobbleRepository)
 
-        // React to search query changes: debounce 250 ms, then reload the current
-        // destination with filtered data.  Clearing the query restores the full list.
-        self.searchQueryCancellable = self.$searchQuery
-            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
-            .removeDuplicates()
-            .sink { [weak self] query in
-                guard let self else { return }
-                Task { await self.loadCurrentDestination() }
-                // Phase 19 step 13: fan out a parallel federated search across
-                // enabled Subsonic servers. No-op when no servers are wired in.
-                self.federatedSearch?.search(query: query, servers: self.subsonicServers)
-            }
+        self.searchQueryCancellable = self.makeSearchQuerySubscription()
 
         self.wirePlaylistCallbacks()
 
@@ -353,6 +354,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.wireExpandedFoldersPersistence()
         self.wireSectionExpansionPersistence()
         self.observeSubsonicCapabilityChanges()
+        self.observeSubsonicConnectionChanges()
     }
 
     /// Bridges `TracksViewModel` (`@Observable`) selection state into the
@@ -425,8 +427,44 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
+    private func makeSearchQuerySubscription() -> AnyCancellable {
+        self.$searchQuery
+            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] query in
+                guard let self else { return }
+                Task { await self.loadCurrentDestination() }
+                self.federatedSearch?.search(query: query, servers: self.subsonicServers)
+            }
+    }
+
+    /// Phase 19 step 17: subscribe to per-server connection-state events
+    /// from the App-layer `SubsonicConnectionObserving` so the sidebar
+    /// status dot and the per-view offline banner stay live.
+    private func observeSubsonicConnectionChanges() {
+        guard let observer = self.subsonicConnectionObserver else { return }
+        Task { [weak self] in
+            let snapshot = await observer.currentStates()
+            await MainActor.run { self?.subsonicConnectionStates = snapshot }
+        }
+        let stream = observer.stateUpdates()
+        self.subsonicConnectionTask = Task { [weak self] in
+            for await (serverID, state) in stream {
+                guard let self else { return }
+                self.subsonicConnectionStates[serverID] = state
+            }
+        }
+    }
+
+    /// Phase 19 step 17: powers the per-view "Retry now" button by asking
+    /// the `SubsonicConnectionObserving` adapter to re-ping immediately.
+    public func retrySubsonicConnection(serverID: UUID) async {
+        await self.subsonicConnectionObserver?.retry(serverID: serverID)
+    }
+
     deinit {
         self.subsonicCapabilityTask?.cancel()
+        self.subsonicConnectionTask?.cancel()
     }
 
     private func wirePlaylistCallbacks() {

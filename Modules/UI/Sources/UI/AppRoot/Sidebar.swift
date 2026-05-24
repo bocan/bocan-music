@@ -50,7 +50,8 @@ public struct Sidebar: View {
                     get: { self.vm.sectionExpansion.expandedServers },
                     set: { self.vm.sectionExpansion.expandedServers = $0 }
                 ),
-                servers: self.vm.subsonicServers
+                servers: self.vm.subsonicServers,
+                connectionStates: self.vm.subsonicConnectionStates
             )
 
             Section {

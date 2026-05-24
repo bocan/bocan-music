@@ -24,10 +24,13 @@ public struct URLSessionHTTPTransport: HTTPTransport {
             switch http.statusCode {
             case 200 ..< 300:
                 break
+
             case 401:
                 throw RemoteTrackLoaderError.unauthorized
+
             case 403, 410:
                 throw RemoteTrackLoaderError.gone
+
             default:
                 throw RemoteTrackLoaderError.server(statusCode: http.statusCode)
             }
