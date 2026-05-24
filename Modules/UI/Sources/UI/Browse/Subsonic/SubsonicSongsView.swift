@@ -14,6 +14,7 @@ public struct SubsonicSongsView: View {
     public let serverID: UUID
     public let library: LibraryViewModel
     public let coverArtProvider: SubsonicCoverArtProvider?
+    public let title: String
 
     @StateObject private var vm: SubsonicSongsViewModel
 
@@ -21,11 +22,13 @@ public struct SubsonicSongsView: View {
         serverID: UUID,
         library: LibraryViewModel,
         dataSource: any SubsonicBrowseDataSource,
-        coverArtProvider: SubsonicCoverArtProvider?
+        coverArtProvider: SubsonicCoverArtProvider?,
+        title: String = "Songs"
     ) {
         self.serverID = serverID
         self.library = library
         self.coverArtProvider = coverArtProvider
+        self.title = title
         self._vm = StateObject(
             wrappedValue: SubsonicSongsViewModel(serverID: serverID, dataSource: dataSource)
         )
@@ -39,7 +42,7 @@ public struct SubsonicSongsView: View {
                 self.list
             }
         }
-        .navigationTitle("Songs")
+        .navigationTitle(self.title)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {

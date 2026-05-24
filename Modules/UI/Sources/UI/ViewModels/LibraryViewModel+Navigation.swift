@@ -62,9 +62,12 @@ extension LibraryViewModel {
                 await self.tracks.search(query: trimmed)
             }
 
-        case .subsonicSongs, .subsonicAlbums, .subsonicArtists, .subsonicGenres:
-            // Phase 19 step 10 wires the per-server browse data; step 9 only
-            // tags the sidebar rows and routes selection to a placeholder.
+        case .subsonicSongs, .subsonicAlbums, .subsonicArtists, .subsonicGenres,
+             .subsonicPlaylists, .subsonicPlaylist, .subsonicStarred,
+             .subsonicRandom, .subsonicRecentlyAdded, .subsonicMostPlayed,
+             .subsonicInternetRadio, .subsonicPodcasts, .subsonicBookmarks:
+            // Per-server Subsonic destinations manage their own loading via
+            // dedicated view models. Nothing to fan out here.
             break
         }
     }

@@ -13,6 +13,7 @@ public final class SubsonicAlbumsViewModel: ObservableObject {
     public static let pageSize = 100
 
     public let serverID: UUID
+    public let listType: AlbumListType
 
     @Published public private(set) var albums: [AlbumID3] = []
     @Published public private(set) var isLoading = false
@@ -22,9 +23,14 @@ public final class SubsonicAlbumsViewModel: ObservableObject {
     private let dataSource: any SubsonicBrowseDataSource
     private let log = AppLogger.make(.ui)
 
-    public init(serverID: UUID, dataSource: any SubsonicBrowseDataSource) {
+    public init(
+        serverID: UUID,
+        dataSource: any SubsonicBrowseDataSource,
+        listType: AlbumListType = .alphabeticalByName
+    ) {
         self.serverID = serverID
         self.dataSource = dataSource
+        self.listType = listType
     }
 
     public func load() async {
@@ -41,7 +47,7 @@ public final class SubsonicAlbumsViewModel: ObservableObject {
         do {
             let batch = try await self.dataSource.getAlbumList2(
                 serverID: self.serverID,
-                type: .alphabeticalByName,
+                type: self.listType,
                 size: Self.pageSize,
                 offset: self.albums.count
             )

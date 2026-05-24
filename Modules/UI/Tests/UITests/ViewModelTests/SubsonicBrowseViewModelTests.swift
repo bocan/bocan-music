@@ -93,6 +93,82 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
     func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3 {
         AlbumID3(id: id, name: "Stub", songCount: 0, duration: 0)
     }
+
+    // MARK: Phase 19 step 11 — optional destinations
+
+    var playlistsList: [Playlist] = []
+    var playlistDetailValue: PlaylistWithSongs?
+    var starredValue: Starred2 = makeStarred2()
+    var podcastsList: [PodcastChannel] = []
+    var stationsList: [InternetRadioStation] = []
+    var bookmarksList: [Bookmark] = []
+    var failNextOptional = false
+
+    func seedPlaylists(_ list: [Playlist]) {
+        self.playlistsList = list
+    }
+
+    func seedPlaylistDetail(_ pl: PlaylistWithSongs) {
+        self.playlistDetailValue = pl
+    }
+
+    func seedStarred(_ s: Starred2) {
+        self.starredValue = s
+    }
+
+    func seedPodcasts(_ list: [PodcastChannel]) {
+        self.podcastsList = list
+    }
+
+    func seedStations(_ list: [InternetRadioStation]) {
+        self.stationsList = list
+    }
+
+    func seedBookmarks(_ list: [Bookmark]) {
+        self.bookmarksList = list
+    }
+
+    func setFailNextOptional(_ v: Bool) {
+        self.failNextOptional = v
+    }
+
+    private func failIfRequested() throws {
+        if self.failNextOptional {
+            self.failNextOptional = false
+            throw TestError.boom
+        }
+    }
+
+    func getPlaylists(serverID: UUID) async throws -> [Playlist] {
+        try self.failIfRequested()
+        return self.playlistsList
+    }
+
+    func getPlaylist(serverID: UUID, id: String) async throws -> PlaylistWithSongs {
+        try self.failIfRequested()
+        guard let pl = self.playlistDetailValue else { throw TestError.boom }
+        return pl
+    }
+
+    func getStarred2(serverID: UUID) async throws -> Starred2 {
+        try self.failIfRequested()
+        return self.starredValue
+    }
+
+    func getPodcasts(serverID: UUID) async throws -> [PodcastChannel] {
+        try self.failIfRequested()
+        return self.podcastsList
+    }
+
+    func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation] {
+        try self.failIfRequested()
+        return self.stationsList
+    }
+
+    func getBookmarks(serverID: UUID) async throws -> [Bookmark] {
+        try self.failIfRequested()
+        return self.bookmarksList
+    }
 }
 
 private enum TestError: Error { case boom }
@@ -270,5 +346,196 @@ struct SubsonicGenresViewModelTests {
 
         let offsets = await stub.lastGenreOffsets
         #expect(offsets == [0, 100])
+    }
+}
+
+// MARK: - Step 11 fixtures
+
+private func makePlaylist(id: String, name: String, songCount: Int = 5) -> Playlist {
+    Playlist(id: id, name: name, songCount: songCount, duration: songCount * 200)
+}
+
+private func makePlaylistDetail(id: String, name: String, songs: [Song]) -> PlaylistWithSongs {
+    PlaylistWithSongs(
+        id: id,
+        name: name,
+        songCount: songs.count,
+        duration: songs.reduce(0) { $0 + ($1.duration ?? 0) },
+        entry: songs
+    )
+}
+
+private func makeStation(id: String, name: String) -> InternetRadioStation {
+    let json = """
+    {"id":"\(id)","name":"\(name)","streamUrl":"https://example.com/\(id).mp3","homePageUrl":"https://example.com/\(id)"}
+    """
+    return try! JSONDecoder().decode(InternetRadioStation.self, from: Data(json.utf8))
+}
+
+private func makeStarred2(songIDs: [String] = [], artistIDs: [String] = [], albumIDs: [String] = []) -> Starred2 {
+    let songs = songIDs.map { #"{"id":"\#($0)","title":"S","duration":200}"# }.joined(separator: ",")
+    let artists = artistIDs.map { #"{"id":"\#($0)","name":"A"}"# }.joined(separator: ",")
+    let albums = albumIDs.map { #"{"id":"\#($0)","name":"Al","songCount":1,"duration":10}"# }.joined(separator: ",")
+    let json = "{\"song\":[\(songs)],\"artist\":[\(artists)],\"album\":[\(albums)]}"
+    return try! JSONDecoder().decode(Starred2.self, from: Data(json.utf8))
+}
+
+private func makeBookmark(songID: String, position: Int) -> Bookmark {
+    // position on the wire is milliseconds; pass seconds * 1000 here.
+    let json = """
+    {
+        "position": \(position * 1000),
+        "username": "alice",
+        "created": "2024-01-01T00:00:00Z",
+        "changed": "2024-01-02T00:00:00Z",
+        "entry": {"id": "\(songID)", "title": "Bookmarked", "artist": "A", "duration": 300}
+    }
+    """
+    let dec = JSONDecoder()
+    dec.dateDecodingStrategy = .iso8601
+    return try! dec.decode(Bookmark.self, from: Data(json.utf8))
+}
+
+private func makePodcastChannel(id: String, title: String, episodes: Int = 0) -> PodcastChannel {
+    let eps = (0 ..< episodes).map { i in
+        """
+        {"id":"\(id)-\(i)","channelId":"\(id)","title":"Ep \(i)","status":"completed"}
+        """
+    }.joined(separator: ",")
+    let json = """
+    {"id":"\(id)","title":"\(title)","status":"completed","episode":[\(eps)]}
+    """
+    return try! JSONDecoder().decode(PodcastChannel.self, from: Data(json.utf8))
+}
+
+// MARK: - SubsonicPlaylistsViewModel
+
+@Suite("SubsonicPlaylistsViewModel")
+@MainActor
+struct SubsonicPlaylistsViewModelTests {
+    @Test("load() populates and sorts playlists by name")
+    func loadAndSort() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedPlaylists([
+            makePlaylist(id: "2", name: "Zeppelin"),
+            makePlaylist(id: "1", name: "Aretha"),
+        ])
+        let vm = SubsonicPlaylistsViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.playlists.map(\.name) == ["Aretha", "Zeppelin"])
+        #expect(vm.errorMessage == nil)
+    }
+
+    @Test("Error path sets errorMessage")
+    func errorPath() async {
+        let stub = StubBrowseDataSource()
+        await stub.setFailNextOptional(true)
+        let vm = SubsonicPlaylistsViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.errorMessage != nil)
+    }
+}
+
+// MARK: - SubsonicPlaylistDetailViewModel
+
+@Suite("SubsonicPlaylistDetailViewModel")
+@MainActor
+struct SubsonicPlaylistDetailViewModelTests {
+    @Test("load() populates playlist with songs")
+    func loadDetail() async {
+        let stub = StubBrowseDataSource()
+        let detail = makePlaylistDetail(id: "p1", name: "Mix", songs: [song(1), song(2)])
+        await stub.seedPlaylistDetail(detail)
+        let vm = SubsonicPlaylistDetailViewModel(
+            serverID: serverID, playlistID: "p1", dataSource: stub
+        )
+        await vm.load()
+        #expect(vm.playlist?.id == "p1")
+        #expect(vm.playlist?.entry?.count == 2)
+    }
+}
+
+// MARK: - SubsonicStarredViewModel
+
+@Suite("SubsonicStarredViewModel")
+@MainActor
+struct SubsonicStarredViewModelTests {
+    @Test("load() projects starred songs and counts")
+    func loadStarred() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedStarred(makeStarred2(
+            songIDs: ["s1", "s2"],
+            artistIDs: ["a1"],
+            albumIDs: ["al1"]
+        ))
+        let vm = SubsonicStarredViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.songs.count == 2)
+        #expect(vm.artistCount == 1)
+        #expect(vm.albumCount == 1)
+    }
+
+    @Test("Error path sets errorMessage")
+    func starredError() async {
+        let stub = StubBrowseDataSource()
+        await stub.setFailNextOptional(true)
+        let vm = SubsonicStarredViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.errorMessage != nil)
+    }
+}
+
+// MARK: - SubsonicPodcastsViewModel
+
+@Suite("SubsonicPodcastsViewModel")
+@MainActor
+struct SubsonicPodcastsViewModelTests {
+    @Test("load() populates channels")
+    func loadPodcasts() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedPodcasts([
+            makePodcastChannel(id: "c1", title: "Show", episodes: 2),
+        ])
+        let vm = SubsonicPodcastsViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.channels.count == 1)
+        #expect(vm.channels.first?.episode.count == 2)
+    }
+}
+
+// MARK: - SubsonicInternetRadioViewModel
+
+@Suite("SubsonicInternetRadioViewModel")
+@MainActor
+struct SubsonicInternetRadioViewModelTests {
+    @Test("load() sorts stations by name")
+    func loadStations() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedStations([
+            makeStation(id: "2", name: "Zen FM"),
+            makeStation(id: "1", name: "Alpha"),
+        ])
+        let vm = SubsonicInternetRadioViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.stations.map(\.name) == ["Alpha", "Zen FM"])
+    }
+}
+
+// MARK: - SubsonicBookmarksViewModel
+
+@Suite("SubsonicBookmarksViewModel")
+@MainActor
+struct SubsonicBookmarksViewModelTests {
+    @Test("load() populates bookmarks and exposes songs")
+    func loadBookmarks() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedBookmarks([
+            makeBookmark(songID: "s1", position: 60),
+            makeBookmark(songID: "s2", position: 120),
+        ])
+        let vm = SubsonicBookmarksViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.bookmarks.count == 2)
+        #expect(vm.songs.map(\.id) == ["s1", "s2"])
     }
 }
