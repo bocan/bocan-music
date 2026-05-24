@@ -72,6 +72,12 @@ public enum A11y {
         public static let results = "searchResults"
     }
 
+    // MARK: - Sources
+
+    public enum SourcesSidebar {
+        public static let addButton = "sources.sidebar.add"
+    }
+
     // MARK: - Playlists
 
     public enum PlaylistSidebar {

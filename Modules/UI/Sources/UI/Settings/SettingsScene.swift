@@ -105,7 +105,19 @@ public struct SettingsScene: View {
                 .tag(SettingsTab.diagnostics)
         }
         .frame(minWidth: 520, minHeight: 415)
+        .onReceive(NotificationCenter.default.publisher(for: .openSourcesSettingsTab)) { _ in
+            self.selectedTab = .sources
+        }
     }
+}
+
+// MARK: - Notification
+
+/// Bòcan-specific `Notification.Name` constants.
+public extension Notification.Name {
+    /// Post this notification (followed by `openSettings()`) to open
+    /// Settings and navigate directly to the Sources tab.
+    static let openSourcesSettingsTab = Notification.Name("bocan.settings.openSourcesTab")
 }
 
 // MARK: - SettingsTab
