@@ -121,6 +121,11 @@ private final class HostTrustDelegate: NSObject, URLSessionDelegate, @unchecked 
 /// as they carry the hash token. The SwiftSonic built-in logger redacts them,
 /// and we never call `print` or `AppLogger` on them.
 public actor SubsonicService {
+    /// Identifier sent as the Subsonic `c` query parameter on every request.
+    /// Kept ASCII-only so it appears unencoded in server-side client lists
+    /// (e.g. Navidrome's "Clients" admin page).
+    static let clientName = "Bocan"
+
     // MARK: - Types
 
     private struct ClientEntry {
@@ -533,12 +538,14 @@ public actor SubsonicService {
             }
             config = ServerConfiguration(
                 serverURL: server.serverURL,
-                auth: .tokenAuth(username: username, password: secret, reusesSalt: false)
+                auth: .tokenAuth(username: username, password: secret, reusesSalt: false),
+                clientName: Self.clientName
             )
         case .apiKey:
             config = ServerConfiguration(
                 serverURL: server.serverURL,
-                auth: .apiKey(secret)
+                auth: .apiKey(secret),
+                clientName: Self.clientName
             )
         }
 
