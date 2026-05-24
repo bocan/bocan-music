@@ -377,6 +377,7 @@ struct BocanApp: App {
         let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
         let subsonicService = SubsonicService(store: subsonicStore)
         let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
+        let subsonicMonitor = SubsonicConnectionMonitor(service: subsonicService)
         self.subsonicStore = subsonicStore
         self.subsonicService = subsonicService
         let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
@@ -408,14 +409,15 @@ struct BocanApp: App {
             subsonicDataSource: subsonicService,
             subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService),
             subsonicAnnotationDelivery: subsonicAnnotations,
-            subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService)
+            subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
+            subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor)
         )
         self.libraryViewModel = lvm
         self.subsonicSettingsViewModel = SubsonicSettingsViewModel(
             store: subsonicStore,
             service: subsonicService,
-            onServersChanged: { [weak lvm] in await lvm?.reloadSubsonicServers() }
-        )
+            monitor: subsonicMonitor
+        ) { [weak lvm] in await lvm?.reloadSubsonicServers() }
         self.dspViewModel = DSPViewModel(
             engine: eng,
             presetStore: presetStore,
@@ -467,10 +469,18 @@ struct BocanApp: App {
 
         // Phase 19: hydrate Subsonic state on launch. Reload clients, sweep
         // orphaned Keychain items, and push the initial sidebar listing.
-        Task { [subsonicStore, subsonicService, weak lvm] in
+        Task { [subsonicStore, subsonicService, subsonicMonitor, weak lvm] in
             try? await subsonicStore.migrateOrphans()
             try? await subsonicService.reloadClients()
             await lvm?.reloadSubsonicServers()
+            // Phase 19 step 17: kick off the ping/back-off loop for every
+            // persisted server so the sidebar status dots become live as
+            // soon as the user finishes launching.
+            if let servers = try? await subsonicStore.fetchAll() {
+                for server in servers {
+                    await subsonicMonitor.startMonitoring(serverID: server.id)
+                }
+            }
         }
     }
 

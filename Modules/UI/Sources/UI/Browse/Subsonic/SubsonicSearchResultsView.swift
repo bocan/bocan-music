@@ -151,12 +151,15 @@ public struct SubsonicSearchResultsCard: View {
         switch self.section.state {
         case .loading:
             ProgressView().controlSize(.mini)
+
         case .success:
             Image(systemName: "checkmark.circle.fill")
                 .foregroundStyle(Color.green)
+
         case .failure:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color.orange)
+
         case .timedOut:
             Image(systemName: "clock.badge.exclamationmark")
                 .foregroundStyle(Color.orange)
@@ -168,6 +171,7 @@ public struct SubsonicSearchResultsCard: View {
         switch self.section.state {
         case .loading:
             Text("Searching…")
+
         case let .success(result):
             let counts = [
                 result.artist?.count ?? 0,
@@ -176,8 +180,10 @@ public struct SubsonicSearchResultsCard: View {
             ]
             let total = counts.reduce(0, +)
             Text("\(total) result\(total == 1 ? "" : "s")")
+
         case let .failure(msg):
             Text(msg).lineLimit(1)
+
         case .timedOut:
             Text("Timed out")
         }

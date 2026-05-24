@@ -53,6 +53,17 @@ public struct ContentPane: View {
                     )
                 }
             }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                // Phase 19 step 17: per-server offline banner with "Retry now".
+                if let serverID = self.vm.selectedDestination.subsonicServerID,
+                   let state = self.vm.subsonicConnectionStates[serverID],
+                   state.isOffline {
+                    SubsonicOfflineBanner(
+                        serverID: serverID,
+                        state: state
+                    ) { Task { await self.vm.retrySubsonicConnection(serverID: serverID) } }
+                }
+            }
             .environment(\.subsonicAnnotationCoordinator, self.vm.subsonicAnnotations)
     }
 
