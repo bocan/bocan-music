@@ -100,6 +100,20 @@ public actor SubsonicServerStore {
         return self.fromDTO(dto)
     }
 
+    /// Persists a fresh capability snapshot for a server without rewriting the
+    /// full record. Used by the capability refresh path (Phase 19 step 16).
+    public func updateCapabilities(
+        serverID: UUID,
+        capabilitiesJSON: Data?,
+        lastConnectedAt: Date = Date()
+    ) async throws {
+        try await self.repository.updateCapabilities(
+            id: serverID,
+            capabilitiesJSON: capabilitiesJSON,
+            lastConnectedAt: lastConnectedAt
+        )
+    }
+
     // MARK: - Credential access
 
     /// Reads the credential secret from the Keychain for `serverID`.
