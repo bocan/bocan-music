@@ -110,11 +110,12 @@ struct QueuePlayerTests {
         let db = try await Database(location: .inMemory)
         let player = QueuePlayer(engine: engine, database: db)
 
-        // Collect the first stopAfterCurrentChanged event using a checked continuation.
+        // Subscribe synchronously *before* triggering the change to avoid a race
+        // where the emit runs before the subscriber is registered.
+        let stream = await player.queue.changes()
         let flag = await withCheckedContinuation { (cont: CheckedContinuation<Bool, Never>) in
-            let queue = player.queue
             Task {
-                for await change in await queue.changes() {
+                for await change in stream {
                     if case let .stopAfterCurrentChanged(enabled) = change {
                         cont.resume(returning: enabled)
                         break
