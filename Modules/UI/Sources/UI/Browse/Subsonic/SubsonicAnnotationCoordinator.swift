@@ -39,7 +39,7 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
         self.listener = Task { [weak self] in
             guard let stream = self?.delivery.annotationFailures() else { return }
             for await failure in stream {
-                await self?.handleFailure(failure)
+                self?.handleFailure(failure)
             }
         }
     }
