@@ -98,6 +98,12 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
     public let duration: TimeInterval
     public let sourceFormat: AudioSourceFormat
 
+    /// Where the playable bytes live: a local security-scoped bookmark or a
+    /// remote Subsonic server. Added in queue schema v2; defaults to
+    /// `.localBookmark(bookmark?.data ?? Data())` for callers that don't
+    /// pass it explicitly so existing call sites keep working.
+    public let playableSource: PlayableSource
+
     // MARK: - Display metadata (snapshot at enqueue time)
 
     public let title: String?
@@ -147,7 +153,8 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         artistID: Int64? = nil,
         startOffsetMs: Int64? = nil,
         endOffsetMs: Int64? = nil,
-        sourceFileURL: String? = nil
+        sourceFileURL: String? = nil,
+        playableSource: PlayableSource? = nil
     ) {
         self.id = id
         self.trackID = trackID
@@ -168,6 +175,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         self.startOffsetMs = startOffsetMs
         self.endOffsetMs = endOffsetMs
         self.sourceFileURL = sourceFileURL
+        self.playableSource = playableSource ?? .localBookmark(bookmark?.data ?? Data())
     }
 
     // MARK: - Helpers
