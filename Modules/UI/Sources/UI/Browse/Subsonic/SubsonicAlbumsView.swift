@@ -10,6 +10,7 @@ public struct SubsonicAlbumsView: View {
     public let serverID: UUID
     public let library: LibraryViewModel
     public let coverArtProvider: SubsonicCoverArtProvider?
+    public let title: String
 
     @StateObject private var vm: SubsonicAlbumsViewModel
     @ScaledMetric(relativeTo: .body) private var minWidth = Theme.albumGridMinWidth
@@ -18,13 +19,20 @@ public struct SubsonicAlbumsView: View {
         serverID: UUID,
         library: LibraryViewModel,
         dataSource: any SubsonicBrowseDataSource,
-        coverArtProvider: SubsonicCoverArtProvider?
+        coverArtProvider: SubsonicCoverArtProvider?,
+        listType: AlbumListType = .alphabeticalByName,
+        title: String = "Albums"
     ) {
         self.serverID = serverID
         self.library = library
         self.coverArtProvider = coverArtProvider
+        self.title = title
         self._vm = StateObject(
-            wrappedValue: SubsonicAlbumsViewModel(serverID: serverID, dataSource: dataSource)
+            wrappedValue: SubsonicAlbumsViewModel(
+                serverID: serverID,
+                dataSource: dataSource,
+                listType: listType
+            )
         )
     }
 
@@ -65,7 +73,7 @@ public struct SubsonicAlbumsView: View {
                 }
             }
         }
-        .navigationTitle("Albums")
+        .navigationTitle(self.title)
         .task(id: self.serverID) {
             if self.vm.albums.isEmpty { await self.vm.load() }
         }

@@ -55,6 +55,20 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case subsonicArtists(UUID)
     case subsonicGenres(UUID)
 
+    // Optional per-server rows (Phase 19 step 11). The capability-gated
+    // ones (Podcasts / Internet Radio / Bookmarks) are only registered in
+    // the sidebar when the server's capability flags allow.
+
+    case subsonicPlaylists(UUID)
+    case subsonicPlaylist(UUID, String)
+    case subsonicStarred(UUID)
+    case subsonicRandom(UUID)
+    case subsonicRecentlyAdded(UUID)
+    case subsonicMostPlayed(UUID)
+    case subsonicInternetRadio(UUID)
+    case subsonicPodcasts(UUID)
+    case subsonicBookmarks(UUID)
+
     // MARK: - Search
 
     case search(String)
