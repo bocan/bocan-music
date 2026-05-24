@@ -53,6 +53,7 @@ public struct ContentPane: View {
                     )
                 }
             }
+            .environment(\.subsonicAnnotationCoordinator, self.vm.subsonicAnnotations)
     }
 
     @ViewBuilder
