@@ -5,6 +5,16 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1](https://github.com/bocan/bocan-music/compare/v1.3.0...v1.3.1) (2026-05-24)
+
+
+### ### Fixed
+
+* **playback:** register PlaybackQueue.changes subscribers synchronously ([eaf7bb1](https://github.com/bocan/bocan-music/commit/eaf7bb12813f81285682a3bcda298777ee3b842d))
+* **playback:** skip and disable missing-file tracks during auto-advance ([bcfa726](https://github.com/bocan/bocan-music/commit/bcfa7262fdac7f73ff9ecc21dce11e1cb3b748f2))
+* **ui:** high-contrast inverted pill for mini-player chrome buttons ([311e255](https://github.com/bocan/bocan-music/commit/311e2558584128bff54b5e5108b3f3f21fe4cc47))
+* **ui:** multicast PlaybackQueue.changes so all subscribers receive events ([2a4c16d](https://github.com/bocan/bocan-music/commit/2a4c16d61c93740fb57f7f6aa97ffabe6645ae0c))
+
 ## [1.3.0](https://github.com/bocan/bocan-music/compare/v1.2.1...v1.3.0) (2026-05-21)
 
 
