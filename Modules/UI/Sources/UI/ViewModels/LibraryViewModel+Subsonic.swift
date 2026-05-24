@@ -53,6 +53,7 @@ extension QueueItem {
             sourceFormat: fmt,
             title: song.title,
             artistName: song.artist,
+            albumName: song.album,
             genre: song.genre,
             playableSource: .subsonic(serverID: serverID, songID: song.id)
         )

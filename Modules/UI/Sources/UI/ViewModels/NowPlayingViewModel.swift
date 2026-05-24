@@ -332,6 +332,17 @@ public final class NowPlayingViewModel {
             for await track in qp.currentTrackChanges {
                 if let track {
                     self.setCurrentTrack(track)
+                } else if let item = await qp.queue.currentItem {
+                    // No local Track row (e.g. Subsonic stream). Populate display
+                    // fields directly from the queue item's snapshot metadata.
+                    self.nowPlayingTrackID = nil
+                    self.nowPlayingAlbumID = nil
+                    self.nowPlayingArtistID = nil
+                    self.title = item.title ?? "Unknown Track"
+                    self.artist = item.artistName ?? ""
+                    self.album = item.albumName ?? ""
+                    self.duration = item.duration
+                    self.artwork = nil
                 } else {
                     self.nowPlayingTrackID = nil
                     self.nowPlayingAlbumID = nil

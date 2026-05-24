@@ -108,6 +108,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
 
     public let title: String?
     public let artistName: String?
+    public let albumName: String?
     public let genre: String?
 
     // MARK: - Smart-shuffle hints (snapshot of track state at enqueue time)
@@ -143,6 +144,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         sourceFormat: AudioSourceFormat,
         title: String? = nil,
         artistName: String? = nil,
+        albumName: String? = nil,
         genre: String? = nil,
         rating: Int = 0,
         loved: Bool = false,
@@ -164,6 +166,7 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         self.sourceFormat = sourceFormat
         self.title = title
         self.artistName = artistName
+        self.albumName = albumName
         self.genre = genre
         self.rating = rating
         self.loved = loved
