@@ -389,6 +389,7 @@ struct BocanApp: App {
         let subsonicRepo = SubsonicServerRepository(database: db)
         let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
         let subsonicService = SubsonicService(store: subsonicStore)
+        let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
         self.subsonicStore = subsonicStore
         self.subsonicService = subsonicService
         let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
@@ -401,7 +402,8 @@ struct BocanApp: App {
             scrobbleService: scrobbleParts.service,
             subsonicSidebarListing: subsonicListing,
             subsonicDataSource: subsonicService,
-            subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService)
+            subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService),
+            subsonicAnnotationDelivery: subsonicAnnotations
         )
         self.libraryViewModel = lvm
         self.subsonicSettingsViewModel = SubsonicSettingsViewModel(

@@ -135,6 +135,8 @@ struct SubsonicSongRow: View {
     let serverID: UUID
     let coverArtProvider: SubsonicCoverArtProvider?
 
+    @Environment(\.subsonicAnnotationCoordinator) private var annotationCoordinator
+
     var body: some View {
         HStack(spacing: 10) {
             SubsonicCoverImage(
@@ -166,12 +168,21 @@ struct SubsonicSongRow: View {
 
             Spacer()
 
+            if let coord = self.annotationCoordinator {
+                SubsonicStarButton(song: self.song, serverID: self.serverID, coordinator: coord)
+            }
+
             Text(Self.formatDuration(self.song.duration))
                 .font(Typography.caption.monospacedDigit())
                 .foregroundStyle(Color.textTertiary)
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
+        .contextMenu {
+            if let coord = self.annotationCoordinator {
+                SubsonicRatingMenu(song: self.song, serverID: self.serverID, coordinator: coord)
+            }
+        }
     }
 
     static func formatDuration(_ seconds: Int?) -> String {
@@ -179,5 +190,59 @@ struct SubsonicSongRow: View {
         let m = seconds / 60
         let s = seconds % 60
         return String(format: "%d:%02d", m, s)
+    }
+}
+
+// MARK: - SubsonicStarButton
+
+struct SubsonicStarButton: View {
+    let song: Song
+    let serverID: UUID
+    @ObservedObject var coordinator: SubsonicAnnotationCoordinator
+
+    var body: some View {
+        let starred = self.coordinator.isStarred(songID: self.song.id, serverStarred: self.song.starred)
+        Button {
+            self.coordinator.toggleStar(
+                songID: self.song.id,
+                serverID: self.serverID,
+                currentlyStarred: starred
+            )
+        } label: {
+            Image(systemName: starred ? "star.fill" : "star")
+                .foregroundStyle(starred ? Color.yellow : Color.textTertiary)
+        }
+        .buttonStyle(.plain)
+        .help(starred ? "Unstar" : "Star")
+        .accessibilityLabel(starred ? "Unstar \(self.song.title)" : "Star \(self.song.title)")
+    }
+}
+
+// MARK: - SubsonicRatingMenu
+
+struct SubsonicRatingMenu: View {
+    let song: Song
+    let serverID: UUID
+    @ObservedObject var coordinator: SubsonicAnnotationCoordinator
+
+    var body: some View {
+        let current = self.coordinator.rating(songID: self.song.id, serverRating: self.song.userRating)
+        Menu("Rating") {
+            ForEach(0 ... 5, id: \.self) { stars in
+                Button {
+                    self.coordinator.setRating(
+                        songID: self.song.id,
+                        serverID: self.serverID,
+                        newRating: stars,
+                        previousRating: self.song.userRating
+                    )
+                } label: {
+                    HStack {
+                        Text(stars == 0 ? "None" : String(repeating: "★", count: stars))
+                        if stars == current { Image(systemName: "checkmark") }
+                    }
+                }
+            }
+        }
     }
 }

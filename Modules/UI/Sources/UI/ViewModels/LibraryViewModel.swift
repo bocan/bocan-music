@@ -260,6 +260,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `nil` when no `subsonicDataSource` was supplied.
     public let federatedSearch: FederatedSearchViewModel?
 
+    /// Phase 19 step 14: optimistic star/rating writes for Subsonic songs.
+    /// `nil` when no annotation delivery was supplied.
+    public let subsonicAnnotations: SubsonicAnnotationCoordinator?
+
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -272,7 +276,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         scrobbleService: ScrobbleService? = nil,
         subsonicSidebarListing: SubsonicSidebarListing? = nil,
         subsonicDataSource: (any SubsonicBrowseDataSource)? = nil,
-        subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil
+        subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil,
+        subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil
     ) {
         self.database = database
         self.engine = engine
@@ -282,6 +287,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.federatedSearch = subsonicDataSource.map { FederatedSearchViewModel(dataSource: $0) }
+        self.subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
 
