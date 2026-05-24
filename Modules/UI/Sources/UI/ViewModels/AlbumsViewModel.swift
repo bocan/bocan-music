@@ -37,12 +37,19 @@ public final class AlbumsViewModel: ObservableObject {
         self.isLoading = true
         self.log.debug("albums.load.start", [:])
         do {
-            async let albums = self.repository.fetchAll()
-            async let artistNames = self.repository.fetchArtistNameMap()
-            async let trackCounts = self.repository.fetchTrackCounts()
-            self.albums = try await albums
-            self.artistNames = await (try? artistNames) ?? [:]
-            self.trackCounts = await (try? trackCounts) ?? [:]
+            async let albumsTask = self.repository.fetchAll()
+            async let artistNamesTask = self.repository.fetchArtistNameMap()
+            async let trackCountsTask = self.repository.fetchTrackCounts()
+            // Await all results before any assignment so SwiftUI coalesces the
+            // three @Published writes into one render pass.  Without this,
+            // `albums` lands first (year now visible) while `trackCounts` is
+            // still [:], causing a flash where year shows but count is missing.
+            let albums = try await albumsTask
+            let artistNames = await (try? artistNamesTask) ?? [:]
+            let trackCounts = await (try? trackCountsTask) ?? [:]
+            self.albums = albums
+            self.artistNames = artistNames
+            self.trackCounts = trackCounts
             self.log.debug("albums.load.end", ["count": self.albums.count])
         } catch {
             self.log.error("albums.load.failed", ["error": String(reflecting: error)])
@@ -54,12 +61,15 @@ public final class AlbumsViewModel: ObservableObject {
     public func load(albumArtistID: Int64) async {
         self.isLoading = true
         do {
-            async let albums = self.repository.fetchAll(albumArtistID: albumArtistID)
-            async let artistNames = self.repository.fetchArtistNameMap()
-            async let trackCounts = self.repository.fetchTrackCounts()
-            self.albums = try await albums
-            self.artistNames = await (try? artistNames) ?? [:]
-            self.trackCounts = await (try? trackCounts) ?? [:]
+            async let albumsTask = self.repository.fetchAll(albumArtistID: albumArtistID)
+            async let artistNamesTask = self.repository.fetchArtistNameMap()
+            async let trackCountsTask = self.repository.fetchTrackCounts()
+            let albums = try await albumsTask
+            let artistNames = await (try? artistNamesTask) ?? [:]
+            let trackCounts = await (try? trackCountsTask) ?? [:]
+            self.albums = albums
+            self.artistNames = artistNames
+            self.trackCounts = trackCounts
         } catch {
             self.log.error("albums.load(artistID).failed", ["error": String(reflecting: error)])
         }
