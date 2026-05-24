@@ -52,6 +52,7 @@ public struct Migrator {
         M018ConflictReviewFlag.register(in: &dm)
         M019PlaylistTrackUnique.register(in: &dm)
         M020SubsonicServers.register(in: &dm)
+        M021SubsonicScrobble.register(in: &dm)
         return Self(inner: dm)
     }
 

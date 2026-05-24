@@ -23,6 +23,12 @@ public actor ScrobbleQueueRepository {
         public let album: String?
         public let duration: TimeInterval
         public let mbid: String?
+
+        /// Set for Subsonic-sourced plays. The pair `(serverID, songID)` tells
+        /// the Subsonic provider which server endpoint to hit. Both nil for
+        /// local plays.
+        public let subsonicServerID: UUID?
+        public let subsonicSongID: String?
     }
 
     public struct Stats: Sendable, Equatable {
@@ -117,20 +123,74 @@ public actor ScrobbleQueueRepository {
         }
     }
 
+    /// Enqueue a Subsonic-sourced play. The played song doesn't live in the
+    /// local `tracks` table, so we store the identity (`server`, `song`) plus
+    /// the metadata payload denormalised onto the queue row. Idempotent on
+    /// `(subsonic_server_id, subsonic_song_id, played_at)`.
+    @discardableResult
+    public func enqueueSubsonic(
+        serverID: UUID,
+        songID: String,
+        playedAt: Date,
+        durationPlayed: TimeInterval,
+        title: String,
+        artist: String,
+        album: String?,
+        albumArtist: String?,
+        duration: TimeInterval,
+        providerIDs: [String]
+    ) async throws -> Int64? {
+        let playedAtEpoch = Int(playedAt.timeIntervalSince1970)
+        let serverIDString = serverID.uuidString
+        return try await self.db.write { db in
+            // track_id is left NULL — there is no local row to FK against.
+            try db.execute(sql: """
+            INSERT OR IGNORE INTO scrobble_queue
+              (track_id, played_at, duration_played, submitted, submission_attempts, dead,
+               subsonic_server_id, subsonic_song_id,
+               payload_title, payload_artist, payload_album, payload_album_artist, payload_duration)
+            VALUES (NULL, ?, ?, 0, 0, 0, ?, ?, ?, ?, ?, ?, ?)
+            """, arguments: [
+                playedAtEpoch, durationPlayed,
+                serverIDString, songID,
+                title, artist, album, albumArtist, duration,
+            ])
+            let queueID: Int64? = try Int64.fetchOne(db, sql: """
+            SELECT id FROM scrobble_queue
+             WHERE subsonic_server_id = ? AND subsonic_song_id = ? AND played_at = ?
+            """, arguments: [serverIDString, songID, playedAtEpoch])
+            guard let queueID else { return nil }
+            for pid in providerIDs {
+                try db.execute(sql: """
+                INSERT OR IGNORE INTO scrobble_submissions
+                  (queue_id, provider_id, status, attempts)
+                VALUES (?, ?, 'pending', 0)
+                """, arguments: [queueID, pid])
+            }
+            return queueID
+        }
+    }
+
     /// Fetch up to `limit` rows ready for submission to `providerID`.
     public func fetchPending(providerID: String, limit: Int = 50, now: Date = Date()) async throws -> [PendingRow] {
         let nowEpoch = Int(now.timeIntervalSince1970)
         return try await self.db.read { db in
+            // LEFT JOIN tracks because Subsonic-sourced rows have NULL track_id;
+            // their metadata is carried in the q.payload_* columns instead.
             let rows = try Row.fetchAll(db, sql: """
             SELECT q.id, q.track_id, q.played_at, q.duration_played,
+                   q.subsonic_server_id, q.subsonic_song_id,
+                   q.payload_title, q.payload_artist, q.payload_album,
+                   q.payload_album_artist, q.payload_duration,
                    s.attempts, s.next_attempt_at,
-                   t.title, t.duration, t.musicbrainz_recording_id,
+                   t.title AS track_title, t.duration AS track_duration,
+                   t.musicbrainz_recording_id,
                    a.name AS artist_name,
                    aa.name AS album_artist_name,
                    al.title AS album_title
               FROM scrobble_submissions s
               JOIN scrobble_queue q ON q.id = s.queue_id
-              JOIN tracks t ON t.id = q.track_id
+              LEFT JOIN tracks t ON t.id = q.track_id
               LEFT JOIN artists a ON a.id = t.artist_id
               LEFT JOIN artists aa ON aa.id = t.album_artist_id
               LEFT JOIN albums al ON al.id = t.album_id
@@ -142,19 +202,28 @@ public actor ScrobbleQueueRepository {
              LIMIT ?
             """, arguments: [providerID, nowEpoch, limit])
             return rows.map { row in
-                PendingRow(
+                let subsonicServerID = (row["subsonic_server_id"] as String?).flatMap(UUID.init(uuidString:))
+                let subsonicSongID = row["subsonic_song_id"] as String?
+                let title = (row["track_title"] as String?) ?? (row["payload_title"] as String?) ?? ""
+                let artist = (row["artist_name"] as String?) ?? (row["payload_artist"] as String?) ?? ""
+                let albumArtist = (row["album_artist_name"] as String?) ?? (row["payload_album_artist"] as String?)
+                let album = (row["album_title"] as String?) ?? (row["payload_album"] as String?)
+                let duration = (row["track_duration"] as Double?) ?? (row["payload_duration"] as Double?) ?? 0
+                return PendingRow(
                     queueID: row["id"],
-                    trackID: row["track_id"],
+                    trackID: (row["track_id"] as Int64?) ?? -1,
                     playedAt: Date(timeIntervalSince1970: TimeInterval(row["played_at"] as Int)),
                     durationPlayed: row["duration_played"] ?? 0,
                     attempts: row["attempts"],
                     nextAttemptAt: (row["next_attempt_at"] as Int?).map { Date(timeIntervalSince1970: TimeInterval($0)) },
-                    title: row["title"] ?? "",
-                    artist: row["artist_name"] ?? "",
-                    albumArtist: row["album_artist_name"],
-                    album: row["album_title"],
-                    duration: row["duration"] ?? 0,
-                    mbid: row["musicbrainz_recording_id"]
+                    title: title,
+                    artist: artist,
+                    albumArtist: albumArtist,
+                    album: album,
+                    duration: duration,
+                    mbid: row["musicbrainz_recording_id"],
+                    subsonicServerID: subsonicServerID,
+                    subsonicSongID: subsonicSongID
                 )
             }
         }
@@ -289,7 +358,9 @@ public actor ScrobbleQueueRepository {
                 albumArtist: row["album_artist_name"],
                 album: row["album_title"],
                 duration: row["duration"] ?? 0,
-                mbid: row["musicbrainz_recording_id"]
+                mbid: row["musicbrainz_recording_id"],
+                subsonicServerID: nil,
+                subsonicSongID: nil
             )
         }
     }

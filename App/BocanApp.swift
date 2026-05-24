@@ -371,8 +371,22 @@ struct BocanApp: App {
         let presetStore = PresetStore()
         let eng = AudioEngine(presets: presetStore)
 
+        // Phase 19: Subsonic infra is built before the scrobble service so
+        // its provider can write through to the active Subsonic servers.
+        let subsonicRepo = SubsonicServerRepository(database: db)
+        let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
+        let subsonicService = SubsonicService(store: subsonicStore)
+        let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
+        self.subsonicStore = subsonicStore
+        self.subsonicService = subsonicService
+        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
+
         // Build the scrobble service before the player so the sink can be wired in.
-        let scrobbleParts = Self.makeScrobble(database: db, log: self.log)
+        let scrobbleParts = Self.makeScrobble(
+            database: db,
+            log: self.log,
+            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore)
+        )
         self.scrobbleService = scrobbleParts.service
         self.scrobbleSettingsViewModel = scrobbleParts.viewModel
         self.backupSettingsViewModel = BackupSettingsViewModel(database: db)
@@ -383,16 +397,6 @@ struct BocanApp: App {
         self.database = db
         self.engine = eng
         self.player = qp
-
-        // Phase 19: Subsonic infra. Built before LibraryViewModel so the
-        // sidebar listing adapter can be injected at init time.
-        let subsonicRepo = SubsonicServerRepository(database: db)
-        let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
-        let subsonicService = SubsonicService(store: subsonicStore)
-        let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
-        self.subsonicStore = subsonicStore
-        self.subsonicService = subsonicService
-        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
 
         let lvm = LibraryViewModel(
             database: db,
@@ -596,7 +600,11 @@ struct BocanApp: App {
         }
     }
 
-    private static func makeScrobble(database db: Database, log: AppLogger) -> ScrobbleParts {
+    private static func makeScrobble(
+        database db: Database,
+        log: AppLogger,
+        subsonicDelivery: any SubsonicScrobbleDelivering
+    ) -> ScrobbleParts {
         let credentials = Credentials()
         let adapter = CredentialsAdapter(store: credentials)
         let http: any HTTPClient = URLSession.shared
@@ -608,6 +616,7 @@ struct BocanApp: App {
         }
         providers.append(ListenBrainzProvider(http: http, credentials: adapter))
         providers.append(RockskyProvider(http: http, credentials: adapter))
+        providers.append(SubsonicScrobbleProvider(delivery: subsonicDelivery))
         let repo = ScrobbleQueueRepository(database: db)
         let reachability = SystemReachability()
         let service = ScrobbleService(providers: providers, repository: repo, reachability: reachability)
