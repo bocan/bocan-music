@@ -56,6 +56,21 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.cover_art", ["id": albumID, "hash": hash])
     }
 
+    /// Sets the `year` column for an album.
+    ///
+    /// Used by the importer to propagate the release year from track tags to the
+    /// album row. A direct `UPDATE` is used (rather than `update(_:)`) so that
+    /// only this column is touched.
+    public func setYear(albumID: Int64, year: Int?) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE albums SET year = ? WHERE id = ?",
+                arguments: [year, albumID]
+            )
+        }
+        self.log.debug("album.setYear", ["id": albumID, "year": year as Any])
+    }
+
     /// Toggles the `force_gapless` flag for an album.
     public func setForceGapless(albumID: Int64, forced: Bool) async throws {
         try await self.database.write { db in

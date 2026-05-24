@@ -85,6 +85,14 @@ actor TrackImporter {
             }
         }
 
+        // Propagate the release year from track tags to the album row when the
+        // track supplies a year that differs from what's already stored. This
+        // handles both newly-created album rows (year is nil) and albums whose
+        // year was corrected in the tags between scans.
+        if let trackYear = tags.year, album.year != trackYear, let albumID = album.id {
+            try await self.albumRepo.setYear(albumID: albumID, year: trackYear)
+        }
+
         // Normalised file URL string
         let fileURLString = url.absoluteString
             .precomposedStringWithCanonicalMapping
