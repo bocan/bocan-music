@@ -247,6 +247,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// when running without the Subsonic module wired in (tests, snapshots).
     private let subsonicSidebarListing: SubsonicSidebarListing?
 
+    /// Phase 19 step 16: emits server IDs whose capabilities changed so the
+    /// sidebar can grow new rows without a relaunch.
+    private let subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)?
+    private var subsonicCapabilityTask: Task<Void, Never>?
+
     /// Phase 19 step 10: data source for per-server browse view models
     /// (Songs / Albums / Artists / Genres). `nil` in tests / snapshots that
     /// don't wire the Subsonic module.
@@ -277,13 +282,15 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicSidebarListing: SubsonicSidebarListing? = nil,
         subsonicDataSource: (any SubsonicBrowseDataSource)? = nil,
         subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil,
-        subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil
+        subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil,
+        subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil
     ) {
         self.database = database
         self.engine = engine
         self.scanner = scanner
         self.scrobbleService = scrobbleService
         self.subsonicSidebarListing = subsonicSidebarListing
+        self.subsonicCapabilityObserver = subsonicCapabilityObserver
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.federatedSearch = subsonicDataSource.map { FederatedSearchViewModel(dataSource: $0) }
@@ -345,6 +352,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.observeTracksSelection()
         self.wireExpandedFoldersPersistence()
         self.wireSectionExpansionPersistence()
+        self.observeSubsonicCapabilityChanges()
     }
 
     /// Bridges `TracksViewModel` (`@Observable`) selection state into the
@@ -399,6 +407,26 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         } catch {
             self.log.error("library.subsonic.reload.failed", ["error": String(reflecting: error)])
         }
+    }
+
+    /// Phase 19 step 16: subscribe to capability-change events from
+    /// `SubsonicService` and refresh the sidebar listing whenever a server's
+    /// advertised capabilities change. This makes new sections (Podcasts,
+    /// Internet Radio, Bookmarks…) appear immediately after a server upgrade
+    /// without requiring an app relaunch.
+    private func observeSubsonicCapabilityChanges() {
+        guard let observer = self.subsonicCapabilityObserver else { return }
+        let stream = observer.capabilityChanges()
+        self.subsonicCapabilityTask = Task { [weak self] in
+            for await _ in stream {
+                guard let self else { return }
+                await self.reloadSubsonicServers()
+            }
+        }
+    }
+
+    deinit {
+        self.subsonicCapabilityTask?.cancel()
     }
 
     private func wirePlaylistCallbacks() {

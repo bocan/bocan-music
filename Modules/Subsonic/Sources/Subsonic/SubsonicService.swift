@@ -133,11 +133,21 @@ public actor SubsonicService {
     private var clients: [UUID: ClientEntry] = [:]
     private let store: SubsonicServerStore
     private let log = AppLogger.make(.subsonic)
+    private var (capabilityStream, capabilityContinuation) = AsyncStream<UUID>.makeStream()
 
     // MARK: - Init
 
     public init(store: SubsonicServerStore) {
         self.store = store
+    }
+
+    /// Broadcasts server IDs whose advertised capabilities have changed since
+    /// the previously persisted snapshot. The UI subscribes here to redraw
+    /// the sidebar when a server upgrade unlocks new sections (Phase 19 step
+    /// 16). Multiple subscribers are not supported — wrap in a fan-out if you
+    /// need more than one consumer.
+    public var capabilityUpdates: AsyncStream<UUID> {
+        self.capabilityStream
     }
 
     // MARK: - Client pool management
@@ -193,7 +203,12 @@ public actor SubsonicService {
         do {
             let raw = try await client.loadCapabilities()
             let caps = SubsonicCapabilities.from(raw)
+            let previous = try? await self.persistedCapabilities(serverID: serverID)
             self.clients[serverID]?.capabilities = caps
+            try? await self.persistCapabilities(caps, serverID: serverID)
+            if previous?.hasSameCapabilityFlags(as: caps) != true {
+                self.capabilityContinuation.yield(serverID)
+            }
             self.log.info(
                 "subsonic.capabilities.loaded",
                 [
@@ -210,9 +225,29 @@ public actor SubsonicService {
     }
 
     /// Forces a fresh capability fetch, bypassing the staleness check.
+    /// Also bypasses the SwiftSonic client's own capability cache so a real
+    /// network refetch happens — required for capability-change detection
+    /// after a server upgrade (Phase 19 step 16).
     public func refreshCapabilities(serverID: UUID) async throws -> SubsonicCapabilities {
+        let client = try self.requireClient(serverID)
         self.clients[serverID]?.capabilities = nil
-        return try await self.loadCapabilities(serverID: serverID)
+        do {
+            let raw = try await client.refreshCapabilities()
+            let caps = SubsonicCapabilities.from(raw)
+            let previous = try? await self.persistedCapabilities(serverID: serverID)
+            self.clients[serverID]?.capabilities = caps
+            try? await self.persistCapabilities(caps, serverID: serverID)
+            if previous?.hasSameCapabilityFlags(as: caps) != true {
+                self.capabilityContinuation.yield(serverID)
+            }
+            self.log.info(
+                "subsonic.capabilities.refreshed",
+                ["id": serverID.uuidString, "type": caps.serverType ?? "unknown"]
+            )
+            return caps
+        } catch let e as SwiftSonicError {
+            throw SubsonicError.transport(e)
+        }
     }
 
     // MARK: - Browsing
@@ -470,6 +505,21 @@ public actor SubsonicService {
         return entry.client
     }
 
+    /// Reads the persisted capability snapshot for a server, or `nil` if none
+    /// has been stored. Used to detect real capability changes before emitting
+    /// on `capabilityUpdates`.
+    private func persistedCapabilities(serverID: UUID) async throws -> SubsonicCapabilities? {
+        guard let server = try await self.store.fetch(id: serverID),
+              let data = server.cachedCapabilitiesJSON else { return nil }
+        return try? JSONDecoder().decode(SubsonicCapabilities.self, from: data)
+    }
+
+    /// Persists a fresh capability snapshot to the store.
+    private func persistCapabilities(_ caps: SubsonicCapabilities, serverID: UUID) async throws {
+        let data = try JSONEncoder().encode(caps)
+        try await self.store.updateCapabilities(serverID: serverID, capabilitiesJSON: data)
+    }
+
     private func buildClient(for server: SubsonicServer) async throws {
         let secret = try await self.store.secret(for: server.id)
 
@@ -521,5 +571,14 @@ public actor SubsonicService {
             client: client,
             capabilities: existing?.capabilities
         )
+    }
+
+    // MARK: - Test hooks
+
+    /// Test-only seam: register a preconstructed `SwiftSonicClient` for a
+    /// server without going through Keychain-backed `buildClient`. Production
+    /// code must continue to use `reloadClients` / `refreshClient`.
+    func _registerClientForTesting(_ client: SwiftSonicClient, serverID: UUID) {
+        self.clients[serverID] = ClientEntry(client: client, capabilities: nil)
     }
 }

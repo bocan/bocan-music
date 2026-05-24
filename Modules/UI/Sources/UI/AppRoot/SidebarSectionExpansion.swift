@@ -92,3 +92,16 @@ public protocol SubsonicSidebarListing: Sendable {
     /// are filtered out before this method returns.
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer]
 }
+
+// MARK: - SubsonicCapabilityChangeObserving
+
+/// Phase 19 step 16: surfaces capability-change events from the Subsonic
+/// module to the UI layer, so the sidebar can grow new rows (Podcasts,
+/// Internet Radio, Bookmarks…) without a relaunch when a server upgrade
+/// adds support for them.
+public protocol SubsonicCapabilityChangeObserving: Sendable {
+    /// Stream of server IDs whose advertised capabilities changed since the
+    /// previously persisted snapshot. Consumers should refetch the sidebar
+    /// listing on each emission.
+    func capabilityChanges() -> AsyncStream<UUID>
+}

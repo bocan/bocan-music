@@ -129,4 +129,24 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
         default: break
         }
     }
+
+    // MARK: - Flag comparison
+
+    /// Returns `true` when the user-visible capability flags match `other`,
+    /// ignoring `fetchedAt`. Used by the capability refresh path to decide
+    /// whether a sidebar redraw is needed.
+    public func hasSameCapabilityFlags(as other: SubsonicCapabilities) -> Bool {
+        self.serverType == other.serverType
+            && self.serverVersion == other.serverVersion
+            && self.apiVersion == other.apiVersion
+            && self.isOpenSubsonic == other.isOpenSubsonic
+            && self.supportsLyricsBySongId == other.supportsLyricsBySongId
+            && self.supportsApiKey == other.supportsApiKey
+            && self.supportsPodcasts == other.supportsPodcasts
+            && self.supportsInternetRadio == other.supportsInternetRadio
+            && self.supportsBookmarks == other.supportsBookmarks
+            && self.supportsJukebox == other.supportsJukebox
+            && self.supportsShares == other.supportsShares
+            && self.supportsRandomSongsByGenre == other.supportsRandomSongsByGenre
+    }
 }
