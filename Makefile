@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble uitest lint format format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble uitest lint format format-check install-hooks clean
 
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
 tests:
@@ -97,6 +97,15 @@ test-coverage:
 		test \
 		| xcbeautify
 	Scripts/coverage-report.sh build/TestResults.xcresult 80
+
+## coverage-all: Run SPM module tests with coverage and fail if any module is below threshold
+## Defaults to report-only (threshold 0). Override with COVERAGE_THRESHOLD=NN for a global
+## floor, or COVERAGE_MIN_<MODULE>=NN for a per-module floor (e.g. COVERAGE_MIN_UI=20).
+coverage-all:
+	@echo "=============================="
+	@echo "= Per-module Coverage Gate"
+	@echo "=============================="
+	Scripts/coverage-all.sh $(or $(COVERAGE_THRESHOLD),0)
 
 ## test-audio-engine: Run AudioEngine SPM package tests (requires FFmpeg via Homebrew)
 test-audio-engine:
