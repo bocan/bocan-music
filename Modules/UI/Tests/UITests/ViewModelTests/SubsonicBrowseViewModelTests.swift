@@ -1,0 +1,274 @@
+import Foundation
+import Subsonic
+import SwiftSonic
+import Testing
+@testable import UI
+
+// MARK: - Test stub
+
+private actor StubBrowseDataSource: SubsonicBrowseDataSource {
+    var randomSongPages: [[Song]] = []
+    var albumPages: [[AlbumID3]] = []
+    var artistsIndex: [ArtistIndex] = []
+    var genresList: [Genre] = []
+    var songsByGenre: [String: [[Song]]] = [:]
+    var failNextRandom = false
+    var randomCallCount = 0
+    var albumCallCount = 0
+    var lastAlbumOffset: Int?
+    var lastGenreOffsets: [Int] = []
+
+    func seedRandomPages(_ pages: [[Song]]) {
+        self.randomSongPages = pages
+    }
+
+    func seedAlbumPages(_ pages: [[AlbumID3]]) {
+        self.albumPages = pages
+    }
+
+    func seedArtists(_ index: [ArtistIndex]) {
+        self.artistsIndex = index
+    }
+
+    func seedGenres(_ genres: [Genre]) {
+        self.genresList = genres
+    }
+
+    func seedGenrePages(_ pages: [[Song]], for genre: String) {
+        self.songsByGenre[genre] = pages
+    }
+
+    func setFailNextRandom(_ v: Bool) {
+        self.failNextRandom = v
+    }
+
+    func getArtists(serverID: UUID) async throws -> [ArtistIndex] {
+        self.artistsIndex
+    }
+
+    func getGenres(serverID: UUID) async throws -> [Genre] {
+        self.genresList
+    }
+
+    func getAlbumList2(
+        serverID: UUID,
+        type: AlbumListType,
+        size: Int,
+        offset: Int
+    ) async throws -> [AlbumID3] {
+        self.albumCallCount += 1
+        self.lastAlbumOffset = offset
+        guard !self.albumPages.isEmpty else { return [] }
+        return self.albumPages.removeFirst()
+    }
+
+    func getRandomSongs(serverID: UUID, size: Int) async throws -> [Song] {
+        self.randomCallCount += 1
+        if self.failNextRandom {
+            self.failNextRandom = false
+            throw TestError.boom
+        }
+        guard !self.randomSongPages.isEmpty else { return [] }
+        return self.randomSongPages.removeFirst()
+    }
+
+    func getSongsByGenre(
+        serverID: UUID,
+        genre: String,
+        count: Int,
+        offset: Int
+    ) async throws -> [Song] {
+        self.lastGenreOffsets.append(offset)
+        var pages = self.songsByGenre[genre] ?? []
+        guard !pages.isEmpty else { return [] }
+        let next = pages.removeFirst()
+        self.songsByGenre[genre] = pages
+        return next
+    }
+
+    func getArtist(serverID: UUID, id: String) async throws -> ArtistID3 {
+        ArtistID3(id: id, name: "Stub")
+    }
+
+    func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3 {
+        AlbumID3(id: id, name: "Stub", songCount: 0, duration: 0)
+    }
+}
+
+private enum TestError: Error { case boom }
+
+private func song(_ i: Int, genre: String? = nil) -> Song {
+    Song(id: "s\(i)", title: "Song \(i)", artist: "Artist", genre: genre, duration: 200)
+}
+
+private func album(_ i: Int) -> AlbumID3 {
+    AlbumID3(id: "a\(i)", name: "Album \(i)", songCount: 10, duration: 1800, artist: "Artist \(i)")
+}
+
+private func makeGenre(value: String, songCount: Int, albumCount: Int) -> Genre {
+    let json = """
+    {"value":"\(value)","songCount":\(songCount),"albumCount":\(albumCount)}
+    """
+    return try! JSONDecoder().decode(Genre.self, from: Data(json.utf8))
+}
+
+private let serverID = UUID()
+
+// MARK: - SubsonicSongsViewModel
+
+@Suite("SubsonicSongsViewModel")
+@MainActor
+struct SubsonicSongsViewModelTests {
+    @Test("load() populates songs and clears errorMessage")
+    func loadPopulates() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedRandomPages([[song(1), song(2), song(3)]])
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+
+        #expect(vm.songs.count == 3)
+        #expect(vm.errorMessage == nil)
+        #expect(vm.isLoading == false)
+    }
+
+    @Test("loadMore() appends and dedupes by id")
+    func loadMoreDedupes() async {
+        let stub = StubBrowseDataSource()
+        // page 1: full page of 100; page 2: overlaps song 100 and adds 50 more
+        let page1 = (0 ..< 100).map { song($0) }
+        let page2 = (99 ..< 150).map { song($0) }
+        await stub.seedRandomPages([page1, page2])
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+        #expect(vm.songs.count == 100)
+        #expect(vm.hasMorePages == true)
+
+        await vm.loadMore()
+        // 100 + (51 new — 1 dedup) = 150
+        #expect(vm.songs.count == 150)
+        #expect(Set(vm.songs.map(\.id)).count == 150)
+    }
+
+    @Test("Short page sets hasMorePages = false")
+    func shortPageStopsPaging() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedRandomPages([[song(1), song(2)]]) // < pageSize
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.hasMorePages == false)
+    }
+
+    @Test("Error path sets errorMessage and clears isLoading")
+    func errorPath() async {
+        let stub = StubBrowseDataSource()
+        await stub.setFailNextRandom(true)
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+        await vm.load()
+        #expect(vm.errorMessage != nil)
+        #expect(vm.isLoading == false)
+    }
+}
+
+// MARK: - SubsonicAlbumsViewModel
+
+@Suite("SubsonicAlbumsViewModel")
+@MainActor
+struct SubsonicAlbumsViewModelTests {
+    @Test("loadMore() pages with offset == albums.count")
+    func loadMoreOffset() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedAlbumPages([
+            (0 ..< 100).map { album($0) },
+            (100 ..< 150).map { album($0) },
+        ])
+        let vm = SubsonicAlbumsViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+        #expect(vm.albums.count == 100)
+        let firstOffset = await stub.lastAlbumOffset
+        #expect(firstOffset == 0)
+
+        await vm.loadMore()
+        #expect(vm.albums.count == 150)
+        let secondOffset = await stub.lastAlbumOffset
+        #expect(secondOffset == 100)
+        #expect(vm.hasMorePages == false)
+    }
+}
+
+// MARK: - SubsonicArtistsViewModel
+
+@Suite("SubsonicArtistsViewModel")
+@MainActor
+struct SubsonicArtistsViewModelTests {
+    @Test("load() populates sections and totalArtistCount sums correctly")
+    func loadAndCount() async {
+        let stub = StubBrowseDataSource()
+        let sections: [ArtistIndex] = [
+            ArtistIndex(name: "A", artist: [
+                ArtistID3(id: "1", name: "Alice"),
+                ArtistID3(id: "2", name: "Anna"),
+            ]),
+            ArtistIndex(name: "B", artist: [
+                ArtistID3(id: "3", name: "Bob"),
+            ]),
+        ]
+        await stub.seedArtists(sections)
+        let vm = SubsonicArtistsViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+
+        #expect(vm.sections.count == 2)
+        #expect(vm.totalArtistCount == 3)
+        #expect(vm.errorMessage == nil)
+    }
+}
+
+// MARK: - SubsonicGenresViewModel
+
+@Suite("SubsonicGenresViewModel")
+@MainActor
+struct SubsonicGenresViewModelTests {
+    @Test("selectGenre(...) loads first page; nil clears genreSongs")
+    func selectAndClear() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedGenres([makeGenre(value: "Rock", songCount: 50, albumCount: 5)])
+        await stub.seedGenrePages([[song(1, genre: "Rock"), song(2, genre: "Rock")]], for: "Rock")
+        let vm = SubsonicGenresViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+        #expect(vm.genres.count == 1)
+
+        await vm.selectGenre("Rock")
+        #expect(vm.genreSongs.count == 2)
+        #expect(vm.selectedGenre == "Rock")
+
+        await vm.selectGenre(nil)
+        #expect(vm.genreSongs.isEmpty)
+        #expect(vm.selectedGenre == nil)
+    }
+
+    @Test("loadMoreGenreSongs() pages with offset = genreSongs.count")
+    func paging() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedGenres([makeGenre(value: "Jazz", songCount: 250, albumCount: 12)])
+        let page1 = (0 ..< 100).map { song($0, genre: "Jazz") }
+        let page2 = (100 ..< 150).map { song($0, genre: "Jazz") }
+        await stub.seedGenrePages([page1, page2], for: "Jazz")
+        let vm = SubsonicGenresViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+        await vm.selectGenre("Jazz")
+        #expect(vm.genreSongs.count == 100)
+        #expect(vm.hasMoreGenreSongs == true)
+
+        await vm.loadMoreGenreSongs()
+        #expect(vm.genreSongs.count == 150)
+        #expect(vm.hasMoreGenreSongs == false)
+
+        let offsets = await stub.lastGenreOffsets
+        #expect(offsets == [0, 100])
+    }
+}

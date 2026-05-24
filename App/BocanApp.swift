@@ -399,7 +399,9 @@ struct BocanApp: App {
             scanner: scanner,
             scrobbleRepository: scrobbleParts.service.queueRepository,
             scrobbleService: scrobbleParts.service,
-            subsonicSidebarListing: subsonicListing
+            subsonicSidebarListing: subsonicListing,
+            subsonicDataSource: subsonicService,
+            subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService)
         )
         self.libraryViewModel = lvm
         self.subsonicSettingsViewModel = SubsonicSettingsViewModel(
