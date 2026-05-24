@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import Subsonic
 import SwiftSonic
@@ -38,8 +39,8 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
         self.songsByGenre[genre] = pages
     }
 
-    func setFailNextRandom(_ v: Bool) {
-        self.failNextRandom = v
+    func setFailNextRandom(_ value: Bool) {
+        self.failNextRandom = value
     }
 
     func getArtists(serverID: UUID) async throws -> [ArtistIndex] {
@@ -128,8 +129,8 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
         self.bookmarksList = list
     }
 
-    func setFailNextOptional(_ v: Bool) {
-        self.failNextOptional = v
+    func setFailNextOptional(_ value: Bool) {
+        self.failNextOptional = value
     }
 
     private func failIfRequested() throws {
@@ -178,16 +179,16 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
     var searchCallCount = 0
     var lastSearchQuery: String?
 
-    func seedSearchResult(_ r: SearchResult3) {
-        self.searchResult = r
+    func seedSearchResult(_ result: SearchResult3) {
+        self.searchResult = result
     }
 
-    func setSearchDelay(_ d: Duration?) {
-        self.searchDelay = d
+    func setSearchDelay(_ delay: Duration?) {
+        self.searchDelay = delay
     }
 
-    func setFailNextSearch(_ v: Bool) {
-        self.failNextSearch = v
+    func setFailNextSearch(_ value: Bool) {
+        self.failNextSearch = value
     }
 
     func search3(
@@ -199,8 +200,8 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
     ) async throws -> SearchResult3 {
         self.searchCallCount += 1
         self.lastSearchQuery = query
-        if let d = self.searchDelay {
-            try await Task.sleep(for: d)
+        if let delay = self.searchDelay {
+            try await Task.sleep(for: delay)
         }
         if self.failNextSearch {
             self.failNextSearch = false
@@ -224,7 +225,7 @@ private func makeGenre(value: String, songCount: Int, albumCount: Int) -> Genre 
     let json = """
     {"value":"\(value)","songCount":\(songCount),"albumCount":\(albumCount)}
     """
-    return try! JSONDecoder().decode(Genre.self, from: Data(json.utf8))
+    return try! JSONDecoder().decode(Genre.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
 
 private func makeSearchResult(
@@ -240,7 +241,7 @@ private func makeSearchResult(
     if !albums.isEmpty { parts.append(#""album":[\#(albumJSON)]"#) }
     if !songs.isEmpty { parts.append(#""song":[\#(songJSON)]"#) }
     let json = "{\(parts.joined(separator: ","))}"
-    return try! JSONDecoder().decode(SearchResult3.self, from: Data(json.utf8))
+    return try! JSONDecoder().decode(SearchResult3.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
 
 private let serverID = UUID()
@@ -424,7 +425,7 @@ private func makeStation(id: String, name: String) -> InternetRadioStation {
     let json = """
     {"id":"\(id)","name":"\(name)","streamUrl":"https://example.com/\(id).mp3","homePageUrl":"https://example.com/\(id)"}
     """
-    return try! JSONDecoder().decode(InternetRadioStation.self, from: Data(json.utf8))
+    return try! JSONDecoder().decode(InternetRadioStation.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
 
 private func makeStarred2(songIDs: [String] = [], artistIDs: [String] = [], albumIDs: [String] = []) -> Starred2 {
@@ -432,7 +433,7 @@ private func makeStarred2(songIDs: [String] = [], artistIDs: [String] = [], albu
     let artists = artistIDs.map { #"{"id":"\#($0)","name":"A"}"# }.joined(separator: ",")
     let albums = albumIDs.map { #"{"id":"\#($0)","name":"Al","songCount":1,"duration":10}"# }.joined(separator: ",")
     let json = "{\"song\":[\(songs)],\"artist\":[\(artists)],\"album\":[\(albums)]}"
-    return try! JSONDecoder().decode(Starred2.self, from: Data(json.utf8))
+    return try! JSONDecoder().decode(Starred2.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
 
 private func makeBookmark(songID: String, position: Int) -> Bookmark {
@@ -448,19 +449,21 @@ private func makeBookmark(songID: String, position: Int) -> Bookmark {
     """
     let dec = JSONDecoder()
     dec.dateDecodingStrategy = .iso8601
-    return try! dec.decode(Bookmark.self, from: Data(json.utf8))
+    return try! dec.decode(Bookmark.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
 
 private func makePodcastChannel(id: String, title: String, episodes: Int = 0) -> PodcastChannel {
-    let eps = (0 ..< episodes).map { i in
-        """
-        {"id":"\(id)-\(i)","channelId":"\(id)","title":"Ep \(i)","status":"completed"}
-        """
-    }.joined(separator: ",")
+    let eps = (0 ..< episodes)
+        .map { i in
+            """
+            {"id":"\(id)-\(i)","channelId":"\(id)","title":"Ep \(i)","status":"completed"}
+            """
+        }
+        .joined(separator: ",")
     let json = """
     {"id":"\(id)","title":"\(title)","status":"completed","episode":[\(eps)]}
     """
-    return try! JSONDecoder().decode(PodcastChannel.self, from: Data(json.utf8))
+    return try! JSONDecoder().decode(PodcastChannel.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
 
 // MARK: - SubsonicPlaylistsViewModel

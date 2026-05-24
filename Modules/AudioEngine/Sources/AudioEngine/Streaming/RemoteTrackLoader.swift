@@ -50,6 +50,7 @@ public struct RemoteTrackBytes: Sendable {
 public actor RemoteTrackLoader {
     private let transport: HTTPTransport
 
+    /// Create a loader that fetches bytes through `transport`.
     public init(transport: HTTPTransport) {
         self.transport = transport
     }

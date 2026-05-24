@@ -123,6 +123,9 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
     }
 }
 
+/// SwiftUI environment plumbing for `SubsonicAnnotationCoordinator`.
 public extension EnvironmentValues {
+    /// Coordinator that owns optimistic star / rating updates for the
+    /// currently visible Subsonic browse screen, if any.
     @Entry var subsonicAnnotationCoordinator: SubsonicAnnotationCoordinator?
 }

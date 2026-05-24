@@ -56,6 +56,8 @@ public actor SubsonicStreamCache {
 
     // MARK: - Init
 
+    /// Create a cache rooted at `configuration.rootDirectory`, using `loader` to
+    /// stream remote bytes. Creates the root directory if it does not exist.
     public init(configuration: Configuration, loader: RemoteTrackLoader) throws {
         self.config = configuration
         self.loader = loader
@@ -152,6 +154,7 @@ public actor SubsonicStreamCache {
 
     // MARK: - Download pump
 
+    // swiftlint:disable:next function_body_length
     private func runDownload(key: SubsonicStreamKey, url: URL) async {
         guard let entry = self.entries[key] else { return }
         let threshold = Int64(self.config.readyThresholdBytes)

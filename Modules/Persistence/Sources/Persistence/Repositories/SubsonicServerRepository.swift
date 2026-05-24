@@ -78,12 +78,14 @@ public struct SubsonicServerDTO: Sendable, Codable, Identifiable {
     public var capabilitiesJSON: Data?
 
     public init(
+        // swiftlint:disable function_default_parameter_at_end
         id: UUID = UUID(),
         name: String,
         serverURL: URL,
         authKind: String,
         username: String? = nil,
         keychainAccount: String,
+        // swiftlint:enable function_default_parameter_at_end
         allowSelfSignedTLS: Bool = false,
         maxBitrate: String = "original",
         preferredFormat: String = "original",

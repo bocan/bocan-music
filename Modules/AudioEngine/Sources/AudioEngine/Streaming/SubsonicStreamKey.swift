@@ -34,13 +34,26 @@ public struct SubsonicStreamKey: Sendable, Hashable, Codable {
 
     private var fileExtension: String {
         switch self.format.lowercased() {
-        case "mp3": "mp3"
-        case "flac": "flac"
-        case "opus": "opus"
-        case "ogg": "ogg"
-        case "aac", "m4a": "m4a"
-        case "wav": "wav"
-        default: "bin"
+        case "mp3":
+            "mp3"
+
+        case "flac":
+            "flac"
+
+        case "opus":
+            "opus"
+
+        case "ogg":
+            "ogg"
+
+        case "aac", "m4a":
+            "m4a"
+
+        case "wav":
+            "wav"
+
+        default:
+            "bin"
         }
     }
 }

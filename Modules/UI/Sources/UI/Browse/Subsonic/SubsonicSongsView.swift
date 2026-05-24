@@ -187,9 +187,9 @@ struct SubsonicSongRow: View {
 
     static func formatDuration(_ seconds: Int?) -> String {
         guard let seconds, seconds > 0 else { return "—" }
-        let m = seconds / 60
-        let s = seconds % 60
-        return String(format: "%d:%02d", m, s)
+        let mins = seconds / 60
+        let secs = seconds % 60
+        return String(format: "%d:%02d", mins, secs)
     }
 }
 
