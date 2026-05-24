@@ -1,4 +1,4 @@
-# Phase 19 — Subsonic / Navidrome / OpenSubsonic Client
+# Phase 19: Subsonic / Navidrome / OpenSubsonic Client
 
 > Prerequisites: Phases 0–16 complete. `QueuePlayer` exposes the full `Transport`
 > protocol. `AudioEngine` decodes local files. Settings UI exists with a `TabView`.
@@ -6,7 +6,7 @@
 >
 > Read `docs/design-spec/_standards.md` first.
 
-## Where this fits — and the user's brief, reviewed
+## Where this fits: and the user's brief, reviewed
 
 The user asked for:
 
@@ -15,7 +15,7 @@ The user asked for:
 2. Preferences to manage one or more servers.
 3. A new sidebar section, **"Subsonic / Navidrome"**, placed **below "Library"
    and above "Recents"**, with one expandable row per connected server
-   exposing `Songs`, `Albums`, `Artists`, `Genres` — the same shape as the
+   exposing `Songs`, `Albums`, `Artists`, `Genres`, the same shape as the
    current Library section.
 4. Rename **"Library"** → **"Local Library"** and make the section collapsible.
 
@@ -35,7 +35,7 @@ This spec implements exactly that, with the following deliberate refinements:
   ignores it feels broken:
   - `Playlists` (server-side, mutable)
   - `Starred` (the server's "favourites")
-  - `Random` (server-side random — actually useful when the catalogue is huge)
+  - `Random` (server-side random, actually useful when the catalogue is huge)
   - `Recently Added` (server-side `newest`)
   - `Most Played` (server-side `frequent`)
   - `Internet Radio` (only when the server advertises it)
@@ -54,7 +54,7 @@ This spec implements exactly that, with the following deliberate refinements:
   per-server inclusion in search.
 - **Star / rating / scrobble are write-through.** Starring a Subsonic track in
   Bòcan stars it on the server. Rating updates `setRating`. Completed plays
-  call `scrobble`. Local scrobbling (Phase 13) still runs in parallel — the
+  call `scrobble`. Local scrobbling (Phase 13) still runs in parallel, the
   user can choose which targets receive a given play.
 
 If you disagree with any of these, the rest of the spec is structured so
@@ -74,7 +74,7 @@ the existing `QueuePlayer` / `AudioEngine` pipeline.
 - Becoming a Subsonic *server*. Phase 18 covers the remote-control server;
   this phase is purely a client.
 - Syncing the remote catalogue into the local SQLite catalogue. The two
-  catalogues remain disjoint — local rows live in `tracks/albums/artists`,
+  catalogues remain disjoint, local rows live in `tracks/albums/artists`,
   remote rows live in an in-memory cache plus a small `subsonic_cache` table
   for cover-art blobs and last-known metadata snapshots.
 - Editing server-side tags or covers. Bòcan's tag editor remains local-only.
@@ -90,7 +90,7 @@ the existing `QueuePlayer` / `AudioEngine` pipeline.
 Modules/Subsonic/
 ├── Package.swift
 ├── Sources/Subsonic/
-│   ├── SubsonicService.swift          # Actor — owns SwiftSonicClient per server, capability cache
+│   ├── SubsonicService.swift          # Actor, owns SwiftSonicClient per server, capability cache
 │   ├── SubsonicServerStore.swift      # CRUD over SubsonicServer records + Keychain
 │   ├── SubsonicCapabilities.swift     # Cached capability snapshot + freshness rules
 │   ├── SubsonicConnectionMonitor.swift# Ping loop, status events, exponential back-off
@@ -193,10 +193,10 @@ Modules/UI/Sources/UI/
 ```
 
 - A small status dot precedes each server name:
-  - **● green** — connected (last ping succeeded within the health-check window)
-  - **○ grey** — offline / never connected
-  - **⚠ amber** — last request failed (auth / 5xx / timeout); tooltip shows reason
-  - **● spinner** — currently testing connection
+  - **● green**: connected (last ping succeeded within the health-check window)
+  - **○ grey**: offline / never connected
+  - **⚠ amber**: last request failed (auth / 5xx / timeout); tooltip shows reason
+  - **● spinner**: currently testing connection
 - Disclosure state per server is persisted to `settings`
   (`ui.subsonic.server.<id>.expanded`).
 - Right-click on a server row exposes: **Refresh**, **Test Connection**,
@@ -235,7 +235,7 @@ Server editor fields:
 | Scrobble plays to server    | Bool, default on                                             |
 | Sync star ⇄ favourite        | Bool, default on                                             |
 | Sync rating                 | Bool, default on                                             |
-| Connection-test result      | Read-only — capability summary after successful Test         |
+| Connection-test result      | Read-only, capability summary after successful Test         |
 
 A **Test Connection** button runs `SwiftSonicClient.ping()` followed by
 `loadCapabilities()` and shows the server type, server version, and a list of
@@ -452,7 +452,7 @@ public struct SearchResults: Sendable {
 
 The search view renders the local section first, then one collapsible card
 per `includeInGlobalSearch` server. Searches are debounced (250 ms) and
-issued in parallel per server with a 1.5 s timeout — slow servers don't
+issued in parallel per server with a 1.5 s timeout, slow servers don't
 delay local results.
 
 ### Keychain
@@ -601,11 +601,11 @@ unless otherwise noted).
 
 The implementing assistant should run these via Context7 before writing code:
 
-- `MathieuDubart/swiftsonic` — verify the 0.8.x public API and pin a version.
-- `apple/swift-async-algorithms` — `AsyncChannel` and `debounce` for the
+- `MathieuDubart/swiftsonic`: verify the 0.8.x public API and pin a version.
+- `apple/swift-async-algorithms`: `AsyncChannel` and `debounce` for the
   search and status streams.
 - Apple's `URLSession` background download + range request docs.
-- Apple's `Security` framework — adding a custom server-trust override
+- Apple's `Security` framework, adding a custom server-trust override
   scoped to a single host.
 
 ## Dependencies
@@ -650,11 +650,11 @@ No new Homebrew formulae. No new system libraries.
   - Star → unstar idempotency.
   - Retry queue eventually flushes once the monitor reports `.online`.
   - Three consecutive failures surface a UI error event.
-- **`PlaybackQueue` migration test** — old persisted blobs without
+- **`PlaybackQueue` migration test**: old persisted blobs without
   `PlayableSource` upgrade cleanly to `.localBookmark`.
 - **UI snapshot / view tests** for the sidebar showing exactly the rows the
   capabilities flag allows (no Podcasts row when the cap is false).
-- **End-to-end (manual)** — connect a real Navidrome 0.50+ instance; verify
+- **End-to-end (manual)**: connect a real Navidrome 0.50+ instance; verify
   browse, play, seek, gapless, ReplayGain, star, rating, scrobble.
 
 ## Acceptance criteria
@@ -688,7 +688,7 @@ No new Homebrew formulae. No new system libraries.
 - [ ] Pulling the network cable mid-stream surfaces an in-row warning and
       the missing-file skip logic advances the queue.
 - [ ] Search results include a "From <Server>" card per connected server
-      with results within 1.5 s, or a "Server slow — still searching"
+      with results within 1.5 s, or a "Server slow, still searching"
       indicator past that.
 - [ ] A server with `Show in sidebar = off` does not appear in the sidebar
       but still participates in search / scrobble if those flags are on.
@@ -703,7 +703,7 @@ No new Homebrew formulae. No new system libraries.
   but accept `…//rest/ping` and vice versa. Normalise the URL on save by
   stripping trailing slashes; SwiftSonic builds endpoints itself.
 - **Salt-token rotation.** Subsonic auth re-hashes the password with a fresh
-  salt per request. Never log the rendered URL — it leaks the per-request
+  salt per request. Never log the rendered URL, it leaks the per-request
   token. Use `SwiftSonicClient`'s built-in logger (`logSubsystem:`), which
   redacts secrets, and never `print` `streamURL(…)`.
 - **Capability lies.** Some servers (looking at you, ancient Subsonic
@@ -715,7 +715,7 @@ No new Homebrew formulae. No new system libraries.
   `String`s; never parse them.
 - **Cover art ID ≠ album ID.** Always use the `coverArt` field from the
   album/song payload, not the album/song ID itself.
-- **`getAlbumList2(type:"random")` is not idempotent** — calling it twice
+- **`getAlbumList2(type:"random")` is not idempotent**: calling it twice
   gives two different shuffles. Cache the result for the lifetime of the
   view so paging doesn't bring back the same album the user just scrolled
   past.
@@ -723,7 +723,7 @@ No new Homebrew formulae. No new system libraries.
   server picks the format; rely on `Content-Type` or the file's container
   byte signature, not on `?format=`. Save with a `.bin` extension and have
   the engine probe the container.
-- **Bookmark resolution path** — `PlayableResolver` must run all source
+- **Bookmark resolution path**: `PlayableResolver` must run all source
   resolution off the main thread; bookmark resolution does I/O.
 - **Queue persistence shape change** breaks the user's restored queue if
   the migration is wrong. Add a "queue snapshot version" field and refuse
@@ -753,7 +753,7 @@ The next phase (Phase 20, future) is expected to:
 - Add offline-album download (full pinning, with track-completion progress).
 - Add support for Plex / Jellyfin via the same `PlayableSource` plumbing.
 - Add Jukebox-mode remote control (where Bòcan asks the server itself to
-  play through *its* output) — useful when Bòcan is running on a different
+  play through *its* output), useful when Bòcan is running on a different
   Mac to the speakers.
 
 When Phase 19 lands:
