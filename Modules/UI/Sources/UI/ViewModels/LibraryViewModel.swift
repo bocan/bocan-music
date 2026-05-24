@@ -267,6 +267,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// don't wire the Subsonic module.
     public let subsonicDataSource: (any SubsonicBrowseDataSource)?
 
+    /// Injected by the app layer to initialise the Subsonic client pool
+    /// before navigation state is restored. Called from `RootView.task` so
+    /// that any persisted Subsonic destination can load without racing
+    /// against the background hydration task in `BocanApp`.
+    public var subsonicBootstrap: (@Sendable () async -> Void)?
+
     /// Phase 19 step 10: cover-art URL resolver used by Subsonic browse
     /// views. `nil` when Subsonic isn't wired in.
     public let subsonicCoverArtProvider: SubsonicCoverArtProvider?
@@ -415,6 +421,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         } catch {
             self.log.error("library.subsonic.reload.failed", ["error": String(reflecting: error)])
         }
+    }
+
+    /// Runs the injected `subsonicBootstrap` closure if one was supplied.
+    /// Called from `RootView.task` *before* navigation state is restored so
+    /// that any persisted Subsonic destination can load immediately without
+    /// racing against the background hydration task in `BocanApp`.
+    public func bootstrapSubsonic() async {
+        await self.subsonicBootstrap?()
     }
 
     /// Phase 19 step 16: subscribe to capability-change events from

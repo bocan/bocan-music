@@ -185,6 +185,11 @@ public struct BocanRootView: View {
             // saved .folder destination doesn't briefly show "Folder Not Found"
             // while playlistSidebar.nodes is still empty.
             await self.vm.playlistSidebar.reload()
+            // Bootstrap Subsonic clients before restoring navigation state.
+            // This ensures that any persisted Subsonic destination (e.g.
+            // .subsonicSongs) can load immediately without racing against the
+            // background hydration task that calls reloadClients() in BocanApp.
+            await self.vm.bootstrapSubsonic()
             await self.vm.restoreUIState()
             self.windowMode.restoreIfNeeded()
             await self.vm.refreshRoots()
