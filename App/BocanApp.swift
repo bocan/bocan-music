@@ -439,6 +439,14 @@ struct BocanApp: App {
             subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor)
         )
         self.libraryViewModel = lvm
+        // Wire the Subsonic bootstrap so RootView.task can pre-load clients
+        // before restoring navigation state, eliminating the startup race that
+        // caused "Couldn't load songs / No server with id …" when the last
+        // selected destination was a Subsonic view.
+        lvm.subsonicBootstrap = { [subsonicService, weak lvm] in
+            try? await subsonicService.reloadClients()
+            await lvm?.reloadSubsonicServers()
+        }
         self.subsonicSettingsViewModel = SubsonicSettingsViewModel(
             store: subsonicStore,
             service: subsonicService,
@@ -493,8 +501,10 @@ struct BocanApp: App {
         // Start scrobble worker once everything is wired up.
         Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
 
-        // Phase 19: hydrate Subsonic state on launch. Reload clients, sweep
-        // orphaned Keychain items, and push the initial sidebar listing.
+        // Phase 19: finish Subsonic hydration. reloadClients + reloadSubsonicServers
+        // already ran synchronously in bootstrapSubsonic (via RootView.task) before
+        // navigation state was restored, so the calls here are idempotent catch-alls.
+        // migrateOrphans and startMonitoring must still run here.
         Task { [subsonicStore, subsonicService, subsonicMonitor, weak lvm] in
             try? await subsonicStore.migrateOrphans()
             try? await subsonicService.reloadClients()
