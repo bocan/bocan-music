@@ -162,7 +162,7 @@ private struct QueueContentView: View {
 
     private func observeQueueChanges() async {
         guard let queue = vm.queuePlayer?.queue else { return }
-        for await _ in queue.changes() {
+        for await _ in await queue.changes() {
             await self.refreshQueue()
         }
     }

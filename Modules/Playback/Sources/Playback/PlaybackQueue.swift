@@ -35,18 +35,17 @@ public actor PlaybackQueue {
     private var subscribers: [UUID: AsyncStream<QueueChange>.Continuation] = [:]
 
     /// Subscribe to queue change events. Each call returns an independent stream.
-    public nonisolated func changes() -> AsyncStream<QueueChange> {
-        AsyncStream { continuation in
-            let id = UUID()
-            Task { await self.addSubscriber(id: id, continuation: continuation) }
-            continuation.onTermination = { _ in
-                Task { await self.removeSubscriber(id: id) }
-            }
-        }
-    }
-
-    private func addSubscriber(id: UUID, continuation: AsyncStream<QueueChange>.Continuation) {
+    /// The subscriber is registered synchronously before the stream is returned, so any
+    /// emit that occurs after `await queue.changes()` returns is guaranteed to be delivered.
+    public func changes() -> AsyncStream<QueueChange> {
+        let (stream, continuation) = AsyncStream.makeStream(of: QueueChange.self)
+        let id = UUID()
         self.subscribers[id] = continuation
+        continuation.onTermination = { [weak self] _ in
+            guard let self else { return }
+            Task { await self.removeSubscriber(id: id) }
+        }
+        return stream
     }
 
     private func removeSubscriber(id: UUID) {

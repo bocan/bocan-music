@@ -353,7 +353,7 @@ public final class NowPlayingViewModel {
             self.shuffleOn = initialShuffle != .off
             self.stopAfterCurrent = initialStopAfter
 
-            for await change in qp.queue.changes() {
+            for await change in await qp.queue.changes() {
                 switch change {
                 case let .stopAfterCurrentChanged(enabled):
                     self.stopAfterCurrent = enabled

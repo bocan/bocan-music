@@ -995,7 +995,7 @@ public actor QueuePlayer: Transport {
     // MARK: Queue change subscription (for persistence)
 
     private func subscribeToQueueChanges() async {
-        for await _ in self.queue.changes() {
+        for await _ in await self.queue.changes() {
             let items = await queue.items
             let currentIndex = await queue.currentIndex
             let repeatMode = await queue.repeatMode
