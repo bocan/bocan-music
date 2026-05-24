@@ -40,6 +40,19 @@ public struct ContentPane: View {
                     ScanBanner(vm: self.vm)
                 }
             }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                // Phase 19 step 13: federated Subsonic search results render
+                // above the locally filtered list whenever the global search
+                // field has content and at least one enabled server has
+                // returned (or is returning) a result section.
+                if let fs = self.vm.federatedSearch {
+                    SubsonicSearchResultsPanel(
+                        vm: fs,
+                        library: self.vm,
+                        coverArtProvider: self.vm.subsonicCoverArtProvider
+                    )
+                }
+            }
     }
 
     @ViewBuilder

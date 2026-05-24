@@ -33,6 +33,15 @@ public protocol SubsonicBrowseDataSource: Sendable {
     func getPodcasts(serverID: UUID) async throws -> [PodcastChannel]
     func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation]
     func getBookmarks(serverID: UUID) async throws -> [Bookmark]
+
+    /// Phase 19 step 13 — federated search.
+    func search3(
+        serverID: UUID,
+        query: String,
+        artistCount: Int,
+        albumCount: Int,
+        songCount: Int
+    ) async throws -> SearchResult3
 }
 
 // MARK: - SubsonicService conformance
