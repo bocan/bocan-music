@@ -15,21 +15,28 @@ public struct SettingsScene: View {
     @State private var selectedTab: SettingsTab = .general
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
     private let backupViewModel: BackupSettingsViewModel
+    private let subsonicViewModel: SubsonicSettingsViewModel?
 
     public init(
         backupViewModel: BackupSettingsViewModel,
-        scrobbleViewModel: ScrobbleSettingsViewModel? = nil
+        scrobbleViewModel: ScrobbleSettingsViewModel? = nil,
+        subsonicViewModel: SubsonicSettingsViewModel? = nil
     ) {
         self.scrobbleViewModel = scrobbleViewModel
         self.backupViewModel = backupViewModel
+        self.subsonicViewModel = subsonicViewModel
     }
 
     /// Ordered list of tabs that are actually visible (scrobble tab is conditional).
     private var visibleTabs: [SettingsTab] {
         var tabs: [SettingsTab] = [
-            .general, .library, .playback, .equaliser, .effects, .replayGain,
-            .appearance, .advanced, .lyrics, .visualizer, .smartPlaylists,
+            .general, .library,
         ]
+        if self.subsonicViewModel != nil { tabs.append(.sources) }
+        tabs.append(contentsOf: [
+            .playback, .equaliser, .effects, .replayGain,
+            .appearance, .advanced, .lyrics, .visualizer, .smartPlaylists,
+        ])
         if self.scrobbleViewModel != nil { tabs.append(.scrobble) }
         tabs.append(.diagnostics)
         return tabs
@@ -44,6 +51,12 @@ public struct SettingsScene: View {
             LibrarySettingsView()
                 .tabItem { Label("Library", systemImage: "music.note.list") }
                 .tag(SettingsTab.library)
+
+            if let subsonicViewModel = self.subsonicViewModel {
+                SubsonicSettingsView(viewModel: subsonicViewModel)
+                    .tabItem { Label("Sources", systemImage: "server.rack") }
+                    .tag(SettingsTab.sources)
+            }
 
             PlaybackSettingsView()
                 .tabItem { Label("Playback", systemImage: "play.circle") }
@@ -98,6 +111,6 @@ public struct SettingsScene: View {
 // MARK: - SettingsTab
 
 private enum SettingsTab: String, CaseIterable {
-    case general, library, playback, equaliser, effects, replayGain
+    case general, library, sources, playback, equaliser, effects, replayGain
     case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
 }

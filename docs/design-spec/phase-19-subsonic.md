@@ -593,7 +593,8 @@ unless otherwise noted).
     labels for all status dots, keyboard navigation through the new sidebar
     section (`⌘⌥1`–`⌘⌥9` already taken; add `⌘⇧1`–`⌘⇧9` for source servers).
 18. **Docs**: update `README.md`'s feature list and add a `docs/sources.md`
-    user-facing guide explaining how to add a server.
+    user-facing guide explaining how to add a server. Also add appropriate
+    instructions to the Help menu in the UI under Bòcan Music Help.
 
 ---
 

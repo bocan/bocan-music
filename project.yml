@@ -89,6 +89,7 @@ targets:
       - package: Library
       - package: Acoustics
       - package: Scrobble
+      - package: Subsonic
       - package: UI
     preBuildScripts:
       - name: Copy and Index Help Book
@@ -164,5 +165,7 @@ packages:
     path: Modules/Library
   Scrobble:
     path: Modules/Scrobble
+  Subsonic:
+    path: Modules/Subsonic
   UI:
     path: Modules/UI

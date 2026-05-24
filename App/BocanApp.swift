@@ -6,6 +6,7 @@ import Observability
 import Persistence
 import Playback
 import Scrobble
+import Subsonic
 import SwiftUI
 import UI
 import UserNotifications
@@ -174,6 +175,9 @@ struct BocanApp: App {
     private let scrobbleService: ScrobbleService
     private let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
     private let backupSettingsViewModel: BackupSettingsViewModel
+    private let subsonicStore: SubsonicServerStore
+    private let subsonicService: SubsonicService
+    private let subsonicSettingsViewModel: SubsonicSettingsViewModel
     private let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
     private let routeViewModel: RouteViewModel
     private let updateController = UpdateController()
@@ -259,7 +263,8 @@ struct BocanApp: App {
         Settings {
             SettingsScene(
                 backupViewModel: self.backupSettingsViewModel,
-                scrobbleViewModel: self.scrobbleSettingsViewModel
+                scrobbleViewModel: self.scrobbleSettingsViewModel,
+                subsonicViewModel: self.subsonicSettingsViewModel
             )
             .environment(self.dspViewModel)
             // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
@@ -379,14 +384,29 @@ struct BocanApp: App {
         self.engine = eng
         self.player = qp
 
+        // Phase 19: Subsonic infra. Built before LibraryViewModel so the
+        // sidebar listing adapter can be injected at init time.
+        let subsonicRepo = SubsonicServerRepository(database: db)
+        let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
+        let subsonicService = SubsonicService(store: subsonicStore)
+        self.subsonicStore = subsonicStore
+        self.subsonicService = subsonicService
+        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
+
         let lvm = LibraryViewModel(
             database: db,
             engine: qp,
             scanner: scanner,
             scrobbleRepository: scrobbleParts.service.queueRepository,
-            scrobbleService: scrobbleParts.service
+            scrobbleService: scrobbleParts.service,
+            subsonicSidebarListing: subsonicListing
         )
         self.libraryViewModel = lvm
+        self.subsonicSettingsViewModel = SubsonicSettingsViewModel(
+            store: subsonicStore,
+            service: subsonicService,
+            onServersChanged: { [weak lvm] in await lvm?.reloadSubsonicServers() }
+        )
         self.dspViewModel = DSPViewModel(
             engine: eng,
             presetStore: presetStore,
@@ -435,6 +455,14 @@ struct BocanApp: App {
 
         // Start scrobble worker once everything is wired up.
         Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
+
+        // Phase 19: hydrate Subsonic state on launch. Reload clients, sweep
+        // orphaned Keychain items, and push the initial sidebar listing.
+        Task { [subsonicStore, subsonicService, weak lvm] in
+            try? await subsonicStore.migrateOrphans()
+            try? await subsonicService.reloadClients()
+            await lvm?.reloadSubsonicServers()
+        }
     }
 
     // MARK: - Private helpers
