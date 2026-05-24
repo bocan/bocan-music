@@ -21,31 +21,28 @@ struct SubsonicCoverImage: View {
     @State private var resolvedURL: URL?
 
     var body: some View {
-        ZStack {
-            if let url = self.resolvedURL {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case let .success(image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-
-                    case .empty, .failure:
-                        GradientPlaceholder(seed: self.seed)
-
-                    @unknown default:
-                        GradientPlaceholder(seed: self.seed)
+        // The gradient placeholder is the layout driver so that its size is
+        // never affected by a non-square loaded image.  The image sits in an
+        // overlay, matching the technique used by the local `Artwork` component.
+        // `.clipShape` then clips any `scaledToFill` overflow, preventing a
+        // wildly-shaped album cover from bleeding into neighbouring cells.
+        GradientPlaceholder(seed: self.seed)
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                if let url = self.resolvedURL {
+                    AsyncImage(url: url) { phase in
+                        if case let .success(image) = phase {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        }
                     }
                 }
-            } else {
-                GradientPlaceholder(seed: self.seed)
             }
-        }
-        .aspectRatio(1, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-        .task(id: self.taskKey) {
-            await self.resolve()
-        }
+            .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+            .task(id: self.taskKey) {
+                await self.resolve()
+            }
     }
 
     private var taskKey: String {
