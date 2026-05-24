@@ -23,28 +23,70 @@ public struct Sidebar: View {
                 }
             }
         )) {
-            Section("Library") {
-                self.sidebarRow(.songs, symbol: "music.note", label: "Songs")
-                self.sidebarRow(.albums, symbol: "square.grid.2x2", label: "Albums")
-                self.sidebarRow(.artists, symbol: "music.mic", label: "Artists")
-                self.sidebarRow(.genres, symbol: "tag", label: "Genres")
-                self.sidebarRow(.composers, symbol: "music.note.list", label: "Composers")
+            Section {
+                if self.vm.sectionExpansion.localLibrary {
+                    self.sidebarRow(.songs, symbol: "music.note", label: "Songs")
+                    self.sidebarRow(.albums, symbol: "square.grid.2x2", label: "Albums")
+                    self.sidebarRow(.artists, symbol: "music.mic", label: "Artists")
+                    self.sidebarRow(.genres, symbol: "tag", label: "Genres")
+                    self.sidebarRow(.composers, symbol: "music.note.list", label: "Composers")
+                }
+            } header: {
+                SidebarSectionHeader(
+                    title: "Local Library",
+                    isExpanded: Binding(
+                        get: { self.vm.sectionExpansion.localLibrary },
+                        set: { self.vm.sectionExpansion.localLibrary = $0 }
+                    )
+                )
             }
 
-            Section("Recents") {
-                self.sidebarRow(.recentlyAdded, symbol: "clock", label: "Recently Added")
-                self.sidebarRow(.recentlyPlayed, symbol: "clock.arrow.circlepath", label: "Recently Played")
-                self.sidebarRow(.mostPlayed, symbol: "chart.bar", label: "Most Played")
+            SubsonicSidebarSection(
+                sectionExpanded: Binding(
+                    get: { self.vm.sectionExpansion.sources },
+                    set: { self.vm.sectionExpansion.sources = $0 }
+                ),
+                expandedServers: Binding(
+                    get: { self.vm.sectionExpansion.expandedServers },
+                    set: { self.vm.sectionExpansion.expandedServers = $0 }
+                ),
+                servers: self.vm.subsonicServers
+            )
+
+            Section {
+                if self.vm.sectionExpansion.recents {
+                    self.sidebarRow(.recentlyAdded, symbol: "clock", label: "Recently Added")
+                    self.sidebarRow(.recentlyPlayed, symbol: "clock.arrow.circlepath", label: "Recently Played")
+                    self.sidebarRow(.mostPlayed, symbol: "chart.bar", label: "Most Played")
+                }
+            } header: {
+                SidebarSectionHeader(
+                    title: "Recents",
+                    isExpanded: Binding(
+                        get: { self.vm.sectionExpansion.recents },
+                        set: { self.vm.sectionExpansion.recents = $0 }
+                    )
+                )
             }
 
-            Section("Queue") {
-                self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
-                    .overlay(TrackDropTarget { ids in
-                        Task { await self.vm.addToQueue(trackIDs: ids) }
-                    })
-                    // Phase 5 audit L4: announce that this row is also a drop
-                    // target for tracks dragged from the library.
-                    .accessibilityHint("Shows the playback queue. Drop tracks here to add them to the end of the queue.")
+            Section {
+                if self.vm.sectionExpansion.queue {
+                    self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
+                        .overlay(TrackDropTarget { ids in
+                            Task { await self.vm.addToQueue(trackIDs: ids) }
+                        })
+                        // Phase 5 audit L4: announce that this row is also a drop
+                        // target for tracks dragged from the library.
+                        .accessibilityHint("Shows the playback queue. Drop tracks here to add them to the end of the queue.")
+                }
+            } header: {
+                SidebarSectionHeader(
+                    title: "Queue",
+                    isExpanded: Binding(
+                        get: { self.vm.sectionExpansion.queue },
+                        set: { self.vm.sectionExpansion.queue = $0 }
+                    )
+                )
             }
 
             PlaylistSidebarSection(vm: self.vm.playlistSidebar, smartPlaylistService: self.vm.smartPlaylistService)

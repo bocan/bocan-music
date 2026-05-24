@@ -43,6 +43,18 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     /// Stub — populated by Phase 7.
     case smartPlaylist(Int64)
 
+    // MARK: - Phase 19 (Subsonic)
+
+    //
+    // Per-server browse roots. The associated `UUID` is the
+    // `SubsonicServer.id`. Content views land in Phase 19 step 10; step 9
+    // only adds the cases so the sidebar can tag rows.
+
+    case subsonicSongs(UUID)
+    case subsonicAlbums(UUID)
+    case subsonicArtists(UUID)
+    case subsonicGenres(UUID)
+
     // MARK: - Search
 
     case search(String)

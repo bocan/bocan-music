@@ -97,6 +97,18 @@ extension SidebarDestination {
 
         case let .search(searchQuery):
             "Search: \(searchQuery)"
+
+        case .subsonicSongs:
+            "Songs"
+
+        case .subsonicAlbums:
+            "Albums"
+
+        case .subsonicArtists:
+            "Artists"
+
+        case .subsonicGenres:
+            "Genres"
         }
     }
 }
