@@ -292,6 +292,14 @@ actor EditTransaction {
             else { currentAlbum?.title ?? "Unknown Album" }
             let album = try await self.albumRepo.findOrCreate(title: albumTitle, albumArtistID: albumArtist.id)
             updated.albumID = album.id
+
+            // Propagate the edited year to the album row when the patch
+            // explicitly includes a year change (outer optional non-nil means
+            // the field was deliberately patched; inner optional nil means
+            // the user cleared the year).
+            if let newYear = patch.year, let albumID = album.id {
+                try await self.albumRepo.setYear(albumID: albumID, year: newYear)
+            }
         }
 
         return (updated, coverArtHash)
