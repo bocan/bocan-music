@@ -71,12 +71,18 @@ for module in "${MODULES[@]}"; do
         continue
     fi
 
+    # Restrict to the module's own sources so the TOTAL row isn't diluted by
+    # sibling SPM packages pulled in via .package(path:). The trailing
+    # positional path argument tells llvm-cov to only report on files under
+    # that prefix. Column $10 is line coverage (column $7 is function
+    # coverage — see `llvm-cov report` header).
     total_line="$(xcrun llvm-cov report \
         "$binary" \
         -instr-profile="$profdata" \
         -ignore-filename-regex='(\.build|/Tests/|/checkouts/|\.derivedSources)' \
+        "$mod_dir/Sources/" \
         2>/dev/null \
-        | awk '/^TOTAL/ {print $7}' \
+        | awk '/^TOTAL/ {print $10}' \
         | tr -d '%')"
 
     if [[ -z "$total_line" ]]; then
