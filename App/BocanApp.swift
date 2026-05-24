@@ -407,7 +407,8 @@ struct BocanApp: App {
             subsonicSidebarListing: subsonicListing,
             subsonicDataSource: subsonicService,
             subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService),
-            subsonicAnnotationDelivery: subsonicAnnotations
+            subsonicAnnotationDelivery: subsonicAnnotations,
+            subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService)
         )
         self.libraryViewModel = lvm
         self.subsonicSettingsViewModel = SubsonicSettingsViewModel(

@@ -65,6 +65,47 @@ struct LibrarySidebarExpansionTests {
         await vm.reloadSubsonicServers()
         #expect(vm.subsonicServers == [serverA, serverB])
     }
+
+    @Test("Capability change events trigger a sidebar reload")
+    func capabilityChangeReloadsSidebar() async throws {
+        let db = try await Database(location: .inMemory)
+        let serverID = UUID()
+        let initial = SubsonicSidebarServer(id: serverID, name: "Lab", sortIndex: 0)
+        let upgraded = SubsonicSidebarServer(
+            id: serverID, name: "Lab", sortIndex: 0,
+            supportsPodcasts: true
+        )
+        let listing = MutableStubListing(servers: [initial])
+        let observer = StubCapabilityObserver()
+
+        let vm = LibraryViewModel(
+            database: db,
+            engine: MockTransport(),
+            subsonicSidebarListing: listing,
+            subsonicCapabilityObserver: observer
+        )
+        await vm.reloadSubsonicServers()
+        #expect(vm.subsonicServers == [initial])
+
+        // Simulate a server upgrade unlocking Podcasts.
+        listing.servers = [upgraded]
+        observer.emit(serverID)
+
+        // Wait for the observer task to deliver the reload.
+        try await pollUntil(timeout: 1.0) { vm.subsonicServers == [upgraded] }
+        #expect(vm.subsonicServers == [upgraded])
+    }
+}
+
+// MARK: - Polling helper
+
+@MainActor
+private func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) async throws {
+    let deadline = Date().addingTimeInterval(timeout)
+    while Date() < deadline {
+        if condition() { return }
+        try await Task.sleep(nanoseconds: 20_000_000)
+    }
 }
 
 // MARK: - StubListing
@@ -74,5 +115,35 @@ private struct StubListing: SubsonicSidebarListing {
 
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer] {
         self.servers
+    }
+}
+
+// MARK: - MutableStubListing
+
+/// Mutable variant whose return value can change across calls so the reload
+/// path actually observes a new snapshot after a capability event.
+private final class MutableStubListing: SubsonicSidebarListing, @unchecked Sendable {
+    var servers: [SubsonicSidebarServer]
+
+    init(servers: [SubsonicSidebarServer]) {
+        self.servers = servers
+    }
+
+    func fetchSidebarServers() async throws -> [SubsonicSidebarServer] {
+        self.servers
+    }
+}
+
+// MARK: - StubCapabilityObserver
+
+private final class StubCapabilityObserver: SubsonicCapabilityChangeObserving, @unchecked Sendable {
+    private let (stream, continuation) = AsyncStream<UUID>.makeStream()
+
+    func capabilityChanges() -> AsyncStream<UUID> {
+        self.stream
+    }
+
+    func emit(_ id: UUID) {
+        self.continuation.yield(id)
     }
 }
