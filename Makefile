@@ -99,13 +99,14 @@ test-coverage:
 	Scripts/coverage-report.sh build/TestResults.xcresult 80
 
 ## coverage-all: Run SPM module tests with coverage and fail if any module is below threshold
-## Defaults to report-only (threshold 0). Override with COVERAGE_THRESHOLD=NN for a global
+## Defaults to 70%. Override with COVERAGE_THRESHOLD=NN for a global
 ## floor, or COVERAGE_MIN_<MODULE>=NN for a per-module floor (e.g. COVERAGE_MIN_UI=20).
 coverage-all:
 	@echo "=============================="
 	@echo "= Per-module Coverage Gate"
 	@echo "=============================="
-	Scripts/coverage-all.sh $(or $(COVERAGE_THRESHOLD),0)
+	COVERAGE_MIN_UI=$(or $(COVERAGE_MIN_UI),20) \
+		Scripts/coverage-all.sh $(or $(COVERAGE_THRESHOLD),70)
 
 ## test-audio-engine: Run AudioEngine SPM package tests (requires FFmpeg via Homebrew)
 test-audio-engine:
