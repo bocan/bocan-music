@@ -16,6 +16,22 @@ struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
         try await self.store.fetchAll()
             .filter(\.showInSidebar)
             .sorted { $0.sortIndex < $1.sortIndex }
-            .map { SubsonicSidebarServer(id: $0.id, name: $0.name, sortIndex: $0.sortIndex) }
+            .map { server in
+                let caps = Self.decodeCapabilities(server.cachedCapabilitiesJSON)
+                return SubsonicSidebarServer(
+                    id: server.id,
+                    name: server.name,
+                    sortIndex: server.sortIndex,
+                    supportsPodcasts: caps.supportsPodcasts,
+                    supportsInternetRadio: caps.supportsInternetRadio,
+                    supportsBookmarks: caps.supportsBookmarks
+                )
+            }
+    }
+
+    private static func decodeCapabilities(_ data: Data?) -> SubsonicCapabilities {
+        guard let data else { return SubsonicCapabilities() }
+        return (try? JSONDecoder().decode(SubsonicCapabilities.self, from: data))
+            ?? SubsonicCapabilities()
     }
 }

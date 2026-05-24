@@ -109,6 +109,33 @@ extension SidebarDestination {
 
         case .subsonicGenres:
             "Genres"
+
+        case .subsonicPlaylists:
+            "Playlists"
+
+        case .subsonicPlaylist:
+            "Playlist"
+
+        case .subsonicStarred:
+            "Starred"
+
+        case .subsonicRandom:
+            "Random"
+
+        case .subsonicRecentlyAdded:
+            "Recently Added"
+
+        case .subsonicMostPlayed:
+            "Most Played"
+
+        case .subsonicInternetRadio:
+            "Internet Radio"
+
+        case .subsonicPodcasts:
+            "Podcasts"
+
+        case .subsonicBookmarks:
+            "Bookmarks"
         }
     }
 }

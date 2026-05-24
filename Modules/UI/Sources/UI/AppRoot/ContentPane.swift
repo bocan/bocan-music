@@ -1,3 +1,4 @@
+import SwiftSonic
 import SwiftUI
 
 // MARK: - ContentPane
@@ -152,6 +153,117 @@ public struct ContentPane: View {
         case let .subsonicGenres(serverID):
             if let ds = self.vm.subsonicDataSource {
                 SubsonicGenresView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicPlaylists(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicPlaylistsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicPlaylist(serverID, playlistID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicPlaylistDetailView(
+                    serverID: serverID,
+                    playlistID: playlistID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicStarred(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicStarredView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicRandom(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicSongsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider,
+                    title: "Random"
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicRecentlyAdded(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicAlbumsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider,
+                    listType: .newest,
+                    title: "Recently Added"
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicMostPlayed(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicAlbumsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider,
+                    listType: .frequent,
+                    title: "Most Played"
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicInternetRadio(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicInternetRadioView(
+                    serverID: serverID,
+                    dataSource: ds
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicPodcasts(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicPodcastsView(
+                    serverID: serverID,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicBookmarks(serverID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicBookmarksView(
                     serverID: serverID,
                     library: self.vm,
                     dataSource: ds,

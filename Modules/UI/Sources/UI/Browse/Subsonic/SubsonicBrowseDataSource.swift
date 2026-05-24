@@ -25,6 +25,14 @@ public protocol SubsonicBrowseDataSource: Sendable {
     ) async throws -> [Song]
     func getArtist(serverID: UUID, id: String) async throws -> ArtistID3
     func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3
+
+    // Phase 19 step 11 — optional per-server destinations.
+    func getPlaylists(serverID: UUID) async throws -> [Playlist]
+    func getPlaylist(serverID: UUID, id: String) async throws -> PlaylistWithSongs
+    func getStarred2(serverID: UUID) async throws -> Starred2
+    func getPodcasts(serverID: UUID) async throws -> [PodcastChannel]
+    func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation]
+    func getBookmarks(serverID: UUID) async throws -> [Bookmark]
 }
 
 // MARK: - SubsonicService conformance

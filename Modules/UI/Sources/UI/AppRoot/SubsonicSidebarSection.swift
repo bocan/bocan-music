@@ -85,6 +85,20 @@ public struct SubsonicSidebarSection: View {
             self.row(.subsonicAlbums(server.id), symbol: "square.grid.2x2", label: "Albums")
             self.row(.subsonicArtists(server.id), symbol: "music.mic", label: "Artists")
             self.row(.subsonicGenres(server.id), symbol: "tag", label: "Genres")
+            self.row(.subsonicPlaylists(server.id), symbol: "music.note.list", label: "Playlists")
+            self.row(.subsonicStarred(server.id), symbol: "star", label: "Starred")
+            self.row(.subsonicRandom(server.id), symbol: "shuffle", label: "Random")
+            self.row(.subsonicRecentlyAdded(server.id), symbol: "clock.badge.checkmark", label: "Recently Added")
+            self.row(.subsonicMostPlayed(server.id), symbol: "chart.line.uptrend.xyaxis", label: "Most Played")
+            if server.supportsInternetRadio {
+                self.row(.subsonicInternetRadio(server.id), symbol: "dot.radiowaves.left.and.right", label: "Internet Radio")
+            }
+            if server.supportsPodcasts {
+                self.row(.subsonicPodcasts(server.id), symbol: "antenna.radiowaves.left.and.right", label: "Podcasts")
+            }
+            if server.supportsBookmarks {
+                self.row(.subsonicBookmarks(server.id), symbol: "bookmark", label: "Bookmarks")
+            }
         }
     }
 

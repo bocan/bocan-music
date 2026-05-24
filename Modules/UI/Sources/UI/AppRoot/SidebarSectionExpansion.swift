@@ -57,11 +57,24 @@ public struct SubsonicSidebarServer: Identifiable, Hashable, Sendable {
     public let id: UUID
     public let name: String
     public let sortIndex: Int
+    public let supportsPodcasts: Bool
+    public let supportsInternetRadio: Bool
+    public let supportsBookmarks: Bool
 
-    public init(id: UUID, name: String, sortIndex: Int) {
+    public init(
+        id: UUID,
+        name: String,
+        sortIndex: Int,
+        supportsPodcasts: Bool = false,
+        supportsInternetRadio: Bool = false,
+        supportsBookmarks: Bool = false
+    ) {
         self.id = id
         self.name = name
         self.sortIndex = sortIndex
+        self.supportsPodcasts = supportsPodcasts
+        self.supportsInternetRadio = supportsInternetRadio
+        self.supportsBookmarks = supportsBookmarks
     }
 }
 
