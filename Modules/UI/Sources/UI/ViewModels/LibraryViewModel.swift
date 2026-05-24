@@ -256,6 +256,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// views. `nil` when Subsonic isn't wired in.
     public let subsonicCoverArtProvider: SubsonicCoverArtProvider?
 
+    /// Phase 19 step 13: federated search across enabled Subsonic servers.
+    /// `nil` when no `subsonicDataSource` was supplied.
+    public let federatedSearch: FederatedSearchViewModel?
+
     let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -277,6 +281,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicSidebarListing = subsonicSidebarListing
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
+        self.federatedSearch = subsonicDataSource.map { FederatedSearchViewModel(dataSource: $0) }
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
 
@@ -313,9 +318,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.searchQueryCancellable = self.$searchQuery
             .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
             .removeDuplicates()
-            .sink { [weak self] _ in
+            .sink { [weak self] query in
                 guard let self else { return }
                 Task { await self.loadCurrentDestination() }
+                // Phase 19 step 13: fan out a parallel federated search across
+                // enabled Subsonic servers. No-op when no servers are wired in.
+                self.federatedSearch?.search(query: query, servers: self.subsonicServers)
             }
 
         self.wirePlaylistCallbacks()

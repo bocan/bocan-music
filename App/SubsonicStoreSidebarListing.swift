@@ -24,7 +24,8 @@ struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
                     sortIndex: server.sortIndex,
                     supportsPodcasts: caps.supportsPodcasts,
                     supportsInternetRadio: caps.supportsInternetRadio,
-                    supportsBookmarks: caps.supportsBookmarks
+                    supportsBookmarks: caps.supportsBookmarks,
+                    includeInGlobalSearch: server.includeInGlobalSearch
                 )
             }
     }

@@ -60,6 +60,7 @@ public struct SubsonicSidebarServer: Identifiable, Hashable, Sendable {
     public let supportsPodcasts: Bool
     public let supportsInternetRadio: Bool
     public let supportsBookmarks: Bool
+    public let includeInGlobalSearch: Bool
 
     public init(
         id: UUID,
@@ -67,7 +68,8 @@ public struct SubsonicSidebarServer: Identifiable, Hashable, Sendable {
         sortIndex: Int,
         supportsPodcasts: Bool = false,
         supportsInternetRadio: Bool = false,
-        supportsBookmarks: Bool = false
+        supportsBookmarks: Bool = false,
+        includeInGlobalSearch: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -75,6 +77,7 @@ public struct SubsonicSidebarServer: Identifiable, Hashable, Sendable {
         self.supportsPodcasts = supportsPodcasts
         self.supportsInternetRadio = supportsInternetRadio
         self.supportsBookmarks = supportsBookmarks
+        self.includeInGlobalSearch = includeInGlobalSearch
     }
 }
 
