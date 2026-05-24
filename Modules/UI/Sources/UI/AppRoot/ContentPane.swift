@@ -112,6 +112,15 @@ public struct ContentPane: View {
         case .search:
             // Treat as Songs view; LibraryViewModel filters by the active query.
             TracksView(vm: self.vm.tracks, library: self.vm)
+
+        case let .subsonicSongs(serverID),
+             let .subsonicAlbums(serverID),
+             let .subsonicArtists(serverID),
+             let .subsonicGenres(serverID):
+            SubsonicPlaceholderView(
+                serverID: serverID,
+                destination: self.vm.selectedDestination
+            )
         }
     }
 }
