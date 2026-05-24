@@ -9,6 +9,7 @@ import SwiftUI
 /// Each row sends a `SidebarDestination` to `LibraryViewModel.selectDestination(_:)`.
 public struct Sidebar: View {
     @ObservedObject public var vm: LibraryViewModel
+    @Environment(\.openSettings) private var openSettings
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
@@ -51,7 +52,8 @@ public struct Sidebar: View {
                     set: { self.vm.sectionExpansion.expandedServers = $0 }
                 ),
                 servers: self.vm.subsonicServers,
-                connectionStates: self.vm.subsonicConnectionStates
+                connectionStates: self.vm.subsonicConnectionStates,
+                onAddSource: self.openAddSource
             )
 
             Section {
@@ -106,6 +108,11 @@ public struct Sidebar: View {
     }
 
     // MARK: - Row builder
+
+    private func openAddSource() {
+        NotificationCenter.default.post(name: .openSourcesSettingsTab, object: nil)
+        self.openSettings()
+    }
 
     private func sidebarRow(_ dest: SidebarDestination, symbol: String, label: String) -> some View {
         Label(label, systemImage: symbol)

@@ -13,17 +13,20 @@ public struct SubsonicSidebarSection: View {
     @Binding public var expandedServers: Set<UUID>
     public let servers: [SubsonicSidebarServer]
     public let connectionStates: [UUID: SubsonicSidebarConnectionState]
+    public var onAddSource: (() -> Void)?
 
     public init(
         sectionExpanded: Binding<Bool>,
         expandedServers: Binding<Set<UUID>>,
         servers: [SubsonicSidebarServer],
-        connectionStates: [UUID: SubsonicSidebarConnectionState] = [:]
+        connectionStates: [UUID: SubsonicSidebarConnectionState] = [:],
+        onAddSource: (() -> Void)? = nil
     ) {
         self._sectionExpanded = sectionExpanded
         self._expandedServers = expandedServers
         self.servers = servers
         self.connectionStates = connectionStates
+        self.onAddSource = onAddSource
     }
 
     public var body: some View {
@@ -42,10 +45,36 @@ public struct SubsonicSidebarSection: View {
                 }
             }
         } header: {
-            SidebarSectionHeader(
-                title: "Sources",
-                isExpanded: self.$sectionExpanded
-            )
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { self.sectionExpanded.toggle() }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text("Sources")
+                        Image(systemName: self.sectionExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(Color.textTertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .help(self.sectionExpanded ? "Collapse Sources" : "Expand Sources")
+                .accessibilityLabel(self.sectionExpanded ? "Collapse Sources" : "Expand Sources")
+                .accessibilityValue(self.sectionExpanded ? "Expanded" : "Collapsed")
+
+                Spacer()
+
+                if let onAddSource {
+                    Button { onAddSource() } label: {
+                        Image(systemName: "plus")
+                            .font(Typography.footnote)
+                    }
+                    .buttonStyle(.borderless)
+                    .fixedSize()
+                    .help("Add a new source server")
+                    .accessibilityLabel("Add Source")
+                    .accessibilityIdentifier(A11y.SourcesSidebar.addButton)
+                }
+            }
         }
     }
 
