@@ -44,6 +44,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Mini Player** in three layouts (Strip, Compact, Square) with always-on-top mode.
 - **Last.fm and ListenBrainz** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
 - **AirPlay** routing via the system picker; a live route chip shows the current output device.
+- **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, and `⌘⇧1`–`⌘⇧9` to jump straight to a server.
 
 ### ♿ It's accessible
 
@@ -153,6 +154,17 @@ Bòcan curates your music library while you sleep. The short version is that com
 - **Import** `.m3u`, `.m3u8`, `.pls`, and `.xspf` playlists via **File ▸ Import Playlist…** (⇧⌘O). Track resolution tries an exact path match first, then falls back to fuzzy artist/title/duration matching against your library.
 - **Export** any manual playlist via the sidebar context menu. Choose `.m3u8`, `.m3u`, `.pls`, or `.xspf`, with **absolute** or **relative-to-folder** path mode for portable exports.
 - **CUE sheets** are recognised at scan time and exposed as virtual tracks (per-track playback offsets are still on the way).
+
+### Subsonic / Navidrome / Airsonic
+
+- **Up to nine Subsonic-compatible servers** managed from Settings → Sources. Credentials are stored in the Keychain; the password is never written to disk.
+- **Per-server sidebar section** lists every browseable bucket a server advertises via its capabilities (Albums, Artists, Genres, Years, Random, Recently Added, Recently Played, Most Played, Starred, Playlists, Podcasts, Radio, Internet Radio).
+- **Live connection monitor** with status dots (online, connecting, auth-failed, unreachable, server error) and VoiceOver labels for every state.
+- **Offline banner with "Retry now"** appears at the top of any per-server view when that server is unreachable; other servers and your local library keep working.
+- **Federated search** queries every connected server in parallel with debounced cancellation; results are grouped by server and merged with local hits.
+- **Streaming with range requests** through the audio engine — gapless, scrobbled, and ReplayGain-applied just like local files.
+- **Star / unstar and 1–5 star ratings** are written back to the server via `star` / `setRating` and surface in the same UI controls as local tracks.
+- **`⌘⇧1`–`⌘⇧9`** jumps straight to the first nine source servers from anywhere in the app.
 
 ### Scrobbling
 

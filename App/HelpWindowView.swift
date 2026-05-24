@@ -10,6 +10,7 @@ struct HelpWindowView: View {
         case gettingStarted = "Getting Started"
         case shortcuts = "Keyboard Shortcuts"
         case formats = "Supported Formats"
+        case subsonic = "Subsonic Servers"
 
         var icon: String {
             switch self {
@@ -21,6 +22,9 @@ struct HelpWindowView: View {
 
             case .formats:
                 "music.note.list"
+
+            case .subsonic:
+                "server.rack"
             }
         }
     }
@@ -52,6 +56,9 @@ struct HelpWindowView: View {
 
             case .formats:
                 FormatsSection()
+
+            case .subsonic:
+                SubsonicSection()
             }
         }
     }
@@ -247,5 +254,93 @@ private struct FormatRow: View {
             Text(self.formats)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+// MARK: - SubsonicSection
+
+private struct SubsonicSection: View {
+    private struct Topic {
+        let title: String
+        let body: String
+    }
+
+    private static let topics: [Topic] = [
+        Topic(
+            title: "Adding a server",
+            body: "Open Bòcan → Settings… → Sources, then click Add Server."
+                + " Enter the server URL (including https://), a username, and a password."
+                + " Credentials are stored in the macOS Keychain; the password is never written to disk."
+                + " You can connect up to nine Subsonic, Navidrome, or Airsonic servers."
+        ),
+        Topic(
+            title: "Connection status dots",
+            body: "Each server in the sidebar shows a coloured dot:"
+                + " green = online, blue pulsing = connecting, orange = authentication failed,"
+                + " grey = unreachable, red = server error. Every dot has a VoiceOver label"
+                + " announcing the server name and current state."
+        ),
+        Topic(
+            title: "Offline banner",
+            body: "When a server you are browsing goes offline, an orange banner appears"
+                + " at the top of the content area with a Retry now button. Other servers"
+                + " and your local library continue to work normally."
+        ),
+        Topic(
+            title: "Browsing",
+            body: "Each server contributes its own sidebar section listing only the buckets"
+                + " it advertises: Albums, Artists, Genres, Years, Random, Recently Added,"
+                + " Recently Played, Most Played, Starred, Playlists, Podcasts, Radio."
+                + " New buckets appear automatically when the server's capabilities change."
+        ),
+        Topic(
+            title: "Federated search",
+            body: "Press ⌘F and start typing. Bòcan queries every connected server in parallel"
+                + " alongside your local library and groups the results by source."
+        ),
+        Topic(
+            title: "Stars and ratings",
+            body: "Starring a track or setting a 1–5 star rating writes back to the server"
+                + " via the standard Subsonic star and setRating calls. Changes appear on the"
+                + " server immediately and survive a relaunch."
+        ),
+        Topic(
+            title: "Streaming and scrobbling",
+            body: "Tracks stream through the same gapless audio engine as local files,"
+                + " with HTTP range requests for accurate seeking."
+                + " Scrobbles are sent both to the server's own scrobble endpoint and to your"
+                + " configured Last.fm / ListenBrainz accounts."
+        ),
+        Topic(
+            title: "Jump shortcuts",
+            body: "⌘⇧1 through ⌘⇧9 jump straight to the first nine source servers in the order"
+                + " they appear in Settings → Sources."
+        ),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            helpSectionTitle("Subsonic Servers")
+            Text(
+                "Bòcan treats Subsonic-compatible servers (including Navidrome and Airsonic)"
+                    + " as first-class sources alongside your local library."
+            )
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.bottom, 20)
+
+            ForEach(Self.topics, id: \.title) { topic in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(topic.title)
+                        .font(.headline)
+                    Text(topic.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, 16)
+            }
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }

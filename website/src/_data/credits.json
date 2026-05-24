@@ -34,5 +34,11 @@
     "url": "https://github.com/pointfreeco/swift-snapshot-testing",
     "license": "MIT",
     "purpose": "UI snapshot testing."
+  },
+  {
+    "name": "SwiftSonic",
+    "url": "https://github.com/MathieuDubart/swiftsonic",
+    "license": "MIT",
+    "purpose": "Subsonic / Navidrome / Airsonic API client."
   }
 ]
