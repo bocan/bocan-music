@@ -2,17 +2,17 @@ import Foundation
 import Observability
 import Persistence
 
-// MARK: - PersistedQueueItem
+// MARK: - PersistedQueueItemV2
 
-/// Slim Codable DTO used for queue persistence.
+/// Codable DTO used for queue persistence (schema v2).
 ///
-/// Deliberately **omits** `BookmarkBlob` from `QueueItem`. Each bookmark is a
-/// security-scoped binary blob (typically 2–8 KB per file). With 14 000+ items
-/// that adds up to 100+ MB of Base64 in the JSON payload, causing a background-
-/// thread CPU/memory spike that starves the CoreAudio IOWorkLoop and produces
-/// audible pops. Bookmarks are re-fetched from the Library database as needed;
-/// until then playback falls back to `fileURL` directly.
-private struct PersistedQueueItem: Codable {
+/// Adds `playableSource` so remote Subsonic items round-trip correctly.
+/// Like the v1 shape, this deliberately **omits** the security-scoped
+/// `BookmarkBlob` from `QueueItem` — each bookmark is a 2–8 KB binary
+/// blob and 14 000+ items can produce 100+ MB of Base64 in the JSON
+/// payload, which starves the CoreAudio IOWorkLoop and causes audible
+/// pops. Bookmarks are re-fetched from the Library database on demand.
+private struct PersistedQueueItemV2: Codable {
     let id: UUID
     let trackID: Int64
     let fileURL: String
@@ -28,6 +28,7 @@ private struct PersistedQueueItem: Codable {
     let lastPlayedAt: Int64?
     let albumID: Int64?
     let artistID: Int64?
+    let playableSource: PlayableSource
 
     init(from item: QueueItem) {
         self.id = item.id
@@ -45,6 +46,7 @@ private struct PersistedQueueItem: Codable {
         self.lastPlayedAt = item.lastPlayedAt
         self.albumID = item.albumID
         self.artistID = item.artistID
+        self.playableSource = item.playableSource
     }
 
     func toQueueItem() -> QueueItem {
@@ -64,15 +66,67 @@ private struct PersistedQueueItem: Codable {
             excludedFromShuffle: self.excludedFromShuffle,
             lastPlayedAt: self.lastPlayedAt,
             albumID: self.albumID,
-            artistID: self.artistID
+            artistID: self.artistID,
+            playableSource: self.playableSource
         )
     }
 }
 
-// MARK: - QueuePersistencePayload (Codable snapshot)
+// MARK: - PersistedQueueItemV1 (legacy)
 
-private struct QueuePayload: Codable {
-    var items: [PersistedQueueItem]
+/// Legacy queue item shape without `playableSource`. Decoded only during a
+/// one-shot migration on first launch after upgrading to schema v2.
+private struct PersistedQueueItemV1: Codable {
+    let id: UUID
+    let trackID: Int64
+    let fileURL: String
+    let duration: TimeInterval
+    let sourceFormat: AudioSourceFormat
+    let title: String?
+    let artistName: String?
+    let genre: String?
+    let rating: Int
+    let loved: Bool
+    let playCount: Int
+    let excludedFromShuffle: Bool
+    let lastPlayedAt: Int64?
+    let albumID: Int64?
+    let artistID: Int64?
+
+    func toQueueItem() -> QueueItem {
+        QueueItem(
+            id: self.id,
+            trackID: self.trackID,
+            bookmark: nil,
+            fileURL: self.fileURL,
+            duration: self.duration,
+            sourceFormat: self.sourceFormat,
+            title: self.title,
+            artistName: self.artistName,
+            genre: self.genre,
+            rating: self.rating,
+            loved: self.loved,
+            playCount: self.playCount,
+            excludedFromShuffle: self.excludedFromShuffle,
+            lastPlayedAt: self.lastPlayedAt,
+            albumID: self.albumID,
+            artistID: self.artistID,
+            playableSource: .localBookmark(Data())
+        )
+    }
+}
+
+// MARK: - Codable payloads
+
+private struct QueuePayloadV2: Codable {
+    var items: [PersistedQueueItemV2]
+    var currentIndex: Int?
+    var repeatMode: RepeatMode
+    var shuffleState: ShuffleState
+}
+
+private struct QueuePayloadV1: Codable {
+    var items: [PersistedQueueItemV1]
     var currentIndex: Int?
     var repeatMode: RepeatMode
     var shuffleState: ShuffleState
@@ -82,10 +136,15 @@ private struct QueuePayload: Codable {
 
 /// Saves and restores the playback queue from the `settings` table.
 ///
-/// Key: `"playback.queue.v1"` (Codable JSON blob via `SettingsRepository`).
-/// Called by `QueuePlayer` on every queue mutation (debounced to 1 save / 2 s).
+/// Active key: `"playback.queue.v2"` (Codable JSON blob via
+/// `SettingsRepository`). The v2 schema adds `PlayableSource` per item so
+/// remote Subsonic tracks survive a relaunch. On first launch after the
+/// upgrade, any legacy `"playback.queue.v1"` blob is read, every item is
+/// promoted to `.localBookmark(Data())`, persisted under v2, and the v1
+/// key is deleted.
 public actor QueuePersistence {
-    private static let settingsKey = "playback.queue.v1"
+    static let settingsKeyV1 = "playback.queue.v1"
+    static let settingsKeyV2 = "playback.queue.v2"
     private static let debounceNanoseconds: UInt64 = 2_000_000_000 // 2 s
 
     private let repo: SettingsRepository
@@ -122,14 +181,27 @@ public actor QueuePersistence {
     // MARK: - Restore
 
     /// Returns the previously persisted queue, or `nil` if none exists.
+    /// Transparently migrates a legacy v1 blob to v2 on first read.
     public func restore() async -> (items: [QueueItem], currentIndex: Int?, repeatMode: RepeatMode, shuffleState: ShuffleState)? {
         do {
-            guard let payload: QueuePayload = try await repo.get(QueuePayload.self, for: Self.settingsKey) else {
-                return nil
+            if let payload: QueuePayloadV2 = try await repo.get(QueuePayloadV2.self, for: Self.settingsKeyV2) {
+                let items = payload.items.map { $0.toQueueItem() }
+                self.log.debug("queue.restore", ["count": items.count, "schema": 2])
+                return (items, payload.currentIndex, payload.repeatMode, payload.shuffleState)
             }
-            let items = payload.items.map { $0.toQueueItem() }
-            self.log.debug("queue.restore", ["count": items.count])
-            return (items, payload.currentIndex, payload.repeatMode, payload.shuffleState)
+            if let legacy: QueuePayloadV1 = try await repo.get(QueuePayloadV1.self, for: Self.settingsKeyV1) {
+                let items = legacy.items.map { $0.toQueueItem() }
+                self.log.info("queue.restore.migrate.v1.v2", ["count": items.count])
+                await self.flush(
+                    items: items,
+                    currentIndex: legacy.currentIndex,
+                    repeatMode: legacy.repeatMode,
+                    shuffleState: legacy.shuffleState
+                )
+                try? await self.repo.remove(key: Self.settingsKeyV1)
+                return (items, legacy.currentIndex, legacy.repeatMode, legacy.shuffleState)
+            }
+            return nil
         } catch {
             self.log.error("queue.restore.failed", ["error": String(reflecting: error)])
             return nil
@@ -148,8 +220,8 @@ public actor QueuePersistence {
         // data, so 14k items can produce 100+ MB of Base64 JSON. That allocation spike
         // starves the CoreAudio IOWorkLoop even at .background priority and causes pops.
         // Bookmarks are not needed for restore: QueueItem falls back to fileURL directly.
-        let slimItems = items.map { PersistedQueueItem(from: $0) }
-        let payload = QueuePayload(
+        let slimItems = items.map { PersistedQueueItemV2(from: $0) }
+        let payload = QueuePayloadV2(
             items: slimItems,
             currentIndex: currentIndex,
             repeatMode: repeatMode,
@@ -160,8 +232,8 @@ public actor QueuePersistence {
         let count = items.count
         await Task.detached(priority: .background) {
             do {
-                try await repo.set(payload, for: QueuePersistence.settingsKey)
-                log.debug("queue.saved", ["count": count])
+                try await repo.set(payload, for: QueuePersistence.settingsKeyV2)
+                log.debug("queue.saved", ["count": count, "schema": 2])
             } catch {
                 log.error("queue.save.failed", ["error": String(reflecting: error)])
             }
