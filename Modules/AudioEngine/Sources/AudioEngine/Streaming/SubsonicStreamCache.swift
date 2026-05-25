@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import Observability
 
 /// Actor that turns a Subsonic stream key into a local file URL the engine
@@ -34,6 +35,7 @@ public actor SubsonicStreamCache {
     private let log = AppLogger.make(.subsonic)
     private var entries: [SubsonicStreamKey: Entry] = [:]
     private var pinned: Set<SubsonicStreamKey> = []
+    private let pathMonitor: NWPathMonitor
 
     private final class Entry {
         let key: SubsonicStreamKey
@@ -65,6 +67,21 @@ public actor SubsonicStreamCache {
             at: configuration.rootDirectory,
             withIntermediateDirectories: true
         )
+        // All stored properties are now initialised; safe to capture self.
+        self.pathMonitor = NWPathMonitor()
+        let monitor = self.pathMonitor
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard let self else { return }
+            Task { await self.handlePathChange(satisfied: path.status == .satisfied) }
+        }
+        monitor.start(queue: DispatchQueue(
+            label: "io.cloudcauldron.bocan.streamcache.path",
+            qos: .utility
+        ))
+    }
+
+    deinit {
+        pathMonitor.cancel()
     }
 
     // MARK: - Public API
@@ -150,6 +167,34 @@ public actor SubsonicStreamCache {
     /// `true` iff the cache has an entry for `key` (regardless of completion).
     public func contains(_ key: SubsonicStreamKey) -> Bool {
         self.entries[key] != nil
+    }
+
+    // MARK: - Network path monitoring
+
+    /// Called whenever the NWPathMonitor reports a path change.
+    /// On path loss, in-flight downloads are cancelled immediately so TCP
+    /// timeouts don't block playback for ~60 s waiting to fail.
+    private func handlePathChange(satisfied: Bool) {
+        guard !satisfied else { return }
+        self.cancelInFlightDownloads()
+    }
+
+    /// Cancel every incomplete download and fail any pending ready-waiters.
+    /// Completed cached entries are left intact — they remain valid to read.
+    /// The next call to `url(for:urlProvider:)` will start a fresh download.
+    private func cancelInFlightDownloads() {
+        let incomplete = self.entries.filter { !$1.isComplete }
+        guard !incomplete.isEmpty else { return }
+        for (key, entry) in incomplete {
+            entry.downloadTask?.cancel()
+            for cont in entry.readyContinuations {
+                cont.resume(throwing: RemoteTrackLoaderError.cancelled)
+            }
+            entry.readyContinuations.removeAll()
+            try? FileManager.default.removeItem(at: entry.fileURL)
+            self.entries[key] = nil
+        }
+        self.log.info("subsonic.cache.network.lost", ["cancelled": incomplete.count])
     }
 
     // MARK: - Download pump
