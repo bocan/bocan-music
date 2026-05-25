@@ -83,7 +83,7 @@ public struct SubsonicSongsView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    Task { await self.vm.load() }
+                    Task { await self.vm.refresh() }
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
