@@ -390,6 +390,9 @@ public actor SubsonicService {
         do {
             return try await client.getPodcasts()
         } catch let e as SwiftSonicError {
+            if isCapabilityLie(e) {
+                await self.markCapabilityUnsupported("podcasts", for: serverID)
+            }
             throw SubsonicError.transport(e)
         }
     }
@@ -401,6 +404,9 @@ public actor SubsonicService {
         do {
             return try await client.getInternetRadioStations()
         } catch let e as SwiftSonicError {
+            if isCapabilityLie(e) {
+                await self.markCapabilityUnsupported("internetRadio", for: serverID)
+            }
             throw SubsonicError.transport(e)
         }
     }
@@ -412,6 +418,9 @@ public actor SubsonicService {
         do {
             return try await client.getBookmarks()
         } catch let e as SwiftSonicError {
+            if isCapabilityLie(e) {
+                await self.markCapabilityUnsupported("bookmarks", for: serverID)
+            }
             throw SubsonicError.transport(e)
         }
     }
@@ -501,6 +510,29 @@ public actor SubsonicService {
         return client.coverArtURL(id: entityID, size: size)
     }
 
+    // MARK: - Capability lie detection
+
+    /// Marks a capability flag as `false` in the in-memory snapshot, persists
+    /// the updated snapshot, and emits the server ID on `capabilityUpdates` so
+    /// the sidebar drops the now-unsupported row.
+    ///
+    /// No-op when:
+    /// - No capability snapshot has been loaded yet for `serverID`.
+    /// - The flag is already `false` (idempotent).
+    private func markCapabilityUnsupported(_ feature: String, for serverID: UUID) async {
+        guard var caps = self.clients[serverID]?.capabilities else { return }
+        let before = caps
+        caps.markUnsupported(feature)
+        guard !before.hasSameCapabilityFlags(as: caps) else { return }
+        self.clients[serverID]?.capabilities = caps
+        try? await self.persistCapabilities(caps, serverID: serverID)
+        self.capabilityContinuation.yield(serverID)
+        self.log.info(
+            "subsonic.capability.revoked",
+            ["id": serverID.uuidString, "feature": feature]
+        )
+    }
+
     // MARK: - Private helpers
 
     private func requireClient(_ serverID: UUID) throws -> SwiftSonicClient {
@@ -587,5 +619,34 @@ public actor SubsonicService {
     /// code must continue to use `reloadClients` / `refreshClient`.
     func _registerClientForTesting(_ client: SwiftSonicClient, serverID: UUID) {
         self.clients[serverID] = ClientEntry(client: client, capabilities: nil)
+    }
+
+    /// Test-only: read the in-memory capability snapshot without going through
+    /// the staleness check. Production code should always use
+    /// `loadCapabilities(serverID:)` instead.
+    func _capabilitiesForTesting(serverID: UUID) -> SubsonicCapabilities? {
+        self.clients[serverID]?.capabilities
+    }
+}
+
+// MARK: - Private helpers (file-level)
+
+/// Returns `true` when a `SwiftSonicError` signals the server does not
+/// actually implement the requested endpoint despite advertising it in its
+/// capability list.
+///
+/// Triggers:
+/// - HTTP 404 — endpoint absent on the server
+/// - HTTP 501 — server explicitly says "not implemented"
+/// - Subsonic API error 70 (`.notFound`) — used by some servers for
+///   optional endpoints they don't support
+private func isCapabilityLie(_ error: SwiftSonicError) -> Bool {
+    switch error {
+    case let .httpError(statusCode, _, _):
+        statusCode == 404 || statusCode == 501
+    case let .api(apiError):
+        apiError.code == .notFound
+    default:
+        false
     }
 }
