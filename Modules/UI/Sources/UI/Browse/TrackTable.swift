@@ -88,7 +88,7 @@ public struct TrackTable: NSViewRepresentable {
     /// When non-nil the table allows intra-table drag-reorder and calls this
     /// closure (on the main thread) with SwiftUI-style `(source, destination)` indices.
     let onMove: ((IndexSet, Int) -> Void)?
-    @AppStorage("appearance.rowDensity") private var rowDensity = "regular"
+    @AppStorage("appearance.rowDensity") private var rowDensity = "spacious"
 
     // MARK: NSViewRepresentable
 

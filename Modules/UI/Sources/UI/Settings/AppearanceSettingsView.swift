@@ -5,7 +5,7 @@ import SwiftUI
 public struct AppearanceSettingsView: View {
     @AppStorage("appearance.colorScheme") private var colorScheme = "system"
     @AppStorage("appearance.accentColor") private var accentColor = "system"
-    @AppStorage("appearance.rowDensity") private var rowDensity = "regular"
+    @AppStorage("appearance.rowDensity") private var rowDensity = "spacious"
 
     public init() {}
 
