@@ -39,13 +39,26 @@ public final class SubsonicSongsViewModel: ObservableObject {
         self.cache = cache
     }
 
-    /// Initial load — replaces the current sample with a fresh random batch,
-    /// after first showing the last persisted sample (if any) for an instant
-    /// non-empty render.
+    /// Initial load — populates the random sample once per view lifetime.
+    /// Idempotent: if `songs` is already non-empty (from a prior in-session
+    /// fetch) or the persisted cache hydrates one, no network re-fetch is
+    /// issued. This stops the sample from re-shuffling every time `.task`
+    /// re-fires (e.g. on view re-appearance) and avoids the visible flash of
+    /// "cached snapshot → fresh random batch replaces it" on launch.
+    /// Use `refresh()` to explicitly reseed.
     public func load() async {
-        if self.songs.isEmpty {
-            await self.hydrateFromCache()
-        }
+        if !self.songs.isEmpty { return }
+        await self.hydrateFromCache()
+        if !self.songs.isEmpty { return }
+        self.hasMorePages = true
+        await self.loadMore(replacingSample: true)
+    }
+
+    /// Explicit user-triggered reshuffle: discards the current sample and
+    /// fetches a fresh random batch from the server. Used by the toolbar's
+    /// Refresh button.
+    public func refresh() async {
+        self.songs = []
         self.hasMorePages = true
         await self.loadMore(replacingSample: true)
     }

@@ -327,6 +327,43 @@ struct SubsonicSongsViewModelTests {
         #expect(vm.errorMessage != nil)
         #expect(vm.isLoading == false)
     }
+
+    @Test("load() is a no-op when songs are already populated — no reshuffle")
+    func stableShuffleAcrossLoads() async {
+        let stub = StubBrowseDataSource()
+        let first = [song(1), song(2), song(3)]
+        let second = [song(4), song(5), song(6)] // would-be reshuffle batch
+        await stub.seedRandomPages([first, second])
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+        let initialCount = await stub.randomCallCount
+        let initialIDs = vm.songs.map(\.id)
+        #expect(initialIDs == first.map(\.id))
+
+        // Mimic `.task` re-firing on view re-appearance.
+        await vm.load()
+        await vm.load()
+
+        let afterCount = await stub.randomCallCount
+        #expect(afterCount == initialCount) // no extra network calls
+        #expect(vm.songs.map(\.id) == initialIDs) // sample unchanged
+    }
+
+    @Test("refresh() discards the current sample and fetches a fresh batch")
+    func refreshReshuffles() async {
+        let stub = StubBrowseDataSource()
+        let first = [song(1), song(2)]
+        let second = [song(10), song(11)]
+        await stub.seedRandomPages([first, second])
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+
+        await vm.load()
+        #expect(vm.songs.map(\.id) == first.map(\.id))
+
+        await vm.refresh()
+        #expect(vm.songs.map(\.id) == second.map(\.id))
+    }
 }
 
 // MARK: - SubsonicAlbumsViewModel
