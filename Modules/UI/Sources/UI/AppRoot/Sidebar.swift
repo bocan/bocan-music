@@ -52,6 +52,7 @@ public struct Sidebar: View {
                     set: { self.vm.sectionExpansion.expandedServers = $0 }
                 ),
                 servers: self.vm.subsonicServers,
+                hiddenServers: self.vm.hiddenSubsonicServers,
                 connectionStates: self.vm.subsonicConnectionStates,
                 onAddSource: self.openAddSource,
                 onManageSources: self.openManageSources,
@@ -59,6 +60,7 @@ public struct Sidebar: View {
                 onTestServerConnection: self.testServerConnection,
                 onEditServer: self.editServer,
                 onDisableServerInSidebar: self.disableServerInSidebar,
+                onEnableServerInSidebar: self.enableServerInSidebar,
                 onRemoveServer: self.removeServer
             )
 
@@ -139,6 +141,10 @@ public struct Sidebar: View {
 
     private func disableServerInSidebar(_ id: UUID) {
         Task { await self.vm.setSubsonicServerSidebarVisible(id: id, visible: false) }
+    }
+
+    private func enableServerInSidebar(_ id: UUID) {
+        Task { await self.vm.setSubsonicServerSidebarVisible(id: id, visible: true) }
     }
 
     private func removeServer(_ id: UUID) {

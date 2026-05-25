@@ -164,8 +164,14 @@ public protocol SubsonicSidebarListing: Sendable {
     /// are filtered out before this method returns.
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer]
 
+    /// Returns the list of servers the user has hidden from the sidebar
+    /// (`showInSidebar == false`), sorted by `sortIndex`. Powers the
+    /// "Hidden Sources" submenu on the sidebar header.
+    func fetchHiddenSidebarServers() async throws -> [SubsonicSidebarServer]
+
     /// Toggles a server's `showInSidebar` flag. Used by the sidebar's
-    /// "Disable in Sidebar" context-menu action.
+    /// "Disable in Sidebar" context-menu action and the "Hidden Sources"
+    /// re-enable submenu.
     func setSidebarVisible(id: UUID, visible: Bool) async throws
 }
 

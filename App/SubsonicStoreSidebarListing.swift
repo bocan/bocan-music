@@ -30,6 +30,24 @@ struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
             }
     }
 
+    func fetchHiddenSidebarServers() async throws -> [SubsonicSidebarServer] {
+        try await self.store.fetchAll()
+            .filter { !$0.showInSidebar }
+            .sorted { $0.sortIndex < $1.sortIndex }
+            .map { server in
+                let caps = Self.decodeCapabilities(server.cachedCapabilitiesJSON)
+                return SubsonicSidebarServer(
+                    id: server.id,
+                    name: server.name,
+                    sortIndex: server.sortIndex,
+                    supportsPodcasts: caps.supportsPodcasts,
+                    supportsInternetRadio: caps.supportsInternetRadio,
+                    supportsBookmarks: caps.supportsBookmarks,
+                    includeInGlobalSearch: server.includeInGlobalSearch
+                )
+            }
+    }
+
     func setSidebarVisible(id: UUID, visible: Bool) async throws {
         guard var server = try await self.store.fetch(id: id) else { return }
         guard server.showInSidebar != visible else { return }
