@@ -95,6 +95,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `SubsonicSidebarListing` was supplied at init).
     @Published public private(set) var subsonicServers: [SubsonicSidebarServer] = []
 
+    /// Subsonic servers the user has hidden from the sidebar. Surfaced by the
+    /// sidebar's "Hidden Sources" submenu so they can be re-enabled with one
+    /// click without round-tripping through Settings → Sources.
+    @Published public private(set) var hiddenSubsonicServers: [SubsonicSidebarServer] = []
+
     /// Phase 19 step 17: live connection state per Subsonic server, used by
     /// the sidebar status dot and the per-view offline banner. Updated by
     /// the optional `SubsonicConnectionObserving` injected at init.
@@ -420,14 +425,20 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     /// Phase 19 step 9: reload the Subsonic server list from the supplied
-    /// `SubsonicSidebarListing`. No-op when no listing was injected.
+    /// `SubsonicSidebarListing`. No-op when no listing was injected. Reloads
+    /// both the visible and hidden lists so the sidebar's "Hidden Sources"
+    /// submenu stays in sync.
     public func reloadSubsonicServers() async {
         guard let listing = self.subsonicSidebarListing else { return }
         do {
-            let servers = try await listing.fetchSidebarServers()
-            self.subsonicServers = servers
+            self.subsonicServers = try await listing.fetchSidebarServers()
         } catch {
             self.log.error("library.subsonic.reload.failed", ["error": String(reflecting: error)])
+        }
+        do {
+            self.hiddenSubsonicServers = try await listing.fetchHiddenSidebarServers()
+        } catch {
+            self.log.error("library.subsonic.reloadHidden.failed", ["error": String(reflecting: error)])
         }
     }
 

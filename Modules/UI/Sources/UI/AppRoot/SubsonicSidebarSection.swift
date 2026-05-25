@@ -12,6 +12,7 @@ public struct SubsonicSidebarSection: View {
     @Binding public var sectionExpanded: Bool
     @Binding public var expandedServers: Set<UUID>
     public let servers: [SubsonicSidebarServer]
+    public let hiddenServers: [SubsonicSidebarServer]
     public let connectionStates: [UUID: SubsonicSidebarConnectionState]
     public var onAddSource: (() -> Void)?
     public var onManageSources: (() -> Void)?
@@ -19,12 +20,14 @@ public struct SubsonicSidebarSection: View {
     public var onTestServerConnection: ((UUID) -> Void)?
     public var onEditServer: ((UUID) -> Void)?
     public var onDisableServerInSidebar: ((UUID) -> Void)?
+    public var onEnableServerInSidebar: ((UUID) -> Void)?
     public var onRemoveServer: ((UUID) -> Void)?
 
     public init(
         sectionExpanded: Binding<Bool>,
         expandedServers: Binding<Set<UUID>>,
         servers: [SubsonicSidebarServer],
+        hiddenServers: [SubsonicSidebarServer] = [],
         connectionStates: [UUID: SubsonicSidebarConnectionState] = [:],
         onAddSource: (() -> Void)? = nil,
         onManageSources: (() -> Void)? = nil,
@@ -32,11 +35,13 @@ public struct SubsonicSidebarSection: View {
         onTestServerConnection: ((UUID) -> Void)? = nil,
         onEditServer: ((UUID) -> Void)? = nil,
         onDisableServerInSidebar: ((UUID) -> Void)? = nil,
+        onEnableServerInSidebar: ((UUID) -> Void)? = nil,
         onRemoveServer: ((UUID) -> Void)? = nil
     ) {
         self._sectionExpanded = sectionExpanded
         self._expandedServers = expandedServers
         self.servers = servers
+        self.hiddenServers = hiddenServers
         self.connectionStates = connectionStates
         self.onAddSource = onAddSource
         self.onManageSources = onManageSources
@@ -44,6 +49,7 @@ public struct SubsonicSidebarSection: View {
         self.onTestServerConnection = onTestServerConnection
         self.onEditServer = onEditServer
         self.onDisableServerInSidebar = onDisableServerInSidebar
+        self.onEnableServerInSidebar = onEnableServerInSidebar
         self.onRemoveServer = onRemoveServer
     }
 
@@ -100,6 +106,16 @@ public struct SubsonicSidebarSection: View {
                 }
                 if let onManageSources {
                     Button("Manage Sources") { onManageSources() }
+                }
+                if !self.hiddenServers.isEmpty, let onEnableServerInSidebar {
+                    Divider()
+                    Menu("Hidden Sources") {
+                        ForEach(self.hiddenServers, id: \.id) { server in
+                            Button("Show \"\(server.name)\"") {
+                                onEnableServerInSidebar(server.id)
+                            }
+                        }
+                    }
                 }
             }
         }
