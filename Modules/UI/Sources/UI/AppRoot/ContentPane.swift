@@ -139,6 +139,21 @@ public struct ContentPane: View {
             // Treat as Songs view; LibraryViewModel filters by the active query.
             TracksView(vm: self.vm.tracks, library: self.vm)
 
+        case let .subsonicRoot(serverID):
+            // The sidebar header is non-navigating (expand/collapse only), so
+            // this case exists for deep-link / state-restore completeness.
+            // Fall through to Songs as the server's natural landing view.
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicSongsView(
+                    serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
         case let .subsonicSongs(serverID):
             if let ds = self.vm.subsonicDataSource {
                 SubsonicSongsView(

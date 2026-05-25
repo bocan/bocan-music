@@ -50,6 +50,10 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     // `SubsonicServer.id`. Content views land in Phase 19 step 10; step 9
     // only adds the cases so the sidebar can tag rows.
 
+    /// The server-level landing destination. The sidebar header button is
+    /// non-navigating (expand/collapse only), but this case exists for
+    /// deep-link and state-restoration completeness.
+    case subsonicRoot(UUID)
     case subsonicSongs(UUID)
     case subsonicAlbums(UUID)
     case subsonicArtists(UUID)
@@ -81,7 +85,8 @@ public extension SidebarDestination {
     /// banner above the destination content.
     var subsonicServerID: UUID? {
         switch self {
-        case let .subsonicSongs(id),
+        case let .subsonicRoot(id),
+             let .subsonicSongs(id),
              let .subsonicAlbums(id),
              let .subsonicArtists(id),
              let .subsonicGenres(id),

@@ -8,6 +8,7 @@ struct SidebarDestinationSubsonicServerIDTests {
     func returnsUUIDForSubsonicCases() {
         let id = UUID()
         let cases: [SidebarDestination] = [
+            .subsonicRoot(id),
             .subsonicSongs(id), .subsonicAlbums(id), .subsonicArtists(id),
             .subsonicGenres(id), .subsonicPlaylists(id),
             .subsonicPlaylist(id, "playlist-7"),

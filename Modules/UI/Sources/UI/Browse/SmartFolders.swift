@@ -136,6 +136,9 @@ extension SidebarDestination {
 
         case .subsonicBookmarks:
             "Bookmarks"
+
+        case .subsonicRoot:
+            "Songs"
         }
     }
 }
