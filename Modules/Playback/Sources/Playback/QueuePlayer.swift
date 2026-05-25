@@ -71,6 +71,15 @@ public actor QueuePlayer: Transport {
     private var unavailableItemContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
     private var _unavailableItemIDs: Set<QueueItem.ID> = []
 
+    // MARK: - Schema warnings stream
+
+    /// Emits a human-readable warning string when the persisted queue was written
+    /// by a newer build of Bòcan whose schema this build cannot interpret.
+    /// The queue is discarded and starts empty; the UI should surface the message
+    /// as a toast so the user understands why their queue is gone.
+    public nonisolated let schemaWarnings: AsyncStream<String>
+    private var schemaWarningContinuation: AsyncStream<String>.Continuation?
+
     // MARK: - Internal state
 
     private var currentTrack: Track?
@@ -148,6 +157,10 @@ public actor QueuePlayer: Transport {
         var unavailableContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
         self.unavailableItemChanges = AsyncStream { unavailableContinuation = $0 }
         self.unavailableItemContinuation = unavailableContinuation
+
+        var schemaWarnContinuation: AsyncStream<String>.Continuation?
+        self.schemaWarnings = AsyncStream { schemaWarnContinuation = $0 }
+        self.schemaWarningContinuation = schemaWarnContinuation
 
         // Build sleep timer — captures engine weakly so it can set volume / stop.
         self.sleepTimer = SleepTimer(
@@ -1071,6 +1084,12 @@ public actor QueuePlayer: Transport {
 
     private func restoreQueue() async {
         guard let saved = await persistence.restore() else { return }
+        if let warning = saved.schemaWarning {
+            self.log.warning("queueplayer.queue.schema_warning", ["message": warning])
+            self.schemaWarningContinuation?.yield(warning)
+            // Queue is empty on a schema mismatch — nothing more to restore.
+            return
+        }
         await self.queue.replace(with: saved.items, startAt: saved.currentIndex ?? 0)
         await self.queue.setRepeatMode(saved.repeatMode)
         if case let .on(seed) = saved.shuffleState {

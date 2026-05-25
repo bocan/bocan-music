@@ -367,6 +367,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.wireSectionExpansionPersistence()
         self.observeSubsonicCapabilityChanges()
         self.observeSubsonicConnectionChanges()
+        self.observeQueueSchemaWarnings()
     }
 
     /// Bridges `TracksViewModel` (`@Observable`) selection state into the
@@ -472,6 +473,19 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             for await (serverID, state) in stream {
                 guard let self else { return }
                 self.subsonicConnectionStates[serverID] = state
+            }
+        }
+    }
+
+    /// Subscribes to ``QueuePlayer/schemaWarnings`` and surfaces any message as a
+    /// toast.  Fires at most once per launch (the stream yields only when a
+    /// persisted queue blob was written by a newer build and has been discarded).
+    private func observeQueueSchemaWarnings() {
+        guard let qp = self.queuePlayer else { return }
+        Task { [weak self] in
+            for await message in qp.schemaWarnings {
+                guard let self else { return }
+                self.showToast(ToastMessage(text: message, kind: .info))
             }
         }
     }

@@ -119,10 +119,43 @@ private struct PersistedQueueItemV1: Codable {
 // MARK: - Codable payloads
 
 private struct QueuePayloadV2: Codable {
+    /// Schema version written by this build.  Old blobs without a `version`
+    /// field decode as `2` (the original v2 schema).  A future build that
+    /// bumps this number will be detectable by downgraded builds.
+    var version: Int
     var items: [PersistedQueueItemV2]
     var currentIndex: Int?
     var repeatMode: RepeatMode
     var shuffleState: ShuffleState
+
+    private enum CodingKeys: String, CodingKey {
+        case version, items, currentIndex, repeatMode, shuffleState
+    }
+
+    /// Forward-compatible decoder: `version` defaults to `2` so blobs written
+    /// before this field was added continue to decode correctly.
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 2
+        self.items = try c.decode([PersistedQueueItemV2].self, forKey: .items)
+        self.currentIndex = try c.decodeIfPresent(Int.self, forKey: .currentIndex)
+        self.repeatMode = try c.decode(RepeatMode.self, forKey: .repeatMode)
+        self.shuffleState = try c.decode(ShuffleState.self, forKey: .shuffleState)
+    }
+
+    init(
+        version: Int,
+        items: [PersistedQueueItemV2],
+        currentIndex: Int?,
+        repeatMode: RepeatMode,
+        shuffleState: ShuffleState
+    ) {
+        self.version = version
+        self.items = items
+        self.currentIndex = currentIndex
+        self.repeatMode = repeatMode
+        self.shuffleState = shuffleState
+    }
 }
 
 private struct QueuePayloadV1: Codable {
@@ -145,6 +178,9 @@ private struct QueuePayloadV1: Codable {
 public actor QueuePersistence {
     static let settingsKeyV1 = "playback.queue.v1"
     static let settingsKeyV2 = "playback.queue.v2"
+    /// The schema version this build writes.  Increment when adding fields
+    /// to `QueuePayloadV2` that older builds cannot interpret.
+    public static let currentSchemaVersion = 2
     private static let debounceNanoseconds: UInt64 = 2_000_000_000 // 2 s
 
     private let repo: SettingsRepository
@@ -181,13 +217,41 @@ public actor QueuePersistence {
     // MARK: - Restore
 
     /// Returns the previously persisted queue, or `nil` if none exists.
+    ///
+    /// Also returns a human-readable `schemaWarning` string when the on-disk
+    /// blob was written by a *newer* build (i.e. its `version` field exceeds
+    /// ``currentSchemaVersion``).  In that case the blob is discarded and the
+    /// queue starts empty; callers should surface the warning to the user.
+    ///
     /// Transparently migrates a legacy v1 blob to v2 on first read.
-    public func restore() async -> (items: [QueueItem], currentIndex: Int?, repeatMode: RepeatMode, shuffleState: ShuffleState)? {
+    public func restore() async -> (
+        items: [QueueItem],
+        currentIndex: Int?,
+        repeatMode: RepeatMode,
+        shuffleState: ShuffleState,
+        schemaWarning: String?
+    )? {
         do {
             if let payload: QueuePayloadV2 = try await repo.get(QueuePayloadV2.self, for: Self.settingsKeyV2) {
+                // Guard against future-version blobs written by a newer build.
+                if payload.version > Self.currentSchemaVersion {
+                    self.log.warning("queue.restore.future_schema", [
+                        "on_disk": payload.version,
+                        "build": Self.currentSchemaVersion,
+                    ])
+                    // Delete the incompatible blob so we don't hit this on every launch.
+                    try? await self.repo.remove(key: Self.settingsKeyV2)
+                    return (
+                        items: [],
+                        currentIndex: nil,
+                        repeatMode: .off,
+                        shuffleState: .off,
+                        schemaWarning: "Saved queue is from a newer version of Bòcan — starting fresh."
+                    )
+                }
                 let items = payload.items.map { $0.toQueueItem() }
-                self.log.debug("queue.restore", ["count": items.count, "schema": 2])
-                return (items, payload.currentIndex, payload.repeatMode, payload.shuffleState)
+                self.log.debug("queue.restore", ["count": items.count, "schema": payload.version])
+                return (items, payload.currentIndex, payload.repeatMode, payload.shuffleState, nil)
             }
             if let legacy: QueuePayloadV1 = try await repo.get(QueuePayloadV1.self, for: Self.settingsKeyV1) {
                 let items = legacy.items.map { $0.toQueueItem() }
@@ -199,7 +263,7 @@ public actor QueuePersistence {
                     shuffleState: legacy.shuffleState
                 )
                 try? await self.repo.remove(key: Self.settingsKeyV1)
-                return (items, legacy.currentIndex, legacy.repeatMode, legacy.shuffleState)
+                return (items, legacy.currentIndex, legacy.repeatMode, legacy.shuffleState, nil)
             }
             return nil
         } catch {
@@ -222,6 +286,7 @@ public actor QueuePersistence {
         // Bookmarks are not needed for restore: QueueItem falls back to fileURL directly.
         let slimItems = items.map { PersistedQueueItemV2(from: $0) }
         let payload = QueuePayloadV2(
+            version: QueuePersistence.currentSchemaVersion,
             items: slimItems,
             currentIndex: currentIndex,
             repeatMode: repeatMode,
