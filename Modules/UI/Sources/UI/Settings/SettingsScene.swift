@@ -4,15 +4,16 @@ import SwiftUI
 
 /// Top-level `Settings` scene content.
 ///
-/// Tabbed toolbar navigation. About is intentionally absent — it is accessible
-/// via the standard macOS "Bòcan → About Bòcan" app menu item, and including it
-/// in the tab bar caused overflow + broken tab behaviour on macOS 26.
+/// Sidebar-style navigation (à la macOS System Settings). About is intentionally
+/// absent — it is accessible via the standard macOS "Bòcan → About Bòcan" app menu
+/// item.
+///
 /// Usage in `BocanApp`:
 /// ```swift
 /// Settings { SettingsScene() }
 /// ```
 public struct SettingsScene: View {
-    @State private var selectedTab: SettingsTab = .general
+    @State private var selection: SettingsTab = .general
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
     private let backupViewModel: BackupSettingsViewModel
     private let subsonicViewModel: SubsonicSettingsViewModel?
@@ -27,11 +28,9 @@ public struct SettingsScene: View {
         self.subsonicViewModel = subsonicViewModel
     }
 
-    /// Ordered list of tabs that are actually visible (scrobble tab is conditional).
+    /// Ordered list of sections that are actually visible (scrobble + sources are conditional).
     private var visibleTabs: [SettingsTab] {
-        var tabs: [SettingsTab] = [
-            .general, .library,
-        ]
+        var tabs: [SettingsTab] = [.general, .library]
         if self.subsonicViewModel != nil { tabs.append(.sources) }
         tabs.append(contentsOf: [
             .playback, .equaliser, .effects, .replayGain,
@@ -43,70 +42,72 @@ public struct SettingsScene: View {
     }
 
     public var body: some View {
-        TabView(selection: self.$selectedTab) {
+        NavigationSplitView {
+            List(self.visibleTabs, id: \.self, selection: self.$selection) { tab in
+                Label(tab.title, systemImage: tab.systemImage)
+                    .tag(tab)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
+        } detail: {
+            self.detail(for: self.selection)
+                .navigationTitle(self.selection.title)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(minWidth: 720, minHeight: 460)
+        .onReceive(NotificationCenter.default.publisher(for: .openSourcesSettingsTab)) { _ in
+            self.selection = .sources
+        }
+    }
+
+    @ViewBuilder
+    private func detail(for tab: SettingsTab) -> some View {
+        switch tab {
+        case .general:
             GeneralSettingsView()
-                .tabItem { Label("General", systemImage: "gear") }
-                .tag(SettingsTab.general)
 
+        case .library:
             LibrarySettingsView()
-                .tabItem { Label("Library", systemImage: "music.note.list") }
-                .tag(SettingsTab.library)
 
+        case .sources:
             if let subsonicViewModel = self.subsonicViewModel {
                 SubsonicSettingsView(viewModel: subsonicViewModel)
-                    .tabItem { Label("Sources", systemImage: "server.rack") }
-                    .tag(SettingsTab.sources)
             }
 
+        case .playback:
             PlaybackSettingsView()
-                .tabItem { Label("Playback", systemImage: "play.circle") }
-                .tag(SettingsTab.playback)
 
+        case .equaliser:
             EQSettingsView()
-                .tabItem { Label("Equaliser", systemImage: "slider.vertical.3") }
-                .tag(SettingsTab.equaliser)
 
+        case .effects:
             EffectsSettingsView()
-                .tabItem { Label("Effects", systemImage: "waveform.badge.magnifyingglass") }
-                .tag(SettingsTab.effects)
 
+        case .replayGain:
             ReplayGainSettingsTabView()
-                .tabItem { Label("ReplayGain", systemImage: "chart.bar.fill") }
-                .tag(SettingsTab.replayGain)
 
+        case .appearance:
             AppearanceSettingsView()
-                .tabItem { Label("Appearance", systemImage: "paintpalette") }
-                .tag(SettingsTab.appearance)
 
+        case .advanced:
             AdvancedSettingsView(backupVM: self.backupViewModel)
-                .tabItem { Label("Advanced", systemImage: "wrench.and.screwdriver") }
-                .tag(SettingsTab.advanced)
 
+        case .lyrics:
             LyricsSettingsView()
-                .tabItem { Label("Lyrics", systemImage: "text.quote") }
-                .tag(SettingsTab.lyrics)
 
+        case .visualizer:
             VisualizerSettingsView()
-                .tabItem { Label("Visualizer", systemImage: "waveform") }
-                .tag(SettingsTab.visualizer)
 
+        case .smartPlaylists:
             SmartPlaylistsSettingsView()
-                .tabItem { Label("Smart Playlists", systemImage: "sparkles") }
-                .tag(SettingsTab.smartPlaylists)
 
+        case .scrobble:
             if let scrobbleViewModel = self.scrobbleViewModel {
                 ScrobbleSettingsView(viewModel: scrobbleViewModel)
-                    .tabItem { Label("Scrobbling", systemImage: "dot.radiowaves.left.and.right") }
-                    .tag(SettingsTab.scrobble)
             }
 
+        case .diagnostics:
             DiagnosticsSettingsView()
-                .tabItem { Label("Diagnostics", systemImage: "stethoscope") }
-                .tag(SettingsTab.diagnostics)
-        }
-        .frame(minWidth: 520, minHeight: 415)
-        .onReceive(NotificationCenter.default.publisher(for: .openSourcesSettingsTab)) { _ in
-            self.selectedTab = .sources
         }
     }
 }
@@ -122,7 +123,99 @@ public extension Notification.Name {
 
 // MARK: - SettingsTab
 
-private enum SettingsTab: String, CaseIterable {
+private enum SettingsTab: String, CaseIterable, Hashable {
     case general, library, sources, playback, equaliser, effects, replayGain
     case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
+
+    var title: String {
+        switch self {
+        case .general:
+            "General"
+
+        case .library:
+            "Library"
+
+        case .sources:
+            "Sources"
+
+        case .playback:
+            "Playback"
+
+        case .equaliser:
+            "Equaliser"
+
+        case .effects:
+            "Effects"
+
+        case .replayGain:
+            "ReplayGain"
+
+        case .appearance:
+            "Appearance"
+
+        case .advanced:
+            "Advanced"
+
+        case .lyrics:
+            "Lyrics"
+
+        case .visualizer:
+            "Visualizer"
+
+        case .smartPlaylists:
+            "Smart Playlists"
+
+        case .scrobble:
+            "Scrobbling"
+
+        case .diagnostics:
+            "Diagnostics"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .general:
+            "gear"
+
+        case .library:
+            "music.note.list"
+
+        case .sources:
+            "server.rack"
+
+        case .playback:
+            "play.circle"
+
+        case .equaliser:
+            "slider.vertical.3"
+
+        case .effects:
+            "waveform.badge.magnifyingglass"
+
+        case .replayGain:
+            "chart.bar.fill"
+
+        case .appearance:
+            "paintpalette"
+
+        case .advanced:
+            "wrench.and.screwdriver"
+
+        case .lyrics:
+            "text.quote"
+
+        case .visualizer:
+            "waveform"
+
+        case .smartPlaylists:
+            "sparkles"
+
+        case .scrobble:
+            "dot.radiowaves.left.and.right"
+
+        case .diagnostics:
+            "stethoscope"
+        }
+    }
 }
