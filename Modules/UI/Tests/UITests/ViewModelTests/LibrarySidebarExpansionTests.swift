@@ -66,6 +66,34 @@ struct LibrarySidebarExpansionTests {
         #expect(vm.subsonicServers == [serverA, serverB])
     }
 
+    @Test("setSubsonicServerSidebarVisible(false) hides the server and reloads")
+    func setSidebarVisibleHidesServer() async throws {
+        let db = try await Database(location: .inMemory)
+        let visibleID = UUID()
+        let visible = SubsonicSidebarServer(id: visibleID, name: "Lab", sortIndex: 0)
+        let listing = MutableStubListing(servers: [visible])
+        let vm = LibraryViewModel(
+            database: db,
+            engine: MockTransport(),
+            subsonicSidebarListing: listing
+        )
+        await vm.reloadSubsonicServers()
+        #expect(vm.subsonicServers == [visible])
+
+        await vm.setSubsonicServerSidebarVisible(id: visibleID, visible: false)
+
+        #expect(listing.lastSetSidebarVisibleCall?.id == visibleID)
+        #expect(listing.lastSetSidebarVisibleCall?.visible == false)
+        #expect(vm.subsonicServers.isEmpty)
+    }
+
+    @Test("setSubsonicServerSidebarVisible is a no-op without a listing")
+    func setSidebarVisibleWithoutListing() async throws {
+        let (vm, _) = try await self.makeVM()
+        await vm.setSubsonicServerSidebarVisible(id: UUID(), visible: false)
+        #expect(vm.subsonicServers.isEmpty)
+    }
+
     @Test("Capability change events trigger a sidebar reload")
     func capabilityChangeReloadsSidebar() async throws {
         let db = try await Database(location: .inMemory)
@@ -118,6 +146,8 @@ private struct StubListing: SubsonicSidebarListing {
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer] {
         self.servers
     }
+
+    func setSidebarVisible(id _: UUID, visible _: Bool) async throws {}
 }
 
 // MARK: - MutableStubListing
@@ -126,6 +156,7 @@ private struct StubListing: SubsonicSidebarListing {
 /// path actually observes a new snapshot after a capability event.
 private final class MutableStubListing: SubsonicSidebarListing, @unchecked Sendable {
     var servers: [SubsonicSidebarServer]
+    private(set) var lastSetSidebarVisibleCall: (id: UUID, visible: Bool)?
 
     init(servers: [SubsonicSidebarServer]) {
         self.servers = servers
@@ -133,6 +164,13 @@ private final class MutableStubListing: SubsonicSidebarListing, @unchecked Senda
 
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer] {
         self.servers
+    }
+
+    func setSidebarVisible(id: UUID, visible: Bool) async throws {
+        self.lastSetSidebarVisibleCall = (id, visible)
+        if !visible {
+            self.servers.removeAll { $0.id == id }
+        }
     }
 }
 

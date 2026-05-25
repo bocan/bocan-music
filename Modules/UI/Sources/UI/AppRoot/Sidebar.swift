@@ -53,7 +53,13 @@ public struct Sidebar: View {
                 ),
                 servers: self.vm.subsonicServers,
                 connectionStates: self.vm.subsonicConnectionStates,
-                onAddSource: self.openAddSource
+                onAddSource: self.openAddSource,
+                onManageSources: self.openManageSources,
+                onRefreshServer: self.refreshServer,
+                onTestServerConnection: self.testServerConnection,
+                onEditServer: self.editServer,
+                onDisableServerInSidebar: self.disableServerInSidebar,
+                onRemoveServer: self.removeServer
             )
 
             Section {
@@ -111,6 +117,32 @@ public struct Sidebar: View {
 
     private func openAddSource() {
         NotificationCenter.default.post(name: .openSourcesSettingsTab, object: nil)
+        self.openSettings()
+    }
+
+    private func openManageSources() {
+        self.openAddSource()
+    }
+
+    private func refreshServer(_: UUID) {
+        Task { await self.vm.reloadSubsonicServers() }
+    }
+
+    private func testServerConnection(_ id: UUID) {
+        Task { await self.vm.retrySubsonicConnection(serverID: id) }
+    }
+
+    private func editServer(_ id: UUID) {
+        NotificationCenter.default.post(name: .openSourcesSettingsTab, object: id)
+        self.openSettings()
+    }
+
+    private func disableServerInSidebar(_ id: UUID) {
+        Task { await self.vm.setSubsonicServerSidebarVisible(id: id, visible: false) }
+    }
+
+    private func removeServer(_ id: UUID) {
+        NotificationCenter.default.post(name: .openSourcesSettingsTab, object: id)
         self.openSettings()
     }
 

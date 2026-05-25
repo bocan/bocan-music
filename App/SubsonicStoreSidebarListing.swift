@@ -30,6 +30,13 @@ struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
             }
     }
 
+    func setSidebarVisible(id: UUID, visible: Bool) async throws {
+        guard var server = try await self.store.fetch(id: id) else { return }
+        guard server.showInSidebar != visible else { return }
+        server.showInSidebar = visible
+        try await self.store.update(server)
+    }
+
     private static func decodeCapabilities(_ data: Data?) -> SubsonicCapabilities {
         guard let data else { return SubsonicCapabilities() }
         return (try? JSONDecoder().decode(SubsonicCapabilities.self, from: data))
