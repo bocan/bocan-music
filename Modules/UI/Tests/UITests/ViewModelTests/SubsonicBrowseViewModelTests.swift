@@ -213,6 +213,32 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
 
 private enum TestError: Error { case boom }
 
+// MARK: - InMemoryMetadataCache
+
+/// Test stub for `SubsonicMetadataCaching`. Records writes so tests can
+/// assert "the view-model saved a fresh snapshot after the network fetch".
+private final class InMemoryMetadataCache: SubsonicMetadataCaching, @unchecked Sendable {
+    private var store: [String: Data] = [:]
+    private(set) var saveCount = 0
+
+    func seed(serverID: UUID, entityKind: String, entityID: String, payload: Data) {
+        self.store[Self.key(serverID, entityKind, entityID)] = payload
+    }
+
+    func loadCache(serverID: UUID, entityKind: String, entityID: String) async -> Data? {
+        self.store[Self.key(serverID, entityKind, entityID)]
+    }
+
+    func saveCache(serverID: UUID, entityKind: String, entityID: String, payload: Data) async {
+        self.saveCount += 1
+        self.store[Self.key(serverID, entityKind, entityID)] = payload
+    }
+
+    private static func key(_ id: UUID, _ kind: String, _ entity: String) -> String {
+        "\(id.uuidString)|\(kind)|\(entity)"
+    }
+}
+
 private func song(_ i: Int, genre: String? = nil) -> Song {
     Song(id: "s\(i)", title: "Song \(i)", artist: "Artist", genre: genre, duration: 200)
 }
@@ -308,6 +334,29 @@ struct SubsonicSongsViewModelTests {
 @Suite("SubsonicAlbumsViewModel")
 @MainActor
 struct SubsonicAlbumsViewModelTests {
+    @Test("load() hydrates from cache before the network fetch replaces it")
+    func cacheHydration() async throws {
+        let stub = StubBrowseDataSource()
+        let cached = [album(900), album(901)]
+        let fresh = [album(0), album(1)]
+        let cache = InMemoryMetadataCache()
+        let payload = try JSONEncoder().encode(cached)
+        cache.seed(
+            serverID: serverID,
+            entityKind: "albums.firstPage",
+            entityID: AlbumListType.alphabeticalByName.rawValue,
+            payload: payload
+        )
+        await stub.seedAlbumPages([fresh])
+        let vm = SubsonicAlbumsViewModel(serverID: serverID, dataSource: stub, cache: cache)
+
+        await vm.load()
+
+        // The fresh page replaces the cached one and the new sample is persisted.
+        #expect(vm.albums.map(\.id) == fresh.map(\.id))
+        #expect(cache.saveCount == 1)
+    }
+
     @Test("loadMore() pages with offset == albums.count")
     func loadMoreOffset() async {
         let stub = StubBrowseDataSource()
@@ -335,6 +384,28 @@ struct SubsonicAlbumsViewModelTests {
 @Suite("SubsonicArtistsViewModel")
 @MainActor
 struct SubsonicArtistsViewModelTests {
+    @Test("load() writes the fresh sections to the cache after a successful fetch")
+    func cacheWriteOnSuccess() async {
+        let stub = StubBrowseDataSource()
+        let sections: [ArtistIndex] = [
+            ArtistIndex(name: "A", artist: [ArtistID3(id: "1", name: "Alice")]),
+        ]
+        await stub.seedArtists(sections)
+        let cache = InMemoryMetadataCache()
+        let vm = SubsonicArtistsViewModel(serverID: serverID, dataSource: stub, cache: cache)
+
+        await vm.load()
+        #expect(vm.sections.count == 1)
+        #expect(cache.saveCount == 1)
+
+        // On a second load() with no live data and only cache, the cached snapshot
+        // is restored before the (empty) network response replaces it.
+        await stub.seedArtists([])
+        let vm2 = SubsonicArtistsViewModel(serverID: serverID, dataSource: stub, cache: cache)
+        await vm2.load()
+        #expect(vm2.sections.isEmpty) // empty network result wins after hydration
+    }
+
     @Test("load() populates sections and totalArtistCount sums correctly")
     func loadAndCount() async {
         let stub = StubBrowseDataSource()

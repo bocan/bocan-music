@@ -27,24 +27,37 @@ public final class SubsonicGenresViewModel: ObservableObject {
     @Published public private(set) var hasMoreGenreSongs = true
 
     private let dataSource: any SubsonicBrowseDataSource
+    private let cache: (any SubsonicMetadataCaching)?
     private let log = AppLogger.make(.ui)
 
-    public init(serverID: UUID, dataSource: any SubsonicBrowseDataSource) {
+    private static let cacheKind = "genres"
+    private static let cacheEntityID = "all"
+
+    public init(
+        serverID: UUID,
+        dataSource: any SubsonicBrowseDataSource,
+        cache: (any SubsonicMetadataCaching)? = nil
+    ) {
         self.serverID = serverID
         self.dataSource = dataSource
+        self.cache = cache
     }
 
     public func load() async {
         guard !self.isLoadingGenres else { return }
+        if self.genres.isEmpty {
+            await self.hydrateFromCache()
+        }
         self.isLoadingGenres = true
         defer { self.isLoadingGenres = false }
 
         do {
-            self.genres = try await self.dataSource.getGenres(serverID: self.serverID)
+            let fresh = try await self.dataSource.getGenres(serverID: self.serverID)
+            self.genres = fresh
+            await self.saveToCache(fresh)
             self.errorMessage = nil
         } catch {
             self.log.error("subsonic.genres.load.failed", ["error": String(reflecting: error)])
-            self.genres = []
             self.errorMessage = (error as? LocalizedError)?.errorDescription
                 ?? "Could not load genres from this server."
         }
@@ -84,5 +97,27 @@ public final class SubsonicGenresViewModel: ObservableObject {
             self.errorMessage = (error as? LocalizedError)?.errorDescription
                 ?? "Could not load songs for this genre."
         }
+    }
+
+    private func hydrateFromCache() async {
+        guard let cache = self.cache else { return }
+        guard let data = await cache.loadCache(
+            serverID: self.serverID,
+            entityKind: Self.cacheKind,
+            entityID: Self.cacheEntityID
+        ) else { return }
+        guard let cached = try? JSONDecoder().decode([Genre].self, from: data) else { return }
+        self.genres = cached
+    }
+
+    private func saveToCache(_ genres: [Genre]) async {
+        guard let cache = self.cache else { return }
+        guard let payload = try? JSONEncoder().encode(genres) else { return }
+        await cache.saveCache(
+            serverID: self.serverID,
+            entityKind: Self.cacheKind,
+            entityID: Self.cacheEntityID,
+            payload: payload
+        )
     }
 }
