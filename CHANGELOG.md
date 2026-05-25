@@ -5,6 +5,55 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0](https://github.com/bocan/bocan-music/compare/v1.3.1...v1.4.0) (2026-05-25)
+
+
+### ### Added
+
+* **audio-engine:** add SubsonicStreamCache and RemoteTrackLoader ([7820de2](https://github.com/bocan/bocan-music/commit/7820de23eb7cd1a85f09d4fbbe915fa64dd9502a))
+* **playback:** introduce PlayableSource on QueueItem with v1-&gt;v2 migration ([74934d6](https://github.com/bocan/bocan-music/commit/74934d69c3d9d6e1fd1d1b2462f41d7351d34ac1))
+* **playback:** wire Subsonic stream resolver into QueuePlayer ([af25e52](https://github.com/bocan/bocan-music/commit/af25e528461baaec5eb3a2a320d795b0aa410c87))
+* **scrobble:** Subsonic scrobble write-through (Phase 19 step 15) ([7cb7681](https://github.com/bocan/bocan-music/commit/7cb76816aff0968fd2b2668d1841e6cd81712d0e))
+* **subsonic:** capability-driven sidebar refresh (Phase 19 step 16) ([f11d6ed](https://github.com/bocan/bocan-music/commit/f11d6ed4b6745a47268ec7c22fc42996c5b4506f))
+* **subsonic:** hydrate browse VMs from metadata cache; prune stale entries on launch ([bd72c7b](https://github.com/bocan/bocan-music/commit/bd72c7bf675a2bb6ea4207bda6710b2b147f3cc6))
+* **subsonic:** polish — status dots, offline banner, ⌘⇧1-9 shortcuts (Phase 19 step 17) ([85eb86d](https://github.com/bocan/bocan-music/commit/85eb86d6d0b93767b23fd1a514dcb2d42dfa69f3))
+* **subsonic:** scaffold Subsonic module with Navidrome/Subsonic client ([7d02127](https://github.com/bocan/bocan-music/commit/7d02127639578c82211ada1b6872ebcd0f2832eb))
+* **ui:** add + button to Sources sidebar header to open Settings → Sources ([dfbf47e](https://github.com/bocan/bocan-music/commit/dfbf47e3c45c90cd42b91be1c4b856d9ec85353a))
+* **ui:** add album art column to songs table and NSTableView-based Subsonic songs view ([a94ebfc](https://github.com/bocan/bocan-music/commit/a94ebfcdb9b5cc7cf53eca86a8926c1ce4c2df4a))
+* **ui:** add optional per-server Subsonic destinations ([2d5f1f8](https://github.com/bocan/bocan-music/commit/2d5f1f810d451ddc5414efaac71fbcdc79cb6c48))
+* **ui:** add per-server Subsonic browse views ([7b9f859](https://github.com/bocan/bocan-music/commit/7b9f8593f13cc9262ffae256ef0d3f1fc59ba51c))
+* **ui:** add Settings → Sources tab for Subsonic servers ([b23576d](https://github.com/bocan/bocan-music/commit/b23576d68199d5fe3867e6bba7566220c0db688e))
+* **ui:** add SidebarDestination.subsonicRoot(UUID) case ([bced272](https://github.com/bocan/bocan-music/commit/bced27278aa01116983f5c5f7ca0a626677ddaee)), closes [#242](https://github.com/bocan/bocan-music/issues/242)
+* **ui:** add spec-mandated Sources sidebar context menus ([2cb9fb2](https://github.com/bocan/bocan-music/commit/2cb9fb29313c8daf180ae62f9e2278f6fa427e5e))
+* **ui:** default row density to spacious; hide playlist menu indicator ([dea7b2f](https://github.com/bocan/bocan-music/commit/dea7b2f489cd278076046a78d4b5a82287cbd8d0))
+* **ui:** federated Subsonic search panel with per-server cards ([6a56482](https://github.com/bocan/bocan-music/commit/6a56482c9c649bb65bfb7ac897cd9a0f01cea78a))
+* **ui:** rename Library to Local Library, add Sources sidebar section ([a6e222d](https://github.com/bocan/bocan-music/commit/a6e222dcdac1df8d7ffce7e2f2a68df9cedbeb2e))
+* **ui:** show Subsonic cover art in NowPlaying ([5a8faac](https://github.com/bocan/bocan-music/commit/5a8faac7d2b40b4541a32110a8d452dfd328fb86))
+* **ui:** sort local genres by track count descending ([1d97dd8](https://github.com/bocan/bocan-music/commit/1d97dd8461d6fce743378656377aecfb85a67767))
+* **ui:** Subsonic star/rating annotation write-through ([82aa01c](https://github.com/bocan/bocan-music/commit/82aa01c6ac5488a98cc9381d78a73d204df7a434))
+
+
+### ### Fixed
+
+* **library:** populate Album.year from track tags during import ([e53362e](https://github.com/bocan/bocan-music/commit/e53362e993a085de89440d787db38c7399cd516c))
+* **playback:** add version field to QueuePayloadV2 for forward-compatibility ([1c9ded7](https://github.com/bocan/bocan-music/commit/1c9ded73b001fe39187e490e23ecdb2700f33ded))
+* **subsonic:** revoke capability flags on 404/501 and rebuild sidebar ([c32ed30](https://github.com/bocan/bocan-music/commit/c32ed30c3c0005a2ee85ba736f3c699a1e359afd)), closes [#250](https://github.com/bocan/bocan-music/issues/250)
+* **subsonic:** set ASCII client name to avoid URL-encoded display ([581839a](https://github.com/bocan/bocan-music/commit/581839a106a75183ff0364b93a8662495b35c6d5))
+* **subsonic:** wire NWPathMonitor into stream cache and connection monitor ([83317a0](https://github.com/bocan/bocan-music/commit/83317a0209f10edbd056a7514f127782bb2827c4)), closes [#241](https://github.com/bocan/bocan-music/issues/241)
+* **ui:** batch AlbumsViewModel published assignments to prevent year/count flash ([f76ac3a](https://github.com/bocan/bocan-music/commit/f76ac3a5141a63e973a23ed309b16207198fd348))
+* **ui:** constrain Subsonic album cover art to square via overlay layout ([c24dc92](https://github.com/bocan/bocan-music/commit/c24dc92d74ebcafecdc9e02a683bef1300ff1768))
+* **ui:** drop unnecessary await on synchronous handleFailure ([2df2142](https://github.com/bocan/bocan-music/commit/2df21424c184a7b3e64ca13f832b481a53cea51d))
+* **ui:** eliminate startup race causing spurious 'No server with id' alert ([5ac4d8e](https://github.com/bocan/bocan-music/commit/5ac4d8e7f877dd350b06850fcdf2f6057101d86d))
+* **ui:** keep Sources tab from overflowing Settings sidebar ([a1d0113](https://github.com/bocan/bocan-music/commit/a1d01133f79bc9c3261f063977079e03202da11e))
+* **ui:** show Subsonic track metadata in NowPlaying ([8cddfa2](https://github.com/bocan/bocan-music/commit/8cddfa20f6093e522ad595ca381fbd2b347b7bca))
+* **ui:** use spec wording for self-signed TLS warning ([0182cd7](https://github.com/bocan/bocan-music/commit/0182cd71bd09046811e2ea36b4f2bed3d004a5ba))
+
+
+### ### Changed
+
+* **ui:** rewrite Settings as sidebar navigation ([3255ec1](https://github.com/bocan/bocan-music/commit/3255ec13130ce20dcb61188b6753c8094c9a798d))
+* **ui:** split SubsonicSongTable into three files to fix lint violations ([6a32263](https://github.com/bocan/bocan-music/commit/6a3226302216a60027a8433fb7cc2c26babf6f6e))
+
 ## [1.3.1](https://github.com/bocan/bocan-music/compare/v1.3.0...v1.3.1) (2026-05-24)
 
 
