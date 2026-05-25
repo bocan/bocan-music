@@ -50,6 +50,8 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
     public let lastPlayedAt: Int64
     public let fileSize: Int64
     public let fileMtime: Int64
+    /// On-disk path to the album cover art image, if any.
+    public let coverArtPath: String?
 
     // MARK: - Identifiable
 
@@ -60,7 +62,7 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
 
     // MARK: - Init
 
-    public init(track: Track, artistName: String?, albumName: String?) {
+    public init(track: Track, artistName: String?, albumName: String?, albumCoverArtPath: String? = nil) {
         self.track = track
         self.title = track.title ?? ""
         self.artistName = artistName ?? ""
@@ -100,6 +102,7 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.lastPlayedAt = track.lastPlayedAt ?? 0
         self.fileSize = track.fileSize
         self.fileMtime = track.fileMtime
+        self.coverArtPath = albumCoverArtPath
     }
 
     /// Integer key for header-sort on the Shuffle Exclude column (Bool isn't Comparable).

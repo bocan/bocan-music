@@ -24,6 +24,15 @@ extension TrackTable {
     /// All columns in display order.  Visibility can be toggled via the header menu.
     static let columnSpecs: [ColSpec] = [
         ColSpec(
+            id: .albumArt,
+            title: "Art",
+            minWidth: 18,
+            idealWidth: 32,
+            maxWidth: 44,
+            sortKey: nil,
+            hidden: false
+        ),
+        ColSpec(
             id: .databaseID,
             title: "ID",
             minWidth: 36,
