@@ -338,3 +338,267 @@ struct SubsonicServiceCapabilityStreamTests {
         #expect(transport.requests.count == 2)
     }
 }
+
+// MARK: - Capability lie detection tests
+
+// MARK: Additional JSON fixtures
+
+/// Subsonic "status: failed" envelope — simulates a server returning API error `code`.
+private func apiErrorEnvelope(code: Int, message: String = "Error") -> String {
+    """
+    {
+        "subsonic-response": {
+            "status": "failed",
+            "version": "1.16.1",
+            "error": {
+                "code": \(code),
+                "message": "\(message)"
+            }
+        }
+    }
+    """
+}
+
+/// A `SwiftSonicClient` with `RetryPolicy.none` so transient-looking errors
+/// (e.g. HTTP 501) are thrown immediately without retries in tests.
+private func makeClientNoRetry(_ transport: HTTPTransport) -> SwiftSonicClient {
+    let config = ServerConfiguration(
+        serverURL: testServerURL,
+        auth: .tokenAuth(username: "alice", password: "s3cr3t", reusesSalt: false)
+    )
+    return SwiftSonicClient(configuration: config, transport: transport, retryPolicy: .none)
+}
+
+// MARK: - SubsonicService capability lie detection
+
+@Suite("SubsonicService capability lie detection")
+struct SubsonicServiceCapabilityLieTests {
+    @Test("getPodcasts HTTP 404 revokes podcasts capability and emits on capabilityUpdates")
+    func getPodcasts404RevokesCapability() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        // Capability load: podcasts advertised.
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope(["podcasts"]))
+        // getPodcasts returns HTTP 404.
+        transport.enqueue(json: "", statusCode: 404)
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let stream = await service.capabilityUpdates
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                ids.append(uuid)
+                if ids.count >= 2 { break }
+            }
+            return ids
+        }
+
+        // Load capabilities (first emission).
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(caps.supportsPodcasts)
+
+        // getPodcasts throws but side-effects a capability revocation (second emission).
+        do {
+            _ = try await service.getPodcasts(serverID: id)
+            Issue.record("Expected getPodcasts to throw on HTTP 404")
+        } catch {}
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+        collector.cancel()
+        #expect(await collector.value == [id, id], "Expect 2 emissions: initial load + revocation")
+
+        // In-memory capability is now false.
+        let updated = await service._capabilitiesForTesting(serverID: id)
+        #expect(updated?.supportsPodcasts == false)
+
+        // Persisted snapshot also reflects revocation.
+        let stored = try #require(await repo.fetch(id: id))
+        let decoded = try JSONDecoder().decode(SubsonicCapabilities.self, from: #require(stored.capabilitiesJSON))
+        #expect(!decoded.supportsPodcasts)
+    }
+
+    @Test("getBookmarks Subsonic API error 70 revokes bookmarks capability and emits")
+    func getBookmarksNotFoundRevokesCapability() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope(["bookmarks"]))
+        // getBookmarks returns Subsonic API error 70 (notFound).
+        transport.enqueue(json: apiErrorEnvelope(code: 70, message: "Data not found"))
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let stream = await service.capabilityUpdates
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                ids.append(uuid)
+                if ids.count >= 2 { break }
+            }
+            return ids
+        }
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(caps.supportsBookmarks)
+
+        do {
+            _ = try await service.getBookmarks(serverID: id)
+            Issue.record("Expected getBookmarks to throw on API error 70")
+        } catch {}
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+        collector.cancel()
+        #expect(await collector.value == [id, id])
+
+        let updated = await service._capabilitiesForTesting(serverID: id)
+        #expect(updated?.supportsBookmarks == false)
+    }
+
+    @Test("getInternetRadioStations HTTP 501 revokes internetRadio capability and emits")
+    func getInternetRadio501RevokesCapability() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope(["internetRadio"]))
+        // Server returns 501 Not Implemented (use no-retry client to avoid slow retries).
+        transport.enqueue(json: "", statusCode: 501)
+
+        let service = SubsonicService(store: store)
+        // No-retry so the 501 isn't retried (5xx is "transient" in the default policy).
+        await service._registerClientForTesting(makeClientNoRetry(transport), serverID: id)
+
+        let stream = await service.capabilityUpdates
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                ids.append(uuid)
+                if ids.count >= 2 { break }
+            }
+            return ids
+        }
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(caps.supportsInternetRadio)
+
+        do {
+            _ = try await service.getInternetRadioStations(serverID: id)
+            Issue.record("Expected getInternetRadioStations to throw on HTTP 501")
+        } catch {}
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+        collector.cancel()
+        #expect(await collector.value == [id, id])
+
+        let updated = await service._capabilitiesForTesting(serverID: id)
+        #expect(updated?.supportsInternetRadio == false)
+    }
+
+    @Test("network error on getPodcasts does not revoke podcasts capability")
+    func networkErrorDoesNotRevokeCapability() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope(["podcasts"]))
+        // No response queued for getPodcasts → throws URLError (treated as network error).
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClientNoRetry(transport), serverID: id)
+
+        let stream = await service.capabilityUpdates
+        let collector = Task { () -> Int in
+            var count = 0
+            for await _ in stream {
+                count += 1
+                if count >= 2 { break }
+            }
+            return count
+        }
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(caps.supportsPodcasts)
+
+        do {
+            _ = try await service.getPodcasts(serverID: id)
+            Issue.record("Expected getPodcasts to throw on network error")
+        } catch {}
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+        collector.cancel()
+        // Only the initial capability load should have emitted; no revocation.
+        #expect(await collector.value == 1, "Network error must not trigger a revocation emission")
+
+        let updated = await service._capabilitiesForTesting(serverID: id)
+        #expect(updated?.supportsPodcasts == true, "Network error must not revoke podcasts capability")
+    }
+
+    @Test("capability revocation is no-op when flag is already false")
+    func idempotentRevocation() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        // No podcasts extension advertised → supportsPodcasts = false after load.
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope([]))
+        transport.enqueue(json: "", statusCode: 404)
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let stream = await service.capabilityUpdates
+        let collector = Task { () -> Int in
+            var count = 0
+            for await _ in stream {
+                count += 1
+                if count >= 2 { break }
+            }
+            return count
+        }
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(!caps.supportsPodcasts)
+
+        // 404 fires markCapabilityUnsupported but the flag is already false — no emit.
+        do { _ = try await service.getPodcasts(serverID: id) } catch {}
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+        collector.cancel()
+        #expect(await collector.value == 1, "Only the initial load should emit; revocation is a no-op")
+    }
+
+    @Test("capability revocation is no-op when no capabilities snapshot exists")
+    func noSnapshotRevocationIsNoOp() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        // Capabilities never loaded — the first call is getPodcasts which 404s.
+        transport.enqueue(json: "", statusCode: 404)
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let stream = await service.capabilityUpdates
+        let collector = Task { () -> Int in
+            var count = 0
+            for await _ in stream {
+                count += 1
+                if count >= 1 { break }
+            }
+            return count
+        }
+
+        do { _ = try await service.getPodcasts(serverID: id) } catch {}
+
+        try await Task.sleep(nanoseconds: 200_000_000)
+        collector.cancel()
+        #expect(await collector.value == 0, "No emit when there is no capability snapshot to downgrade")
+        _ = repo // suppress unused warning
+    }
+}
