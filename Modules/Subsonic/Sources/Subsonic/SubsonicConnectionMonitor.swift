@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Network
 import Observability
 
 // MARK: - SubsonicConnectionMonitor
@@ -31,11 +32,29 @@ public actor SubsonicConnectionMonitor {
     private let service: SubsonicService
     private let log = AppLogger.make(.subsonic)
     private var (stream, continuation) = AsyncStream<StatusUpdate>.makeStream()
+    private let pathMonitor: NWPathMonitor
 
     // MARK: - Init
 
     public init(service: SubsonicService) {
         self.service = service
+        // All stored properties initialised; safe to capture self.
+        self.pathMonitor = NWPathMonitor()
+        let monitor = self.pathMonitor
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard let self else { return }
+            if path.status == .satisfied {
+                // Network came back — re-ping all servers immediately.
+                Task { await self.wakeAll() }
+            } else {
+                // Network dropped — flip statuses without waiting for the next poll.
+                Task { await self.handleNetworkLost() }
+            }
+        }
+        monitor.start(queue: DispatchQueue(
+            label: "io.cloudcauldron.bocan.monitor.path",
+            qos: .utility
+        ))
         Task { await self.installWakeObserver() }
     }
 
@@ -76,13 +95,27 @@ public actor SubsonicConnectionMonitor {
         self.statuses = [:]
     }
 
-    /// Triggers an immediate re-ping of all monitored servers (e.g. after wake).
+    /// Triggers an immediate re-ping of all monitored servers (e.g. after wake or network restore).
     public func wakeAll() {
         for serverID in self.tasks.keys {
             self.tasks[serverID]?.cancel()
             self.tasks[serverID] = Task { await self.runLoop(serverID: serverID) }
         }
         self.log.info("subsonic.monitor.wake", ["count": self.tasks.count])
+    }
+
+    /// Called when `NWPathMonitor` reports the path is no longer satisfied.
+    /// Cancels all ping loops and immediately emits `.unreachable` so the UI
+    /// updates without waiting up to 60 s for the next poll tick.
+    private func handleNetworkLost() {
+        guard !self.tasks.isEmpty else { return }
+        for serverID in self.tasks.keys {
+            self.tasks[serverID]?.cancel()
+            // Leave the key in self.tasks so wakeAll() can restart the loop
+            // when the path becomes satisfied again.
+            self.emit(serverID: serverID, status: .unreachable("Network unavailable"))
+        }
+        self.log.info("subsonic.monitor.network.lost", ["count": self.tasks.count])
     }
 
     // MARK: - Loop
