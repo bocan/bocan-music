@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0](https://github.com/bocan/bocan-music/compare/v1.3.1...v1.4.0) (2026-05-25)
 
+This release adds Subsonic / Navidrome / Airsonic servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, and ⌘⇧1–⌘⇧9 to jump straight to a server.
 
 ### ### Added
 
