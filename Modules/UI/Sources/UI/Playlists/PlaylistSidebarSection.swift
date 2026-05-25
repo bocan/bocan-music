@@ -63,6 +63,7 @@ public struct PlaylistSidebarSection: View {
                         .font(Typography.footnote)
                 }
                 .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
                 .fixedSize()
                 .help("Create a new playlist, smart playlist, or folder")
                 .accessibilityLabel("New Playlist or Folder")

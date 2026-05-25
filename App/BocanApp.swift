@@ -600,7 +600,7 @@ struct BocanApp: App {
             "ui.windowMode.restoresLastMode": true,
             "appearance.colorScheme": "system",
             "appearance.accentColor": "system",
-            "appearance.rowDensity": "regular",
+            "appearance.rowDensity": "spacious",
             "advanced.logLevel": "info",
             "playback.rate": 1.0,
             "playback.gaplessPrerollSeconds": 5.0,

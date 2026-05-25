@@ -26,7 +26,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var isSyncingSort = false
 
     /// Tracks the last-applied density so updateNSView can detect changes.
-    var lastRowDensity = UserDefaults.standard.string(forKey: "appearance.rowDensity") ?? "regular"
+    var lastRowDensity = UserDefaults.standard.string(forKey: "appearance.rowDensity") ?? "spacious"
 
     // Owned AppKit objects — weak/strong to avoid retain cycles.
     weak var tableView: NSTableView?
