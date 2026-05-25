@@ -434,6 +434,7 @@ struct BocanApp: App {
             subsonicSidebarListing: subsonicListing,
             subsonicDataSource: subsonicService,
             subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService),
+            subsonicMetadataCache: SubsonicRepositoryMetadataCache(repository: subsonicRepo),
             subsonicAnnotationDelivery: subsonicAnnotations,
             subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
             subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor)
@@ -505,7 +506,7 @@ struct BocanApp: App {
         // already ran synchronously in bootstrapSubsonic (via RootView.task) before
         // navigation state was restored, so the calls here are idempotent catch-alls.
         // migrateOrphans and startMonitoring must still run here.
-        Task { [subsonicStore, subsonicService, subsonicMonitor, weak lvm] in
+        Task { [subsonicStore, subsonicService, subsonicMonitor, subsonicRepo, weak lvm] in
             try? await subsonicStore.migrateOrphans()
             try? await subsonicService.reloadClients()
             await lvm?.reloadSubsonicServers()
@@ -517,6 +518,8 @@ struct BocanApp: App {
                     await subsonicMonitor.startMonitoring(serverID: server.id)
                 }
             }
+            // Spec: prune metadata-cache entries older than 7 days once on launch.
+            try? await subsonicRepo.pruneStaleCache()
         }
     }
 

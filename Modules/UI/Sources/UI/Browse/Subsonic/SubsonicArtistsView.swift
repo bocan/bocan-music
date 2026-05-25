@@ -25,7 +25,11 @@ public struct SubsonicArtistsView: View {
         self.library = library
         self.coverArtProvider = coverArtProvider
         self._vm = StateObject(
-            wrappedValue: SubsonicArtistsViewModel(serverID: serverID, dataSource: dataSource)
+            wrappedValue: SubsonicArtistsViewModel(
+                serverID: serverID,
+                dataSource: dataSource,
+                cache: library.subsonicMetadataCache
+            )
         )
     }
 
