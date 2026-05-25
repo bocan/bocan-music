@@ -236,7 +236,8 @@ private struct SubsonicServerEditorView: View {
                 Toggle("Allow self-signed TLS certificate", isOn: self.$vm.editor.allowSelfSignedTLS)
                 if self.vm.editor.allowSelfSignedTLS {
                     Label(
-                        "Warning: traffic to this server cannot be fully verified.",
+                        "Allowing self-signed certificates means Bòcan cannot verify that"
+                            + " the server is who it claims to be. Use only on a network you control.",
                         systemImage: "exclamationmark.triangle.fill"
                     )
                     .font(.caption)
