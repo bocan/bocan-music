@@ -163,6 +163,10 @@ public protocol SubsonicSidebarListing: Sendable {
     /// sidebar, sorted by `sortIndex`. Servers with `showInSidebar == false`
     /// are filtered out before this method returns.
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer]
+
+    /// Toggles a server's `showInSidebar` flag. Used by the sidebar's
+    /// "Disable in Sidebar" context-menu action.
+    func setSidebarVisible(id: UUID, visible: Bool) async throws
 }
 
 // MARK: - SubsonicCapabilityChangeObserving

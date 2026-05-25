@@ -55,8 +55,11 @@ public struct SettingsScene: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 720, minHeight: 460)
-        .onReceive(NotificationCenter.default.publisher(for: .openSourcesSettingsTab)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .openSourcesSettingsTab)) { note in
             self.selection = .sources
+            if let id = note.object as? UUID, let vm = self.subsonicViewModel {
+                Task { await vm.selectServer(id) }
+            }
         }
     }
 

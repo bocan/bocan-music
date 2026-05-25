@@ -14,19 +14,37 @@ public struct SubsonicSidebarSection: View {
     public let servers: [SubsonicSidebarServer]
     public let connectionStates: [UUID: SubsonicSidebarConnectionState]
     public var onAddSource: (() -> Void)?
+    public var onManageSources: (() -> Void)?
+    public var onRefreshServer: ((UUID) -> Void)?
+    public var onTestServerConnection: ((UUID) -> Void)?
+    public var onEditServer: ((UUID) -> Void)?
+    public var onDisableServerInSidebar: ((UUID) -> Void)?
+    public var onRemoveServer: ((UUID) -> Void)?
 
     public init(
         sectionExpanded: Binding<Bool>,
         expandedServers: Binding<Set<UUID>>,
         servers: [SubsonicSidebarServer],
         connectionStates: [UUID: SubsonicSidebarConnectionState] = [:],
-        onAddSource: (() -> Void)? = nil
+        onAddSource: (() -> Void)? = nil,
+        onManageSources: (() -> Void)? = nil,
+        onRefreshServer: ((UUID) -> Void)? = nil,
+        onTestServerConnection: ((UUID) -> Void)? = nil,
+        onEditServer: ((UUID) -> Void)? = nil,
+        onDisableServerInSidebar: ((UUID) -> Void)? = nil,
+        onRemoveServer: ((UUID) -> Void)? = nil
     ) {
         self._sectionExpanded = sectionExpanded
         self._expandedServers = expandedServers
         self.servers = servers
         self.connectionStates = connectionStates
         self.onAddSource = onAddSource
+        self.onManageSources = onManageSources
+        self.onRefreshServer = onRefreshServer
+        self.onTestServerConnection = onTestServerConnection
+        self.onEditServer = onEditServer
+        self.onDisableServerInSidebar = onDisableServerInSidebar
+        self.onRemoveServer = onRemoveServer
     }
 
     public var body: some View {
@@ -73,6 +91,15 @@ public struct SubsonicSidebarSection: View {
                     .help("Add a new source server")
                     .accessibilityLabel("Add Source")
                     .accessibilityIdentifier(A11y.SourcesSidebar.addButton)
+                }
+            }
+            .contentShape(Rectangle())
+            .contextMenu {
+                if let onAddSource {
+                    Button("Add Server") { onAddSource() }
+                }
+                if let onManageSources {
+                    Button("Manage Sources") { onManageSources() }
                 }
             }
         }
@@ -145,6 +172,28 @@ public struct SubsonicSidebarSection: View {
         .accessibilityLabel(server.name)
         .accessibilityValue("\(state.displayLabel). \(binding.wrappedValue ? "Expanded" : "Collapsed")")
         .modifier(SourceServerShortcut(index: shortcutIndex))
+        .contextMenu { self.serverContextMenu(for: server) }
+    }
+
+    @ViewBuilder
+    private func serverContextMenu(for server: SubsonicSidebarServer) -> some View {
+        if let onRefreshServer {
+            Button("Refresh") { onRefreshServer(server.id) }
+        }
+        if let onTestServerConnection {
+            Button("Test Connection") { onTestServerConnection(server.id) }
+        }
+        if let onEditServer {
+            Button("Edit…") { onEditServer(server.id) }
+        }
+        if let onDisableServerInSidebar {
+            Divider()
+            Button("Disable in Sidebar") { onDisableServerInSidebar(server.id) }
+        }
+        if let onRemoveServer {
+            Divider()
+            Button("Remove…", role: .destructive) { onRemoveServer(server.id) }
+        }
     }
 
     private func row(_ dest: SidebarDestination, symbol: String, label: String) -> some View {

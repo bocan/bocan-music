@@ -424,6 +424,22 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
+    /// Hides or shows a Subsonic server in the sidebar by toggling its
+    /// `showInSidebar` flag on the underlying store, then reloads the
+    /// sidebar listing. Powers the "Disable in Sidebar" context-menu action.
+    public func setSubsonicServerSidebarVisible(id: UUID, visible: Bool) async {
+        guard let listing = self.subsonicSidebarListing else { return }
+        do {
+            try await listing.setSidebarVisible(id: id, visible: visible)
+            await self.reloadSubsonicServers()
+        } catch {
+            self.log.error(
+                "library.subsonic.setSidebarVisible.failed",
+                ["id": id.uuidString, "error": String(reflecting: error)]
+            )
+        }
+    }
+
     /// Runs the injected `subsonicBootstrap` closure if one was supplied.
     /// Called from `RootView.task` *before* navigation state is restored so
     /// that any persisted Subsonic destination can load immediately without
