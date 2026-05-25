@@ -19,12 +19,14 @@ public struct SubsonicSettingsView: View {
     }
 
     public var body: some View {
-        HSplitView {
+        HStack(spacing: 0) {
             self.sidebar
-                .frame(minWidth: 220, idealWidth: 240, maxWidth: 280)
+                .frame(width: 240)
+
+            Divider()
 
             self.detail
-                .frame(minWidth: 360)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .task { await self.vm.reload() }
         .navigationTitle("Sources")
