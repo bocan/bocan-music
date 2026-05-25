@@ -62,7 +62,7 @@ extension LibraryViewModel {
                 await self.tracks.search(query: trimmed)
             }
 
-        case .subsonicSongs, .subsonicAlbums, .subsonicArtists, .subsonicGenres,
+        case .subsonicRoot, .subsonicSongs, .subsonicAlbums, .subsonicArtists, .subsonicGenres,
              .subsonicPlaylists, .subsonicPlaylist, .subsonicStarred,
              .subsonicRandom, .subsonicRecentlyAdded, .subsonicMostPlayed,
              .subsonicInternetRadio, .subsonicPodcasts, .subsonicBookmarks:
