@@ -31,6 +31,7 @@ public struct SubsonicAlbumsView: View {
             wrappedValue: SubsonicAlbumsViewModel(
                 serverID: serverID,
                 dataSource: dataSource,
+                cache: library.subsonicMetadataCache,
                 listType: listType
             )
         )

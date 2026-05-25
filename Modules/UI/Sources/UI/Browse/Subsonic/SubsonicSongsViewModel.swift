@@ -23,23 +23,40 @@ public final class SubsonicSongsViewModel: ObservableObject {
     @Published public var errorMessage: String?
 
     private let dataSource: any SubsonicBrowseDataSource
+    private let cache: (any SubsonicMetadataCaching)?
     private let log = AppLogger.make(.ui)
 
-    public init(serverID: UUID, dataSource: any SubsonicBrowseDataSource) {
+    private static let cacheKind = "songs.randomSample"
+    private static let cacheEntityID = "default"
+
+    public init(
+        serverID: UUID,
+        dataSource: any SubsonicBrowseDataSource,
+        cache: (any SubsonicMetadataCaching)? = nil
+    ) {
         self.serverID = serverID
         self.dataSource = dataSource
+        self.cache = cache
     }
 
-    /// Initial load — replaces the current sample.
+    /// Initial load — replaces the current sample with a fresh random batch,
+    /// after first showing the last persisted sample (if any) for an instant
+    /// non-empty render.
     public func load() async {
-        self.songs = []
+        if self.songs.isEmpty {
+            await self.hydrateFromCache()
+        }
         self.hasMorePages = true
-        await self.loadMore()
+        await self.loadMore(replacingSample: true)
     }
 
     /// Appends another page of random songs. The server controls the seed,
     /// so duplicates across pages are possible. We dedupe defensively.
     public func loadMore() async {
+        await self.loadMore(replacingSample: false)
+    }
+
+    private func loadMore(replacingSample: Bool) async {
         guard !self.isLoading, self.hasMorePages else { return }
         self.isLoading = true
         defer { self.isLoading = false }
@@ -53,9 +70,14 @@ public final class SubsonicSongsViewModel: ObservableObject {
                 self.hasMorePages = false
                 return
             }
-            let existing = Set(self.songs.map(\.id))
-            let appended = batch.filter { !existing.contains($0.id) }
-            self.songs.append(contentsOf: appended)
+            if replacingSample {
+                self.songs = batch
+                await self.saveToCache(batch)
+            } else {
+                let existing = Set(self.songs.map(\.id))
+                let appended = batch.filter { !existing.contains($0.id) }
+                self.songs.append(contentsOf: appended)
+            }
             // If the server returned a short page, assume we've sampled all
             // it's willing to give us in this session.
             if batch.count < Self.pageSize {
@@ -67,5 +89,27 @@ public final class SubsonicSongsViewModel: ObservableObject {
             self.errorMessage = (error as? LocalizedError)?.errorDescription
                 ?? "Could not load songs from this server."
         }
+    }
+
+    private func hydrateFromCache() async {
+        guard let cache = self.cache else { return }
+        guard let data = await cache.loadCache(
+            serverID: self.serverID,
+            entityKind: Self.cacheKind,
+            entityID: Self.cacheEntityID
+        ) else { return }
+        guard let cached = try? JSONDecoder().decode([Song].self, from: data) else { return }
+        self.songs = cached
+    }
+
+    private func saveToCache(_ songs: [Song]) async {
+        guard let cache = self.cache else { return }
+        guard let payload = try? JSONEncoder().encode(songs) else { return }
+        await cache.saveCache(
+            serverID: self.serverID,
+            entityKind: Self.cacheKind,
+            entityID: Self.cacheEntityID,
+            payload: payload
+        )
     }
 }

@@ -277,6 +277,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// views. `nil` when Subsonic isn't wired in.
     public let subsonicCoverArtProvider: SubsonicCoverArtProvider?
 
+    /// Optional metadata cache used by Subsonic browse view-models to hydrate
+    /// their first render from the last persisted snapshot before kicking off
+    /// the live re-fetch. `nil` in tests / snapshots that don't wire it.
+    public let subsonicMetadataCache: (any SubsonicMetadataCaching)?
+
     /// Phase 19 step 13: federated search across enabled Subsonic servers.
     /// `nil` when no `subsonicDataSource` was supplied.
     public let federatedSearch: FederatedSearchViewModel?
@@ -299,6 +304,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicSidebarListing: SubsonicSidebarListing? = nil,
         subsonicDataSource: (any SubsonicBrowseDataSource)? = nil,
         subsonicCoverArtProvider: SubsonicCoverArtProvider? = nil,
+        subsonicMetadataCache: (any SubsonicMetadataCaching)? = nil,
         subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil,
         subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil,
         subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil
@@ -312,6 +318,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicConnectionObserver = subsonicConnectionObserver
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
+        self.subsonicMetadataCache = subsonicMetadataCache
         self.federatedSearch = subsonicDataSource.map { FederatedSearchViewModel(dataSource: $0) }
         self.subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
         self.settingsRepo = SettingsRepository(database: database)
