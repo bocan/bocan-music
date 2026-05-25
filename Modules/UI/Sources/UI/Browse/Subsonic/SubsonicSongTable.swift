@@ -271,7 +271,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     // Snapshot-tracking
     var lastAppliedIDs: [String] = []
     var hasAppliedInitialSnapshot = false
-    var lastRowDensity = UserDefaults.standard.string(forKey: "appearance.rowDensity") ?? "regular"
+    var lastRowDensity = UserDefaults.standard.string(forKey: "appearance.rowDensity") ?? "spacious"
 
     weak var tableView: NSTableView?
     var dataSource: SubsonicSongDiffableDataSource?
