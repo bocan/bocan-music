@@ -106,8 +106,8 @@ public struct TrackTable: NSViewRepresentable {
         tableView.setAccessibilityLabel("Track List")
         tableView.setAccessibilityRoleDescription("Music track list")
         tableView.autosaveName = self.sortable
-            ? "bocan.tracksTable.sortable.v3"
-            : "bocan.tracksTable.plain.v3"
+            ? "bocan.tracksTable.sortable.v4"
+            : "bocan.tracksTable.plain.v4"
         tableView.autosaveTableColumns = true
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.style = .inset

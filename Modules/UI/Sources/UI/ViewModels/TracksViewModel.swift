@@ -106,6 +106,9 @@ public final class TracksViewModel {
     /// Maps `albumID → album title` for column display.  Refreshed on every load.
     public private(set) var albumNames: [Int64: String] = [:]
 
+    /// Maps `albumID → cover art file-system path` for the art column.  Refreshed on every load.
+    private var albumArtPaths: [Int64: String] = [:]
+
     /// Incremented each time the caller wants the table to scroll the now-playing
     /// track into view.  `TrackTable.updateNSView` detects the change and calls
     /// `scrollRowToVisible` for the matching row.
@@ -277,12 +280,14 @@ public final class TracksViewModel {
         guard !updatedTracks.isEmpty else { return }
         let artists = self.artistNames
         let albums = self.albumNames
+        let artPaths = self.albumArtPaths
         let newRowsByID: [Int64: TrackRow] = updatedTracks.reduce(into: [:]) { dict, track in
             guard let id = track.id else { return }
             dict[id] = TrackRow(
                 track: track,
                 artistName: track.artistID.flatMap { artists[$0] },
-                albumName: track.albumID.flatMap { albums[$0] }
+                albumName: track.albumID.flatMap { albums[$0] },
+                albumCoverArtPath: track.albumID.flatMap { artPaths[$0] }
             )
         }
         for i in self.allRows.indices {
@@ -369,6 +374,12 @@ public final class TracksViewModel {
                 album.id.map { id in (id, album.title) }
             }
         )
+        self.albumArtPaths = Dictionary(
+            uniqueKeysWithValues: albums.compactMap { album -> (Int64, String)? in
+                guard let id = album.id, let path = album.coverArtPath else { return nil }
+                return (id, path)
+            }
+        )
     }
 
     /// Rebuilds the unfiltered `allRows` backing array from `source`
@@ -376,11 +387,13 @@ public final class TracksViewModel {
     private func rebuildAllRows(from source: [Track]) {
         let artists = self.artistNames
         let albums = self.albumNames
+        let artPaths = self.albumArtPaths
         self.allRows = source.map { track in
             TrackRow(
                 track: track,
                 artistName: track.artistID.flatMap { artists[$0] },
-                albumName: track.albumID.flatMap { albums[$0] }
+                albumName: track.albumID.flatMap { albums[$0] },
+                albumCoverArtPath: track.albumID.flatMap { artPaths[$0] }
             )
         }
     }

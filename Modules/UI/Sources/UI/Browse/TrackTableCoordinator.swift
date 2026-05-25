@@ -61,6 +61,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         guard let row = self.rowsByID[trackID] else { return nil }
         let isNowPlaying = self.parent.nowPlayingTrackID == row.id
 
+        if column.identifier == .albumArt {
+            return self.coverArtCell(for: row, in: tableView)
+        }
+
         if column.identifier == .shuffleExclude {
             return self.shuffleCell(for: row, in: tableView)
         }
@@ -109,6 +113,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             tf.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
             tf.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
         ])
+        return cell
+    }
+
+    private func coverArtCell(for row: TrackRow, in tableView: NSTableView) -> NSView {
+        let cellID = NSUserInterfaceItemIdentifier("artCell.albumArt")
+        let cell = (tableView.makeView(withIdentifier: cellID, owner: nil) as? CoverArtImageCell)
+            ?? CoverArtImageCell()
+        cell.configure(artPath: row.coverArtPath, trackTitle: row.title)
         return cell
     }
 

@@ -115,6 +115,68 @@ final class LoveButtonCell: NSTableCellView {
     }
 }
 
+// MARK: - CoverArtImageCell
+
+/// `NSTableCellView` for the album-art column.
+///
+/// The image view is constrained as a square that fills the row height
+/// (minus 2 pt padding on each side).  When `artPath` changes the cell
+/// cancels any in-flight load and starts a fresh `Task` via `ArtworkLoader`.
+final class CoverArtImageCell: NSTableCellView {
+    private let imageContainer = NSView()
+    private let artImageView = NSImageView()
+    private var loadTask: Task<Void, Never>?
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        identifier = NSUserInterfaceItemIdentifier("artCell.albumArt")
+
+        // Container fills the cell and clips the image.
+        self.imageContainer.translatesAutoresizingMaskIntoConstraints = false
+        self.imageContainer.wantsLayer = true
+        self.imageContainer.layer?.cornerRadius = 3
+        self.imageContainer.layer?.masksToBounds = true
+        addSubview(self.imageContainer)
+
+        self.artImageView.translatesAutoresizingMaskIntoConstraints = false
+        self.artImageView.imageScaling = .scaleProportionallyUpOrDown
+        self.artImageView.imageAlignment = .alignCenter
+        self.artImageView.animates = false
+        self.imageContainer.addSubview(self.artImageView)
+
+        NSLayoutConstraint.activate([
+            // Container: square, vertically inset 2 pt, horizontally centred.
+            self.imageContainer.topAnchor.constraint(equalTo: topAnchor, constant: 2),
+            self.imageContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -2),
+            self.imageContainer.widthAnchor.constraint(equalTo: self.imageContainer.heightAnchor),
+            self.imageContainer.centerXAnchor.constraint(equalTo: centerXAnchor),
+            // Image fills the container.
+            self.artImageView.leadingAnchor.constraint(equalTo: self.imageContainer.leadingAnchor),
+            self.artImageView.trailingAnchor.constraint(equalTo: self.imageContainer.trailingAnchor),
+            self.artImageView.topAnchor.constraint(equalTo: self.imageContainer.topAnchor),
+            self.artImageView.bottomAnchor.constraint(equalTo: self.imageContainer.bottomAnchor),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("unavailable")
+    }
+
+    func configure(artPath: String?, trackTitle: String) {
+        self.loadTask?.cancel()
+        self.artImageView.image = nil
+        setAccessibilityLabel(artPath == nil ? "No artwork" : "\(trackTitle) artwork")
+        guard let path = artPath else { return }
+        self.loadTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let img = await ArtworkLoader.shared.image(at: path)
+            guard !Task.isCancelled else { return }
+            self.artImageView.image = img
+        }
+    }
+}
+
 // MARK: - TrackDiffableDataSource
 
 /// Subclass of `NSTableViewDiffableDataSource` that adds drag-to-playlist

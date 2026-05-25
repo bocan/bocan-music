@@ -4,6 +4,7 @@ import Library
 // MARK: - Column identifiers
 
 extension NSUserInterfaceItemIdentifier {
+    static let albumArt = NSUserInterfaceItemIdentifier("col.albumArt")
     static let databaseID = NSUserInterfaceItemIdentifier("col.databaseID")
     static let trackNumber = NSUserInterfaceItemIdentifier("col.trackNumber")
     static let trackTotal = NSUserInterfaceItemIdentifier("col.trackTotal")
