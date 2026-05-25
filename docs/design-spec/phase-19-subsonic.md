@@ -592,9 +592,9 @@ unless otherwise noted).
     "Retry now", error toasts only for user-initiated actions, VoiceOver
     labels for all status dots, keyboard navigation through the new sidebar
     section (`⌘⌥1`–`⌘⌥9` already taken; add `⌘⇧1`–`⌘⇧9` for source servers).
-18. **Docs**: update `README.md`'s feature list and add a `docs/sources.md`
-    user-facing guide explaining how to add a server. Also add appropriate
-    instructions to the Help menu in the UI under Bòcan Music Help.
+18. **Docs**: update `README.md`'s and the /website feature lists. We also add
+    instructions to the Help menu in the UI under Bòcan Music Help.  And most
+    importantly, update the NOTICE file with the SwiftSonic dependency and its license.
 
 ---
 
