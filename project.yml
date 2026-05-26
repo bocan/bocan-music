@@ -150,7 +150,7 @@ targets:
 packages:
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    from: "2.9.1"
+    from: "2.9.2"
   Observability:
     path: Modules/Observability
   AudioEngine:

@@ -1,5 +1,5 @@
 {
-  "originHash" : "a2013f8bf7ca7a492a0a45744b41f96b08b2e21dc5d2286a6abea701d213549d",
+  "originHash" : "bc738ff87360bbc7e3cbee53416e384a0d1a0fa303add95d1c865de0451e617d",
   "pins" : [
     {
       "identity" : "grdb.swift",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/sparkle-project/Sparkle",
       "state" : {
-        "revision" : "066e75a8b3e99962685d6a90cdd5293ebffd9261",
-        "version" : "2.9.1"
+        "revision" : "6276ba2b404829d139c45ff98427cf90e2efc59b",
+        "version" : "2.9.2"
       }
     },
     {
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/MathieuDubart/swiftsonic.git",
       "state" : {
-        "revision" : "d3e7b5fbee546a39108b48b6ed933dfd4ab41359",
-        "version" : "0.8.2"
+        "revision" : "57ed3b1fc3608a64a73be5fceff03baef5f082ca",
+        "version" : "0.8.3"
       }
     },
     {
