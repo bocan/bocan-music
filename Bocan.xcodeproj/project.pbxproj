@@ -178,7 +178,7 @@
 		EFAFC444ACE5CDE2792AAA35 /* SubsonicRepositoryMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicRepositoryMetadataCache.swift; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_C9F1DA16-2AAD-4D0C-9372-6045B91C0B26" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_3118FECB-39B8-4CD7-B62F-27D7101B4A23" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -438,10 +438,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_CED90C57-71EC-4D64-8B75-BAAD9A86875C" /* bocan-music */ = {
+		"TEMP_50BF5B9D-C981-4467-AAA0-7A22536EEDF9" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_C9F1DA16-2AAD-4D0C-9372-6045B91C0B26" /* Secrets.xcconfig */,
+				"TEMP_3118FECB-39B8-4CD7-B62F-27D7101B4A23" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -729,7 +729,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_C9F1DA16-2AAD-4D0C-9372-6045B91C0B26" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_3118FECB-39B8-4CD7-B62F-27D7101B4A23" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -865,7 +865,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_C9F1DA16-2AAD-4D0C-9372-6045B91C0B26" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_3118FECB-39B8-4CD7-B62F-27D7101B4A23" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1040,7 +1040,7 @@
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.1;
+				minimumVersion = 2.9.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
