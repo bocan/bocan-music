@@ -34,6 +34,7 @@ extension NSUserInterfaceItemIdentifier {
     static let lastPlayedAt = NSUserInterfaceItemIdentifier("col.lastPlayedAt")
     static let fileSize = NSUserInterfaceItemIdentifier("col.fileSize")
     static let fileMtime = NSUserInterfaceItemIdentifier("col.fileMtime")
+    static let musicBrainzID = NSUserInterfaceItemIdentifier("col.musicBrainzID")
 }
 
 // MARK: - TrackTable static helpers
@@ -127,6 +128,8 @@ extension TrackTable {
         if comparator == KeyPathComparator(\TrackRow.lastPlayedAt, order: ord) { return "lastPlayedAt" }
         if comparator == KeyPathComparator(\TrackRow.fileSize, order: ord) { return "fileSize" }
         if comparator == KeyPathComparator(\TrackRow.fileMtime, order: ord) { return "fileMtime" }
+        let mbidCmp = KeyPathComparator(\TrackRow.musicBrainzRecordingID, comparator: .localizedStandard, order: ord)
+        if comparator == mbidCmp { return "musicBrainzID" }
         return nil
     }
 
@@ -223,6 +226,9 @@ extension TrackTable {
 
         case "fileMtime":
             return KeyPathComparator(\TrackRow.fileMtime, order: order)
+
+        case "musicBrainzID":
+            return KeyPathComparator(\TrackRow.musicBrainzRecordingID, comparator: .localizedStandard, order: order)
 
         default:
             return nil
@@ -333,6 +339,9 @@ extension TrackTable {
 
         case .fileMtime:
             return Formatters.shortDate(epochSeconds: row.fileMtime)
+
+        case .musicBrainzID:
+            return row.musicBrainzRecordingID
 
         default:
             return ""

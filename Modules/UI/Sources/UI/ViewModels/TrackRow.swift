@@ -50,6 +50,12 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
     public let lastPlayedAt: Int64
     public let fileSize: Int64
     public let fileMtime: Int64
+    /// MusicBrainz recording ID (`musicbrainz_recording_id` on the
+    /// `tracks` table), or `""` when the file's tags don't include one.
+    /// Exposed as a sortable / displayable column so users can spot which
+    /// tracks lack an MBID — relevant to ListenBrainz feedback, which
+    /// silently skips when this is missing.
+    public let musicBrainzRecordingID: String
     /// On-disk path to the album cover art image, if any.
     public let coverArtPath: String?
 
@@ -102,6 +108,7 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.lastPlayedAt = track.lastPlayedAt ?? 0
         self.fileSize = track.fileSize
         self.fileMtime = track.fileMtime
+        self.musicBrainzRecordingID = track.musicbrainzRecordingID ?? ""
         self.coverArtPath = albumCoverArtPath
     }
 
