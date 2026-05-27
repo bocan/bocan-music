@@ -139,6 +139,12 @@ extension SidebarDestination {
 
         case .subsonicRoot:
             "Songs"
+
+        case .subsonicArtist:
+            "Artist"
+
+        case .subsonicAlbum:
+            "Album"
         }
     }
 }

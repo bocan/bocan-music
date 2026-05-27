@@ -73,6 +73,14 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case subsonicPodcasts(UUID)
     case subsonicBookmarks(UUID)
 
+    /// Drill-down into a specific Subsonic artist on a specific server.
+    /// `String` is the artist's upstream Subsonic ID.
+    case subsonicArtist(UUID, String)
+
+    /// Drill-down into a specific Subsonic album on a specific server.
+    /// `String` is the album's upstream Subsonic ID.
+    case subsonicAlbum(UUID, String)
+
     // MARK: - Search
 
     case search(String)
@@ -98,7 +106,9 @@ public extension SidebarDestination {
              let .subsonicMostPlayed(id),
              let .subsonicInternetRadio(id),
              let .subsonicPodcasts(id),
-             let .subsonicBookmarks(id):
+             let .subsonicBookmarks(id),
+             let .subsonicArtist(id, _),
+             let .subsonicAlbum(id, _):
             id
 
         default:

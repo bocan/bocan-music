@@ -10,13 +10,21 @@ import SwiftUI
 /// Decorated row for the Subsonic songs NSTableView, carrying every
 /// field available from `Song` plus live star/rating state from the
 /// `SubsonicAnnotationCoordinator`.
+///
+/// `serverID` / `serverName` are per-row so the table can present rows that
+/// span multiple Subsonic servers (multi-source search results). For a
+/// single-server destination view, every row shares the same pair.
 struct SubsonicSongTableRow: Identifiable {
     let song: Song
+    let serverID: UUID
+    let serverName: String
     let starred: Bool
     let rating: Int
 
+    /// Identifier scoped per server so multi-source rows can't collide when
+    /// two servers expose the same upstream song ID.
     var id: String {
-        self.song.id
+        "\(self.serverID.uuidString)::\(self.song.id)"
     }
 
     var title: String {
@@ -78,12 +86,17 @@ struct SubsonicSongTableActions {
 
 /// NSTableView-backed songs list for a Subsonic server, mirroring the
 /// appearance and behaviour of the local library's `TrackTable`.
+///
+/// Rows now carry their own `serverID`, so this table can render either a
+/// single-server destination (Songs view) or a multi-source search result
+/// set. The `showsSource` flag adds a "Source" column the user can use to
+/// see which server each row came from when results are aggregated.
 struct SubsonicSongTable: NSViewRepresentable {
-    let serverID: UUID
     let rows: [SubsonicSongTableRow]
     let isLoading: Bool
     let hasMorePages: Bool
     let coverArtProvider: SubsonicCoverArtProvider?
+    let showsSource: Bool
     let actions: SubsonicSongTableActions
 
     typealias NSViewType = NSScrollView
@@ -111,7 +124,7 @@ struct SubsonicSongTable: NSViewRepresentable {
         tableView.autosaveName = "bocan.subsonicSongsTable.v1"
         tableView.autosaveTableColumns = true
 
-        Self.addColumns(to: tableView)
+        Self.addColumns(to: tableView, includingSource: self.showsSource)
         Self.buildHeaderMenu(for: tableView, coordinator: context.coordinator)
 
         let dataSource = SubsonicSongDiffableDataSource(tableView: tableView) { tv, col, _, id in
@@ -197,9 +210,18 @@ struct SubsonicSongTable: NSViewRepresentable {
         ColDef(rawID: "starred", title: "\u{2605}", min: 24, ideal: 32, max: 40, sortKey: "starred"),
     ]
 
-    private static func addColumns(to tableView: NSTableView) {
+    /// Optional column appended only when `showsSource` is `true` — i.e. the
+    /// table is rendering multi-source search results and the user needs to
+    /// distinguish rows by originating server.
+    private static let sourceColDef = ColDef(
+        rawID: "source", title: "Source", min: 80, ideal: 120, max: 240, sortKey: "source"
+    )
+
+    private static func addColumns(to tableView: NSTableView, includingSource: Bool) {
         let autosaveName = tableView.autosaveName ?? ""
-        for def in self.colDefs {
+        var defs = self.colDefs
+        if includingSource { defs.append(self.sourceColDef) }
+        for def in defs {
             let colID = NSUserInterfaceItemIdentifier("scol.\(def.rawID)")
             let col = NSTableColumn(identifier: colID)
             col.title = def.title
