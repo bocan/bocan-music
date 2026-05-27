@@ -287,9 +287,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// the live re-fetch. `nil` in tests / snapshots that don't wire it.
     public let subsonicMetadataCache: (any SubsonicMetadataCaching)?
 
-    /// Phase 19 step 13: federated search across enabled Subsonic servers.
-    /// `nil` when no `subsonicDataSource` was supplied.
-    public let federatedSearch: FederatedSearchViewModel?
+    /// Cross-server Subsonic search aggregator. Drives the in-place filtered
+    /// content of the per-server Songs/Albums/Artists views when the global
+    /// search field has text. `nil` when no `subsonicDataSource` was supplied.
+    public let subsonicSearch: SubsonicMultiSourceSearchViewModel?
 
     /// Phase 19 step 14: optimistic star/rating writes for Subsonic songs.
     /// `nil` when no annotation delivery was supplied.
@@ -324,7 +325,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.subsonicMetadataCache = subsonicMetadataCache
-        self.federatedSearch = subsonicDataSource.map { FederatedSearchViewModel(dataSource: $0) }
+        self.subsonicSearch = subsonicDataSource.map { SubsonicMultiSourceSearchViewModel(dataSource: $0) }
         self.subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
         self.settingsRepo = SettingsRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
@@ -489,7 +490,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             .sink { [weak self] query in
                 guard let self else { return }
                 Task { await self.loadCurrentDestination() }
-                self.federatedSearch?.search(query: query, servers: self.subsonicServers)
+                self.subsonicSearch?.search(query: query, servers: self.subsonicServers)
             }
     }
 
@@ -679,11 +680,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.canGoForward = false
         }
 
-        // Clear search when drilling into a detail page (album or artist).
+        // Clear search when drilling into a detail page (album or artist —
+        // local or Subsonic — and other concrete destinations).
         // For top-level browse views (songs/albums/artists/etc) keep the active
         // query so the new view shows filtered results immediately.
         switch destination {
-        case .album, .artist, .playlist, .smartPlaylist, .folder:
+        case .album, .artist, .playlist, .smartPlaylist, .folder,
+             .subsonicAlbum, .subsonicArtist:
             self.searchQuery = ""
 
         default:

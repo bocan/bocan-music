@@ -28,6 +28,25 @@ public extension LibraryViewModel {
             self.playbackErrorMessage = "Could not play \"\(title)\" from this server."
         }
     }
+
+    /// Plays a heterogeneous list of Subsonic songs sourced from multiple
+    /// servers. Each `SubsonicSongHit` carries its own `serverID` so the
+    /// queue stamps the right server on each `QueueItem`.
+    func play(subsonicMultiSource hits: [SubsonicSongHit], startingAt index: Int = 0) async {
+        guard let qp = self.queuePlayer else {
+            self.playbackErrorMessage = "Playback engine isn't available."
+            return
+        }
+        guard !hits.isEmpty else { return }
+        let safeIndex = max(0, min(index, hits.count - 1))
+        let queueItems = hits.map { QueueItem.makeSubsonic(from: $0.song, serverID: $0.serverID) }
+        do {
+            try await qp.play(items: queueItems, startingAt: safeIndex, shuffle: self.nowPlaying.shuffleOn)
+        } catch {
+            let title = hits[safeIndex].song.title
+            self.playbackErrorMessage = "Could not play \"\(title)\" from this server."
+        }
+    }
 }
 
 // MARK: - QueueItem factory

@@ -66,7 +66,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
             ?? SubsonicCoverArtCell()
         cell.configure(
             provider: self.parent.coverArtProvider,
-            serverID: self.parent.serverID,
+            serverID: row.serverID,
             entityID: row.coverArtEntityID,
             seed: abs(row.id.hashValue),
             title: row.title
@@ -130,6 +130,9 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
             let n = row.rating
             return n > 0 ? String(repeating: "★", count: min(n, 5)) : ""
 
+        case "scol.source":
+            return row.serverName
+
         default:
             return ""
         }
@@ -192,6 +195,9 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
 
         case "starred":
             self.rows.sort { asc ? (!$0.starred && $1.starred) : ($0.starred && !$1.starred) }
+
+        case "source":
+            self.rows.sort { asc ? $0.serverName < $1.serverName : $0.serverName > $1.serverName }
 
         default:
             return

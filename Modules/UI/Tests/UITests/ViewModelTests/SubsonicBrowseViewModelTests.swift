@@ -706,7 +706,7 @@ struct SubsonicBookmarksViewModelTests {
     }
 }
 
-// MARK: - FederatedSearchViewModel (Phase 19 step 13)
+// MARK: - SubsonicMultiSourceSearchViewModel
 
 private func sidebarServer(_ name: String, include: Bool = true) -> SubsonicSidebarServer {
     SubsonicSidebarServer(
@@ -717,96 +717,94 @@ private func sidebarServer(_ name: String, include: Bool = true) -> SubsonicSide
     )
 }
 
-@Suite("FederatedSearchViewModel")
+@Suite("SubsonicMultiSourceSearchViewModel")
 @MainActor
-struct FederatedSearchViewModelTests {
-    @Test("empty query clears sections")
+struct SubsonicMultiSourceSearchViewModelTests {
+    @Test("empty query clears aggregated hits")
     func emptyClears() {
         let stub = StubBrowseDataSource()
-        let vm = FederatedSearchViewModel(dataSource: stub)
+        let vm = SubsonicMultiSourceSearchViewModel(dataSource: stub)
         vm.search(query: "", servers: [sidebarServer("A")])
-        #expect(vm.sections.isEmpty)
+        #expect(vm.songs.isEmpty)
+        #expect(vm.albums.isEmpty)
+        #expect(vm.artists.isEmpty)
         #expect(vm.query.isEmpty)
     }
 
-    @Test("fan-out populates one section per included server")
+    @Test("fan-out aggregates hits across servers")
     func fanOut() async {
         let stub = StubBrowseDataSource()
         await stub.seedSearchResult(makeSearchResult(songs: ["s1", "s2"]))
-        let vm = FederatedSearchViewModel(dataSource: stub)
+        let vm = SubsonicMultiSourceSearchViewModel(dataSource: stub)
         let servers = [sidebarServer("A"), sidebarServer("B")]
         vm.search(query: "hello", servers: servers)
-        #expect(vm.sections.count == 2)
         #expect(vm.query == "hello")
-        // Wait for the fan-out to complete.
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(20))
-            if vm.sections.allSatisfy({ if case .loading = $0.state { false } else { true } }) {
-                break
-            }
+            if !vm.isSearching { break }
         }
-        for section in vm.sections {
-            guard case let .success(result) = section.state else {
-                Issue.record("Section \(section.serverName) didn't succeed")
-                continue
-            }
-            #expect(result.song?.count == 2)
-        }
+        // Two servers x two songs each = four aggregated hits.
+        #expect(vm.songs.count == 4)
+        let names = Set(vm.songs.map(\.serverName))
+        #expect(names == Set(["A", "B"]))
     }
 
     @Test("excluded servers are filtered out before search")
     func excludesDisabled() async {
         let stub = StubBrowseDataSource()
         await stub.seedSearchResult(makeSearchResult(songs: ["s1"]))
-        let vm = FederatedSearchViewModel(dataSource: stub)
+        let vm = SubsonicMultiSourceSearchViewModel(dataSource: stub)
         let servers = [
             sidebarServer("A", include: true),
             sidebarServer("B", include: false),
         ]
         vm.search(query: "hi", servers: servers)
-        #expect(vm.sections.count == 1)
-        #expect(vm.sections.first?.serverName == "A")
+        for _ in 0 ..< 50 {
+            try? await Task.sleep(for: .milliseconds(20))
+            if !vm.isSearching { break }
+        }
+        #expect(vm.songs.allSatisfy { $0.serverName == "A" })
     }
 
-    @Test("per-server failure surfaces as .failure state")
+    @Test("per-server failure surfaces in failedServerNames")
     func failureSurfaces() async {
         let stub = StubBrowseDataSource()
         await stub.setFailNextSearch(true)
-        let vm = FederatedSearchViewModel(dataSource: stub)
+        let vm = SubsonicMultiSourceSearchViewModel(dataSource: stub)
         vm.search(query: "hi", servers: [sidebarServer("A")])
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(20))
-            if case .failure = vm.sections.first?.state { break }
+            if !vm.isSearching { break }
         }
-        guard case .failure = vm.sections.first?.state else {
-            Issue.record("Expected .failure state")
-            return
-        }
+        #expect(vm.failedServerNames == ["A"])
+        #expect(vm.songs.isEmpty)
     }
 
-    @Test("slow server exceeds timeout and surfaces as .timedOut")
+    @Test("slow server exceeds timeout and is reported as failed")
     func timeoutSurfaces() async {
         let stub = StubBrowseDataSource()
         await stub.setSearchDelay(.milliseconds(500))
-        let vm = FederatedSearchViewModel(dataSource: stub, timeout: .milliseconds(50))
+        let vm = SubsonicMultiSourceSearchViewModel(
+            dataSource: stub, timeout: .milliseconds(50)
+        )
         vm.search(query: "hi", servers: [sidebarServer("A")])
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(30))
-            if case .timedOut = vm.sections.first?.state { break }
+            if !vm.isSearching { break }
         }
-        guard case .timedOut = vm.sections.first?.state else {
-            Issue.record("Expected .timedOut state")
-            return
-        }
+        #expect(vm.failedServerNames == ["A"])
     }
 
-    @Test("clear() cancels in-flight and empties sections")
+    @Test("clear() cancels in-flight and empties results")
     func clearCancels() {
         let stub = StubBrowseDataSource()
-        let vm = FederatedSearchViewModel(dataSource: stub)
+        let vm = SubsonicMultiSourceSearchViewModel(dataSource: stub)
         vm.search(query: "hi", servers: [sidebarServer("A")])
         vm.clear()
-        #expect(vm.sections.isEmpty)
+        #expect(vm.songs.isEmpty)
+        #expect(vm.albums.isEmpty)
+        #expect(vm.artists.isEmpty)
         #expect(vm.query.isEmpty)
+        #expect(vm.isSearching == false)
     }
 }

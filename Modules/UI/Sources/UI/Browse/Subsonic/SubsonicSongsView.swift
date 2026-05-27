@@ -6,17 +6,22 @@ import SwiftUI
 
 /// Per-server Songs destination (Phase 19 step 10).
 ///
-/// Subsonic has no global "all songs" endpoint, so this view presents a
-/// shuffled sample fetched via `getRandomSongs`.  The toolbar offers a
-/// Refresh action to reseed the sample, and the table lazy-loads further
-/// pages as the user scrolls toward the bottom.
+/// Subsonic has no global "all songs" endpoint, so the un-filtered list is
+/// a shuffled sample fetched via `getRandomSongs`. Refresh reseeds the
+/// sample; the table lazy-loads further pages as the user scrolls.
+///
+/// When `library.searchQuery` is non-empty the view switches to multi-source
+/// search results — songs aggregated across every enabled Subsonic server
+/// via `search3`. The same NSTableView renders both modes; in search mode
+/// the table gains a "Source" column.
 public struct SubsonicSongsView: View {
     public let serverID: UUID
-    public let library: LibraryViewModel
+    @ObservedObject public var library: LibraryViewModel
     public let coverArtProvider: SubsonicCoverArtProvider?
     public let title: String
 
     @StateObject private var vm: SubsonicSongsViewModel
+    @ObservedObject private var search: SubsonicMultiSourceSearchViewModel
     @Environment(\.subsonicAnnotationCoordinator) private var annotationCoordinator
 
     public init(
@@ -37,46 +42,24 @@ public struct SubsonicSongsView: View {
                 cache: library.subsonicMetadataCache
             )
         )
+        // Safe: `subsonicSearch` is always non-nil whenever this view is
+        // reachable (the view only routes for Subsonic destinations, which
+        // implies the data source — and therefore the search VM — exist).
+        // The fallback exists only so previews/snapshots stay safe.
+        self.search = library.subsonicSearch
+            ?? SubsonicMultiSourceSearchViewModel(dataSource: NoopBrowseDataSource())
+    }
+
+    private var isSearching: Bool {
+        !self.library.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     public var body: some View {
         Group {
-            if self.vm.songs.isEmpty, !self.vm.isLoading {
-                self.emptyState
+            if self.isSearching {
+                self.searchBody
             } else {
-                SubsonicSongTable(
-                    serverID: self.serverID,
-                    rows: self.buildRows(),
-                    isLoading: self.vm.isLoading,
-                    hasMorePages: self.vm.hasMorePages,
-                    coverArtProvider: self.coverArtProvider,
-                    actions: SubsonicSongTableActions(
-                        playNow: { index in
-                            let songs = self.vm.songs
-                            let sid = self.serverID
-                            Task { await self.library.play(subsonicSongs: songs, serverID: sid, startingAt: index) }
-                        },
-                        loadMore: {
-                            Task { await self.vm.loadMore() }
-                        },
-                        toggleStar: { songID in
-                            guard let coord = self.annotationCoordinator else { return }
-                            let song = self.vm.songs.first { $0.id == songID }
-                            let starred = coord.isStarred(songID: songID, serverStarred: song?.starred)
-                            coord.toggleStar(songID: songID, serverID: self.serverID, currentlyStarred: starred)
-                        },
-                        setRating: { songID, stars in
-                            guard let coord = self.annotationCoordinator else { return }
-                            let song = self.vm.songs.first { $0.id == songID }
-                            coord.setRating(
-                                songID: songID,
-                                serverID: self.serverID,
-                                newRating: stars,
-                                previousRating: song?.userRating
-                            )
-                        }
-                    )
-                )
+                self.regularBody
             }
         }
         .navigationTitle(self.title)
@@ -87,7 +70,8 @@ public struct SubsonicSongsView: View {
                 } label: {
                     Label("Refresh", systemImage: "arrow.clockwise")
                 }
-                .disabled(self.vm.isLoading)
+                .disabled(self.vm.isLoading || self.isSearching)
+                .help(self.isSearching ? "Refresh is disabled during search" : "Reshuffle the sample")
             }
         }
         .task(id: self.serverID) {
@@ -104,34 +88,157 @@ public struct SubsonicSongsView: View {
         )
     }
 
+    // MARK: - Regular mode (no search)
+
     @ViewBuilder
-    private var emptyState: some View {
-        if self.vm.isLoading {
-            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else {
+    private var regularBody: some View {
+        if self.vm.songs.isEmpty, !self.vm.isLoading {
             ContentUnavailableView(
                 "No Songs",
                 systemImage: "music.note",
                 description: Text("This server hasn't returned any songs yet.")
             )
+        } else if self.vm.songs.isEmpty {
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            let serverName = self.currentServerName
+            let rows = self.vm.songs.map { song in
+                SubsonicSongTableRow(
+                    song: song,
+                    serverID: self.serverID,
+                    serverName: serverName,
+                    starred: self.annotationCoordinator?.isStarred(
+                        songID: song.id,
+                        serverStarred: song.starred
+                    ) ?? (song.starred != nil),
+                    rating: self.annotationCoordinator?.rating(
+                        songID: song.id,
+                        serverRating: song.userRating
+                    ) ?? (song.userRating ?? 0)
+                )
+            }
+            SubsonicSongTable(
+                rows: rows,
+                isLoading: self.vm.isLoading,
+                hasMorePages: self.vm.hasMorePages,
+                coverArtProvider: self.coverArtProvider,
+                showsSource: false,
+                actions: SubsonicSongTableActions(
+                    playNow: { index in
+                        let songs = self.vm.songs
+                        let sid = self.serverID
+                        Task {
+                            await self.library.play(
+                                subsonicSongs: songs, serverID: sid, startingAt: index
+                            )
+                        }
+                    },
+                    loadMore: { Task { await self.vm.loadMore() } },
+                    toggleStar: { songID in
+                        guard let coord = self.annotationCoordinator else { return }
+                        let song = self.vm.songs.first { $0.id == songID }
+                        let starred = coord.isStarred(songID: songID, serverStarred: song?.starred)
+                        coord.toggleStar(
+                            songID: songID,
+                            serverID: self.serverID,
+                            currentlyStarred: starred
+                        )
+                    },
+                    setRating: { songID, stars in
+                        guard let coord = self.annotationCoordinator else { return }
+                        let song = self.vm.songs.first { $0.id == songID }
+                        coord.setRating(
+                            songID: songID,
+                            serverID: self.serverID,
+                            newRating: stars,
+                            previousRating: song?.userRating
+                        )
+                    }
+                )
+            )
+            .id("regular")
         }
     }
 
-    /// Builds table rows from the current songs, incorporating live
-    /// star/rating overrides from the annotation coordinator when present.
-    private func buildRows() -> [SubsonicSongTableRow] {
-        self.vm.songs.map { song in
-            SubsonicSongTableRow(
-                song: song,
-                starred: self.annotationCoordinator?.isStarred(
-                    songID: song.id,
-                    serverStarred: song.starred
-                ) ?? (song.starred != nil),
-                rating: self.annotationCoordinator?.rating(
-                    songID: song.id,
-                    serverRating: song.userRating
-                ) ?? (song.userRating ?? 0)
-            )
+    // MARK: - Search mode (multi-source)
+
+    @ViewBuilder
+    private var searchBody: some View {
+        if self.search.songs.isEmpty {
+            if self.search.isSearching {
+                ProgressView("Searching…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ContentUnavailableView.search(text: self.library.searchQuery)
+            }
+        } else {
+            let rows = self.search.songs.map { hit in
+                SubsonicSongTableRow(
+                    song: hit.song,
+                    serverID: hit.serverID,
+                    serverName: hit.serverName,
+                    starred: self.annotationCoordinator?.isStarred(
+                        songID: hit.song.id,
+                        serverStarred: hit.song.starred
+                    ) ?? (hit.song.starred != nil),
+                    rating: self.annotationCoordinator?.rating(
+                        songID: hit.song.id,
+                        serverRating: hit.song.userRating
+                    ) ?? (hit.song.userRating ?? 0)
+                )
+            }
+            VStack(spacing: 0) {
+                if !self.search.failedServerNames.isEmpty {
+                    SubsonicSearchFailedBanner(serverNames: self.search.failedServerNames)
+                }
+                SubsonicSongTable(
+                    rows: rows,
+                    isLoading: self.search.isSearching,
+                    hasMorePages: false,
+                    coverArtProvider: self.coverArtProvider,
+                    showsSource: true,
+                    actions: SubsonicSongTableActions(
+                        playNow: { index in
+                            let hits = self.search.songs
+                            Task {
+                                await self.library.play(
+                                    subsonicMultiSource: hits, startingAt: index
+                                )
+                            }
+                        },
+                        loadMore: {},
+                        toggleStar: { songID in
+                            guard let coord = self.annotationCoordinator else { return }
+                            guard let hit = self.search.songs.first(where: { $0.song.id == songID }) else {
+                                return
+                            }
+                            let starred = coord.isStarred(songID: songID, serverStarred: hit.song.starred)
+                            coord.toggleStar(
+                                songID: songID,
+                                serverID: hit.serverID,
+                                currentlyStarred: starred
+                            )
+                        },
+                        setRating: { songID, stars in
+                            guard let coord = self.annotationCoordinator else { return }
+                            guard let hit = self.search.songs.first(where: { $0.song.id == songID }) else {
+                                return
+                            }
+                            coord.setRating(
+                                songID: songID,
+                                serverID: hit.serverID,
+                                newRating: stars,
+                                previousRating: hit.song.userRating
+                            )
+                        }
+                    )
+                )
+                .id("search")
+            }
         }
+    }
+
+    private var currentServerName: String {
+        self.library.subsonicServers.first(where: { $0.id == self.serverID })?.name ?? ""
     }
 }

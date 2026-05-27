@@ -41,19 +41,6 @@ public struct ContentPane: View {
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                // Phase 19 step 13: federated Subsonic search results render
-                // above the locally filtered list whenever the global search
-                // field has content and at least one enabled server has
-                // returned (or is returning) a result section.
-                if let fs = self.vm.federatedSearch {
-                    SubsonicSearchResultsPanel(
-                        vm: fs,
-                        library: self.vm,
-                        coverArtProvider: self.vm.subsonicCoverArtProvider
-                    )
-                }
-            }
-            .safeAreaInset(edge: .top, spacing: 0) {
                 // Phase 19 step 17: per-server offline banner with "Retry now".
                 if let serverID = self.vm.selectedDestination.subsonicServerID,
                    let state = self.vm.subsonicConnectionStates[serverID],
@@ -305,6 +292,32 @@ public struct ContentPane: View {
             if let ds = self.vm.subsonicDataSource {
                 SubsonicBookmarksView(
                     serverID: serverID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicArtist(serverID, artistID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicArtistDetailView(
+                    serverID: serverID,
+                    artistID: artistID,
+                    library: self.vm,
+                    dataSource: ds,
+                    coverArtProvider: self.vm.subsonicCoverArtProvider
+                )
+            } else {
+                self.subsonicUnavailable
+            }
+
+        case let .subsonicAlbum(serverID, albumID):
+            if let ds = self.vm.subsonicDataSource {
+                SubsonicAlbumDetailView(
+                    serverID: serverID,
+                    albumID: albumID,
                     library: self.vm,
                     dataSource: ds,
                     coverArtProvider: self.vm.subsonicCoverArtProvider

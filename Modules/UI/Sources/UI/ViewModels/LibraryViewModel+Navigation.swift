@@ -65,7 +65,8 @@ extension LibraryViewModel {
         case .subsonicRoot, .subsonicSongs, .subsonicAlbums, .subsonicArtists, .subsonicGenres,
              .subsonicPlaylists, .subsonicPlaylist, .subsonicStarred,
              .subsonicRandom, .subsonicRecentlyAdded, .subsonicMostPlayed,
-             .subsonicInternetRadio, .subsonicPodcasts, .subsonicBookmarks:
+             .subsonicInternetRadio, .subsonicPodcasts, .subsonicBookmarks,
+             .subsonicArtist, .subsonicAlbum:
             // Per-server Subsonic destinations manage their own loading via
             // dedicated view models. Nothing to fan out here.
             break
