@@ -3,28 +3,28 @@ import Network
 import Observability
 
 /// Actor that turns a Subsonic stream key into a local file URL the engine
-/// can decode. The cache writes incoming bytes to a partial file, and
-/// returns the URL as soon as enough bytes are buffered for playback to
-/// start. The download continues in the background until complete (or
-/// fails); the engine reads from the same file the downloader is still
-/// writing to, which is what makes seek + gapless work without bolting an
-/// `AVPlayer` code path onto the engine.
+/// can decode. The cache writes incoming bytes to a partial file and returns
+/// the URL only once the download has fully completed.
+///
+/// **Why wait for the whole file?** The engine decodes via `AVAudioFile`,
+/// which snapshots the track's frame count at open time. If we returned the
+/// URL mid-download, the decoder would treat whatever bytes happened to be
+/// on disk as the entire track — playback would stop early (e.g. ~18 s on a
+/// 200 KB sample of an MP3) with no warning. Waiting for `isComplete = true`
+/// is the only correctness-preserving option without swapping the decoder.
 public actor SubsonicStreamCache {
     // MARK: - Configuration
 
     public struct Configuration: Sendable {
         public var rootDirectory: URL
         public var budgetBytes: Int64
-        public var readyThresholdBytes: Int
 
         public init(
             rootDirectory: URL,
-            budgetBytes: Int64 = 1_073_741_824,
-            readyThresholdBytes: Int = 200 * 1024
+            budgetBytes: Int64 = 1_073_741_824
         ) {
             self.rootDirectory = rootDirectory
             self.budgetBytes = budgetBytes
-            self.readyThresholdBytes = readyThresholdBytes
         }
     }
 
@@ -39,7 +39,9 @@ public actor SubsonicStreamCache {
 
     private final class Entry {
         let key: SubsonicStreamKey
-        let fileURL: URL
+        /// Mutable so the cache can rename the file to a real audio
+        /// extension once the magic bytes are known (see `finaliseExtension`).
+        var fileURL: URL
         var totalBytes: Int64?
         var bytesWritten: Int64 = 0
         var isComplete = false
@@ -86,10 +88,10 @@ public actor SubsonicStreamCache {
 
     // MARK: - Public API
 
-    /// Returns a local file URL for `key` as soon as the cache has buffered
-    /// enough bytes to start playback. Concurrent requests for the same key
-    /// share a single download. `urlProvider` is invoked exactly once per
-    /// fresh cache miss to obtain the signed Subsonic stream URL.
+    /// Returns a local file URL for `key` once the whole track has been
+    /// downloaded. Concurrent requests for the same key share a single
+    /// download. `urlProvider` is invoked exactly once per fresh cache miss
+    /// to obtain the signed Subsonic stream URL.
     public func url(
         for key: SubsonicStreamKey,
         urlProvider: @Sendable @escaping () async throws -> URL
@@ -97,7 +99,7 @@ public actor SubsonicStreamCache {
         if let existing = self.entries[key] {
             existing.lastAccess = Date()
             if let error = existing.error { throw error }
-            if existing.isComplete || existing.bytesWritten >= Int64(self.config.readyThresholdBytes) {
+            if existing.isComplete {
                 return existing.fileURL
             }
             return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<URL, Error>) in
@@ -199,10 +201,8 @@ public actor SubsonicStreamCache {
 
     // MARK: - Download pump
 
-    // swiftlint:disable:next function_body_length
     private func runDownload(key: SubsonicStreamKey, url: URL) async {
         guard let entry = self.entries[key] else { return }
-        let threshold = Int64(self.config.readyThresholdBytes)
 
         let bytes: RemoteTrackBytes
         do {
@@ -212,12 +212,6 @@ public actor SubsonicStreamCache {
             return
         }
         entry.totalBytes = bytes.totalBytes
-        // Short tracks: drop the ready threshold to the file size so we
-        // don't block forever waiting for 200 KB on a 60 KB voice memo.
-        let effectiveThreshold: Int64 = {
-            guard let total = bytes.totalBytes else { return threshold }
-            return min(threshold, total)
-        }()
 
         let handle: FileHandle
         do {
@@ -242,14 +236,11 @@ public actor SubsonicStreamCache {
                 }
                 try handle.write(contentsOf: chunk)
                 entry.bytesWritten += Int64(chunk.count)
-                if !entry.hasSignalledReady, entry.bytesWritten >= effectiveThreshold {
-                    entry.hasSignalledReady = true
-                    self.signalReady(entry: entry)
-                }
             }
+            // Close the writer before sniffing so the read sees a flushed file.
+            try? handle.close()
             entry.isComplete = true
-            // EOF arrived before we hit the threshold (very short track):
-            // signal ready now so any waiters unblock with the whole file.
+            self.finaliseExtension(for: entry)
             if !entry.hasSignalledReady {
                 entry.hasSignalledReady = true
                 self.signalReady(entry: entry)
@@ -257,11 +248,81 @@ public actor SubsonicStreamCache {
             self.log.info("subsonic.cache.download.complete", [
                 "songID": key.songID,
                 "bytes": entry.bytesWritten,
+                "ext": entry.fileURL.pathExtension,
             ])
             await self.evictIfNeeded()
         } catch {
             self.fail(entry: entry, with: error)
         }
+    }
+
+    // MARK: - Format sniffing
+
+    /// If the entry's file is named with the generic `.bin` extension
+    /// (i.e. the format was `"original"` / unknown), sniff its magic bytes
+    /// and rename it to the correct audio extension. AVFoundation's
+    /// content-type detection is unreliable for a `.bin` input — Opus,
+    /// Vorbis, and some FLAC variants fail with `kAudioFileUnsupportedFile`
+    /// (`'typ?'`). Giving the file a real extension routes the file
+    /// through the matching decoder.
+    private func finaliseExtension(for entry: Entry) {
+        guard entry.fileURL.pathExtension.lowercased() == "bin" else { return }
+        guard let ext = Self.detectAudioExtension(at: entry.fileURL) else { return }
+        let newURL = entry.fileURL.deletingPathExtension().appendingPathExtension(ext)
+        do {
+            // moveItem fails if the destination exists. Clear it first.
+            try? FileManager.default.removeItem(at: newURL)
+            try FileManager.default.moveItem(at: entry.fileURL, to: newURL)
+            entry.fileURL = newURL
+        } catch {
+            self.log.warning("subsonic.cache.rename.failed", [
+                "songID": entry.key.songID,
+                "error": String(reflecting: error),
+            ])
+        }
+    }
+
+    /// Returns the appropriate audio file extension based on the first
+    /// few bytes of `fileURL`, or `nil` if no known signature is found.
+    /// Covers the formats Navidrome / Subsonic servers commonly serve as
+    /// `original`: MP3, FLAC, OGG, Opus, WAV, AIFF, M4A/AAC.
+    static func detectAudioExtension(at fileURL: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: fileURL) else { return nil }
+        defer { try? handle.close() }
+        guard let data = try? handle.read(upToCount: 64) else { return nil }
+        let b = Array(data)
+        guard b.count >= 4 else { return nil }
+
+        // FLAC: "fLaC"
+        if b.starts(with: [0x66, 0x4C, 0x61, 0x43]) { return "flac" }
+        // Ogg container: "OggS". Inspect the payload to distinguish Opus vs Vorbis vs FLAC-in-Ogg.
+        if b.starts(with: [0x4F, 0x67, 0x67, 0x53]) {
+            if b.count >= 36, b[28 ..< 36].elementsEqual([0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64]) {
+                return "opus"
+            }
+            return "ogg"
+        }
+        // RIFF / WAVE
+        if b.count >= 12, b.starts(with: [0x52, 0x49, 0x46, 0x46]),
+           b[8 ..< 12].elementsEqual([0x57, 0x41, 0x56, 0x45]) {
+            return "wav"
+        }
+        // AIFF / AIFC: "FORM" .. "AIFF" or "AIFC"
+        if b.count >= 12, b.starts(with: [0x46, 0x4F, 0x52, 0x4D]),
+           b[8 ..< 12].elementsEqual([0x41, 0x49, 0x46, 0x46])
+           || b[8 ..< 12].elementsEqual([0x41, 0x49, 0x46, 0x43]) {
+            return "aiff"
+        }
+        // MP4/M4A: "ftyp" at offset 4
+        if b.count >= 8, b[4] == 0x66, b[5] == 0x74, b[6] == 0x79, b[7] == 0x70 {
+            return "m4a"
+        }
+        // MP3 with ID3v2: "ID3"
+        if b.starts(with: [0x49, 0x44, 0x33]) { return "mp3" }
+        // MP3 frame sync (11 bits set: 0xFF Ex)
+        if b[0] == 0xFF, (b[1] & 0xE0) == 0xE0 { return "mp3" }
+
+        return nil
     }
 
     private func signalReady(entry: Entry) {

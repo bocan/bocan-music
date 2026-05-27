@@ -107,8 +107,8 @@ private func dummyURL() -> URL {
 struct SubsonicStreamCacheTests {
     // MARK: - Cold fetch reaches ready
 
-    @Test("cold fetch returns URL once threshold bytes are buffered")
-    func coldFetchReturnsAfterThreshold() async throws {
+    @Test("cold fetch returns URL once the full download completes")
+    func coldFetchReturnsAfterDownload() async throws {
         let dir = try makeTempDir()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -117,7 +117,7 @@ struct SubsonicStreamCacheTests {
         let transport = StubTransport(script: .init(chunks: chunks, totalBytes: 200 * 1024))
         let loader = RemoteTrackLoader(transport: transport)
         let cache = try SubsonicStreamCache(
-            configuration: .init(rootDirectory: dir, budgetBytes: 10 * 1024 * 1024, readyThresholdBytes: 50 * 1024),
+            configuration: .init(rootDirectory: dir, budgetBytes: 10 * 1024 * 1024),
             loader: loader
         )
 
@@ -136,7 +136,7 @@ struct SubsonicStreamCacheTests {
 
     // MARK: - Short track: under threshold
 
-    @Test("a track smaller than the threshold still becomes ready on EOF")
+    @Test("a very short track still becomes ready on EOF")
     func shortTrackBecomesReadyOnEOF() async throws {
         let dir = try makeTempDir()
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -145,7 +145,7 @@ struct SubsonicStreamCacheTests {
         let transport = StubTransport(script: .init(chunks: [small], totalBytes: 1000))
         let loader = RemoteTrackLoader(transport: transport)
         let cache = try SubsonicStreamCache(
-            configuration: .init(rootDirectory: dir, readyThresholdBytes: 200 * 1024),
+            configuration: .init(rootDirectory: dir),
             loader: loader
         )
 
@@ -166,7 +166,7 @@ struct SubsonicStreamCacheTests {
         let transport = StubTransport(script: .init(chunks: chunks, totalBytes: 400_000))
         let loader = RemoteTrackLoader(transport: transport)
         let cache = try SubsonicStreamCache(
-            configuration: .init(rootDirectory: dir, readyThresholdBytes: 50000),
+            configuration: .init(rootDirectory: dir),
             loader: loader
         )
 
@@ -197,7 +197,7 @@ struct SubsonicStreamCacheTests {
         ))
         let loader = RemoteTrackLoader(transport: transport)
         let cache = try SubsonicStreamCache(
-            configuration: .init(rootDirectory: dir, readyThresholdBytes: 200 * 1024),
+            configuration: .init(rootDirectory: dir),
             loader: loader
         )
 
@@ -254,7 +254,7 @@ struct SubsonicStreamCacheTests {
         // LRU candidate is k2, which is exactly what we want the cache to
         // pick.
         let cache = try SubsonicStreamCache(
-            configuration: .init(rootDirectory: dir, budgetBytes: 25000, readyThresholdBytes: 1000),
+            configuration: .init(rootDirectory: dir, budgetBytes: 25000),
             loader: loader
         )
 
@@ -290,7 +290,7 @@ struct SubsonicStreamCacheTests {
         let transport = StubTransport(script: .init(chunks: [chunk], totalBytes: 4096))
         let loader = RemoteTrackLoader(transport: transport)
         let cache = try SubsonicStreamCache(
-            configuration: .init(rootDirectory: dir, readyThresholdBytes: 100),
+            configuration: .init(rootDirectory: dir),
             loader: loader
         )
 
@@ -325,5 +325,147 @@ struct SubsonicStreamCacheTests {
         #expect(flac.cacheFilename.hasSuffix(".flac"))
         // Slashes in the song ID must not leak into the filename.
         #expect(!mp3.cacheFilename.contains("/"))
+    }
+
+    // MARK: - Format sniffing on download for "original" / .bin files
+
+    @Test("an `original` MP3 download is renamed to .mp3")
+    func originalIsRenamedByMagicBytes() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // ID3v2 header — unmistakable MP3 signature.
+        var payload = Data([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00])
+        payload.append(Data(repeating: 0x00, count: 1024))
+        let transport = StubTransport(script: .init(chunks: [payload], totalBytes: Int64(payload.count)))
+        let loader = RemoteTrackLoader(transport: transport)
+        let cache = try SubsonicStreamCache(
+            configuration: .init(rootDirectory: dir),
+            loader: loader
+        )
+
+        let key = SubsonicStreamKey(serverID: UUID(), songID: "x", format: "original", bitrateKbps: nil)
+        let url = try await cache.url(for: key) { dummyURL() }
+        #expect(url.pathExtension == "mp3", "expected .mp3 extension, got \(url.pathExtension)")
+        #expect(FileManager.default.fileExists(atPath: url.path))
+    }
+
+    @Test("an `original` FLAC download is renamed to .flac")
+    func originalFLACRename() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var payload = Data([0x66, 0x4C, 0x61, 0x43]) // "fLaC"
+        payload.append(Data(repeating: 0x00, count: 1024))
+        let transport = StubTransport(script: .init(chunks: [payload], totalBytes: Int64(payload.count)))
+        let loader = RemoteTrackLoader(transport: transport)
+        let cache = try SubsonicStreamCache(
+            configuration: .init(rootDirectory: dir),
+            loader: loader
+        )
+
+        let key = SubsonicStreamKey(serverID: UUID(), songID: "x", format: "original", bitrateKbps: nil)
+        let url = try await cache.url(for: key) { dummyURL() }
+        #expect(url.pathExtension == "flac")
+    }
+
+    @Test("an unrecognised `original` payload keeps the .bin extension")
+    func originalUnknownStaysBin() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Random non-audio bytes — no magic signature.
+        let payload = Data(repeating: 0x42, count: 64)
+        let transport = StubTransport(script: .init(chunks: [payload], totalBytes: Int64(payload.count)))
+        let loader = RemoteTrackLoader(transport: transport)
+        let cache = try SubsonicStreamCache(
+            configuration: .init(rootDirectory: dir),
+            loader: loader
+        )
+
+        let key = SubsonicStreamKey(serverID: UUID(), songID: "x", format: "original", bitrateKbps: nil)
+        let url = try await cache.url(for: key) { dummyURL() }
+        #expect(url.pathExtension == "bin")
+    }
+
+    @Test("a known-format download is left alone (no rename)")
+    func knownFormatNotRenamed() async throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var payload = Data([0x49, 0x44, 0x33, 0x04, 0x00, 0x00, 0x00, 0x00])
+        payload.append(Data(repeating: 0x00, count: 1024))
+        let transport = StubTransport(script: .init(chunks: [payload], totalBytes: Int64(payload.count)))
+        let loader = RemoteTrackLoader(transport: transport)
+        let cache = try SubsonicStreamCache(
+            configuration: .init(rootDirectory: dir),
+            loader: loader
+        )
+
+        // Format key is already "mp3" → filename ends with .mp3 and the
+        // rename pass is a no-op.
+        let key = SubsonicStreamKey(serverID: UUID(), songID: "x", format: "mp3", bitrateKbps: 192)
+        let url = try await cache.url(for: key) { dummyURL() }
+        #expect(url.pathExtension == "mp3")
+    }
+
+    // MARK: - Direct sniffer coverage
+
+    @Test("detectAudioExtension identifies common audio magic bytes")
+    func detectAudioExtensionRecognisesFormats() throws {
+        let dir = try makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        func write(_ bytes: [UInt8]) throws -> URL {
+            let url = dir.appendingPathComponent("\(UUID().uuidString).bin")
+            try Data(bytes).write(to: url)
+            return url
+        }
+
+        // FLAC
+        var url = try write([0x66, 0x4C, 0x61, 0x43, 0x00, 0x00])
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "flac")
+
+        // OGG container, Opus payload — needs the "OpusHead" marker at offset 28.
+        var ogg = Array(repeating: UInt8(0), count: 36)
+        ogg[0] = 0x4F
+        ogg[1] = 0x67
+        ogg[2] = 0x67
+        ogg[3] = 0x53
+        // "OpusHead" at offset 28
+        let opusHead: [UInt8] = [0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64]
+        for (i, b) in opusHead.enumerated() {
+            ogg[28 + i] = b
+        }
+        url = try write(ogg)
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "opus")
+
+        // OGG without Opus payload → falls back to "ogg".
+        url = try write([0x4F, 0x67, 0x67, 0x53] + Array(repeating: UInt8(0), count: 32))
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "ogg")
+
+        // WAV
+        url = try write([
+            0x52, 0x49, 0x46, 0x46, // RIFF
+            0x00, 0x00, 0x00, 0x00,
+            0x57, 0x41, 0x56, 0x45, // WAVE
+        ])
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "wav")
+
+        // M4A — "ftyp" at offset 4
+        url = try write([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70])
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "m4a")
+
+        // MP3 with ID3v2 header
+        url = try write([0x49, 0x44, 0x33, 0x04, 0x00, 0x00])
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "mp3")
+
+        // MP3 with raw frame sync (0xFF 0xFB → MPEG-1 layer 3)
+        url = try write([0xFF, 0xFB, 0x90, 0x00])
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == "mp3")
+
+        // Unknown → nil
+        url = try write([0x42, 0x42, 0x42, 0x42, 0x42])
+        #expect(SubsonicStreamCache.detectAudioExtension(at: url) == nil)
     }
 }
