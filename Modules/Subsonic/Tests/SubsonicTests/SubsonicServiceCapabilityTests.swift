@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import Persistence
 import SwiftSonic
@@ -65,6 +66,27 @@ private func extensionsEnvelope(_ names: [String]) -> String {
 // MARK: - Helpers
 
 private let testServerURL = URL(string: "https://music.test.local")!
+
+/// Names the legacy-core capabilities SubsonicService probes after fetching
+/// the OpenSubsonic extensions list. Probe order is radio → podcasts → bookmarks.
+private enum LegacyCoreProbe { case internetRadio, podcasts, bookmarks }
+
+/// Enqueues an HTTP 404 ("not supported") for each probe SubsonicService is
+/// expected to run during a single capability load. Pass only the probes you
+/// expect to fire — anything advertised in extensions is skipped by the
+/// service.
+private func enqueueProbeFailures(_ transport: CapabilityStubTransport, for probes: [LegacyCoreProbe]) {
+    for _ in probes {
+        transport.enqueue(json: "", statusCode: 404)
+    }
+}
+
+/// JSON envelope for a successful (but empty) `getInternetRadioStations` response.
+private func emptyRadioStationsEnvelope() -> String {
+    """
+    {"subsonic-response":{"status":"ok","version":"1.16.1","internetRadioStations":{"internetRadioStation":[]}}}
+    """
+}
 
 private func makeStore() async throws -> (SubsonicServerStore, SubsonicServerRepository, Database) {
     let db = try await Database(location: .inMemory)
@@ -192,6 +214,9 @@ struct SubsonicServiceCapabilityStreamTests {
         let transport = CapabilityStubTransport()
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope(["podcasts", "internetRadio"]))
+        // podcasts and internetRadio are advertised → probe is skipped for both.
+        // Only bookmarks probe runs; have it return 404 so caps.supportsBookmarks stays false.
+        enqueueProbeFailures(transport, for: [.bookmarks])
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
@@ -236,10 +261,12 @@ struct SubsonicServiceCapabilityStreamTests {
         let (store, repo, _) = try await makeStore()
         let id = try await seedServer(repo: repo)
         let transport = CapabilityStubTransport()
-        // Two identical round-trips: ping + extensions × 2.
+        // Two identical round-trips: ping + extensions + probes × 2.
+        // podcasts is advertised → skipped. radio + bookmarks probes run; 404 both.
         for _ in 0 ..< 2 {
             transport.enqueue(json: pingEnvelope())
             transport.enqueue(json: extensionsEnvelope(["podcasts"]))
+            enqueueProbeFailures(transport, for: [.internetRadio, .bookmarks])
         }
 
         let service = SubsonicService(store: store)
@@ -269,11 +296,14 @@ struct SubsonicServiceCapabilityStreamTests {
         let (store, repo, _) = try await makeStore()
         let id = try await seedServer(repo: repo)
         let transport = CapabilityStubTransport()
-        // First load: no podcasts. Second (refresh): podcasts enabled.
+        // First load: no extensions. All 3 probes run, all return 404.
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope([]))
+        enqueueProbeFailures(transport, for: [.internetRadio, .podcasts, .bookmarks])
+        // Second (refresh): podcasts + bookmarks advertised, only radio probe runs (404).
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope(["podcasts", "bookmarks"]))
+        enqueueProbeFailures(transport, for: [.internetRadio])
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
@@ -308,6 +338,71 @@ struct SubsonicServiceCapabilityStreamTests {
         #expect(decoded.supportsBookmarks)
     }
 
+    @Test("legacy-core probe flips supportsInternetRadio to true when server answers 200")
+    func probePromotesUnadvertisedCapability() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        // No legacy-core capability is advertised. Probe runs for all 3.
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope([]))
+        // Radio probe returns 200 (empty list) → supportsInternetRadio should flip to true.
+        transport.enqueue(json: emptyRadioStationsEnvelope())
+        // Podcasts + bookmarks probes return 404 → those flags stay false.
+        enqueueProbeFailures(transport, for: [.podcasts, .bookmarks])
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(caps.supportsInternetRadio, "200 from getInternetRadioStations should set the flag")
+        #expect(!caps.supportsPodcasts)
+        #expect(!caps.supportsBookmarks)
+    }
+
+    @Test("legacy-core probe skips capabilities already advertised in extensions")
+    func probeSkipsAdvertised() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        // All 3 legacy-core capabilities advertised — no probe should fire.
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope(["internetRadio", "podcasts", "bookmarks"]))
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        #expect(caps.supportsInternetRadio)
+        #expect(caps.supportsPodcasts)
+        #expect(caps.supportsBookmarks)
+        // Exactly 2 requests went over the wire — no probe round-trips.
+        #expect(transport.requests.count == 2)
+    }
+
+    @Test("transient probe error leaves the existing flag untouched")
+    func probeTransientErrorDoesNotDowngrade() async throws {
+        let (store, repo, _) = try await makeStore()
+        let id = try await seedServer(repo: repo)
+        let transport = CapabilityStubTransport()
+        // No extensions; all 3 probes will run. Queue runs out before podcasts probe,
+        // surfacing as URLError(.badServerResponse) — a transient signal, not a lie.
+        transport.enqueue(json: pingEnvelope())
+        transport.enqueue(json: extensionsEnvelope([]))
+        transport.enqueue(json: "", statusCode: 404) // radio: capability lie → false (already false)
+        // No more responses → podcasts + bookmarks probes throw URLError → no override.
+
+        let service = SubsonicService(store: store)
+        await service._registerClientForTesting(makeClient(transport), serverID: id)
+
+        let caps = try await service.loadCapabilities(serverID: id)
+        // The lie response on radio set it explicitly false; podcasts + bookmarks
+        // saw a transient error so they retain their pre-probe value (also false).
+        #expect(!caps.supportsInternetRadio)
+        #expect(!caps.supportsPodcasts)
+        #expect(!caps.supportsBookmarks)
+    }
+
     @Test("loadCapabilities returns cached value on second call without re-emitting")
     func cachedLoadDoesNotEmit() async throws {
         let (store, repo, _) = try await makeStore()
@@ -315,6 +410,8 @@ struct SubsonicServiceCapabilityStreamTests {
         let transport = CapabilityStubTransport()
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope(["jukebox"]))
+        // Jukebox advertised; none of the legacy-core probes are skipped → all 3 run (404).
+        enqueueProbeFailures(transport, for: [.internetRadio, .podcasts, .bookmarks])
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
@@ -334,8 +431,8 @@ struct SubsonicServiceCapabilityStreamTests {
         try await Task.sleep(nanoseconds: 200_000_000)
         collector.cancel()
         #expect(await collector.value == 1)
-        // Only the first ping+extensions pair was consumed.
-        #expect(transport.requests.count == 2)
+        // First load consumed ping + extensions + 3 probes; second was served from cache.
+        #expect(transport.requests.count == 5)
     }
 }
 
@@ -378,9 +475,10 @@ struct SubsonicServiceCapabilityLieTests {
         let (store, repo, _) = try await makeStore()
         let id = try await seedServer(repo: repo)
         let transport = CapabilityStubTransport()
-        // Capability load: podcasts advertised.
+        // Capability load: podcasts advertised. Probes run for radio + bookmarks (skipped for podcasts).
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope(["podcasts"]))
+        enqueueProbeFailures(transport, for: [.internetRadio, .bookmarks])
         // getPodcasts returns HTTP 404.
         transport.enqueue(json: "", statusCode: 404)
 
@@ -428,6 +526,8 @@ struct SubsonicServiceCapabilityLieTests {
         let transport = CapabilityStubTransport()
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope(["bookmarks"]))
+        // Bookmarks advertised → bookmarks probe skipped; radio + podcasts probes run.
+        enqueueProbeFailures(transport, for: [.internetRadio, .podcasts])
         // getBookmarks returns Subsonic API error 70 (notFound).
         transport.enqueue(json: apiErrorEnvelope(code: 70, message: "Data not found"))
 
@@ -467,6 +567,8 @@ struct SubsonicServiceCapabilityLieTests {
         let transport = CapabilityStubTransport()
         transport.enqueue(json: pingEnvelope())
         transport.enqueue(json: extensionsEnvelope(["internetRadio"]))
+        // internetRadio advertised → radio probe skipped; podcasts + bookmarks probes run.
+        enqueueProbeFailures(transport, for: [.podcasts, .bookmarks])
         // Server returns 501 Not Implemented (use no-retry client to avoid slow retries).
         transport.enqueue(json: "", statusCode: 501)
 
