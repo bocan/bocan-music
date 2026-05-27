@@ -5,6 +5,27 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0](https://github.com/bocan/bocan-music/compare/v1.4.0...v1.5.0) (2026-05-27)
+
+
+### ### Added
+
+* **subsonic:** play internet radio stations + add info popover ([0ec5ad8](https://github.com/bocan/bocan-music/commit/0ec5ad87804e10ffaf5112ed9f166a4404fbdd57))
+* **subsonic:** probe legacy-core endpoints to detect Radio/Podcasts/Bookmarks ([12bc1b9](https://github.com/bocan/bocan-music/commit/12bc1b9963ed7979190e16b29f7f9ab52e2c269d))
+* **subsonic:** rebuild search + add artist/album drill-down ([3d54eea](https://github.com/bocan/bocan-music/commit/3d54eead6ed3328b3be50f117404a9fddc6a7a3e))
+* **ui:** add Hidden Sources submenu for one-click sidebar re-enable ([fe4eafc](https://github.com/bocan/bocan-music/commit/fe4eafc78374d8a7657978541433e1cdd7fb06fa))
+* **ui:** add hidden-by-default MBID column to the Songs table ([63c39a2](https://github.com/bocan/bocan-music/commit/63c39a2c8da53511ab8cacae3568b1ea43d04c6c))
+* **ui:** show Recording + Album MBIDs in the Get Info sheet (read-only) ([740a913](https://github.com/bocan/bocan-music/commit/740a9138cd3d7873d36b313ef7eabfddae160ed6))
+* **website:** add Open Graph / Twitter Card preview image ([f477b70](https://github.com/bocan/bocan-music/commit/f477b7014dd430d61bcd816b68d555639a0268b4))
+
+
+### ### Fixed
+
+* **audio:** wait for full Subsonic download + sniff format extension ([61b50b4](https://github.com/bocan/bocan-music/commit/61b50b4335a05e0d60066df92f596389d47de24a))
+* **persistence:** broaden local Album search to include track-title hits ([66c8c71](https://github.com/bocan/bocan-music/commit/66c8c71afd2606cbab506ff4adf38f8ee66210d8))
+* **subsonic:** refresh capabilities on launch so the legacy-core probe runs ([41d0621](https://github.com/bocan/bocan-music/commit/41d06214484af9096047a96cc07debcb82c5effa))
+* **subsonic:** stable random shuffle for the Songs view ([3579449](https://github.com/bocan/bocan-music/commit/357944941dbaa84a5a40fedaff9c78d5b7870617))
+
 ## [1.4.0](https://github.com/bocan/bocan-music/compare/v1.3.1...v1.4.0) (2026-05-25)
 
 This release adds Subsonic / Navidrome / Airsonic servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, and ⌘⇧1–⌘⇧9 to jump straight to a server.
