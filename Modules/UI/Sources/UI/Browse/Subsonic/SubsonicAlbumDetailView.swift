@@ -120,62 +120,73 @@ public struct SubsonicAlbumDetailView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                let serverName = self.currentServerName
-                let rows = songs.map { song in
-                    SubsonicSongTableRow(
-                        song: song,
-                        serverID: self.serverID,
-                        serverName: serverName,
-                        starred: self.annotationCoordinator?.isStarred(
-                            songID: song.id,
-                            serverStarred: song.starred
-                        ) ?? (song.starred != nil),
-                        rating: self.annotationCoordinator?.rating(
-                            songID: song.id,
-                            serverRating: song.userRating
-                        ) ?? (song.userRating ?? 0)
-                    )
-                }
-                SubsonicSongTable(
-                    rows: rows,
-                    isLoading: false,
-                    hasMorePages: false,
-                    coverArtProvider: self.coverArtProvider,
-                    showsSource: false,
-                    actions: SubsonicSongTableActions(
-                        playNow: { index in
-                            let sid = self.serverID
-                            Task {
-                                await self.library.play(
-                                    subsonicSongs: songs, serverID: sid, startingAt: index
-                                )
-                            }
-                        },
-                        loadMore: {},
-                        toggleStar: { songID in
-                            guard let coord = self.annotationCoordinator else { return }
-                            let song = songs.first { $0.id == songID }
-                            let starred = coord.isStarred(songID: songID, serverStarred: song?.starred)
-                            coord.toggleStar(
-                                songID: songID,
-                                serverID: self.serverID,
-                                currentlyStarred: starred
-                            )
-                        },
-                        setRating: { songID, stars in
-                            guard let coord = self.annotationCoordinator else { return }
-                            let song = songs.first { $0.id == songID }
-                            coord.setRating(
-                                songID: songID,
-                                serverID: self.serverID,
-                                newRating: stars,
-                                previousRating: song?.userRating
-                            )
-                        }
-                    )
-                )
+                self.songsTable(songs)
             }
         }
+    }
+
+    private func songsTable(_ songs: [Song]) -> some View {
+        SubsonicSongTable(
+            rows: self.makeRows(songs),
+            isLoading: false,
+            hasMorePages: false,
+            coverArtProvider: self.coverArtProvider,
+            showsSource: false,
+            actions: self.makeActions(songs)
+        )
+    }
+
+    private func makeRows(_ songs: [Song]) -> [SubsonicSongTableRow] {
+        let serverName = self.currentServerName
+        return songs.map { song in
+            SubsonicSongTableRow(
+                song: song,
+                serverID: self.serverID,
+                serverName: serverName,
+                starred: self.annotationCoordinator?.isStarred(
+                    songID: song.id,
+                    serverStarred: song.starred
+                ) ?? (song.starred != nil),
+                rating: self.annotationCoordinator?.rating(
+                    songID: song.id,
+                    serverRating: song.userRating
+                ) ?? (song.userRating ?? 0)
+            )
+        }
+    }
+
+    private func makeActions(_ songs: [Song]) -> SubsonicSongTableActions {
+        SubsonicSongTableActions(
+            playNow: { index in
+                let sid = self.serverID
+                Task {
+                    await self.library.play(
+                        subsonicSongs: songs, serverID: sid, startingAt: index
+                    )
+                }
+            },
+            loadMore: {},
+            toggleStar: { songID in
+                guard let coord = self.annotationCoordinator else { return }
+                let song = songs.first { $0.id == songID }
+                let starred = coord.isStarred(songID: songID, serverStarred: song?.starred)
+                coord.toggleStar(
+                    songID: songID,
+                    serverID: self.serverID,
+                    currentlyStarred: starred
+                )
+            },
+            setRating: { songID, stars in
+                guard let coord = self.annotationCoordinator else { return }
+                let song = songs.first { $0.id == songID }
+                coord.setRating(
+                    songID: songID,
+                    serverID: self.serverID,
+                    newRating: stars,
+                    previousRating: song?.userRating
+                )
+            }
+        )
     }
 
     private func header(_ album: AlbumID3, songs: [Song]) -> some View {
@@ -198,54 +209,61 @@ public struct SubsonicAlbumDetailView: View {
                         .font(Typography.subheadline)
                         .foregroundStyle(Color.textSecondary)
                 }
-                HStack(spacing: 8) {
-                    if let year = album.year {
-                        Text(String(year))
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textTertiary)
-                    }
-                    let n = songs.count
-                    if n > 0 {
-                        Text(n == 1 ? "1 song" : "\(n) songs")
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textTertiary)
-                    }
-                    let totalSeconds = songs.compactMap(\.duration).reduce(0, +)
-                    if totalSeconds > 0 {
-                        Text(Self.formatTotalDuration(totalSeconds))
-                            .font(Typography.caption.monospacedDigit())
-                            .foregroundStyle(Color.textTertiary)
-                    }
-                }
-
+                self.headerMeta(album: album, songs: songs)
                 if !songs.isEmpty {
-                    Button {
-                        Task {
-                            await self.library.play(
-                                subsonicSongs: songs, serverID: self.serverID, startingAt: 0
-                            )
-                        }
-                    } label: {
-                        Label("Play", systemImage: "play.fill")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .padding(.top, 6)
+                    self.playButton(songs: songs)
                 }
             }
             Spacer()
         }
     }
 
+    private func headerMeta(album: AlbumID3, songs: [Song]) -> some View {
+        HStack(spacing: 8) {
+            if let year = album.year {
+                Text(String(year))
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textTertiary)
+            }
+            let count = songs.count
+            if count > 0 {
+                Text(count == 1 ? "1 song" : "\(count) songs")
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textTertiary)
+            }
+            let totalSeconds = songs.compactMap(\.duration).reduce(0, +)
+            if totalSeconds > 0 {
+                Text(Self.formatTotalDuration(totalSeconds))
+                    .font(Typography.caption.monospacedDigit())
+                    .foregroundStyle(Color.textTertiary)
+            }
+        }
+    }
+
+    private func playButton(songs: [Song]) -> some View {
+        Button {
+            Task {
+                await self.library.play(
+                    subsonicSongs: songs, serverID: self.serverID, startingAt: 0
+                )
+            }
+        } label: {
+            Label("Play", systemImage: "play.fill")
+        }
+        .buttonStyle(.borderedProminent)
+        .padding(.top, 6)
+    }
+
     private var currentServerName: String {
-        self.library.subsonicServers.first(where: { $0.id == self.serverID })?.name ?? ""
+        self.library.subsonicServers.first { $0.id == self.serverID }?.name ?? ""
     }
 
     private static func formatTotalDuration(_ seconds: Int) -> String {
-        let h = seconds / 3600
-        let m = (seconds % 3600) / 60
-        let s = seconds % 60
-        return h > 0
-            ? String(format: "%d:%02d:%02d", h, m, s)
-            : String(format: "%d:%02d", m, s)
+        let hours = seconds / 3600
+        let minutes = (seconds % 3600) / 60
+        let secs = seconds % 60
+        return hours > 0
+            ? String(format: "%d:%02d:%02d", hours, minutes, secs)
+            : String(format: "%d:%02d", minutes, secs)
     }
 }

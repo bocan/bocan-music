@@ -239,6 +239,6 @@ public struct SubsonicSongsView: View {
     }
 
     private var currentServerName: String {
-        self.library.subsonicServers.first(where: { $0.id == self.serverID })?.name ?? ""
+        self.library.subsonicServers.first { $0.id == self.serverID }?.name ?? ""
     }
 }

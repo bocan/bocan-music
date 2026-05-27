@@ -68,8 +68,11 @@ struct NoopBrowseDataSource: SubsonicBrowseDataSource {
     }
 
     func search3(
-        serverID _: UUID, query _: String,
-        artistCount _: Int, albumCount _: Int, songCount _: Int
+        serverID _: UUID,
+        query _: String,
+        artistCount _: Int,
+        albumCount _: Int,
+        songCount _: Int
     ) async throws -> SearchResult3 {
         throw Unavailable()
     }
