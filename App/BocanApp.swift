@@ -513,9 +513,22 @@ struct BocanApp: App {
             // Phase 19 step 17: kick off the ping/back-off loop for every
             // persisted server so the sidebar status dots become live as
             // soon as the user finishes launching.
-            if let servers = try? await subsonicStore.fetchAll() {
+            let servers = await (try? subsonicStore.fetchAll()) ?? []
+            for server in servers {
+                await subsonicMonitor.startMonitoring(serverID: server.id)
+            }
+            // Refresh capabilities on launch so the legacy-core probe
+            // (Internet Radio / Podcasts / Bookmarks) runs and the sidebar
+            // reflects whatever the server actually supports today — not
+            // whatever was advertised when the user first added the server.
+            // Fired in parallel; capability-change events flow through
+            // `LibraryViewModel.observeSubsonicCapabilityChanges` and trigger
+            // a sidebar reload on each server whose flags actually changed.
+            await withTaskGroup(of: Void.self) { group in
                 for server in servers {
-                    await subsonicMonitor.startMonitoring(serverID: server.id)
+                    group.addTask {
+                        _ = try? await subsonicService.loadCapabilities(serverID: server.id)
+                    }
                 }
             }
             // Spec: prune metadata-cache entries older than 7 days once on launch.
