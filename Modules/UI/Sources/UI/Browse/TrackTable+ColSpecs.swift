@@ -293,5 +293,14 @@ extension TrackTable {
             sortKey: "fileMtime",
             hidden: true
         ),
+        ColSpec(
+            id: .musicBrainzID,
+            title: "MBID",
+            minWidth: 80,
+            idealWidth: 240,
+            maxWidth: 320,
+            sortKey: "musicBrainzID",
+            hidden: true
+        ),
     ]
 }
