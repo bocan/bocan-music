@@ -207,7 +207,8 @@ public actor SubsonicService {
         }
         do {
             let raw = try await client.loadCapabilities()
-            let caps = SubsonicCapabilities.from(raw)
+            let advertised = SubsonicCapabilities.from(raw)
+            let caps = await self.probeLegacyCoreCapabilities(advertised, serverID: serverID)
             let previous = try? await self.persistedCapabilities(serverID: serverID)
             self.clients[serverID]?.capabilities = caps
             try? await self.persistCapabilities(caps, serverID: serverID)
@@ -238,7 +239,8 @@ public actor SubsonicService {
         self.clients[serverID]?.capabilities = nil
         do {
             let raw = try await client.refreshCapabilities()
-            let caps = SubsonicCapabilities.from(raw)
+            let advertised = SubsonicCapabilities.from(raw)
+            let caps = await self.probeLegacyCoreCapabilities(advertised, serverID: serverID)
             let previous = try? await self.persistedCapabilities(serverID: serverID)
             self.clients[serverID]?.capabilities = caps
             try? await self.persistCapabilities(caps, serverID: serverID)
@@ -535,6 +537,12 @@ public actor SubsonicService {
 
     // MARK: - Private helpers
 
+    /// Internal-only accessor used by the legacy-core capability probe in
+    /// `SubsonicService+CapabilityProbe.swift`.
+    func clientForCapabilityProbe(serverID: UUID) -> SwiftSonicClient? {
+        self.clients[serverID]?.client
+    }
+
     private func requireClient(_ serverID: UUID) throws -> SwiftSonicClient {
         guard let entry = self.clients[serverID] else {
             throw SubsonicError.unknownServer(serverID)
@@ -640,12 +648,14 @@ public actor SubsonicService {
 /// - HTTP 501 — server explicitly says "not implemented"
 /// - Subsonic API error 70 (`.notFound`) — used by some servers for
 ///   optional endpoints they don't support
-private func isCapabilityLie(_ error: SwiftSonicError) -> Bool {
+func isCapabilityLie(_ error: SwiftSonicError) -> Bool {
     switch error {
     case let .httpError(statusCode, _, _):
         statusCode == 404 || statusCode == 501
+
     case let .api(apiError):
         apiError.code == .notFound
+
     default:
         false
     }
