@@ -132,6 +132,11 @@ extension TagEditorSheet {
                 .focused(self.$focusedField, equals: .comment)
             }
 
+            Section("Identifiers") {
+                ReadOnlyIDRow(label: "Recording MBID", value: self.vm.recordingMBIDDisplay)
+                ReadOnlyIDRow(label: "Album MBID", value: self.vm.releaseMBIDDisplay)
+            }
+
             Section("Rating") {
                 StarRatingRow(
                     "Rating",

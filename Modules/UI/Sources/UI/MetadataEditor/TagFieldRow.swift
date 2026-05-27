@@ -1,6 +1,35 @@
 import Library
 import SwiftUI
 
+// MARK: - ReadOnlyIDRow
+
+/// Label + read-only value row for identifiers (e.g. MusicBrainz MBIDs).
+/// The value is selectable so users can copy it, but never editable from
+/// the Tag Editor — these IDs come from file tags and the DB scanner.
+/// Renders an em-dash when no value exists for the loaded track(s).
+public struct ReadOnlyIDRow: View {
+    public let label: LocalizedStringKey
+    public let value: String
+
+    public init(label: LocalizedStringKey, value: String) {
+        self.label = label
+        self.value = value
+    }
+
+    public var body: some View {
+        LabeledContent(self.label) {
+            Text(self.value.isEmpty ? "\u{2014}" : self.value)
+                .font(.body.monospaced())
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(self.value.isEmpty ? "Not set" : self.value)
+        }
+    }
+}
+
 // MARK: - TagFieldRow
 
 /// A single label + text-input row in the tag editor form.
