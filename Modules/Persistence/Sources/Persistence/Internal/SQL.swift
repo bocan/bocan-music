@@ -89,6 +89,27 @@ enum SQL {
         )
     }
 
+    /// Returns albums that contain at least one non-disabled track whose
+    /// indexed metadata matches `term` via `tracks_fts`. Lets album search
+    /// surface results where the album/artist names don't contain the term
+    /// but one of the album's songs does — matching Subsonic's `search3`
+    /// album behaviour.
+    static func albumsByTrackFTSQuery(_ term: String) -> SQLRequest<Album> {
+        let escaped = Self.escapeFTSTerm(term)
+        return SQLRequest(
+            sql: """
+            SELECT DISTINCT albums.*
+            FROM albums
+            JOIN tracks ON tracks.album_id = albums.id
+            JOIN tracks_fts ON tracks_fts.rowid = tracks.id
+            WHERE tracks_fts MATCH ?
+              AND tracks.disabled = 0
+            ORDER BY albums.title
+            """,
+            arguments: [escaped]
+        )
+    }
+
     // MARK: - Helpers
 
     /// Converts a user-supplied query into an FTS5 expression that supports

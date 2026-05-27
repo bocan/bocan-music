@@ -106,4 +106,109 @@ struct AlbumRepositoryTests {
         let fetched = try await repo.fetch(id: id)
         #expect(fetched.forceGapless == false)
     }
+
+    // MARK: - search(query:)
+
+    @Test("search matches by album title via FTS")
+    func searchMatchesByTitle() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        _ = try await repo.insert(Album(title: "Wall of Fire"))
+        _ = try await repo.insert(Album(title: "Abbey Road"))
+        let hits = try await repo.search(query: "fire")
+        #expect(hits.map(\.title) == ["Wall of Fire"])
+    }
+
+    @Test("search matches by album-artist name")
+    func searchMatchesByArtist() async throws {
+        let db = try await makeDatabase()
+        let albumRepo = AlbumRepository(database: db)
+        let artistRepo = ArtistRepository(database: db)
+        let arsonID = try await artistRepo.insert(Artist(name: "Arsonists"))
+        _ = try await albumRepo.insert(Album(title: "Plain Title", albumArtistID: arsonID))
+        let hits = try await albumRepo.search(query: "arson")
+        #expect(hits.contains { $0.title == "Plain Title" })
+    }
+
+    @Test("search surfaces albums whose track titles match")
+    func searchMatchesByTrackTitle() async throws {
+        let db = try await makeDatabase()
+        let albumRepo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let albumID = try await albumRepo.insert(Album(title: "The Wall"))
+        let now = Int64(Date().timeIntervalSince1970)
+        _ = try await trackRepo.insert(
+            Track(
+                fileURL: "file:///tmp/\(UUID().uuidString).flac",
+                fileSize: 1024,
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 200,
+                title: "Fire In The Sky",
+                albumID: albumID,
+                addedAt: now,
+                updatedAt: now
+            )
+        )
+        let hits = try await albumRepo.search(query: "fire")
+        #expect(hits.contains { $0.id == albumID })
+    }
+
+    @Test("search dedupes albums matched by multiple passes")
+    func searchDedupes() async throws {
+        let db = try await makeDatabase()
+        let albumRepo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        // Album title + track title both contain "fire" → only one row.
+        let albumID = try await albumRepo.insert(Album(title: "Fire Album"))
+        let now = Int64(Date().timeIntervalSince1970)
+        _ = try await trackRepo.insert(
+            Track(
+                fileURL: "file:///tmp/\(UUID().uuidString).flac",
+                fileSize: 1024,
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 200,
+                title: "Fire Song",
+                albumID: albumID,
+                addedAt: now,
+                updatedAt: now
+            )
+        )
+        let hits = try await albumRepo.search(query: "fire")
+        #expect(hits.count(where: { $0.id == albumID }) == 1)
+    }
+
+    @Test("search returns empty for blank query")
+    func searchBlankReturnsEmpty() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        _ = try await repo.insert(Album(title: "Anything"))
+        #expect(try await repo.search(query: "   ").isEmpty)
+        #expect(try await repo.search(query: "").isEmpty)
+    }
+
+    @Test("search excludes albums whose only matching track is disabled")
+    func searchExcludesDisabledTracks() async throws {
+        let db = try await makeDatabase()
+        let albumRepo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let albumID = try await albumRepo.insert(Album(title: "Quiet Album"))
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(
+            fileURL: "file:///tmp/\(UUID().uuidString).flac",
+            fileSize: 1024,
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 200,
+            title: "Fire Walk",
+            albumID: albumID,
+            addedAt: now,
+            updatedAt: now
+        )
+        track.disabled = true
+        _ = try await trackRepo.insert(track)
+        let hits = try await albumRepo.search(query: "fire")
+        #expect(hits.contains { $0.id == albumID } == false)
+    }
 }

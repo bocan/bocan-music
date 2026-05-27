@@ -175,19 +175,31 @@ public struct AlbumRepository: Sendable {
 
     // MARK: - Search
 
-    /// Full-text search across album title and artist name.
+    /// Full-text search across album title, artist name, and track-level
+    /// metadata.
     ///
-    /// Returns albums ranked by FTS5 relevance first, followed by any additional
-    /// albums whose artist name matches the query (case-insensitive prefix).
-    /// Returns an empty array for blank queries.
+    /// Returns albums ranked by FTS5 relevance first, then albums whose
+    /// album-artist name matches the query (case-insensitive substring),
+    /// then any further albums that contain at least one track whose
+    /// indexed metadata matches. Deduped by album ID; empty for blank
+    /// queries. The track-level pass mirrors how Subsonic's `search3`
+    /// surfaces an album when one of its songs matches.
     public func search(query: String) async throws -> [Album] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
         return try await self.database.read { db in
             var results = try SQL.albumsFTSQuery(trimmed).fetchAll(db)
-            let seenIDs = Set(results.compactMap(\.id))
+            var seenIDs = Set(results.compactMap(\.id))
             let artistMatches = try SQL.albumsByArtistQuery(trimmed).fetchAll(db)
-            results += artistMatches.filter { $0.id.map { !seenIDs.contains($0) } ?? true }
+            for album in artistMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
+                results.append(album)
+                if let id = album.id { seenIDs.insert(id) }
+            }
+            let trackMatches = try SQL.albumsByTrackFTSQuery(trimmed).fetchAll(db)
+            for album in trackMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
+                results.append(album)
+                if let id = album.id { seenIDs.insert(id) }
+            }
             return results
         }
     }
