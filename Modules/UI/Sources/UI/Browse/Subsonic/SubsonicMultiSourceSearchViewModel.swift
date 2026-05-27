@@ -185,9 +185,9 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
                     let value = try await dataSource.search3(
                         serverID: serverID,
                         query: query,
-                        artistCount: SubsonicMultiSourceSearchViewModel.artistCount,
-                        albumCount: SubsonicMultiSourceSearchViewModel.albumCount,
-                        songCount: SubsonicMultiSourceSearchViewModel.songCount
+                        artistCount: Self.artistCount,
+                        albumCount: Self.albumCount,
+                        songCount: Self.songCount
                     )
                     return .success(value)
                 } catch is CancellationError {

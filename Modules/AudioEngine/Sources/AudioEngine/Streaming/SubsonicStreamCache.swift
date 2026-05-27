@@ -282,6 +282,8 @@ public actor SubsonicStreamCache {
         }
     }
 
+    // swiftlint:disable cyclomatic_complexity
+
     /// Returns the appropriate audio file extension based on the first
     /// few bytes of `fileURL`, or `nil` if no known signature is found.
     /// Covers the formats Navidrome / Subsonic servers commonly serve as
@@ -324,6 +326,8 @@ public actor SubsonicStreamCache {
 
         return nil
     }
+
+    // swiftlint:enable cyclomatic_complexity
 
     private func signalReady(entry: Entry) {
         let conts = entry.readyContinuations

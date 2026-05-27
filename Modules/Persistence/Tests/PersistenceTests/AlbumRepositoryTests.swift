@@ -176,7 +176,7 @@ struct AlbumRepositoryTests {
             )
         )
         let hits = try await albumRepo.search(query: "fire")
-        #expect(hits.count(where: { $0.id == albumID }) == 1)
+        #expect(hits.count { $0.id == albumID } == 1)
     }
 
     @Test("search returns empty for blank query")
