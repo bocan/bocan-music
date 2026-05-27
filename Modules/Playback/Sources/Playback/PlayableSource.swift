@@ -16,6 +16,7 @@ import Foundation
 /// ```json
 /// { "kind": "localBookmark", "bookmark": "<base64>" }
 /// { "kind": "subsonic", "serverID": "<uuid>", "songID": "tr-1234" }
+/// { "kind": "internetRadio", "streamURL": "<absolute URL>" }
 /// ```
 /// Legacy persisted queues (v1 schema) lack this field entirely; the
 /// restore path in `QueuePersistence` upgrades those to
@@ -33,13 +34,31 @@ public enum PlayableSource: Sendable, Hashable, Codable {
     /// `SubsonicStreamCache` to produce a local cache-file URL.
     case subsonic(serverID: UUID, songID: String)
 
+    /// An internet radio station: a live HTTP / HTTPS stream identified
+    /// by its absolute URL. The audio engine reads the stream directly
+    /// via FFmpeg — no bookmark, no Subsonic stream cache. Live streams
+    /// have no fixed duration and don't support seek; the queue treats
+    /// the source as a single "track" that plays until the user stops
+    /// it or the network drops.
+    case internetRadio(streamURL: URL)
+
     // MARK: - Convenience
 
     /// `true` when the source must be streamed from a remote server.
     public var isRemote: Bool {
         switch self {
         case .localBookmark: false
-        case .subsonic: true
+        case .subsonic, .internetRadio: true
+        }
+    }
+
+    /// `true` when the source is a live (open-ended) stream rather than
+    /// a finite track. Used by scrobble / history / now-playing paths to
+    /// skip duration-based logic.
+    public var isLiveStream: Bool {
+        switch self {
+        case .localBookmark, .subsonic: false
+        case .internetRadio: true
         }
     }
 
@@ -55,11 +74,18 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         return nil
     }
 
+    /// The stream URL, when the source is `.internetRadio`. `nil` otherwise.
+    public var internetRadioURL: URL? {
+        if case let .internetRadio(url) = self { return url }
+        return nil
+    }
+
     // MARK: - Codable
 
     private enum Kind: String, Codable {
         case localBookmark
         case subsonic
+        case internetRadio
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -67,6 +93,7 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case bookmark
         case serverID
         case songID
+        case streamURL
     }
 
     public init(from decoder: Decoder) throws {
@@ -80,6 +107,9 @@ public enum PlayableSource: Sendable, Hashable, Codable {
             let serverID = try container.decode(UUID.self, forKey: .serverID)
             let songID = try container.decode(String.self, forKey: .songID)
             self = .subsonic(serverID: serverID, songID: songID)
+        case .internetRadio:
+            let url = try container.decode(URL.self, forKey: .streamURL)
+            self = .internetRadio(streamURL: url)
         }
     }
 
@@ -95,6 +125,9 @@ public enum PlayableSource: Sendable, Hashable, Codable {
             try container.encode(Kind.subsonic, forKey: .kind)
             try container.encode(serverID, forKey: .serverID)
             try container.encode(songID, forKey: .songID)
+        case let .internetRadio(url):
+            try container.encode(Kind.internetRadio, forKey: .kind)
+            try container.encode(url, forKey: .streamURL)
         }
     }
 }

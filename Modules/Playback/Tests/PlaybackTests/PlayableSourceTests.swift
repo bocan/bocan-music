@@ -9,11 +9,23 @@ import Testing
 struct PlayableSourceTests {
     // MARK: - Equality + helpers
 
-    @Test("isRemote is true only for .subsonic")
-    func isRemoteDiscrimination() {
+    @Test("isRemote is true for remote sources (.subsonic and .internetRadio)")
+    func isRemoteDiscrimination() throws {
         #expect(PlayableSource.localBookmark(Data()).isRemote == false)
         #expect(PlayableSource.localBookmark(Data([0x01, 0x02])).isRemote == false)
         #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").isRemote)
+        // swiftlint:disable:next force_unwrapping
+        let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
+        #expect(PlayableSource.internetRadio(streamURL: url).isRemote)
+    }
+
+    @Test("isLiveStream flags only .internetRadio")
+    func isLiveStreamDiscrimination() throws {
+        #expect(PlayableSource.localBookmark(Data()).isLiveStream == false)
+        #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").isLiveStream == false)
+        // swiftlint:disable:next force_unwrapping
+        let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
+        #expect(PlayableSource.internetRadio(streamURL: url).isLiveStream)
     }
 
     @Test("subsonicServerID/SongID surface only on .subsonic")
@@ -25,6 +37,18 @@ struct PlayableSourceTests {
         let local = PlayableSource.localBookmark(Data([0xAA]))
         #expect(local.subsonicServerID == nil)
         #expect(local.subsonicSongID == nil)
+    }
+
+    @Test("internetRadioURL surfaces only on .internetRadio")
+    func internetRadioAccessor() throws {
+        // swiftlint:disable:next force_unwrapping
+        let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
+        let radio = PlayableSource.internetRadio(streamURL: url)
+        #expect(radio.internetRadioURL == url)
+        let local = PlayableSource.localBookmark(Data())
+        #expect(local.internetRadioURL == nil)
+        let subsonic = PlayableSource.subsonic(serverID: UUID(), songID: "tr-1")
+        #expect(subsonic.internetRadioURL == nil)
     }
 
     // MARK: - Codable round-trip
@@ -51,9 +75,20 @@ struct PlayableSourceTests {
     func codableLocalMissingBookmark() throws {
         // Minimal legacy-style JSON: only the discriminator. Should decode
         // to an empty-data local bookmark and fall back to fileURL at play time.
+        // swiftlint:disable:next force_unwrapping
         let json = "{\"kind\":\"localBookmark\"}".data(using: .utf8)!
         let decoded = try JSONDecoder().decode(PlayableSource.self, from: json)
         #expect(decoded == .localBookmark(Data()))
+    }
+
+    @Test("Codable round-trip preserves .internetRadio stream URL")
+    func codableRoundTripInternetRadio() throws {
+        // swiftlint:disable:next force_unwrapping
+        let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
+        let value = PlayableSource.internetRadio(streamURL: url)
+        let data = try JSONEncoder().encode(value)
+        let decoded = try JSONDecoder().decode(PlayableSource.self, from: data)
+        #expect(decoded == value)
     }
 }
 

@@ -271,6 +271,7 @@ public struct ContentPane: View {
             if let ds = self.vm.subsonicDataSource {
                 SubsonicInternetRadioView(
                     serverID: serverID,
+                    library: self.vm,
                     dataSource: ds
                 )
             } else {
