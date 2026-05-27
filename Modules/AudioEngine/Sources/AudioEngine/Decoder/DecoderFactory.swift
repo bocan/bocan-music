@@ -15,6 +15,16 @@ public struct DecoderFactory: Sendable {
     /// - Throws: `AudioEngineError.fileNotFound` if the file doesn't exist,
     ///   `AudioEngineError.unsupportedFormat` if no decoder handles the format.
     public static func make(for url: URL) throws -> any Decoder {
+        // HTTP / HTTPS streams (e.g. Subsonic internet radio) go straight to
+        // FFmpeg. The format sniffer reads bytes off a local file handle and
+        // can't probe a network stream — FFmpeg's own probing inside
+        // `avformat_open_input` handles ICY, Shoutcast, HLS, and the usual
+        // container formats served over HTTP. URLs with no scheme (bare paths
+        // like "/tmp/foo.flac") still go down the local-file branch so the
+        // sniffer raises a proper "file not found" if the path is missing.
+        if let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" {
+            return try FFmpegDecoder(url: url)
+        }
         let sniffer = FormatSniffer()
         let codec = try sniffer.sniff(url: url)
         return try self.make(codec: codec, url: url)

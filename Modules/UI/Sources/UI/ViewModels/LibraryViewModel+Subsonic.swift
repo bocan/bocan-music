@@ -29,6 +29,27 @@ public extension LibraryViewModel {
         }
     }
 
+    /// Starts playback of a Subsonic internet radio station. The queue is
+    /// replaced with a single open-ended item; nothing pre-caches and no
+    /// scrobble fires. Live streams have no fixed duration and don't
+    /// support seek — the engine simply reads frames as they arrive.
+    func play(internetRadioStation station: InternetRadioStation, serverID: UUID) async {
+        guard let qp = self.queuePlayer else {
+            self.playbackErrorMessage = "Playback engine isn't available."
+            return
+        }
+        guard let url = URL(string: station.streamUrl) else {
+            self.playbackErrorMessage = "\u{201C}\(station.name)\u{201D} has no valid stream URL."
+            return
+        }
+        let item = QueueItem.makeInternetRadio(station: station, serverID: serverID, streamURL: url)
+        do {
+            try await qp.play(items: [item], startingAt: 0, shuffle: false)
+        } catch {
+            self.playbackErrorMessage = "Could not start \u{201C}\(station.name)\u{201D}."
+        }
+    }
+
     /// Plays a heterogeneous list of Subsonic songs sourced from multiple
     /// servers. Each `SubsonicSongHit` carries its own `serverID` so the
     /// queue stamps the right server on each `QueueItem`.
@@ -52,6 +73,35 @@ public extension LibraryViewModel {
 // MARK: - QueueItem factory
 
 extension QueueItem {
+    /// Builds a `QueueItem` representing a Subsonic internet radio station.
+    /// `duration = 0` flags the item as live — no scrobble, no gapless,
+    /// no scrubbing in the now-playing UI.
+    static func makeInternetRadio(
+        station: InternetRadioStation,
+        serverID: UUID,
+        streamURL: URL
+    ) -> QueueItem {
+        let fmt = AudioSourceFormat(
+            sampleRate: 44100,
+            bitDepth: 16,
+            channelCount: 2,
+            isInterleaved: false,
+            codec: "stream"
+        )
+        return QueueItem(
+            trackID: -1,
+            bookmark: nil,
+            fileURL: streamURL.absoluteString,
+            duration: 0,
+            sourceFormat: fmt,
+            title: station.name,
+            artistName: "Internet Radio",
+            albumName: station.homePageUrl,
+            genre: nil,
+            playableSource: .internetRadio(streamURL: streamURL)
+        )
+    }
+
     /// Builds a `QueueItem` from a SwiftSonic `Song`, marking it as a
     /// `.subsonic` `PlayableSource` so the audio engine routes it through
     /// `SubsonicStreamCache`.

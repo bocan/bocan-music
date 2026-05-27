@@ -78,7 +78,13 @@ public actor FFmpegDecoder: Decoder {
     // MARK: - Init
 
     public init(url: URL) throws {
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        // Skip the file-exists check for HTTP / HTTPS URLs (internet radio
+        // streams). FFmpeg's `avformat_open_input` handles network
+        // protocols directly when given an absolute URL string. Local
+        // file URLs (and bare-path URLs with no scheme) still get the
+        // existence check so a missing file fails fast.
+        let isHTTP = (url.scheme?.lowercased()).map { $0 == "http" || $0 == "https" } ?? false
+        if !isHTTP, !FileManager.default.fileExists(atPath: url.path) {
             throw AudioEngineError.fileNotFound(url)
         }
         let ctx = FFContext()
@@ -157,7 +163,13 @@ private extension FFmpegDecoder {
     /// Opens the format context, finds the best audio stream, opens the codec,
     /// and initialises the SWR resampler. Returns the stream's native sample rate.
     private static func openAndConfigure(ctx: FFContext, url: URL) throws -> Double {
-        let openRet = avformat_open_input(&ctx.formatCtx, url.path, nil, nil)
+        // For HTTP / HTTPS URLs pass the full absolute string so FFmpeg's
+        // network protocol handlers fire. Everything else (file URLs,
+        // bare paths) uses the on-disk path so security-scoped bookmark
+        // URLs aren't double-encoded.
+        let isHTTP = (url.scheme?.lowercased()).map { $0 == "http" || $0 == "https" } ?? false
+        let inputPath = isHTTP ? url.absoluteString : url.path
+        let openRet = avformat_open_input(&ctx.formatCtx, inputPath, nil, nil)
         if openRet < 0 {
             throw AudioEngineError.accessDenied(url, underlying: ffError(openRet))
         }

@@ -559,7 +559,13 @@ public actor QueuePlayer: Transport {
         var rootScope: RootScopeHandle? = nil
         let url: URL
 
-        if case let .subsonic(serverID, songID) = item.playableSource {
+        if case let .internetRadio(streamURL) = item.playableSource {
+            // Live HTTP radio bypasses bookmarks and the Subsonic stream
+            // cache. Hand the URL straight to the engine; FFmpeg decodes
+            // the stream directly.
+            self.log.debug("queueplayer.internetRadio.start", ["url": streamURL.absoluteString])
+            url = streamURL
+        } else if case let .subsonic(serverID, songID) = item.playableSource {
             guard let resolver = self.subsonicResolver else {
                 self.log.error("queueplayer.subsonic.no_resolver", ["songID": songID])
                 throw PlaybackError.bookmarkResolutionFailed(
@@ -690,6 +696,9 @@ public actor QueuePlayer: Transport {
     /// server. Subsonic items don't have a row in the local `tracks` table,
     /// so the recorder must skip its usual local-DB writes.
     private func notifyHistoryStart(for item: QueueItem) async {
+        // Internet radio is a live stream — no track row, no scrobble.
+        // Skip the history recorder entirely.
+        if case .internetRadio = item.playableSource { return }
         if case let .subsonic(serverID, songID) = item.playableSource {
             let context = SubsonicPlayContext(
                 serverID: serverID,
