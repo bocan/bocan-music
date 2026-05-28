@@ -120,7 +120,7 @@ private struct GettingStartedSection: View {
         ),
         Topic(
             title: "Scrobbling",
-            body: "Connect your Last.fm account under Bòcan → Settings… → Scrobbling"
+            body: "Connect your Last.fm, Musicbrainz, or Rocksky account under Bòcan → Settings… → Scrobbling"
                 + " to enable automatic track scrobbling."
         ),
     ]
@@ -309,7 +309,7 @@ private struct SubsonicSection: View {
             body: "Tracks stream through the same gapless audio engine as local files,"
                 + " with HTTP range requests for accurate seeking."
                 + " Scrobbles are sent both to the server's own scrobble endpoint and to your"
-                + " configured Last.fm / ListenBrainz accounts."
+                + " configured Last.fm, Musicbrainz, or Rocksky accounts."
         ),
         Topic(
             title: "Jump shortcuts",
