@@ -2,9 +2,14 @@
 
 [![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml)
+[![GitHub release](https://img.shields.io/github/v/release/bocan/bocan-music?color=4BC51D)](https://github.com/bocan/bocan-music/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue)
-![Swift 6](https://img.shields.io/badge/Swift-6.0-orange)
 ![Xcode 26](https://img.shields.io/badge/Xcode-26-1575F9)
+[![Swift 6](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)](https://swift.org)
+
+
 
 **The music player macOS deserves.** No Electron. No Catalyst. No subscription. No cloud. Just your music, played beautifully.
 
@@ -41,8 +46,8 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Smart Playlists** built from a rule editor, compiled to live SQL and updated automatically as your library changes.
 - **Import / export** M3U, PLS, and XSPF playlists, with fuzzy track matching on import.
 - **Real-time visualisers**: spectrum bars, oscilloscope, and a Metal GPU fluid shader, dockable or full-screen with `⌘⇧F`.
-- **Mini Player** in three layouts (Strip, Compact, Square) with always-on-top mode.
-- **Last.fm and ListenBrainz** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
+- **Mini Player** in four layouts (Strip, Compact, Square, Visualizer) with always-on-top mode.
+- **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
 - **AirPlay** routing via the system picker; a live route chip shows the current output device.
 - **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, and `⌘⇧1`–`⌘⇧9` to jump straight to a server.
 
