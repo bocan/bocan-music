@@ -1,5 +1,9 @@
 # Phase 17 — Sane, Bullet-Proof CI/CD
 
+## Removed from the roadmap.
+
+I've decided to remove this phase from the roadmap. The current CI/CD pipeline is admittedly a bit rough around the edges, but it works reliably and the pain points aren't severe enough to justify a complete overhaul at this time. The proposed design is also quite complex and would require significant maintenance effort.
+
 > Prerequisites: v1.0.0 has shipped. The current pipeline (`ci.yml` + `release-please.yml` + `release.yml` + `website.yml` + the `homebrew-bocan` cross-repo dispatch) **must be replaced**, not extended.
 >
 > Read `docs/design-spec/_standards.md` first. This phase replaces the entire `.github/workflows/` directory.

@@ -5,7 +5,7 @@ Every phase assumes these. Re-read once, then obey without being asked.
 ## Language & Platform
 
 - **Swift 6.0+** with `-strict-concurrency=complete`. No `@preconcurrency` escape hatches except at clearly-marked third-party boundaries, with a TODO and a justification.
-- **macOS 26+ deployment target** (Tahoe). Nothing older.
+- **macOS 15+ deployment target** (Sequoia). Nothing older.
 - **Xcode 16+**.
 - **SwiftUI** primary; reach for `NSViewRepresentable`/`NSHostingController` only when SwiftUI genuinely cannot deliver. Document every drop-down to AppKit with a one-line comment explaining why.
 - **SPM only**. No CocoaPods, no Carthage, no manually-vendored xcframeworks unless they are the only option (e.g. FFmpeg binary artifacts).
@@ -23,11 +23,25 @@ Modules/<Name>/
     └── *.swift
 ```
 
-Modules depend **only** on lower-level modules (no cycles). Current stack from bottom up:
+Modules depend **only** on lower-level modules (no cycles). The dependency graph is no longer a single chain; feature modules fan out from the foundation layers.
 
-```
-Observability → Persistence → AudioEngine → Metadata → Library → Playback → UI → App
-```
+Current internal-module dependencies:
+
+| Module        | Depends on                                                                                |
+|---------------|-------------------------------------------------------------------------------------------|
+| Observability | (none)                                                                                    |
+| AudioEngine   | Observability                                                                             |
+| Metadata      | Observability                                                                             |
+| Acoustics     | Observability                                                                             |
+| Persistence   | Observability                                                                             |
+| Subsonic      | Observability, Persistence                                                                |
+| Library       | Observability, Persistence, Metadata, Acoustics                                           |
+| Playback      | Observability, Persistence, AudioEngine                                                   |
+| Scrobble      | Observability, Persistence, Playback                                                      |
+| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics |
+| App           | UI (transitively pulls in everything else)                                                |
+
+Read this top-to-bottom before adding a `.package(path: ...)` line. Anything that looks like it wants an upward edge (e.g. `Playback` importing `UI`) is a sign the abstraction lives in the wrong layer; lift the shared type into one of the lower modules instead.
 
 A module never imports `AppKit` unless it has no other choice (UI module is the only one expected to).
 
