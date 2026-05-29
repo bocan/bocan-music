@@ -27,15 +27,20 @@ public enum FileWalker {
         iCloudDownload: Bool = false
     ) -> AsyncStream<URL> {
         AsyncStream { continuation in
-            Task.detached(priority: .utility) {
+            let task = Task.detached(priority: .utility) {
                 self.enumerate(
                     rootURL,
                     extensions: supportedExtensions,
                     iCloudDownload: iCloudDownload,
-                    continuation: continuation
+                    yield: { continuation.yield($0) }
                 )
                 continuation.finish()
             }
+            // `Task.detached` severs the parent's cancellation chain, so the walk
+            // would otherwise keep running after the consumer cancels (or simply
+            // stops iterating). Propagate stream termination to the producer so a
+            // 10k+ file enumeration stops promptly instead of burning CPU/battery.
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
@@ -47,8 +52,12 @@ public enum FileWalker {
         _ url: URL,
         extensions supportedExtensions: Set<String>,
         iCloudDownload: Bool,
-        continuation: AsyncStream<URL>.Continuation
+        yield: (URL) -> Void
     ) {
+        // Cooperative cancellation: the owning scan can be cancelled mid-walk
+        // (app backgrounded, library re-pointed). Bail before doing more work.
+        if Task.isCancelled { return }
+
         let fm = FileManager.default
 
         // If the root itself is a supported audio file, yield it directly.
@@ -59,7 +68,7 @@ public enum FileWalker {
         if !isDir.boolValue {
             let ext = url.pathExtension.lowercased()
             if supportedExtensions.contains(ext) {
-                continuation.yield(url)
+                yield(url)
             }
             return
         }
@@ -77,6 +86,10 @@ public enum FileWalker {
         ) else { return }
 
         for case let child as URL in enumerator {
+            // Cooperative cancellation inside the per-child loop: a single
+            // directory can hold thousands of entries, so check every iteration.
+            if Task.isCancelled { return }
+
             let name = child.lastPathComponent
             // Skip hidden
             if name.hasPrefix(".") { continue }
@@ -123,7 +136,7 @@ public enum FileWalker {
                     child,
                     extensions: supportedExtensions,
                     iCloudDownload: iCloudDownload,
-                    continuation: continuation
+                    yield: yield
                 )
                 continue
             }
@@ -131,7 +144,18 @@ public enum FileWalker {
             // File: check extension
             let ext = child.pathExtension.lowercased()
             guard supportedExtensions.contains(ext) else { continue }
-            continuation.yield(child)
+            yield(child)
         }
+    }
+
+    /// Test hook: runs the recursive enumeration synchronously in the current
+    /// task context (no detached task) and returns the URLs it yields. Lets the
+    /// cancellation regression test observe `enumerate`'s cooperative bail
+    /// directly, without the `AsyncStream` consumer's own cancellation masking
+    /// it. See #265.
+    static func _collectForTesting(_ url: URL, extensions: Set<String>) -> [URL] {
+        var out: [URL] = []
+        self.enumerate(url, extensions: extensions, iCloudDownload: false) { out.append($0) }
+        return out
     }
 }
