@@ -154,4 +154,45 @@ struct FileWalkerTests {
         }
         #expect(found.isEmpty)
     }
+
+    /// Regression for issue #265: the recursive walk ran in a detached task with
+    /// no cancellation checks, so cancelling the owning scan didn't stop a large
+    /// enumeration. `enumerate` now bails on `Task.isCancelled`; verify it
+    /// enumerates nothing when invoked from an already-cancelled task (driving
+    /// the producer directly, so the AsyncStream consumer's own cancellation
+    /// can't mask the behaviour).
+    @Test("enumeration stops cooperatively when the task is cancelled")
+    func enumerationHonoursCancellation() async throws {
+        let dir = try self.makeTempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Root + two subdirectories, 20 audio files each = 60 total.
+        for i in 0 ..< 20 {
+            try self.write("root-\(i).mp3", to: dir)
+        }
+        for name in ["albumA", "albumB"] {
+            let sub = dir.appendingPathComponent(name, isDirectory: true)
+            try FileManager.default.createDirectory(at: sub, withIntermediateDirectories: true)
+            for i in 0 ..< 20 {
+                try self.write("\(name)-\(i).mp3", to: sub)
+            }
+        }
+
+        // Baseline: an uncancelled walk finds every file.
+        let all = FileWalker._collectForTesting(dir, extensions: ["mp3"])
+        #expect(all.count == 60, "baseline walk should find all 60 files, got \(all.count)")
+
+        // Inside an already-cancelled task, enumeration must bail immediately.
+        let task = Task<Int, Never> {
+            // Spin until cancellation is observed so the walk runs in a known
+            // cancelled context (deterministic outcome, not timing-dependent).
+            while !Task.isCancelled {
+                await Task.yield()
+            }
+            return FileWalker._collectForTesting(dir, extensions: ["mp3"]).count
+        }
+        task.cancel()
+        let countWhenCancelled = await task.value
+        #expect(countWhenCancelled == 0, "a cancelled task must enumerate nothing, got \(countWhenCancelled)")
+    }
 }
