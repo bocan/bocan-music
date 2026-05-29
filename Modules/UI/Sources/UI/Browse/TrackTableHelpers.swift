@@ -170,7 +170,9 @@ final class CoverArtImageCell: NSTableCellView {
         guard let path = artPath else { return }
         self.loadTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            let img = await ArtworkLoader.shared.image(at: path)
+            // Track rows show art at roughly row height (~36 pt); request a
+            // matching thumbnail rather than decoding the full-resolution cover.
+            let img = await ArtworkLoader.shared.image(at: path, maxDimensionPoints: 40)
             guard !Task.isCancelled else { return }
             self.artImageView.image = img
         }
