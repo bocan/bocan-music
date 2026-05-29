@@ -46,7 +46,7 @@ public actor AcoustIDClient {
         fingerprint: String,
         duration: Int
     ) async throws -> [AcoustIDResult] {
-        await self.rateLimiter.wait()
+        try await self.rateLimiter.wait()
 
         var components = URLComponents(string: Self.baseURL)!
         components.queryItems = [
