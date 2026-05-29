@@ -11,9 +11,10 @@ import SwiftUI
 import UI
 import UserNotifications
 
-/// Sendable wrapper used only during synchronous app init to transfer the
-/// Database actor across the Task.detached boundary.  The semaphore enforces
-/// strict single-writer / single-reader ordering, so @unchecked is safe here.
+/// Small mutable `Sendable` box used to share a value across a notification
+/// closure / `Task` boundary (e.g. the wake/sleep `wasPlaying` flag). Access is
+/// effectively serialised by the main-actor notification callbacks that use it,
+/// so `@unchecked` is safe here.
 private final class _InitBox<T: Sendable>: @unchecked Sendable {
     var value: T?
 }
@@ -157,80 +158,40 @@ struct BocanApp: App {
     @State private var showMenuBarExtra = UserDefaults.standard.bool(forKey: "general.showMenuBarExtra")
 
     private let log = AppLogger.make(.app)
-    private let database: Database
-    private let engine: AudioEngine
-    private let player: QueuePlayer
-    // All four are private let, not @StateObject. @StateObject would subscribe App.body
-    // to objectWillChange on each, rebuilding the menu bar on every selection change,
-    // playback tick, or scan update. Child views and environment objects observe these
-    // instances directly; BocanApp.body only needs the references, not reactivity.
-    private let libraryViewModel: LibraryViewModel
-    private let dspViewModel: DSPViewModel
-    private let miniPlayerViewModel: MiniPlayerViewModel
-    private let windowMode: WindowModeController
-    private let dockTile: DockTileController
-    private let lyricsService: LyricsService
-    private let lyricsViewModel: LyricsViewModel
-    private let visualizerViewModel: VisualizerViewModel
-    private let scrobbleService: ScrobbleService
-    private let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
-    private let backupSettingsViewModel: BackupSettingsViewModel
-    private let subsonicStore: SubsonicServerStore
-    private let subsonicService: SubsonicService
-    private let subsonicSettingsViewModel: SubsonicSettingsViewModel
-    private let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
-    private let routeViewModel: RouteViewModel
+
+    /// Database-independent, so built eagerly and used by the About window and
+    /// the command menus even while the library is still loading.
     private let updateController = UpdateController()
 
+    /// Owns the asynchronously-built object graph (database, engine, player, view
+    /// models). The DB is opened and the graph wired off the main thread in
+    /// `AppModel.bootstrap`, so the window shell renders immediately instead of
+    /// blocking `init` on the DB open. See #276. `@Observable`, so reading
+    /// `model.graph` re-evaluates `body` exactly once — when the graph becomes
+    /// ready — without subscribing to every downstream change.
+    @State private var model = AppModel()
+
+    /// The scene tree is kept flat and (mostly) unconditional: gating whole
+    /// scenes on `model.graph` overran the SwiftUI scene type-checker (the same
+    /// limit the RootView extraction worked around). Instead, the main window
+    /// shows a loading shell via `AppRootGate`, and the graph-backed secondary
+    /// windows render their content through `GraphContent` once the graph is
+    /// ready (they only open post-launch, so the placeholder is never seen).
+    /// Only `MiniPlayerWindow` — a custom `Scene` that takes its view model at
+    /// init — must be declared conditionally.
     var body: some Scene {
         // MARK: Main window
 
         WindowGroup("Bòcan", id: "main") {
-            BocanRootView(
-                vm: self.libraryViewModel,
-                lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel,
-                routeVM: self.routeViewModel,
-                scrobbleSettingsVM: self.scrobbleSettingsViewModel
-            )
-            .environment(self.dspViewModel)
-            .environmentObject(self.windowMode)
-            .environmentObject(self.lyricsViewModel)
-            .onAppear { self.dockTile.start(observing: self.libraryViewModel.nowPlaying) }
+            AppRootGate(model: self.model, appDelegate: self.appDelegate)
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 1100, height: 700)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
-        .commands {
-            BocanCommands(
-                vm: self.libraryViewModel,
-                windowMode: self.windowMode,
-                lyricsVM: self.lyricsViewModel,
-                visualizerVM: self.visualizerViewModel,
-                updateController: self.updateController
-            )
-        }
+        .commands { AppCommands(model: self.model, updateController: self.updateController) }
 
-        // MARK: Mini player
-
-        MiniPlayerWindow(vm: self.miniPlayerViewModel)
-            .environmentObject(self.windowMode)
-            // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
-            .environmentObject(self.libraryViewModel)
-            .environmentObject(self.visualizerViewModel)
-
-        // MARK: Track info panel
-
-        Window("Track Info", id: "track-info") {
-            TrackInfoPanel()
-                .environmentObject(self.libraryViewModel)
-        }
-        .windowResizability(.contentSize)
-        .defaultPosition(.topTrailing)
-        .restorationBehavior(.disabled)
-
-        // MARK: About window
+        // MARK: About / Help / Notices (database-independent)
 
         Window("About Bòcan", id: "about") {
             AboutView(
@@ -242,16 +203,12 @@ struct BocanApp: App {
         .defaultSize(width: 360, height: 520)
         .restorationBehavior(.disabled)
 
-        // MARK: Help window
-
         Window("Bòcan Help", id: "bocan-help") {
             HelpWindowView()
         }
         .windowResizability(.contentMinSize)
         .defaultSize(width: 760, height: 540)
         .restorationBehavior(.disabled)
-
-        // MARK: Notices window
 
         Window("Notices \u{26} Licences", id: "notices") {
             NoticesWindowView()
@@ -260,22 +217,25 @@ struct BocanApp: App {
         .defaultSize(width: 640, height: 560)
         .restorationBehavior(.disabled)
 
+        // MARK: Track info panel
+
+        Window("Track Info", id: "track-info") {
+            TrackInfoWindowContent(model: self.model)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.topTrailing)
+        .restorationBehavior(.disabled)
+
+        // MARK: Settings
+
         Settings {
-            SettingsScene(
-                backupViewModel: self.backupSettingsViewModel,
-                scrobbleViewModel: self.scrobbleSettingsViewModel,
-                subsonicViewModel: self.subsonicSettingsViewModel
-            )
-            .environment(self.dspViewModel)
-            // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
-            .environmentObject(self.libraryViewModel)
-            .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
+            SettingsWindowContent(model: self.model, showMenuBarExtra: self.$showMenuBarExtra)
         }
 
         // MARK: Visualizer fullscreen
 
         Window("Visualizer", id: "visualizer-fullscreen") {
-            VisualizerFullscreenView(vm: self.visualizerViewModel, nowPlayingVM: self.libraryViewModel.nowPlaying)
+            VisualizerWindowContent(model: self.model)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
@@ -283,12 +243,8 @@ struct BocanApp: App {
 
         // MARK: Equaliser & DSP panel
 
-        // Non-modal floating window so the user can tweak EQ/effects while
-        // the track list and transport controls stay fully interactive.
         Window("Equaliser & DSP", id: "dsp") {
-            DSPSheet(vm: self.dspViewModel)
-                // TODO: When LibraryViewModel is @Observable, use .environment(self.libraryViewModel)
-                .environmentObject(self.libraryViewModel)
+            DSPWindowContent(model: self.model)
         }
         .defaultSize(width: 600, height: 520)
         .windowResizability(.contentMinSize)
@@ -297,34 +253,44 @@ struct BocanApp: App {
 
         // MARK: Menu bar widget
 
-        // Accessing isPlaying / isPaused from the @Observable NowPlayingViewModel
-        // here subscribes App.body to those two properties only — re-evaluating body
-        // at most twice per track transition (once to true, once back to false).
-        // This is safe because @Observable gives property-level granularity, unlike
-        // @StateObject/@ObservedObject which would subscribe to every objectWillChange.
-        let np = self.libraryViewModel.nowPlaying
-        let menuBarLabel: String = np.isPlaying ? "Bòcan — Playing"
-            : (np.isPaused ? "Bòcan — Paused" : "Bòcan")
-        let menuBarIcon: String = np.isPlaying ? "music.note.list" : "music.note"
+        // `isPlaying` / `isPaused` give property-level granularity, so this
+        // re-evaluates at most twice per track transition.
+        let np = self.model.graph?.libraryViewModel.nowPlaying
+        let menuBarLabel: String = np?.isPlaying == true ? "Bòcan — Playing"
+            : (np?.isPaused == true ? "Bòcan — Paused" : "Bòcan")
+        let menuBarIcon: String = np?.isPlaying == true ? "music.note.list" : "music.note"
         MenuBarExtra(menuBarLabel, systemImage: menuBarIcon, isInserted: self.$showMenuBarExtra) {
-            MenuBarExtraScene(vm: self.libraryViewModel.nowPlaying)
+            MenuBarWindowContent(model: self.model)
         }
         .menuBarExtraStyle(.window)
         .onChange(of: self.showMenuBarExtra) { _, newValue in
             UserDefaults.standard.set(newValue, forKey: "general.showMenuBarExtra")
         }
 
+        // MARK: Mini player
+
+        // Inlined (rather than the UI module's `MiniPlayerWindow` scene) so the
+        // window is unconditional and its content is graph-gated, keeping the
+        // scene list flat. `.commandsRemoved()` strips SwiftUI's auto-injected
+        // "Mini Player" Window-menu item, matching the old MiniPlayerWindow.
+        Window("Mini Player", id: "mini") {
+            MiniPlayerWindowContent(model: self.model)
+        }
+        .windowResizability(.contentSize)
+        .defaultSize(width: 420, height: 72)
+        .defaultPosition(.bottomTrailing)
+        .windowStyle(.hiddenTitleBar)
+        .commandsRemoved()
+
         #if DEBUG
-            // Phase 1 audit #14: debug-only manual playback window.  Opens a
-            // separate scene whose sole purpose is to drive the AudioEngine
-            // directly for codec / fade / seek triage.  Compiled out of Release.
+            // Phase 1 audit #14: debug-only manual playback window for codec /
+            // fade / seek triage. Compiled out of Release.
             Window("Debug Audio", id: "debug-audio") {
-                DebugAudioView(engine: self.engine)
+                DebugAudioWindowContent(model: self.model)
             }
         #endif
     }
 
-    // swiftlint:disable:next function_body_length
     init() {
         // Detect unclean exit from the previous session (crash / force-quit).
         // Must run before any UI is constructed so the recovery banner state
@@ -348,192 +314,11 @@ struct BocanApp: App {
         LaunchAtLoginController.reconcileAtLaunch()
         Self.installLaunchAtLoginObserver()
 
-        // Initialise the database synchronously on the calling thread.
-        // priority: .userInitiated matches the waiting thread (main = .userInteractive)
-        // so the OS doesn't deprioritise this task while we're blocking on it,
-        // which would cause a Thread Performance Checker priority-inversion warning
-        // and a visible startup freeze.
-        let semaphore = DispatchSemaphore(value: 0)
-        let box = _InitBox<Database>()
-        Task.detached(priority: .userInitiated) {
-            do {
-                box.value = try await Database(location: .application)
-            } catch {
-                fatalError("Failed to open application database: \(error)")
-            }
-            semaphore.signal()
-        }
-        semaphore.wait()
-        guard let db = box.value else {
-            fatalError("Database initialisation completed without a value")
-        }
-
-        let presetStore = PresetStore()
-        let eng = AudioEngine(presets: presetStore)
-
-        // Phase 19: Subsonic infra is built before the scrobble service so
-        // its provider can write through to the active Subsonic servers.
-        let subsonicRepo = SubsonicServerRepository(database: db)
-        let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
-        let subsonicService = SubsonicService(store: subsonicStore)
-        let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
-        let subsonicMonitor = SubsonicConnectionMonitor(service: subsonicService)
-        self.subsonicStore = subsonicStore
-        self.subsonicService = subsonicService
-        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
-
-        // Build the scrobble service before the player so the sink can be wired in.
-        let scrobbleParts = Self.makeScrobble(
-            database: db,
-            log: self.log,
-            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore)
-        )
-        self.scrobbleService = scrobbleParts.service
-        self.scrobbleSettingsViewModel = scrobbleParts.viewModel
-        self.backupSettingsViewModel = BackupSettingsViewModel(database: db)
-
-        // Phase 19: build the Subsonic stream cache (and resolver) so QueuePlayer
-        // can turn a `.subsonic` PlayableSource into a local file URL the engine
-        // can decode. Cache lives under the user's Caches directory so macOS
-        // can reclaim space under pressure.
-        let cachesRoot = (try? FileManager.default.url(
-            for: .cachesDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: true
-        )) ?? FileManager.default.temporaryDirectory
-        let streamCacheDir = cachesRoot
-            .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
-            .appendingPathComponent("SubsonicStreams", isDirectory: true)
-        let subsonicStreamCache: SubsonicStreamCache? = try? SubsonicStreamCache(
-            configuration: SubsonicStreamCache.Configuration(rootDirectory: streamCacheDir),
-            loader: RemoteTrackLoader(transport: URLSessionHTTPTransport())
-        )
-        let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
-            SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
-        }
-
-        let qp = QueuePlayer(
-            engine: eng,
-            database: db,
-            scrobbleSink: scrobbleParts.service,
-            subsonicResolver: subsonicStreamResolver
-        )
-        let scanner = LibraryScanner(database: db)
-
-        self.database = db
-        self.engine = eng
-        self.player = qp
-
-        let lvm = LibraryViewModel(
-            database: db,
-            engine: qp,
-            scanner: scanner,
-            scrobbleRepository: scrobbleParts.service.queueRepository,
-            scrobbleService: scrobbleParts.service,
-            subsonicSidebarListing: subsonicListing,
-            subsonicDataSource: subsonicService,
-            subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService),
-            subsonicMetadataCache: SubsonicRepositoryMetadataCache(repository: subsonicRepo),
-            subsonicAnnotationDelivery: subsonicAnnotations,
-            subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
-            subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor)
-        )
-        self.libraryViewModel = lvm
-        // Wire the Subsonic bootstrap so RootView.task can pre-load clients
-        // before restoring navigation state, eliminating the startup race that
-        // caused "Couldn't load songs / No server with id …" when the last
-        // selected destination was a Subsonic view.
-        lvm.subsonicBootstrap = { [subsonicService, weak lvm] in
-            try? await subsonicService.reloadClients()
-            await lvm?.reloadSubsonicServers()
-        }
-        self.subsonicSettingsViewModel = SubsonicSettingsViewModel(
-            store: subsonicStore,
-            service: subsonicService,
-            monitor: subsonicMonitor
-        ) { [weak lvm] in await lvm?.reloadSubsonicServers() }
-        self.dspViewModel = DSPViewModel(
-            engine: eng,
-            presetStore: presetStore,
-            queuePlayer: qp,
-            assignmentRepo: DSPAssignmentRepository(database: db)
-        )
-        self.miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
-        self.windowMode = WindowModeController()
-        self.dockTile = DockTileController()
-
-        let lsvc = LyricsService(database: db, fetcher: LRClibClient())
-        self.lyricsService = lsvc
-        self.lyricsViewModel = LyricsViewModel(service: lsvc)
-        self.visualizerViewModel = VisualizerViewModel(engine: eng)
-        // Phase 15: AirPlay routing — `routeManager` is set at declaration.
-        self.routeViewModel = Self.makeRouteViewModel(manager: self.routeManager)
-
-        // Wire quit-guard references so AppDelegate can check live background-work
-        // state in applicationShouldTerminate without importing UI into AppKit code.
-        // Must come after all `private let` properties are initialised.
-        self.appDelegate.libraryViewModel = lvm
-        self.appDelegate.dspViewModel = self.dspViewModel
-        self.appDelegate.routeViewModel = self.routeViewModel
-
-        // Forward NSWorkspace wake events to the sleep timer + install the
-        // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
-        // QueuePlayer lives in the Playback module and must not import AppKit,
-        // so all NSWorkspace subscriptions live in the app target.
-        Self.installSleepWakeAndDeviceChangeObservers(engine: eng, sleepTimer: qp.sleepTimer)
-
-        // Phase 3 audit H1: re-open FSEvent streams after the system wakes;
-        // FSEvents may stop firing reliably across long sleeps.
-        Self.installLibraryWakeObserver(scanner: scanner)
-
-        // Phase 3 audit M1: kick off the FSEvents watcher at app launch (gated on
-        // the `library.watchForChanges` preference).  Without this, FSEvents stay
-        // silent until the user navigates into the Library view, breaking the
-        // "files appear without manual rescan" acceptance criterion when the user
-        // lands on Now Playing or launches via the dock.
-        Task { [weak lvm] in await lvm?.startOrStopWatcher() }
-
-        // Persist playback position on quit so it can be restored on next launch.
-        registerTerminationObserver(player: qp, database: db)
-
-        Self.scheduleLaunchBackup(database: db)
-
-        // Start scrobble worker once everything is wired up.
-        Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
-
-        // Phase 19: finish Subsonic hydration. reloadClients + reloadSubsonicServers
-        // already ran synchronously in bootstrapSubsonic (via RootView.task) before
-        // navigation state was restored, so the calls here are idempotent catch-alls.
-        // migrateOrphans and startMonitoring must still run here.
-        Task { [subsonicStore, subsonicService, subsonicMonitor, subsonicRepo, weak lvm] in
-            try? await subsonicStore.migrateOrphans()
-            try? await subsonicService.reloadClients()
-            await lvm?.reloadSubsonicServers()
-            // Phase 19 step 17: kick off the ping/back-off loop for every
-            // persisted server so the sidebar status dots become live as
-            // soon as the user finishes launching.
-            let servers = await (try? subsonicStore.fetchAll()) ?? []
-            for server in servers {
-                await subsonicMonitor.startMonitoring(serverID: server.id)
-            }
-            // Refresh capabilities on launch so the legacy-core probe
-            // (Internet Radio / Podcasts / Bookmarks) runs and the sidebar
-            // reflects whatever the server actually supports today — not
-            // whatever was advertised when the user first added the server.
-            // Fired in parallel; capability-change events flow through
-            // `LibraryViewModel.observeSubsonicCapabilityChanges` and trigger
-            // a sidebar reload on each server whose flags actually changed.
-            await withTaskGroup(of: Void.self) { group in
-                for server in servers {
-                    group.addTask {
-                        _ = try? await subsonicService.loadCapabilities(serverID: server.id)
-                    }
-                }
-            }
-            // Spec: prune metadata-cache entries older than 7 days once on launch.
-            try? await subsonicRepo.pruneStaleCache()
-        }
+        // #276: the database is opened (async) and the object graph wired in
+        // `AppModel.bootstrap`, kicked off from the main window's `.task`. This
+        // keeps the formerly main-thread-blocking DB open off the synchronous
+        // launch path, so the window shell renders immediately. Only the cheap,
+        // UI-free pre-flight above runs here.
     }
 
     // MARK: - Private helpers
@@ -688,4 +473,255 @@ struct BocanApp: App {
         }
         return ScrobbleParts(service: service, viewModel: viewModel)
     }
+}
+
+// MARK: - Object graph
+
+/// The fully-wired application object graph. Built once the database is open
+/// (off the synchronous launch path) and held for the app's lifetime by
+/// `AppModel`. Everything here was previously a `private let` on `BocanApp`,
+/// constructed synchronously in `init` behind the blocking DB open (#276).
+@MainActor
+struct AppGraph {
+    let database: Database
+    let engine: AudioEngine
+    let player: QueuePlayer
+    let libraryViewModel: LibraryViewModel
+    let dspViewModel: DSPViewModel
+    let miniPlayerViewModel: MiniPlayerViewModel
+    let windowMode: WindowModeController
+    let dockTile: DockTileController
+    let lyricsService: LyricsService
+    let lyricsViewModel: LyricsViewModel
+    let visualizerViewModel: VisualizerViewModel
+    let scrobbleService: ScrobbleService
+    let scrobbleSettingsViewModel: ScrobbleSettingsViewModel
+    let backupSettingsViewModel: BackupSettingsViewModel
+    let subsonicStore: SubsonicServerStore
+    let subsonicService: SubsonicService
+    let subsonicSettingsViewModel: SubsonicSettingsViewModel
+    let routeManager: RouteManager
+    let routeViewModel: RouteViewModel
+}
+
+// MARK: - AppModel
+
+/// Owns the asynchronous launch bootstrap. `BocanApp` holds this in `@State`;
+/// the main window renders a loading shell until `graph` is populated.
+///
+/// `@Observable` gives property-level granularity, so `body` re-evaluates once
+/// when `graph` (or `failed`) changes, not on every downstream mutation.
+@MainActor
+@Observable
+final class AppModel {
+    private(set) var graph: AppGraph?
+    /// `true` if the database could not be opened. Surfaced as `LaunchErrorView`
+    /// instead of the previous `fatalError` crash.
+    private(set) var failed = false
+    private var started = false
+
+    private let log = AppLogger.make(.app)
+
+    /// Opens the database off the main thread and wires the object graph.
+    /// Idempotent: only the first call does work (the main window's `.task` may
+    /// run more than once across the window's lifetime).
+    func bootstrap(appDelegate: AppDelegate) async {
+        guard !self.started else { return }
+        self.started = true
+
+        let start = Date()
+        do {
+            let db = try await Database(location: .application)
+            self.graph = BocanApp.buildGraph(database: db, appDelegate: appDelegate)
+            self.log.info("app.bootstrap.ready", ["ms": -start.timeIntervalSinceNow * 1000])
+        } catch {
+            self.log.error("app.bootstrap.dbOpenFailed", ["error": String(reflecting: error)])
+            self.failed = true
+        }
+    }
+}
+
+// MARK: - Object-graph construction
+
+extension BocanApp {
+    // swiftlint:disable function_body_length
+    /// Builds and wires the full object graph once the database is open. Runs on
+    /// the main actor (the view models are main-actor isolated) but off the
+    /// synchronous launch path, so it no longer blocks first paint. Lifted
+    /// verbatim from the old `init` body, with `self.x = y` assignments replaced
+    /// by locals returned in the `AppGraph`. See #276.
+    @MainActor
+    static func buildGraph(database db: Database, appDelegate: AppDelegate) -> AppGraph {
+        let log = AppLogger.make(.app)
+        let presetStore = PresetStore()
+        let eng = AudioEngine(presets: presetStore)
+
+        // Phase 19: Subsonic infra is built before the scrobble service so
+        // its provider can write through to the active Subsonic servers.
+        let subsonicRepo = SubsonicServerRepository(database: db)
+        let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
+        let subsonicService = SubsonicService(store: subsonicStore)
+        let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
+        let subsonicMonitor = SubsonicConnectionMonitor(service: subsonicService)
+        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
+
+        // Build the scrobble service before the player so the sink can be wired in.
+        let scrobbleParts = Self.makeScrobble(
+            database: db,
+            log: log,
+            subsonicDelivery: SubsonicScrobbleDelivery(service: subsonicService, store: subsonicStore)
+        )
+        let backupSettingsViewModel = BackupSettingsViewModel(database: db)
+
+        // Phase 19: build the Subsonic stream cache (and resolver) so QueuePlayer
+        // can turn a `.subsonic` PlayableSource into a local file URL the engine
+        // can decode. Cache lives under the user's Caches directory so macOS
+        // can reclaim space under pressure.
+        let cachesRoot = (try? FileManager.default.url(
+            for: .cachesDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )) ?? FileManager.default.temporaryDirectory
+        let streamCacheDir = cachesRoot
+            .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
+            .appendingPathComponent("SubsonicStreams", isDirectory: true)
+        let subsonicStreamCache: SubsonicStreamCache? = try? SubsonicStreamCache(
+            configuration: SubsonicStreamCache.Configuration(rootDirectory: streamCacheDir),
+            loader: RemoteTrackLoader(transport: URLSessionHTTPTransport())
+        )
+        let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
+            SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
+        }
+
+        let qp = QueuePlayer(
+            engine: eng,
+            database: db,
+            scrobbleSink: scrobbleParts.service,
+            subsonicResolver: subsonicStreamResolver
+        )
+        let scanner = LibraryScanner(database: db)
+
+        let lvm = LibraryViewModel(
+            database: db,
+            engine: qp,
+            scanner: scanner,
+            scrobbleRepository: scrobbleParts.service.queueRepository,
+            scrobbleService: scrobbleParts.service,
+            subsonicSidebarListing: subsonicListing,
+            subsonicDataSource: subsonicService,
+            subsonicCoverArtProvider: SubsonicCoverArtProvider(service: subsonicService),
+            subsonicMetadataCache: SubsonicRepositoryMetadataCache(repository: subsonicRepo),
+            subsonicAnnotationDelivery: subsonicAnnotations,
+            subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
+            subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor)
+        )
+        // Wire the Subsonic bootstrap so RootView.task can pre-load clients
+        // before restoring navigation state, eliminating the startup race that
+        // caused "Couldn't load songs / No server with id …" when the last
+        // selected destination was a Subsonic view.
+        lvm.subsonicBootstrap = { [subsonicService, weak lvm] in
+            try? await subsonicService.reloadClients()
+            await lvm?.reloadSubsonicServers()
+        }
+        let subsonicSettingsViewModel = SubsonicSettingsViewModel(
+            store: subsonicStore,
+            service: subsonicService,
+            monitor: subsonicMonitor
+        ) { [weak lvm] in await lvm?.reloadSubsonicServers() }
+        let dspViewModel = DSPViewModel(
+            engine: eng,
+            presetStore: presetStore,
+            queuePlayer: qp,
+            assignmentRepo: DSPAssignmentRepository(database: db)
+        )
+        let miniPlayerViewModel = MiniPlayerViewModel(nowPlaying: lvm.nowPlaying)
+        let windowMode = WindowModeController()
+        let dockTile = DockTileController()
+
+        let lsvc = LyricsService(database: db, fetcher: LRClibClient())
+        let lyricsViewModel = LyricsViewModel(service: lsvc)
+        let visualizerViewModel = VisualizerViewModel(engine: eng)
+        // Phase 15: AirPlay routing.
+        let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
+        let routeViewModel = Self.makeRouteViewModel(manager: routeManager)
+
+        // Wire quit-guard references so AppDelegate can check live background-work
+        // state in applicationShouldTerminate without importing UI into AppKit code.
+        appDelegate.libraryViewModel = lvm
+        appDelegate.dspViewModel = dspViewModel
+        appDelegate.routeViewModel = routeViewModel
+
+        // Forward NSWorkspace wake events to the sleep timer + install the
+        // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
+        // QueuePlayer lives in the Playback module and must not import AppKit,
+        // so all NSWorkspace subscriptions live in the app target.
+        Self.installSleepWakeAndDeviceChangeObservers(engine: eng, sleepTimer: qp.sleepTimer)
+
+        // Phase 3 audit H1: re-open FSEvent streams after the system wakes.
+        Self.installLibraryWakeObserver(scanner: scanner)
+
+        // Phase 3 audit M1: kick off the FSEvents watcher at app launch (gated on
+        // the `library.watchForChanges` preference).
+        Task { [weak lvm] in await lvm?.startOrStopWatcher() }
+
+        // Persist playback position on quit so it can be restored on next launch.
+        registerTerminationObserver(player: qp, database: db)
+
+        Self.scheduleLaunchBackup(database: db)
+
+        // Start scrobble worker once everything is wired up.
+        Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
+
+        // Phase 19: finish Subsonic hydration. migrateOrphans and startMonitoring
+        // must run here; reloadClients / reloadSubsonicServers are idempotent
+        // catch-alls also run by bootstrapSubsonic via RootView.task.
+        Task { [subsonicStore, subsonicService, subsonicMonitor, subsonicRepo, weak lvm] in
+            try? await subsonicStore.migrateOrphans()
+            try? await subsonicService.reloadClients()
+            await lvm?.reloadSubsonicServers()
+            // Phase 19 step 17: kick off the ping/back-off loop for every
+            // persisted server so the sidebar status dots become live as
+            // soon as the user finishes launching.
+            let servers = await (try? subsonicStore.fetchAll()) ?? []
+            for server in servers {
+                await subsonicMonitor.startMonitoring(serverID: server.id)
+            }
+            // Refresh capabilities on launch so the legacy-core probe
+            // (Internet Radio / Podcasts / Bookmarks) runs and the sidebar
+            // reflects whatever the server actually supports today.
+            await withTaskGroup(of: Void.self) { group in
+                for server in servers {
+                    group.addTask {
+                        _ = try? await subsonicService.loadCapabilities(serverID: server.id)
+                    }
+                }
+            }
+            // Spec: prune metadata-cache entries older than 7 days once on launch.
+            try? await subsonicRepo.pruneStaleCache()
+        }
+
+        return AppGraph(
+            database: db,
+            engine: eng,
+            player: qp,
+            libraryViewModel: lvm,
+            dspViewModel: dspViewModel,
+            miniPlayerViewModel: miniPlayerViewModel,
+            windowMode: windowMode,
+            dockTile: dockTile,
+            lyricsService: lsvc,
+            lyricsViewModel: lyricsViewModel,
+            visualizerViewModel: visualizerViewModel,
+            scrobbleService: scrobbleParts.service,
+            scrobbleSettingsViewModel: scrobbleParts.viewModel,
+            backupSettingsViewModel: backupSettingsViewModel,
+            subsonicStore: subsonicStore,
+            subsonicService: subsonicService,
+            subsonicSettingsViewModel: subsonicSettingsViewModel,
+            routeManager: routeManager,
+            routeViewModel: routeViewModel
+        )
+    }
+    // swiftlint:enable function_body_length
 }
