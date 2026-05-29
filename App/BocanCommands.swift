@@ -173,7 +173,7 @@ struct BocanCommands: Commands {
             Divider()
 
             Button("Clear Queue") {
-                Task { await self.vm.clearQueue() }
+                Task { await self.vm.requestClearQueue() }
             }
             .keyboardShortcut(KeyBindings.clearQueue)
             .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)

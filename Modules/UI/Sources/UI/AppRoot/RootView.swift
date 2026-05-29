@@ -273,6 +273,12 @@ public struct BocanRootView: View {
             } message: {
                 Text(self.vm.rescanErrorMessage ?? "")
             }
+            .modifier(ClearQueueConfirmationModifier(
+                isPresented: self.$vm.clearQueueConfirmationPresented,
+                itemCount: self.vm.clearQueueItemCount
+            ) {
+                Task { await self.vm.clearQueue() }
+            })
             .overlay(alignment: .top) {
                 // Phase 5.5 audit M2: lightweight toast surface for transient
                 // confirmations (e.g. "Re-scanned «Title»"). Auto-dismisses
@@ -454,6 +460,26 @@ public struct BocanRootView: View {
             _ = provider.loadObject(ofClass: URL.self) { url, _ in
                 continuation.resume(returning: url)
             }
+        }
+    }
+}
+
+// MARK: - Clear-queue confirmation (issue #260)
+
+/// Hosts the "Clear the queue?" confirmation as a standalone modifier so the
+/// large `BocanRootView.body` modifier chain stays within the Swift
+/// type-checker's complexity budget.
+private struct ClearQueueConfirmationModifier: ViewModifier {
+    @Binding var isPresented: Bool
+    let itemCount: Int
+    let onConfirm: () -> Void
+
+    func body(content: Content) -> some View {
+        content.alert("Clear the queue?", isPresented: self.$isPresented) {
+            Button("Clear Queue", role: .destructive, action: self.onConfirm)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes the \(self.itemCount) tracks in your queue and stops playback.")
         }
     }
 }
