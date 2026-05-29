@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import Observability
 import SwiftUI
 
@@ -6,32 +7,79 @@ import SwiftUI
 
 /// Thread-safe async image loader with `NSCache` backing.
 ///
-/// Images are keyed by the SHA-256 hash string stored in `cover_art.hash` /
-/// `tracks.cover_art_hash`.  The cache has a 200-image cost limit; macOS will
-/// evict under memory pressure.
+/// Images are keyed by `<path>@<pixelSize>`: the same cover can coexist as a
+/// tiny table thumbnail and a large hero image without one evicting the other.
+///
+/// Covers are **downsampled at decode time** via `CGImageSource` rather than
+/// decoded at full resolution: a 4096px cover bound for a 36px cell wastes both
+/// CPU and ~64 MB of RAM. The cache is bounded by both a count limit and a
+/// `totalCostLimit` (approximate decoded bytes), and macOS evicts under memory
+/// pressure on top of that.
 actor ArtworkLoader {
     static let shared = ArtworkLoader()
+
+    /// Approximate backing scale used to convert point sizes to pixels. Most
+    /// Macs are Retina (2x); on a 1x display this merely over-resolves slightly,
+    /// which stays bounded by the per-image cap below.
+    private static let renderScale: CGFloat = 2.0
+    /// Hard cap on a thumbnail's longest edge (pixels). 1024px is sharp for the
+    /// largest hero art while keeping a single decoded cover to ~4 MB.
+    private static let maxThumbnailPixels = 1024
+    /// Floor so tiny cells still get a usable (and cacheable) thumbnail.
+    private static let minThumbnailPixels = 64
 
     private let cache: NSCache<NSString, NSImage> = {
         let c = NSCache<NSString, NSImage>()
         c.countLimit = 200
+        // ~256 MB ceiling so a gridful of covers can't balloon unbounded.
+        c.totalCostLimit = 256 * 1024 * 1024
         return c
     }()
 
     private let log = AppLogger.make(.ui)
 
-    /// Returns a decoded `NSImage` for `path`, loading from disk if not cached.
-    func image(at path: String) -> NSImage? {
-        let key = path as NSString
+    /// Returns a decoded `NSImage` for `path`, downsampled so its longest edge is
+    /// at most `maxDimensionPoints` (converted to pixels and capped). Loads from
+    /// disk if not cached.
+    ///
+    /// - Parameter maxDimensionPoints: The largest on-screen edge the image will
+    ///   be drawn at, in points. Defaults to a generous hero size for callers
+    ///   that display art large.
+    func image(at path: String, maxDimensionPoints: CGFloat = 512) -> NSImage? {
+        let maxPixels = Self.pixelTarget(forPoints: maxDimensionPoints)
+        let key = "\(path)@\(maxPixels)" as NSString
         if let cached = cache.object(forKey: key) {
             return cached
         }
-        guard let img = NSImage(contentsOfFile: path) else {
+        guard let cg = Self.downsampledCGImage(at: path, maxPixels: maxPixels) else {
             self.log.debug("artwork.miss", ["path": path])
             return nil
         }
-        self.cache.setObject(img, forKey: key)
+        let img = NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+        // Cost ≈ decoded bytes (8-bit RGBA) so totalCostLimit reflects real memory.
+        self.cache.setObject(img, forKey: key, cost: cg.width * cg.height * 4)
         return img
+    }
+
+    private static func pixelTarget(forPoints points: CGFloat) -> Int {
+        let scaled = Int((points * self.renderScale).rounded(.up))
+        return min(max(scaled, self.minThumbnailPixels), self.maxThumbnailPixels)
+    }
+
+    private static func downsampledCGImage(at path: String, maxPixels: Int) -> CGImage? {
+        let url = URL(fileURLWithPath: path) as CFURL
+        guard let source = CGImageSourceCreateWithURL(
+            url, [kCGImageSourceShouldCache: false] as CFDictionary
+        ) else {
+            return nil
+        }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixels,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }
 
@@ -95,7 +143,7 @@ public struct Artwork: View {
                 self.isLoaded = false
                 self.loadedImage = nil
                 guard let path = artPath else { return }
-                let img = await ArtworkLoader.shared.image(at: path)
+                let img = await ArtworkLoader.shared.image(at: path, maxDimensionPoints: self.size)
                 guard !Task.isCancelled else { return }
                 self.loadedImage = img
                 self.isLoaded = img != nil
