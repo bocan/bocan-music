@@ -38,4 +38,22 @@ struct FSWatcherTests {
         await watcher.stopAll()
         // No crash = pass
     }
+
+    /// Regression for issue #264: `makeStream` retains `self` via
+    /// `Unmanaged.passRetained` to hand the C callback a back-pointer. That
+    /// retain is balanced only by the FSEventStream context `release` callback,
+    /// which never fires when `FSEventStreamCreate` returns nil — so each failed
+    /// creation used to leak one `FSWatcher` retain permanently. After driving
+    /// the failure branch and dropping our reference, the watcher must deallocate.
+    @Test("does not leak a retain when FSEventStreamCreate fails")
+    func noRetainLeakOnStreamCreateFailure() async {
+        weak var weakWatcher: FSWatcher?
+        do {
+            let watcher = FSWatcher { _ in }
+            weakWatcher = watcher
+            let failed = await watcher._forceStreamCreateFailureForTesting()
+            #expect(failed, "precondition: an empty paths array must fail FSEventStreamCreate")
+        }
+        #expect(weakWatcher == nil, "FSWatcher leaked a retain on the stream-create failure path")
+    }
 }

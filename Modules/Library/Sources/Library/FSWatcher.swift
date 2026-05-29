@@ -97,7 +97,7 @@ public actor FSWatcher {
             }
         }
 
-        guard let stream = self.makeStream(for: watchURL) else {
+        guard let stream = self.makeStream(forPaths: [watchURL.path]) else {
             scopedURL?.stopAccessingSecurityScopedResource()
             return
         }
@@ -142,7 +142,7 @@ public actor FSWatcher {
 
         for root in snapshot {
             // Scope is still held from the original `watch(_:)` call — reuse it.
-            guard let stream = self.makeStream(for: root.url) else {
+            guard let stream = self.makeStream(forPaths: [root.url.path]) else {
                 root.scopedURL?.stopAccessingSecurityScopedResource()
                 continue
             }
@@ -153,9 +153,8 @@ public actor FSWatcher {
 
     // MARK: - Stream lifecycle
 
-    private func makeStream(for url: URL) -> FSEventStreamRef? {
-        let path = url.path as CFString
-        let paths = [path] as CFArray
+    private func makeStream(forPaths paths: [String]) -> FSEventStreamRef? {
+        let cfPaths = paths.map { $0 as CFString } as CFArray
         let callback = fsEventsCallback
 
         // Pass `self` as a retained raw pointer so the C callback can call back in.
@@ -177,7 +176,7 @@ public actor FSWatcher {
             nil,
             callback,
             &context,
-            paths,
+            cfPaths,
             FSEventStreamEventId(kFSEventStreamEventIdSinceNow),
             self.latency,
             FSEventStreamCreateFlags(
@@ -186,12 +185,24 @@ public actor FSWatcher {
                     kFSEventStreamCreateFlagNoDefer
             )
         ) else {
-            self.log.error("fsevents.create_failed", ["path": url.path])
+            self.log.error("fsevents.create_failed", ["paths": paths.joined(separator: ", ")])
             return nil
         }
 
         FSEventStreamSetDispatchQueue(stream, self.eventQueue)
         return stream
+    }
+
+    /// Test hook: drives the `FSEventStreamCreate`-failure branch (reachable only
+    /// with an empty paths array) and reports whether it failed, without exposing
+    /// the non-Sendable stream handle across the actor boundary. Used by the
+    /// retain-balance regression test for #264.
+    func _forceStreamCreateFailureForTesting() -> Bool {
+        guard let stream = self.makeStream(forPaths: []) else { return true }
+        // Defensive: should not happen, but never leak a real stream.
+        FSEventStreamInvalidate(stream)
+        FSEventStreamRelease(stream)
+        return false
     }
 
     // MARK: - Callback bridge
