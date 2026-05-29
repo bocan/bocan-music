@@ -92,38 +92,39 @@ public actor PlaybackQueue {
     }
 
     /// Remove items by their queue-local IDs.
-    /// If the current item is removed, advances to the next item (or stops).
+    /// If the current item is removed, advances to the next surviving item (or stops if none remain).
     public func remove(ids: Set<QueueItem.ID>) {
         guard !ids.isEmpty else { return }
         let removedIDs = Array(ids)
 
-        // Determine if we're removing the current item
-        let removingCurrent = self.currentIndex.map { ids.contains(self.items[$0].id) } ?? false
+        let oldCurrentIndex = self.currentIndex
+        let removingCurrent = oldCurrentIndex.map { ids.contains(self.items[$0].id) } ?? false
 
-        // Remove items and fix currentIndex
-        var newCurrentIndex = self.currentIndex
-        var removedCount = 0
-        self.items = self.items.filter { item in
-            if ids.contains(item.id) {
-                removedCount += 1
-                return false
-            }
-            return true
-        }
-        self.sourceOrder = self.sourceOrder.filter { !ids.contains($0.id) }
+        // Only items removed *before* the current position shift the index leftward;
+        // removals after it leave the current track exactly where it is.
+        let removedBeforeCurrent = oldCurrentIndex.map { ci in
+            self.items[..<ci].lazy.count(where: { ids.contains($0.id) })
+        } ?? 0
 
-        // Adjust currentIndex
-        if let ci = newCurrentIndex {
-            if removingCurrent {
-                // Advance to next (same index, now pointing at what was the next item)
-                newCurrentIndex = ci < self.items.count ? ci : (self.items.isEmpty ? nil : self.items.count - 1)
+        let originalCount = self.items.count
+        self.items.removeAll { ids.contains($0.id) }
+        self.sourceOrder.removeAll { ids.contains($0.id) }
+
+        // Recompute currentIndex against the new array.
+        var newCurrentIndex = oldCurrentIndex
+        if let ci = oldCurrentIndex {
+            if self.items.isEmpty {
+                newCurrentIndex = nil
+            } else if removingCurrent {
+                // Current item gone: keep its slot (now the next surviving item),
+                // clamped to the last index when it had been at the tail.
+                newCurrentIndex = min(ci - removedBeforeCurrent, self.items.count - 1)
             } else {
-                // Count how many removed items were before currentIndex in the original array
-                // We approximate by checking the new count
-                newCurrentIndex = ci - removedCount < 0 ? 0 : max(0, ci - removedCount)
-                if self.items.isEmpty { newCurrentIndex = nil }
+                // Current item survived: it only shifts by the removals ahead of it.
+                newCurrentIndex = ci - removedBeforeCurrent
             }
         }
+
         let previousIndex = self.currentIndex
         self.currentIndex = newCurrentIndex
 
@@ -131,7 +132,7 @@ public actor PlaybackQueue {
         if previousIndex != self.currentIndex {
             self.emit(.currentChanged(newIndex: self.currentIndex, previousIndex: previousIndex))
         }
-        self.log.debug("queue.remove", ["count": removedCount])
+        self.log.debug("queue.remove", ["count": originalCount - self.items.count])
     }
 
     /// Move a single item from one position to another.
