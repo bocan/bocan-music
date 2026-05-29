@@ -45,7 +45,7 @@ public actor MusicBrainzClient {
     ///
     /// Includes releases, artists, and tags (`?inc=releases+artists+tags`).
     public func fetchRecording(mbid: String) async throws -> MBRecording {
-        await self.rateLimiter.wait()
+        try await self.rateLimiter.wait()
 
         let urlString = Self.baseURL + mbid + "?inc=releases+artists+tags&fmt=json"
         guard let url = URL(string: urlString) else {

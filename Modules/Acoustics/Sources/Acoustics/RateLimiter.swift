@@ -17,7 +17,16 @@ public actor RateLimiter {
     }
 
     /// Blocks until the next request can be sent within the rate budget.
-    public func wait() async {
+    ///
+    /// Throws `CancellationError` if the calling task is cancelled before or
+    /// during the wait, so a cancelled identification does not fire its request
+    /// after the rate-limit delay. (Previously the sleep used `try?`, swallowing
+    /// cancellation and letting the caller proceed regardless.)
+    public func wait() async throws {
+        // Bail immediately if the task was already cancelled, even when no delay
+        // is required, so we never append a timestamp / let the caller continue.
+        try Task.checkCancellation()
+
         let now = Date()
         let windowStart = now.addingTimeInterval(-self.interval)
         self.timestamps.removeAll { $0 < windowStart }
@@ -26,7 +35,7 @@ public actor RateLimiter {
             let oldest = self.timestamps[0]
             let delay = oldest.addingTimeInterval(self.interval).timeIntervalSince(now)
             if delay > 0 {
-                try? await Task.sleep(for: .seconds(delay))
+                try await Task.sleep(for: .seconds(delay))
             }
             let newNow = Date()
             self.timestamps.removeAll { $0 < newNow.addingTimeInterval(-self.interval) }
