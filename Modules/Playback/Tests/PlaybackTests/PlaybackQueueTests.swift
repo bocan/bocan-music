@@ -155,6 +155,92 @@ struct PlaybackQueueTests {
         #expect(!stored.contains(where: { $0.id == idToRemove }))
     }
 
+    @Test("remove after current keeps the current track")
+    func removeAfterCurrentKeepsCurrent() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 5).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 2) // current = track 3
+        await queue.remove(ids: [items[3].id, items[4].id]) // remove tracks 4 & 5 (after current)
+        let ci = await queue.currentIndex
+        let current = await queue.currentItem
+        #expect(ci == 2)
+        #expect(current?.trackID == 3)
+    }
+
+    @Test("remove before current shifts the index but keeps the track")
+    func removeBeforeCurrentShiftsIndex() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 5).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 2) // current = track 3
+        await queue.remove(ids: [items[0].id, items[1].id]) // remove tracks 1 & 2 (before current)
+        let ci = await queue.currentIndex
+        let current = await queue.currentItem
+        #expect(ci == 0)
+        #expect(current?.trackID == 3)
+    }
+
+    @Test("remove on both sides of current keeps the track")
+    func removeAroundCurrentKeepsCurrent() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 5).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 2) // current = track 3
+        await queue.remove(ids: [items[0].id, items[4].id]) // one before, one after
+        let ci = await queue.currentIndex
+        let current = await queue.currentItem
+        #expect(ci == 1) // one item removed before the cursor
+        #expect(current?.trackID == 3)
+    }
+
+    @Test("removing the current item advances to the next surviving track")
+    func removeCurrentAdvances() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 5).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 2) // current = track 3
+        await queue.remove(ids: [items[2].id]) // remove the current track
+        let ci = await queue.currentIndex
+        let current = await queue.currentItem
+        #expect(ci == 2)
+        #expect(current?.trackID == 4)
+    }
+
+    @Test("removing the current item plus earlier items advances correctly")
+    func removeCurrentWithEarlierRemovals() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 5).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 2) // current = track 3
+        await queue.remove(ids: [items[0].id, items[2].id]) // remove track 1 and the current track 3
+        let ci = await queue.currentIndex
+        let current = await queue.currentItem
+        #expect(ci == 1) // surviving [2, 4, 5]; next after track 3 is track 4
+        #expect(current?.trackID == 4)
+    }
+
+    @Test("removing the current item at the tail clamps to the new last item")
+    func removeCurrentAtTailClamps() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 3).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 2) // current = track 3 (last)
+        await queue.remove(ids: [items[2].id])
+        let ci = await queue.currentIndex
+        let current = await queue.currentItem
+        #expect(ci == 1)
+        #expect(current?.trackID == 2)
+    }
+
+    @Test("removing every item clears the current index")
+    func removeAllClearsCurrent() async {
+        let queue = PlaybackQueue()
+        let items = (1 ... 3).map { self.makeItem(trackID: Int64($0)) }
+        await queue.replace(with: items, startAt: 1)
+        await queue.remove(ids: Set(items.map(\.id)))
+        let ci = await queue.currentIndex
+        let count = await queue.items.count
+        let current = await queue.currentItem
+        #expect(count == 0)
+        #expect(ci == nil)
+        #expect(current == nil)
+    }
+
     // MARK: - Clear
 
     @Test("clear empties queue")
