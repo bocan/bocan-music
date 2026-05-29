@@ -306,8 +306,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.pump = newPump
 
         let pumpID = newPump.id
-        await newPump.start { [self] in
-            Task { await self.handleEnded(firedBy: pumpID) }
+        // [weak self]: the pump stores this closure (engine → pump → onEnded),
+        // so a strong capture would form an engine ⇄ pump cycle that never
+        // releases while a track is loaded. A deallocated engine has nothing to
+        // handle, so a nil self correctly no-ops.
+        await newPump.start { [weak self] in
+            Task { await self?.handleEnded(firedBy: pumpID) }
         }
 
         // Cold start: ramp player-node volume from 0 → 1 over ~10 ms to mask

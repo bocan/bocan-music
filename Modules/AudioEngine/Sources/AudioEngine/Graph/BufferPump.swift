@@ -112,6 +112,13 @@ actor BufferPump {
         }
     }
 
+    /// Number of buffers handed to the player node so far. Read-only diagnostic
+    /// surface (mirrors `scheduledCount`); used by the leak regression test to
+    /// confirm completion handlers were actually registered on the node.
+    var scheduledBufferCount: Int {
+        self.scheduledCount
+    }
+
     /// Stop the pump and wait for the background task to finish.
     func stop() async {
         self.log.debug("pump.stop", [
@@ -200,9 +207,12 @@ actor BufferPump {
     private func claimSlotAndSchedule(_ buffer: AVAudioPCMBuffer) {
         self.availableSlots -= 1
         self.scheduledCount += 1
-        let selfCapture = self
-        self.playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { _ in
-            Task { await selfCapture.releaseSlot() }
+        // [weak self]: the player node retains this completion handler until the
+        // buffer is played back (or the node is reset). A strong capture would
+        // keep a logically-stopped pump alive for the lifetime of the node. If
+        // the pump is gone the slot bookkeeping is moot, so a nil self no-ops.
+        self.playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+            Task { await self?.releaseSlot() }
         }
     }
 

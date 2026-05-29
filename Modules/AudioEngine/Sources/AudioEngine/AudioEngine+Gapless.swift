@@ -62,9 +62,13 @@ extension AudioEngine {
 
         // Start the deferred pump task; its buffers queue after the outgoing pump's tail.
         let newPumpID = next.id
-        Task { [self] in
-            await next.start {
-                Task { await self.handleEnded(firedBy: newPumpID) }
+        // [weak self] on the stored onEnded closure: the swapped-in pump retains
+        // it, so a strong capture re-forms the same engine ⇄ pump cycle that
+        // play() avoids. (Kept on the inner closure, not the transient outer
+        // Task, so Swift 6 doesn't flag capturing an enclosing weak binding.)
+        Task {
+            await next.start { [weak self] in
+                Task { await self?.handleEnded(firedBy: newPumpID) }
             }
         }
 
