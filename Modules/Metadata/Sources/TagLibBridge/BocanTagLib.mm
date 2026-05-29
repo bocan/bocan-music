@@ -20,7 +20,18 @@
 
 static NSString *_Nullable tagStringToNS(const TagLib::String &s) {
     if (s.isEmpty()) return nil;
-    return [NSString stringWithUTF8String:s.toCString(true)];
+    // TagLib stores Unicode, so UTF-8 is normally the correct lossless form.
+    if (NSString *utf8 = [NSString stringWithUTF8String:s.toCString(true)]) {
+        return utf8;
+    }
+    // Some files carry Latin-1 bytes in a frame mis-declared as UTF-8 (and ID3v1
+    // has no encoding field at all). When the UTF-8 conversion fails, recover the
+    // raw 8-bit form decoded as Latin-1 so the tag is not silently dropped to nil
+    // (issue #259). Latin-1 maps every byte, so this never itself returns nil.
+    const std::string latin1 = s.to8Bit(false);
+    return [[NSString alloc] initWithBytes:latin1.data()
+                                    length:latin1.size()
+                                  encoding:NSISOLatin1StringEncoding];
 }
 
 static NSString *_Nullable firstValue(const TagLib::PropertyMap &props,

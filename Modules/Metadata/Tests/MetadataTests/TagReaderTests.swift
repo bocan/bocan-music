@@ -88,4 +88,18 @@ struct TagReaderTests {
         let url = URL(fileURLWithPath: "/tmp/file.pdf")
         #expect(!TagReader.isSupported(url))
     }
+
+    /// Guard for issue #259: real Latin-1 (ISO-8859-1) ID3 tags, common in older
+    /// MP3 libraries, must decode to their accented characters rather than being
+    /// dropped. `tagStringToNS` also carries a defensive raw-Latin-1 fallback for
+    /// the rarer case where TagLib hands back non-UTF-8 bytes. (Frames mis-declared
+    /// as UTF-8 but carrying Latin-1 bytes are discarded by TagLib at parse time
+    /// and are not recoverable through its high-level API.)
+    @Test("reads Latin-1 (ISO-8859-1) ID3 tags with accented characters")
+    func readsLatin1Tags() throws {
+        let url = try Fixtures.url(named: "latin1-id3.mp3")
+        let tags = try self.reader.read(from: url)
+        #expect(tags.title == "Café")
+        #expect(tags.artist == "Björk")
+    }
 }
