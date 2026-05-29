@@ -43,6 +43,7 @@ public actor CrossfadeScheduler {
 
     private var config = Config()
     private var fadeOutTask: Task<Void, Never>?
+    private var fadeInTask: Task<Void, Never>?
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
@@ -118,11 +119,12 @@ public actor CrossfadeScheduler {
     ///   - node:         The incoming `AVAudioPlayerNode`.
     ///   - halfDuration: Duration of the fade-in ramp in seconds.
     public func scheduledIncomingFade(on node: AVAudioPlayerNode, halfDuration: TimeInterval) {
+        self.fadeInTask?.cancel()
         let steps = max(1, Int(halfDuration * 30))
         let interval = halfDuration / Double(steps)
         let log = self.log
 
-        Task { [steps, interval] in
+        self.fadeInTask = Task { [steps, interval] in
             log.debug("crossfade.fadeIn.start", ["steps": steps])
             // Start silent.
             await MainActor.run { node.volume = 0 }
@@ -133,15 +135,34 @@ public actor CrossfadeScheduler {
                 await MainActor.run { node.volume = volume }
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
             }
-            await MainActor.run { node.volume = 1.0 }
+            // Only settle to full volume on natural completion. If cancelled (a
+            // skip/stop mid-fade), leave the node as `cancelFades` set it instead
+            // of slamming the now-stopped incoming node back to full. Mirrors the
+            // guarded final write in `scheduleOutgoingFade`.
+            if !Task.isCancelled {
+                await MainActor.run { node.volume = 1.0 }
+            }
             log.debug("crossfade.fadeIn.end")
         }
     }
 
     /// Cancel any in-flight fade tasks and restore `node` to full volume.
-    public func cancelFades(on node: AVAudioPlayerNode) {
-        self.fadeOutTask?.cancel()
+    public func cancelFades(on node: AVAudioPlayerNode) async {
+        // Capture and detach the handles up front so a concurrent
+        // scheduleOutgoing/IncomingFade can install fresh tasks while we drain.
+        let outgoing = self.fadeOutTask
+        let incoming = self.fadeInTask
         self.fadeOutTask = nil
+        self.fadeInTask = nil
+
+        outgoing?.cancel()
+        incoming?.cancel()
+        // Drain the ramp loops so a stale in-flight `node.volume` write (a loop
+        // can be mid-`MainActor.run` when cancelled) cannot land *after* we
+        // restore full volume below. Both tasks exit promptly once cancelled.
+        await outgoing?.value
+        await incoming?.value
+
         node.volume = 1.0
         self.log.debug("crossfade.fades.cancelled")
     }
