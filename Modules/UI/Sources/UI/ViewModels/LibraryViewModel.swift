@@ -192,6 +192,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     @Published public var isPlaylistImportSheetPresented = false
     @Published public var playlistExportRequest: PlaylistExportRequest?
 
+    // MARK: - Clear-queue confirmation (issue #260)
+
+    /// Drives the "Clear the queue?" confirmation presented from `BocanRootView`,
+    /// raised by the Playback menu's "Clear Queue" command for a non-trivial queue.
+    @Published public var clearQueueConfirmationPresented = false
+
+    /// Number of queued tracks, shown in the confirmation message. Always at or
+    /// above the confirmation threshold while the dialog is visible.
+    @Published public private(set) var clearQueueItemCount = 0
+
     // MARK: - Tools sheet flags
 
     /// Set to `true` to present the "Fetch Missing Cover Art" progress sheet.
@@ -935,9 +945,39 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         await qp.setRepeat(mode)
     }
 
-    /// Clears the entire playback queue and stops playback.  Used by the
-    /// Playback menu's "Clear Queue" command (Phase 5 audit H1) and the
-    /// matching Up Next toolbar / context-menu surfaces.
+    /// Smallest queue size that warrants a "Clear the queue?" confirmation.
+    /// Trivial queues (empty, or just the currently-playing track) clear without
+    /// asking; anything larger is a built-up queue worth protecting (issue #260).
+    static let clearQueueConfirmationThreshold = 2
+
+    /// Entry point for the Playback menu's "Clear Queue" command (Cmd-Shift-Delete).
+    /// Reads the live queue size, then either clears immediately (trivial queue)
+    /// or raises the confirmation dialog. The crash-recovery "Start Fresh" button
+    /// deliberately calls `clearQueue()` directly and is not gated by this.
+    public func requestClearQueue() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let count = await qp.queue.items.count
+        if self.resolveClearQueueRequest(itemCount: count) {
+            await self.clearQueue()
+        }
+    }
+
+    /// Decides what "Clear Queue" should do for a queue of `count` items,
+    /// updating the confirmation state. Returns `true` when the queue is trivial
+    /// and the caller should clear immediately, `false` when a confirmation was
+    /// raised instead. Split out from `requestClearQueue()` so the decision is
+    /// synchronously testable without a live `QueuePlayer`.
+    @discardableResult
+    func resolveClearQueueRequest(itemCount count: Int) -> Bool {
+        guard count >= Self.clearQueueConfirmationThreshold else { return true }
+        self.clearQueueItemCount = count
+        self.clearQueueConfirmationPresented = true
+        return false
+    }
+
+    /// Clears the entire playback queue and stops playback. The unguarded clear,
+    /// invoked by the "Clear Queue" confirmation, the crash-recovery "Start Fresh"
+    /// button, and the matching Up Next toolbar / context-menu surfaces.
     public func clearQueue() async {
         guard let qp = engine as? QueuePlayer else { return }
         await qp.clearSavedState()
