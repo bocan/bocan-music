@@ -263,6 +263,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var searchQueryCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     private var sectionExpansionCancellable: AnyCancellable?
+    private var selectedDestinationCancellable: AnyCancellable?
     /// Source of Subsonic servers for the sidebar (Phase 19 step 9). `nil`
     /// when running without the Subsonic module wired in (tests, snapshots).
     private let subsonicSidebarListing: SubsonicSidebarListing?
@@ -388,6 +389,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.observeTracksSelection()
         self.wireExpandedFoldersPersistence()
         self.wireSectionExpansionPersistence()
+        self.wireSelectedDestinationPersistence()
         self.observeSubsonicCapabilityChanges()
         self.observeSubsonicConnectionChanges()
         self.observeQueueSchemaWarnings()
@@ -427,6 +429,22 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         // Phase 19 step 9: persist sidebar section collapse + per-server
         // disclosure with the same debounce strategy as expanded folders.
         self.sectionExpansionCancellable = self.$sectionExpansion
+            .dropFirst()
+            .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                Task { await self.saveUIState() }
+            }
+    }
+
+    private func wireSelectedDestinationPersistence() {
+        // Persist the selected sidebar destination as the user navigates, so the
+        // app reopens where they left off. Previously this was only saved by the
+        // folder/section sinks (when those happened to change) and RootView's
+        // `.onDisappear`, which does not reliably fire on app termination — so a
+        // stale destination (e.g. Up Next) would stick across launches. Same
+        // 250 ms debounce coalesces rapid back/forward navigation.
+        self.selectedDestinationCancellable = self.$selectedDestination
             .dropFirst()
             .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
             .sink { [weak self] _ in
