@@ -32,7 +32,11 @@ public struct ArtistDetailView: View {
                     .background(Color.bgSecondary)
                     .contextMenu {
                         Button("Remove Artist from Library", role: .destructive) {
-                            Task { await self.library.removeArtistFromLibrary(artistID: self.artistID) }
+                            Task {
+                                await RemoveFromLibraryConfirm.artist(
+                                    id: self.artistID, name: artist.name, library: self.library
+                                )
+                            }
                         }
                     }
                 Divider()
@@ -204,7 +208,11 @@ public struct ArtistDetailView: View {
         Divider()
         Button("Remove Album from Library", role: .destructive) {
             if let id = album.id {
-                Task { await self.library.removeAlbumsFromLibrary(albumIDs: [id]) }
+                Task {
+                    await RemoveFromLibraryConfirm.albums(
+                        ids: [id], soleTitle: album.title, library: self.library
+                    )
+                }
             }
         }
         .disabled(album.id == nil)
@@ -326,7 +334,11 @@ public struct ArtistsView: View {
             .contextMenu {
                 if let id = artist.id {
                     Button("Remove Artist from Library", role: .destructive) {
-                        Task { await self.library.removeArtistFromLibrary(artistID: id) }
+                        Task {
+                            await RemoveFromLibraryConfirm.artist(
+                                id: id, name: artist.name, library: self.library
+                            )
+                        }
                     }
                 }
             }
