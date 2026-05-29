@@ -331,7 +331,11 @@ public struct AlbumsGridView: View {
 
         Divider()
         Button(multi ? "Remove \(ids.count) Albums from Library" : "Remove Album from Library", role: .destructive) {
-            Task { await self.library.removeAlbumsFromLibrary(albumIDs: ids) }
+            Task {
+                await RemoveFromLibraryConfirm.albums(
+                    ids: ids, soleTitle: multi ? nil : album.title, library: self.library
+                )
+            }
         }
         .disabled(ids.isEmpty)
     }

@@ -150,7 +150,9 @@ extension TracksView {
     /// `UserDefaults` key for "Don't ask again" on the soft-delete (Remove from
     /// Library) confirmation. Trash deletion is *never* suppressible — it
     /// touches the filesystem, so we always confirm.
-    private static let suppressRemoveKey = "library.suppressRemoveConfirmation"
+    /// Shared with album/artist removal (RemoveFromLibraryConfirm) so the
+    /// "Don't ask again" preference is unified across all soft-delete prompts.
+    static let suppressRemoveKey = "library.suppressRemoveConfirmation"
 
     /// Presents the soft-delete confirmation. Honours the suppression flag.
     /// Note: the flag only suppresses *Remove from Library* — trashing a file
