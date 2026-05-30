@@ -78,10 +78,15 @@ public final class NowPlayingViewModel {
     private let engine: any Transport
     private let database: Database
     private let subsonicCoverArtProvider: SubsonicCoverArtProvider?
-    private var stateTask: Task<Void, Never>?
-    private var positionTask: Task<Void, Never>?
-    private var sleepTimerTask: Task<Void, Never>?
-    private var scrobbleStatsTask: Task<Void, Never>?
+    // nonisolated(unsafe): assigned only from @MainActor methods and read once
+    // from the nonisolated `deinit`, which has exclusive access — never
+    // concurrently. Task handles are themselves Sendable. See #279.
+    private nonisolated(unsafe) var stateTask: Task<Void, Never>?
+    private nonisolated(unsafe) var positionTask: Task<Void, Never>?
+    private nonisolated(unsafe) var sleepTimerTask: Task<Void, Never>?
+    private nonisolated(unsafe) var scrobbleStatsTask: Task<Void, Never>?
+    private nonisolated(unsafe) var currentTrackTask: Task<Void, Never>?
+    private nonisolated(unsafe) var queueChangesTask: Task<Void, Never>?
     /// The full `Track` record for the currently-playing item, or `nil` when idle.
     /// Populated by `setCurrentTrack(_:)` and used by `TrackInfoPanel`.
     public private(set) var currentTrack: Track?
@@ -113,6 +118,20 @@ public final class NowPlayingViewModel {
         if let repo = scrobbleRepository {
             self.startObservingScrobbleStats(repo)
         }
+    }
+
+    deinit {
+        // Cancel every long-lived observation loop. These closures all capture
+        // [weak self] so they no-op once the VM is gone, but leaving the tasks
+        // running is untidy and a real leak should the VM ever become per-window
+        // rather than app-lifetime. Task.cancel() is safe from a nonisolated
+        // deinit; the stored handles are Sendable. See #279.
+        self.stateTask?.cancel()
+        self.positionTask?.cancel()
+        self.sleepTimerTask?.cancel()
+        self.scrobbleStatsTask?.cancel()
+        self.currentTrackTask?.cancel()
+        self.queueChangesTask?.cancel()
     }
 
     private func startObservingScrobbleStats(_ repo: ScrobbleQueueRepository) {
@@ -331,7 +350,7 @@ public final class NowPlayingViewModel {
     }
 
     private func startObservingCurrentTrack(_ qp: QueuePlayer) {
-        Task { [weak self] in
+        self.currentTrackTask = Task { [weak self] in
             guard let self else { return }
             for await track in qp.currentTrackChanges {
                 if let track {
@@ -362,7 +381,7 @@ public final class NowPlayingViewModel {
             }
         }
         // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
-        Task { [weak self] in
+        self.queueChangesTask = Task { [weak self] in
             guard let self else { return }
             let initialRepeat = await qp.queue.repeatMode
             let initialShuffle = await qp.queue.shuffleState
