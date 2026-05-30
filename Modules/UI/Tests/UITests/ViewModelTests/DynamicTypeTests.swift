@@ -109,6 +109,18 @@ struct DynamicTypeTests {
         )
     }
 
+    // MARK: ShuffleCheckCell a11y label (#297)
+
+    @Test("ShuffleCheckCell sets an accessibilityLabel on the checkbox")
+    func shuffleCheckCellSetsAccessibilityLabel() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Browse/TrackTableHelpers.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("setAccessibilityLabel") && source.contains("ShuffleCheckCell"),
+            "ShuffleCheckCell must call setAccessibilityLabel so VoiceOver can identify the control"
+        )
+    }
+
     // MARK: LoveButtonCell uses preferredFont
 
     @Test("LoveButtonCell uses NSFont.preferredFont(forTextStyle:) for the heart glyph")
