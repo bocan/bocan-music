@@ -109,6 +109,29 @@ struct DynamicTypeTests {
         )
     }
 
+    // MARK: AccentColor dark variant (#301)
+
+    @Test("AccentColor colorset has a dark-appearance variant for WCAG AA contrast")
+    func accentColorHasDarkVariant() throws {
+        // The colorset lives outside the Modules tree; navigate relative to this test file.
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // UI/
+            .deletingLastPathComponent() // Modules/
+            .deletingLastPathComponent() // repo root
+            .appendingPathComponent("Resources/Assets.xcassets/AccentColor.colorset/Contents.json")
+        let data = try Data(contentsOf: url)
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        let colors = json?["colors"] as? [[String: Any]] ?? []
+        let hasDark = colors.contains { entry in
+            let appearances = entry["appearances"] as? [[String: Any]] ?? []
+            return appearances.contains { $0["value"] as? String == "dark" }
+        }
+        #expect(hasDark, "AccentColor.colorset must have a dark-appearance variant so accent-as-text meets WCAG AA in dark mode")
+    }
+
     // MARK: ShuffleCheckCell a11y label (#297)
 
     @Test("ShuffleCheckCell sets an accessibilityLabel on the checkbox")
