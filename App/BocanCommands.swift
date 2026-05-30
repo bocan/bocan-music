@@ -29,7 +29,28 @@ struct BocanCommands: Commands {
     @AppStorage("visualizer.paneVisible") private var visualizerPaneVisible = false
     /// Mirrors `NowPlayingStrip.showRecentScrobbles` (`@AppStorage("scrobble.showRecentSheet")`).
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
+    /// In-app Reduce Motion toggle, mirrored so menu-driven pane changes can match
+    /// the toolbar buttons' animation behaviour (issue #312).
+    @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.openWindow) private var openWindow
+
+    /// `true` when motion should be suppressed (system Reduce Motion or the in-app toggle).
+    private var reduceMotion: Bool {
+        self.systemReduceMotion || self.appReduceMotion
+    }
+
+    /// Toggles `flag`, animating the change the same way the lyrics/visualizer
+    /// toolbar buttons do, unless Reduce Motion is active (issue #312).
+    private func toggleAnimated(_ flag: Binding<Bool>) {
+        if self.reduceMotion {
+            flag.wrappedValue.toggle()
+        } else {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                flag.wrappedValue.toggle()
+            }
+        }
+    }
 
     var body: some Commands {
         // Replace the default "About Bòcan" system item with our custom About
@@ -267,14 +288,12 @@ struct BocanCommands: Commands {
             // Phase 4 audit C1: ⌘L is reserved for "Love" (the Track menu);
             // Show Lyrics moves to ⌘⌥L so the two don't collide.
             Button(self.lyricsPaneVisible ? "Hide Lyrics" : "Show Lyrics") {
-                self.lyricsPaneVisible.toggle()
+                self.toggleAnimated(self.$lyricsPaneVisible)
             }
             .keyboardShortcut("l", modifiers: [.command, .option])
 
             Button(self.visualizerPaneVisible ? "Hide Visualizer" : "Show Visualizer") {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    self.visualizerPaneVisible.toggle()
-                }
+                self.toggleAnimated(self.$visualizerPaneVisible)
             }
             .keyboardShortcut("v", modifiers: [.command, .shift])
 
