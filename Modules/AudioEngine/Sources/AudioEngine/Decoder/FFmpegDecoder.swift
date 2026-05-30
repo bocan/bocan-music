@@ -33,6 +33,24 @@ public actor FFmpegDecoder: Decoder {
         Self._executor.asUnownedSerialExecutor()
     }
 
+    /// RAII owner of every FFmpeg C allocation the decoder makes.
+    ///
+    /// Cleanup contract (#295): each FFmpeg resource is parked on a property of
+    /// this class *immediately* after it is allocated, and `deinit` frees every
+    /// property unconditionally. All the FFmpeg free functions used here
+    /// (`av_packet_free`, `av_frame_free`, `swr_free`, `avcodec_free_context`,
+    /// `avformat_close_input`) are NULL-safe, so a partially-constructed context
+    /// -- where a later allocation threw before its property was set -- still
+    /// tears down cleanly: the unset members are simply skipped.
+    ///
+    /// This is why `openAndConfigure` can assign `ctx.codecCtx` *before* the
+    /// throwing `avcodec_open2` call, and why `FFmpegDecoder.init` stores the
+    /// context in `self.ctx` before configuring it: any throw releases the
+    /// `FFContext`, `deinit` runs exactly once, and every allocation made so far
+    /// is freed. The one allocation that is *not* owned here until it fully
+    /// succeeds is the SWR resampler -- `buildSWR` frees it on its own throw
+    /// paths (see there) and only hands a live pointer back to be parked on
+    /// `swrCtx`.
     private final class FFContext {
         var formatCtx: UnsafeMutablePointer<AVFormatContext>?
         var codecCtx: UnsafeMutablePointer<AVCodecContext>?
@@ -47,6 +65,8 @@ public actor FFmpegDecoder: Decoder {
         }
 
         deinit {
+            // Order is not significant: the resources are independent and every
+            // free is NULL-safe, so this covers any partial-alloc state.
             av_packet_free(&packet)
             av_frame_free(&frame)
             var swr = swrCtx
@@ -193,6 +213,10 @@ private extension FFmpegDecoder {
             av_dict_set(&opts, "protocol_whitelist", allowed, 0)
         }
 
+        // avformat_open_input writes straight into ctx.formatCtx. On failure it
+        // leaves it NULL; on partial success (opened but find_stream_info below
+        // throws) it is non-NULL and owned by FFContext.deinit via
+        // avformat_close_input. Either way the throw path is covered. (#295)
         let openRet = avformat_open_input(&ctx.formatCtx, inputPath, nil, &opts)
         if openRet < 0 {
             throw AudioEngineError.accessDenied(url, underlying: ffError(openRet))
@@ -217,10 +241,15 @@ private extension FFmpegDecoder {
         guard let codecCtx = avcodec_alloc_context3(codec) else {
             throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: FFmpegInternalError.alloc)
         }
+        // Park the codec context on ctx *before* the two throwing calls below so
+        // that a failure in parameters_to_context / open2 is still covered by
+        // FFContext.deinit's avcodec_free_context. (#295)
         ctx.codecCtx = codecCtx
 
         try self.ffCheck(avcodec_parameters_to_context(codecCtx, codecParams))
         try self.ffCheck(avcodec_open2(codecCtx, codec, nil))
+        // buildSWR owns its allocation until it returns successfully; only a
+        // live, fully-initialised resampler reaches ctx.swrCtx. (#295)
         ctx.swrCtx = try self.buildSWR(codecCtx: codecCtx)
 
         return Double(codecCtx.pointee.sample_rate)
@@ -233,7 +262,15 @@ private extension FFmpegDecoder {
         av_channel_layout_default(&outLayout, 2)
         defer { av_channel_layout_uninit(&outLayout) }
 
+        // Builder that frees on throw (#295): swr_alloc_set_opts2 can allocate
+        // the context and still return an error, so a half-built resampler must
+        // be freed on *every* throw path, not just swr_init failure. We free it
+        // in a defer unless ownership is handed back to the caller (who parks it
+        // on FFContext.swrCtx for deinit to own). swr_free is NULL-safe.
         var swrCtx: OpaquePointer?
+        var handedOff = false
+        defer { if !handedOff { swr_free(&swrCtx) } }
+
         let ret = swr_alloc_set_opts2(
             &swrCtx,
             &outLayout,
@@ -246,15 +283,12 @@ private extension FFmpegDecoder {
             nil
         )
         try self.ffCheck(ret, codec: "FFmpeg/swr")
+        try self.ffCheck(swr_init(swrCtx), codec: "FFmpeg/swr")
 
-        let initRet = swr_init(swrCtx)
-        if initRet < 0 {
-            swr_free(&swrCtx)
-            throw AudioEngineError.decoderFailure(codec: "FFmpeg/swr", underlying: ffError(initRet))
-        }
         guard let swr = swrCtx else {
             throw AudioEngineError.decoderFailure(codec: "FFmpeg/swr", underlying: FFmpegInternalError.alloc)
         }
+        handedOff = true
         return swr
     }
 

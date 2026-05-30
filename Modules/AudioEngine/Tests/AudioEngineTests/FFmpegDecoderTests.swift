@@ -100,6 +100,24 @@ struct FFmpegDecoderTests {
         }
     }
 
+    @Test("Corrupt input throws cleanly and leaves the decoder usable afterwards (#295)")
+    func corruptInputPartialAllocCleanup() throws {
+        // corrupt.mp3 opens far enough to allocate FFmpeg state but then fails
+        // mid-configure, exercising the FFContext partial-alloc teardown path.
+        // Doing it repeatedly would surface a double-free / leak as a crash.
+        let bad = try fixtureURL("corrupt.mp3")
+        for _ in 0 ..< 5 {
+            #expect(throws: (any Error).self) {
+                _ = try FFmpegDecoder(url: bad)
+            }
+        }
+        // A valid decoder must still construct and read after the failures,
+        // proving the failed inits did not corrupt shared FFmpeg state.
+        let good = try fixtureURL("sine-1s-48000-stereo.ogg")
+        let decoder = try FFmpegDecoder(url: good)
+        #expect(decoder.sourceFormat.channelCount == 2)
+    }
+
     // MARK: - Sine-wave sanity (FFT)
 
     @Test("OGG sine: peak frequency ≈ 440 Hz")
