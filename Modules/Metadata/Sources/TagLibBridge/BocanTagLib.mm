@@ -417,7 +417,10 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     // -----------------------------------------------------------------------
     // Cover art via complexProperties (TagLib 2.0+)
     // -----------------------------------------------------------------------
-    if (tags.coverArt.count > 0) {
+    // Always call setComplexProperties so that an intentionally-empty array
+    // clears existing embedded art. Callers that want to preserve art must
+    // include it in tags.coverArt.
+    {
         TagLib::List<TagLib::VariantMap> picList;
         for (BOCCoverArt *art in tags.coverArt) {
             const auto *bytes = static_cast<const char *>(art.data.bytes);
