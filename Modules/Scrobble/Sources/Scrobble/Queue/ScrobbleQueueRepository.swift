@@ -424,13 +424,18 @@ public actor ScrobbleQueueRepository {
         providerID: String?
     ) throws -> [RecentRow] {
         // Build the queue-row query, optionally restricting to a provider.
+        // LEFT JOIN (not INNER) so Subsonic-sourced rows -- which have
+        // track_id IS NULL because the streamed song was never inserted into
+        // `tracks` -- are still returned. For those rows the local-track columns
+        // are NULL, so fall back to the payload_* columns captured at enqueue
+        // time (see M021SubsonicScrobble). (#291)
         var queueSQL = """
         SELECT q.id AS queue_id, q.played_at,
-               t.title,
-               a.name AS artist_name,
-               al.title AS album_title
+               COALESCE(t.title, q.payload_title) AS title,
+               COALESCE(a.name, q.payload_artist) AS artist_name,
+               COALESCE(al.title, q.payload_album) AS album_title
           FROM scrobble_queue q
-          JOIN tracks t ON t.id = q.track_id
+          LEFT JOIN tracks t ON t.id = q.track_id
           LEFT JOIN artists a ON a.id = t.artist_id
           LEFT JOIN albums al ON al.id = t.album_id
         """

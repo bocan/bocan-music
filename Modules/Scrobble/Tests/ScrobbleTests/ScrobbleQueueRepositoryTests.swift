@@ -172,6 +172,48 @@ struct ScrobbleQueueRepositoryTests {
         #expect(row.subsonicSongID == "song-42")
     }
 
+    @Test("fetchRecent includes Subsonic-sourced rows via payload fallback (#291)")
+    func recentIncludesSubsonicRows() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db, id: 1, title: "Local Song", artist: "Local Artist")
+        let repo = ScrobbleQueueRepository(database: db)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+
+        // A local-track scrobble (track_id present).
+        _ = try await repo.enqueue(
+            trackID: 1,
+            playedAt: now,
+            durationPlayed: 200,
+            providerIDs: ["lastfm"]
+        )
+        // A Subsonic-sourced scrobble (track_id IS NULL; metadata in payload_*).
+        _ = try await repo.enqueueSubsonic(
+            serverID: UUID(),
+            songID: "song-99",
+            playedAt: now.addingTimeInterval(60),
+            durationPlayed: 200,
+            title: "Streamed Song",
+            artist: "Streamed Artist",
+            album: "Streamed Album",
+            albumArtist: nil,
+            duration: 212,
+            providerIDs: ["subsonic"]
+        )
+
+        let recent = try await repo.fetchRecent(limit: 50)
+        #expect(recent.count == 2, "expected both local and Subsonic rows, got \(recent.count)")
+
+        let subsonic = try #require(
+            recent.first { $0.title == "Streamed Song" },
+            "Subsonic-sourced row missing from fetchRecent (INNER JOIN regression)"
+        )
+        #expect(subsonic.artist == "Streamed Artist")
+        #expect(subsonic.album == "Streamed Album")
+
+        let local = try #require(recent.first { $0.title == "Local Song" })
+        #expect(local.artist == "Local Artist")
+    }
+
     @Test("enqueueSubsonic is idempotent on (serverID, songID, playedAt)")
     func subsonicEnqueueIdempotent() async throws {
         let db = try await self.makeDB()
