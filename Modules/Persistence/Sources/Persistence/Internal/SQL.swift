@@ -77,15 +77,16 @@ enum SQL {
     ///
     /// Used to supplement FTS title search so artist-name queries surface relevant albums.
     static func albumsByArtistQuery(_ term: String) -> SQLRequest<Album> {
-        SQLRequest(
+        let escaped = Self.escapeLIKETerm(term)
+        return SQLRequest(
             sql: """
             SELECT albums.*
             FROM albums
             LEFT JOIN artists ON artists.id = albums.album_artist_id
-            WHERE artists.name LIKE ?
+            WHERE artists.name LIKE ? ESCAPE '\\'
             ORDER BY albums.title
             """,
-            arguments: ["%\(term)%"]
+            arguments: ["%\(escaped)%"]
         )
     }
 
@@ -108,6 +109,18 @@ enum SQL {
             """,
             arguments: [escaped]
         )
+    }
+
+    // MARK: - LIKE helpers
+
+    /// Escapes `%`, `_`, and `\` in a LIKE pattern operand so they are treated
+    /// as literals rather than wildcards. The caller is responsible for appending
+    /// the surrounding `%` wildcards and passing `ESCAPE '\'` in the SQL.
+    static func escapeLIKETerm(_ term: String) -> String {
+        term
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "%", with: "\\%")
+            .replacingOccurrences(of: "_", with: "\\_")
     }
 
     // MARK: - Helpers
