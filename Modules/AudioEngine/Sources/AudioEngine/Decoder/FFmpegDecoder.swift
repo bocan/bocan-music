@@ -159,6 +159,17 @@ public actor FFmpegDecoder: Decoder {
 
 // MARK: - Setup helpers
 
+extension FFmpegDecoder {
+    /// The set of protocols FFmpeg may use for a *remote* input, as a
+    /// comma-separated `protocol_whitelist` value. Deliberately excludes
+    /// `file`, `concat`, `subfile`, `data`, etc. so a server-supplied URL
+    /// cannot make the demuxer read local files. Returns `nil` for local
+    /// inputs, which must keep FFmpeg's default protocol set (incl. `file`).
+    static func allowedRemoteProtocols(isRemote: Bool) -> String? {
+        isRemote ? "http,https,tls,tcp,crypto" : nil
+    }
+}
+
 private extension FFmpegDecoder {
     /// Opens the format context, finds the best audio stream, opens the codec,
     /// and initialises the SWR resampler. Returns the stream's native sample rate.
@@ -169,7 +180,20 @@ private extension FFmpegDecoder {
         // URLs aren't double-encoded.
         let isHTTP = (url.scheme?.lowercased()).map { $0 == "http" || $0 == "https" } ?? false
         let inputPath = isHTTP ? url.absoluteString : url.path
-        let openRet = avformat_open_input(&ctx.formatCtx, inputPath, nil, nil)
+
+        // For remote (server-supplied) inputs, restrict FFmpeg to network
+        // protocols. Without this a malicious internet-radio / Subsonic server
+        // could return an HLS / `concat:` / `file:` / `subfile:` URL that makes
+        // the demuxer read sandbox-reachable local files (local file
+        // disclosure). Local files deliberately get no whitelist so the default
+        // `file` protocol still works. See #280.
+        var opts: OpaquePointer? // AVDictionary*
+        defer { av_dict_free(&opts) }
+        if let allowed = allowedRemoteProtocols(isRemote: isHTTP) {
+            av_dict_set(&opts, "protocol_whitelist", allowed, 0)
+        }
+
+        let openRet = avformat_open_input(&ctx.formatCtx, inputPath, nil, &opts)
         if openRet < 0 {
             throw AudioEngineError.accessDenied(url, underlying: ffError(openRet))
         }
