@@ -48,9 +48,16 @@ public actor Fingerprinter {
         at fpcalcURL: URL,
         fileURL: URL
     ) throws -> (fingerprint: String, duration: Int) {
+        guard fileURL.isFileURL else {
+            throw AcousticsError.invalidInput(reason: "fpcalc requires a file URL, got: \(fileURL.scheme ?? "nil")")
+        }
+        let path = fileURL.path(percentEncoded: false)
+        guard !path.contains("\0") else {
+            throw AcousticsError.invalidInput(reason: "file path contains a NUL byte")
+        }
         let process = Process()
         process.executableURL = fpcalcURL
-        process.arguments = ["-json", "-length", "120", fileURL.path(percentEncoded: false)]
+        process.arguments = ["-json", "-length", "120", path]
 
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()
