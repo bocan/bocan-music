@@ -526,7 +526,7 @@ public actor ScrobbleQueueRepository {
     }
 
     /// Stream live `Stats` for the UI.
-    public nonisolated func observeStats() -> AsyncThrowingStream<Stats, Error> {
+    public nonisolated func observeStats(now: @Sendable @escaping () -> Date = { Date() }) -> AsyncThrowingStream<Stats, Error> {
         AsyncThrowingStream { continuation in
             let task = Task { [database = self.db] in
                 let upstream = await database.observe(value: { db -> Stats in
@@ -536,7 +536,7 @@ public actor ScrobbleQueueRepository {
                     let dead = try Int.fetchOne(db, sql: """
                     SELECT COUNT(*) FROM scrobble_queue WHERE dead = 1
                     """) ?? 0
-                    let startOfDay = Calendar(identifier: .gregorian).startOfDay(for: Date())
+                    let startOfDay = Calendar(identifier: .gregorian).startOfDay(for: now())
                     let submittedToday = try Int.fetchOne(db, sql: """
                     SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
                      WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
