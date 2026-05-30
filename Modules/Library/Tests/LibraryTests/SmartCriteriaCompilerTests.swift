@@ -225,6 +225,37 @@ struct SmartCriteriaCompilerTests {
         self.assertNoLiteral(c.selectSQL, "1700000000")
     }
 
+    @Test("onDate produces a [startOfDay, nextDay) range spanning exactly one day (#296)")
+    func addedAtOnDate() throws {
+        // A mid-day date that won't fall on a DST transition.
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let c = try compile(.addedAt, .onDate, .date(date))
+        #expect(
+            c.selectSQL.contains(">= ?") && c.selectSQL.contains("< ?"),
+            "onDate must produce a half-open [start, end) range"
+        )
+
+        // Compute expected boundaries via the same pinned Gregorian calendar as the fix.
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone.current
+        let expectedStart = cal.startOfDay(for: date)
+        let expectedEnd = try #require(cal.date(byAdding: .day, value: 1, to: expectedStart))
+
+        let expectedLo = Int64(expectedStart.timeIntervalSince1970)
+        let expectedHi = Int64(expectedEnd.timeIntervalSince1970)
+
+        // The range must span exactly one calendar day for a non-DST date.
+        let span = expectedHi - expectedLo
+        #expect(span == 86400, "Day range should span 86400 s; got \(span)")
+
+        // lo must be midnight local time.
+        let components = cal.dateComponents([.hour, .minute, .second], from: expectedStart)
+        #expect(
+            components.hour == 0 && components.minute == 0 && components.second == 0,
+            "startOfDay should be midnight local time; got \(components)"
+        )
+    }
+
     // MARK: - Boolean comparators
 
     @Test func lovedIsTrue() throws {
