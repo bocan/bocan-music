@@ -134,6 +134,25 @@ struct FFmpegDecoderTests {
         )
     }
 
+    // MARK: - Protocol whitelist (#280)
+
+    @Test("remote inputs are restricted to safe network protocols")
+    func allowedRemoteProtocolsRestrictToNetwork() {
+        let allowed = try? #require(FFmpegDecoder.allowedRemoteProtocols(isRemote: true))
+        let protocols = Set((allowed ?? "").split(separator: ",").map(String.init))
+        // Network protocols a legitimate http/https stream needs.
+        #expect(protocols.isSuperset(of: ["http", "https", "tls", "tcp"]))
+        // The dangerous, local-file-reaching protocols must NOT be allowed.
+        for forbidden in ["file", "concat", "subfile", "data", "pipe"] {
+            #expect(!protocols.contains(forbidden), "\(forbidden) must not be allowed for remote inputs")
+        }
+    }
+
+    @Test("local inputs get no restriction so the file protocol still works")
+    func localInputsKeepDefaultProtocols() {
+        #expect(FFmpegDecoder.allowedRemoteProtocols(isRemote: false) == nil)
+    }
+
     // MARK: - Private helpers
 
     /// Returns the index of the bin with maximum magnitude (excluding DC).
