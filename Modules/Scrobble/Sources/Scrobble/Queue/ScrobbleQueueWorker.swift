@@ -194,6 +194,23 @@ public actor ScrobbleQueueWorker {
             }
         } catch {
             self.log.error("scrobble.worker.apply.fail", ["err": String(reflecting: error)])
+            // The provider already accepted this scrobble (.success) but persisting
+            // that outcome failed, leaving the submission pending/retry. Without
+            // intervention the next drain pass re-submits it and the scrobble is
+            // delivered twice. Best-effort: move the row to a terminal
+            // sent_unconfirmed state so it is never re-sent. (#292)
+            if case .success = result.outcome {
+                do {
+                    try await self.repo.markSentUnconfirmed(
+                        queueID: result.queueID,
+                        providerID: self.provider.id,
+                        reason: "delivered; confirm write failed: \(error)",
+                        at: self.now()
+                    )
+                } catch {
+                    self.log.error("scrobble.worker.apply.sentinel.fail", ["err": String(reflecting: error)])
+                }
+            }
         }
     }
 

@@ -64,6 +64,32 @@ struct ScrobbleQueueRepositoryTests {
         #expect(stats2.pending == 0)
     }
 
+    @Test("markSentUnconfirmed is terminal: excluded from pending, counts as submitted (#292)")
+    func sentUnconfirmedIsTerminal() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db)
+        let repo = ScrobbleQueueRepository(database: db)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let qid = try try await #require(repo.enqueue(
+            trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]
+        ))
+        try await repo.markSentUnconfirmed(queueID: qid, providerID: "lastfm", reason: "confirm failed", at: now)
+
+        // Not re-fetched for submission.
+        let pending = try await repo.fetchPending(providerID: "lastfm", now: now)
+        #expect(pending.isEmpty, "sent_unconfirmed rows must not be re-submitted")
+
+        // Counted as done: queue no longer pending, and submittedToday includes it.
+        let stats = try await repo.stats(now: now)
+        #expect(stats.pending == 0)
+        #expect(stats.submittedToday == 1)
+
+        // reviveDead (which only touches 'failed') must not resurrect it.
+        try await repo.reviveDead()
+        let afterRevive = try await repo.fetchPending(providerID: "lastfm", now: now)
+        #expect(afterRevive.isEmpty, "reviveDead must not resurrect sent_unconfirmed rows")
+    }
+
     @Test("markRetry hides row until next_attempt_at")
     func retryDelaysFetch() async throws {
         let db = try await self.makeDB()

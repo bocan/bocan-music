@@ -47,6 +47,11 @@ public actor ScrobbleQueueRepository {
             case pending
             case retry
             case sent
+            /// The provider accepted the scrobble but persisting the clean
+            /// success failed; recorded as a distinct terminal state so the row
+            /// is never re-submitted (would be a double scrobble) yet the
+            /// unconfirmed delivery stays visible. (#292)
+            case sentUnconfirmed = "sent_unconfirmed"
             case failed
             case ignored
 
@@ -56,6 +61,7 @@ public actor ScrobbleQueueRepository {
                 case .pending: "Queued"
                 case .retry: "Retrying"
                 case .sent: "Sent"
+                case .sentUnconfirmed: "Sent (unconfirmed)"
                 case .failed: "Failed"
                 case .ignored: "Ignored"
                 }
@@ -63,7 +69,7 @@ public actor ScrobbleQueueRepository {
 
             /// `true` for terminal states (no more work expected).
             public var isTerminal: Bool {
-                self == .sent || self == .failed || self == .ignored
+                self == .sent || self == .sentUnconfirmed || self == .failed || self == .ignored
             }
         }
 
@@ -82,6 +88,7 @@ public actor ScrobbleQueueRepository {
             if statuses.contains(.retry) { return .retry }
             if statuses.contains(.pending) { return .pending }
             if statuses.contains(.ignored) { return .ignored }
+            if statuses.contains(.sentUnconfirmed) { return .sentUnconfirmed }
             return .sent
         }
     }
@@ -238,10 +245,40 @@ public actor ScrobbleQueueRepository {
                SET status = 'sent', submitted_at = ?, last_error = NULL
              WHERE queue_id = ? AND provider_id = ?
             """, arguments: [nowEpoch, queueID, providerID])
-            // If every submission row for this queue_id is sent, mark the queue row submitted.
+            // If every submission row for this queue_id is in a successful terminal
+            // state, mark the queue row submitted.
             let pending = try Int.fetchOne(db, sql: """
             SELECT COUNT(*) FROM scrobble_submissions
-             WHERE queue_id = ? AND status NOT IN ('sent', 'ignored')
+             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+            """, arguments: [queueID]) ?? 0
+            if pending == 0 {
+                try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
+            }
+        }
+    }
+
+    /// Best-effort terminal marker for when a provider already accepted the
+    /// scrobble but the normal `markSucceeded` write failed. Records the
+    /// distinct `sent_unconfirmed` status so the row is terminal -- never
+    /// re-fetched by `fetchPending`, never revived by `reviveDead` (which only
+    /// touches `failed`) -- instead of leaving it pending and re-submitting on
+    /// the next pass, which would deliver the scrobble twice. (#292)
+    public func markSentUnconfirmed(
+        queueID: Int64,
+        providerID: String,
+        reason: String,
+        at now: Date = Date()
+    ) async throws {
+        let nowEpoch = Int(now.timeIntervalSince1970)
+        try await self.db.write { db in
+            try db.execute(sql: """
+            UPDATE scrobble_submissions
+               SET status = 'sent_unconfirmed', submitted_at = ?, last_error = ?
+             WHERE queue_id = ? AND provider_id = ?
+            """, arguments: [nowEpoch, reason, queueID, providerID])
+            let pending = try Int.fetchOne(db, sql: """
+            SELECT COUNT(*) FROM scrobble_submissions
+             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
             """, arguments: [queueID]) ?? 0
             if pending == 0 {
                 try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
@@ -378,7 +415,7 @@ public actor ScrobbleQueueRepository {
             let startOfDay = calendar.startOfDay(for: now)
             let submittedToday = try Int.fetchOne(db, sql: """
             SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
-             WHERE status = 'sent' AND submitted_at >= ?
+             WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
             """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
             return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
         }
@@ -502,7 +539,7 @@ public actor ScrobbleQueueRepository {
                     let startOfDay = Calendar(identifier: .gregorian).startOfDay(for: Date())
                     let submittedToday = try Int.fetchOne(db, sql: """
                     SELECT COUNT(DISTINCT queue_id) FROM scrobble_submissions
-                     WHERE status = 'sent' AND submitted_at >= ?
+                     WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
                     """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
                     return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
                 })

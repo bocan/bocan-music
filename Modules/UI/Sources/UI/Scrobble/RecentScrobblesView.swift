@@ -207,6 +207,9 @@ public struct RecentScrobblesView: View {
         case .sent:
             ("checkmark.circle.fill", .green)
 
+        case .sentUnconfirmed:
+            ("checkmark.circle", .green)
+
         case .failed:
             ("xmark.circle.fill", .red)
 
