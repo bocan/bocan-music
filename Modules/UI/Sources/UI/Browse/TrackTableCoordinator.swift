@@ -143,12 +143,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     // MARK: NSTableViewDelegate — accessibility
 
     /// Gives VoiceOver a single spoken sentence per row instead of reading
-    /// each column value individually.  Format: "Title, Artist, Album, Duration".
+    /// each column value individually.  Format: "[Now playing, ]Title, Artist, Album, Duration".
     public func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
         guard row < self.rows.count else { return nil }
         let r = self.rows[row]
         let duration = Formatters.duration(r.duration)
-        return "\(r.title), \(r.artistName), \(r.albumName), \(duration)"
+        let isNowPlaying = self.parent.nowPlayingTrackID == r.id
+        let prefix = isNowPlaying ? "Now playing, " : ""
+        return "\(prefix)\(r.title), \(r.artistName), \(r.albumName), \(duration)"
     }
 
     // MARK: NSTableViewDelegate — sort / selection / layout
