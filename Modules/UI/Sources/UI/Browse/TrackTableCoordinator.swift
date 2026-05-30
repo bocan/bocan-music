@@ -51,6 +51,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         ) { _, new in new }
     }
 
+    /// On-disk file URL for a local track row, to support dragging out to Finder (#311); nil for streamed sources.
+    func fileURL(forTrackID id: Int64) -> URL? {
+        guard let row = self.rowsByID[id],
+              let url = URL(string: row.track.fileURL),
+              url.isFileURL else { return nil }
+        return url
+    }
+
     // MARK: Cell population
 
     func cellView(

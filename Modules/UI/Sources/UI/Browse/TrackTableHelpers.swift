@@ -215,7 +215,14 @@ final class TrackDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
     ) -> (any NSPasteboardWriting)? {
         guard let id = itemIdentifier(forRow: row) else { return nil }
         let item = NSPasteboardItem()
+        // The track-ID string drives intra-table reorder; the file URL lets the
+        // same drag drop a real file onto Finder/Desktop or another app (#311).
         item.setString(String(id), forType: .string)
+        MainActor.assumeIsolated {
+            if let url = self.coordinator?.fileURL(forTrackID: id) {
+                item.setString(url.absoluteString, forType: .fileURL)
+            }
+        }
         return item
     }
 
