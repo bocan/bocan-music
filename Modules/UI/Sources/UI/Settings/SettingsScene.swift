@@ -4,67 +4,77 @@ import SwiftUI
 
 /// Top-level `Settings` scene content.
 ///
-/// Sidebar-style navigation (à la macOS System Settings). About is intentionally
-/// absent — it is accessible via the standard macOS "Bòcan → About Bòcan" app menu
-/// item.
+/// Sidebar-style navigation (à la macOS System Settings), grouped into sections
+/// so related panes — notably the audio panes (Equaliser / Effects / ReplayGain)
+/// under "Playback" — read as a set rather than 14 flat tabs (#305). About is
+/// intentionally absent — it is reached via the standard "Bòcan → About" menu.
 ///
-/// Usage in `BocanApp`:
-/// ```swift
-/// Settings { SettingsScene() }
-/// ```
+/// Deep-links from elsewhere (sidebar buttons, menu items) navigate via the
+/// injected ``SettingsRouter``, whose pending request survives until this scene
+/// appears — so opening Settings directly to a page is reliable on first open.
 public struct SettingsScene: View {
-    @State private var selection: SettingsTab = .general
+    @State private var selection: SettingsPage = .general
+    private let router: SettingsRouter
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
     private let backupViewModel: BackupSettingsViewModel
     private let subsonicViewModel: SubsonicSettingsViewModel?
 
     public init(
+        router: SettingsRouter,
         backupViewModel: BackupSettingsViewModel,
         scrobbleViewModel: ScrobbleSettingsViewModel? = nil,
         subsonicViewModel: SubsonicSettingsViewModel? = nil
     ) {
+        self.router = router
         self.scrobbleViewModel = scrobbleViewModel
         self.backupViewModel = backupViewModel
         self.subsonicViewModel = subsonicViewModel
     }
 
-    /// Ordered list of sections that are actually visible (scrobble + sources are conditional).
-    private var visibleTabs: [SettingsTab] {
-        var tabs: [SettingsTab] = [.general, .library]
-        if self.subsonicViewModel != nil { tabs.append(.sources) }
-        tabs.append(contentsOf: [
-            .playback, .equaliser, .effects, .replayGain,
-            .appearance, .advanced, .lyrics, .visualizer, .smartPlaylists,
-        ])
-        if self.scrobbleViewModel != nil { tabs.append(.scrobble) }
-        tabs.append(.diagnostics)
-        return tabs
+    private var sections: [SettingsSection] {
+        SettingsSection.sidebar(includeScrobble: self.scrobbleViewModel != nil)
     }
 
     public var body: some View {
         NavigationSplitView {
-            List(self.visibleTabs, id: \.self, selection: self.$selection) { tab in
-                Label(tab.title, systemImage: tab.systemImage)
-                    .tag(tab)
+            List(selection: self.$selection) {
+                ForEach(self.sections) { section in
+                    Section {
+                        ForEach(section.pages, id: \.self) { page in
+                            Label(page.title, systemImage: page.systemImage)
+                                .tag(page)
+                        }
+                    } header: {
+                        if let title = section.title { Text(title) }
+                    }
+                }
             }
             .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
+            .navigationSplitViewColumnWidth(min: 200, ideal: 215, max: 260)
         } detail: {
             self.detail(for: self.selection)
                 .navigationTitle(self.selection.title)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 720, minHeight: 460)
-        .onReceive(NotificationCenter.default.publisher(for: .openSourcesSettingsTab)) { note in
-            self.selection = .sources
-            if let id = note.object as? UUID, let vm = self.subsonicViewModel {
-                Task { await vm.selectServer(id) }
-            }
+        .onAppear { self.consumePendingNavigation() }
+        .onChange(of: self.router.pendingPage) { _, _ in self.consumePendingNavigation() }
+    }
+
+    /// Navigate to any page the router has queued, then clear the request so it
+    /// doesn't re-fire. Runs on appear (first open) and on change (already open).
+    private func consumePendingNavigation() {
+        guard let page = self.router.pendingPage else { return }
+        self.selection = page
+        if page == .sources, let id = self.router.pendingServerID, let vm = self.subsonicViewModel {
+            Task { await vm.selectServer(id) }
         }
+        self.router.pendingPage = nil
+        self.router.pendingServerID = nil
     }
 
     @ViewBuilder
-    private func detail(for tab: SettingsTab) -> some View {
+    private func detail(for tab: SettingsPage) -> some View {
         switch tab {
         case .general:
             GeneralSettingsView()
@@ -75,6 +85,12 @@ public struct SettingsScene: View {
         case .sources:
             if let subsonicViewModel = self.subsonicViewModel {
                 SubsonicSettingsView(viewModel: subsonicViewModel)
+            } else {
+                ContentUnavailableView(
+                    "Sources Unavailable",
+                    systemImage: "server.rack",
+                    description: Text("Music server sources can't be configured right now.")
+                )
             }
 
         case .playback:
@@ -115,21 +131,38 @@ public struct SettingsScene: View {
     }
 }
 
-// MARK: - Notification
+// MARK: - SettingsSection
 
-/// Bòcan-specific `Notification.Name` constants.
-public extension Notification.Name {
-    /// Post this notification (followed by `openSettings()`) to open
-    /// Settings and navigate directly to the Sources tab.
-    static let openSourcesSettingsTab = Notification.Name("bocan.settings.openSourcesTab")
+/// A labelled group of pages in the Settings sidebar. A `nil` title renders an
+/// unlabelled top section (matching macOS System Settings).
+struct SettingsSection: Identifiable {
+    let title: String?
+    let pages: [SettingsPage]
+    var id: String {
+        self.title ?? "_top"
+    }
+
+    /// The ordered sidebar sections. Sources is always present so a first-timer
+    /// can find server setup; Scrobbling appears only when its provider exists.
+    /// The audio panes (Equaliser/Effects/ReplayGain) are grouped under Playback
+    /// rather than left as loose top-level tabs (#305).
+    static func sidebar(includeScrobble: Bool) -> [Self] {
+        var advanced: [SettingsPage] = []
+        if includeScrobble { advanced.append(.scrobble) }
+        advanced.append(contentsOf: [.advanced, .diagnostics])
+        return [
+            Self(title: nil, pages: [.general, .appearance]),
+            Self(title: "Library", pages: [.library, .sources, .smartPlaylists]),
+            Self(title: "Playback", pages: [.playback, .equaliser, .effects, .replayGain]),
+            Self(title: "Now Playing", pages: [.lyrics, .visualizer]),
+            Self(title: "Advanced", pages: advanced),
+        ]
+    }
 }
 
-// MARK: - SettingsTab
+// MARK: - SettingsPage presentation
 
-private enum SettingsTab: String, CaseIterable, Hashable {
-    case general, library, sources, playback, equaliser, effects, replayGain
-    case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
-
+extension SettingsPage {
     var title: String {
         switch self {
         case .general:

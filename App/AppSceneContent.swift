@@ -28,6 +28,7 @@ struct SettingsWindowContent: View {
     var body: some View {
         GraphContent(model: self.model) { graph in
             SettingsScene(
+                router: graph.settingsRouter,
                 backupViewModel: graph.backupSettingsViewModel,
                 scrobbleViewModel: graph.scrobbleSettingsViewModel,
                 subsonicViewModel: graph.subsonicSettingsViewModel
@@ -118,6 +119,7 @@ struct AppCommands: Commands {
                 windowMode: graph.windowMode,
                 lyricsVM: graph.lyricsViewModel,
                 visualizerVM: graph.visualizerViewModel,
+                settingsRouter: graph.settingsRouter,
                 updateController: self.updateController
             )
         }

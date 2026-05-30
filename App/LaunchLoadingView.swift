@@ -23,6 +23,7 @@ struct AppRootGate: View {
                     scrobbleSettingsVM: graph.scrobbleSettingsViewModel
                 )
                 .environment(graph.dspViewModel)
+                .environment(\.settingsRouter, graph.settingsRouter)
                 .environmentObject(graph.windowMode)
                 .environmentObject(graph.lyricsViewModel)
                 .onAppear { graph.dockTile.start(observing: graph.libraryViewModel.nowPlaying) }
