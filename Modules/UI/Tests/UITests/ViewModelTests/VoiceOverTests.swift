@@ -246,4 +246,33 @@ struct VoiceOverTests {
             "TrackTableCoordinator must implement tableView(_:accessibilityLabelForRow:)"
         )
     }
+
+    // MARK: - Differentiate Without Color (#298)
+
+    @Test("ActiveToggleIndicator reads accessibilityDifferentiateWithoutColor")
+    func activeToggleIndicatorReadsDifferentiateWithoutColor() throws {
+        let source = try self.sourceContents(at: "Theme/ActiveToggleIndicator.swift")
+        #expect(
+            source.contains("accessibilityDifferentiateWithoutColor"),
+            "ActiveToggleIndicator must gate its shape affordance on accessibilityDifferentiateWithoutColor"
+        )
+    }
+
+    @Test("NowPlayingStrip transport toggles apply activeToggleIndicator")
+    func nowPlayingStripTogglesUseActiveIndicator() throws {
+        let source = try self.sourceContents(at: "AppRoot/NowPlayingStrip.swift")
+        #expect(
+            source.contains("activeToggleIndicator"),
+            "Shuffle/repeat/stop-after toggles must apply .activeToggleIndicator so on/off isn't colour-only"
+        )
+    }
+
+    @Test("SubsonicStatusDot reads accessibilityDifferentiateWithoutColor")
+    func subsonicStatusDotReadsDifferentiateWithoutColor() throws {
+        let source = try self.sourceContents(at: "AppRoot/SubsonicSidebarSection.swift")
+        #expect(
+            source.contains("accessibilityDifferentiateWithoutColor"),
+            "SubsonicStatusDot must render a per-status glyph when differentiate-without-colour is on"
+        )
+    }
 }

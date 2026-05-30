@@ -257,6 +257,7 @@ struct SidebarSectionHeader: View {
 /// enclosing row carries the spoken label and value (Phase 19 step 17).
 struct SubsonicStatusDot: View {
     let state: SubsonicSidebarConnectionState
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         Group {
@@ -265,6 +266,13 @@ struct SubsonicStatusDot: View {
                     .controlSize(.mini)
                     .scaleEffect(0.6)
                     .frame(width: 8, height: 8)
+            } else if self.differentiateWithoutColor {
+                // Per-status glyph so colourblind users can tell states apart by
+                // shape rather than the green/orange/red hue alone (WCAG 1.4.1).
+                Image(systemName: Self.glyph(for: self.state))
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(self.color)
+                    .frame(width: 10, height: 10)
             } else {
                 Circle()
                     .fill(self.color)
@@ -272,6 +280,29 @@ struct SubsonicStatusDot: View {
             }
         }
         .accessibilityHidden(true)
+    }
+
+    /// SF Symbol shown in place of the plain dot when "Differentiate Without
+    /// Color" is enabled. `.connecting` is handled separately by the spinner.
+    /// Each state maps to a distinct shape so the status is conveyed without
+    /// relying on hue.
+    static func glyph(for state: SubsonicSidebarConnectionState) -> String {
+        switch state {
+        case .online:
+            "checkmark.circle.fill"
+
+        case .connecting:
+            "circle.dotted"
+
+        case .authFailed:
+            "lock.fill"
+
+        case .unreachable, .serverError:
+            "exclamationmark.triangle.fill"
+
+        case .unknown:
+            "questionmark"
+        }
     }
 
     private var color: Color {
