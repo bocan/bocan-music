@@ -1,3 +1,4 @@
+import Foundation
 import GRDB
 import Testing
 @testable import Persistence
@@ -111,5 +112,18 @@ struct MigrationTests {
                 .compactMap { $0["name"] as String? }
         }
         #expect(columns.contains("needs_conflict_review"))
+    }
+
+    @Test("WAL journal mode is active on an on-disk database (#288)")
+    func walModeOnDisk() async throws {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("bocan-wal-test-\(UUID().uuidString).sqlite")
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let db = try await Database(location: .custom(url))
+        let mode = try await db.read { grdb in
+            try String.fetchOne(grdb, sql: "PRAGMA journal_mode")
+        }
+        #expect(mode == "wal", "Expected WAL journal mode; got '\(mode ?? "nil")' — pragma was silently swallowed")
     }
 }

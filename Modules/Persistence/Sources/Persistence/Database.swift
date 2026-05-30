@@ -240,8 +240,15 @@ public actor Database {
         // SQLite default of 1,000. This prevents the WAL growing large enough that
         // ValueObservation delivers a stale (pre-WAL-replay) snapshot on the next
         // app launch, which surfaced as an empty library list despite rows being present.
+        let log = AppLogger.make(.persistence)
         try await writer.write { db in
-            _ = try? db.execute(sql: "PRAGMA journal_mode = WAL")
+            do {
+                try db.execute(sql: "PRAGMA journal_mode = WAL")
+            } catch {
+                // WAL is unavailable on read-only or network-mounted volumes.
+                // Log a warning so degraded mode is visible; the app continues in DELETE journaling.
+                log.warning("db.wal.unavailable", ["error": String(reflecting: error)])
+            }
             try db.execute(sql: "PRAGMA wal_autocheckpoint = 400")
             try db.execute(sql: "PRAGMA auto_vacuum = INCREMENTAL")
         }
