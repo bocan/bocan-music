@@ -232,7 +232,12 @@ public actor SubsonicServerStore {
             kSecAttrService: Self.keychainService,
             kSecAttrAccount: account,
         ]
-        let updateAttrs: [CFString: Any] = [kSecValueData: data]
+        // Include kSecAttrAccessible on update so credential rotation never
+        // silently inherits a different accessibility class (#285).
+        let updateAttrs: [CFString: Any] = [
+            kSecValueData: data,
+            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
         let updateStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttrs as CFDictionary)
 
         if updateStatus == errSecItemNotFound {
