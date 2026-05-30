@@ -262,7 +262,9 @@ public extension SubsonicSettingsViewModel {
         public static func blankNew() -> Self {
             var editor = Self()
             editor.name = "New Server"
-            editor.serverURLText = "https://"
+            // Left empty so the field shows the example placeholder prompt rather
+            // than a bare "https://" the user has to position the cursor after (issue #310).
+            editor.serverURLText = ""
             return editor
         }
 
