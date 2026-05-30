@@ -61,4 +61,36 @@ struct SubsonicSidebarConnectionStateTests {
         #expect(lhs == rhs)
         #expect(lhs.hashValue == rhs.hashValue)
     }
+
+    // MARK: - Differentiate Without Color glyphs (#298)
+
+    @Test("SubsonicStatusDot maps each distinguishable state to a non-empty glyph")
+    func statusDotGlyphNonEmpty() {
+        let states: [SubsonicSidebarConnectionState] = [
+            .unknown, .connecting, .online,
+            .authFailed("x"), .unreachable("y"), .serverError("z"),
+        ]
+        for s in states {
+            #expect(!SubsonicStatusDot.glyph(for: s).isEmpty, "Expected a glyph for \(s)")
+        }
+    }
+
+    @Test("SubsonicStatusDot uses distinct glyph shapes for online / authFailed / unreachable")
+    func statusDotGlyphsAreDistinct() {
+        // The three coloured-dot states (green/orange/red) must differ by shape,
+        // not hue alone, so colourblind users can tell them apart (WCAG 1.4.1).
+        let online = SubsonicStatusDot.glyph(for: .online)
+        let authFailed = SubsonicStatusDot.glyph(for: .authFailed("x"))
+        let unreachable = SubsonicStatusDot.glyph(for: .unreachable("y"))
+        #expect(online != authFailed)
+        #expect(online != unreachable)
+        #expect(authFailed != unreachable)
+    }
+
+    @Test("SubsonicStatusDot maps serverError and unreachable to the same warning glyph")
+    func statusDotServerErrorMatchesUnreachable() {
+        // Both are red "something is wrong" states; sharing the warning triangle
+        // is acceptable since their spoken displayLabel already distinguishes them.
+        #expect(SubsonicStatusDot.glyph(for: .serverError("a")) == SubsonicStatusDot.glyph(for: .unreachable("b")))
+    }
 }

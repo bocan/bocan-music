@@ -266,6 +266,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
+            .activeToggleIndicator(self.vm.shuffleOn)
             .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
             .accessibilityLabel("Shuffle")
             .accessibilityValue(self.vm.shuffleOn ? "on" : "off")
@@ -282,21 +283,13 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
+            .activeToggleIndicator(self.vm.repeatMode != .off)
             .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
             .accessibilityLabel("Repeat")
             .accessibilityValue(self.vm.repeatMode == .off ? "off" : self.vm.repeatMode == .all ? "all" : "one")
-            .accessibilityHint({
-                switch self.vm.repeatMode {
-                case .off:
-                    "Activate to repeat all tracks"
-
-                case .all:
-                    "Activate to repeat current track"
-
-                case .one:
-                    "Activate to turn repeat off"
-                }
-            }())
+            .accessibilityHint(self.vm.repeatMode == .off ? "Activate to repeat all tracks"
+                : self.vm.repeatMode == .all ? "Activate to repeat current track"
+                : "Activate to turn repeat off")
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.repeatButton)
 
@@ -309,6 +302,7 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
+            .activeToggleIndicator(self.vm.stopAfterCurrent)
             .help(self.vm.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
             .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
             .accessibilityHint(self.vm
