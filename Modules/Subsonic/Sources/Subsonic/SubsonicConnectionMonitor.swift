@@ -34,6 +34,14 @@ public actor SubsonicConnectionMonitor {
     private var (stream, continuation) = AsyncStream<StatusUpdate>.makeStream()
     private let pathMonitor: NWPathMonitor
 
+    /// Token for the block-based wake observer, retained so `deinit` can remove
+    /// it. Without this the observer block leaks for the monitor's lifetime and
+    /// keeps a (weak-self) reference registered with the notification centre.
+    /// `nonisolated(unsafe)`: written once from the actor-isolated installer and
+    /// read once from `deinit`, which has exclusive access — never concurrently.
+    /// See #274.
+    private nonisolated(unsafe) var wakeObserver: NSObjectProtocol?
+
     // MARK: - Init
 
     public init(service: SubsonicService) {
@@ -185,7 +193,10 @@ public actor SubsonicConnectionMonitor {
     // MARK: - Wake observer
 
     private func installWakeObserver() {
-        NotificationCenter.default.addObserver(
+        // `NSWorkspace.didWakeNotification` is posted on the workspace's own
+        // notification centre, not `NotificationCenter.default`. Register there
+        // and retain the returned token so `deinit` can tear the observer down.
+        self.wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: nil
@@ -193,6 +204,12 @@ public actor SubsonicConnectionMonitor {
             Task {
                 await self?.wakeAll()
             }
+        }
+    }
+
+    deinit {
+        if let wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
         }
     }
 }
