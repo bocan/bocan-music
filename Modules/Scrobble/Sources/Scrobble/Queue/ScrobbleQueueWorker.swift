@@ -26,6 +26,7 @@ public actor ScrobbleQueueWorker {
     private let batchSize: Int
 
     private var task: Task<Void, Never>?
+    private var reachTask: Task<Void, Never>?
     private var kickCount = 0
     private var kickContinuation: CheckedContinuation<Void, Never>?
 
@@ -57,6 +58,8 @@ public actor ScrobbleQueueWorker {
     public func stop() {
         self.task?.cancel()
         self.task = nil
+        self.reachTask?.cancel()
+        self.reachTask = nil
         self.kickContinuation?.resume()
         self.kickContinuation = nil
     }
@@ -74,8 +77,10 @@ public actor ScrobbleQueueWorker {
 
     private func run() async {
         // Subscribe to reachability changes — kick when we come back online.
+        // Stored in reachTask so stop() can cancel it; without cancellation
+        // the for-await loop iterates forever after the worker is stopped.
         let reachStream = await self.reachability.updates()
-        Task { [weak self] in
+        self.reachTask = Task { [weak self] in
             for await reachable in reachStream {
                 guard let self else { return }
                 if reachable { await self.kick() }

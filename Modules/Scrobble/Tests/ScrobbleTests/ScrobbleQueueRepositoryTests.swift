@@ -240,6 +240,37 @@ struct ScrobbleQueueRepositoryTests {
         #expect(local.artist == "Local Artist")
     }
 
+    @Test("observeStats respects injectable clock for submittedToday boundary (#293)")
+    func observeStatsInjectableClock() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db)
+        let repo = ScrobbleQueueRepository(database: db)
+
+        // Noon on an arbitrary reference date.
+        let noon = Date(timeIntervalSince1970: 1_700_000_000)
+        // A different day — far enough in the past that yesterday's noon is before today's start.
+        let yesterday = noon.addingTimeInterval(-86400)
+
+        // Enqueue and mark succeeded so submitted_at is around noon.
+        let qid = try try await #require(repo.enqueue(
+            trackID: 1, playedAt: noon, durationPlayed: 200, providerIDs: ["lastfm"]
+        ))
+        try await repo.markSucceeded(queueID: qid, providerID: "lastfm", at: noon)
+
+        // Clock frozen at noon: the submission is "today" (startOfDay(noon) <= noon).
+        let statsToday = try await repo.stats(now: noon)
+        #expect(statsToday.submittedToday == 1)
+
+        // Clock advanced two days into the future: startOfDay(twoDaysLater) is after noon,
+        // so the submission falls in a prior day and must NOT count.
+        let twoDaysLater = noon.addingTimeInterval(2 * 86400)
+        let statsOtherDay = try await repo.stats(now: twoDaysLater)
+        #expect(
+            statsOtherDay.submittedToday == 0,
+            "submittedToday must respect the injectable clock, not wall-clock Date()"
+        )
+    }
+
     @Test("enqueueSubsonic is idempotent on (serverID, songID, playedAt)")
     func subsonicEnqueueIdempotent() async throws {
         let db = try await self.makeDB()

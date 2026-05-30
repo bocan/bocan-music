@@ -159,6 +159,33 @@ struct ScrobbleQueueWorkerTests {
         #expect(row.statusByProvider["mock"] == .sentUnconfirmed)
     }
 
+    @Test("reachability subscription task is cancelled when worker stops (#293)")
+    func reachabilityTaskCancelledOnStop() async throws {
+        let db = try await self.makeDB()
+        let repo = try await self.seedAndEnqueue(db, count: 1)
+        let reach = StaticReachability(reachable: true)
+        let worker = ScrobbleQueueWorker(
+            provider: MockProvider(),
+            repository: repo,
+            policy: RetryPolicy(baseDelay: 0.01, maxDelay: 0.05, maxAttempts: 3, jitter: 0),
+            reachability: reach
+        )
+        await worker.start()
+        try await Task.sleep(for: .milliseconds(50))
+        await worker.stop()
+
+        // Toggle reachability after stop — it should NOT trigger a kick that
+        // causes another submit call. We verify no additional DB work happens.
+        let statsBefore = try await repo.stats()
+        await reach.set(false)
+        await reach.set(true)
+        try await Task.sleep(for: .milliseconds(100))
+        let statsAfter = try await repo.stats()
+        // If the reachability task were still alive it could trigger more drains;
+        // the row count must be stable (already drained to 0 or still at 1).
+        #expect(statsBefore.pending == statsAfter.pending, "reachability task fired after stop()")
+    }
+
     // MARK: helpers
 
     private func waitFor(timeout: TimeInterval, predicate: () async throws -> Bool) async throws {
