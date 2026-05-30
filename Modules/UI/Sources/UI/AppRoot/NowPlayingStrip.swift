@@ -429,6 +429,12 @@ public struct NowPlayingStrip: View {
             .help("Scrub to position")
             .accessibilityLabel("Playback position")
             .accessibilityValue(Formatters.duration(self.displayPosition) + " of " + Formatters.duration(self.vm.duration))
+            .accessibilityAdjustableAction { direction in
+                guard direction == .increment || direction == .decrement else { return }
+                let step = max(self.vm.duration * 0.05, 5)
+                let pos = direction == .increment ? min(self.vm.position + step, self.vm.duration) : max(self.vm.position - step, 0)
+                Task { await self.vm.scrub(to: pos) }
+            }
             .accessibilityIdentifier(A11y.NowPlaying.scrubber)
 
             Text(Formatters.duration(self.vm.duration))
@@ -464,6 +470,11 @@ public struct NowPlayingStrip: View {
                 .help("Volume: \(Int(self.vm.volume * 100))%")
                 .accessibilityLabel("Volume")
                 .accessibilityValue("\(Int(self.vm.volume * 100)) percent")
+                .accessibilityAdjustableAction { direction in
+                    guard direction == .increment || direction == .decrement else { return }
+                    let vol = direction == .increment ? min(self.vm.volume + 0.1, 1) : max(self.vm.volume - 0.1, 0)
+                    Task { await self.vm.setVolume(vol) }
+                }
                 .accessibilityIdentifier(A11y.NowPlaying.volumeSlider)
 
             Image(systemName: "speaker.wave.3.fill")

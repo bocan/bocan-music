@@ -12,6 +12,7 @@ public struct SpeedPickerView: View {
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var isPopoverShown = false
     @State private var isHovered = false
+    @FocusState private var isFocused: Bool
     /// Held locally during a drag; setRate is called only once on release so the
     /// spectral time-pitch node isn't hammered on every mouse-move event.
     @State private var dragRate: Double?
@@ -30,7 +31,15 @@ public struct SpeedPickerView: View {
                 .frame(width: 36)
         }
         .buttonStyle(.plain)
+        .focused(self.$isFocused)
         .onHover { self.isHovered = $0 }
+        .overlay {
+            if self.isFocused {
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(Color.accentColor, lineWidth: 2)
+                    .padding(-3)
+            }
+        }
         .help("Playback speed")
         .accessibilityLabel("Speed: \(self.rateLabel)")
         .accessibilityIdentifier(A11y.NowPlaying.speedPicker)
