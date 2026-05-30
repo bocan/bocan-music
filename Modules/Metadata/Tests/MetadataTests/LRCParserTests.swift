@@ -362,4 +362,29 @@ struct LyricsDocumentTests {
         let doc = LyricsDocument.unsynced(text)
         #expect(doc.toLRC() == text)
     }
+
+    // MARK: - BOM handling (#290)
+
+    @Test("BOM-prefixed synced LRC parses first timestamp correctly")
+    func bomPrefixedSyncedLRC() {
+        // U+FEFF before the first timestamp tag — written by some Windows LRC editors.
+        let lrc = "\u{FEFF}[00:05.00]First line\n[00:15.00]Second line\n"
+        let doc = LRCParser.parseDocument(lrc)
+        guard case let .synced(lines, _) = doc else {
+            Issue.record("Expected .synced, got .unsynced — BOM caused the file to be misclassified")
+            return
+        }
+        #expect(lines.count == 2)
+        #expect(abs(lines[0].start - 5.0) < 0.01, "First timestamp lost due to BOM; expected 5.0, got \(lines[0].start)")
+        #expect(lines[0].text == "First line")
+    }
+
+    @Test("BOM-prefixed synced LRC parsed correctly via legacy parse()")
+    func bomPrefixedLegacyParse() {
+        let lrc = "\u{FEFF}[00:05.00]First line\n[00:15.00]Second line\n"
+        let lines = LRCParser.parse(lrc)
+        let synced = lines.filter { $0.timestamp != nil }
+        #expect(synced.count == 2, "Expected 2 synced lines; BOM may have caused one to be dropped")
+        #expect(abs((synced.first?.timestamp ?? -1) - 5.0) < 0.01)
+    }
 }

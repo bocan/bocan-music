@@ -54,7 +54,11 @@ public enum LRCParser {
     ///   - trackDuration: When provided, the last synced line's `end` is set to this value.
     /// - Returns: `.synced` when LRC timestamps are detected; `.unsynced` otherwise.
     public static func parseDocument(_ raw: String, trackDuration: TimeInterval? = nil) -> LyricsDocument {
-        let lines = raw.components(separatedBy: .newlines)
+        // Strip a leading UTF-8 BOM (U+FEFF) written by some Windows editors.
+        // .whitespaces does not include U+FEFF, so without this the first [mm:ss.xx]
+        // timestamp fails the prefix match and the opening lyric is silently dropped.
+        let stripped = raw.hasPrefix("\u{FEFF}") ? String(raw.dropFirst()) : raw
+        let lines = stripped.components(separatedBy: .newlines)
 
         let hasTimestamps = lines.contains { $0.contains(self.timestampPattern) }
         guard hasTimestamps else {
@@ -136,7 +140,8 @@ public enum LRCParser {
     ///
     /// - Returns: Unsynced lines when no LRC timestamps are detected.
     public static func parse(_ raw: String) -> [LyricLine] {
-        let lines = raw.components(separatedBy: .newlines)
+        let stripped = raw.hasPrefix("\u{FEFF}") ? String(raw.dropFirst()) : raw
+        let lines = stripped.components(separatedBy: .newlines)
 
         let hasTimestamps = lines.contains { $0.contains(self.timestampPattern) }
         guard hasTimestamps else {
