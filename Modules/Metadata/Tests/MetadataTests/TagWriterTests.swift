@@ -186,6 +186,29 @@ struct TagWriterTests {
         #expect(reread.title == "FLAC Round-Trip")
     }
 
+    // MARK: - Cover art clearing (#289)
+
+    @Test("writing empty coverArt clears existing embedded art")
+    func writingEmptyCoverArtClearsExistingArt() throws {
+        let tmp = try tempCopy(of: "sample-with-art.mp3")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        // Verify the fixture actually has art before we try to clear it.
+        let before = try TagReader().read(from: tmp)
+        guard !before.coverArt.isEmpty else {
+            // Fixture has no art; the test has nothing meaningful to assert.
+            return
+        }
+
+        // Write tags back with an empty coverArt array.
+        var tags = before
+        tags.coverArt = []
+        try TagWriter().write(tags, to: tmp)
+
+        let after = try TagReader().read(from: tmp)
+        #expect(after.coverArt.isEmpty, "Expected embedded art to be cleared; got \(after.coverArt.count) image(s)")
+    }
+
     // MARK: - OGG
 
     @Test func writeAndReadBackTitle_ogg() throws {
