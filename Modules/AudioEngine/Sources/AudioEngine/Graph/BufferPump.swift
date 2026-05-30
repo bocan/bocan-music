@@ -169,8 +169,7 @@ actor BufferPump {
 
             if framesRead == 0 {
                 self.log.debug("pump.eof", ["id": self.id, "scheduled": self.scheduledCount])
-                let cb = self.onEnded
-                Task { @MainActor in cb?() }
+                self.signalEnded()
                 break
             }
 
@@ -194,8 +193,17 @@ actor BufferPump {
         guard let resampled = try resampledBuffer(buffer) else { return }
         self.claimSlotAndSchedule(resampled)
         self.log.debug("pump.segment.end", ["id": self.id, "scheduled": self.scheduledCount])
-        let cb = self.onEnded
-        Task { @MainActor in cb?() }
+        self.signalEnded()
+    }
+
+    /// Invoke the end-of-stream callback directly on the pump's executor.
+    ///
+    /// The stored `onEnded` closure dispatches onto the engine actor itself (it
+    /// wraps its work in a `Task`), so routing it through an extra `@MainActor`
+    /// `Task` hop bought nothing and only widened the window in which that second
+    /// hop could be lost if the engine deallocated mid-handoff. See #262.
+    private func signalEnded() {
+        self.onEnded?()
     }
 
     /// Resample (if needed) then claim a window slot and hand the buffer to AVAudioPlayerNode.
