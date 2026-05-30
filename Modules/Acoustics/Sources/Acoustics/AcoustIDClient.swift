@@ -47,6 +47,10 @@ public actor AcoustIDClient {
         duration: Int
     ) async throws -> [AcoustIDResult] {
         try await self.rateLimiter.wait()
+        // The slot may have been granted after this job was cancelled (or the
+        // job may have been cancelled while waiting in line). Bail before
+        // firing the request so a cancelled lookup never hits the network. See #273.
+        try Task.checkCancellation()
 
         var components = URLComponents(string: Self.baseURL)!
         components.queryItems = [

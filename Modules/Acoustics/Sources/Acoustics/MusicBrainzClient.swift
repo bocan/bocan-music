@@ -46,6 +46,10 @@ public actor MusicBrainzClient {
     /// Includes releases, artists, and tags (`?inc=releases+artists+tags`).
     public func fetchRecording(mbid: String) async throws -> MBRecording {
         try await self.rateLimiter.wait()
+        // The slot may have been granted after this job was cancelled (or the
+        // job may have been cancelled while waiting in line). Bail before
+        // firing the request so a cancelled fetch never hits the network. See #273.
+        try Task.checkCancellation()
 
         let urlString = Self.baseURL + mbid + "?inc=releases+artists+tags&fmt=json"
         guard let url = URL(string: urlString) else {
