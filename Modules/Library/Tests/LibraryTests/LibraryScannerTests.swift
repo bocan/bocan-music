@@ -194,6 +194,43 @@ struct LibraryScannerTests {
         while await iter1.next() != nil {}
     }
 
+    @Test("cancelling the scan consumer stops the scan body (#266)")
+    func cancellingConsumerStopsScan() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+        let dir = try sampleLibraryURL
+        try await scanner.addRoot(dir)
+
+        // Consume the scan in a child task and cancel it the moment the scan
+        // signals `.started` — before the coordinator has imported anything
+        // (`.started` is emitted ahead of walking + importing). With the fix,
+        // `continuation.onTermination` cancels the underlying scan task, so the
+        // coordinator's cooperative `Task.isCancelled` checks trip almost
+        // immediately and very few (often zero) files are imported. Without it,
+        // the unstructured Task keeps running to completion in the background
+        // and imports every file regardless of the cancellation.
+        let consumer = Task {
+            for await event in await scanner.scan(mode: .full) {
+                if case .started = event { break }
+            }
+        }
+        consumer.cancel()
+        await consumer.value
+
+        // Give any *leaked* (uncancelled) background scan generous time to run
+        // to completion. The full sample-library scan finishes well within this
+        // window, so if cancellation did not propagate every file would be in
+        // the DB by now.
+        try await Task.sleep(nanoseconds: 500_000_000)
+
+        let trackRepo = TrackRepository(database: db)
+        let count = try await trackRepo.count()
+        #expect(
+            count < 10,
+            "Cancelling the consumer should stop the scan; imported \(count) tracks (full library is ~15)"
+        )
+    }
+
     // MARK: - scanSingleFile
 
     @Test("scanSingleFile inserts a single audio file into the database")
