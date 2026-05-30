@@ -99,7 +99,14 @@ public actor LibraryScanner {
     /// - Parameter mode: `.quick` (default) or `.full`.
     public func scan(mode: ScanMode = .quick) -> AsyncStream<ScanProgress> {
         AsyncStream { continuation in
-            Task {
+            // Keep a handle to the scanning task and cancel it when the stream
+            // terminates — either because we finished it ourselves or because
+            // the consumer stopped iterating (or had its own task cancelled).
+            // Without this, the unstructured Task inherited no cancellation, so
+            // a consumer that cancelled could not stop the scan body; the
+            // ScanCoordinator's cooperative `Task.isCancelled` checks never
+            // tripped because nothing ever cancelled this task. See #266.
+            let task = Task {
                 guard !self.isScanning else {
                     continuation.yield(.error(url: nil, error: LibraryError.scanAlreadyInProgress))
                     continuation.finish()
@@ -185,6 +192,7 @@ public actor LibraryScanner {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
