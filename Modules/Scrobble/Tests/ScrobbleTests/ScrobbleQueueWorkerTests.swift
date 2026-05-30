@@ -112,6 +112,53 @@ struct ScrobbleQueueWorkerTests {
         await worker.stop()
     }
 
+    @Test("markSucceeded write failure does not re-submit the scrobble (#292)")
+    func successConfirmWriteFailureNoDoubleSubmit() async throws {
+        let db = try await self.makeDB()
+        let repo = try await self.seedAndEnqueue(db, count: 1)
+
+        // Install a trigger that aborts any attempt to set a submission row to
+        // 'sent'. This simulates a persistence failure on the markSucceeded
+        // write *after* the provider has already accepted the scrobble. The
+        // sentinel write uses 'sent_unconfirmed', so the trigger lets it through.
+        try await db.write { db in
+            try db.execute(sql: """
+            CREATE TRIGGER block_sent
+            BEFORE UPDATE OF status ON scrobble_submissions
+            WHEN NEW.status = 'sent'
+            BEGIN
+                SELECT RAISE(ABORT, 'simulated confirm-write failure');
+            END
+            """)
+        }
+
+        let provider = MockProvider()
+        let worker = ScrobbleQueueWorker(
+            provider: provider,
+            repository: repo,
+            policy: RetryPolicy(baseDelay: 0.01, maxDelay: 0.05, maxAttempts: 3, jitter: 0),
+            reachability: StaticReachability(reachable: true)
+        )
+        await worker.start()
+        await worker.kick()
+
+        // The row should leave the pending set (via the sentinel) so stats settle.
+        try await self.waitFor(timeout: 2.0) { try await repo.stats().pending == 0 }
+        // Give the loop a moment to attempt any (incorrect) re-submission.
+        try await Task.sleep(for: .milliseconds(200))
+        await worker.stop()
+
+        // The provider must have been called exactly once: the scrobble was
+        // delivered, and the sentinel prevented a second submission.
+        let calls = await provider.submitCalls
+        #expect(calls == 1, "scrobble re-submitted \(calls) times; expected exactly 1")
+
+        // The submission row is terminal (sent_unconfirmed), not pending/retry.
+        let recent = try await repo.fetchRecent(limit: 10)
+        let row = try #require(recent.first)
+        #expect(row.statusByProvider["mock"] == .sentUnconfirmed)
+    }
+
     // MARK: helpers
 
     private func waitFor(timeout: TimeInterval, predicate: () async throws -> Bool) async throws {
