@@ -25,9 +25,12 @@ actor BufferPump {
     // MARK: - Configuration
 
     /// Number of buffers kept in-flight ahead of the render thread.
-    /// 8 × 200 ms = 1.6 s of headroom — enough to survive a scheduler hiccup
-    /// without starving the AVAudioPlayerNode.
-    private static let windowSize = 8 // number of buffers in flight
+    /// 4 × 200 ms = 0.8 s of headroom — enough to survive a scheduler hiccup
+    /// without starving the AVAudioPlayerNode, while keeping the worst-case
+    /// teardown-and-refill on a seek small (the whole window is rescheduled on
+    /// every seek, so an oversized window directly inflates seek latency against
+    /// the < 50 ms baseline). See #277.
+    private static let windowSize = 4 // number of buffers in flight
     private static let bufferDuration = 0.2 // seconds per buffer
 
     // MARK: - Dependencies
