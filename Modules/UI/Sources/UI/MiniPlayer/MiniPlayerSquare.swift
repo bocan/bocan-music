@@ -107,7 +107,7 @@ struct MiniPlayerSquare: View {
                     self.openWindow(id: "track-info")
                 } label: {
                     Image(systemName: "info.circle")
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledSystemFont(size: 13, weight: .medium)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.nowPlayingTrackID != nil ? .white.opacity(0.85) : .white.opacity(0.35))
@@ -119,7 +119,7 @@ struct MiniPlayerSquare: View {
                     Task { await self.np.previous() }
                 } label: {
                     Image(systemName: "backward.fill")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
@@ -130,7 +130,7 @@ struct MiniPlayerSquare: View {
                     Task { await self.np.playPause() }
                 } label: {
                     Image(systemName: self.np.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 22, weight: .bold))
+                        .scaledSystemFont(size: 22, weight: .bold)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
@@ -141,7 +141,7 @@ struct MiniPlayerSquare: View {
                     Task { await self.np.next() }
                 } label: {
                     Image(systemName: "forward.fill")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
@@ -152,7 +152,7 @@ struct MiniPlayerSquare: View {
                     Task { await self.np.toggleShuffle() }
                 } label: {
                     Image(systemName: "shuffle")
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledSystemFont(size: 13, weight: .medium)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
@@ -164,7 +164,7 @@ struct MiniPlayerSquare: View {
                     Task { await self.np.cycleRepeat() }
                 } label: {
                     Image(systemName: self.np.repeatMode == .one ? "repeat.1" : "repeat")
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledSystemFont(size: 13, weight: .medium)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.repeatMode == .off ? .white.opacity(0.6) : AccentPalette.color(for: self.accentColorKey))
@@ -176,7 +176,7 @@ struct MiniPlayerSquare: View {
                     Task { await self.np.toggleStopAfterCurrent() }
                 } label: {
                     Image(systemName: "stop.circle\(self.np.stopAfterCurrent ? ".fill" : "")")
-                        .font(.system(size: 13, weight: .medium))
+                        .scaledSystemFont(size: 13, weight: .medium)
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))

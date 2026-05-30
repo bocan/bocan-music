@@ -138,12 +138,12 @@ public struct SleepTimerMenu: View {
     private var menuLabel: some View {
         HStack(spacing: 3) {
             Image(systemName: "moon.fill")
-                .font(.system(size: 13, weight: .medium))
+                .scaledSystemFont(size: 13, weight: .medium)
                 .foregroundStyle(self.vm.sleepTimerRemaining != nil ? Color.accentColor : Color.textTertiary)
 
             if let remaining = self.vm.sleepTimerRemaining {
                 Text(self.shortRemaining(remaining))
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .scaledSystemFont(size: 11, weight: .medium, design: .monospaced)
                     .foregroundStyle(Color.accentColor)
             }
         }

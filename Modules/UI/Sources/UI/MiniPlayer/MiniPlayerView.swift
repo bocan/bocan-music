@@ -121,7 +121,7 @@ public struct MiniPlayerView: View {
                 Task { await self.vm.nowPlaying.playPause() }
             } label: {
                 Image(systemName: self.vm.nowPlaying.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 14, weight: .bold))
+                    .scaledSystemFont(size: 14, weight: .bold)
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
@@ -132,7 +132,7 @@ public struct MiniPlayerView: View {
                 Task { await self.vm.nowPlaying.toggleShuffle() }
             } label: {
                 Image(systemName: "shuffle")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledSystemFont(size: 12, weight: .medium)
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
@@ -144,7 +144,7 @@ public struct MiniPlayerView: View {
                 Task { await self.vm.nowPlaying.cycleRepeat() }
             } label: {
                 Image(systemName: self.vm.nowPlaying.repeatMode == .one ? "repeat.1" : "repeat")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledSystemFont(size: 12, weight: .medium)
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
@@ -156,7 +156,7 @@ public struct MiniPlayerView: View {
                 Task { await self.vm.nowPlaying.toggleStopAfterCurrent() }
             } label: {
                 Image(systemName: "stop.circle\(self.vm.nowPlaying.stopAfterCurrent ? ".fill" : "")")
-                    .font(.system(size: 12, weight: .medium))
+                    .scaledSystemFont(size: 12, weight: .medium)
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
@@ -210,7 +210,7 @@ public struct MiniPlayerView: View {
             self.resizeWindow(for: self.vm.layout)
         } label: {
             Image(systemName: self.vm.layout.icon)
-                .font(.system(size: 11, weight: .medium))
+                .scaledSystemFont(size: 11, weight: .medium)
                 .foregroundStyle(Color.primary)
                 .padding(6)
                 .contentShape(Rectangle())
@@ -225,7 +225,7 @@ public struct MiniPlayerView: View {
             self.vm.alwaysOnTop.toggle()
         } label: {
             Image(systemName: self.vm.alwaysOnTop ? "pin.fill" : "pin")
-                .font(.system(size: 11, weight: .medium))
+                .scaledSystemFont(size: 11, weight: .medium)
                 .foregroundStyle(self.vm.alwaysOnTop ? Color.accentColor : Color.primary)
                 .padding(6)
                 .contentShape(Rectangle())
@@ -240,7 +240,7 @@ public struct MiniPlayerView: View {
             self.windowMode.toggleMiniPlayer()
         } label: {
             Image(systemName: "xmark")
-                .font(.system(size: 11, weight: .medium))
+                .scaledSystemFont(size: 11, weight: .medium)
                 .foregroundStyle(Color.primary)
                 .padding(6)
                 .contentShape(Rectangle())
