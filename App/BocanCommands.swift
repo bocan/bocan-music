@@ -125,6 +125,49 @@ struct BocanCommands: Commands {
             .keyboardShortcut("o", modifiers: [.command, .option, .shift])
         }
 
+        // View menu: presentation toggles for the lyrics / visualizer panes and
+        // the auxiliary windows. Per macOS HIG these belong under View — where the
+        // system and Music.app keep content-presentation commands — rather than
+        // buried in the Window menu, which should hold only window management (#303).
+        // Declared before the app-specific menus so View sits right after Edit.
+        CommandMenu("View") {
+            // ⌘L is reserved for "Love" (the Track menu); Show Lyrics uses ⌘⌥L.
+            Button(self.lyricsPaneVisible ? "Hide Lyrics" : "Show Lyrics") {
+                self.toggleAnimated(self.$lyricsPaneVisible)
+            }
+            .keyboardShortcut("l", modifiers: [.command, .option])
+
+            Button(self.visualizerPaneVisible ? "Hide Visualizer" : "Show Visualizer") {
+                self.toggleAnimated(self.$visualizerPaneVisible)
+            }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
+
+            Button("Open Fullscreen Visualizer") {
+                self.openWindow(id: "visualizer-fullscreen")
+            }
+            .keyboardShortcut("f", modifiers: [.command, .shift])
+
+            Button("Toggle Miniplayer") {
+                self.windowMode.toggleMiniPlayer()
+            }
+            .keyboardShortcut("m", modifiers: [.command, .option])
+
+            Divider()
+
+            Button("Show Recent Scrobbles") {
+                self.showRecentScrobbles = true
+            }
+            .keyboardShortcut("s", modifiers: [.command, .option, .shift])
+            .help("Show the list of recently scrobbled tracks and their submission status")
+
+            Divider()
+
+            Button("Equaliser & DSP…") {
+                self.openWindow(id: "dsp")
+            }
+            .keyboardShortcut(KeyBindings.showEQPanel)
+        }
+
         CommandMenu("Playback") {
             Button("Play / Pause") {
                 Task { await self.vm.nowPlaying.playPause() }
@@ -282,45 +325,6 @@ struct BocanCommands: Commands {
                 self.vm.requestSearchFocus()
             }
             .keyboardShortcut(KeyBindings.focusSearch)
-        }
-
-        CommandGroup(after: .windowArrangement) {
-            // Phase 4 audit C1: ⌘L is reserved for "Love" (the Track menu);
-            // Show Lyrics moves to ⌘⌥L so the two don't collide.
-            Button(self.lyricsPaneVisible ? "Hide Lyrics" : "Show Lyrics") {
-                self.toggleAnimated(self.$lyricsPaneVisible)
-            }
-            .keyboardShortcut("l", modifiers: [.command, .option])
-
-            Button(self.visualizerPaneVisible ? "Hide Visualizer" : "Show Visualizer") {
-                self.toggleAnimated(self.$visualizerPaneVisible)
-            }
-            .keyboardShortcut("v", modifiers: [.command, .shift])
-
-            Button("Open Fullscreen Visualizer") {
-                self.openWindow(id: "visualizer-fullscreen")
-            }
-            .keyboardShortcut("f", modifiers: [.command, .shift])
-
-            Button("Toggle Miniplayer") {
-                self.windowMode.toggleMiniPlayer()
-            }
-            .keyboardShortcut("m", modifiers: [.command, .option])
-
-            Divider()
-
-            Button("Show Recent Scrobbles") {
-                self.showRecentScrobbles = true
-            }
-            .keyboardShortcut("s", modifiers: [.command, .option, .shift])
-            .help("Show the list of recently scrobbled tracks and their submission status")
-
-            Divider()
-
-            Button("Equaliser & DSP…") {
-                self.openWindow(id: "dsp")
-            }
-            .keyboardShortcut(KeyBindings.showEQPanel)
         }
 
         CommandMenu("Track") {
