@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Persistence
 import SwiftSonic
@@ -149,6 +150,59 @@ struct SubsonicConnectionMonitorTests {
         }
         #expect(authSeen)
 
+        await monitor.stopAll()
+    }
+
+    @Test("a workspace wake notification restarts the loop via wakeAll (#274)")
+    func wakeNotificationTriggersReping() async throws {
+        let (service, id, transport) = try await makeService()
+        transport.setPerpetual(json: okEnvelope)
+        let monitor = SubsonicConnectionMonitor(service: service)
+
+        await monitor.startMonitoring(serverID: id)
+        let updates = await monitor.updates
+
+        // Give the loop time to reach .online and the wake observer time to
+        // install (init dispatches it asynchronously), then post the wake
+        // notification on the workspace centre.
+        let poster = Task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            NSWorkspace.shared.notificationCenter.post(
+                name: NSWorkspace.didWakeNotification,
+                object: nil
+            )
+        }
+
+        // Watch the stream for: .online (loop ran) then a fresh .connecting,
+        // which only happens because wakeAll() cancelled and restarted the
+        // loop. If the observer were still on NotificationCenter.default (or
+        // never wired) the post would be ignored and we would time out.
+        let restarted = await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                var sawOnline = false
+                for await update in updates where update.serverID == id {
+                    switch update.status {
+                    case .online:
+                        sawOnline = true
+                    case .connecting where sawOnline:
+                        return true
+                    default:
+                        break
+                    }
+                }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                return false
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
+        poster.cancel()
+
+        #expect(restarted, "wakeAll() should restart the monitor loop after a wake notification")
         await monitor.stopAll()
     }
 
