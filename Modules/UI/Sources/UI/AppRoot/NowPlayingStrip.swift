@@ -187,7 +187,7 @@ public struct NowPlayingStrip: View {
                 self.library.toggleLovedForNowPlaying()
             } label: {
                 Image(systemName: self.vm.nowPlayingIsLoved ? "heart.fill" : "heart")
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledSystemFont(size: 15, weight: .medium)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -207,7 +207,7 @@ public struct NowPlayingStrip: View {
                 self.library.showTagEditorForNowPlaying()
             } label: {
                 Image(systemName: "info.circle")
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledSystemFont(size: 15, weight: .medium)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -221,7 +221,7 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.previous() }
             } label: {
                 Image(systemName: "backward.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .scaledSystemFont(size: 18, weight: .semibold)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -234,7 +234,7 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.playPause() }
             } label: {
                 Image(systemName: self.vm.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 24, weight: .bold))
+                    .scaledSystemFont(size: 24, weight: .bold)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -248,7 +248,7 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.next() }
             } label: {
                 Image(systemName: "forward.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .scaledSystemFont(size: 18, weight: .semibold)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -261,7 +261,7 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.toggleShuffle() }
             } label: {
                 Image(systemName: "shuffle")
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledSystemFont(size: 15, weight: .medium)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -278,7 +278,7 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.cycleRepeat() }
             } label: {
                 Image(systemName: self.vm.repeatMode == .one ? "repeat.1" : "repeat")
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledSystemFont(size: 15, weight: .medium)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -297,7 +297,7 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.toggleStopAfterCurrent() }
             } label: {
                 Image(systemName: "stop.circle\(self.vm.stopAfterCurrent ? ".fill" : "")")
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledSystemFont(size: 15, weight: .medium)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -324,7 +324,7 @@ public struct NowPlayingStrip: View {
                     self.showRecentScrobbles = true
                 } label: {
                     Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 15, weight: .medium))
+                        .scaledSystemFont(size: 15, weight: .medium)
                         .overlay(alignment: .topTrailing) {
                             ZStack {
                                 Circle()
@@ -351,7 +351,7 @@ public struct NowPlayingStrip: View {
                 self.openWindow(id: "dsp")
             } label: {
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 15, weight: .medium))
+                    .scaledSystemFont(size: 15, weight: .medium)
                     .overlay(alignment: .topTrailing) {
                         if self.dsp.isEQActive || self.dsp.hasScopedPreset {
                             ZStack {

@@ -85,7 +85,7 @@ public struct MenuBarExtraScene: View {
                     Task { await self.vm.previous() }
                 } label: {
                     Image(systemName: "backward.fill")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
                 .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
@@ -95,7 +95,7 @@ public struct MenuBarExtraScene: View {
                     Task { await self.vm.playPause() }
                 } label: {
                     Image(systemName: self.vm.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: 22, weight: .bold))
+                        .scaledSystemFont(size: 22, weight: .bold)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(self.vm.isPlaying ? "Pause" : "Play")
@@ -104,7 +104,7 @@ public struct MenuBarExtraScene: View {
                     Task { await self.vm.next() }
                 } label: {
                     Image(systemName: "forward.fill")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Next")

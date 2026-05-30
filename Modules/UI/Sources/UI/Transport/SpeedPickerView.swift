@@ -26,7 +26,7 @@ public struct SpeedPickerView: View {
             self.isPopoverShown.toggle()
         } label: {
             Text(self.rateLabel)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .scaledSystemFont(size: 11, weight: .medium, design: .monospaced)
                 .foregroundStyle(self.labelColor)
                 .frame(width: 36)
         }
@@ -56,7 +56,7 @@ public struct SpeedPickerView: View {
                 .font(.headline)
 
             Text(self.rateLabel)
-                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                .scaledSystemFont(size: 28, weight: .bold, design: .monospaced)
                 .foregroundStyle(AccentPalette.color(for: self.accentColorKey))
 
             Slider(

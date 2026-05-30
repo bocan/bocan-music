@@ -67,6 +67,45 @@ struct DynamicTypeTests {
         )
     }
 
+    // MARK: Transport / mini-player fonts scale with Dynamic Type (#299)
+
+    /// Transport, mini-player, and menu-bar surfaces used fixed `.font(.system(size:))`
+    /// glyphs and labels that ignored the user's text-size preference. They now route
+    /// through `.scaledSystemFont(...)`, which scales via `@ScaledMetric`. Guard against
+    /// regressions in exactly these files.
+    private static let dynamicTypeScopedFiles = [
+        "AppRoot/NowPlayingStrip.swift",
+        "Transport/SpeedPickerView.swift",
+        "Transport/SleepTimerMenu.swift",
+        "MiniPlayer/MiniPlayerCompact.swift",
+        "MiniPlayer/MiniPlayerSquare.swift",
+        "MiniPlayer/MiniPlayerView.swift",
+        "MiniPlayer/MiniPlayerVisualizer.swift",
+        "MenuBarExtra/MenuBarExtraScene.swift",
+    ]
+
+    @Test("Transport and mini-player files no longer use fixed-size system fonts (#299)")
+    func transportFilesUseScaledFonts() throws {
+        for relativePath in Self.dynamicTypeScopedFiles {
+            let url = self.uiSourcesURL.appendingPathComponent(relativePath)
+            let source = try String(contentsOf: url, encoding: .utf8)
+            #expect(
+                !source.contains(".font(.system(size:"),
+                "\(relativePath) must use .scaledSystemFont(...) instead of fixed .font(.system(size:))"
+            )
+        }
+    }
+
+    @Test("ScaledSystemFont helper exists and uses @ScaledMetric")
+    func scaledSystemFontHelperUsesScaledMetric() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("Theme/ScaledSystemFont.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("@ScaledMetric"),
+            "scaledSystemFont must drive its size through @ScaledMetric so it honours Dynamic Type"
+        )
+    }
+
     // MARK: No hardcoded NSFont sizes in UI module
 
     @Test("UI module contains no NSFont.systemFont(ofSize:) calls")
