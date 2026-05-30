@@ -125,12 +125,15 @@ struct BocanCommands: Commands {
             .keyboardShortcut("o", modifiers: [.command, .option, .shift])
         }
 
-        // View menu: presentation toggles for the lyrics / visualizer panes and
-        // the auxiliary windows. Per macOS HIG these belong under View — where the
-        // system and Music.app keep content-presentation commands — rather than
-        // buried in the Window menu, which should hold only window management (#303).
-        // Declared before the app-specific menus so View sits right after Edit.
-        CommandMenu("View") {
+        // Restore the standard Show/Hide Sidebar item; the system also manages
+        // Enter Full Screen here. Using the system View menu (not a custom
+        // CommandMenu) guarantees a single View menu in the right place (#303/#304).
+        SidebarCommands()
+
+        // View menu: presentation toggles for the panes and auxiliary windows.
+        // Per HIG these belong under View, not the Window menu (#303); appended
+        // after the sidebar group so they sit below Show/Hide Sidebar.
+        CommandGroup(after: .sidebar) {
             // ⌘L is reserved for "Love" (the Track menu); Show Lyrics uses ⌘⌥L.
             Button(self.lyricsPaneVisible ? "Hide Lyrics" : "Show Lyrics") {
                 self.toggleAnimated(self.$lyricsPaneVisible)
