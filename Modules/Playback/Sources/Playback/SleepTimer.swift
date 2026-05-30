@@ -75,6 +75,13 @@ public actor SleepTimer {
     private let log = AppLogger.make(.playback)
     private var expiresAt: Date?
     private var countdownTask: Task<Void, Never>?
+
+    /// Guards against a double stop. `handleSystemWake()` and the countdown
+    /// loop can both observe `left <= 0` on the same deadline tick; without
+    /// this, the in-flight countdown still completes its `await self.fire()`
+    /// after `cancel()` interrupts its sleep, so `onStop()` would run twice.
+    /// Cleared each time a fresh countdown starts. See #270.
+    private var hasFired = false
     private let onStop: StopAction
     private let onSetVolume: SetVolumeAction
 
@@ -150,6 +157,7 @@ public actor SleepTimer {
     }
 
     private func startCountdown(expiresAt: Date) {
+        self.hasFired = false
         self.countdownTask = Task { [weak self] in
             guard let self else { return }
             while !Task.isCancelled {
@@ -174,7 +182,12 @@ public actor SleepTimer {
         await self.onSetVolume(fraction)
     }
 
-    private func fire() {
+    func fire() {
+        guard !self.hasFired else {
+            self.log.debug("sleepTimer.fire.ignoredDuplicate")
+            return
+        }
+        self.hasFired = true
         self.log.debug("sleepTimer.fired")
         self.cancel()
         self.remaining = nil
