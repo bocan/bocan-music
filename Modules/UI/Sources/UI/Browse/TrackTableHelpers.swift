@@ -31,6 +31,7 @@ final class ActionMenuItem: NSMenuItem {
 final class ShuffleCheckCell: NSTableCellView {
     private let checkbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private var trackID: Int64?
+    private var trackTitle = ""
     private var onToggle: ((Int64, Bool) -> Void)?
 
     override init(frame: NSRect) {
@@ -53,13 +54,20 @@ final class ShuffleCheckCell: NSTableCellView {
 
     func configure(row: TrackRow, action: @escaping (Int64, Bool) -> Void) {
         self.trackID = row.id
+        self.trackTitle = row.title
         self.onToggle = action
         self.checkbox.state = row.excludedFromShuffle ? .on : .off
+        self.updateAccessibilityLabel()
     }
 
     @objc private func checkboxChanged(_ sender: NSButton) {
         guard let id = trackID else { return }
         self.onToggle?(id, sender.state == .on)
+        self.updateAccessibilityLabel()
+    }
+
+    private func updateAccessibilityLabel() {
+        self.checkbox.setAccessibilityLabel("Exclude \(self.trackTitle) from shuffle")
     }
 }
 
