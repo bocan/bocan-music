@@ -194,6 +194,7 @@ private struct QueueRow: View {
     let isPlaying: Bool
     let isUnavailable: Bool
     let position: Int
+    @State private var isHovered = false
 
     /// Best-effort display title: metadata title → decoded filename stem → raw last path component.
     private var displayTitle: String {
@@ -262,10 +263,22 @@ private struct QueueRow: View {
                 .font(Typography.caption.monospacedDigit())
                 .foregroundStyle(Color.textSecondary)
                 .frame(width: 44, alignment: .trailing)
+
+            // Drag-reorder grip — revealed on hover so the row's reorder
+            // affordance is discoverable (the whole row is already draggable
+            // via the List's .onMove). Space is always reserved so the layout
+            // doesn't shift when the grip appears (#313).
+            Image(systemName: "line.3.horizontal")
+                .font(Typography.caption)
+                .foregroundStyle(Color.textTertiary)
+                .frame(width: 18)
+                .opacity(self.isHovered ? 1 : 0)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, 3)
         .opacity(self.isUnavailable ? 0.55 : 1.0)
         .help(self.isUnavailable ? "File missing — original location no longer exists" : "")
+        .onHover { self.isHovered = $0 }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.rowLabel)
