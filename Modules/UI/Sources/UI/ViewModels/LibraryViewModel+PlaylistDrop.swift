@@ -17,6 +17,7 @@ extension LibraryViewModel {
         var parentID: Int64?
         if urls.count > 1 {
             let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.dateFormat = "yyyy-MM-dd HH:mm"
             let folderName = "Dropped Playlists \u{2013} \(formatter.string(from: Date()))"
             do {

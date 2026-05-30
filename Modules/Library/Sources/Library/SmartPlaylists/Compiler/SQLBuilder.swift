@@ -186,8 +186,13 @@ public enum SQLBuilder {
 
         case .onDate:
             guard case let .date(d) = rule.value else { throw Self.valueError(rule) }
-            // Match entire day: [start of day, start of next day)
-            let cal = Calendar.current
+            // Match entire day: [start of day, start of next day).
+            // Pin the Gregorian calendar to the device's current timezone so the
+            // day boundary matches the user's local clock; Calendar.current can
+            // silently change locale/era (e.g. th_TH Buddhist era) and produce
+            // incorrect year-based arithmetic.
+            var cal = Calendar(identifier: .gregorian)
+            cal.timeZone = TimeZone.current
             let start = cal.startOfDay(for: d)
             let end = cal.date(byAdding: .day, value: 1, to: start)!
             args.append(Int64(start.timeIntervalSince1970))
