@@ -127,53 +127,51 @@ actor ScanCoordinator {
         // Phase 3 audit H7: opt-in iCloud download for placeholder files.
         let iCloudDownload: Bool = await (try? self.settingsRepo.get(Bool.self, for: "library.icloudDownload")) ?? nil ?? false
 
-        // Collect all URLs first so we can cap concurrency properly
-        var discoveredURLs: [(url: URL, rootID: Int64)] = []
-        for root in roots {
-            var walked = 0
-            for await fileURL in FileWalker.walk(
-                root.url,
-                supportedExtensions: supported,
-                iCloudDownload: iCloudDownload
-            ) {
-                walked += 1
-                discoveredURLs.append((fileURL, root.rootID))
-                emit(.walking(currentPath: fileURL.path, walked: walked))
-                guard !Task.isCancelled else { break }
-            }
-            guard !Task.isCancelled else { break }
-        }
-
-        guard !Task.isCancelled else { return }
-
-        // Import in a bounded TaskGroup; each task returns an ImportResult.
+        // Feed the FileWalker stream directly into a bounded TaskGroup so
+        // importing overlaps the walk and peak memory stays O(concurrency)
+        // rather than O(library size). Previously every discovered (URL,
+        // rootID) pair was buffered into an array before a single import
+        // started (~10k pairs at once on a large library). See #267.
         let results: [ImportResult] = await withTaskGroup(
             of: (url: URL, result: ImportResult).self,
             returning: [ImportResult].self
         ) { group in
             var inFlight = 0
             var collected: [ImportResult] = []
+            var walked = 0
 
-            for (fileURL, _) in discoveredURLs {
-                if Task.isCancelled { break }
+            rootLoop: for root in roots {
+                for await fileURL in FileWalker.walk(
+                    root.url,
+                    supportedExtensions: supported,
+                    iCloudDownload: iCloudDownload
+                ) {
+                    if Task.isCancelled { break rootLoop }
+                    walked += 1
+                    emit(.walking(currentPath: fileURL.path, walked: walked))
 
-                if inFlight >= concurrency {
-                    if let r = await group.next() {
-                        collected.append(r.result)
-                        inFlight -= 1
+                    // Throttle to the concurrency window: once `concurrency`
+                    // imports are in flight, wait for one to finish before
+                    // dispatching the next discovered file.
+                    if inFlight >= concurrency {
+                        if let r = await group.next() {
+                            collected.append(r.result)
+                            inFlight -= 1
+                        }
+                    }
+
+                    inFlight += 1
+                    let url = fileURL
+                    let mode_ = mode
+                    // Phase 3 audit M4: scan import work runs at `.utility` so it
+                    // doesn't steal CPU priority from playback (engine + queue
+                    // operate at higher default priorities).
+                    group.addTask(priority: .utility) {
+                        let result = await self.importOne(url: url, mode: mode_, emit: emit)
+                        return (url, result)
                     }
                 }
-
-                inFlight += 1
-                let url = fileURL
-                let mode_ = mode
-                // Phase 3 audit M4: scan import work runs at `.utility` so it
-                // doesn't steal CPU priority from playback (engine + queue
-                // operate at higher default priorities).
-                group.addTask(priority: .utility) {
-                    let result = await self.importOne(url: url, mode: mode_, emit: emit)
-                    return (url, result)
-                }
+                if Task.isCancelled { break }
             }
             // Drain remaining
             for await r in group {
@@ -181,6 +179,8 @@ actor ScanCoordinator {
             }
             return collected
         }
+
+        guard !Task.isCancelled else { return }
 
         for result in results {
             switch result {
