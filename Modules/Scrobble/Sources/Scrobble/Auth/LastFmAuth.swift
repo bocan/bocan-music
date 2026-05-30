@@ -48,7 +48,9 @@ public actor LastFmAuth {
         let token = try await self.provider.requestAuthToken()
         let url = self.provider.authorisationURL(forToken: token)
         self.openURL(url)
-        self.log.info("scrobble.lastfm.auth.opened", ["url": url.absoluteString])
+        // Log only the base path; the query string contains api_key and token (#283).
+        let urlForLog = url.absoluteString.components(separatedBy: "?").first ?? url.absoluteString
+        self.log.info("scrobble.lastfm.auth.opened", ["url": urlForLog])
 
         let deadline = ContinuousClock.now.advanced(by: self.timeout)
         while ContinuousClock.now < deadline {
