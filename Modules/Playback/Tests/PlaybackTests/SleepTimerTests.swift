@@ -154,6 +154,45 @@ struct SleepTimerTests {
         // Clean up
         await timer.set(minutes: nil)
     }
+
+    // MARK: - Double-fire guard (#270)
+
+    @Test("fire() runs onStop at most once when invoked twice on the same deadline")
+    func fireIsIdempotent() async throws {
+        let recorder = TimerRecorder()
+        let timer = self.makeTimer(recorder: recorder)
+        await timer.set(minutes: 30) // starts a countdown; clears the guard
+
+        // Simulate handleSystemWake() and the countdown loop both observing
+        // `left <= 0` on the same tick — the second fire must be ignored.
+        await timer.fire()
+        await timer.fire()
+
+        try await Task.sleep(nanoseconds: 100_000_000) // let the onStop Task run
+        let stops = await recorder.stopCount
+        #expect(stops == 1, "onStop should run exactly once, ran \(stops) times")
+        let remaining = await timer.remaining
+        #expect(remaining == nil, "timer state should be cleared after firing")
+        await timer.set(minutes: nil)
+    }
+
+    @Test("rescheduling re-arms the timer so it can fire again")
+    func fireGuardResetsOnReschedule() async throws {
+        let recorder = TimerRecorder()
+        let timer = self.makeTimer(recorder: recorder)
+
+        await timer.set(minutes: 30)
+        await timer.fire()
+        await timer.fire() // ignored by the guard
+
+        await timer.set(minutes: 30) // a fresh countdown clears the guard
+        await timer.fire()
+
+        try await Task.sleep(nanoseconds: 100_000_000)
+        let stops = await recorder.stopCount
+        #expect(stops == 2, "each scheduled timer should fire once; got \(stops)")
+        await timer.set(minutes: nil)
+    }
 }
 
 // MARK: - SleepTimerPreset equality tests
