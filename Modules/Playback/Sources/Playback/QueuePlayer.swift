@@ -808,6 +808,25 @@ public actor QueuePlayer: Transport {
     /// Returns `true` when `error` indicates the track's file is missing or
     /// its bookmark can no longer be resolved — cases where skipping and
     /// disabling the track is the right recovery rather than surfacing a failure.
+    /// Upper bound on a scheduled crossfade-out delay. No real track needs the
+    /// fade scheduled more than a day out; the clamp exists to keep a corrupt
+    /// or live-stream duration from overflowing the nanosecond `UInt64` cast.
+    static let maxCrossfadeOutDelaySeconds: TimeInterval = 24 * 60 * 60
+
+    /// Returns how long to wait before beginning the crossfade-out, clamped to
+    /// a finite value safe for `UInt64(delay * 1e9)`. An infinite duration
+    /// (e.g. a live stream) clamps to `maxCrossfadeOutDelaySeconds` so the fade
+    /// is deferred rather than fired immediately; a NaN duration collapses to
+    /// `0` via `max`; a huge-but-finite duration is capped. See #271.
+    nonisolated static func crossfadeOutDelaySeconds(
+        remaining: TimeInterval,
+        halfDuration: TimeInterval
+    ) -> TimeInterval {
+        let raw = max(0, remaining - halfDuration)
+        guard raw.isFinite else { return Self.maxCrossfadeOutDelaySeconds }
+        return min(raw, Self.maxCrossfadeOutDelaySeconds)
+    }
+
     private static func isMissingFileError(_ error: Error) -> Bool {
         if case AudioEngineError.fileNotFound = error { return true }
         if case PlaybackError.bookmarkResolutionFailed = error { return true }
@@ -1007,8 +1026,11 @@ public actor QueuePlayer: Transport {
             let total = await self.engine.duration
             let current = await self.engine.currentTime
             let remaining = max(0, total - current)
-            // Start the fade-out `halfDuration` seconds before the track ends.
-            let delay = max(0, remaining - halfDuration)
+            // Start the fade-out `halfDuration` seconds before the track ends,
+            // clamped to a finite, sane upper bound: a corrupt or live-stream
+            // duration can be huge or non-finite, and `UInt64(delay * 1e9)`
+            // traps on overflow or NaN. See #271.
+            let delay = Self.crossfadeOutDelaySeconds(remaining: remaining, halfDuration: halfDuration)
             self.crossfadeOutTask?.cancel()
             self.crossfadeOutTask = Task { [weak self] in
                 guard !Task.isCancelled else { return }
