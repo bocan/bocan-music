@@ -225,7 +225,8 @@ public struct NowPlayingStrip: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.textPrimary)
+            .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
+            .disabled(self.vm.title.isEmpty)
             .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
             .accessibilityLabel("Previous or restart")
             .accessibilityIdentifier(A11y.NowPlaying.prev)
@@ -252,7 +253,8 @@ public struct NowPlayingStrip: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Color.textPrimary)
+            .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
+            .disabled(self.vm.title.isEmpty)
             .help("Next track")
             .accessibilityLabel("Next track")
             .accessibilityIdentifier(A11y.NowPlaying.next)

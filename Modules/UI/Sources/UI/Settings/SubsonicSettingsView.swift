@@ -204,9 +204,13 @@ private struct SubsonicServerEditorView: View {
         Form {
             Section("Identity") {
                 TextField("Display Name", text: self.$vm.editor.name)
-                TextField("Server URL", text: self.$vm.editor.serverURLText)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled(true)
+                TextField(
+                    "Server URL",
+                    text: self.$vm.editor.serverURLText,
+                    prompt: Text(verbatim: "https://music.example.com")
+                )
+                .textContentType(.URL)
+                .autocorrectionDisabled(true)
                 if let problem = self.vm.editor.firstValidationError,
                    problem.contains("URL") {
                     Text(problem)

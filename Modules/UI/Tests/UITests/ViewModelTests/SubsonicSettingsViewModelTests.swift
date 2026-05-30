@@ -14,6 +14,13 @@ struct SubsonicSettingsViewModelEditorTests {
         #expect(editor.firstValidationError?.contains("name") == true)
     }
 
+    @Test("blankNew leaves the URL empty so the field shows its placeholder prompt (#310)")
+    func blankNewHasEmptyURL() {
+        let editor = Editor.blankNew()
+        #expect(editor.serverURLText.isEmpty, "URL must be empty so the example prompt shows instead of a bare https://")
+        #expect(editor.name == "New Server")
+    }
+
     @Test("Non-http(s) URL is rejected.")
     func rejectsBadScheme() {
         var editor = Editor()
