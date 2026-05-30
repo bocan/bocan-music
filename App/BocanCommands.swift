@@ -20,6 +20,7 @@ struct BocanCommands: Commands {
     let windowMode: WindowModeController
     let lyricsVM: LyricsViewModel
     let visualizerVM: VisualizerViewModel
+    let settingsRouter: SettingsRouter
     let updateController: UpdateController
     /// Mirrors `LyricsViewModel.paneVisible` (`@AppStorage("lyrics.paneVisible")`).
     @AppStorage("lyrics.paneVisible") private var lyricsPaneVisible = false
@@ -34,6 +35,7 @@ struct BocanCommands: Commands {
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     /// `true` when motion should be suppressed (system Reduce Motion or the in-app toggle).
     private var reduceMotion: Bool {
@@ -53,10 +55,8 @@ struct BocanCommands: Commands {
     }
 
     var body: some Commands {
-        // Replace the default "About Bòcan" system item with our custom About
-        // window (which includes the credits section and Check for Updates button).
-        // We also keep "Check for Updates…" here in the application menu per
-        // the macOS convention (iTunes / Logic / Xcode all put it here).
+        // Custom About window (credits + Check for Updates), with Check for
+        // Updates kept in the app menu per macOS convention.
         CommandGroup(replacing: .appInfo) {
             Button("About Bòcan") {
                 self.openWindow(id: "about")
@@ -96,12 +96,18 @@ struct BocanCommands: Commands {
             }
             .keyboardShortcut(KeyBindings.addFiles)
 
+            // Deep-link straight to Settings ▸ Sources so server setup is
+            // discoverable from a menu, not only the sidebar (#305).
+            Button("Music Sources…") {
+                self.settingsRouter.open(.sources)
+                self.openSettings()
+            }
+            .help("Add or manage streaming music servers (Subsonic-compatible)")
+
             Divider()
 
-            // Phase 3 audit M2: Quick / Full rescan entry-points for the File
-            // menu so users aren't limited to per-track right-click "Re-scan File".
-            // ⌘R is reserved for "Reveal in Finder" (see KeyBindings.revealInFinder)
-            // and ⌘⇧R is used by TracksView's "Clear Sort", so we use ⌥-modifiers.
+            // Quick / Full rescan. ⌘R is Reveal in Finder and ⌘⇧R is Clear Sort,
+            // so these use ⌥-modifiers.
             Button("Quick Rescan Library") {
                 self.vm.rescanLibrary(mode: .quick)
             }
@@ -116,9 +122,7 @@ struct BocanCommands: Commands {
 
             Divider()
 
-            // Phase 4 audit C2: ⌘⇧O is reserved for "Add Folder to Library…"
-            // (KeyBindings.addFolder).  Import Playlist gets ⌘⌥⇧O so the two
-            // file-import entries don't trample each other.
+            // ⌘⇧O is Add Folder, so Import Playlist gets ⌘⌥⇧O.
             Button("Import Playlist…") {
                 self.vm.isPlaylistImportSheetPresented = true
             }
@@ -218,9 +222,7 @@ struct BocanCommands: Commands {
             .keyboardShortcut(KeyBindings.chooseAudioOutput)
             .help("Open the AirPlay / audio output picker")
 
-            // Phase 5 audit H1: keyboard-accessible mode toggles.  Labels
-            // include the current state so VoiceOver announces it and so
-            // users can confirm without opening the strip.
+            // Keyboard-accessible mode toggles.
             Button("Toggle Shuffle") {
                 Task { await self.vm.nowPlaying.toggleShuffle() }
             }
@@ -321,8 +323,7 @@ struct BocanCommands: Commands {
             .disabled(self.vm.nowPlaying.nowPlayingArtistID == nil)
         }
 
-        // Phase 4 audit H5: replace the default Find menu so ⌘F focuses the
-        // toolbar search field instead of triggering SwiftUI's no-op default.
+        // Override Find so ⌘F focuses the toolbar search, not SwiftUI's no-op.
         CommandGroup(replacing: .textEditing) {
             Button("Find") {
                 self.vm.requestSearchFocus()

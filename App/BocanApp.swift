@@ -502,6 +502,8 @@ struct AppGraph {
     let subsonicSettingsViewModel: SubsonicSettingsViewModel
     let routeManager: RouteManager
     let routeViewModel: RouteViewModel
+    /// Shared deep-link navigation for the Settings scene (#305).
+    let settingsRouter: SettingsRouter
 }
 
 // MARK: - AppModel
@@ -720,7 +722,8 @@ extension BocanApp {
             subsonicService: subsonicService,
             subsonicSettingsViewModel: subsonicSettingsViewModel,
             routeManager: routeManager,
-            routeViewModel: routeViewModel
+            routeViewModel: routeViewModel,
+            settingsRouter: SettingsRouter()
         )
     }
     // swiftlint:enable function_body_length

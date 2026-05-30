@@ -10,6 +10,7 @@ import SwiftUI
 public struct Sidebar: View {
     @ObservedObject public var vm: LibraryViewModel
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.settingsRouter) private var settingsRouter
 
     public init(vm: LibraryViewModel) {
         self.vm = vm
@@ -118,7 +119,7 @@ public struct Sidebar: View {
     // MARK: - Row builder
 
     private func openAddSource() {
-        NotificationCenter.default.post(name: .openSourcesSettingsTab, object: nil)
+        self.settingsRouter?.open(.sources)
         self.openSettings()
     }
 
@@ -135,7 +136,7 @@ public struct Sidebar: View {
     }
 
     private func editServer(_ id: UUID) {
-        NotificationCenter.default.post(name: .openSourcesSettingsTab, object: id)
+        self.settingsRouter?.open(.sources, serverID: id)
         self.openSettings()
     }
 
@@ -148,7 +149,7 @@ public struct Sidebar: View {
     }
 
     private func removeServer(_ id: UUID) {
-        NotificationCenter.default.post(name: .openSourcesSettingsTab, object: id)
+        self.settingsRouter?.open(.sources, serverID: id)
         self.openSettings()
     }
 

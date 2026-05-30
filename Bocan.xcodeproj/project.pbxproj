@@ -46,6 +46,7 @@
 		5CFAFAFE675531C5E6AED98A /* ContrastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E49CDFBDDA8CA1C27167FD94 /* ContrastTests.swift */; };
 		5F463887C3D0E059B4CDE351 /* fpcalc in Resources */ = {isa = PBXBuildFile; fileRef = A9999948FAD8FF8EE311BC9A /* fpcalc */; };
 		61710529DAD3CE20DE867CA2 /* libcrypto.3.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */; };
+		6178D14DC175A347E7252030 /* SettingsMenuTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5ED57792C57E833ECFCE6DC3 /* SettingsMenuTests.swift */; };
 		66A006037FB3F8C99B2585CA /* libchromaprint.1.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 4184573B514D5001203CDC8F /* libchromaprint.1.dylib */; };
 		682BA6032B380BADD28F3FCD /* UIStateV2Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E81F40F4AF9574582DC83F3 /* UIStateV2Tests.swift */; };
 		6C037B4EAD50B67AA02719E8 /* libopus.0.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 793B0EF76ECE1435160C2F32 /* libopus.0.dylib */; };
@@ -61,6 +62,7 @@
 		83D1988AE70AF6C6F97FC1A3 /* DebugAudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86C2B2FF5D1DDE98868F4E4 /* DebugAudioView.swift */; };
 		84BAE5C2FAF57BE28E445749 /* ReduceTransparencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2281C47BF7969849A1BCBFA6 /* ReduceTransparencyTests.swift */; };
 		8648C9B6A91C206B360C67EB /* Observability in Frameworks */ = {isa = PBXBuildFile; productRef = 4471527EBD815A0F4817C396 /* Observability */; };
+		8840C9CE90C418B381661CB2 /* SettingsNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8614C028180E5B7098F018 /* SettingsNavigationTests.swift */; };
 		8898D5F54BEE976BF1FB21AD /* SingleInstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4262BE7B022BB4DC4BDA75C /* SingleInstance.swift */; };
 		89BD8F709DD5D630E449B97D /* QueueReorderGripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335B0C06DAF35F96240EF261 /* QueueReorderGripTests.swift */; };
 		8A614DC6BC63667C9813552C /* ReduceMotionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4807631780E7B75DB867E0E /* ReduceMotionTests.swift */; };
@@ -128,6 +130,7 @@
 		38D3908A7CD0D2A9A3BA7A60 /* VolumeIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = VolumeIcon.icns; sourceTree = "<group>"; };
 		3AB7C159C37D262541974E75 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3BC2BFDE7E0BF2180866ABE1 /* SubsonicMonitorConnectionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicMonitorConnectionObserver.swift; sourceTree = "<group>"; };
+		3C8614C028180E5B7098F018 /* SettingsNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsNavigationTests.swift; sourceTree = "<group>"; };
 		3D1CAA6A918DE471019AB205 /* SingleInstanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleInstanceTests.swift; sourceTree = "<group>"; };
 		3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		3D8E8EC191BDB21827F3BBAE /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -138,6 +141,7 @@
 		5176B1403032D73D9D52B246 /* dmg-background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "dmg-background.png"; sourceTree = "<group>"; };
 		531C8B2E4746B8942918520D /* Subsonic */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Subsonic; path = Modules/Subsonic; sourceTree = SOURCE_ROOT; };
 		5E81F40F4AF9574582DC83F3 /* UIStateV2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStateV2Tests.swift; sourceTree = "<group>"; };
+		5ED57792C57E833ECFCE6DC3 /* SettingsMenuTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMenuTests.swift; sourceTree = "<group>"; };
 		5F9290FC0C85BA0735CCF7F2 /* HelpWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpWindowView.swift; sourceTree = "<group>"; };
 		601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartPlaylistDetailViewModelTests.swift; sourceTree = "<group>"; };
 		62CA9772727FF5A9FBC5ED1A /* SubsonicStoreSidebarListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicStoreSidebarListing.swift; sourceTree = "<group>"; };
@@ -202,7 +206,7 @@
 		EFAFC444ACE5CDE2792AAA35 /* SubsonicRepositoryMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicRepositoryMetadataCache.swift; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_8258D6F7-96A7-44E7-A406-D9452D91ED81" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_28DEAB4B-2A83-4D1E-9842-F9521160BF4D" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -328,6 +332,7 @@
 				A1BE682ABBE655F2E269B377 /* RemoveFromLibraryConfirmTests.swift */,
 				8F7E8AA1C53EF99B1B37A2B8 /* RuleBuilderViewValidationTests.swift */,
 				186F049CE6669E44D287954A /* SearchViewModelTests.swift */,
+				3C8614C028180E5B7098F018 /* SettingsNavigationTests.swift */,
 				1D50DD1D06C958D253417C07 /* SidebarDestinationSubsonicServerIDTests.swift */,
 				601E8DA997D3DBE53B2FE143 /* SmartPlaylistDetailViewModelTests.swift */,
 				D336D59F9188111951FCC5DF /* SubsonicAnnotationCoordinatorTests.swift */,
@@ -468,16 +473,17 @@
 			isa = PBXGroup;
 			children = (
 				B5F151905EDE76E79038D4A9 /* MenuAnimationTests.swift */,
+				5ED57792C57E833ECFCE6DC3 /* SettingsMenuTests.swift */,
 				3D1CAA6A918DE471019AB205 /* SingleInstanceTests.swift */,
 				0C9322FD4F5214BF2D3D40B7 /* ViewMenuTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_DD37E997-98AD-4088-9D69-9164CAA2ACD8" /* bocan-music */ = {
+		"TEMP_1FE708B2-D5BE-4107-BAC2-C428DE8C5546" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_8258D6F7-96A7-44E7-A406-D9452D91ED81" /* Secrets.xcconfig */,
+				"TEMP_28DEAB4B-2A83-4D1E-9842-F9521160BF4D" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -686,6 +692,8 @@
 				E54E039886C7610775A8B0B6 /* RemoveFromLibraryConfirmTests.swift in Sources */,
 				F3D833ADDEE61DD7224FEC9B /* RuleBuilderViewValidationTests.swift in Sources */,
 				0825DB354812A90F349CA0F5 /* SearchViewModelTests.swift in Sources */,
+				6178D14DC175A347E7252030 /* SettingsMenuTests.swift in Sources */,
+				8840C9CE90C418B381661CB2 /* SettingsNavigationTests.swift in Sources */,
 				E08D458D14F295855EEEF366 /* SidebarDestinationSubsonicServerIDTests.swift in Sources */,
 				7D8AD74E3C50474CA24958DC /* SingleInstance.swift in Sources */,
 				D376AD0CF2E8518F2B7AEC32 /* SingleInstanceTests.swift in Sources */,
@@ -777,7 +785,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_8258D6F7-96A7-44E7-A406-D9452D91ED81" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_28DEAB4B-2A83-4D1E-9842-F9521160BF4D" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -913,7 +921,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_8258D6F7-96A7-44E7-A406-D9452D91ED81" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_28DEAB4B-2A83-4D1E-9842-F9521160BF4D" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
