@@ -60,8 +60,10 @@ import os
             for payload in payloads {
                 let data = payload.jsonRepresentation()
                 let log = AppLogger.make(.app)
-                let json = String(data: data, encoding: .utf8) ?? "<binary>"
-                log.notice("metrickit.payload.diagnostics", ["json": json])
+                // Do not log the payload JSON -- it contains stack frames, file paths,
+                // and device identifiers that should not flow to the OS log unredacted.
+                // The full payload is persisted to disk by writePayload. (#284)
+                log.notice("metrickit.payload.diagnostics", ["byteCount": data.count])
                 Self.writePayload(data)
             }
         }
