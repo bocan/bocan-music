@@ -233,4 +233,37 @@ struct FTSSearchTests {
         }
         #expect(newHits.count == 1)
     }
+
+    // MARK: - LIKE metacharacter escaping (#287)
+
+    @Test("escapeLIKETerm escapes % _ and backslash")
+    func escapeLIKETermUnit() {
+        #expect(SQL.escapeLIKETerm("100%") == "100\\%")
+        #expect(SQL.escapeLIKETerm("file_name") == "file\\_name")
+        #expect(SQL.escapeLIKETerm("back\\slash") == "back\\\\slash")
+        #expect(SQL.escapeLIKETerm("plain") == "plain")
+        #expect(SQL.escapeLIKETerm("%_\\") == "\\%\\_\\\\")
+    }
+
+    @Test("albumsByArtistQuery with % in search term does not match unrelated albums (#287)")
+    func albumsByArtistQueryPercentMetachar() async throws {
+        let db = try await makeDatabase()
+        let artistRepo = ArtistRepository(database: db)
+        let albumRepo = AlbumRepository(database: db)
+
+        // Create two artists: "100%" and "Other Artist".
+        let idA = try await artistRepo.insert(Artist(name: "100%"))
+        let idB = try await artistRepo.insert(Artist(name: "Other Artist"))
+
+        // Give each artist an album.
+        _ = try await albumRepo.insert(Album(title: "Percent Album", albumArtistID: idA))
+        _ = try await albumRepo.insert(Album(title: "Other Album", albumArtistID: idB))
+
+        // Searching for "100%" should match only the "100%" artist's album.
+        let hits = try await db.read { grdb in
+            try SQL.albumsByArtistQuery("100%").fetchAll(grdb)
+        }
+        #expect(hits.count == 1, "unescaped % would match every album; expected exactly 1")
+        #expect(hits.first?.title == "Percent Album")
+    }
 }
