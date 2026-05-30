@@ -44,4 +44,15 @@ public enum SecurityScope {
 
         return try await body(url)
     }
+
+    /// Wraps a security-scoped URL that was already provided by the system
+    /// (e.g. from `.fileImporter` or drag-and-drop) without resolving a bookmark.
+    ///
+    /// The scope is started before `body` is called and stopped on return,
+    /// even if `body` throws. Use the async overload for bookmark-based access.
+    public static func withAccess<T>(_ url: URL, _ body: (URL) throws -> T) rethrows -> T {
+        let accessed = url.startAccessingSecurityScopedResource()
+        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+        return try body(url)
+    }
 }
