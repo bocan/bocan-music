@@ -76,4 +76,28 @@ struct AcoustIDClientTests {
             try await client.lookup(fingerprint: "fp", duration: 100)
         }
     }
+
+    // MARK: - API key placement (#282)
+
+    @Test("API key is sent in POST body, never in the request URL")
+    func apiKeyInBodyNotURL() async throws {
+        let mock = MockHTTPClient()
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/acoustid_response_single.json")
+        let client = self.makeClient(mock: mock)
+        _ = try await client.lookup(fingerprint: "AQAAZ0mk", duration: 259)
+
+        let req = try #require(mock.lastRequest)
+        #expect(req.httpMethod == "POST")
+
+        // API key must NOT appear in the URL.
+        let urlString = req.url?.absoluteString ?? ""
+        #expect(!urlString.contains("client="), "API key must not be in URL, got: \(urlString)")
+
+        // API key MUST appear in the POST body.
+        let bodyString = req.httpBody.flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        #expect(bodyString.contains("client=test-key"), "API key must be in POST body, got: \(bodyString)")
+
+        // Content-Type must be form-encoded.
+        #expect(req.value(forHTTPHeaderField: "Content-Type") == "application/x-www-form-urlencoded")
+    }
 }

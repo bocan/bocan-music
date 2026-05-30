@@ -52,18 +52,27 @@ public actor AcoustIDClient {
         // firing the request so a cancelled lookup never hits the network. See #273.
         try Task.checkCancellation()
 
-        var components = URLComponents(string: Self.baseURL)!
-        components.queryItems = [
+        // POST body keeps the API key out of the request URL so it doesn't
+        // appear in URLSession diagnostics, crash logs, or proxy traces (#282).
+        guard let url = URL(string: Self.baseURL) else {
+            throw AcousticsError.invalidResponse(reason: "Could not build AcoustID URL")
+        }
+        var formItems = URLComponents()
+        formItems.queryItems = [
             URLQueryItem(name: "client", value: self.apiKey),
             URLQueryItem(name: "meta", value: "recordings+releases+tracks"),
             URLQueryItem(name: "fingerprint", value: fingerprint),
             URLQueryItem(name: "duration", value: String(duration)),
+            URLQueryItem(name: "format", value: "json"),
         ]
-        guard let url = components.url else {
-            throw AcousticsError.invalidResponse(reason: "Could not build AcoustID URL")
+        guard let body = formItems.query?.data(using: .utf8) else {
+            throw AcousticsError.invalidResponse(reason: "Could not encode AcoustID request body")
         }
 
         var request = URLRequest(url: url, timeoutInterval: 15)
+        request.httpMethod = "POST"
+        request.httpBody = body
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         self.log.debug("acoustid.lookup.start", ["duration": duration])

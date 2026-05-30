@@ -12,9 +12,12 @@ final class MockHTTPClient: HTTPClient, @unchecked Sendable {
     /// Number of times `data(for:)` was actually invoked. Used to assert that a
     /// cancelled job never fires its HTTP request (#273).
     private(set) var callCount = 0
+    /// Most recent request received, for inspection in tests.
+    private(set) var lastRequest: URLRequest?
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         self.callCount += 1
+        self.lastRequest = request
         if let error {
             throw error
         }
