@@ -104,6 +104,47 @@ struct VoiceOverTests {
     }
 
     @MainActor
+    @Test("accessibilityLabelForRow prefixes 'Now playing, ' for the current track (#300)")
+    func trackRowAccessibilityLabelNowPlaying() {
+        let now = Int64(Date().timeIntervalSince1970)
+        let track = Track(
+            fileURL: "file:///tmp/inMyLife.mp3",
+            fileSize: 0,
+            fileMtime: now,
+            fileFormat: "mp3",
+            duration: 167.0,
+            title: "In My Life",
+            addedAt: now,
+            updatedAt: now
+        )
+        let row = TrackRow(track: track, artistName: "The Beatles", albumName: "Rubber Soul")
+        let trackID = row.id
+
+        var selectionStub = Set<Track.ID>()
+        var sortStub = [KeyPathComparator<TrackRow>]()
+        let table = TrackTable(
+            rows: [],
+            selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
+            sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
+            nowPlayingTrackID: trackID,
+            sortable: false,
+            playlistNodes: [],
+            actions: self.makeNoopActions(),
+            scrollRequest: 0,
+            onMove: nil
+        )
+        let coordinator = TrackTableCoordinator(parent: table)
+        coordinator.rows = [row]
+
+        let tv = NSTableView()
+        let label = coordinator.tableView(tv, accessibilityLabelForRow: 0)
+        #expect(
+            label?.hasPrefix("Now playing, ") == true,
+            "Row label for the now-playing track must begin with 'Now playing, '; got: \(label ?? "nil")"
+        )
+    }
+
+    @MainActor
     @Test("accessibilityLabelForRow returns nil for out-of-bounds row")
     func trackRowAccessibilityLabelOutOfBounds() {
         var selectionStub = Set<Track.ID>()
