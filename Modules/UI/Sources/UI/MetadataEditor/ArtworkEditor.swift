@@ -74,12 +74,10 @@ public struct ArtworkEditor: View {
             allowedContentTypes: [.jpeg, .png, .webP, .gif]
         ) { result in
             if case let .success(url) = result {
-                // .fileImporter returns a security-scoped URL; we must explicitly
-                // acquire and release the grant before reading file data.
-                let accessed = url.startAccessingSecurityScopedResource()
-                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-                if let data = try? Data(contentsOf: url) {
-                    self.vm.pendingArtData = Self.normalise(data)
+                SecurityScope.withAccess(url) { scopedURL in
+                    if let data = try? Data(contentsOf: scopedURL) {
+                        self.vm.pendingArtData = Self.normalise(data)
+                    }
                 }
             }
         }

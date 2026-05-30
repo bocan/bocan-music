@@ -54,6 +54,32 @@ struct RedactionTests {
         let result = Redaction.sanitize([:])
         #expect(result.isEmpty)
     }
+
+    @Test("sanitize scrubs sensitive query params inside a URL value (#286)")
+    func sanitizeScrubsURLQueryParams() {
+        let fields: [String: Any] = [
+            "url": "https://api.example.com/lookup?token=abc123&duration=259&salt=xyz",
+        ]
+        let result = Redaction.sanitize(fields)
+        let sanitized = result["url"] ?? ""
+        #expect(!sanitized.contains("abc123"), "token value must be scrubbed from URL")
+        #expect(!sanitized.contains("xyz"), "salt value must be scrubbed from URL")
+        #expect(sanitized.contains("token=<redacted>"))
+        #expect(sanitized.contains("salt=<redacted>"))
+        #expect(sanitized.contains("duration=259"), "non-sensitive param must be preserved")
+    }
+
+    @Test("scrubURLQueryParams leaves non-URL strings unchanged")
+    func scrubURLQueryParamsNoop() {
+        let plain = "just a plain log message"
+        #expect(Redaction.scrubURLQueryParams(in: plain) == plain)
+    }
+
+    @Test("scrubURLQueryParams leaves safe params unchanged")
+    func scrubURLQueryParamsSafePreserved() {
+        let url = "https://example.com/lookup?format=json&duration=30"
+        #expect(Redaction.scrubURLQueryParams(in: url) == url)
+    }
 }
 
 // MARK: - LogCategory
