@@ -9,8 +9,14 @@ struct MiniPlayerVisualizer: View {
     @ObservedObject var vm: MiniPlayerViewModel
     @EnvironmentObject private var visualizerVM: VisualizerViewModel
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
+    @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
     @State private var dragPosition: Double?
+
+    private var reduceMotion: Bool {
+        self.systemReduceMotion || self.appReduceMotion
+    }
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
@@ -25,10 +31,16 @@ struct MiniPlayerVisualizer: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Full-bleed visualizer background
-            VisualizerHost(vm: self.visualizerVM)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityHidden(true)
+            // Full-bleed visualizer background — replaced with a static tint when reduce-motion is on.
+            if self.reduceMotion {
+                Color.bgSecondary
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityHidden(true)
+            } else {
+                VisualizerHost(vm: self.visualizerVM)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .accessibilityHidden(true)
+            }
 
             // Overlay gradient + controls (identical to MiniPlayerSquare)
             VStack(spacing: 0) {

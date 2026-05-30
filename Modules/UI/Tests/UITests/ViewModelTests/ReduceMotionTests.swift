@@ -1,4 +1,5 @@
 import AudioEngine
+import Foundation
 import Testing
 @testable import UI
 
@@ -93,5 +94,40 @@ struct ReduceMotionTests {
         #expect(vm.mode == .oscilloscope)
         #expect(vm.modeBeforeAutoSimplify == nil)
         #expect(vm.performanceToast == nil)
+    }
+
+    // MARK: - Source conventions (#302)
+
+    private var uiSourcesURL: URL {
+        URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/UI")
+    }
+
+    @Test("MiniPlayerVisualizer reads reduceMotion and uses a static fallback (#302)")
+    func miniPlayerVisualizerRespondsToReduceMotion() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("MiniPlayer/MiniPlayerVisualizer.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("reduceMotion"),
+            "MiniPlayerVisualizer must gate the animated VisualizerHost on reduceMotion"
+        )
+        #expect(
+            source.contains("accessibilityReduceMotion") || source.contains("appReduceMotion"),
+            "MiniPlayerVisualizer must read the reduce-motion preference from Environment or AppStorage"
+        )
+    }
+
+    @Test("NowPlayingStrip scrubber exposes adjustable-action semantics (#302)")
+    func nowPlayingStripScrubberHasAdjustableAction() throws {
+        let url = self.uiSourcesURL.appendingPathComponent("AppRoot/NowPlayingStrip.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("accessibilityAdjustableAction"),
+            "NowPlayingStrip scrubber must expose .accessibilityAdjustableAction for VoiceOver coarse seek"
+        )
     }
 }
