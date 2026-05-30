@@ -10,7 +10,7 @@ private struct AlbumCell: View {
     let trackCount: Int?
 
     var body: some View {
-        let displayArtist = self.artistName ?? "Various Artists"
+        let displayArtist = self.artistName ?? L10n.string("Various Artists")
         VStack(alignment: .leading, spacing: 4) {
             // Artwork — always a 1:1 square that fills the grid cell's width.
             // `Artwork` self-applies an aspect-ratio constraint so the loaded
@@ -18,12 +18,12 @@ private struct AlbumCell: View {
             Group {
                 if let path = album.coverArtPath {
                     Artwork(artPath: path, seed: Int(self.album.id ?? 0), size: Theme.albumGridMinWidth)
-                        .accessibilityLabel("\(self.album.title) artwork")
+                        .accessibilityLabel(L10n.string("\(self.album.title) artwork"))
                 } else {
                     GradientPlaceholder(seed: Int(self.album.id ?? 0))
                         .aspectRatio(1, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                        .accessibilityLabel("\(self.album.title) artwork placeholder")
+                        .accessibilityLabel(L10n.string("\(self.album.title) artwork placeholder"))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -42,7 +42,7 @@ private struct AlbumCell: View {
 
             // Year · track count
             let yearString = self.album.year.map { String($0) }
-            let countString = self.trackCount.map { "\($0) \($0 == 1 ? "song" : "songs")" }
+            let countString = self.trackCount.map { L10n.string("\($0) songs") }
             let subtitle = [yearString, countString].compactMap(\.self).joined(separator: " · ")
             if !subtitle.isEmpty {
                 Text(subtitle)
@@ -58,7 +58,7 @@ private struct AlbumCell: View {
                 .compactMap(\.self)
                 .joined(separator: ", ")
         )
-        .accessibilityHint("Double-tap to open album")
+        .accessibilityHint(L10n.string("Double-tap to open album"))
     }
 }
 
@@ -172,15 +172,15 @@ public struct AlbumsGridView: View {
                 if !activeQuery.isEmpty {
                     EmptyState(
                         symbol: "magnifyingglass",
-                        title: "No Results",
-                        message: "No albums match \u{201C}\(activeQuery)\u{201D}."
+                        title: L10n.string("No Results"),
+                        message: L10n.string("No albums match \u{201C}\(activeQuery)\u{201D}.")
                     )
                 } else {
                     EmptyState(
                         symbol: "square.grid.2x2",
-                        title: "No Albums",
-                        message: "Add a music folder to start building your library.",
-                        actionLabel: "Add Music Folder"
+                        title: L10n.string("No Albums"),
+                        message: L10n.string("Add a music folder to start building your library."),
+                        actionLabel: L10n.string("Add Music Folder")
                     ) {
                         Task { await self.library.addFolderByPicker() }
                     }
@@ -189,7 +189,7 @@ public struct AlbumsGridView: View {
                 self.albumGrid
             }
         }
-        .navigationTitle("Albums")
+        .navigationTitle(L10n.string("Albums"))
     }
 
     // MARK: - Grid
@@ -293,7 +293,7 @@ public struct AlbumsGridView: View {
         let ids = self.targetIDs(for: album)
         let multi = ids.count > 1
 
-        Button(multi ? "Play \(ids.count) Albums" : "Play Album") {
+        Button(L10n.string("Play \(ids.count) Albums")) {
             Task {
                 for id in ids {
                     await self.library.selectDestination(.album(id))
@@ -304,7 +304,7 @@ public struct AlbumsGridView: View {
 
         if !multi {
             Divider()
-            Toggle("Force Gapless Playback", isOn: Binding(
+            Toggle(L10n.string("Force Gapless Playback"), isOn: Binding(
                 get: { album.forceGapless },
                 set: { forced in
                     if let id = album.id {
@@ -312,7 +312,7 @@ public struct AlbumsGridView: View {
                     }
                 }
             ))
-            Toggle("Exclude from Shuffle", isOn: Binding(
+            Toggle(L10n.string("Exclude from Shuffle"), isOn: Binding(
                 get: { album.excludedFromShuffle },
                 set: { excluded in
                     if let id = album.id {
@@ -324,13 +324,13 @@ public struct AlbumsGridView: View {
 
         Divider()
         // Phase 4 audit L8: wire Get Info now that Phase 8 has shipped.
-        Button(multi ? "Get Info (\(ids.count) Albums)" : "Get Info") {
+        Button(L10n.string("Get Info (\(ids.count) Albums)")) {
             Task { await self.openInspector(forAlbumIDs: ids) }
         }
         .disabled(ids.isEmpty)
 
         Divider()
-        Button(multi ? "Remove \(ids.count) Albums from Library" : "Remove Album from Library", role: .destructive) {
+        Button(L10n.string("Remove \(ids.count) Albums from Library"), role: .destructive) {
             Task {
                 await RemoveFromLibraryConfirm.albums(
                     ids: ids, soleTitle: multi ? nil : album.title, library: self.library
