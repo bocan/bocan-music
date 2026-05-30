@@ -74,6 +74,29 @@ struct ScanCoordinatorTests {
         #expect(count >= 10, "Expected >= 10 tracks from sample-library, got \(count)")
     }
 
+    @Test("scanned tracks record the file's real size and mtime (#278)")
+    func scanRecordsAccurateFileAttributes() async throws {
+        let db = try await makeDB()
+        let coordinator = ScanCoordinator(database: db)
+        let dir = try sampleLibraryURL
+
+        await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { _ in }
+
+        let trackRepo = TrackRepository(database: db)
+        let tracks = try await trackRepo.fetchAll()
+        let track = try #require(tracks.first, "expected at least one imported track")
+
+        // size/mtime now come from the FileWalker's prefetched resourceValues
+        // rather than a second stat(2); they must still match the filesystem.
+        let fileURL = try #require(URL(string: track.fileURL))
+        let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
+        let realSize = try #require(attrs[.size] as? Int64)
+        let realMtime = try Int64(#require(attrs[.modificationDate] as? Date).timeIntervalSince1970)
+
+        #expect(track.fileSize == realSize, "stored size \(track.fileSize) != real \(realSize)")
+        #expect(track.fileMtime == realMtime, "stored mtime \(track.fileMtime) != real \(realMtime)")
+    }
+
     @Test("full scan emits processed event for each audio file")
     func fullScanEmitsProcessedEvents() async throws {
         let db = try await makeDB()

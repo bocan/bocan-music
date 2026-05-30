@@ -81,6 +81,9 @@ public enum FileWalker {
                 .isSymbolicLinkKey,
                 .isPackageKey,
                 .fileSizeKey,
+                // Prefetched so ScanCoordinator.importOne can read size + mtime
+                // straight from the URL cache instead of a second stat(2). #278.
+                .contentModificationDateKey,
             ],
             options: [.skipsSubdirectoryDescendants]
         ) else { return }

@@ -227,11 +227,13 @@ actor ScanCoordinator {
     ) async -> ImportResult {
         guard !Task.isCancelled else { return .skipped }
 
-        // File attributes
-        let fm = FileManager.default
-        let attrs = try? fm.attributesOfItem(atPath: url.path)
-        let size = (attrs?[.size] as? Int64) ?? 0
-        let mtime = Int64((attrs?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)
+        // File attributes. Prefer the values the FileWalker enumerator already
+        // prefetched onto this URL (size + mtime keys), so this is a cache hit
+        // rather than a fresh stat(2) per file; resourceValues falls back to a
+        // syscall only on a cache miss, so this never regresses. See #278.
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey])
+        let size = Int64(values?.fileSize ?? 0)
+        let mtime = Int64(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)
 
         // Change detection for quick scans
         if mode == .quick {
@@ -291,11 +293,18 @@ actor ScanCoordinator {
             coverArtCache: coverArtCache
         )
 
-        let bookmark = try? url.bookmarkData(
+        // Minting a security-scoped bookmark is an expensive per-file syscall.
+        // A known track (same file_url) already carries a valid bookmark for
+        // the same file, so reuse it and only mint a fresh one for genuinely
+        // new files (or a track that somehow lost its bookmark). A moved file
+        // arrives under a new path with no existing row, so it still gets a
+        // fresh bookmark. Stale-bookmark refresh stays on the edit path
+        // (MetadataEditService). See #278.
+        let bookmark = existingTrack?.fileBookmark ?? (try? url.bookmarkData(
             options: .withSecurityScope,
             includingResourceValuesForKeys: nil,
             relativeTo: nil
-        )
+        ))
 
         do {
             let id = try await importer.importTrack(
