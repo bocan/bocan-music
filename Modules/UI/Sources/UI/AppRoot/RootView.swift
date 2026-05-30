@@ -64,6 +64,16 @@ public struct BocanRootView: View {
         self.scrobbleSettingsVM = scrobbleSettingsVM
     }
 
+    /// `true` once the user has added any music source — a local folder or a
+    /// Subsonic server (including hidden ones). Used to hold the diagnostics
+    /// consent banner back until first launch's sole call to action ("Add Music")
+    /// has been satisfied, so the two prompts never compete (issue #310).
+    private var libraryHasContent: Bool {
+        !self.vm.libraryRoots.isEmpty
+            || !self.vm.subsonicServers.isEmpty
+            || !self.vm.hiddenSubsonicServers.isEmpty
+    }
+
     /// `true` while any modal sheet is presented over the main window.
     private var anySheetOpen: Bool {
         self.tagEditorVM != nil
@@ -169,8 +179,10 @@ public struct BocanRootView: View {
             // Start Fresh; never grabs focus so it can't cause an audio pop.
             if self.didCrashPreviously {
                 CrashRecoveryBanner()
-            } else if !self.diagnosticsConsentAsked {
-                // Non-modal first-launch consent prompt (issue #209).
+            } else if !self.diagnosticsConsentAsked, self.libraryHasContent {
+                // Non-modal first-launch consent prompt (issue #209), deferred
+                // until the user has added music so it doesn't compete with the
+                // empty-library "Add Music" call to action (issue #310).
                 DiagnosticsConsentBanner()
             }
         }
