@@ -41,6 +41,11 @@ final class MockTransport: Transport, @unchecked Sendable {
         self._continuation.yield(state)
     }
 
+    /// Ends the state stream so the VM's observation task can complete.
+    func finishState() {
+        self._continuation.finish()
+    }
+
     func load(_ url: URL) async throws {
         self.loadedURL = url
         self.emit(.loading)
@@ -79,6 +84,28 @@ final class MockTransport: Transport, @unchecked Sendable {
 struct NowPlayingViewModelTests {
     private func makeDatabase() async throws -> Database {
         try await Database(location: .inMemory)
+    }
+
+    @Test("VM tears down cleanly once its observation tasks complete (#279)")
+    func deallocatesWhenObservationCompletes() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+
+        weak var weakVM: NowPlayingViewModel?
+        do {
+            let vm = NowPlayingViewModel(engine: engine, database: db)
+            weakVM = vm
+            // Let the state-observation task start iterating engine.state.
+            try await Task.sleep(nanoseconds: 50_000_000)
+            #expect(weakVM != nil)
+            // Ending the stream lets the observation task finish and release the
+            // VM; deinit then cancels every stored handle. A retain cycle from
+            // the stored task handles would keep weakVM alive past this point.
+            engine.finishState()
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        try await Task.sleep(nanoseconds: 50_000_000)
+        #expect(weakVM == nil, "NowPlayingViewModel leaked after its observation task completed")
     }
 
     @Test("Initial state is idle/empty")
