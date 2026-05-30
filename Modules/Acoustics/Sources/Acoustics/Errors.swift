@@ -8,6 +8,7 @@ public enum AcousticsError: Error, Sendable, Equatable {
         case (.noResults, .noResults): true
         case let (.invalidResponse(l), .invalidResponse(r)): l == r
         case (.tagWritebackFailed, .tagWritebackFailed): true
+        case let (.invalidInput(l), .invalidInput(r)): l == r
         default: false
         }
     }
@@ -24,4 +25,6 @@ public enum AcousticsError: Error, Sendable, Equatable {
     case invalidResponse(reason: String)
     /// Applying the chosen candidate's tags to the file failed.
     case tagWritebackFailed(underlying: Error)
+    /// The supplied URL or path is not valid for the requested operation.
+    case invalidInput(reason: String)
 }

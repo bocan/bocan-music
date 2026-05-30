@@ -39,6 +39,34 @@ struct FingerprinterTests {
         #expect(dur == 180)
     }
 
+    // MARK: - Input validation (#294)
+
+    @Test("non-file URL throws invalidInput before touching fpcalc")
+    func nonFileURLThrows() async throws {
+        let fpcalc = URL(fileURLWithPath: "/nonexistent/fpcalc")
+        let fingerprinter = Fingerprinter(fpcalcURL: fpcalc)
+        let httpsURL = try #require(URL(string: "https://example.com/audio.mp3"))
+        await #expect(throws: AcousticsError.invalidInput(reason: "fpcalc requires a file URL, got: https")) {
+            try await fingerprinter.fingerprint(url: httpsURL)
+        }
+    }
+
+    @Test("path containing NUL byte throws invalidInput before touching fpcalc")
+    func nulBytePathThrows() async {
+        let fpcalc = URL(fileURLWithPath: "/nonexistent/fpcalc")
+        let fingerprinter = Fingerprinter(fpcalcURL: fpcalc)
+        // Build a URL whose decoded path contains a NUL via percent-encoding.
+        // URL(fileURLWithPath:) rejects embedded NUL in a String literal, so we
+        // construct the path programmatically.
+        var pathWithNul = "/tmp/audio"
+        pathWithNul.append(Character(UnicodeScalar(0)))
+        pathWithNul.append(contentsOf: ".mp3")
+        let nulURL = URL(fileURLWithPath: pathWithNul)
+        await #expect(throws: AcousticsError.invalidInput(reason: "file path contains a NUL byte")) {
+            try await fingerprinter.fingerprint(url: nulURL)
+        }
+    }
+
     // MARK: - Non-zero exit code
 
     @Test("fpcalcFailed is thrown when fpcalc binary is absent")
