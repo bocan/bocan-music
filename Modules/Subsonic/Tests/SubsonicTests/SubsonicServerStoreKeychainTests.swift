@@ -130,6 +130,34 @@ struct SubsonicServerStoreTests {
         }
     }
 
+    @Test("Keychain item retains kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly after update (#285)")
+    func updatePreservesAccessibility() async throws {
+        let (store, _) = try await makeStore()
+        let server = self.makeServer()
+        try await store.add(server, secret: "initial")
+        var updated = server
+        updated.name = "Rotated"
+        try await store.update(updated, newSecret: "rotated")
+
+        // Query with the expected accessibility class: if the update path set the
+        // attribute correctly, the item is findable under this class. If the update
+        // silently inherited a different class, the query would return errSecItemNotFound.
+        let accessibilityQuery: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: "io.cloudcauldron.bocan.subsonic",
+            kSecAttrAccount: server.keychainAccount,
+            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            kSecMatchLimit: kSecMatchLimitOne,
+        ]
+        var accessibilityResult: AnyObject?
+        let accessibilityStatus = SecItemCopyMatching(accessibilityQuery as CFDictionary, &accessibilityResult)
+        #expect(
+            accessibilityStatus == errSecSuccess,
+            "Keychain item not found with kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly after update; status=\(accessibilityStatus)"
+        )
+        try? await store.remove(id: server.id)
+    }
+
     @Test("migrateOrphans leaves live Keychain items in place")
     func migrateOrphansPreservesLive() async throws {
         let (store, _) = try await makeStore()
