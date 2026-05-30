@@ -4,6 +4,11 @@ import PackageDescription
 
 let package = Package(
     name: "UI",
+    // Required so SwiftPM treats Resources/Localizable.xcstrings as a localization
+    // resource and extracts/compiles strings for the module bundle (#314). Without
+    // it the catalog ships but the module's own LocalizedStringKey lookups can't
+    // resolve against it.
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v15),
     ],

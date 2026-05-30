@@ -171,9 +171,11 @@ struct VoiceOverTests {
     @Test("AlbumsGridView AlbumCell has accessibilityHint for opening album")
     func albumsGridViewHasOpenHint() throws {
         let source = try self.sourceContents(at: "Browse/AlbumsGridView.swift")
+        // Copy may be wrapped in L10n.string(...) for localization (#314); match the text itself.
         #expect(
-            source.contains("accessibilityHint(\"Double-tap to open album\")"),
-            "AlbumCell must declare accessibilityHint(\"Double-tap to open album\")"
+            source.contains("accessibilityHint(L10n.string(\"Double-tap to open album\"))")
+                || source.contains("accessibilityHint(\"Double-tap to open album\")"),
+            "AlbumCell must declare the Double-tap to open album accessibility hint"
         )
     }
 
