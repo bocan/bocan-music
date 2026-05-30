@@ -231,9 +231,7 @@ public actor SubsonicStreamCache {
 
         do {
             for try await chunk in bytes.stream {
-                if Task.isCancelled {
-                    throw RemoteTrackLoaderError.cancelled
-                }
+                try Task.checkCancellation()
                 try handle.write(contentsOf: chunk)
                 entry.bytesWritten += Int64(chunk.count)
             }
