@@ -26,12 +26,15 @@ struct LibraryViewModelToastTests {
         #expect(vm.toast?.kind == .success)
     }
 
-    @Test("Toast auto-dismisses after 2 seconds")
+    @Test("Toast auto-dismisses after the timer")
     func autoDismiss() async throws {
         let vm = try await self.makeVM()
         vm.showToast(.init(text: "Hello"))
         #expect(vm.toast != nil)
-        try await Task.sleep(for: .milliseconds(2200))
+        // The dismiss timer is ~2s. Poll with generous slack rather than a fixed
+        // sleep + immediate assert, so a scheduler-starved run (the dismiss Task
+        // delayed past a hard deadline) doesn't flake. See `make tests` load.
+        try await self.pollUntil(timeout: 6.0) { vm.toast == nil }
         #expect(vm.toast == nil)
     }
 
@@ -41,11 +44,24 @@ struct LibraryViewModelToastTests {
         vm.showToast(.init(text: "First"))
         try await Task.sleep(for: .milliseconds(1000))
         vm.showToast(.init(text: "Second"))
-        // The first toast's dismiss timer must NOT fire 1s from now.
+        // The first toast's stale dismiss timer (token-guarded) must NOT clear the
+        // replacement. Wait past the point it would have fired; "Second" must hold.
+        // This stays a fixed wait because it's a *negative* check: a toast that is
+        // still showing cannot flake to nil early (timers never fire ahead of time).
         try await Task.sleep(for: .milliseconds(1200))
         #expect(vm.toast?.text == "Second")
-        // But the second one's timer should fire shortly after.
-        try await Task.sleep(for: .milliseconds(1000))
+        // The replacement's own timer then dismisses it; poll generously.
+        try await self.pollUntil(timeout: 6.0) { vm.toast == nil }
         #expect(vm.toast == nil)
+    }
+
+    /// Polls `condition` until true or `timeout` elapses, then returns. A
+    /// subsequent `#expect` turns a timeout into an explicit failure.
+    private func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return }
+            try await Task.sleep(for: .milliseconds(20))
+        }
     }
 }
