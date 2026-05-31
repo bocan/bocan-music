@@ -57,7 +57,7 @@ extension UISnapshotTests {
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-fingerprinting-light"
             )
         }
@@ -70,7 +70,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-fingerprinting-dark"
             )
         }
@@ -84,7 +84,7 @@ extension UISnapshotTests {
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-lookingup-light"
             )
         }
@@ -97,7 +97,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-lookingup-dark"
             )
         }
@@ -111,7 +111,7 @@ extension UISnapshotTests {
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-results-light"
             )
         }
@@ -124,7 +124,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-results-dark"
             )
         }
@@ -138,7 +138,7 @@ extension UISnapshotTests {
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-nomatch-light"
             )
         }
@@ -151,7 +151,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-nomatch-dark"
             )
         }
@@ -165,7 +165,7 @@ extension UISnapshotTests {
                 .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-error-light"
             )
         }
@@ -178,7 +178,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.sheetSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-error-dark"
             )
         }

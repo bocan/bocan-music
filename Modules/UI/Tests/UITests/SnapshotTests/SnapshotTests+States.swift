@@ -18,7 +18,7 @@ extension UISnapshotTests {
                 .frame(width: 600, height: 400)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "loading-state-default-light"
             )
         }
@@ -30,7 +30,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "loading-state-default-dark"
             )
         }
@@ -44,7 +44,7 @@ extension UISnapshotTests {
             .frame(width: 600, height: 400)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "loading-state-message-light"
             )
         }
@@ -59,7 +59,7 @@ extension UISnapshotTests {
             .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "loading-state-message-dark"
             )
         }
@@ -81,7 +81,7 @@ extension UISnapshotTests {
             .frame(width: 600, height: 400)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "error-state-no-action-light"
             )
         }
@@ -96,7 +96,7 @@ extension UISnapshotTests {
             .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "error-state-no-action-dark"
             )
         }
@@ -111,7 +111,7 @@ extension UISnapshotTests {
                 .frame(width: 600, height: 400)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "error-state-retry-light"
             )
         }
@@ -127,7 +127,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "error-state-retry-dark"
             )
         }

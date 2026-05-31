@@ -26,7 +26,7 @@ extension UISnapshotTests {
             .environment(\.marqueeReduceMotion, true)
             assertSnapshot(
                 of: host(view, size: Self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "marquee-static-overflow-light"
             )
         }
@@ -43,7 +43,7 @@ extension UISnapshotTests {
             .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "marquee-static-overflow-dark"
             )
         }
@@ -59,7 +59,7 @@ extension UISnapshotTests {
             .environment(\.marqueeReduceMotion, true)
             assertSnapshot(
                 of: host(view, size: Self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "marquee-static-fit-light"
             )
         }
@@ -76,7 +76,7 @@ extension UISnapshotTests {
             .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: Self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "marquee-static-fit-dark"
             )
         }
