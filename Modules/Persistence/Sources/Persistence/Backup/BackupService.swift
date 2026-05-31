@@ -139,11 +139,17 @@ public struct BackupService: Sendable {
     /// Deletes the oldest `library-*.sqlite` files in `dir`, keeping `keepLast`.
     private func pruneBackups(in dir: URL, keepLast: Int) {
         let fm = FileManager.default
-        guard let items = try? fm.contentsOfDirectory(
-            at: dir,
-            includingPropertiesForKeys: [.creationDateKey],
-            options: []
-        ) else { return }
+        let items: [URL]
+        do {
+            items = try fm.contentsOfDirectory(
+                at: dir,
+                includingPropertiesForKeys: [.creationDateKey],
+                options: []
+            )
+        } catch {
+            self.log.warning("backup.prune.list.failed", ["error": String(reflecting: error)])
+            return
+        }
         let backups = items
             .filter { $0.lastPathComponent.hasPrefix("library-") && $0.pathExtension == "sqlite" }
             .sorted {
@@ -152,7 +158,11 @@ public struct BackupService: Sendable {
                 return ld > rd // newest first
             }
         for old in backups.dropFirst(keepLast) {
-            try? fm.removeItem(at: old)
+            do {
+                try fm.removeItem(at: old)
+            } catch {
+                self.log.warning("backup.prune.remove.failed", ["file": old.lastPathComponent, "error": String(reflecting: error)])
+            }
             self.log.debug("backup.pruned", ["file": old.lastPathComponent])
         }
     }
