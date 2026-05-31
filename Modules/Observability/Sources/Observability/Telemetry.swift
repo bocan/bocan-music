@@ -1,4 +1,4 @@
-@preconcurrency import os
+import os
 
 /// Lightweight telemetry helpers backed by `OSSignposter` for Instruments integration.
 ///
