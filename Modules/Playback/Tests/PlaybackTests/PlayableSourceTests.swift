@@ -166,7 +166,9 @@ struct QueuePersistenceMigrationTests {
     @Test("v2 round-trip preserves a mix of local and subsonic sources")
     func roundTripV2() async throws {
         let db = try await Database(location: .inMemory)
-        let persistence = QueuePersistence(database: db)
+        // Collapse the debounce so the save fires promptly; await the actual
+        // in-flight task rather than sleeping past a guessed window (#323).
+        let persistence = QueuePersistence(database: db, debounce: .milliseconds(1))
 
         let serverID = UUID()
         let items: [QueueItem] = [
@@ -179,8 +181,7 @@ struct QueuePersistenceMigrationTests {
             items: items, currentIndex: 1,
             repeatMode: .all, shuffleState: .off
         )
-        // Wait past the 2 s debounce.
-        try await Task.sleep(nanoseconds: 2_300_000_000)
+        await persistence._awaitPendingSaveForTesting()
 
         let restored = await persistence.restore()
         let restoredItems = try #require(restored?.items)
@@ -248,8 +249,9 @@ struct QueuePersistenceMigrationTests {
         #expect(items[0].trackID == 7)
         #expect(items[0].playableSource == .localBookmark(Data()))
 
-        // The migration save runs through the 2 s debounced path; wait for it.
-        try await Task.sleep(nanoseconds: 2_300_000_000)
+        // The v1->v2 migration flush is awaited inline inside restore() (it does
+        // not go through the debounced scheduleSave path), so by the time restore
+        // returns the v1 key is already cleared and v2 written. No wait needed.
 
         // V1 key is gone, V2 key is populated.
         let v1Probe: Data? = try await repo.get(Data.self, for: QueuePersistence.settingsKeyV1)
