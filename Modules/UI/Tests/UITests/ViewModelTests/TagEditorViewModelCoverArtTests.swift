@@ -36,7 +36,6 @@ struct TagEditorViewModelCoverArtTests {
     }
 
     private func makeCandidate(id: String = "c1") -> CoverArtCandidate {
-        // swiftlint:disable:next force_unwrapping
         let url = URL(string: "https://example.com/art.jpg")!
         return CoverArtCandidate(
             id: id,
