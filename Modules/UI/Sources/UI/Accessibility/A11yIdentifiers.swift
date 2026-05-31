@@ -20,6 +20,7 @@ public enum A11y {
         public static let recentlyAdded = "sidebar.recentlyAdded"
         public static let recentlyPlayed = "sidebar.recentlyPlayed"
         public static let mostPlayed = "sidebar.mostPlayed"
+        public static let addFolderButton = "sidebar.addFolder"
     }
 
     // MARK: - Tracks table

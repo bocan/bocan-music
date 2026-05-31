@@ -39,7 +39,13 @@ public struct Sidebar: View {
                     isExpanded: Binding(
                         get: { self.vm.sectionExpansion.localLibrary },
                         set: { self.vm.sectionExpansion.localLibrary = $0 }
-                    )
+                    ),
+                    // Persistent "Add Folder" entry point, so adding music is reachable
+                    // from any destination (not only the empty state / File menu) (#308).
+                    action: .init(
+                        title: "Add Folder",
+                        identifier: A11y.Sidebar.addFolderButton
+                    ) { Task { await self.vm.addFolderByPicker() } }
                 )
             }
 
