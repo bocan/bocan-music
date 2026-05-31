@@ -84,7 +84,7 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 - Every bug fix begins with a failing regression test.
 - UI: **swift-snapshot-testing** for every view, in light and dark mode, at representative sizes.
 - Property-based tests (swift-testing's `arguments:` or hand-rolled) for anything with interesting algebra (queue ops, criteria compiler, LRC parser, etc.).
-- Fixtures live in `Tests/Fixtures/` at repo root. Never generate fixtures at test time unless deterministic.
+- Fixtures live alongside the module that uses them, under `Modules/<Module>/Tests/<Module>Tests/Fixtures/` (e.g. `Modules/Metadata/Tests/MetadataTests/Fixtures/`). Keep a fixture in the SPM package whose tests consume it so `swift test` and the per-module `make test-<module>` gate pick it up as a bundle resource. Never generate fixtures at test time unless deterministic.
 - Tests must not hit the network. Use a `URLProtocol` stub or a protocol-based HTTP client mock.
 
 ## Linting & formatting
