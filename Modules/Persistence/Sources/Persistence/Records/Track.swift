@@ -7,7 +7,7 @@ import GRDB
 /// Unix epoch seconds (`Int64`).  `rating` is 0–100 for future half-star UI support.
 /// `file_url` is stored as a Unicode-normalised (`precomposedStringWithCanonicalMapping`)
 /// string to avoid phantom duplicates on APFS.
-public struct Track: Codable, FetchableRecord, MutablePersistableRecord, Sendable {
+public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableRecord, Sendable {
     // MARK: - Table
 
     /// The database table name.
