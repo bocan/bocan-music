@@ -139,6 +139,17 @@ public struct TrackRepository: Sendable {
         }
     }
 
+    /// Emits the `Track` row for `id` (or `nil` if absent) immediately and on
+    /// every subsequent change.
+    ///
+    /// Used by the songs table to reflect a live `play_count` / `last_played_at`
+    /// bump on the now-playing track without reloading the whole destination.
+    public func observe(id: Int64) async -> AsyncThrowingStream<Track?, Error> {
+        await self.database.observe { db in
+            try Track.fetchOne(db, key: id)
+        }
+    }
+
     /// Fetches all tracks, newest first.
     public func fetchAll() async throws -> [Track] {
         try await self.database.read { db in

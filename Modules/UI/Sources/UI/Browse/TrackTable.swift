@@ -204,19 +204,12 @@ public struct TrackTable: NSViewRepresentable {
             let animated = coordinator.hasAppliedInitialSnapshot && !self.rows.isEmpty
             dataSource.apply(snapshot, animatingDifferences: animated)
             coordinator.hasAppliedInitialSnapshot = true
-        } else if coordinator.lastNowPlayingID != self.nowPlayingTrackID {
-            // 2 — Only now-playing changed: reconfigure just the affected rows.
-            coordinator.updateRows(self.rows)
-            var snapshot = dataSource.snapshot()
-            var toReconfigure: [Int64] = []
-            if let old = coordinator.lastNowPlayingID, let oldID = old { toReconfigure.append(oldID) }
-            if let new = self.nowPlayingTrackID, let newID = new { toReconfigure.append(newID) }
-            let existing = Set(snapshot.itemIdentifiers(inSection: 0))
-            let valid = toReconfigure.filter { existing.contains($0) }
-            if !valid.isEmpty {
-                snapshot.reloadItems(valid)
-                dataSource.apply(snapshot, animatingDifferences: false)
-            }
+        } else {
+            // 2 — Same ID set: reconfigure rows whose displayed content changed
+            // (love toggled, play count bumped, rating, in-place tag edits) and
+            // the rows gaining or losing the now-playing highlight.  Without
+            // this the NSTableView keeps rendering stale cells until a reload.
+            self.reconfigureChangedRows(coordinator: coordinator, dataSource: dataSource)
         }
         coordinator.lastNowPlayingID = self.nowPlayingTrackID
 
@@ -250,6 +243,40 @@ public struct TrackTable: NSViewRepresentable {
 
         // 7 — Scroll to the now-playing track when requested.
         self.applyScrollIfNeeded(coordinator: coordinator, tableView: tableView)
+    }
+
+    /// Reloads only the rows whose rendered content changed (or whose
+    /// now-playing highlight is gained/lost) while the set of track IDs is
+    /// unchanged.  `reloadItems` re-runs the cell provider for those identifiers
+    /// without disturbing the row order, selection, or scroll position.
+    private func reconfigureChangedRows(
+        coordinator: TrackTableCoordinator,
+        dataSource: TrackDiffableDataSource
+    ) {
+        let oldRowsByID = coordinator.rowsByID
+        var changed: [Int64] = []
+        for row in self.rows {
+            guard let id = row.id else { continue }
+            if let old = oldRowsByID[id], !old.hasSameContent(as: row) {
+                changed.append(id)
+            }
+        }
+        // The now-playing highlight depends on `nowPlayingTrackID`, not on row
+        // content, so the outgoing and incoming now-playing rows must refresh
+        // too — even when their underlying values are identical.
+        if coordinator.lastNowPlayingID != self.nowPlayingTrackID {
+            if let old = coordinator.lastNowPlayingID, let oldID = old { changed.append(oldID) }
+            if let new = self.nowPlayingTrackID, let newID = new { changed.append(newID) }
+        }
+        coordinator.updateRows(self.rows)
+        guard !changed.isEmpty else { return }
+        var snapshot = dataSource.snapshot()
+        let existing = Set(snapshot.itemIdentifiers(inSection: 0))
+        var seen = Set<Int64>()
+        let valid = changed.filter { existing.contains($0) && seen.insert($0).inserted }
+        guard !valid.isEmpty else { return }
+        snapshot.reloadItems(valid)
+        dataSource.apply(snapshot, animatingDifferences: false)
     }
 
     private func applyScrollIfNeeded(coordinator: TrackTableCoordinator, tableView: NSTableView) {
