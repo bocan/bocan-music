@@ -25,7 +25,7 @@ extension UISnapshotTests {
                 .frame(width: self.size.width, height: self.size.height)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-chip-local-light"
             )
         }
@@ -39,7 +39,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-chip-local-dark"
             )
         }
@@ -54,7 +54,7 @@ extension UISnapshotTests {
                 .frame(width: self.size.width, height: self.size.height)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-chip-airplay-light"
             )
         }
@@ -68,7 +68,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-chip-airplay-dark"
             )
         }
@@ -94,7 +94,7 @@ extension UISnapshotTests {
                 .frame(width: self.size.width, height: self.size.height)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-picker-local-light"
             )
         }
@@ -108,7 +108,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-picker-local-dark"
             )
         }
@@ -121,7 +121,7 @@ extension UISnapshotTests {
                 .frame(width: self.size.width, height: self.size.height)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-picker-airplay-light"
             )
         }
@@ -135,7 +135,7 @@ extension UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: self.size),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "route-picker-airplay-dark"
             )
         }

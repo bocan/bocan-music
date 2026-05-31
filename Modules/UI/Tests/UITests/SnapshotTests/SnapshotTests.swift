@@ -26,8 +26,15 @@ func host(_ view: some View, size: CGSize) -> NSView {
 ///
 /// Snapshot tests are disabled on CI because pixel-level SwiftUI/AppKit
 /// rendering differs subtly between developer Macs and GitHub-hosted runners
-/// (font hinting, GPU, color profile), producing false positives even at 98%
-/// precision. They remain a local visual-regression guardrail.
+/// (font hinting, GPU, color profile). All assertions now use a
+/// `perceptualPrecision` tolerance (which forgives anti-aliasing / font-hinting
+/// differences), so they are much closer to being CI-safe — but the reference
+/// images were recorded on a developer Mac.
+///
+/// To turn the CI gate on (issue #320): on the pinned `macos-26` CI runner, do
+/// one record run (`SNAPSHOT_TESTING_RECORD=all`) to regenerate the reference
+/// PNGs against the runner's renderer, commit them, then delete the
+/// `.disabled(if: …CI…)` below. Until then they stay a local-only guardrail.
 @Suite(
     "UI Snapshots",
     .serialized,
@@ -53,7 +60,7 @@ struct UISnapshotTests {
             let view = Sidebar(vm: vm).frame(width: 220, height: 600)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 220, height: 600)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "sidebar-light"
             )
         }
@@ -64,7 +71,7 @@ struct UISnapshotTests {
             let view = Sidebar(vm: vm).frame(width: 220, height: 600).colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 220, height: 600)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "sidebar-dark"
             )
         }
@@ -94,7 +101,7 @@ struct UISnapshotTests {
                 .environmentObject(vizVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
-            assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-idle-light")
+            assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98, perceptualPrecision: 0.98), named: "strip-idle-light")
         }
 
         @Test("Strip idle dark mode")
@@ -107,7 +114,7 @@ struct UISnapshotTests {
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
                 .colorScheme(.dark)
-            assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-idle-dark")
+            assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98, perceptualPrecision: 0.98), named: "strip-idle-dark")
         }
 
         @Test("Strip with track light mode")
@@ -133,7 +140,11 @@ struct UISnapshotTests {
                 .environmentObject(vizVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
-            assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98), named: "strip-with-track-light")
+            assertSnapshot(
+                of: host(view, size: size),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "strip-with-track-light"
+            )
         }
     }
 
@@ -161,7 +172,7 @@ struct UISnapshotTests {
                 .frame(width: 900, height: 500)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 900, height: 500)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "tracks-empty-light"
             )
         }
@@ -174,7 +185,7 @@ struct UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 900, height: 500)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "tracks-empty-dark"
             )
         }
@@ -194,7 +205,7 @@ struct UISnapshotTests {
                 .frame(width: 900, height: 600)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 900, height: 600)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "albums-empty-light"
             )
         }
@@ -209,7 +220,7 @@ struct UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 900, height: 600)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "albums-empty-dark"
             )
         }
@@ -239,7 +250,7 @@ struct UISnapshotTests {
                 .frame(width: 400, height: 200)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 400, height: 200)),
-                as: .image(precision: 0.95),
+                as: .image(precision: 0.95, perceptualPrecision: 0.98),
                 named: "viz-spectrum-bars-light"
             )
         }
@@ -254,7 +265,7 @@ struct UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 400, height: 200)),
-                as: .image(precision: 0.95),
+                as: .image(precision: 0.95, perceptualPrecision: 0.98),
                 named: "viz-spectrum-bars-dark"
             )
         }
@@ -268,7 +279,7 @@ struct UISnapshotTests {
                 .frame(width: 400, height: 200)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 400, height: 200)),
-                as: .image(precision: 0.95),
+                as: .image(precision: 0.95, perceptualPrecision: 0.98),
                 named: "viz-oscilloscope-light"
             )
         }
@@ -283,7 +294,7 @@ struct UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 400, height: 200)),
-                as: .image(precision: 0.95),
+                as: .image(precision: 0.95, perceptualPrecision: 0.98),
                 named: "viz-oscilloscope-dark"
             )
         }
@@ -363,7 +374,7 @@ struct UISnapshotTests {
                 .frame(width: 600, height: 400)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 600, height: 400)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "playlist-folder-children-light"
             )
         }
@@ -376,7 +387,7 @@ struct UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 600, height: 400)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "playlist-folder-children-dark"
             )
         }
@@ -388,7 +399,7 @@ struct UISnapshotTests {
                 .frame(width: 600, height: 400)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 600, height: 400)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "playlist-folder-empty-light"
             )
         }
@@ -401,7 +412,7 @@ struct UISnapshotTests {
                 .colorScheme(.dark)
             assertSnapshot(
                 of: host(view, size: CGSize(width: 600, height: 400)),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "playlist-folder-empty-dark"
             )
         }

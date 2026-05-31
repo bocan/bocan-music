@@ -47,7 +47,7 @@ extension UISnapshotTests {
                 .frame(width: Self.stripSize.width, height: Self.stripSize.height)
             assertSnapshot(
                 of: host(view, size: Self.stripSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "strip-high-contrast-light"
             )
         }
@@ -64,7 +64,7 @@ extension UISnapshotTests {
                 .frame(width: Self.stripSize.width, height: Self.stripSize.height)
             assertSnapshot(
                 of: host(view, size: Self.stripSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "strip-high-contrast-dark"
             )
         }
@@ -82,7 +82,7 @@ extension UISnapshotTests {
                 .frame(width: Self.compactSize.width, height: Self.compactSize.height)
             assertSnapshot(
                 of: host(view, size: Self.compactSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "compact-high-contrast-light"
             )
         }
@@ -99,7 +99,7 @@ extension UISnapshotTests {
                 .frame(width: Self.compactSize.width, height: Self.compactSize.height)
             assertSnapshot(
                 of: host(view, size: Self.compactSize),
-                as: .image(precision: 0.98),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "compact-high-contrast-dark"
             )
         }
