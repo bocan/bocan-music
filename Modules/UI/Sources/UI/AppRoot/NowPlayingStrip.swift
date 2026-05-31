@@ -192,7 +192,7 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(
                 self.vm.nowPlayingIsLoved
-                    ? Color(red: 1.0, green: 0.176, blue: 0.333)
+                    ? Color.lovedTint
                     : (self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
             )
             .disabled(self.vm.nowPlayingTrackID == nil)

@@ -77,7 +77,7 @@ final class ShuffleCheckCell: NSTableCellView {
 /// Shows a filled red heart when loved and a faint outline heart when not.
 /// Clicking the cell toggles the loved state on just that one track.
 final class LoveButtonCell: NSTableCellView {
-    private static let lovedColor = NSColor(red: 1.0, green: 0.176, blue: 0.333, alpha: 1.0)
+    private static let lovedColor = NSColor(Color.lovedTint)
 
     private let button = NSButton(frame: .zero)
     private var track: Track?
