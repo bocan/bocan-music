@@ -209,9 +209,17 @@ public actor SubsonicService {
             let raw = try await client.loadCapabilities()
             let advertised = SubsonicCapabilities.from(raw)
             let caps = await self.probeLegacyCoreCapabilities(advertised, serverID: serverID)
-            let previous = try? await self.persistedCapabilities(serverID: serverID)
+            let previous: SubsonicCapabilities?
+            do { previous = try await self.persistedCapabilities(serverID: serverID) } catch {
+                self.log.warning("subsonic.capabilities.persist.read.failed", ["error": String(reflecting: error)])
+                previous = nil
+            }
             self.clients[serverID]?.capabilities = caps
-            try? await self.persistCapabilities(caps, serverID: serverID)
+            do {
+                try await self.persistCapabilities(caps, serverID: serverID)
+            } catch {
+                self.log.warning("subsonic.capabilities.persist.write.failed", ["error": String(reflecting: error)])
+            }
             if previous?.hasSameCapabilityFlags(as: caps) != true {
                 self.capabilityContinuation.yield(serverID)
             }
@@ -241,9 +249,17 @@ public actor SubsonicService {
             let raw = try await client.refreshCapabilities()
             let advertised = SubsonicCapabilities.from(raw)
             let caps = await self.probeLegacyCoreCapabilities(advertised, serverID: serverID)
-            let previous = try? await self.persistedCapabilities(serverID: serverID)
+            let previous: SubsonicCapabilities?
+            do { previous = try await self.persistedCapabilities(serverID: serverID) } catch {
+                self.log.warning("subsonic.capabilities.persist.read.failed", ["error": String(reflecting: error)])
+                previous = nil
+            }
             self.clients[serverID]?.capabilities = caps
-            try? await self.persistCapabilities(caps, serverID: serverID)
+            do {
+                try await self.persistCapabilities(caps, serverID: serverID)
+            } catch {
+                self.log.warning("subsonic.capabilities.persist.write.failed", ["error": String(reflecting: error)])
+            }
             if previous?.hasSameCapabilityFlags(as: caps) != true {
                 self.capabilityContinuation.yield(serverID)
             }
@@ -527,7 +543,11 @@ public actor SubsonicService {
         caps.markUnsupported(feature)
         guard !before.hasSameCapabilityFlags(as: caps) else { return }
         self.clients[serverID]?.capabilities = caps
-        try? await self.persistCapabilities(caps, serverID: serverID)
+        do {
+            try await self.persistCapabilities(caps, serverID: serverID)
+        } catch {
+            self.log.warning("subsonic.capabilities.persist.write.failed", ["error": String(reflecting: error)])
+        }
         self.capabilityContinuation.yield(serverID)
         self.log.info(
             "subsonic.capability.revoked",
@@ -556,7 +576,12 @@ public actor SubsonicService {
     private func persistedCapabilities(serverID: UUID) async throws -> SubsonicCapabilities? {
         guard let server = try await self.store.fetch(id: serverID),
               let data = server.cachedCapabilitiesJSON else { return nil }
-        return try? JSONDecoder().decode(SubsonicCapabilities.self, from: data)
+        do {
+            return try JSONDecoder().decode(SubsonicCapabilities.self, from: data)
+        } catch {
+            self.log.warning("subsonic.capabilities.decode.failed", ["server": serverID.uuidString, "error": String(reflecting: error)])
+            return nil
+        }
     }
 
     /// Persists a fresh capability snapshot to the store.
