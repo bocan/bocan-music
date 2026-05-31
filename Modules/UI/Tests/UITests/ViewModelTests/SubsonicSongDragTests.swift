@@ -26,11 +26,11 @@ struct SubsonicSongDragTests {
 
     @Test("Payload encodes to a pasteboard item and decodes back (#332)")
     func pasteboardRoundTrip() throws {
-        let a = self.payload(songID: "a", title: "A")
-        let b = self.payload(songID: "b", title: "B")
-        let item = try #require(SubsonicSongDrag.pasteboardItem(for: [a, b]))
+        let first = self.payload(songID: "a", title: "A")
+        let second = self.payload(songID: "b", title: "B")
+        let item = try #require(SubsonicSongDrag.pasteboardItem(for: [first, second]))
         let decoded = SubsonicSongDrag.payloads(from: [item])
-        #expect(decoded == [a, b])
+        #expect(decoded == [first, second])
     }
 
     @Test("An empty payload list produces no pasteboard item (#332)")
@@ -47,8 +47,8 @@ struct SubsonicSongDragTests {
 
     @Test("makeSubsonic(from payload:) builds a .subsonic queue item (#332)")
     func makesSubsonicQueueItem() {
-        let p = self.payload(songID: "song-42", title: "Faded")
-        let item = QueueItem.makeSubsonic(from: p)
+        let payload = self.payload(songID: "song-42", title: "Faded")
+        let item = QueueItem.makeSubsonic(from: payload)
 
         #expect(item.trackID == -1)
         #expect(item.title == "Faded")
@@ -60,7 +60,7 @@ struct SubsonicSongDragTests {
             Issue.record("Expected a .subsonic playable source, got \(item.playableSource)")
             return
         }
-        #expect(serverID == p.serverID)
+        #expect(serverID == payload.serverID)
         #expect(songID == "song-42")
     }
 }
