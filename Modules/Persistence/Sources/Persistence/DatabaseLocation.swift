@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 
 /// Resolves the filesystem path for the SQLite database file.
 ///
@@ -38,11 +39,18 @@ public enum DatabaseLocation: Sendable {
         ).first ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
 
         let dir = base.appendingPathComponent("Bocan", isDirectory: true)
-        try? FileManager.default.createDirectory(
-            at: dir,
-            withIntermediateDirectories: true,
-            attributes: nil
-        )
+        do {
+            try FileManager.default.createDirectory(
+                at: dir,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+        } catch {
+            AppLogger.make(.persistence).warning(
+                "db.directory.create.failed",
+                ["error": String(reflecting: error)]
+            )
+        }
         return dir.appendingPathComponent("library.sqlite")
     }
 }
