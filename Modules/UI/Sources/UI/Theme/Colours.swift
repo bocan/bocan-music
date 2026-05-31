@@ -93,6 +93,19 @@ extension Color {
 
     /// Heart / loved tint.  Light: #FF2D55  Dark: #FF375F
     static let lovedTint = Color(adaptiveLight: 1.000, 0.176, 0.333, dark: 1.000, 0.216, 0.373)
+
+    /// Warning / attention tint (scrobble-pending indicator, etc.).
+    ///
+    /// Light: #CC5900 — deepened amber so the sRGB luminance is low enough to
+    /// achieve ≥ 3 : 1 against warm-cream `bgPrimary` (#FAF8F5, L ≈ 0.941).
+    /// Approx 3.6 : 1. ✓
+    ///
+    /// Dark: #FFB200 — bright golden amber; ≈ 9.9 : 1 on dark `bgPrimary`. ✓
+    static let warningTint = Color(adaptiveLight: 0.800, 0.350, 0.000, dark: 1.000, 0.700, 0.000)
+
+    /// Star / favourite tint.  Shares the `ratingFill` palette so that Subsonic
+    /// stars and local rating stars render identically.
+    static let starTint = ratingFill
 }
 
 // MARK: - Private convenience initialiser

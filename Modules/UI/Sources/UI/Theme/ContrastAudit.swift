@@ -60,6 +60,8 @@ public struct ContrastAuditView: View {
         AuditPair(label: "ratingFill / bgPrimary", fg: .ratingFill, bg: .bgPrimary, threshold: 3.0),
         AuditPair(label: "lovedTint / bgPrimary", fg: .lovedTint, bg: .bgPrimary, threshold: 3.0),
         AuditPair(label: "accentColor / bgPrimary", fg: .accentColor, bg: .bgPrimary, threshold: 3.0),
+        AuditPair(label: "warningTint / bgPrimary", fg: .warningTint, bg: .bgPrimary, threshold: 3.0),
+        AuditPair(label: "starTint / bgPrimary", fg: .starTint, bg: .bgPrimary, threshold: 3.0),
     ]
 
     public init() {}

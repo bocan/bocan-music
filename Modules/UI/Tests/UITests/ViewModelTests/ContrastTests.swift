@@ -161,6 +161,34 @@ struct ContrastTests {
         #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
     }
 
+    // MARK: warningTint — non-text (≥ 3.0)
+
+    @Test("warningTint / bgPrimary light >= 3.0")
+    func warningTintOnBgPrimaryLight() {
+        let r = self.ratio(.warningTint, .bgPrimary, appearance: .aqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    @Test("warningTint / bgPrimary dark >= 3.0")
+    func warningTintOnBgPrimaryDark() {
+        let r = self.ratio(.warningTint, .bgPrimary, appearance: .darkAqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    // MARK: starTint — non-text (≥ 3.0)
+
+    @Test("starTint / bgPrimary light >= 3.0")
+    func starTintOnBgPrimaryLight() {
+        let r = self.ratio(.starTint, .bgPrimary, appearance: .aqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    @Test("starTint / bgPrimary dark >= 3.0")
+    func starTintOnBgPrimaryDark() {
+        let r = self.ratio(.starTint, .bgPrimary, appearance: .darkAqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
     // MARK: Accent palette checkmarks — non-text (≥ 3.0)
 
     @Test("AccentPalette labelColor achieves ≥ 3.0 on every swatch")
