@@ -258,7 +258,9 @@ public final class NowPlayingViewModel {
     /// Skips to the next track (no-op if engine is not a QueuePlayer).
     public func next() async {
         guard let qp = engine as? QueuePlayer else { return }
-        do { try await qp.next() } catch {}
+        do { try await qp.next() } catch {
+            self.log.error("transport.next.failed", ["error": String(reflecting: error)])
+        }
     }
 
     /// Toggles shuffle on the queue player.

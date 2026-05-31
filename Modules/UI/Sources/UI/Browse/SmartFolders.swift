@@ -1,3 +1,4 @@
+import Observability
 import Persistence
 import SwiftUI
 
@@ -37,7 +38,12 @@ public struct SmartFolderView: View {
                         result = []
                     }
                     self.vm.setTracks(result)
-                } catch {}
+                } catch {
+                    AppLogger.make(.ui).error(
+                        "smartfolder.load.failed",
+                        ["destination": String(describing: self.destination), "error": String(reflecting: error)]
+                    )
+                }
             }
     }
 }

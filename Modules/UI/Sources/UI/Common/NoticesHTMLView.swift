@@ -27,6 +27,8 @@ public struct NoticesHTMLView: View {
 
 // MARK: - _NoticesWebView
 
+/// NSViewRepresentable wrapping WKWebView because SwiftUI has no equivalent
+/// that can render arbitrary HTML with inline CSS and dark-mode media queries.
 private struct _NoticesWebView: NSViewRepresentable {
     let html: String
 

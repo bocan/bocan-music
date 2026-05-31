@@ -7,8 +7,7 @@ import SwiftUI
 /// The 72pt-tall transport bar anchored at the bottom of every main view.
 ///
 /// Shows current track artwork, title/artist/album, play/pause and scrubber,
-/// and a volume slider.  Prev/Next buttons are present but disabled until
-/// Phase 5 introduces the queue.
+/// and a volume slider.
 public struct NowPlayingStrip: View {
     public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
