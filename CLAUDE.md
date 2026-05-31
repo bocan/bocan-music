@@ -74,7 +74,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 ## Commits
 
 Document new features in README.md and in the repo's /website pages. NEVER use em dashes (—) in commit messages or markdown, or the website.
-After any logical change, run `make format`, `make lint` and `make test-coverage` to ensure standards are met before committing.
+After any logical change, run `make format`, `make lint`, `make build` and `make test-coverage` to ensure standards are met before committing.
 Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): …`, `chore(deps): …`. One logical change per commit / PR. The pre-commit hook (`make install-hooks`, also run automatically by `make bootstrap`) runs SwiftFormat in lint mode + SwiftLint strict; CI re-runs both. Don't `--no-verify` past failures; fix the issue.
 
 ## When in doubt
