@@ -49,7 +49,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Mini Player** in four layouts (Strip, Compact, Square, Visualizer) with always-on-top mode.
 - **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
 - **AirPlay** routing via the system picker; a live route chip shows the current output device.
-- **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, and `⌘⇧1`–`⌘⇧9` to jump straight to a server.
+- **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, `⌘⇧1`–`⌘⇧9` to jump straight to a server, and drag a streamed song straight into Up Next.
 
 ### ♿ It's accessible
 

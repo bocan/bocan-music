@@ -148,6 +148,13 @@ private struct QueueContentView: View {
             }
         }
         .navigationTitle("Up Next")
+        // Accept streamed Subsonic songs dragged in from a server's song list (#332).
+        .overlay(SubsonicSongDropTarget { payloads in
+            Task {
+                await self.vm.addSubsonicSongsToQueue(payloads)
+                await self.refreshQueue()
+            }
+        })
         .task { await self.refreshQueue() }
         .task { await self.observeQueueChanges() }
         .task { await self.observeUnavailableChanges() }
