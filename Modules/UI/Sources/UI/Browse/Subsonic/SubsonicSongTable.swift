@@ -133,6 +133,8 @@ struct SubsonicSongTable: NSViewRepresentable {
         dataSource.coordinator = context.coordinator
         tableView.dataSource = dataSource
         tableView.delegate = context.coordinator
+        // Allow streamed rows to be dragged out (e.g. into the Up Next queue) (#332).
+        tableView.setDraggingSourceOperationMask(.copy, forLocal: true)
 
         tableView.target = context.coordinator
         tableView.doubleAction = #selector(SubsonicSongTableCoordinator.doubleClickAction(_:))
@@ -275,5 +277,22 @@ final class SubsonicSongDiffableDataSource: NSTableViewDiffableDataSource<Int, S
         MainActor.assumeIsolated {
             self.coordinator?.handleSortChanged(in: tableView)
         }
+    }
+
+    /// Lets a streamed song be dragged out (into the Up Next queue) by writing a
+    /// `SubsonicSongDragPayload` for the row (#332).
+    @objc func tableView(
+        _ tableView: NSTableView,
+        pasteboardWriterForRow row: Int
+    ) -> (any NSPasteboardWriting)? {
+        // Resolve the (Sendable) payload on the main actor, then build the AppKit
+        // pasteboard item outside the isolation boundary (NSPasteboardWriting is
+        // not Sendable, so it must not cross out of assumeIsolated).
+        let payload: SubsonicSongDragPayload? = MainActor.assumeIsolated {
+            guard let id = itemIdentifier(forRow: row) else { return nil }
+            return self.coordinator?.dragPayload(forID: id)
+        }
+        guard let payload else { return nil }
+        return SubsonicSongDrag.pasteboardItem(for: [payload])
     }
 }

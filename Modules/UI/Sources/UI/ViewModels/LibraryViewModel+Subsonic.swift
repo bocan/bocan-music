@@ -29,6 +29,19 @@ public extension LibraryViewModel {
         }
     }
 
+    /// Appends streamed Subsonic songs to the end of the Up Next queue, building
+    /// `.subsonic` queue items from the drag payload. Powers dragging a server's
+    /// song rows into the queue (#332).
+    func addSubsonicSongsToQueue(_ payloads: [SubsonicSongDragPayload]) async {
+        guard let qp = self.queuePlayer, !payloads.isEmpty else { return }
+        let items = payloads.map { QueueItem.makeSubsonic(from: $0) }
+        await qp.addToQueue(items: items)
+        let text = payloads.count == 1
+            ? "Added \u{201C}\(payloads[0].title)\u{201D} to Up Next"
+            : "Added \(payloads.count) songs to Up Next"
+        self.showToast(.init(text: text, kind: .success))
+    }
+
     /// Starts playback of a Subsonic internet radio station. The queue is
     /// replaced with a single open-ended item; nothing pre-caches and no
     /// scrobble fires. Live streams have no fixed duration and don't
@@ -106,7 +119,20 @@ extension QueueItem {
     /// `.subsonic` `PlayableSource` so the audio engine routes it through
     /// `SubsonicStreamCache`.
     static func makeSubsonic(from song: Song, serverID: UUID) -> QueueItem {
-        let duration = TimeInterval(song.duration ?? 0)
+        self.makeSubsonic(from: SubsonicSongDragPayload(
+            serverID: serverID,
+            songID: song.id,
+            title: song.title,
+            artist: song.artist ?? "",
+            album: song.album ?? "",
+            genre: song.genre ?? "",
+            durationSeconds: song.duration ?? 0
+        ))
+    }
+
+    /// Builds a `.subsonic` `PlayableSource` queue item from a drag payload, which
+    /// doubles as the field bundle for both the drag path and the play path (#332).
+    static func makeSubsonic(from payload: SubsonicSongDragPayload) -> QueueItem {
         let fmt = AudioSourceFormat(
             sampleRate: 44100,
             bitDepth: 16,
@@ -117,14 +143,14 @@ extension QueueItem {
         return QueueItem(
             trackID: -1,
             bookmark: nil,
-            fileURL: "subsonic://\(serverID.uuidString)/\(song.id)",
-            duration: duration,
+            fileURL: "subsonic://\(payload.serverID.uuidString)/\(payload.songID)",
+            duration: TimeInterval(payload.durationSeconds),
             sourceFormat: fmt,
-            title: song.title,
-            artistName: song.artist,
-            albumName: song.album,
-            genre: song.genre,
-            playableSource: .subsonic(serverID: serverID, songID: song.id)
+            title: payload.title,
+            artistName: payload.artist,
+            albumName: payload.album,
+            genre: payload.genre,
+            playableSource: .subsonic(serverID: payload.serverID, songID: payload.songID)
         )
     }
 }

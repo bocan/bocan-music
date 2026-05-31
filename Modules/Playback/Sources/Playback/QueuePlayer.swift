@@ -393,6 +393,13 @@ public actor QueuePlayer: Transport {
         await queue.append(items)
     }
 
+    /// Append already-built items (e.g. streamed Subsonic songs) to the end of
+    /// the queue. Used by drag-and-drop of `.subsonic` sources into Up Next (#332).
+    public func addToQueue(items: [QueueItem]) async {
+        guard !items.isEmpty else { return }
+        await self.queue.append(items)
+    }
+
     /// Replace the queue with all tracks from `albumID` and start playing.
     /// Pass `shuffle: true` to shuffle before playback begins.
     public func playAlbum(_ albumID: Int64, shuffle: Bool = false) async throws {

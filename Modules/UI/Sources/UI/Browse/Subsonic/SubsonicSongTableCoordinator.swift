@@ -31,6 +31,20 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         self.rowsByID = Dictionary(newRows.map { ($0.id, $0) }) { _, new in new }
     }
 
+    /// Drag payload for a row, used to drag a streamed song into the queue (#332).
+    func dragPayload(forID id: String) -> SubsonicSongDragPayload? {
+        guard let row = self.rowsByID[id] else { return nil }
+        return SubsonicSongDragPayload(
+            serverID: row.serverID,
+            songID: row.song.id,
+            title: row.title,
+            artist: row.artist,
+            album: row.album,
+            genre: row.genre,
+            durationSeconds: row.duration
+        )
+    }
+
     // MARK: Cell population
 
     func cellView(
