@@ -81,26 +81,45 @@ import os
         /// Returns all `.json` report files in `reportsDirectory`, newest first.
         public nonisolated static func listReports() -> [URL] {
             let dir = Self.reportsDirectory
-            let files = (try? FileManager.default.contentsOfDirectory(
-                at: dir,
-                includingPropertiesForKeys: [.contentModificationDateKey],
-                options: .skipsHiddenFiles
-            )) ?? []
-            return files
+            let log = AppLogger.make(.app)
+            let files: [URL]
+            do {
+                files = try FileManager.default.contentsOfDirectory(
+                    at: dir,
+                    includingPropertiesForKeys: [.contentModificationDateKey],
+                    options: .skipsHiddenFiles
+                )
+            } catch {
+                log.warning("metrickit.reports.list.failed", ["error": String(reflecting: error)])
+                return []
+            }
+            let dated: [(url: URL, date: Date)] = files
                 .filter { $0.pathExtension == "json" }
-                .sorted {
-                    let da = (try? $0.resourceValues(forKeys: [.contentModificationDateKey])
-                        .contentModificationDate) ?? .distantPast
-                    let db = (try? $1.resourceValues(forKeys: [.contentModificationDateKey])
-                        .contentModificationDate) ?? .distantPast
-                    return da > db
+                .map { url in
+                    let date: Date
+                    do {
+                        date = try url
+                            .resourceValues(forKeys: [.contentModificationDateKey])
+                            .contentModificationDate ?? .distantPast
+                    } catch {
+                        log.warning("metrickit.reports.moddate.failed", ["file": url.lastPathComponent, "error": String(reflecting: error)])
+                        date = .distantPast
+                    }
+                    return (url, date)
                 }
+            return dated.sorted { $0.date > $1.date }.map(\.url)
         }
 
         /// Write a diagnostic payload to disk, redacting the user's home directory path.
         nonisolated static func writePayload(_ data: Data) {
+            let log = AppLogger.make(.app)
             let dir = Self.reportsDirectory
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            do {
+                try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            } catch {
+                log.warning("metrickit.reports.dir.failed", ["error": String(reflecting: error)])
+                return
+            }
             let name = ISO8601DateFormatter()
                 .string(from: Date())
                 .replacingOccurrences(of: ":", with: "-")
@@ -109,8 +128,13 @@ import os
             // Redact home directory path before writing (issue #209 §4).
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             json = json.replacingOccurrences(of: home, with: "~")
-            try? json.write(to: file, atomically: true, encoding: .utf8)
-            AppLogger.make(.app).info("metrickit.payload.written", ["file": file.lastPathComponent])
+            do {
+                try json.write(to: file, atomically: true, encoding: .utf8)
+            } catch {
+                log.warning("metrickit.payload.write.failed", ["file": file.lastPathComponent, "error": String(reflecting: error)])
+                return
+            }
+            log.info("metrickit.payload.written", ["file": file.lastPathComponent])
         }
     }
 #endif

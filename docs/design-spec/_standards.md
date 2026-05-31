@@ -71,7 +71,7 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 ## Logging
 
 - Use the `AppLogger` facade from `Observability`, never `print`, never raw `os_log`.
-- Categories (create the module's category on first use): `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `cast`, `scrobble`.
+- Categories (create the module's category on first use): `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `cast`, `scrobble`, `subsonic`.
 - Every async op: `log.debug("op.start", [...])` / `log.debug("op.end", ["ms": duration])`.
 - Every caught error: `log.error("op.failed", ["reason": ..., "error": String(reflecting: err)])`.
 - **Redact** anything matching keys in `Observability.sensitiveKeys` (`apiKey`, `token`, `sessionKey`, `password`, `authorization`). Add to that list as you add integrations.
