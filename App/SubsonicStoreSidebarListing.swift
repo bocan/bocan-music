@@ -11,6 +11,7 @@ import UI
 /// them down to the minimal `SubsonicSidebarServer` shape the UI consumes.
 struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
     let store: SubsonicServerStore
+    let service: SubsonicService
 
     func fetchSidebarServers() async throws -> [SubsonicSidebarServer] {
         try await self.store.fetchAll()
@@ -53,6 +54,11 @@ struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
         guard server.showInSidebar != visible else { return }
         server.showInSidebar = visible
         try await self.store.update(server)
+    }
+
+    func removeServer(id: UUID) async throws {
+        try await self.store.remove(id: id)
+        await self.service.removeClient(for: id)
     }
 
     private static func decodeCapabilities(_ data: Data?) -> SubsonicCapabilities {
