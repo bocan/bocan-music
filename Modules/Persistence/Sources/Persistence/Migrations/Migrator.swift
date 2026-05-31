@@ -43,11 +43,7 @@ public struct Migrator {
         M013CueVirtualTracks.register(in: &dm)
         M014ForeignKeyActions.register(in: &dm)
         M015TrackExtendedTags.register(in: &dm)
-        dm.registerMigration("016_smart_last_snapshot_at") { db in
-            try db.alter(table: "playlists") { table in
-                table.add(column: "smart_last_snapshot_at", .integer)
-            }
-        }
+        M016SmartLastSnapshotAt.register(in: &dm)
         M017SmartRandomSeed.register(in: &dm)
         M018ConflictReviewFlag.register(in: &dm)
         M019PlaylistTrackUnique.register(in: &dm)
