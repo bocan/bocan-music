@@ -87,7 +87,7 @@ struct SubsonicStarButton: View {
             )
         } label: {
             Image(systemName: starred ? "star.fill" : "star")
-                .foregroundStyle(starred ? Color.yellow : Color.textTertiary)
+                .foregroundStyle(starred ? Color.starTint : Color.textTertiary)
         }
         .buttonStyle(.plain)
         .help(starred ? "Unstar" : "Star")

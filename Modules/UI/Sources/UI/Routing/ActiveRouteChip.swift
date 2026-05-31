@@ -32,11 +32,11 @@ public struct ActiveRouteChip: View {
             .padding(.vertical, 4)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color.gray.opacity(0.15))
+                    .fill(Color.bgTertiary)
             )
             .overlay(
                 Capsule(style: .continuous)
-                    .strokeBorder(Color.gray.opacity(0.25), lineWidth: 0.5)
+                    .strokeBorder(Color.separatorAdaptive, lineWidth: 0.5)
             )
             .foregroundStyle(Color.textPrimary)
         }

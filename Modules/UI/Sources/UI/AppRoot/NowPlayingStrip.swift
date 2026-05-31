@@ -340,7 +340,7 @@ public struct NowPlayingStrip: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(Color.orange)
+                .foregroundStyle(Color.warningTint)
                 .help("Scrobbles pending: \(self.vm.pendingScrobbleCount) — click to view")
                 .accessibilityLabel("Scrobbles pending")
                 .accessibilityValue("\(self.vm.pendingScrobbleCount)")
