@@ -181,14 +181,17 @@ public actor QueuePersistence {
     /// The schema version this build writes.  Increment when adding fields
     /// to `QueuePayloadV2` that older builds cannot interpret.
     public static let currentSchemaVersion = 2
-    private static let debounceNanoseconds: UInt64 = 2_000_000_000 // 2 s
 
     private let repo: SettingsRepository
     private let log = AppLogger.make(.playback)
+    /// How long `scheduleSave` coalesces rapid calls before writing. Injectable
+    /// so tests can collapse the window instead of sleeping past the 2 s default.
+    private let debounce: Duration
     private var pendingSave: Task<Void, Never>?
 
-    public init(database: Database) {
+    public init(database: Database, debounce: Duration = .seconds(2)) {
         self.repo = SettingsRepository(database: database)
+        self.debounce = debounce
     }
 
     // MARK: - Save
@@ -201,9 +204,10 @@ public actor QueuePersistence {
         shuffleState: ShuffleState
     ) {
         self.pendingSave?.cancel()
+        let debounce = self.debounce
         self.pendingSave = Task { [weak self] in
             guard let self else { return }
-            try? await Task.sleep(nanoseconds: Self.debounceNanoseconds)
+            try? await Task.sleep(for: debounce)
             guard !Task.isCancelled else { return }
             await self.flush(
                 items: items,
@@ -213,6 +217,15 @@ public actor QueuePersistence {
             )
         }
     }
+
+    #if DEBUG
+        /// Awaits the in-flight debounced save, if any. Test-only seam so suites can
+        /// deterministically wait for `scheduleSave` to complete (through its
+        /// debounce and flush) instead of sleeping past a guessed window (#323).
+        func _awaitPendingSaveForTesting() async {
+            await self.pendingSave?.value
+        }
+    #endif
 
     // MARK: - Restore
 
