@@ -11,7 +11,7 @@ struct SubsonicServerRepositoryTests {
     private func sample(name: String = "Home", sortIndex: Int = 0) -> SubsonicServerDTO {
         SubsonicServerDTO(
             name: name,
-            serverURL: URL(string: "https://music.example.test")!, // swiftlint:disable:this force_unwrapping
+            serverURL: URL(string: "https://music.example.test")!,
             authKind: "tokenSalt",
             username: "user",
             keychainAccount: "subsonic.\(name)",

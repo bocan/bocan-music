@@ -97,7 +97,6 @@ private func makeKey(server: UUID = UUID(), song: String = "tr-1", format: Strin
 }
 
 private func dummyURL() -> URL {
-    // swiftlint:disable:next force_unwrapping
     URL(string: "https://example.invalid/stream")!
 }
 
