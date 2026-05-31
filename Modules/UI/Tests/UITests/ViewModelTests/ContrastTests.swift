@@ -143,6 +143,24 @@ struct ContrastTests {
         #expect(r >= 3.0, "Expected ≥ 3.0, got \(String(format: "%.2f", r))")
     }
 
+    // MARK: accentColor — non-text (≥ 3.0)
+
+    // Color.accentColor resolves to the system/user accent; in a headless test
+    // environment this is typically the default macOS blue (#007AFF), which meets
+    // the 3.0 threshold on both bgPrimary surfaces.
+
+    @Test("accentColor / bgPrimary light >= 3.0")
+    func accentColorOnBgPrimaryLight() {
+        let r = self.ratio(.accentColor, .bgPrimary, appearance: .aqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    @Test("accentColor / bgPrimary dark >= 3.0")
+    func accentColorOnBgPrimaryDark() {
+        let r = self.ratio(.accentColor, .bgPrimary, appearance: .darkAqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
     // MARK: Accent palette checkmarks — non-text (≥ 3.0)
 
     @Test("AccentPalette labelColor achieves ≥ 3.0 on every swatch")

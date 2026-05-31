@@ -59,6 +59,7 @@ public struct ContrastAuditView: View {
         // Non-text / graphical objects (WCAG 1.4.11: 3 : 1)
         AuditPair(label: "ratingFill / bgPrimary", fg: .ratingFill, bg: .bgPrimary, threshold: 3.0),
         AuditPair(label: "lovedTint / bgPrimary", fg: .lovedTint, bg: .bgPrimary, threshold: 3.0),
+        AuditPair(label: "accentColor / bgPrimary", fg: .accentColor, bg: .bgPrimary, threshold: 3.0),
     ]
 
     public init() {}
