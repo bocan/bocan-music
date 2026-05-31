@@ -76,8 +76,11 @@ public struct TagWriter: Sendable {
                 throw MetadataError.writeFailed(url, "Replace failed: \(error.localizedDescription)")
             }
         } catch {
-            // Clean up temp file; ignore any secondary error
-            try? fm.removeItem(at: tmpURL)
+            do {
+                try fm.removeItem(at: tmpURL)
+            } catch let cleanupError {
+                self.log.warning("taglib.tmp.cleanup.failed", ["error": String(reflecting: cleanupError)])
+            }
             throw error
         }
 

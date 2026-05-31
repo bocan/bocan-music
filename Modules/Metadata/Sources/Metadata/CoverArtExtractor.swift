@@ -17,13 +17,22 @@ public struct ExtractedCoverArt: Sendable {
     /// SHA-256 hex digest of `data`.
     public let sha256: String
 
+    /// Embedded art larger than this is unusual and expensive to hash synchronously.
+    static let maxHashBytes = 50 * 1024 * 1024 // 50 MB
+
     init(data: Data, mimeType: String, pictureType: Int) {
         self.data = data
         self.mimeType = mimeType
         self.pictureType = pictureType
-        self.sha256 = SHA256.hash(data: data)
-            .map { String(format: "%02x", $0) }
-            .joined()
+        if data.count <= Self.maxHashBytes {
+            self.sha256 = SHA256.hash(data: data)
+                .map { String(format: "%02x", $0) }
+                .joined()
+        } else {
+            // Oversized art: skip the full hash to avoid a blocking allocation.
+            // Use a random token so deduplication is skipped rather than wrong.
+            self.sha256 = UUID().uuidString
+        }
     }
 
     /// File extension inferred from `mimeType`.
