@@ -60,7 +60,11 @@ public actor SubsonicServerStore {
             try await self.repository.insert(dto)
         } catch {
             // Roll back the Keychain item to keep them in sync.
-            try? self.keychainDelete(account: server.keychainAccount)
+            do {
+                try self.keychainDelete(account: server.keychainAccount)
+            } catch let keychainError {
+                self.log.warning("subsonic.store.rollback.keychain.failed", ["error": String(reflecting: keychainError)])
+            }
             throw error
         }
         self.log.info("subsonic.store.add", ["id": server.id.uuidString, "name": server.name])
@@ -81,7 +85,11 @@ public actor SubsonicServerStore {
     public func remove(id: UUID) async throws {
         // Fetch so we can get the keychainAccount before deletion.
         if let dto = try await self.repository.fetch(id: id) {
-            try? self.keychainDelete(account: dto.keychainAccount)
+            do {
+                try self.keychainDelete(account: dto.keychainAccount)
+            } catch {
+                self.log.warning("subsonic.store.remove.keychain.failed", ["id": id.uuidString, "error": String(reflecting: error)])
+            }
             try await self.repository.deleteCache(serverID: id)
         }
         try await self.repository.delete(id: id)
@@ -149,7 +157,11 @@ public actor SubsonicServerStore {
         for item in items {
             guard let account = item[kSecAttrAccount] as? String else { continue }
             if !liveSet.contains(account) {
-                try? self.keychainDelete(account: account)
+                do {
+                    try self.keychainDelete(account: account)
+                } catch {
+                    self.log.warning("subsonic.store.orphan.keychain.failed", ["account": account, "error": String(reflecting: error)])
+                }
                 orphanCount += 1
             }
         }
