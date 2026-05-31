@@ -116,6 +116,41 @@ private func makeClient(_ transport: HTTPTransport) -> SwiftSonicClient {
     return SwiftSonicClient(configuration: config, transport: transport)
 }
 
+// MARK: - Capability-stream fence
+
+/// A deterministic end-marker for `capabilityUpdates` assertions.
+///
+/// "Does not emit" tests previously gated on a fixed `Task.sleep` window and
+/// asked "did a second event arrive?" — a false green whenever a spurious event
+/// landed just after the window (#322). Instead, register a throwaway server and,
+/// once the operations under test have run, `trigger()` a single guaranteed
+/// emission for it. Because `AsyncStream` preserves FIFO order, draining the
+/// stream until the fence ID arrives is guaranteed to surface every real emission
+/// queued before it — no sleeping, no race.
+private struct CapabilityFence {
+    let id: UUID
+    let trigger: @Sendable () async -> Void
+}
+
+/// Registers a fence server on `service` whose first `loadCapabilities` emits
+/// exactly once (fresh server → no prior snapshot → flags changed). Call the
+/// returned `trigger` after the operations under test, then drain the stream
+/// until `id` is seen.
+private func makeCapabilityFence(
+    service: SubsonicService,
+    repo: SubsonicServerRepository
+) async throws -> CapabilityFence {
+    let fenceID = try await seedServer(repo: repo)
+    let transport = CapabilityStubTransport()
+    transport.enqueue(json: pingEnvelope())
+    transport.enqueue(json: extensionsEnvelope([]))
+    enqueueProbeFailures(transport, for: [.internetRadio, .podcasts, .bookmarks])
+    await service._registerClientForTesting(makeClient(transport), serverID: fenceID)
+    return CapabilityFence(id: fenceID) {
+        _ = try? await service.loadCapabilities(serverID: fenceID)
+    }
+}
+
 // MARK: - SubsonicCapabilities flag-comparison
 
 @Suite("SubsonicCapabilities flag comparison")
@@ -271,22 +306,22 @@ struct SubsonicServiceCapabilityStreamTests {
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
+        let fence = try await makeCapabilityFence(service: service, repo: repo)
 
-        // Collect emissions throughout the test.
+        // Collect every emission up to the fence — deterministic, no sleep.
         let stream = await service.capabilityUpdates
         let collector = Task { () -> [UUID] in
             var ids: [UUID] = []
             for await uuid in stream {
+                if uuid == fence.id { break }
                 ids.append(uuid)
-                if ids.count == 1 { break } // bail after the first; we only expect one.
             }
             return ids
         }
 
         _ = try await service.loadCapabilities(serverID: id) // emits once
         _ = try await service.refreshCapabilities(serverID: id) // identical → no emit
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
+        await fence.trigger() // guaranteed emission marks the end of collection
         let emissions = await collector.value
         #expect(emissions == [id])
     }
@@ -325,9 +360,8 @@ struct SubsonicServiceCapabilityStreamTests {
         #expect(second.supportsPodcasts)
         #expect(second.supportsBookmarks)
 
-        // Give the collector a moment.
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
+        // The collector self-terminates after the two expected emissions, so we
+        // await it directly rather than gating on a fixed sleep (#322).
         let emissions = await collector.value
         #expect(emissions == [id, id])
 
@@ -415,22 +449,22 @@ struct SubsonicServiceCapabilityStreamTests {
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
+        let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
-        let collector = Task { () -> Int in
-            var count = 0
-            for await _ in stream {
-                count += 1
-                if count >= 2 { break }
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                if uuid == fence.id { break }
+                ids.append(uuid)
             }
-            return count
+            return ids
         }
 
         _ = try await service.loadCapabilities(serverID: id)
         _ = try await service.loadCapabilities(serverID: id)
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
-        #expect(await collector.value == 1)
+        await fence.trigger()
+        #expect(await collector.value == [id])
         // First load consumed ping + extensions + 3 probes; second was served from cache.
         #expect(transport.requests.count == 5)
     }
@@ -505,8 +539,7 @@ struct SubsonicServiceCapabilityLieTests {
             Issue.record("Expected getPodcasts to throw on HTTP 404")
         } catch {}
 
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
+        // The collector self-terminates after the two expected emissions (#322).
         #expect(await collector.value == [id, id], "Expect 2 emissions: initial load + revocation")
 
         // In-memory capability is now false.
@@ -552,8 +585,7 @@ struct SubsonicServiceCapabilityLieTests {
             Issue.record("Expected getBookmarks to throw on API error 70")
         } catch {}
 
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
+        // The collector self-terminates after the two expected emissions (#322).
         #expect(await collector.value == [id, id])
 
         let updated = await service._capabilitiesForTesting(serverID: id)
@@ -594,8 +626,7 @@ struct SubsonicServiceCapabilityLieTests {
             Issue.record("Expected getInternetRadioStations to throw on HTTP 501")
         } catch {}
 
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
+        // The collector self-terminates after the two expected emissions (#322).
         #expect(await collector.value == [id, id])
 
         let updated = await service._capabilitiesForTesting(serverID: id)
@@ -613,15 +644,16 @@ struct SubsonicServiceCapabilityLieTests {
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClientNoRetry(transport), serverID: id)
+        let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
-        let collector = Task { () -> Int in
-            var count = 0
-            for await _ in stream {
-                count += 1
-                if count >= 2 { break }
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                if uuid == fence.id { break }
+                ids.append(uuid)
             }
-            return count
+            return ids
         }
 
         let caps = try await service.loadCapabilities(serverID: id)
@@ -632,10 +664,9 @@ struct SubsonicServiceCapabilityLieTests {
             Issue.record("Expected getPodcasts to throw on network error")
         } catch {}
 
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
+        await fence.trigger()
         // Only the initial capability load should have emitted; no revocation.
-        #expect(await collector.value == 1, "Network error must not trigger a revocation emission")
+        #expect(await collector.value == [id], "Network error must not trigger a revocation emission")
 
         let updated = await service._capabilitiesForTesting(serverID: id)
         #expect(updated?.supportsPodcasts == true, "Network error must not revoke podcasts capability")
@@ -653,15 +684,16 @@ struct SubsonicServiceCapabilityLieTests {
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
+        let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
-        let collector = Task { () -> Int in
-            var count = 0
-            for await _ in stream {
-                count += 1
-                if count >= 2 { break }
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                if uuid == fence.id { break }
+                ids.append(uuid)
             }
-            return count
+            return ids
         }
 
         let caps = try await service.loadCapabilities(serverID: id)
@@ -670,9 +702,8 @@ struct SubsonicServiceCapabilityLieTests {
         // 404 fires markCapabilityUnsupported but the flag is already false — no emit.
         do { _ = try await service.getPodcasts(serverID: id) } catch {}
 
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
-        #expect(await collector.value == 1, "Only the initial load should emit; revocation is a no-op")
+        await fence.trigger()
+        #expect(await collector.value == [id], "Only the initial load should emit; revocation is a no-op")
     }
 
     @Test("capability revocation is no-op when no capabilities snapshot exists")
@@ -685,22 +716,21 @@ struct SubsonicServiceCapabilityLieTests {
 
         let service = SubsonicService(store: store)
         await service._registerClientForTesting(makeClient(transport), serverID: id)
+        let fence = try await makeCapabilityFence(service: service, repo: repo)
 
         let stream = await service.capabilityUpdates
-        let collector = Task { () -> Int in
-            var count = 0
-            for await _ in stream {
-                count += 1
-                if count >= 1 { break }
+        let collector = Task { () -> [UUID] in
+            var ids: [UUID] = []
+            for await uuid in stream {
+                if uuid == fence.id { break }
+                ids.append(uuid)
             }
-            return count
+            return ids
         }
 
         do { _ = try await service.getPodcasts(serverID: id) } catch {}
 
-        try await Task.sleep(nanoseconds: 200_000_000)
-        collector.cancel()
-        #expect(await collector.value == 0, "No emit when there is no capability snapshot to downgrade")
-        _ = repo // suppress unused warning
+        await fence.trigger()
+        #expect(await collector.value == [], "No emit when there is no capability snapshot to downgrade")
     }
 }
