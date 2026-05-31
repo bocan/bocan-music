@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble uitest lint format format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-observability uitest lint format format-check install-hooks clean
 
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
 tests:
@@ -163,6 +163,20 @@ test-scrobble:
 	@echo "= Executing Scrobble Test"
 	@echo "=============================="
 	cd Modules/Scrobble && swift test --enable-code-coverage
+
+## test-subsonic: Run Subsonic SPM package tests
+test-subsonic:
+	@echo "=============================="
+	@echo "= Executing Subsonic Test"
+	@echo "=============================="
+	cd Modules/Subsonic && swift test --enable-code-coverage
+
+## test-observability: Run Observability SPM package tests
+test-observability:
+	@echo "=============================="
+	@echo "= Executing Observability Test"
+	@echo "=============================="
+	cd Modules/Observability && swift test --enable-code-coverage
 
 ## uitest: Run UI smoke tests (BocanUITests scheme target)
 uitest:
