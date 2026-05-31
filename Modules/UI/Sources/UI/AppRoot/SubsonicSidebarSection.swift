@@ -227,28 +227,72 @@ public struct SubsonicSidebarSection: View {
 
 /// Click-to-collapse header used by every top-level sidebar section that
 /// participates in `SidebarSectionExpansion`. Matches the visual idiom of
-/// the existing Playlists header (chevron + label, no in-row controls).
+/// the existing Playlists header (chevron + label).
+///
+/// Pass an `action` to surface a trailing "+" affordance and a matching
+/// context-menu item (e.g. the Local Library header's persistent "Add Folder",
+/// mirroring the Sources header's "Add Source") (#308).
 struct SidebarSectionHeader: View {
     let title: String
     @Binding var isExpanded: Bool
+    /// Optional trailing-action affordance.
+    var action: Action?
+
+    /// A trailing "+" button plus its labels, shown when supplied.
+    struct Action {
+        let title: String
+        let identifier: String?
+        let perform: () -> Void
+    }
+
+    init(title: String, isExpanded: Binding<Bool>, action: Action? = nil) {
+        self.title = title
+        self._isExpanded = isExpanded
+        self.action = action
+    }
 
     var body: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) { self.isExpanded.toggle() }
-        } label: {
-            HStack(spacing: 4) {
-                Text(self.title)
-                Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Color.textTertiary)
-                Spacer()
+        let header = HStack {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { self.isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(self.title)
+                    Image(systemName: self.isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(Color.textTertiary)
+                }
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .help(self.isExpanded ? "Collapse \(self.title)" : "Expand \(self.title)")
+            .accessibilityLabel(self.isExpanded ? "Collapse \(self.title)" : "Expand \(self.title)")
+            .accessibilityValue(self.isExpanded ? "Expanded" : "Collapsed")
+
+            Spacer()
+
+            if let action {
+                Button { action.perform() } label: {
+                    Image(systemName: "plus")
+                        .font(Typography.footnote)
+                }
+                .buttonStyle(.borderless)
+                .fixedSize()
+                .help(action.title)
+                .accessibilityLabel(action.title)
+                .accessibilityIdentifier(action.identifier ?? "")
+            }
         }
-        .buttonStyle(.plain)
-        .help(self.isExpanded ? "Collapse \(self.title)" : "Expand \(self.title)")
-        .accessibilityLabel(self.isExpanded ? "Collapse \(self.title)" : "Expand \(self.title)")
-        .accessibilityValue(self.isExpanded ? "Expanded" : "Collapsed")
+        .contentShape(Rectangle())
+
+        // Only attach the context menu when there's an action, so the
+        // action-less headers (Recents, Queue) don't get an empty right-click menu.
+        if let action {
+            header.contextMenu {
+                Button("\(action.title)\u{2026}") { action.perform() }
+            }
+        } else {
+            header
+        }
     }
 }
 
