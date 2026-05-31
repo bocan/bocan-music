@@ -81,6 +81,38 @@ private func makeService() async throws -> (SubsonicService, UUID, MonitorStubTr
     return (service, id, transport)
 }
 
+/// Awaits the first status update for `serverID` matching `predicate` on
+/// `stream`, or returns `nil` after `timeoutNanos`. The monitor emits from a
+/// detached loop task, so consumers must await the emission rather than guess a
+/// fixed `Task.sleep` delay that races under load (#322).
+private func awaitStatus(
+    for serverID: UUID,
+    on stream: AsyncStream<SubsonicConnectionMonitor.StatusUpdate>,
+    matching predicate: @escaping @Sendable (SubsonicConnectionStatus) -> Bool = { _ in true },
+    timeoutNanos: UInt64 = 2_000_000_000
+) async -> SubsonicConnectionStatus? {
+    await withTaskGroup(of: SubsonicConnectionStatus?.self) { group in
+        group.addTask {
+            for await update in stream where update.serverID == serverID && predicate(update.status) {
+                return update.status
+            }
+            return nil
+        }
+        group.addTask {
+            try? await Task.sleep(nanoseconds: timeoutNanos)
+            return nil
+        }
+        let first = await group.next() ?? nil
+        group.cancelAll()
+        return first
+    }
+}
+
+/// True when a status is `.online`.
+private let isOnline: @Sendable (SubsonicConnectionStatus) -> Bool = {
+    if case .online = $0 { true } else { false }
+}
+
 // MARK: - Tests
 
 @Suite("SubsonicConnectionMonitor")
@@ -162,15 +194,21 @@ struct SubsonicConnectionMonitorTests {
         await monitor.startMonitoring(serverID: id)
         let updates = await monitor.updates
 
-        // Give the loop time to reach .online and the wake observer time to
-        // install (init dispatches it asynchronously), then post the wake
-        // notification on the workspace centre.
+        // Post the wake notification repeatedly rather than guessing a single
+        // fixed delay for the loop to reach .online and the asynchronously
+        // installed wake observer to register (both of which race under load).
+        // Each post that lands triggers wakeAll(), which cancels and restarts
+        // the loop and re-emits .connecting. A 200ms cadence is slower than a
+        // stub ping, so .online settles between posts and the consumer reliably
+        // sees .online followed by a fresh .connecting (#322).
         let poster = Task {
-            try? await Task.sleep(nanoseconds: 400_000_000)
-            NSWorkspace.shared.notificationCenter.post(
-                name: NSWorkspace.didWakeNotification,
-                object: nil
-            )
+            while !Task.isCancelled {
+                NSWorkspace.shared.notificationCenter.post(
+                    name: NSWorkspace.didWakeNotification,
+                    object: nil
+                )
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
         }
 
         // Watch the stream for: .online (loop ran) then a fresh .connecting,
@@ -212,8 +250,11 @@ struct SubsonicConnectionMonitorTests {
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
 
+        let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        // Wait until the loop has settled on .online (then idle for a poll cycle)
+        // before stopping, so no late emission repopulates the status afterwards.
+        _ = await awaitStatus(for: id, on: updates, matching: isOnline)
         await monitor.stopMonitoring(serverID: id)
 
         let snapshot = await monitor.currentStatuses()
@@ -225,8 +266,9 @@ struct SubsonicConnectionMonitorTests {
         let (service, id, transport) = try await makeService()
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
+        let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        _ = await awaitStatus(for: id, on: updates, matching: isOnline)
         await monitor.stopAll()
         let snapshot = await monitor.currentStatuses()
         #expect(snapshot.isEmpty)
@@ -237,11 +279,13 @@ struct SubsonicConnectionMonitorTests {
         let (service, id, transport) = try await makeService()
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
+        let updates = await monitor.updates
         await monitor.startMonitoring(serverID: id)
         await monitor.startMonitoring(serverID: id)
         // The internal task dictionary has one entry — exposed only via the
         // observable behavior that we don't get two parallel pings per cycle.
-        try? await Task.sleep(nanoseconds: 200_000_000)
+        // Await the loop's first published status instead of guessing a delay.
+        _ = await awaitStatus(for: id, on: updates)
         // No crash, no exception, and we still resolve a status.
         let snapshot = await monitor.currentStatuses()
         #expect(snapshot[id] != nil)
