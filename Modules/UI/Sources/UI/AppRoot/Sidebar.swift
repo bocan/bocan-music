@@ -114,6 +114,22 @@ public struct Sidebar: View {
             vm: self.vm.playlistSidebar,
             smartPlaylistService: self.vm.smartPlaylistService
         )
+        .confirmationDialog(
+            self.vm.subsonicServerPendingRemoval.map { "Remove \u{201C}\($0.name)\u{201D}?" } ?? "Remove Server?",
+            isPresented: Binding(
+                get: { self.vm.subsonicServerPendingRemoval != nil },
+                set: { if !$0 { self.vm.subsonicServerPendingRemoval = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: self.vm.subsonicServerPendingRemoval
+        ) { _ in
+            Button("Remove Server", role: .destructive) {
+                Task { await self.vm.confirmRemoveSubsonicServer() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("This removes the server and its saved credentials from this Mac. Your music on the server isn't affected.")
+        }
     }
 
     // MARK: - Row builder
@@ -148,9 +164,10 @@ public struct Sidebar: View {
         Task { await self.vm.setSubsonicServerSidebarVisible(id: id, visible: true) }
     }
 
-    private func removeServer(_ id: UUID) {
-        self.settingsRouter?.open(.sources, serverID: id)
-        self.openSettings()
+    private func removeServer(_ server: SubsonicSidebarServer) {
+        // Stage the server for a confirm-delete dialog rather than navigating
+        // to Settings — the destructive role now performs a real removal (#306).
+        self.vm.subsonicServerPendingRemoval = server
     }
 
     private func sidebarRow(_ dest: SidebarDestination, symbol: String, label: String) -> some View {

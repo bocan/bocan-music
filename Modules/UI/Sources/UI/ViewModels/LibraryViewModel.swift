@@ -105,6 +105,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// the optional `SubsonicConnectionObserving` injected at init.
     @Published public private(set) var subsonicConnectionStates: [UUID: SubsonicSidebarConnectionState] = [:]
 
+    /// The server the user has asked to remove, awaiting a confirmation dialog.
+    /// Non-nil drives the sidebar's destructive confirm-delete (#306).
+    @Published public var subsonicServerPendingRemoval: SubsonicSidebarServer?
+
     // MARK: - Navigation history
 
     @Published public private(set) var canGoBack = false
@@ -483,6 +487,29 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.log.error(
                 "library.subsonic.setSidebarVisible.failed",
                 ["id": id.uuidString, "error": String(reflecting: error)]
+            )
+        }
+    }
+
+    /// Permanently removes the server currently queued in
+    /// `subsonicServerPendingRemoval` (set when the user confirms the sidebar's
+    /// "Remove…" dialog), then clears the pending state and reloads the sidebar.
+    /// Deletes the server, its in-memory client, and its Keychain credential via
+    /// the injected listing (#306).
+    public func confirmRemoveSubsonicServer() async {
+        guard let server = self.subsonicServerPendingRemoval,
+              let listing = self.subsonicSidebarListing else {
+            self.subsonicServerPendingRemoval = nil
+            return
+        }
+        self.subsonicServerPendingRemoval = nil
+        do {
+            try await listing.removeServer(id: server.id)
+            await self.reloadSubsonicServers()
+        } catch {
+            self.log.error(
+                "library.subsonic.removeServer.failed",
+                ["id": server.id.uuidString, "error": String(reflecting: error)]
             )
         }
     }

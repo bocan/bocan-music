@@ -118,6 +118,37 @@ struct LibrarySidebarExpansionTests {
         #expect(vm.subsonicServers.isEmpty)
     }
 
+    @Test("confirmRemoveSubsonicServer deletes the staged server and reloads (#306)")
+    func confirmRemoveDeletesStagedServer() async throws {
+        let db = try await Database(location: .inMemory)
+        let id = UUID()
+        let server = SubsonicSidebarServer(id: id, name: "Home", sortIndex: 0)
+        let listing = MutableStubListing(servers: [server])
+        let vm = LibraryViewModel(database: db, engine: MockTransport(), subsonicSidebarListing: listing)
+        await vm.reloadSubsonicServers()
+        #expect(vm.subsonicServers == [server])
+
+        vm.subsonicServerPendingRemoval = server
+        await vm.confirmRemoveSubsonicServer()
+
+        #expect(listing.lastRemovedServerID == id)
+        #expect(vm.subsonicServerPendingRemoval == nil, "pending state must clear after delete")
+        #expect(vm.subsonicServers.isEmpty)
+    }
+
+    @Test("confirmRemoveSubsonicServer is a no-op when nothing is staged (#306)")
+    func confirmRemoveNoOpWhenNothingStaged() async throws {
+        let server = SubsonicSidebarServer(id: UUID(), name: "Home", sortIndex: 0)
+        let listing = MutableStubListing(servers: [server])
+        let db = try await Database(location: .inMemory)
+        let vm = LibraryViewModel(database: db, engine: MockTransport(), subsonicSidebarListing: listing)
+        await vm.reloadSubsonicServers()
+
+        await vm.confirmRemoveSubsonicServer() // nothing staged
+        #expect(listing.lastRemovedServerID == nil, "no delete should happen with nothing staged")
+        #expect(vm.subsonicServers == [server])
+    }
+
     @Test("Capability change events trigger a sidebar reload")
     func capabilityChangeReloadsSidebar() async throws {
         let db = try await Database(location: .inMemory)
@@ -176,6 +207,8 @@ private struct StubListing: SubsonicSidebarListing {
     }
 
     func setSidebarVisible(id _: UUID, visible _: Bool) async throws {}
+
+    func removeServer(id _: UUID) async throws {}
 }
 
 // MARK: - MutableStubListing
@@ -186,6 +219,7 @@ private final class MutableStubListing: SubsonicSidebarListing, @unchecked Senda
     var servers: [SubsonicSidebarServer]
     var hiddenServers: [SubsonicSidebarServer] = []
     private(set) var lastSetSidebarVisibleCall: (id: UUID, visible: Bool)?
+    private(set) var lastRemovedServerID: UUID?
 
     init(servers: [SubsonicSidebarServer]) {
         self.servers = servers
@@ -212,6 +246,12 @@ private final class MutableStubListing: SubsonicSidebarListing, @unchecked Senda
                 self.hiddenServers.append(removed)
             }
         }
+    }
+
+    func removeServer(id: UUID) async throws {
+        self.lastRemovedServerID = id
+        self.servers.removeAll { $0.id == id }
+        self.hiddenServers.removeAll { $0.id == id }
     }
 }
 

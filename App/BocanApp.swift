@@ -565,7 +565,7 @@ extension BocanApp {
         let subsonicService = SubsonicService(store: subsonicStore)
         let subsonicAnnotations = SubsonicAnnotations(service: subsonicService)
         let subsonicMonitor = SubsonicConnectionMonitor(service: subsonicService)
-        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore)
+        let subsonicListing = SubsonicStoreSidebarListing(store: subsonicStore, service: subsonicService)
 
         // Build the scrobble service before the player so the sink can be wired in.
         let scrobbleParts = Self.makeScrobble(

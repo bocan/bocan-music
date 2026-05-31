@@ -173,6 +173,10 @@ public protocol SubsonicSidebarListing: Sendable {
     /// "Disable in Sidebar" context-menu action and the "Hidden Sources"
     /// re-enable submenu.
     func setSidebarVisible(id: UUID, visible: Bool) async throws
+
+    /// Permanently removes a server, along with its in-memory client and saved
+    /// Keychain credential. Powers the sidebar's "Remove…" confirm-delete action.
+    func removeServer(id: UUID) async throws
 }
 
 // MARK: - SubsonicCapabilityChangeObserving

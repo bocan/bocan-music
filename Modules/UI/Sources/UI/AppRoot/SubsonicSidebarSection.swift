@@ -21,7 +21,7 @@ public struct SubsonicSidebarSection: View {
     public var onEditServer: ((UUID) -> Void)?
     public var onDisableServerInSidebar: ((UUID) -> Void)?
     public var onEnableServerInSidebar: ((UUID) -> Void)?
-    public var onRemoveServer: ((UUID) -> Void)?
+    public var onRemoveServer: ((SubsonicSidebarServer) -> Void)?
 
     public init(
         sectionExpanded: Binding<Bool>,
@@ -36,7 +36,7 @@ public struct SubsonicSidebarSection: View {
         onEditServer: ((UUID) -> Void)? = nil,
         onDisableServerInSidebar: ((UUID) -> Void)? = nil,
         onEnableServerInSidebar: ((UUID) -> Void)? = nil,
-        onRemoveServer: ((UUID) -> Void)? = nil
+        onRemoveServer: ((SubsonicSidebarServer) -> Void)? = nil
     ) {
         self._sectionExpanded = sectionExpanded
         self._expandedServers = expandedServers
@@ -208,7 +208,9 @@ public struct SubsonicSidebarSection: View {
         }
         if let onRemoveServer {
             Divider()
-            Button("Remove…", role: .destructive) { onRemoveServer(server.id) }
+            // Opens a confirm-delete dialog (the "…" + destructive role are now
+            // honest: this really removes the server, not just navigates) (#306).
+            Button("Remove…", role: .destructive) { onRemoveServer(server) }
         }
     }
 
