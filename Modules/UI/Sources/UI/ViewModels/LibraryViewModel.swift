@@ -267,6 +267,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var searchQueryCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     private var sectionExpansionCancellable: AnyCancellable?
+    /// Single-row observation of the now-playing track, re-subscribed whenever
+    /// the active track changes. Keeps the Songs table's Plays / Date Played
+    /// columns live when a play is counted mid-playback.
+    private var nowPlayingStatsTask: Task<Void, Never>?
     private var selectedDestinationCancellable: AnyCancellable?
     /// Source of Subsonic servers for the sidebar (Phase 19 step 9). `nil`
     /// when running without the Subsonic module wired in (tests, snapshots).
@@ -397,6 +401,49 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.observeSubsonicCapabilityChanges()
         self.observeSubsonicConnectionChanges()
         self.observeQueueSchemaWarnings()
+        self.observeNowPlayingTrackStats()
+    }
+
+    /// Keeps the now-playing track's row in the Songs table current.
+    ///
+    /// A track accrues its play (and a `last_played_at` bump) mid-playback, at
+    /// the scrobble threshold — while it is still the active track.  We watch
+    /// `nowPlayingTrackID` and re-subscribe a single-row observation each time
+    /// it changes, so that bump is reflected in the Plays / Date Played columns
+    /// live, instead of only after navigating away and back.  Tracks not present
+    /// in the current destination are simply skipped by `updateRows(for:)`.
+    private func observeNowPlayingTrackStats() {
+        withObservationTracking {
+            _ = self.nowPlaying.nowPlayingTrackID
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.observeNowPlayingTrackStats() }
+        }
+        self.nowPlayingStatsTask?.cancel()
+        guard let id = self.nowPlaying.nowPlayingTrackID else {
+            self.nowPlayingStatsTask = nil
+            return
+        }
+        let repo = TrackRepository(database: self.database)
+        self.nowPlayingStatsTask = Task { [weak self] in
+            let stream = await repo.observe(id: id)
+            do {
+                var isInitialSnapshot = true
+                for try await track in stream {
+                    guard let self else { return }
+                    // The first emission is the current value, already shown by
+                    // the table's load; only later mutations need a refresh.
+                    if isInitialSnapshot {
+                        isInitialSnapshot = false
+                        continue
+                    }
+                    if let track { self.tracks.updateRows(for: [track]) }
+                }
+            } catch is CancellationError {
+                // Expected when re-subscribing for a new now-playing track.
+            } catch {
+                self?.log.warning("nowplaying.stats.observe.failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 
     /// Bridges `TracksViewModel` (`@Observable`) selection state into the

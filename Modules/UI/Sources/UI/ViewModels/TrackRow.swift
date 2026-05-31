@@ -122,6 +122,23 @@ public struct TrackRow: Identifiable, Hashable, Sendable {
         self.loved ? 1 : 0
     }
 
+    // MARK: - Content equality
+
+    /// `true` when every *displayed* value matches `other`.
+    ///
+    /// `==`/`hash` are deliberately identity-only so the diffable data source
+    /// keeps stable item identity across reloads.  The NSTableView still needs
+    /// to know when a row's rendered values change in place — a play-count
+    /// bump, a love toggle, a rating, an in-place tag edit — so it can
+    /// reconfigure just that cell.  Every displayed field derives from `track`
+    /// plus the decorated names, so comparing those covers the whole row.
+    public func hasSameContent(as other: Self) -> Bool {
+        self.track == other.track
+            && self.artistName == other.artistName
+            && self.albumName == other.albumName
+            && self.coverArtPath == other.coverArtPath
+    }
+
     // MARK: - Hashable
 
     /// Hash/equality by track identity only — two rows referring to the
