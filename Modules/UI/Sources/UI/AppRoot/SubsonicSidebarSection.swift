@@ -57,11 +57,24 @@ public struct SubsonicSidebarSection: View {
         Section {
             if self.sectionExpanded {
                 if self.servers.isEmpty {
-                    Text("No sources yet")
-                        .font(Typography.footnote)
-                        .foregroundStyle(Color.textTertiary)
-                        .padding(.vertical, 2)
-                        .accessibilityLabel("No Subsonic sources configured")
+                    // Tappable empty-state CTA so a first-time user can find server
+                    // setup without discovering the header "+" (#309). Falls back to
+                    // a plain label only if no add handler was injected.
+                    if let onAddSource {
+                        Button { onAddSource() } label: {
+                            Label("Add a Server\u{2026}", systemImage: "plus.circle")
+                                .font(Typography.body)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Connect a Subsonic-compatible music server")
+                        .accessibilityIdentifier(A11y.SourcesSidebar.emptyStateAddButton)
+                    } else {
+                        Text("No sources yet")
+                            .font(Typography.footnote)
+                            .foregroundStyle(Color.textTertiary)
+                            .padding(.vertical, 2)
+                            .accessibilityLabel("No Subsonic sources configured")
+                    }
                 } else {
                     ForEach(Array(self.servers.enumerated()), id: \.element.id) { index, server in
                         self.serverRows(for: server, shortcutIndex: index)

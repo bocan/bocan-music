@@ -77,6 +77,7 @@ public enum A11y {
 
     public enum SourcesSidebar {
         public static let addButton = "sources.sidebar.add"
+        public static let emptyStateAddButton = "sources.sidebar.emptyAdd"
     }
 
     // MARK: - Playlists
