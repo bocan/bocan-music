@@ -76,11 +76,11 @@ extension UISnapshotTests {
 
     // MARK: - RoutePicker
 
-    /// `AirPlayButton` wraps `AVRoutePickerView`, a system control whose
-    /// appearance depends on live HAL state and cannot be snapshotted
-    /// deterministically. Only `ActiveRouteChip` is snapshot-tested here;
-    /// see the `ActiveRouteChip` suite above. `RoutePicker` tests verify
-    /// that the combined layout renders without crashing.
+    /// `OutputDeviceButton` is an AppKit `NSButton` whose menu is built from
+    /// live CoreAudio state and cannot be snapshotted deterministically. Only
+    /// `ActiveRouteChip` is snapshot-tested here; see the `ActiveRouteChip`
+    /// suite above. `RoutePicker` tests verify the combined layout renders
+    /// without crashing.
     @Suite("RoutePicker Snapshots")
     @MainActor
     struct RoutePickerSnapshotTests {
