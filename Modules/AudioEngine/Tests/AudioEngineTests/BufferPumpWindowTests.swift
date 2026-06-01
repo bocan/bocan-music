@@ -56,14 +56,34 @@ struct BufferPumpWindowTests {
         )
 
         await pump.start {}
-        // Let the run loop fill the window against the idle (non-playing) node.
-        try await Task.sleep(for: .milliseconds(200))
-        let scheduled = await pump.scheduledBufferCount
+        // Wait for the window to fill to its cap and settle, rather than sleeping
+        // a fixed interval. The fixed sleep raced the async fill loop under CI
+        // load and read a half-filled window (#277 regression seen as
+        // scheduled == 1 with a 200 ms sleep).
+        let scheduled = try await Self.awaitWindowSettled(pump, target: 4)
         await pump.stop()
 
         #expect(
             scheduled == 4,
             "in-flight window should cap at 4 buffers (~0.8 s), was \(scheduled)"
         )
+    }
+
+    /// Waits for the pump's in-flight window to reach `target`, then settles
+    /// briefly before reporting the count.
+    ///
+    /// Waiting for the real cap (instead of a fixed `Task.sleep`) removes the
+    /// race that made this flaky: under load the fill loop can schedule just one
+    /// buffer before the read. The trailing settle lets an *oversized* window —
+    /// which would keep climbing past the cap — still fail the caller's
+    /// `== target` check rather than passing on a transient mid-fill reading.
+    private static func awaitWindowSettled(_ pump: BufferPump, target: Int) async throws -> Int {
+        let deadline = ContinuousClock.now + .seconds(10)
+        while ContinuousClock.now < deadline {
+            if await pump.scheduledBufferCount >= target { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        try await Task.sleep(for: .milliseconds(100)) // let any overshoot manifest
+        return await pump.scheduledBufferCount
     }
 }
