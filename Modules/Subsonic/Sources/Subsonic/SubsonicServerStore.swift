@@ -143,6 +143,7 @@ public actor SubsonicServerStore {
         let liveSet = Set(live)
 
         let query: [CFString: Any] = [
+            kSecUseDataProtectionKeychain: true,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
             kSecReturnAttributes: true,
