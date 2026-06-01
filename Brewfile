@@ -1,3 +1,7 @@
+# SwiftLint's exact version is pinned in `.swiftlint-version`: CI installs that
+# release (shadowing this brew copy) and `make doctor` fails on a mismatch.
+# force_unwrapping/superfluous_disable behaviour shifts between patch releases,
+# so an unpinned local copy silently diverges from CI. Match the pin locally.
 brew "swiftlint"
 brew "swiftformat"
 brew "xcbeautify"

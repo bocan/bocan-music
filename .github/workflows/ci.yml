@@ -47,6 +47,17 @@ jobs:
       - name: Install Brewfile dependencies
         run: brew bundle
 
+      - name: Pin SwiftLint to .swiftlint-version
+        run: |
+          version="$(cat .swiftlint-version)"
+          echo "Pinning SwiftLint to ${version}"
+          mkdir -p "$RUNNER_TEMP/swiftlint"
+          curl -fsSL "https://github.com/realm/SwiftLint/releases/download/${version}/portable_swiftlint.zip" \
+            -o "$RUNNER_TEMP/swiftlint.zip"
+          unzip -o "$RUNNER_TEMP/swiftlint.zip" swiftlint -d "$RUNNER_TEMP/swiftlint"
+          # Prepend so this shadows the Homebrew-installed swiftlint for every later step.
+          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+
       - name: Set pkg-config path for FFmpeg and TagLib
         run: |
           echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV

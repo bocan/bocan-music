@@ -1,5 +1,12 @@
 .PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-observability uitest lint format format-check install-hooks clean
 
+# Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
+# the local install differs. SwiftLint's force_unwrapping/superfluous_disable
+# behaviour changed between patch releases (0.63.2 vs 0.63.3), so an unpinned
+# version silently diverges local from CI. Single source of truth: bump the
+# `.swiftlint-version` file and CI follows automatically.
+EXPECTED_SWIFTLINT := $(shell cat .swiftlint-version 2>/dev/null)
+
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
 tests:
 	@bash Scripts/run-tests.sh
@@ -44,6 +51,17 @@ doctor:
 	@echo "=============================="
 	@if [ ! -f Brewfile.lock.json ]; then \
 		echo "⚠️  WARNING: Brewfile.lock.json is missing. Run 'brew bundle install' then commit the lock file."; \
+	fi
+	@actual="$$(swiftlint version 2>/dev/null)"; \
+	if [ -z "$(EXPECTED_SWIFTLINT)" ]; then \
+		echo "⚠️  WARNING: .swiftlint-version is missing; cannot verify the SwiftLint pin."; \
+	elif [ "$$actual" != "$(EXPECTED_SWIFTLINT)" ]; then \
+		echo "✗ SwiftLint version mismatch: have '$$actual', expected '$(EXPECTED_SWIFTLINT)' (.swiftlint-version)."; \
+		echo "  CI pins this exact release; lint results diverge across SwiftLint versions."; \
+		echo "  Install the pinned version, e.g.:  curl -sSL https://github.com/realm/SwiftLint/releases/download/$(EXPECTED_SWIFTLINT)/portable_swiftlint.zip -o /tmp/sl.zip && unzip -o /tmp/sl.zip swiftlint -d /opt/homebrew/bin"; \
+		exit 1; \
+	else \
+		echo "✓ SwiftLint $$actual matches the pin"; \
 	fi
 
 ## open: Open the Xcode project
