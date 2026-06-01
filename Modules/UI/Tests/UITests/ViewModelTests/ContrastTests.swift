@@ -189,6 +189,48 @@ struct ContrastTests {
         #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
     }
 
+    // MARK: Will-o'-the-Wisp accent — non-text (≥ 3.0)
+
+    @Test("willowispAccent / bgPrimary light >= 3.0")
+    func willowispAccentOnBgPrimaryLight() {
+        let r = self.ratio(.willowispAccent, .bgPrimary, appearance: .aqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    @Test("willowispAccent / bgPrimary dark >= 3.0")
+    func willowispAccentOnBgPrimaryDark() {
+        let r = self.ratio(.willowispAccent, .bgPrimary, appearance: .darkAqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    // MARK: Will-o'-the-Wisp alert — non-text (≥ 3.0)
+
+    // Light variant deepened to #E84C2E so the coral clears 3:1 on warm-cream
+    // bgPrimary; the spec's #FF6B57 only managed 2.65:1 there.
+
+    @Test("willowispAlert / bgPrimary light >= 3.0")
+    func willowispAlertOnBgPrimaryLight() {
+        let r = self.ratio(.willowispAlert, .bgPrimary, appearance: .aqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    @Test("willowispAlert / bgPrimary dark >= 3.0")
+    func willowispAlertOnBgPrimaryDark() {
+        let r = self.ratio(.willowispAlert, .bgPrimary, appearance: .darkAqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    // MARK: Will-o'-the-Wisp highlight — dark-surface glow only (≥ 3.0)
+
+    // A bright mint intended for dark surfaces; deliberately low contrast on
+    // light surfaces, so it is asserted in dark appearance only.
+
+    @Test("willowispHighlight / bgPrimary dark >= 3.0")
+    func willowispHighlightOnBgPrimaryDark() {
+        let r = self.ratio(.willowispHighlight, .bgPrimary, appearance: .darkAqua)
+        #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
     // MARK: Accent palette checkmarks — non-text (≥ 3.0)
 
     @Test("AccentPalette labelColor achieves ≥ 3.0 on every swatch")

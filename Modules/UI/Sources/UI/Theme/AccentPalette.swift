@@ -34,6 +34,10 @@ public enum AccentPalette {
     ///   yellow  ≈ 0.64 → black  (white = 1.5 : 1 ✗  black = 11.1 : 1 ✓)
     ///   green   ≈ 0.42 → black  (white = 2.2 : 1 ✗  black = 7.6 : 1 ✓)
     ///   teal    ≈ 0.35 → black  (white = 2.7 : 1 ✗  black = 6.3 : 1 ✓)
+    ///
+    /// `willowisp` is the only adaptive swatch (light #1E9E8A / dark #3FD6BC), so
+    /// its `labelColor` must clear 3 : 1 on *both* variants: black does (6.3 : 1
+    /// light, 11.6 : 1 dark) whereas white fails on the bright dark variant.
     public static let all: [AccentColor] = [
         .init(id: "system", displayName: "System", color: .accentColor, labelColor: .white),
         .init(id: "blue", displayName: "Blue", color: Color(red: 0.0, green: 0.48, blue: 1.0), labelColor: .white),
@@ -44,6 +48,7 @@ public enum AccentPalette {
         .init(id: "yellow", displayName: "Yellow", color: Color(red: 1.0, green: 0.80, blue: 0.0), labelColor: .black),
         .init(id: "green", displayName: "Green", color: Color(red: 0.20, green: 0.78, blue: 0.35), labelColor: .black),
         .init(id: "teal", displayName: "Teal", color: Color(red: 0.19, green: 0.68, blue: 0.76), labelColor: .black),
+        .init(id: "willowisp", displayName: "Will-o'-the-Wisp", color: .willowispAccent, labelColor: .black),
     ]
 
     /// Returns the `Color` for the given accent ID, falling back to `.accentColor`.
