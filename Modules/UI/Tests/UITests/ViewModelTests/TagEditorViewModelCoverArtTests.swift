@@ -36,7 +36,7 @@ struct TagEditorViewModelCoverArtTests {
     }
 
     private func makeCandidate(id: String = "c1") -> CoverArtCandidate {
-        let url = URL(string: "https://example.com/art.jpg")!
+        let url = URL(string: "https://example.com/art.jpg") ?? URL(filePath: "/")
         return CoverArtCandidate(
             id: id,
             title: "Abbey Road",
