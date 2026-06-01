@@ -4,17 +4,9 @@ import UI
 
 // MARK: - BocanCommands
 
-/// Application menu commands.
-///
-/// All four VMs are plain `let` so this struct's `body` is never invalidated by
-/// observable publishes — LibraryViewModel fires on every playback tick,
-/// VisualizerViewModel fires `analysis` at 60 fps, and LyricsViewModel fires
-/// `currentLineIndex` on every lyric scroll.  Rebuilding the macOS menu bar at
-/// those rates causes audio buffer starvation (audible pops).
-///
-/// For labels that must reflect live state ("Show" vs "Hide"), we read the
-/// AppStorage keys directly — those same keys back the VMs' paneVisible
-/// properties, so they stay in sync without requiring @ObservedObject.
+/// Application menu commands. VMs are plain `let` (not `@ObservedObject`/`@Bindable`) to
+/// prevent menu-bar rebuilds on every playback tick or 60 fps visualizer update, which
+/// starves the audio buffer. Live-state labels read `@AppStorage` keys directly.
 struct BocanCommands: Commands {
     let vm: LibraryViewModel
     let windowMode: WindowModeController
@@ -471,6 +463,14 @@ struct BocanCommands: Commands {
                 self.openWindow(id: "notices")
             }
             .help("View third-party licence notices for open-source components used by Bòcan")
+
+            Divider()
+
+            Button("Log Console") {
+                self.openWindow(id: "log-console")
+            }
+            .keyboardShortcut("l", modifiers: [.command, .shift])
+            .help("Open the in-app log console to view captured log entries")
         }
 
         CommandMenu("Tools") {
