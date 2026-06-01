@@ -120,4 +120,51 @@ struct LogConsoleViewConventionTests {
             "LogConsoleRow must read the differentiateWithoutColor environment key"
         )
     }
+
+    // MARK: - Step 9: Polish + Export
+
+    @Test("LogConsoleView provides a Clear Buffer action")
+    func viewHasClearBuffer() throws {
+        let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
+        #expect(
+            source.contains("clearBuffer"),
+            "LogConsoleView must expose a Clear Buffer action to empty the ring buffer"
+        )
+    }
+
+    @Test("LogConsoleView overflow menu label contains 'Clear Buffer'")
+    func viewHasClearBufferLabel() throws {
+        let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
+        #expect(
+            source.contains("\"Clear Buffer\""),
+            "LogConsoleView must have a 'Clear Buffer' label in the clear menu"
+        )
+    }
+
+    @Test("LogConsoleView search field has an accessibility label")
+    func searchFieldHasAccessibilityLabel() throws {
+        let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
+        #expect(
+            source.contains("Search log entries"),
+            "The search text field must have an .accessibilityLabel for VoiceOver"
+        )
+    }
+
+    @Test("LogConsoleView capacity banner image is hidden from accessibility")
+    func capacityBannerImageIsAccessibilityHidden() throws {
+        let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
+        #expect(
+            source.contains("accessibilityHidden(true)"),
+            "The capacity banner icon must be hidden from VoiceOver (.accessibilityHidden(true))"
+        )
+    }
+
+    @Test("LogConsoleView line count label has an accessibility label")
+    func lineCountHasAccessibilityLabel() throws {
+        let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
+        #expect(
+            source.contains("log entries visible"),
+            "The line count label must have an .accessibilityLabel describing the visible entry count"
+        )
+    }
 }
