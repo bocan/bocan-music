@@ -204,6 +204,12 @@ public actor DeviceRouter {
             size,
             &deviceID
         )
+        let log = AppLogger.make(.cast)
+        if status == noErr {
+            log.info("cast.setDefaultDevice.ok", ["deviceID": Int(id)])
+        } else {
+            log.error("cast.setDefaultDevice.fail", ["deviceID": Int(id), "status": Int(status)])
+        }
         return status == noErr
     }
 }

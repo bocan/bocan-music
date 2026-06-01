@@ -38,9 +38,9 @@ extension AudioEngine {
     /// once after construction.  On change, the engine is reset and
     /// reconnected at the new hardware sample rate.
     public func startObservingOutputDeviceChanges() async {
-        await self.deviceRouter.startObserving { [weak self] _ in
+        await self.deviceRouter.startObserving { [weak self] device in
             guard let self else { return }
-            Task { await self.handleDefaultDeviceChange() }
+            Task { await self.handleDefaultDeviceChange(device) }
         }
     }
 
@@ -52,18 +52,28 @@ extension AudioEngine {
     /// Reconfigure the graph for a new default output device.  Runs on the
     /// engine actor — the CoreAudio listener fires on a HAL thread, so the
     /// hop onto this actor is mandatory before mutating AVFoundation state.
-    func handleDefaultDeviceChange() async {
+    func handleDefaultDeviceChange(_ device: DeviceInfo? = nil) async {
         let resumeAfter = self.isPlaying
+        self.log.notice("audio.device.reconfigure.start", [
+            "device": device?.name ?? "unknown",
+            "wasPlaying": resumeAfter,
+        ])
         await self.fadePlayerNode(to: 0)
         self.graph.playerNode.stop()
         await self.pump?.stop()
         self.pump = nil
         self.graph.reset()
-        self.log.notice("audio.device.reconfigure")
         if resumeAfter {
             // Best-effort resume; if the new device fails to open, swallow
             // the error here (the public state stream will surface .failed).
-            try? await self.play()
+            do {
+                try await self.play()
+                self.log.notice("audio.device.reconfigure.resumed", ["device": device?.name ?? "unknown"])
+            } catch {
+                self.log.error("audio.device.reconfigure.resume.failed", ["error": String(reflecting: error)])
+            }
+        } else {
+            self.log.notice("audio.device.reconfigure.end", ["device": device?.name ?? "unknown"])
         }
     }
 }

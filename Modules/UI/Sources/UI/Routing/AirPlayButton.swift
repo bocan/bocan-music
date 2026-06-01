@@ -1,4 +1,5 @@
 import AVKit
+import Observability
 import SwiftUI
 
 // MARK: - Notification
@@ -37,6 +38,7 @@ public struct AirPlayButton: NSViewRepresentable {
         view.setRoutePickerButtonColor(.controlAccentColor, for: .active)
         view.setAccessibilityLabel("AirPlay")
         view.toolTip = "Choose AirPlay output"
+        view.delegate = context.coordinator
         context.coordinator.attach(to: view)
         return view
     }
@@ -54,7 +56,8 @@ public struct AirPlayButton: NSViewRepresentable {
     /// The isolation also makes `Coordinator` implicitly `Sendable`, satisfying
     /// Swift 6's requirement for captures in `@Sendable` notification closures.
     @MainActor
-    public final class Coordinator {
+    public final class Coordinator: NSObject, AVRoutePickerViewDelegate {
+        private let log = AppLogger.make(.cast)
         private weak var pickerView: AVRoutePickerView?
         /// `NSObjectProtocol` (the opaque observer token from NotificationCenter) is not
         /// `Sendable`. Marking it `nonisolated(unsafe)` lets `deinit` (which is always
@@ -81,10 +84,32 @@ public struct AirPlayButton: NSViewRepresentable {
         /// `AVRoutePickerView` contains a system `NSButton` subview; forwarding
         /// `performClick` to it opens the route-picker popup programmatically.
         private func trigger() {
-            guard let view = pickerView else { return }
-            if let button = view.subviews.first(where: { $0 is NSButton }) as? NSButton {
-                button.performClick(nil)
+            guard let view = pickerView else {
+                self.log.warning("cast.picker.activate.noView")
+                return
             }
+            if let button = view.subviews.first(where: { $0 is NSButton }) as? NSButton {
+                self.log.info("cast.picker.activate", ["source": "notification"])
+                button.performClick(nil)
+            } else {
+                self.log.warning("cast.picker.activate.noButton")
+            }
+        }
+
+        // MARK: AVRoutePickerViewDelegate
+
+        // These fire on the main thread but the protocol is not actor-annotated,
+        // so they are `nonisolated`; they only touch the Sendable `log`.
+
+        public nonisolated func routePickerViewWillBeginPresentingRoutes(_: AVRoutePickerView) {
+            self.log.info("cast.picker.present.begin")
+        }
+
+        public nonisolated func routePickerViewDidEndPresentingRoutes(_: AVRoutePickerView) {
+            // AVRoutePickerView gives us no selection callback (it routes AVPlayer
+            // audio, which this app does not use), so the actual destination shows
+            // up via the CoreAudio default-device observer, not here.
+            self.log.info("cast.picker.present.end")
         }
 
         deinit {
