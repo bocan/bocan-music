@@ -132,8 +132,18 @@ public struct SubsonicAlbumDetailView: View {
             hasMorePages: false,
             coverArtProvider: self.coverArtProvider,
             showsSource: false,
+            nowPlayingRowID: self.nowPlayingRowID,
             actions: self.makeActions(songs)
         )
+    }
+
+    /// Row ID of the currently-playing Subsonic stream, so the table can move its
+    /// selection onto the playing song (mirrors the local library).
+    private var nowPlayingRowID: String? {
+        let np = self.library.nowPlaying
+        guard let serverID = np.nowPlayingSubsonicServerID,
+              let songID = np.nowPlayingSubsonicSongID else { return nil }
+        return SubsonicSongTableRow.id(serverID: serverID, songID: songID)
     }
 
     private func makeRows(_ songs: [Song]) -> [SubsonicSongTableRow] {
