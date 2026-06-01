@@ -46,7 +46,7 @@ public struct LogConsoleView: View {
             self.searchField
             Spacer()
             self.pauseButton
-            self.clearButton
+            self.clearMenu
             self.copyButton
             self.exportButton
             Divider().frame(height: 16)
@@ -113,6 +113,7 @@ public struct LogConsoleView: View {
             .textFieldStyle(.roundedBorder)
             .frame(minWidth: 120, maxWidth: 200)
             .help("Filter entries by message text")
+            .accessibilityLabel(L10n.string("Search log entries"))
     }
 
     private var pauseButton: some View {
@@ -132,13 +133,27 @@ public struct LogConsoleView: View {
         )
     }
 
-    private var clearButton: some View {
-        Button {
-            self.vm.clearView()
+    private var clearMenu: some View {
+        Menu {
+            Button {
+                self.vm.clearView()
+            } label: {
+                Label(L10n.string("Clear View"), systemImage: "xmark")
+            }
+            .help("Remove all entries from the visible list without emptying the ring buffer")
+
+            Divider()
+
+            Button(role: .destructive) {
+                self.vm.clearBuffer()
+            } label: {
+                Label(L10n.string("Clear Buffer"), systemImage: "trash.fill")
+            }
+            .help("Empty both the visible list and the underlying ring buffer")
         } label: {
             Label(L10n.string("Clear"), systemImage: "trash")
         }
-        .help("Clear the log view (does not affect the ring buffer)")
+        .help("Clear the log view; expand for option to also clear the ring buffer")
     }
 
     private var copyButton: some View {
@@ -174,6 +189,7 @@ public struct LogConsoleView: View {
             .foregroundStyle(.secondary)
             .monospacedDigit()
             .frame(minWidth: 70, alignment: .trailing)
+            .accessibilityLabel(Text(localized: "\(self.vm.visible.count) log entries visible"))
     }
 
     // MARK: - Content area
@@ -221,6 +237,7 @@ public struct LogConsoleView: View {
     private var capacityBanner: some View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle")
+                .accessibilityHidden(true)
             Text(localized: "Buffer full - oldest entries are being dropped")
                 .font(.caption)
         }
@@ -249,7 +266,7 @@ public struct LogConsoleView: View {
 
     private var lineCountText: String {
         let n = self.vm.visible.count
-        return n == 1 ? "1 line" : "\(n) lines"
+        return n == 1 ? L10n.string("1 line") : L10n.string("\(n) lines")
     }
 
     private var categoriesMenuTitle: String {
