@@ -50,6 +50,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
 - **AirPlay** routing via the system picker; a live route chip shows the current output device.
 - **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, `⌘⇧1`–`⌘⇧9` to jump straight to a server, and drag a streamed song straight into Up Next.
+- **In-app Log Console** : open **Help -> Log Console** (`⌘⇧L`) to tail every log line since launch, filtered by level or category, with free-text search, live tailing, pause and resume, copy to clipboard, and export to a `.log` file. Diagnose a problem without ever leaving the app.
 
 ### ♿ It's accessible
 
@@ -99,7 +100,6 @@ Bòcan curates your music library while you sleep. The short version is that com
 - **File management tools**: move, rename, and organise files directly from the library.
 - **More visualisers**: new render modes beyond spectrum bars, oscilloscope, and the fluid shader.
 - **Remote control**: iPhone and Android apps to control playback on the Mac (not AirPlay; the Mac stays the source).
-- **Observability**: structured log viewer in the Tools menu, in-app diagnostic export.
 - **Accessibility**: ongoing work; VoiceOver coverage is good but there's more to do.
 
 Contributions and ideas welcome. Open an issue or a pull request.
@@ -129,7 +129,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for prerequisites, environment setup, the b
 
 | Module | Description |
 |--------|-------------|
-| `Observability` | Structured logging (`AppLogger`), telemetry, MetricKit |
+| `Observability` | Structured logging (`AppLogger`), in-process ring buffer (`LogStore`), log console support, telemetry, MetricKit |
 | `Persistence` | GRDB schema + migrations, repositories, reactive `ValueObservation` |
 | `AudioEngine` | AVFoundation + FFmpeg decoder graph, ring buffer, DSP chain, playback actor |
 | `Metadata` | TagLib read/write, cover-art extraction, LRC lyric parser |

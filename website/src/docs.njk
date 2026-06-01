@@ -35,6 +35,7 @@ permalink: /docs/
       <tr><td><kbd>⌘</kbd><kbd>I</kbd></td><td>Get info / tag editor</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Preferences</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⌥</kbd><kbd>S</kbd></td><td>Sleep timer</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd></td><td>Log Console</td></tr>
     </tbody>
   </table>
 
@@ -54,6 +55,30 @@ permalink: /docs/
     album, year, BPM, rating, play count, last played, date added, key, …),
     and a "limit by" clause. Shuffle is reproducible per session, no
     "shuffle" that mysteriously plays the same five tracks.
+  </p>
+
+  <h2 id="viewing-logs">Viewing logs</h2>
+  <p>
+    Bòcan has a built-in log console you can open without leaving the app.
+    Choose <strong>Help &#x2192; Log Console</strong> (<kbd>&#x21E7;&#x2318;L</kbd>)
+    or go to <strong>Settings &#x2192; Diagnostics &#x2192; Open Log Console</strong>.
+  </p>
+  <p>
+    The console shows every debug, info, warning, and error line emitted since
+    the app started, up to a 5,000-line ring buffer. You can:
+  </p>
+  <ul>
+    <li>Filter by minimum log level (Trace through Fault) or by category.</li>
+    <li>Search the message text (case-insensitive, updates live).</li>
+    <li>Tail new lines automatically as they arrive, or pause to freeze the view.</li>
+    <li>Copy the visible lines to the clipboard.</li>
+    <li>Export the visible lines to a <code>.log</code> text file for attaching to a bug report.</li>
+    <li>Clear the view, or clear the underlying ring buffer via the overflow menu.</li>
+  </ul>
+  <p>
+    Capture can be turned off under <strong>Settings &#x2192; Diagnostics</strong>
+    if you need to stop the buffer from filling while the app runs unattended.
+    Disabling capture has no effect on the system log (<code>log stream</code>).
   </p>
 
   <h2 id="troubleshooting">Troubleshooting</h2>
