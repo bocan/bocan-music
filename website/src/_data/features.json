@@ -42,5 +42,9 @@
   {
     "title": "The Homer of music players.",
     "body": "Every cool feature from iTunes 9, Winamp 5, Foobar2000, and Cog. Without the bloat, without the spyware, without the cloud."
+  },
+  {
+    "title": "A log console you can actually read.",
+    "body": "Open <strong>Help &#x2192; Log Console</strong> (<kbd>&#x21E7;&#x2318;L</kbd>) to tail every debug, info, warning, and error line since launch. Filter by level or category, search free-text, pause, copy, and export to a <code>.log</code> file. No terminal required."
   }
 ]
