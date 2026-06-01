@@ -41,14 +41,23 @@ public final class DockTileController: ObservableObject {
         self.vm = vm
         NSApp.dockTile.contentView = self.contentView
 
-        // Observe artwork + track changes
+        // Observe artwork + track changes.
+        //
+        // Keying on a composite identity (local track ID *or* Subsonic song ID)
+        // covers Subsonic streams, whose `nowPlayingTrackID` is always nil. We
+        // also watch the artwork object itself: for Subsonic the cover loads
+        // asynchronously *after* the identity is already set, so an identity-only
+        // check would refresh the tile before the image had arrived.
         self.observationTask = Task { [weak self] in
-            var lastID: Int64?
+            var lastIdentity: String?
+            var lastArtwork: NSImage?
             while !Task.isCancelled {
                 guard let self else { return }
-                let id = self.vm?.nowPlayingTrackID
-                if id != lastID {
-                    lastID = id
+                let identity = self.nowPlayingIdentity
+                let artwork = self.vm?.artwork
+                if identity != lastIdentity || artwork !== lastArtwork {
+                    lastIdentity = identity
+                    lastArtwork = artwork
                     await self.updateArtwork()
                 }
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -85,6 +94,20 @@ public final class DockTileController: ObservableObject {
     }
 
     // MARK: - Private
+
+    /// A stable key for the current item across both local and Subsonic sources.
+    /// Local tracks expose `nowPlayingTrackID`; Subsonic streams expose only a
+    /// server + song ID. Returns `nil` when nothing is playing.
+    private var nowPlayingIdentity: String? {
+        if let trackID = self.vm?.nowPlayingTrackID {
+            return "track:\(trackID)"
+        }
+        if let serverID = self.vm?.nowPlayingSubsonicServerID,
+           let songID = self.vm?.nowPlayingSubsonicSongID {
+            return "subsonic:\(serverID.uuidString):\(songID)"
+        }
+        return nil
+    }
 
     private func updateArtwork() async {
         let showAlbumArt = UserDefaults.standard.object(forKey: Self.showAlbumArtKey) as? Bool ?? true
