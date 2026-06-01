@@ -134,7 +134,7 @@ public protocol OutputDeviceProvider: Sendable {
 /// object, plus name / transport-type listeners on the *current* device,
 /// and emits a fresh `OutputDeviceInfo` on every change.
 public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @unchecked Sendable {
-    private let log = AppLogger.make(.playback)
+    private let log = AppLogger.make(.cast)
 
     /// Continuations for active subscribers. CoreAudio HAL callbacks fire
     /// on its own thread; we serialise mutation through the lock.
@@ -268,6 +268,7 @@ public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @uncheck
             self.systemListenerInstalled = true
             self.systemListenerBlock = block
             self.lock.unlock()
+            self.log.debug("routing.hal.systemListener.installed")
         } else {
             self.log.error("routing.hal.systemListener.fail", ["status": Int(status)])
         }
@@ -294,6 +295,7 @@ public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @uncheck
     }
 
     private func handleDefaultDeviceChanged() {
+        self.log.info("routing.hal.defaultDevice.changed")
         self.refreshDeviceListener()
         self.broadcastSnapshot()
     }
@@ -374,10 +376,19 @@ public final class CoreAudioOutputDeviceProvider: OutputDeviceProvider, @uncheck
     }
 
     private func broadcastSnapshot() {
-        guard let info = self.snapshot() else { return }
+        guard let info = self.snapshot() else {
+            self.log.warning("routing.hal.snapshot.nil")
+            return
+        }
         self.lock.lock()
         let conts = Array(self.continuations.values)
         self.lock.unlock()
+        self.log.debug("routing.hal.broadcast", [
+            "device": info.name,
+            "transport": String(describing: info.transportType),
+            "deviceID": Int(info.deviceID),
+            "subscribers": conts.count,
+        ])
         for cont in conts {
             cont.yield(info)
         }

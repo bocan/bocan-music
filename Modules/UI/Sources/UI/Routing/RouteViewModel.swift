@@ -18,7 +18,7 @@ public final class RouteViewModel {
     public private(set) var current: Route = .local(name: "Built-in Output")
 
     private let manager: RouteManager?
-    private let log = AppLogger.make(.playback)
+    private let log = AppLogger.make(.cast)
     /// `@ObservationIgnored` keeps this as a plain stored var so that
     /// `nonisolated(unsafe)` is meaningful — `deinit` (nonisolated) needs
     /// to call `cancel()` on it, and the task handle doesn't need observation.
@@ -47,13 +47,24 @@ public final class RouteViewModel {
 
     /// Begin observing route changes. Idempotent.
     public func start() {
-        guard self.consumer == nil, let mgr = manager else { return }
+        guard self.consumer == nil, let mgr = manager else {
+            self.log.debug("cast.routeVM.start.skipped", ["hasManager": self.manager != nil])
+            return
+        }
+        self.log.debug("cast.routeVM.start")
         self.consumer = Task { [weak self] in
             await mgr.start()
             for await route in mgr.routes() {
                 if Task.isCancelled { return }
                 await MainActor.run {
-                    self?.current = route
+                    guard let self else { return }
+                    if route != self.current {
+                        self.log.info("cast.routeVM.route", [
+                            "name": route.displayName,
+                            "kind": route.subtitle ?? "local",
+                        ])
+                    }
+                    self.current = route
                 }
             }
         }
@@ -61,6 +72,7 @@ public final class RouteViewModel {
 
     /// Stops observing route changes and cancels the consumer task.
     public func stop() {
+        self.log.debug("cast.routeVM.stop")
         self.consumer?.cancel()
         self.consumer = nil
     }

@@ -15,7 +15,7 @@ public actor RouteManager {
     public private(set) var current: Route = .local(name: "Built-in Output")
 
     private let provider: any OutputDeviceProvider
-    private let log = AppLogger.make(.playback)
+    private let log = AppLogger.make(.cast)
 
     private var consumeTask: Task<Void, Never>?
     private var subscribers: [UUID: AsyncStream<Route>.Continuation] = [:]
@@ -31,13 +31,20 @@ public actor RouteManager {
     /// Subscribe to the provider's update stream and re-publish as `Route`.
     /// Idempotent — subsequent calls are no-ops while a task is running.
     public func start() async {
-        guard self.consumeTask == nil else { return }
+        guard self.consumeTask == nil else {
+            self.log.debug("routing.start.alreadyRunning")
+            return
+        }
         self.log.debug("routing.start")
 
         // Seed `current` from a one-shot read so subscribers see a sensible
         // value before the first update arrives.
         let seed = await self.provider.current()
         self.current = Self.route(for: seed)
+        self.log.info("routing.seed", [
+            "name": self.current.displayName,
+            "kind": self.current.subtitle ?? "local",
+        ])
         self.fanout(self.current)
 
         let stream = self.provider.updates()
@@ -86,7 +93,17 @@ public actor RouteManager {
 
     private func handle(_ info: OutputDeviceInfo) {
         let route = Self.route(for: info)
-        guard route != self.current else { return }
+        // Log every update from the HAL, so a device event that maps to the same
+        // route (e.g. AirPlay never actually engaging) is still visible.
+        self.log.debug("routing.update", [
+            "device": info.name,
+            "transport": String(describing: info.transportType),
+            "deviceID": Int(info.deviceID),
+        ])
+        guard route != self.current else {
+            self.log.debug("routing.unchanged", ["name": route.displayName])
+            return
+        }
         self.current = route
         self.log.info("routing.changed", [
             "name": route.displayName,
