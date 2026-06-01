@@ -48,6 +48,14 @@ public final class NowPlayingViewModel {
     public private(set) var nowPlayingAlbumID: Int64?
     /// The artist ID of the track currently loaded into the engine, or `nil`.
     public private(set) var nowPlayingArtistID: Int64?
+    /// The Subsonic server ID of the stream currently loaded into the engine, or
+    /// `nil` when the current item is not a Subsonic stream.
+    public private(set) var nowPlayingSubsonicServerID: UUID?
+    /// The Subsonic song ID of the stream currently loaded into the engine, or
+    /// `nil` when the current item is not a Subsonic stream. Together with
+    /// `nowPlayingSubsonicServerID` this lets per-server Songs lists move their
+    /// selection onto the playing row, mirroring the local library.
+    public private(set) var nowPlayingSubsonicSongID: String?
     /// `true` only while playback is paused mid-song (not stopped, idle, or ended).
     /// Used by `playPause()` to decide whether to resume or reload the library.
     public private(set) var isPaused = false
@@ -158,6 +166,9 @@ public final class NowPlayingViewModel {
         self.nowPlayingTrackID = track.id
         self.nowPlayingAlbumID = track.albumID
         self.nowPlayingArtistID = track.artistID
+        // A local track is not a Subsonic stream; drop any stale stream identity.
+        self.nowPlayingSubsonicServerID = nil
+        self.nowPlayingSubsonicSongID = nil
         self.nowPlayingIsLoved = track.loved
         self.title = track.title ?? "Unknown Track"
         self.artist = ""
@@ -351,6 +362,40 @@ public final class NowPlayingViewModel {
         if minutes == nil { self.sleepTimerRemaining = nil }
     }
 
+    /// Populates the now-playing display from a queue item that has no local
+    /// `Track` row (e.g. a Subsonic stream), using the item's snapshot metadata.
+    private func applyStreamItem(_ item: QueueItem) async {
+        self.nowPlayingTrackID = nil
+        self.nowPlayingAlbumID = nil
+        self.nowPlayingArtistID = nil
+        self.title = item.title ?? "Unknown Track"
+        self.artist = item.artistName ?? ""
+        self.album = item.albumName ?? ""
+        self.duration = item.duration
+        self.artwork = nil
+        if case let .subsonic(serverID, songID) = item.playableSource {
+            self.nowPlayingSubsonicServerID = serverID
+            self.nowPlayingSubsonicSongID = songID
+            await self.loadSubsonicArtwork(serverID: serverID, songID: songID)
+        } else {
+            self.nowPlayingSubsonicServerID = nil
+            self.nowPlayingSubsonicSongID = nil
+        }
+    }
+
+    /// Resets every now-playing display field; called when the queue is empty.
+    private func clearNowPlayingDisplay() {
+        self.nowPlayingTrackID = nil
+        self.nowPlayingAlbumID = nil
+        self.nowPlayingArtistID = nil
+        self.nowPlayingSubsonicServerID = nil
+        self.nowPlayingSubsonicSongID = nil
+        self.title = ""
+        self.artist = ""
+        self.album = ""
+        self.artwork = nil
+    }
+
     private func startObservingCurrentTrack(_ qp: QueuePlayer) {
         self.currentTrackTask = Task { [weak self] in
             guard let self else { return }
@@ -358,27 +403,9 @@ public final class NowPlayingViewModel {
                 if let track {
                     self.setCurrentTrack(track)
                 } else if let item = await qp.queue.currentItem {
-                    // No local Track row (e.g. Subsonic stream). Populate display
-                    // fields directly from the queue item's snapshot metadata.
-                    self.nowPlayingTrackID = nil
-                    self.nowPlayingAlbumID = nil
-                    self.nowPlayingArtistID = nil
-                    self.title = item.title ?? "Unknown Track"
-                    self.artist = item.artistName ?? ""
-                    self.album = item.albumName ?? ""
-                    self.duration = item.duration
-                    self.artwork = nil
-                    if case let .subsonic(serverID, songID) = item.playableSource {
-                        await self.loadSubsonicArtwork(serverID: serverID, songID: songID)
-                    }
+                    await self.applyStreamItem(item)
                 } else {
-                    self.nowPlayingTrackID = nil
-                    self.nowPlayingAlbumID = nil
-                    self.nowPlayingArtistID = nil
-                    self.title = ""
-                    self.artist = ""
-                    self.album = ""
-                    self.artwork = nil
+                    self.clearNowPlayingDisplay()
                 }
             }
         }

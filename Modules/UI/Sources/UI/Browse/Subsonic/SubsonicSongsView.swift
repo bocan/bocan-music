@@ -54,6 +54,15 @@ public struct SubsonicSongsView: View {
         !self.library.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Row ID of the currently-playing Subsonic stream, so the table can move its
+    /// selection onto the playing song (mirrors the local library).
+    private var nowPlayingRowID: String? {
+        let np = self.library.nowPlaying
+        guard let serverID = np.nowPlayingSubsonicServerID,
+              let songID = np.nowPlayingSubsonicSongID else { return nil }
+        return SubsonicSongTableRow.id(serverID: serverID, songID: songID)
+    }
+
     public var body: some View {
         Group {
             if self.isSearching {
@@ -123,6 +132,7 @@ public struct SubsonicSongsView: View {
                 hasMorePages: self.vm.hasMorePages,
                 coverArtProvider: self.coverArtProvider,
                 showsSource: false,
+                nowPlayingRowID: self.nowPlayingRowID,
                 actions: SubsonicSongTableActions(
                     playNow: { index in
                         let songs = self.vm.songs
@@ -197,6 +207,7 @@ public struct SubsonicSongsView: View {
                     hasMorePages: false,
                     coverArtProvider: self.coverArtProvider,
                     showsSource: true,
+                    nowPlayingRowID: self.nowPlayingRowID,
                     actions: SubsonicSongTableActions(
                         playNow: { index in
                             let hits = self.search.songs
