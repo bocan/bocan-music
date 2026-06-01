@@ -106,6 +106,35 @@ extension Color {
     /// Star / favourite tint.  Shares the `ratingFill` palette so that Subsonic
     /// stars and local rating stars render identically.
     static let starTint = ratingFill
+
+    // MARK: - Will-o'-the-Wisp identity (issue #333)
+
+    /// Signature spectral blue-green accent ("bòcan" = ghost; the marsh-light of
+    /// Gaelic folklore).  Selectable from the accent picker; the heritage blue
+    /// stays as the "System" swatch.
+    ///
+    /// Light: #1E9E8A — 3.14 : 1 on `bgPrimary` (passes WCAG 1.4.11 non-text /
+    /// large-text 3 : 1; do NOT use for body text, which needs 4.5 : 1).
+    /// Dark: #3FD6BC — 9.36 : 1 on dark `bgPrimary`. ✓
+    ///
+    /// Colour-blindness checked (Machado 2009, severity 1.0): stays separable
+    /// from both its surface and `willowispAlert` across protan/deutan/tritan
+    /// (worst-case ΔE 23, protanopia).
+    static let willowispAccent = Color(adaptiveLight: 0.118, 0.620, 0.541, dark: 0.247, 0.839, 0.737)
+
+    /// Will-o'-the-Wisp highlight / glow.  A bright mint intended for dark
+    /// surfaces only (13.08 : 1 on dark `bgPrimary`); it is deliberately low
+    /// contrast on light surfaces, so it is not audited against the light
+    /// appearance.  Consumed by the spectral-glow behaviour in #334.
+    static let willowispHighlight = Color(red: 0.612, green: 0.949, blue: 0.863)
+
+    /// Will-o'-the-Wisp alert / coral.
+    ///
+    /// Light: #E84C2E — deepened from the direction's #FF6B57 (which was only
+    /// 2.65 : 1 on warm-cream `bgPrimary`) to 3.60 : 1, clearing the 3 : 1
+    /// graphical threshold.
+    /// Dark: #FF6B57 — the spec value; 6.07 : 1 on dark `bgPrimary`. ✓
+    static let willowispAlert = Color(adaptiveLight: 0.910, 0.298, 0.180, dark: 1.000, 0.420, 0.341)
 }
 
 // MARK: - Private convenience initialiser

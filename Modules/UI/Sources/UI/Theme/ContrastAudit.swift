@@ -62,6 +62,8 @@ public struct ContrastAuditView: View {
         AuditPair(label: "accentColor / bgPrimary", fg: .accentColor, bg: .bgPrimary, threshold: 3.0),
         AuditPair(label: "warningTint / bgPrimary", fg: .warningTint, bg: .bgPrimary, threshold: 3.0),
         AuditPair(label: "starTint / bgPrimary", fg: .starTint, bg: .bgPrimary, threshold: 3.0),
+        AuditPair(label: "willowispAccent / bgPrimary", fg: .willowispAccent, bg: .bgPrimary, threshold: 3.0),
+        AuditPair(label: "willowispAlert / bgPrimary", fg: .willowispAlert, bg: .bgPrimary, threshold: 3.0),
     ]
 
     public init() {}
