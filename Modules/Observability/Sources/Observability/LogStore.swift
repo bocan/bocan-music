@@ -48,6 +48,11 @@ public final class LogStore: Sendable {
         self._state.withLock { $0.subscribers.count }
     }
 
+    /// The number of entries currently held in the ring buffer.
+    public var count: Int {
+        self._state.withLock { $0.count }
+    }
+
     /// When `false`, `record` is a cheap no-op; `os.Logger` output is unaffected.
     /// On by default.
     public var isCaptureEnabled: Bool {

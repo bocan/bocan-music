@@ -14,9 +14,12 @@ import SwiftUI
 public struct DiagnosticsSettingsView: View {
     @AppStorage(MetricKitListener.consentKey) private var consented = false
     @AppStorage(MetricKitListener.consentAskedKey) private var consentAsked = false
+    @AppStorage("console.captureEnabled") private var captureEnabled = true
+    @Environment(\.openWindow) private var openWindow
     @State private var reports: [URL] = []
     @State private var expandedReport: URL?
     @State private var expandedContent = ""
+    @State private var logBufferCount = 0
 
     public init() {}
 
@@ -75,6 +78,39 @@ public struct DiagnosticsSettingsView: View {
                 .foregroundStyle(.secondary)
             }
 
+            // MARK: Log console
+
+            Section {
+                Button("Open Log Console") {
+                    self.openWindow(id: "log-console")
+                }
+                .help("Open the floating Log Console window.")
+                .accessibilityLabel("Open log console window")
+
+                Toggle("Capture in-app logs", isOn: self.$captureEnabled)
+                    .help(
+                        "When enabled, log entries are captured to an in-memory ring buffer for"
+                            + " the Log Console. Disabling stops new entries from being captured;"
+                            + " system log output via Console.app is unaffected."
+                    )
+                    .onChange(of: self.captureEnabled) { _, enabled in
+                        LogStore.shared.isCaptureEnabled = enabled
+                    }
+
+                Text("\(self.logBufferCount) of \(LogStore.shared.capacity) entries in buffer")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Log Console")
+            } footer: {
+                Text(
+                    "The in-memory buffer holds the most recent \(LogStore.shared.capacity) entries since launch."
+                        + " Capture has no effect on external log tools such as Console.app."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
             // MARK: Colour contrast audit
 
             Section {
@@ -93,7 +129,10 @@ public struct DiagnosticsSettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Diagnostics")
-        .task { self.reports = MetricKitListener.listReports() }
+        .task {
+            self.reports = MetricKitListener.listReports()
+            self.logBufferCount = LogStore.shared.count
+        }
     }
 
     // MARK: - Private helpers

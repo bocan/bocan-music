@@ -282,6 +282,15 @@ struct BocanApp: App {
         .windowStyle(.hiddenTitleBar)
         .commandsRemoved()
 
+        // MARK: Log console
+
+        Window("Log Console", id: "log-console") {
+            LogConsoleWindowContent(model: self.model)
+        }
+        .defaultSize(width: 900, height: 520)
+        .windowResizability(.contentMinSize)
+        .restorationBehavior(.disabled)
+
         #if DEBUG
             // Phase 1 audit #14: debug-only manual playback window for codec /
             // fade / seek triage. Compiled out of Release.
@@ -302,6 +311,10 @@ struct BocanApp: App {
         SingleInstance.shared.start()
 
         Self.registerDefaults()
+
+        // Phase 20: apply the persisted capture preference before the first log
+        // line is emitted so the console backfills from the very start of this session.
+        LogStore.shared.isCaptureEnabled = UserDefaults.standard.bool(forKey: "console.captureEnabled")
 
         self.log.info("app.launched", ["version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"])
         #if os(macOS)
@@ -409,6 +422,7 @@ struct BocanApp: App {
             "general.showAlbumArtInDock": true,
             "general.showPlaybackBadge": true,
             "general.showDockProgress": true,
+            "console.captureEnabled": true,
         ])
     }
 
@@ -504,6 +518,7 @@ struct AppGraph {
     let routeViewModel: RouteViewModel
     /// Shared deep-link navigation for the Settings scene (#305).
     let settingsRouter: SettingsRouter
+    let logConsoleViewModel: LogConsoleViewModel
 }
 
 // MARK: - AppModel
@@ -723,7 +738,8 @@ extension BocanApp {
             subsonicSettingsViewModel: subsonicSettingsViewModel,
             routeManager: routeManager,
             routeViewModel: routeViewModel,
-            settingsRouter: SettingsRouter()
+            settingsRouter: SettingsRouter(),
+            logConsoleViewModel: LogConsoleViewModel()
         )
     }
     // swiftlint:enable function_body_length
