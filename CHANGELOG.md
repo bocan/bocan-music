@@ -5,6 +5,88 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0](https://github.com/bocan/bocan-music/compare/v1.5.0...v1.6.0) (2026-06-01)
+
+
+### ### Added
+
+* **ui:** add Will-o'-the-Wisp signature accent identity ([ac2f5c9](https://github.com/bocan/bocan-music/commit/ac2f5c941f47aee32edaa167a94963d583daff02)), closes [#333](https://github.com/bocan/bocan-music/issues/333)
+* **ui:** drag streamed Subsonic songs into the Up Next queue ([#332](https://github.com/bocan/bocan-music/issues/332)) ([a466ffd](https://github.com/bocan/bocan-music/commit/a466ffd6dbd58ec197f0bd804fa7fd3b78f3f4f3))
+* **ui:** group Settings into sections, always show Sources, add a robust deep-link router ([#305](https://github.com/bocan/bocan-music/issues/305)) ([3111271](https://github.com/bocan/bocan-music/commit/3111271862634106f7f49fe2b8addb5d1724276d))
+* **ui:** lay localization foundation and localize the Albums grid ([#314](https://github.com/bocan/bocan-music/issues/314)) ([68d3dab](https://github.com/bocan/bocan-music/commit/68d3dabd9978606f4e6a8e0438146c3f78855330))
+* **ui:** Subsonic song tables follow the now-playing track ([fa00923](https://github.com/bocan/bocan-music/commit/fa00923117b31e23ff3c71b9576779190ed1ae0d))
+* **website:** add Homebrew install snippet to homepage Get it section ([14094a8](https://github.com/bocan/bocan-music/commit/14094a85238717a0df3e68db6b9aa4ea95ad8c8c))
+
+
+### ### Fixed
+
+* **acoustics:** check cancellation after the rate-limiter wait ([2d7e685](https://github.com/bocan/bocan-music/commit/2d7e685eae1314b79671d848c0d90ab09a9ac36a)), closes [#273](https://github.com/bocan/bocan-music/issues/273)
+* **acoustics:** move AcoustID API key from URL to POST body ([85c6aef](https://github.com/bocan/bocan-music/commit/85c6aefa7fd0325cc3514b878d22e6965f4193b3)), closes [#282](https://github.com/bocan/bocan-music/issues/282)
+* **acoustics:** propagate cancellation through RateLimiter.wait() ([e36c93a](https://github.com/bocan/bocan-music/commit/e36c93a7231a3dfa000de790cbbe48f4adde974b)), closes [#272](https://github.com/bocan/bocan-music/issues/272)
+* **acoustics:** validate fpcalc path for file URL and NUL bytes ([fd602fa](https://github.com/bocan/bocan-music/commit/fd602fa35e1f22294d1221bfe0ecfa32b1fcd5b7))
+* **audio:** break retain cycles keeping engine and pump alive across track loads ([89b081b](https://github.com/bocan/bocan-music/commit/89b081b632fe05284df95c4c69daa532d2ec5786)), closes [#261](https://github.com/bocan/bocan-music/issues/261)
+* **audio:** dispatch BufferPump onEnded without the extra @MainActor hop ([655fccb](https://github.com/bocan/bocan-music/commit/655fccb7e4e9cf5f0305faf2ede312e819d36a0c)), closes [#262](https://github.com/bocan/bocan-music/issues/262)
+* **audio:** document and harden FFmpeg partial-alloc cleanup ([9d7bc45](https://github.com/bocan/bocan-music/commit/9d7bc451f0fbdf14a074000001f46d0608b6af7f)), closes [#295](https://github.com/bocan/bocan-music/issues/295)
+* **audio:** restrict FFmpeg to network protocols for remote inputs ([137dc59](https://github.com/bocan/bocan-music/commit/137dc5970476f8233d00a9fc636d236fba30db3d)), closes [#280](https://github.com/bocan/bocan-music/issues/280)
+* **audio:** use checkCancellation in SubsonicStreamCache download loop ([b746b34](https://github.com/bocan/bocan-music/commit/b746b34319de5ebfff176b00007a14fe4634dbec)), closes [#263](https://github.com/bocan/bocan-music/issues/263)
+* **library:** propagate cancellation into LibraryScanner.scan() ([ee338eb](https://github.com/bocan/bocan-music/commit/ee338eb83ed300d0a797d8e755c810f5ad5b27de)), closes [#266](https://github.com/bocan/bocan-music/issues/266)
+* **library:** propagate cancellation into the FileWalker directory walk ([45fd207](https://github.com/bocan/bocan-music/commit/45fd20700437aafd0aa1d2bd869af616de0c7e58)), closes [#265](https://github.com/bocan/bocan-music/issues/265)
+* **metadata:** harden tag decoding against non-UTF-8 bytes ([246d4cc](https://github.com/bocan/bocan-music/commit/246d4ccdf7a5acbe5a6ecce3c767e6ce1e632f4d)), closes [#259](https://github.com/bocan/bocan-music/issues/259)
+* **metadata:** honor empty coverArt array to clear embedded art on write ([89da436](https://github.com/bocan/bocan-music/commit/89da436d43cf658acc753ecc4d76cf9daad924f4))
+* **metadata:** log temp-file cleanup failures; guard large-art SHA-256 hash ([58283c0](https://github.com/bocan/bocan-music/commit/58283c0a005f2949dfd7adf5b9a5d760f9ddb437)), closes [#317](https://github.com/bocan/bocan-music/issues/317)
+* **metadata:** strip UTF-8 BOM before parsing LRC files ([f4b59d3](https://github.com/bocan/bocan-music/commit/f4b59d32f598ec2ec5f5c040d135a077c3c699cf))
+* **observability:** log silently-swallowed errors; drop [@preconcurrency](https://github.com/preconcurrency); add subsonic to standards ([7579b08](https://github.com/bocan/bocan-music/commit/7579b086e7a6ba1fd39448c44cc863bf028bad23)), closes [#315](https://github.com/bocan/bocan-music/issues/315)
+* **observability:** omit diagnostic payload JSON from OS log ([c5362ef](https://github.com/bocan/bocan-music/commit/c5362efafd7224c156c2b8efa64d84d5e384cb13)), closes [#284](https://github.com/bocan/bocan-music/issues/284)
+* **persistence:** escape LIKE metacharacters in albumsByArtistQuery ([06dd26d](https://github.com/bocan/bocan-music/commit/06dd26d61ace625c704dbd7578600c2d96ae613c))
+* **persistence:** extract M016 migration struct; log silently-swallowed errors ([f14a601](https://github.com/bocan/bocan-music/commit/f14a601d00e73be29f58af6b9a3db5697889870b)), closes [#316](https://github.com/bocan/bocan-music/issues/316)
+* **persistence:** surface WAL pragma failure as a warning instead of swallowing it ([ee0b5db](https://github.com/bocan/bocan-music/commit/ee0b5dbd3e03b90b1c0cf90509d1383b44f119ef))
+* **playback:** clamp crossfade-out delay before the UInt64 cast ([0ece82b](https://github.com/bocan/bocan-music/commit/0ece82b19bc204914c4e10baeacfe5b85ce7ff50)), closes [#271](https://github.com/bocan/bocan-music/issues/271)
+* **playback:** guard SleepTimer against a double stop ([7ed7724](https://github.com/bocan/bocan-music/commit/7ed7724ea42f5e5ed698c553a5ee9b271ff87cfe)), closes [#270](https://github.com/bocan/bocan-music/issues/270)
+* **playback:** keep correct currentIndex when removing queue items ([c919c3c](https://github.com/bocan/bocan-music/commit/c919c3c594d3f8898878887d1db748936f21a66c)), closes [#257](https://github.com/bocan/bocan-music/issues/257)
+* **playback:** make the crossfade fade-in task cancellable ([84aad0d](https://github.com/bocan/bocan-music/commit/84aad0dcb4f566399ee01d8d804e67be05373a6a)), closes [#269](https://github.com/bocan/bocan-music/issues/269)
+* **scrobble:** cancel reachability task on stop(); inject clock into observeStats ([de6f3dd](https://github.com/bocan/bocan-music/commit/de6f3dd397c5555faf5f70ffaa24669f0f4757ee))
+* **scrobble:** prevent double-submit when success confirmation write fails ([1755a86](https://github.com/bocan/bocan-music/commit/1755a86ee91350c00757c1461b735c8789752651)), closes [#292](https://github.com/bocan/bocan-music/issues/292)
+* **scrobble:** show Subsonic-sourced rows in recent-scrobbles list ([0322097](https://github.com/bocan/bocan-music/commit/03220973b972bbaaaba350051ff7cf68c538a0e6)), closes [#291](https://github.com/bocan/bocan-music/issues/291)
+* **scrobble:** strip query params from Last.fm auth URL before logging ([0b6d4b4](https://github.com/bocan/bocan-music/commit/0b6d4b487bed4c52eb2f13cb3a110b65cd3decdf)), closes [#283](https://github.com/bocan/bocan-music/issues/283)
+* **security:** harden security posture across multiple low-risk items ([8b3f889](https://github.com/bocan/bocan-music/commit/8b3f889b24b69b4488ec247a8d01de8418192680)), closes [#286](https://github.com/bocan/bocan-music/issues/286)
+* **subsonic:** add kSecAttrAccessible to Keychain update attributes ([b581780](https://github.com/bocan/bocan-music/commit/b581780c26518c819a82ce1dac1c2151f3b80b76)), closes [#285](https://github.com/bocan/bocan-music/issues/285)
+* **subsonic:** manage the connection-monitor wake observer lifecycle ([f7ac9c4](https://github.com/bocan/bocan-music/commit/f7ac9c43a3e4beeaef9d9427f025170a2c846c26)), closes [#274](https://github.com/bocan/bocan-music/issues/274)
+* **subsonic:** replace try? with do/catch + log.warning at all capability and Keychain sites ([f0430f2](https://github.com/bocan/bocan-music/commit/f0430f26a83b87cbc5a3bef36a91cb188066855d)), closes [#318](https://github.com/bocan/bocan-music/issues/318)
+* **ui,library:** pin DateFormatter to en_US_POSIX locale; use Gregorian calendar for day-bucket math ([6682581](https://github.com/bocan/bocan-music/commit/668258121673629b7bc855f6c392e4cafa8c685b))
+* **ui:** a11y polish -- reduce-motion fallback, adjustable sliders, speed-picker focus ring ([79d8218](https://github.com/bocan/bocan-music/commit/79d8218c3e1d937c64941ed708b0367a4702eff9))
+* **ui:** add a persistent Add Folder affordance to the Local Library sidebar header ([#308](https://github.com/bocan/bocan-music/issues/308)) ([1f71ff8](https://github.com/bocan/bocan-music/commit/1f71ff8568faea1a6c93334944669c542d1b0599))
+* **ui:** add a View menu for the presentation toggles ([#303](https://github.com/bocan/bocan-music/issues/303)) ([0f8aa3b](https://github.com/bocan/bocan-music/commit/0f8aa3b1b6792748fddf9432abbe7018496a9fe8))
+* **ui:** add accentColor/bgPrimary pairs to ContrastAudit and ContrastTests ([8c0512e](https://github.com/bocan/bocan-music/commit/8c0512eac3f9045dd50b2a1fff652a42e0241064)), closes [#326](https://github.com/bocan/bocan-music/issues/326)
+* **ui:** add accessibilityLabel to ShuffleCheckCell checkbox ([ca7e3e1](https://github.com/bocan/bocan-music/commit/ca7e3e1fa7908a2881cb271fff35b4a2050eb4c6))
+* **ui:** add dark-appearance variant to AccentColor for WCAG AA contrast ([6399d4f](https://github.com/bocan/bocan-music/commit/6399d4fc863047f3d9224bfd94608516d082d8c8))
+* **ui:** cancel NowPlayingViewModel observation tasks in deinit ([4525a93](https://github.com/bocan/bocan-music/commit/4525a9309c9a327d39a9542d154110737212bdd3)), closes [#279](https://github.com/bocan/bocan-music/issues/279)
+* **ui:** confirm before clearing a non-trivial playback queue ([c1b7085](https://github.com/bocan/bocan-music/commit/c1b7085b90e84ced295682a50a1edff4450d29e5)), closes [#260](https://github.com/bocan/bocan-music/issues/260)
+* **ui:** confirm before removing albums or artists from the library ([d916ace](https://github.com/bocan/bocan-music/commit/d916aced3c15cd35c587d8548060154f886f1926)), closes [#258](https://github.com/bocan/bocan-music/issues/258)
+* **ui:** honor differentiateWithoutColor for transport toggles and Subsonic status dots ([40c88e1](https://github.com/bocan/bocan-music/commit/40c88e175f0a48dcfb2a17c77753f72d34f7b3da))
+* **ui:** let tracks be dragged out to Finder ([1cfdeb1](https://github.com/bocan/bocan-music/commit/1cfdeb1e5ce1b8f596f41b44a565d464782df916))
+* **ui:** live-update Plays and Love in the Songs table ([0e90f52](https://github.com/bocan/bocan-music/commit/0e90f5294b234d6e545092bb16f8752a7807b9f1))
+* **ui:** log empty catch blocks; add WKWebView justification; remove stale comment ([935f909](https://github.com/bocan/bocan-music/commit/935f909d0f6793c215d31263882fc2353a8f8299)), closes [#319](https://github.com/bocan/bocan-music/issues/319)
+* **ui:** make the empty Sources sidebar state a tappable 'Add a Server' CTA ([#309](https://github.com/bocan/bocan-music/issues/309)) ([36cb2db](https://github.com/bocan/bocan-music/commit/36cb2db42a91589e5a2251bce59d580bc0084cb7))
+* **ui:** make the sidebar server Remove… a real confirm-delete ([#306](https://github.com/bocan/bocan-music/issues/306)) ([94cf3f7](https://github.com/bocan/bocan-music/commit/94cf3f79bb34a0f8f82c0ac63be523de2a755742))
+* **ui:** make transport and mini-player fonts honor Dynamic Type ([5dea822](https://github.com/bocan/bocan-music/commit/5dea8224df28f1a686a240a6934553d43d7c0d33))
+* **ui:** persist the selected sidebar destination as the user navigates ([14b309b](https://github.com/bocan/bocan-music/commit/14b309bd95b52c443f2e8f29127761232def8e65))
+* **ui:** prefix now-playing row label with 'Now playing, ' for VoiceOver ([20c165f](https://github.com/bocan/bocan-music/commit/20c165f84e1bded6416e4d3030baa1f373d8c156))
+* **ui:** promote status/affordance colours to semantic tokens ([bd7837d](https://github.com/bocan/bocan-music/commit/bd7837ddb5c1cf6f02807ae9314c7ed5becce299)), closes [#327](https://github.com/bocan/bocan-music/issues/327)
+* **ui:** restore Show/Hide Sidebar and converge on the system View menu ([#304](https://github.com/bocan/bocan-music/issues/304)) ([b5fb213](https://github.com/bocan/bocan-music/commit/b5fb213e426197bb194242a3d010335841a5a3d3))
+* **ui:** reveal a reorder grip on Up Next rows ([ba802aa](https://github.com/bocan/bocan-music/commit/ba802aa29322fa3c43d67105dc8f055b918c2321))
+* **ui:** smooth first-run by deferring consent, dimming idle transport, and improving the URL prompt ([0643548](https://github.com/bocan/bocan-music/commit/06435484a9532bf5c3dd35c48cd0d3f935d602b0))
+* **ui:** use lovedTint token for love heart in strip and table cell ([906bd38](https://github.com/bocan/bocan-music/commit/906bd38c182888ce6e20ad00281621102dc7f529)), closes [#325](https://github.com/bocan/bocan-music/issues/325)
+
+
+### ### Changed
+
+* **app:** open the database off the launch path behind a loading shell ([899009a](https://github.com/bocan/bocan-music/commit/899009ac7bc8b874f3b2fecde66ad15628d2f12b)), closes [#276](https://github.com/bocan/bocan-music/issues/276)
+* **audio:** shrink BufferPump in-flight window back to 4 buffers ([bc16593](https://github.com/bocan/bocan-music/commit/bc16593be52d5eccd28a5c95187f2a87ad7b7dc4)), closes [#277](https://github.com/bocan/bocan-music/issues/277)
+* **library:** bound the on-disk cover-art cache with an LRU sweep ([51fb7c5](https://github.com/bocan/bocan-music/commit/51fb7c5f6ecb638c72fcd296045bd4bebea464b6)), closes [#268](https://github.com/bocan/bocan-music/issues/268)
+* **library:** cut redundant per-file syscalls in the scan import ([fc47ba7](https://github.com/bocan/bocan-music/commit/fc47ba7cb78ab957232c8dcb14b0d671007d1439)), closes [#278](https://github.com/bocan/bocan-music/issues/278)
+* **library:** stream walk output into the import TaskGroup ([7b3b384](https://github.com/bocan/bocan-music/commit/7b3b38435d30c082d069c56a58b660e7744c5fb0)), closes [#267](https://github.com/bocan/bocan-music/issues/267)
+* **ui:** downsample cover art and bound the artwork cache ([da0fafb](https://github.com/bocan/bocan-music/commit/da0fafb77ba1820c8755c8ae5127f004fc46381e)), closes [#275](https://github.com/bocan/bocan-music/issues/275)
+
 ## [1.5.0](https://github.com/bocan/bocan-music/compare/v1.4.0...v1.5.0) (2026-05-27)
 
 
