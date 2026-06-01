@@ -91,6 +91,17 @@ struct MenuBarWindowContent: View {
     }
 }
 
+// MARK: - Log console
+
+struct LogConsoleWindowContent: View {
+    let model: AppModel
+    var body: some View {
+        GraphContent(model: self.model) { graph in
+            LogConsoleView(vm: graph.logConsoleViewModel)
+        }
+    }
+}
+
 #if DEBUG
     struct DebugAudioWindowContent: View {
         let model: AppModel
