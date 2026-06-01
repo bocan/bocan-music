@@ -326,6 +326,7 @@ public struct SubsonicArtistDetailView: View {
             hasMorePages: false,
             coverArtProvider: self.coverArtProvider,
             showsSource: false,
+            nowPlayingRowID: self.nowPlayingRowID,
             actions: SubsonicSongTableActions(
                 playNow: { index in
                     let sid = self.serverID
@@ -362,5 +363,14 @@ public struct SubsonicArtistDetailView: View {
 
     private var currentServerName: String {
         self.library.subsonicServers.first { $0.id == self.serverID }?.name ?? ""
+    }
+
+    /// Row ID of the currently-playing Subsonic stream, so the table can move its
+    /// selection onto the playing song (mirrors the local library).
+    private var nowPlayingRowID: String? {
+        let np = self.library.nowPlaying
+        guard let serverID = np.nowPlayingSubsonicServerID,
+              let songID = np.nowPlayingSubsonicSongID else { return nil }
+        return SubsonicSongTableRow.id(serverID: serverID, songID: songID)
     }
 }

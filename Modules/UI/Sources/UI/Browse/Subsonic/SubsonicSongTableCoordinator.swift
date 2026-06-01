@@ -15,6 +15,10 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     // Snapshot-tracking
     var lastAppliedIDs: [String] = []
     var hasAppliedInitialSnapshot = false
+    /// Row ID last driven onto the selection by the now-playing sync. Tracked so
+    /// the selection only follows the playing track when it actually changes,
+    /// leaving the user free to select other rows in between.
+    var lastNowPlayingRowID: String?
     var lastRowDensity = UserDefaults.standard.string(forKey: "appearance.rowDensity") ?? "spacious"
 
     weak var tableView: NSTableView?
@@ -29,6 +33,21 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     func updateRows(_ newRows: [SubsonicSongTableRow]) {
         self.rows = newRows
         self.rowsByID = Dictionary(newRows.map { ($0.id, $0) }) { _, new in new }
+    }
+
+    /// Moves the table selection onto the now-playing row, but only when the
+    /// now-playing identity changes. Mirrors the local library's
+    /// `TracksView.syncSelectionToNowPlaying`: between track changes the user is
+    /// free to select other rows. No-op when the row isn't loaded yet.
+    func syncSelectionToNowPlaying(_ rowID: String?) {
+        guard rowID != self.lastNowPlayingRowID else { return }
+        self.lastNowPlayingRowID = rowID
+        guard let rowID,
+              let tableView = self.tableView,
+              let index = self.lastAppliedIDs.firstIndex(of: rowID) else { return }
+        guard tableView.selectedRowIndexes != IndexSet(integer: index) else { return }
+        tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
+        tableView.scrollRowToVisible(index)
     }
 
     /// Drag payload for a row, used to drag a streamed song into the queue (#332).

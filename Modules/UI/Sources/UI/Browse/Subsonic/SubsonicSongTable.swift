@@ -24,7 +24,13 @@ struct SubsonicSongTableRow: Identifiable {
     /// Identifier scoped per server so multi-source rows can't collide when
     /// two servers expose the same upstream song ID.
     var id: String {
-        "\(self.serverID.uuidString)::\(self.song.id)"
+        Self.id(serverID: self.serverID, songID: self.song.id)
+    }
+
+    /// Composes the per-server row identifier from its parts. Used by the Songs
+    /// and detail views to map the now-playing Subsonic stream onto a row ID.
+    static func id(serverID: UUID, songID: String) -> String {
+        "\(serverID.uuidString)::\(songID)"
     }
 
     var title: String {
@@ -97,6 +103,10 @@ struct SubsonicSongTable: NSViewRepresentable {
     let hasMorePages: Bool
     let coverArtProvider: SubsonicCoverArtProvider?
     let showsSource: Bool
+    /// Row ID of the currently-playing Subsonic stream, or `nil`. When this
+    /// changes the table moves its selection onto that row, mirroring the local
+    /// library's `syncSelectionToNowPlaying`.
+    var nowPlayingRowID: String?
     let actions: SubsonicSongTableActions
 
     typealias NSViewType = NSScrollView
@@ -170,20 +180,24 @@ struct SubsonicSongTable: NSViewRepresentable {
         // Only rebuild the snapshot when the *set* of song IDs changes.
         let newIDSet = Set(self.rows.map(\.id))
         let currentIDSet = Set(context.coordinator.lastAppliedIDs)
-        guard newIDSet != currentIDSet else { return }
+        if newIDSet != currentIDSet {
+            // Preserve the existing sort order for already-loaded songs; append
+            // new songs at the end.
+            let keepIDs = context.coordinator.lastAppliedIDs.filter { newIDSet.contains($0) }
+            let addIDs = self.rows.filter { !currentIDSet.contains($0.id) }.map(\.id)
+            let orderedIDs = keepIDs + addIDs
+            context.coordinator.lastAppliedIDs = orderedIDs
 
-        // Preserve the existing sort order for already-loaded songs; append
-        // new songs at the end.
-        let keepIDs = context.coordinator.lastAppliedIDs.filter { newIDSet.contains($0) }
-        let addIDs = self.rows.filter { !currentIDSet.contains($0.id) }.map(\.id)
-        let orderedIDs = keepIDs + addIDs
-        context.coordinator.lastAppliedIDs = orderedIDs
+            var snap = NSDiffableDataSourceSnapshot<Int, String>()
+            snap.appendSections([0])
+            snap.appendItems(orderedIDs)
+            dataSource.apply(snap, animatingDifferences: context.coordinator.hasAppliedInitialSnapshot)
+            context.coordinator.hasAppliedInitialSnapshot = true
+        }
 
-        var snap = NSDiffableDataSourceSnapshot<Int, String>()
-        snap.appendSections([0])
-        snap.appendItems(orderedIDs)
-        dataSource.apply(snap, animatingDifferences: context.coordinator.hasAppliedInitialSnapshot)
-        context.coordinator.hasAppliedInitialSnapshot = true
+        // Once the snapshot reflects the current rows, move the selection onto
+        // the now-playing row when it changes.
+        context.coordinator.syncSelectionToNowPlaying(self.nowPlayingRowID)
     }
 
     // MARK: Column definitions
