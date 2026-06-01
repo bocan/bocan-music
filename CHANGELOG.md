@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.6.0](https://github.com/bocan/bocan-music/compare/v1.5.0...v1.6.0) (2026-06-01)
 
+This release is heavily laden with fixes and minor improvements after a running a complex audit against the codebase. Of note is a redesigned settings panel.
 
 ### ### Added
 
