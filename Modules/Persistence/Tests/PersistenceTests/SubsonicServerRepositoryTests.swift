@@ -11,7 +11,7 @@ struct SubsonicServerRepositoryTests {
     private func sample(name: String = "Home", sortIndex: Int = 0) -> SubsonicServerDTO {
         SubsonicServerDTO(
             name: name,
-            serverURL: URL(string: "https://music.example.test")!,
+            serverURL: URL(string: "https://music.example.test") ?? URL(filePath: "/"),
             authKind: "tokenSalt",
             username: "user",
             keychainAccount: "subsonic.\(name)",
