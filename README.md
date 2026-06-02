@@ -48,7 +48,6 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Real-time visualisers**: spectrum bars, oscilloscope, and a Metal GPU fluid shader, dockable or full-screen with `⌘⇧F`.
 - **Mini Player** in four layouts (Strip, Compact, Square, Visualizer) with always-on-top mode.
 - **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
-- **AirPlay** routing via the system picker; a live route chip shows the current output device.
 - **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, `⌘⇧1`–`⌘⇧9` to jump straight to a server, and drag a streamed song straight into Up Next.
 - **In-app Log Console** : open **Help -> Log Console** (`⌘⇧L`) to tail every log line since launch, filtered by level or category, with free-text search, live tailing, pause and resume, copy to clipboard, and export to a `.log` file. Diagnose a problem without ever leaving the app.
 
@@ -99,7 +98,7 @@ Bòcan curates your music library while you sleep. The short version is that com
 
 - **File management tools**: move, rename, and organise files directly from the library.
 - **More visualisers**: new render modes beyond spectrum bars, oscilloscope, and the fluid shader.
-- **Remote control**: iPhone and Android apps to control playback on the Mac (not AirPlay; the Mac stays the source).
+- **Remote control**: iPhone and Android apps to control playback on the Mac; the Mac stays the source.
 - **Accessibility**: ongoing work; VoiceOver coverage is good but there's more to do.
 
 Contributions and ideas welcome. Open an issue or a pull request.

@@ -1,4 +1,3 @@
-import CoreAudio
 import Foundation
 import Persistence
 import Testing
@@ -217,26 +216,5 @@ struct PlaybackErrorTests {
         for err in cases {
             #expect(!err.description.isEmpty)
         }
-    }
-}
-
-// MARK: - TransportType rawCode round-trip
-
-@Suite("TransportType rawCode")
-struct TransportTypeRawCodeTests {
-    @Test("each named CoreAudio transport code maps to the matching case")
-    func mapsAllKnownCodes() {
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeBuiltIn) == .builtIn)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeAirPlay) == .airPlay)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeBluetooth) == .bluetooth)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeBluetoothLE) == .bluetoothLE)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeHDMI) == .hdmi)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeDisplayPort) == .displayPort)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeUSB) == .usb)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeThunderbolt) == .thunderbolt)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeAggregate) == .aggregate)
-        #expect(TransportType(rawCode: kAudioDeviceTransportTypeVirtual) == .virtual)
-        #expect(TransportType(rawCode: 0) == .unknown)
-        #expect(TransportType(rawCode: 0xFFFF_FFFF) == .unknown)
     }
 }

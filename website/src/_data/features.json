@@ -36,10 +36,6 @@
     "body": "Subsonic, Navidrome, Airsonic. Up to nine servers, federated search across all of them, per-server status dots, offline banners with one-tap retry, and <kbd>⌘⇧1</kbd>–<kbd>⌘⇧9</kbd> to jump straight to a server. Streams through the same gapless engine as your local files."
   },
   {
-    "title": "Casts to AirPlay 2.",
-    "body": "Pick a HomePod, an Apple TV, or any AirPlay 2 speaker from the route button next to the transport. A live chip shows exactly where the audio is going, and updates automatically when you switch devices from Control Centre."
-  },
-  {
     "title": "The Homer of music players.",
     "body": "Every cool feature from iTunes 9, Winamp 5, Foobar2000, and Cog. Without the bloat, without the spyware, without the cloud."
   },

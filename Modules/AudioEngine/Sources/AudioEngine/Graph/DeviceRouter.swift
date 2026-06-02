@@ -22,68 +22,6 @@ public actor DeviceRouter {
     private let log = AppLogger.make(.audio)
     private var listenerBlock: AudioObjectPropertyListenerBlock?
 
-    /// Returns all current CoreAudio output devices.
-    public static func outputDevices() -> [DeviceInfo] {
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDevices,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-
-        var dataSize: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(
-            AudioObjectID(kAudioObjectSystemObject),
-            &address,
-            0,
-            nil,
-            &dataSize
-        ) == noErr, dataSize > 0 else { return [] }
-
-        let count = Int(dataSize) / MemoryLayout<AudioDeviceID>.size
-        var deviceIDs = [AudioDeviceID](repeating: 0, count: count)
-        guard AudioObjectGetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &address,
-            0,
-            nil,
-            &dataSize,
-            &deviceIDs
-        ) == noErr else { return [] }
-
-        let log = AppLogger.make(.cast)
-        log.debug("cast.devices.enumerate", ["total": deviceIDs.count])
-        return deviceIDs.compactMap { deviceID -> DeviceInfo? in
-            let transport = self.transportRawCode(deviceID)
-            let isAirPlay = transport == kAudioDeviceTransportTypeAirPlay
-            let hasOutput = self.isOutputDevice(deviceID)
-            let name = self.stringProperty(deviceID, kAudioDevicePropertyDeviceNameCFString) ?? "Unknown"
-            // Include any output-capable device, plus AirPlay receivers, which can
-            // report zero output streams until they are actually selected and so
-            // would be dropped by the stream-config check alone.
-            guard hasOutput || isAirPlay else {
-                log.debug("cast.devices.skip", ["name": name, "transport": Int(transport)])
-                return nil
-            }
-            let uid = self.stringProperty(deviceID, kAudioDevicePropertyDeviceUID) ?? "\(deviceID)"
-            log.debug("cast.devices.include", ["name": name, "airPlay": isAirPlay, "hasOutput": hasOutput])
-            return DeviceInfo(id: deviceID, name: name, uid: uid)
-        }
-    }
-
-    /// Raw `kAudioDevicePropertyTransportType` four-char code for a device, or 0
-    /// if it can't be read. Used to spot AirPlay receivers during enumeration.
-    private static func transportRawCode(_ deviceID: AudioDeviceID) -> UInt32 {
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyTransportType,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var raw: UInt32 = 0
-        var size = UInt32(MemoryLayout<UInt32>.size)
-        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &raw) == noErr else { return 0 }
-        return raw
-    }
-
     /// The current default output device. Returns `nil` if none is set.
     public static func defaultOutputDevice() -> DeviceInfo? {
         var address = AudioObjectPropertyAddress(
@@ -108,35 +46,6 @@ public actor DeviceRouter {
     }
 
     // MARK: - Private helpers
-
-    private static func isOutputDevice(_ deviceID: AudioDeviceID) -> Bool {
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioDevicePropertyStreamConfiguration,
-            mScope: kAudioDevicePropertyScopeOutput,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var dataSize: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(
-            deviceID,
-            &address,
-            0,
-            nil,
-            &dataSize
-        ) == noErr, dataSize > 0 else { return false }
-
-        let bufferList = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: Int(dataSize))
-        defer { bufferList.deallocate() }
-        guard AudioObjectGetPropertyData(
-            deviceID,
-            &address,
-            0,
-            nil,
-            &dataSize,
-            bufferList
-        ) == noErr else { return false }
-
-        return bufferList.pointee.mNumberBuffers > 0
-    }
 
     private static func stringProperty(
         _ deviceID: AudioDeviceID,
@@ -202,40 +111,5 @@ public actor DeviceRouter {
             block
         )
         self.listenerBlock = nil
-    }
-
-    /// Set the system-wide default output device.
-    ///
-    /// Returns `true` on success.  Used both as the spec-mandated `set(_:)`
-    /// API and as the underlying mechanism behind any "select output device"
-    /// preference in the UI.  Per-app routing (changing only this app's
-    /// destination without affecting the rest of the system) is intentionally
-    /// out of scope for v1: the macOS HAL story for that requires a private
-    /// `kAudioOutputUnitProperty_CurrentDevice` dance against the engine's
-    /// output unit, and shipping it without a way to reset on crash is risky.
-    @discardableResult
-    public static func setDefaultOutputDevice(_ id: AudioDeviceID) -> Bool {
-        var address = AudioObjectPropertyAddress(
-            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
-            mScope: kAudioObjectPropertyScopeGlobal,
-            mElement: kAudioObjectPropertyElementMain
-        )
-        var deviceID = id
-        let size = UInt32(MemoryLayout<AudioDeviceID>.size)
-        let status = AudioObjectSetPropertyData(
-            AudioObjectID(kAudioObjectSystemObject),
-            &address,
-            0,
-            nil,
-            size,
-            &deviceID
-        )
-        let log = AppLogger.make(.cast)
-        if status == noErr {
-            log.info("cast.setDefaultDevice.ok", ["deviceID": Int(id)])
-        } else {
-            log.error("cast.setDefaultDevice.fail", ["deviceID": Int(id), "status": Int(status)])
-        }
-        return status == noErr
     }
 }

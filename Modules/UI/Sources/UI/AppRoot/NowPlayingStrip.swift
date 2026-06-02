@@ -12,9 +12,6 @@ public struct NowPlayingStrip: View {
     public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
-    /// Optional — only the main window injects a `RouteViewModel`. Snapshot
-    /// tests and other ad-hoc surfaces can skip it.
-    private var route: RouteViewModel
 
     /// While the user is actively dragging the scrubber, we hold the drag
     /// fraction locally so the Slider doesn't fight the live `vm.position`
@@ -30,9 +27,8 @@ public struct NowPlayingStrip: View {
     /// indicator is shown in the panel-buttons area.
     var scrobbleSettingsVM: ScrobbleSettingsViewModel?
 
-    public init(vm: NowPlayingViewModel, route: RouteViewModel? = nil, scrobbleSettingsVM: ScrobbleSettingsViewModel? = nil) {
+    public init(vm: NowPlayingViewModel, scrobbleSettingsVM: ScrobbleSettingsViewModel? = nil) {
         self.vm = vm
-        self.route = route ?? RouteViewModel.placeholder
         self.scrobbleSettingsVM = scrobbleSettingsVM
     }
 
@@ -54,10 +50,6 @@ public struct NowPlayingStrip: View {
             self.transport
             Spacer(minLength: 16)
             self.volumeAndScrubber
-            Divider()
-                .frame(height: 32)
-                .padding(.horizontal, 4)
-            RoutePicker(vm: self.route)
             Divider()
                 .frame(height: 32)
                 .padding(.horizontal, 4)
