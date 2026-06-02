@@ -85,6 +85,14 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_CFBundleDisplayName: "Bòcan"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.music"
+      configs:
+        # Debug signs with a stable team identity (not ad-hoc) so the
+        # data-protection Keychain item survives Xcode rebuilds — otherwise the
+        # signing identity changes every build and stored credentials read back
+        # as errSecItemNotFound. Release signing is left to the notarization flow.
+        Debug:
+          CODE_SIGN_STYLE: Automatic
+          DEVELOPMENT_TEAM: 4P7SKNWGR6
     dependencies:
       - package: Sparkle
         product: Sparkle

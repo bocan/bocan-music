@@ -232,7 +232,7 @@
 		F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_B61EFA94-B0FE-4BA4-AFDA-2B68493C480D" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_D1C4B207-E636-48C8-A196-210CA4EBFE0E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -519,10 +519,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_E20D761B-D0C4-4303-9A54-75B4569440F2" /* bocan-music */ = {
+		"TEMP_F36FFE8F-B194-44EE-92A5-EB465DF55350" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_B61EFA94-B0FE-4BA4-AFDA-2B68493C480D" /* Secrets.xcconfig */,
+				"TEMP_D1C4B207-E636-48C8-A196-210CA4EBFE0E" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -847,7 +847,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_B61EFA94-B0FE-4BA4-AFDA-2B68493C480D" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_D1C4B207-E636-48C8-A196-210CA4EBFE0E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -983,7 +983,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_B61EFA94-B0FE-4BA4-AFDA-2B68493C480D" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_D1C4B207-E636-48C8-A196-210CA4EBFE0E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1058,7 +1058,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 4P7SKNWGR6;
 				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Bòcan";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.music";
