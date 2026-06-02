@@ -95,7 +95,10 @@ jobs:
         run: make lint && make format-check
 
       - name: Build & Test with coverage
-        run: make test-coverage 2>&1 | xcbeautify
+        # Strip the keychain-access-groups entitlement: CI signs ad-hoc (no team),
+        # and that entitlement otherwise demands a provisioning profile. The
+        # data-protection-keychain tests detect the missing entitlement and skip.
+        run: make test-coverage XCB_OVERRIDE='CODE_SIGN_ENTITLEMENTS=' 2>&1 | xcbeautify
 
       - name: Test AudioEngine package
         run: make test-audio-engine

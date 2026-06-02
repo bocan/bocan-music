@@ -84,7 +84,9 @@ jobs:
           queries: security-and-quality
 
       - name: Build (manual)
-        run: make build
+        # Strip the keychain-access-groups entitlement: this build signs ad-hoc
+        # (no team), and that entitlement otherwise demands a provisioning profile.
+        run: make build XCB_OVERRIDE='CODE_SIGN_ENTITLEMENTS='
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4

@@ -109,7 +109,10 @@ jobs:
         run: make generate
 
       - name: Run tests before release (fail fast)
-        run: make test-coverage 2>&1 | xcbeautify
+        # Runs before the signing cert is imported, so this build is ad-hoc: strip
+        # the keychain-access-groups entitlement (it would otherwise require a
+        # provisioning profile). The real signed archive happens further down.
+        run: make test-coverage XCB_OVERRIDE='CODE_SIGN_ENTITLEMENTS=' 2>&1 | xcbeautify
 
       - name: Import Developer ID certificate
         env:
@@ -130,6 +133,25 @@ jobs:
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Import Developer ID provisioning profile
+        # The keychain-access-groups entitlement (data-protection Keychain for
+        # Subsonic/Scrobble credentials) is restricted, so the Developer ID archive
+        # must embed a matching provisioning profile. Create one in the Apple
+        # Developer portal (Profiles -> Developer ID, App ID io.cloudcauldron.bocan)
+        # and store it base64-encoded in the DEVELOPER_ID_PROVISION_PROFILE secret.
+        env:
+          DEVELOPER_ID_PROVISION_PROFILE: ${{ secrets.DEVELOPER_ID_PROVISION_PROFILE }}
+        run: |
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_DIR"
+          echo "$DEVELOPER_ID_PROVISION_PROFILE" | base64 --decode > "$RUNNER_TEMP/bocan.provisionprofile"
+          PLIST=$(security cms -D -i "$RUNNER_TEMP/bocan.provisionprofile")
+          UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$PLIST")
+          NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin <<< "$PLIST")
+          cp "$RUNNER_TEMP/bocan.provisionprofile" "$PROFILES_DIR/$UUID.provisionprofile"
+          echo "PROVISION_PROFILE_NAME=$NAME" >> "$GITHUB_ENV"
+          echo "Installed provisioning profile: $NAME ($UUID)"
 
       - name: Bundle fpcalc + FFmpeg dylibs into Resources/
         env:
@@ -165,6 +187,7 @@ jobs:
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
             CODE_SIGN_IDENTITY="${{ secrets.DEVELOPER_ID_IDENTITY }}" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROVISION_PROFILE_NAME" \
             OTHER_CODE_SIGN_FLAGS="--timestamp --options=runtime" \
             ENABLE_HARDENED_RUNTIME=YES \
             | xcbeautify
