@@ -52,6 +52,12 @@ settings:
       DEBUG_INFORMATION_FORMAT: dwarf
       ONLY_ACTIVE_ARCH: YES
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      # Debug builds load Homebrew-signed dylibs (TagLib, FFmpeg). Real Team-ID
+      # signing turns on hardened runtime, whose Library Validation refuses
+      # dylibs signed by another team and crashes at launch. Ad-hoc builds used
+      # to auto-disable hardened runtime; now that Debug signs with a team, do it
+      # explicitly. Release keeps hardened runtime ON for notarization.
+      ENABLE_HARDENED_RUNTIME: NO
     Release:
       DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""

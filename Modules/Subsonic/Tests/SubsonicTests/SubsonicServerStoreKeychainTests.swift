@@ -4,7 +4,30 @@ import Security
 import Testing
 @testable import Subsonic
 
-@Suite("SubsonicServerStore", .serialized)
+/// Probes whether the data-protection Keychain is writable in this process.
+///
+/// `SubsonicServerStore` now uses the data-protection Keychain
+/// (`kSecUseDataProtectionKeychain: true`). Unsigned `swift test` binaries lack the
+/// `keychain-access-groups` entitlement and get `errSecMissingEntitlement` (-34018),
+/// so the whole suite is skipped there; the signed app build exercises the real path.
+private func subsonicDataProtectionKeychainAvailable() -> Bool {
+    let account = "probe-\(UUID().uuidString)"
+    let base: [CFString: Any] = [
+        kSecUseDataProtectionKeychain: true,
+        kSecClass: kSecClassGenericPassword,
+        kSecAttrService: "io.cloudcauldron.bocan.subsonic.probe",
+        kSecAttrAccount: account,
+    ]
+    var add = base
+    add[kSecValueData] = Data("x".utf8)
+    add[kSecAttrAccessible] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+    let status = SecItemAdd(add as CFDictionary, nil)
+    guard status == errSecSuccess else { return false }
+    _ = SecItemDelete(base as CFDictionary)
+    return true
+}
+
+@Suite("SubsonicServerStore", .serialized, .enabled(if: subsonicDataProtectionKeychainAvailable()))
 struct SubsonicServerStoreTests {
     private func makeStore() async throws -> (SubsonicServerStore, SubsonicServerRepository) {
         let db = try await Persistence.Database(location: .inMemory)
@@ -143,6 +166,7 @@ struct SubsonicServerStoreTests {
         // attribute correctly, the item is findable under this class. If the update
         // silently inherited a different class, the query would return errSecItemNotFound.
         let accessibilityQuery: [CFString: Any] = [
+            kSecUseDataProtectionKeychain: true,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: "io.cloudcauldron.bocan.subsonic",
             kSecAttrAccount: server.keychainAccount,
@@ -167,6 +191,50 @@ struct SubsonicServerStoreTests {
         let secret = try await store.secret(for: server.id)
         #expect(secret == "live")
         try? await store.remove(id: server.id)
+    }
+
+    @Test("a credential left in the legacy Keychain is migrated to the data-protection Keychain on read")
+    func legacyKeychainMigration() async throws {
+        let (store, _) = try await makeStore()
+        let id = UUID()
+        let account = id.uuidString
+        let service = "io.cloudcauldron.bocan.subsonic"
+
+        // Write a credential directly into the LEGACY Keychain (no kSecUseDataProtectionKeychain),
+        // mimicking an install from before the data-protection switch.
+        let data = try JSONEncoder().encode(SubsonicCredential(kind: "tokenSalt", secret: "legacy-secret"))
+        let legacyBase: [CFString: Any] = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+        ]
+        _ = SecItemDelete(legacyBase as CFDictionary)
+        var legacyAdd = legacyBase
+        legacyAdd[kSecValueData] = data
+        #expect(SecItemAdd(legacyAdd as CFDictionary, nil) == errSecSuccess)
+
+        // Reading through the store should find it via the legacy fallback and migrate it.
+        let secret = try await store.secret(for: id)
+        #expect(secret == "legacy-secret")
+
+        // The legacy item should now be gone.
+        var legacyResult: AnyObject?
+        var legacyRead = legacyBase
+        legacyRead[kSecReturnData] = true
+        legacyRead[kSecMatchLimit] = kSecMatchLimitOne
+        #expect(SecItemCopyMatching(legacyRead as CFDictionary, &legacyResult) == errSecItemNotFound)
+
+        // ...and the value now resolves from the data-protection Keychain.
+        #expect(try await store.secret(for: id) == "legacy-secret")
+
+        // Cleanup: no DB row exists, so delete the data-protection item directly.
+        let dpDelete: [CFString: Any] = [
+            kSecUseDataProtectionKeychain: true,
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrService: service,
+            kSecAttrAccount: account,
+        ]
+        _ = SecItemDelete(dpDelete as CFDictionary)
     }
 
     @Test("updateCapabilities persists JSON + lastConnectedAt")

@@ -30,6 +30,15 @@ public enum SubsonicError: Error, Sendable {
         }
     }
 
+    /// `true` if the error means the Keychain item genuinely does not exist
+    /// (as opposed to a transient read failure where the credential is still
+    /// stored but momentarily unreadable). Callers use this to distinguish
+    /// "no password configured" from "couldn't read the password right now".
+    public var isCredentialMissing: Bool {
+        if case let .keychain(status, _) = self { return status == errSecItemNotFound }
+        return false
+    }
+
     /// `true` if the error indicates an authentication failure.
     public var isAuthenticationFailure: Bool {
         switch self {
