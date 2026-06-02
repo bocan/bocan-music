@@ -13,10 +13,10 @@ public struct RoutePicker: View {
     public var body: some View {
         HStack(spacing: 6) {
             ActiveRouteChip(vm: self.vm)
-            AirPlayButton()
+            OutputDeviceButton(vm: self.vm)
                 .frame(width: 22, height: 22)
-                .help("Choose AirPlay output")
-                .accessibilityLabel("Choose AirPlay output")
+                .help("Choose audio output device")
+                .accessibilityLabel("Choose audio output device")
         }
     }
 }

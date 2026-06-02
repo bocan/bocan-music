@@ -31,6 +31,32 @@ public actor Credentials {
 
     public func data(for account: String) throws -> Data? {
         var query: [String: Any] = [
+            kSecUseDataProtectionKeychain as String: true,
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: self.service,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        query[kSecAttrSynchronizable as String] = false
+
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        if status == errSecSuccess { return item as? Data }
+        // Lazy migration from the legacy file-based Keychain: tokens written before the
+        // data-protection switch still live there. Move them across on first access.
+        if status == errSecItemNotFound, let legacy = try self.legacyData(for: account) {
+            try? self.set(legacy, for: account)
+            self.legacyDelete(account: account)
+            return legacy
+        }
+        if status == errSecItemNotFound { return nil }
+        throw ScrobbleError.keychain(status: status, message: Self.message(for: status))
+    }
+
+    /// Reads a token from the legacy file-based Keychain, or `nil` if absent.
+    private func legacyData(for account: String) throws -> Data? {
+        var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
             kSecAttrAccount as String: account,
@@ -48,6 +74,15 @@ public actor Credentials {
         return item as? Data
     }
 
+    private func legacyDelete(account: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: self.service,
+            kSecAttrAccount as String: account,
+        ]
+        _ = SecItemDelete(query as CFDictionary)
+    }
+
     // MARK: Write
 
     public func set(_ value: String, for account: String) throws {
@@ -56,19 +91,26 @@ public actor Credentials {
 
     public func set(_ value: Data, for account: String) throws {
         let baseQuery: [String: Any] = [
+            kSecUseDataProtectionKeychain as String: true,
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
             kSecAttrAccount as String: account,
         ]
 
         // Try to update first; fall back to add.
-        let updateAttrs: [String: Any] = [kSecValueData as String: value]
+        let updateAttrs: [String: Any] = [
+            kSecValueData as String: value,
+            // Accessible after first unlock so the offline drain worker can read it
+            // in the background; device-only so it never syncs via iCloud Keychain.
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
         let updateStatus = SecItemUpdate(baseQuery as CFDictionary, updateAttrs as CFDictionary)
         if updateStatus == errSecSuccess { return }
 
         if updateStatus == errSecItemNotFound {
             var addQuery = baseQuery
             addQuery[kSecValueData as String] = value
+            addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             addQuery[kSecAttrSynchronizable as String] = false
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
             guard addStatus == errSecSuccess else {
@@ -83,11 +125,14 @@ public actor Credentials {
 
     public func remove(account: String) throws {
         let query: [String: Any] = [
+            kSecUseDataProtectionKeychain as String: true,
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: self.service,
             kSecAttrAccount as String: account,
         ]
         let status = SecItemDelete(query as CFDictionary)
+        // Also clear any straggler left in the legacy store.
+        self.legacyDelete(account: account)
         if status == errSecSuccess || status == errSecItemNotFound { return }
         throw ScrobbleError.keychain(status: status, message: Self.message(for: status))
     }

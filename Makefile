@@ -7,6 +7,12 @@
 # `.swiftlint-version` file and CI follows automatically.
 EXPECTED_SWIFTLINT := $(shell cat .swiftlint-version 2>/dev/null)
 
+# Extra xcodebuild settings injected into `build`/`test`/`test-coverage`. Empty by
+# default. CI uses it to strip the keychain-access-groups entitlement on unsigned
+# ad-hoc builds (which otherwise demand a provisioning profile):
+#   make test-coverage XCB_OVERRIDE='CODE_SIGN_ENTITLEMENTS='
+XCB_OVERRIDE ?=
+
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
 tests:
 	@bash Scripts/run-tests.sh
@@ -79,6 +85,7 @@ build:
 		-scheme Bocan \
 		-configuration Debug \
 		-destination 'platform=macOS' \
+		$(XCB_OVERRIDE) \
 		build \
 		| xcbeautify
 
@@ -95,6 +102,7 @@ test:
 		-destination 'platform=macOS' \
 		-resultBundlePath build/TestResults.xcresult \
 		-skip-testing:BocanUITests \
+		$(XCB_OVERRIDE) \
 		test \
 		| xcbeautify
 
@@ -112,6 +120,7 @@ test-coverage:
 		-resultBundlePath build/TestResults.xcresult \
 		-enableCodeCoverage YES \
 		-skip-testing:BocanUITests \
+		$(XCB_OVERRIDE) \
 		test \
 		| xcbeautify
 	Scripts/coverage-report.sh build/TestResults.xcresult 80

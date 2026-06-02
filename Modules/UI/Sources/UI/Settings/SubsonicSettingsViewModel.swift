@@ -100,7 +100,24 @@ public final class SubsonicSettingsViewModel: ObservableObject {
     private func applyEditor(forServerWithID id: UUID) async {
         guard let server = self.servers.first(where: { $0.id == id }) else { return }
         var editor = ServerEditor(server: server)
-        editor.secret = await (try? self.store.secret(for: id)) ?? ""
+        do {
+            editor.secret = try await self.store.secret(for: id)
+        } catch let error as SubsonicError where error.isCredentialMissing {
+            // No credential stored: present an empty field for first-time entry.
+            editor.secret = ""
+        } catch {
+            // Transient read failure (Keychain momentarily unavailable). Do NOT imply
+            // the password was lost; the field stays empty but we keep the snapshot in
+            // sync so a save that doesn't touch the password can't clobber the stored
+            // secret, and we surface a recoverable, non-destructive note.
+            editor.secret = ""
+            self.errorMessage = "Couldn't read the stored password right now. Your saved credential is intact; "
+                + "reopen Settings to try again."
+            self.log.warning(
+                "subsonic.settings.secret.readFailed",
+                ["id": id.uuidString, "error": String(reflecting: error)]
+            )
+        }
         self.editor = editor
         self.storedSecretSnapshot = editor.secret
     }
