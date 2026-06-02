@@ -50,12 +50,38 @@ public actor DeviceRouter {
             &deviceIDs
         ) == noErr else { return [] }
 
+        let log = AppLogger.make(.cast)
+        log.debug("cast.devices.enumerate", ["total": deviceIDs.count])
         return deviceIDs.compactMap { deviceID -> DeviceInfo? in
-            guard self.isOutputDevice(deviceID) else { return nil }
+            let transport = self.transportRawCode(deviceID)
+            let isAirPlay = transport == kAudioDeviceTransportTypeAirPlay
+            let hasOutput = self.isOutputDevice(deviceID)
             let name = self.stringProperty(deviceID, kAudioDevicePropertyDeviceNameCFString) ?? "Unknown"
+            // Include any output-capable device, plus AirPlay receivers, which can
+            // report zero output streams until they are actually selected and so
+            // would be dropped by the stream-config check alone.
+            guard hasOutput || isAirPlay else {
+                log.debug("cast.devices.skip", ["name": name, "transport": Int(transport)])
+                return nil
+            }
             let uid = self.stringProperty(deviceID, kAudioDevicePropertyDeviceUID) ?? "\(deviceID)"
+            log.debug("cast.devices.include", ["name": name, "airPlay": isAirPlay, "hasOutput": hasOutput])
             return DeviceInfo(id: deviceID, name: name, uid: uid)
         }
+    }
+
+    /// Raw `kAudioDevicePropertyTransportType` four-char code for a device, or 0
+    /// if it can't be read. Used to spot AirPlay receivers during enumeration.
+    private static func transportRawCode(_ deviceID: AudioDeviceID) -> UInt32 {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioDevicePropertyTransportType,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var raw: UInt32 = 0
+        var size = UInt32(MemoryLayout<UInt32>.size)
+        guard AudioObjectGetPropertyData(deviceID, &address, 0, nil, &size, &raw) == noErr else { return 0 }
+        return raw
     }
 
     /// The current default output device. Returns `nil` if none is set.

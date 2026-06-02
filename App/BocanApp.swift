@@ -432,12 +432,8 @@ struct BocanApp: App {
     }
 
     @MainActor
-    private static func makeRouteViewModel(manager: RouteManager, engine: AudioEngine) -> RouteViewModel {
-        // Inject app-only routing: the device menu sends the chosen device id to
-        // the engine, which pins its AUHAL output unit without moving system audio.
-        let viewModel = RouteViewModel(manager: manager) { deviceID in
-            await engine.setOutputDevice(deviceID)
-        }
+    private static func makeRouteViewModel(manager: RouteManager) -> RouteViewModel {
+        let viewModel = RouteViewModel(manager: manager)
         viewModel.start()
         return viewModel
     }
@@ -665,7 +661,7 @@ extension BocanApp {
         let visualizerViewModel = VisualizerViewModel(engine: eng)
         // Phase 15: AirPlay routing.
         let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
-        let routeViewModel = Self.makeRouteViewModel(manager: routeManager, engine: eng)
+        let routeViewModel = Self.makeRouteViewModel(manager: routeManager)
 
         // Wire quit-guard references so AppDelegate can check live background-work
         // state in applicationShouldTerminate without importing UI into AppKit code.

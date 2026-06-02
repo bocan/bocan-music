@@ -2,7 +2,6 @@
 // thread-safety is provided by AudioEngine's actor isolation.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
 @preconcurrency import AVFoundation
-import CoreAudio
 import Foundation
 import Observability
 
@@ -51,17 +50,6 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     var lastState: PlaybackState?
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
     let log = AppLogger.make(.audio)
-
-    // MARK: - Output routing (app-only)
-
-    /// The output device this app's audio is pinned to, or `nil` when following
-    /// the system default. Set via `setOutputDevice(_:)`; per-app routing leaves
-    /// the rest of the system on its own output. See `AudioEngine+OutputDevice`.
-    var pinnedOutputDeviceID: AudioDeviceID?
-    /// `true` once the user has explicitly chosen an output device. Until then the
-    /// engine relies on AUHAL's implicit default-follow and never touches the
-    /// output unit's device, preserving the pre-feature behavior exactly.
-    var managesOutputDevice = false
 
     // MARK: - Gapless state
 

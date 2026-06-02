@@ -90,19 +90,15 @@ public struct OutputDeviceButton: NSViewRepresentable {
                 return
             }
             let devices = self.vm.availableDevices()
+            let currentDefault = self.vm.currentDefaultDeviceID()
             self.log.info("cast.deviceMenu.present", ["count": devices.count])
 
             let menu = NSMenu()
-            let defaultItem = NSMenuItem(
-                title: "System Default",
-                action: #selector(self.selectSystemDefault),
-                keyEquivalent: ""
-            )
-            defaultItem.target = self
-            defaultItem.state = self.vm.selectedDeviceID == nil ? .on : .off
-            menu.addItem(defaultItem)
-            menu.addItem(.separator())
-
+            if devices.isEmpty {
+                let empty = NSMenuItem(title: "No output devices found", action: nil, keyEquivalent: "")
+                empty.isEnabled = false
+                menu.addItem(empty)
+            }
             for device in devices {
                 let item = NSMenuItem(
                     title: device.name,
@@ -111,17 +107,14 @@ public struct OutputDeviceButton: NSViewRepresentable {
                 )
                 item.target = self
                 item.representedObject = DeviceBox(device)
-                item.state = self.vm.selectedDeviceID == device.id ? .on : .off
+                // Checkmark the device that is currently the system output.
+                item.state = device.id == currentDefault ? .on : .off
                 menu.addItem(item)
             }
 
             // Drop the menu just below the button.
             let origin = NSPoint(x: 0, y: button.bounds.height + 4)
             menu.popUp(positioning: nil, at: origin, in: button)
-        }
-
-        @objc private func selectSystemDefault() {
-            self.vm.selectDevice(nil)
         }
 
         @objc private func selectDevice(_ sender: NSMenuItem) {
