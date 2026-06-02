@@ -674,10 +674,7 @@ extension BocanApp {
         // must run here; reloadClients / reloadSubsonicServers are idempotent
         // catch-alls also run by bootstrapSubsonic via RootView.task.
         Task { [subsonicStore, subsonicService, subsonicMonitor, subsonicRepo, weak lvm] in
-            // Drain any credentials still in the legacy file-based Keychain into the
-            // data-protection Keychain before building clients, so existing servers
-            // connect on first launch after the migration without re-entering a password.
-            try? await subsonicStore.migrateLegacyKeychain()
+            // Prune Keychain items whose server row no longer exists, then build clients.
             try? await subsonicStore.migrateOrphans()
             try? await subsonicService.reloadClients()
             await lvm?.reloadSubsonicServers()

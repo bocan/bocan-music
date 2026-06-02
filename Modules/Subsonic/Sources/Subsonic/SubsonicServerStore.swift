@@ -143,7 +143,6 @@ public actor SubsonicServerStore {
         let liveSet = Set(live)
 
         let query: [CFString: Any] = [
-            kSecUseDataProtectionKeychain: true,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
             kSecReturnAttributes: true,
@@ -229,51 +228,16 @@ public actor SubsonicServerStore {
         )
     }
 
-    // MARK: - Keychain migration
-
-    /// Moves any credentials still living in the legacy file-based Keychain into the
-    /// data-protection Keychain. Safe to call on every launch; best-effort and idempotent.
-    ///
-    /// The previous implementation stored generic passwords on the legacy Keychain while
-    /// tagging them with the data-protection accessibility class
-    /// `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`. That combination is undefined on
-    /// macOS and made reads fail intermittently ("Server Unreachable / No server with id …").
-    /// We now use the data-protection Keychain exclusively; this drains stragglers so existing
-    /// users never have to re-enter a password.
-    public func migrateLegacyKeychain() async throws {
-        let query: [CFString: Any] = [
-            // Note: NO kSecUseDataProtectionKeychain — this targets the legacy store.
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrService: Self.keychainService,
-            kSecReturnAttributes: true,
-            kSecReturnData: true,
-            kSecMatchLimit: kSecMatchLimitAll,
-        ]
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let items = result as? [[CFString: Any]] else { return }
-
-        var migrated = 0
-        for item in items {
-            guard let account = item[kSecAttrAccount] as? String,
-                  let data = item[kSecValueData] as? Data else { continue }
-            do {
-                try self.dataProtectionWrite(account: account, data: data)
-                self.legacyDelete(account: account)
-                migrated += 1
-            } catch {
-                self.log.warning(
-                    "subsonic.keychain.migrate.failed",
-                    ["account": account, "error": String(reflecting: error)]
-                )
-            }
-        }
-        if migrated > 0 {
-            self.log.info("subsonic.keychain.migrated", ["count": migrated])
-        }
-    }
-
     // MARK: - Keychain helpers
+
+    // Credentials live in the login (file-based) Keychain, not the
+    // data-protection Keychain. On macOS the data-protection Keychain is scoped
+    // to the app's code-signing identity and did not survive local rebuilds
+    // (writes succeeded but read back as errSecItemNotFound, blanking the
+    // password every launch). The file Keychain persists across rebuilds. No
+    // `kSecAttrAccessible` is set: those data-protection accessibility classes
+    // are undefined on the macOS file Keychain and previously caused
+    // intermittent read failures.
 
     private func keychainWrite(server: SubsonicServer, secret: String) throws {
         let credential = SubsonicCredential(
@@ -281,35 +245,25 @@ public actor SubsonicServerStore {
             secret: secret
         )
         let data = try JSONEncoder().encode(credential)
-        try self.dataProtectionWrite(account: server.keychainAccount, data: data)
+        try self.writeItem(account: server.keychainAccount, data: data)
         self.log.debug("subsonic.keychain.write", ["account": server.keychainAccount])
     }
 
-    /// Writes `data` to the data-protection Keychain (update-then-add).
-    private func dataProtectionWrite(account: String, data: Data) throws {
+    /// Writes `data` to the login Keychain (update-then-add).
+    private func writeItem(account: String, data: Data) throws {
         let updateQuery: [CFString: Any] = [
-            kSecUseDataProtectionKeychain: true,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
             kSecAttrAccount: account,
         ]
-        // Include kSecAttrAccessible on update so credential rotation never
-        // silently inherits a different accessibility class (#285).
-        let updateAttrs: [CFString: Any] = [
-            kSecValueData: data,
-            kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
-        ]
-        let updateStatus = SecItemUpdate(updateQuery as CFDictionary, updateAttrs as CFDictionary)
+        let updateStatus = SecItemUpdate(updateQuery as CFDictionary, [kSecValueData: data] as CFDictionary)
 
         if updateStatus == errSecItemNotFound {
             let addQuery: [CFString: Any] = [
-                kSecUseDataProtectionKeychain: true,
                 kSecClass: kSecClassGenericPassword,
                 kSecAttrService: Self.keychainService,
                 kSecAttrAccount: account,
                 kSecValueData: data,
-                // Accessible after first unlock; survives reboots without user present.
-                kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
             ]
             let addStatus = SecItemAdd(addQuery as CFDictionary, nil)
             if addStatus != errSecSuccess {
@@ -324,7 +278,6 @@ public actor SubsonicServerStore {
 
     private func keychainRead(account: String) throws -> SubsonicCredential {
         let query: [CFString: Any] = [
-            kSecUseDataProtectionKeychain: true,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
             kSecAttrAccount: account,
@@ -333,58 +286,20 @@ public actor SubsonicServerStore {
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        if status == errSecSuccess, let data = result as? Data {
-            return try JSONDecoder().decode(SubsonicCredential.self, from: data)
-        }
-        // Lazy migration: an item may still live in the legacy Keychain from before the
-        // data-protection switch. Move it across on first access so nothing is re-typed.
-        if status == errSecItemNotFound, let data = try self.legacyRead(account: account) {
-            try? self.dataProtectionWrite(account: account, data: data)
-            self.legacyDelete(account: account)
-            self.log.info("subsonic.keychain.migrated.lazy", ["account": account])
-            return try JSONDecoder().decode(SubsonicCredential.self, from: data)
-        }
-        self.log.error("subsonic.keychain.read.failed", ["status": Int(status), "account": account])
-        throw SubsonicError.keychain(status, "read")
-    }
-
-    /// Reads the raw credential blob from the legacy file-based Keychain, or `nil` if absent.
-    private func legacyRead(account: String) throws -> Data? {
-        let query: [CFString: Any] = [
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrService: Self.keychainService,
-            kSecAttrAccount: account,
-            kSecReturnData: true,
-            kSecMatchLimit: kSecMatchLimitOne,
-        ]
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess, let data = result as? Data else {
-            throw SubsonicError.keychain(status, "legacyRead")
+            self.log.error("subsonic.keychain.read.failed", ["status": Int(status), "account": account])
+            throw SubsonicError.keychain(status, "read")
         }
-        return data
-    }
-
-    private func legacyDelete(account: String) {
-        let query: [CFString: Any] = [
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrService: Self.keychainService,
-            kSecAttrAccount: account,
-        ]
-        _ = SecItemDelete(query as CFDictionary)
+        return try JSONDecoder().decode(SubsonicCredential.self, from: data)
     }
 
     private func keychainDelete(account: String) throws {
         let query: [CFString: Any] = [
-            kSecUseDataProtectionKeychain: true,
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: Self.keychainService,
             kSecAttrAccount: account,
         ]
         let status = SecItemDelete(query as CFDictionary)
-        // Also clear any straggler in the legacy store so a deleted server cannot resurrect.
-        self.legacyDelete(account: account)
         guard status == errSecSuccess || status == errSecItemNotFound else {
             throw SubsonicError.keychain(status, "delete")
         }
