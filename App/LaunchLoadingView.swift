@@ -19,7 +19,6 @@ struct AppRootGate: View {
                     vm: graph.libraryViewModel,
                     lyricsVM: graph.lyricsViewModel,
                     visualizerVM: graph.visualizerViewModel,
-                    routeVM: graph.routeViewModel,
                     scrobbleSettingsVM: graph.scrobbleSettingsViewModel
                 )
                 .environment(graph.dspViewModel)

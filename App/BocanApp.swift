@@ -31,9 +31,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     /// inspect live scan state without importing UI types into AppKit callbacks.
     var libraryViewModel: LibraryViewModel?
     var dspViewModel: DSPViewModel?
-    /// Held weakly so `applicationWillTerminate` can cancel the HAL observation
-    /// task before deallocation order becomes non-deterministic.
-    var routeViewModel: RouteViewModel?
 
     // MARK: Lifecycle
 
@@ -83,14 +80,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return .terminateLater
     }
 
-    /// Called by AppKit immediately before the process exits.  Cancel the
-    /// routing subsystem here so the HAL listener block and AsyncStream
-    /// consumer are torn down in a deterministic order rather than whenever
-    /// ARC happens to deallocate them.
+    /// Called by AppKit immediately before the process exits.
     func applicationWillTerminate(_: Notification) {
         LaunchSanity.shared.markCleanExit()
         SingleInstance.shared.stop()
-        self.routeViewModel?.stop()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -431,13 +424,6 @@ struct BocanApp: App {
         let viewModel: ScrobbleSettingsViewModel
     }
 
-    @MainActor
-    private static func makeRouteViewModel(manager: RouteManager) -> RouteViewModel {
-        let viewModel = RouteViewModel(manager: manager)
-        viewModel.start()
-        return viewModel
-    }
-
     /// Schedules launch-time backups (iCloud + local), each gated on its own setting.
     private static func scheduleLaunchBackup(database db: Database) {
         Task.detached { [db] in
@@ -514,8 +500,6 @@ struct AppGraph {
     let subsonicStore: SubsonicServerStore
     let subsonicService: SubsonicService
     let subsonicSettingsViewModel: SubsonicSettingsViewModel
-    let routeManager: RouteManager
-    let routeViewModel: RouteViewModel
     /// Shared deep-link navigation for the Settings scene (#305).
     let settingsRouter: SettingsRouter
     let logConsoleViewModel: LogConsoleViewModel
@@ -659,15 +643,11 @@ extension BocanApp {
         let lsvc = LyricsService(database: db, fetcher: LRClibClient())
         let lyricsViewModel = LyricsViewModel(service: lsvc)
         let visualizerViewModel = VisualizerViewModel(engine: eng)
-        // Phase 15: AirPlay routing.
-        let routeManager = RouteManager(provider: CoreAudioOutputDeviceProvider())
-        let routeViewModel = Self.makeRouteViewModel(manager: routeManager)
 
         // Wire quit-guard references so AppDelegate can check live background-work
         // state in applicationShouldTerminate without importing UI into AppKit code.
         appDelegate.libraryViewModel = lvm
         appDelegate.dspViewModel = dspViewModel
-        appDelegate.routeViewModel = routeViewModel
 
         // Forward NSWorkspace wake events to the sleep timer + install the
         // engine-level pause-on-sleep / resume-on-wake / device-change wiring.
@@ -740,8 +720,6 @@ extension BocanApp {
             subsonicStore: subsonicStore,
             subsonicService: subsonicService,
             subsonicSettingsViewModel: subsonicSettingsViewModel,
-            routeManager: routeManager,
-            routeViewModel: routeViewModel,
             settingsRouter: SettingsRouter(),
             logConsoleViewModel: LogConsoleViewModel()
         )

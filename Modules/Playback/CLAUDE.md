@@ -10,7 +10,7 @@ The queue and "what plays next" logic, layered on top of `AudioEngine`'s `Transp
 
 - `QueuePlayer.swift` drives playback; `PlaybackQueue.swift` holds the ordered items, history, and shuffle state. `QueueItem.swift` is the queued unit and `PlayableSource.swift` is its origin discriminator: `.localBookmark` / `.subsonic` / `.internetRadio`.
 - `Gapless/` (`GaplessScheduler`, `CrossfadeScheduler`, `FormatBridge`) pre-schedules the next track for seamless transitions. `Shuffle/` holds the strategies (`FisherYatesShuffle`, `SmartShuffle`).
-- `NowPlaying/` integrates `MPNowPlayingInfoCenter` and remote commands. `Routing/` (`RouteManager`, `Route`, `OutputDeviceProvider`) owns AirPlay/output selection. `Persistence/QueuePersistence.swift` saves/restores the queue (schema v1 -> v2). `SleepTimer.swift` and `History/PlayHistoryRecorder.swift` round it out.
+- `NowPlaying/` integrates `MPNowPlayingInfoCenter` and remote commands. `Persistence/QueuePersistence.swift` saves/restores the queue (schema v1 -> v2). `SleepTimer.swift` and `History/PlayHistoryRecorder.swift` round it out.
 - `SubsonicStreamResolving.swift` is a protocol seam: Playback never imports `Subsonic`; the App layer injects a resolver that turns a `.subsonic` source into a playable URL.
 
 ## Things easy to get wrong

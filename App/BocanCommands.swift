@@ -208,12 +208,6 @@ struct BocanCommands: Commands {
             }
             .keyboardShortcut(KeyBindings.decreaseVolume)
 
-            Button("Choose Audio Output…") {
-                NotificationCenter.default.post(name: .bocanActivateRoutePicker, object: nil)
-            }
-            .keyboardShortcut(KeyBindings.chooseAudioOutput)
-            .help("Open the AirPlay / audio output picker")
-
             // Keyboard-accessible mode toggles.
             Button("Toggle Shuffle") {
                 Task { await self.vm.nowPlaying.toggleShuffle() }

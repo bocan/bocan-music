@@ -8,7 +8,7 @@ Scope: the `Observability` module. For the build system, the module DAG, and com
 
 The logging and diagnostics floor of the app. It is the **root of the module DAG**: every other module depends on it and it depends on nothing of ours, so it must stay free of any `import` from a sibling module (or you create a cycle).
 
-- `AppLogger` (`AppLogger.swift`) is the single logging facade. Categories are an enum in `LogCategory.swift`: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `cast`, `scrobble`, `subsonic`.
+- `AppLogger` (`AppLogger.swift`) is the single logging facade. Categories are an enum in `LogCategory.swift`: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `scrobble`, `subsonic`.
 - `LogStore` (`LogStore.swift`) is the process-wide in-memory ring buffer (capacity 5,000) that `AppLogger` tees into. After building the formatted, redacted message string, each `AppLogger` level method calls `LogStore.shared.record(level:category:message:)`. `LogLevel.swift` and `LogEntry.swift` are the supporting value types. `LogStore` must never call `AppLogger` (no recursion).
 - `Redaction.swift` scrubs sensitive values automatically. `Observability.sensitiveKeys` (apiKey/token/sessionKey/password/authorization, etc.) are redacted from log metadata, and `scrubURLQueryParams` strips secret query params from URLs.
 - `Telemetry.swift` / `MetricKitListener.swift` receive `MXDiagnosticPayload`s and persist them. The listener only starts once the user has granted diagnostics consent.
