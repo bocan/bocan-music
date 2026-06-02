@@ -161,11 +161,27 @@ public actor SubsonicService {
     /// Call once on app start, and again whenever a server is added/edited/removed.
     public func reloadClients() async throws {
         let servers = try await self.store.fetchAll()
-        self.clients = [:]
+        let liveIDs = Set(servers.map(\.id))
+        // Drop clients for servers that no longer exist, but keep the rest so a
+        // transient credential-read failure on one server cannot take down the
+        // healthy ones (previously `self.clients = [:]` wiped the whole pool).
+        self.clients = self.clients.filter { liveIDs.contains($0.key) }
+
+        var built = 0
         for server in servers {
-            try await self.buildClient(for: server)
+            do {
+                try await self.buildClient(for: server)
+                built += 1
+            } catch {
+                // Preserve any prior client for this server; a later refresh
+                // (e.g. Settings "Test") or the next reload can recover it.
+                self.log.error(
+                    "subsonic.service.client.buildFailed",
+                    ["id": server.id.uuidString, "error": String(reflecting: error)]
+                )
+            }
         }
-        self.log.info("subsonic.service.reloaded", ["count": servers.count])
+        self.log.info("subsonic.service.reloaded", ["count": servers.count, "built": built])
     }
 
     /// Inserts or replaces the client for a single server.

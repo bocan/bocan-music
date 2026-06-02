@@ -234,7 +234,7 @@
 		F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_BB7C62EE-DA51-421D-9751-5F6E092945A3" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_9DF18B12-57DF-4F4F-A64C-1BC5511579F4" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -522,10 +522,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_745EB78D-2FAD-4C42-B91E-9E6776DCDAE8" /* bocan-music */ = {
+		"TEMP_E4DE930C-FBC1-44EF-8C30-590CF42B513B" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_BB7C62EE-DA51-421D-9751-5F6E092945A3" /* Secrets.xcconfig */,
+				"TEMP_9DF18B12-57DF-4F4F-A64C-1BC5511579F4" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -612,8 +612,18 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					A0B4B021CE6EED7390E85E12 = {
+						DevelopmentTeam = 4P7SKNWGR6;
+						ProvisioningStyle = Automatic;
+					};
 					AA04E90B83F0999C792EC217 = {
+						DevelopmentTeam = 4P7SKNWGR6;
+						ProvisioningStyle = Automatic;
 						TestTargetID = A0B4B021CE6EED7390E85E12;
+					};
+					B7FEE840BECC122A6CC41E10 = {
+						DevelopmentTeam = 4P7SKNWGR6;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -841,7 +851,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BB7C62EE-DA51-421D-9751-5F6E092945A3" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_9DF18B12-57DF-4F4F-A64C-1BC5511579F4" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -879,7 +889,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_APP_SANDBOX = YES;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -977,7 +987,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BB7C62EE-DA51-421D-9751-5F6E092945A3" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_9DF18B12-57DF-4F4F-A64C-1BC5511579F4" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
