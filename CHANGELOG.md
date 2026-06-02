@@ -7,18 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.0](https://github.com/bocan/bocan-music/compare/v1.6.0...v1.7.0) (2026-06-02)
 
+This has been a hairy one.  I've removed the Airplay feature as it didn't work, and to **make** it work, I'd have had to entirely re-write the playback engine.  You'll have to just rely on Bluetooth I guess.  On a more positive note, I've added a Logging Console under Help if you'd like to see the internals of how the app runs.  Also fixed showing album art via the Dock for any Subsonic clients you may use.
+
 
 ### ### Added
 
-* **cast:** app-only output-device routing, replacing AVRoutePickerView ([bbfcc2d](https://github.com/bocan/bocan-music/commit/bbfcc2de45e45872bc2ea1447307d92cd32ba52a))
-* **cast:** app-only output-device routing, replacing AVRoutePickerView ([786d1f2](https://github.com/bocan/bocan-music/commit/786d1f27b02c0dfc51f6fa42336d75543fb74db8))
-* **cast:** instrument the output-routing and AirPlay path ([7b15057](https://github.com/bocan/bocan-music/commit/7b150570830b0d2b6c3d9baaf21dac7ef11082e0))
 * **cast:** remove AirPlay / output-device routing entirely ([7678a86](https://github.com/bocan/bocan-music/commit/7678a86f214846659db24246fcdec426abac8f71))
-* **cast:** route output system-wide instead of app-only ([50114e5](https://github.com/bocan/bocan-music/commit/50114e58d91858a39e752eb17932884d52f013ec))
 * **observability:** complete the in-app log console (phase 20) ([9a4c2d9](https://github.com/bocan/bocan-music/commit/9a4c2d9f141ec6909a632497f51032c3ef820498))
-* **ui:** add diagnostics settings hooks for log console ([92e15a4](https://github.com/bocan/bocan-music/commit/92e15a40c6a813a00ea89e83797ab579d02ab225))
-* **ui:** add LogConsoleView and LogConsoleRow with toolbar and tail mode ([418490c](https://github.com/bocan/bocan-music/commit/418490c3c1b347f281b54f2878bf04d112078276))
-* **ui:** polish log console - clear buffer menu, a11y labels, l10n line count ([f1678d7](https://github.com/bocan/bocan-music/commit/f1678d740f33039005c7c78e3d63f75ae1418c74))
 
 
 ### ### Fixed
