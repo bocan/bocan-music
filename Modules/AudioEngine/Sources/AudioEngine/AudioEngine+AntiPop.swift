@@ -49,6 +49,35 @@ public extension AudioEngine {
         await self.deviceRouter.stopObserving()
     }
 
-    // `handleDefaultDeviceChange` and the output-path reconfigure live in
-    // `AudioEngine+OutputDevice.swift`, alongside the app-only routing they share.
+    /// Reconfigure the graph for a new default output device.  Runs on the
+    /// engine actor — the CoreAudio listener fires on a HAL thread, so the hop
+    /// onto this actor is mandatory before mutating AVFoundation state.
+    ///
+    /// This is how output routing actually takes effect: selecting a device sets
+    /// the system default output, the HAL listener fires, and the engine follows
+    /// it here. The `device` is logged so the routing path is traceable.
+    func handleDefaultDeviceChange(_ device: DeviceInfo? = nil) async {
+        let resumeAfter = self.isPlaying
+        self.log.notice("audio.device.reconfigure.start", [
+            "device": device?.name ?? "system-default",
+            "wasPlaying": resumeAfter,
+        ])
+        await self.fadePlayerNode(to: 0)
+        self.graph.playerNode.stop()
+        await self.pump?.stop()
+        self.pump = nil
+        self.graph.reset()
+        if resumeAfter {
+            // Best-effort resume; if the new device fails to open, swallow the
+            // error here (the public state stream will surface .failed).
+            do {
+                try await self.play()
+                self.log.notice("audio.device.reconfigure.resumed", ["device": device?.name ?? "?"])
+            } catch {
+                self.log.error("audio.device.reconfigure.resume.failed", ["error": String(reflecting: error)])
+            }
+        } else {
+            self.log.notice("audio.device.reconfigure.end", ["device": device?.name ?? "?"])
+        }
+    }
 }

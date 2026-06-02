@@ -5,28 +5,20 @@ import Testing
 
 // MARK: - RouteViewModelTests
 
-@Suite("RouteViewModel device selection")
+@Suite("RouteViewModel device menu")
 @MainActor
 struct RouteViewModelTests {
-    @Test("selecting a device pins it and reflects it on the chip")
-    func selectDevicePins() {
+    @Test("availableDevices returns the CoreAudio output devices")
+    func availableDevicesEnumerates() {
         let vm = RouteViewModel(initialRoute: .local(name: "MacBook Pro Speakers"))
-        let device = DeviceInfo(id: 42, name: "Living Room", uid: "uid-42")
-
-        vm.selectDevice(device)
-
-        #expect(vm.selectedDeviceID == 42)
-        #expect(vm.current.displayName == "Living Room")
+        // On a host with no audio devices this is empty; the contract is only
+        // that it matches the DeviceRouter enumeration without crashing.
+        #expect(vm.availableDevices().map(\.id) == DeviceRouter.outputDevices().map(\.id))
     }
 
-    @Test("selecting System Default clears the pin")
-    func selectSystemDefaultClearsPin() {
+    @Test("currentDefaultDeviceID matches the HAL default output device")
+    func currentDefaultMatchesHAL() {
         let vm = RouteViewModel(initialRoute: .local(name: "MacBook Pro Speakers"))
-        vm.selectDevice(DeviceInfo(id: 7, name: "USB DAC", uid: "uid-7"))
-        #expect(vm.selectedDeviceID == 7)
-
-        vm.selectDevice(nil)
-
-        #expect(vm.selectedDeviceID == nil)
+        #expect(vm.currentDefaultDeviceID() == DeviceRouter.defaultOutputDevice()?.id)
     }
 }
