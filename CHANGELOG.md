@@ -5,6 +5,13 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1](https://github.com/bocan/bocan-music/compare/v1.7.0...v1.7.1) (2026-06-02)
+
+
+### ### Fixed
+
+* **scrobble:** store tokens in the login Keychain, not data-protection ([57505bc](https://github.com/bocan/bocan-music/commit/57505bceded765a2df40f3cef895e57b14aeb05e))
+
 ## [1.7.0](https://github.com/bocan/bocan-music/compare/v1.6.0...v1.7.0) (2026-06-02)
 
 This has been a hairy one.  I've removed the Airplay feature as it didn't work, and to **make** it work, I'd have had to entirely re-write the playback engine.  You'll have to just rely on Bluetooth I guess.  On a more positive note, I've added a Logging Console under Help if you'd like to see the internals of how the app runs.  Also fixed showing album art via the Dock for any Subsonic clients you may use.
