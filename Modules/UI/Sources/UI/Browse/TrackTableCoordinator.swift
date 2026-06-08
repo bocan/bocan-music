@@ -254,15 +254,10 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     // MARK: Context menu — helpers
 
-    /// Synchronises the table selection to the right-clicked row before building the context menu.
-    ///
-    /// This intentionally mirrors the standard macOS behaviour used by Finder and Music.app:
-    ///
-    /// - **Right-click inside the existing selection** — the `guard` exits immediately; the
-    ///   multi-row selection is preserved and the menu applies to all selected rows.
-    /// - **Right-click outside the existing selection** — the selection is replaced with the
-    ///   single clicked row so the menu always targets a visible, unambiguous set of tracks.
-    ///
+    /// Syncs the table selection to the right-clicked row before building the menu,
+    /// mirroring Finder / Music.app: a click inside the existing selection keeps the
+    /// multi-row selection; a click outside it replaces the selection with the
+    /// clicked row so the menu always targets an unambiguous set.
     /// Do **not** remove the selection-replace branch; it is intentional, not a bug.
     private func syncClickedRow(in tv: NSTableView) {
         let clicked = tv.clickedRow
@@ -342,6 +337,16 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let playlistItem = NSMenuItem(title: "Add to Playlist", action: nil, keyEquivalent: "")
         playlistItem.submenu = sub
         menu.addItem(playlistItem)
+
+        // Grouped under "Add to Playlist", not among the library/disk removals
+        // below. The ⌫ equivalent is display-only; the table handles the press.
+        if let removeFromPlaylist = acts.removeFromPlaylist {
+            let rp = ActionMenuItem("Remove from Playlist") { removeFromPlaylist(selected) }
+            rp.isEnabled = !selected.isEmpty
+            rp.keyEquivalent = "\u{8}"
+            rp.keyEquivalentModifierMask = []
+            menu.addItem(rp)
+        }
     }
 
     private func addLoveItem(
@@ -459,11 +464,6 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         menu.addItem(rgItem)
 
         menu.addItem(.separator())
-        if let removeFromPlaylist = acts.removeFromPlaylist {
-            let rp = ActionMenuItem("Remove from Playlist") { removeFromPlaylist(selected) }
-            rp.isEnabled = !selected.isEmpty
-            menu.addItem(rp)
-        }
         let removeItem = ActionMenuItem("Remove from Library") { acts.removeFromLibrary(selected) }
         removeItem.isEnabled = !selected.isEmpty
         menu.addItem(removeItem)
