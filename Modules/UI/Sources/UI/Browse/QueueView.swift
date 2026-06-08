@@ -33,6 +33,28 @@ private struct QueueContentView: View {
         self.nowPlaying = vm.nowPlaying
     }
 
+    /// The slice of the queue shown in Up Next: the now-playing track followed by
+    /// everything queued after it. Tracks *behind* the playhead are reachable via
+    /// Previous and are intentionally hidden so the current track is pinned to the
+    /// top. Each entry keeps its absolute queue index so the row actions (play
+    /// from here, reorder, remove) keep operating on real queue positions. Falls
+    /// back to the whole queue when nothing is currently playing.
+    private var upcoming: [UpNextEntry] {
+        let start = self.currentIndex.flatMap { self.items.indices.contains($0) ? $0 : nil } ?? 0
+        let nextSlot = (self.currentIndex ?? -1) + 1
+        return (start ..< self.items.count).map { idx in
+            let item = self.items[idx]
+            return UpNextEntry(
+                index: idx,
+                item: item,
+                isCurrent: idx == self.currentIndex,
+                isUnavailable: self.unavailableIDs.contains(item.id),
+                isAlreadyNext: idx == nextSlot,
+                albumName: item.albumID.flatMap { self.vm.tracks.albumNames[$0] }
+            )
+        }
+    }
+
     var body: some View {
         Group {
             if self.items.isEmpty {
@@ -57,63 +79,63 @@ private struct QueueContentView: View {
                 }
             } else {
                 List {
-                    ForEach(Array(self.items.enumerated()), id: \.element.id) { offset, item in
+                    ForEach(self.upcoming) { entry in
                         QueueRow(
-                            item: item,
-                            albumName: item.albumID.flatMap { self.vm.tracks.albumNames[$0] },
-                            isCurrent: offset == self.currentIndex,
+                            item: entry.item,
+                            albumName: entry.albumName,
+                            isCurrent: entry.isCurrent,
                             isPlaying: self.nowPlaying.isPlaying,
-                            isUnavailable: self.unavailableIDs.contains(item.id),
-                            position: offset
+                            isUnavailable: entry.isUnavailable,
+                            position: entry.index
                         )
+                        .listRowBackground(entry.isCurrent ? Color.accentColor.opacity(0.15) : Color.clear)
                         .contextMenu {
-                            // Phase 5 audit M1: rich Up Next row context menu.
                             Button("Play From Here") {
                                 Task {
-                                    await self.vm.playFromQueueIndex(offset)
+                                    await self.vm.playFromQueueIndex(entry.index)
                                     await self.refreshQueue()
                                 }
                             }
-                            .disabled(self.unavailableIDs.contains(item.id))
+                            .disabled(entry.isCurrent || entry.isUnavailable)
 
                             Divider()
 
-                            Button("Move to Top") {
+                            Button("Play Next") {
                                 Task {
-                                    await self.vm.moveQueueItemToTop(id: item.id)
+                                    await self.vm.playQueueItemNext(id: entry.item.id)
                                     await self.refreshQueue()
                                 }
                             }
-                            .disabled(offset == 0)
+                            .disabled(entry.isCurrent || entry.isAlreadyNext)
 
                             Button("Move to Bottom") {
                                 Task {
-                                    await self.vm.moveQueueItemToBottom(id: item.id)
+                                    await self.vm.moveQueueItemToBottom(id: entry.item.id)
                                     await self.refreshQueue()
                                 }
                             }
-                            .disabled(offset == self.items.count - 1)
+                            .disabled(entry.index == self.items.count - 1)
 
                             Divider()
 
                             Button("Show in Finder") {
-                                if let url = URL(string: item.fileURL) {
+                                if let url = URL(string: entry.item.fileURL) {
                                     NSWorkspace.shared.activateFileViewerSelecting([url])
                                 }
                             }
-                            .disabled(self.unavailableIDs.contains(item.id))
+                            .disabled(entry.isUnavailable)
 
                             Button("Get Info") {
-                                self.vm.tagEditorTrackIDs = [item.trackID]
+                                self.vm.tagEditorTrackIDs = [entry.item.trackID]
                             }
 
-                            if let albumID = item.albumID {
+                            if let albumID = entry.item.albumID {
                                 Button("Go to Album") {
                                     Task { await self.vm.selectDestination(.album(albumID)) }
                                 }
                             }
 
-                            if let artistID = item.artistID {
+                            if let artistID = entry.item.artistID {
                                 Button("Go to Artist") {
                                     Task { await self.vm.selectDestination(.artist(artistID)) }
                                 }
@@ -123,7 +145,7 @@ private struct QueueContentView: View {
 
                             Button("Remove from Queue") {
                                 Task {
-                                    await self.vm.queuePlayer?.queue.remove(ids: Set([item.id]))
+                                    await self.vm.queuePlayer?.queue.remove(ids: Set([entry.item.id]))
                                     await self.refreshQueue()
                                 }
                             }
@@ -133,9 +155,9 @@ private struct QueueContentView: View {
                         // users get the same primary action. Skipped when the
                         // file is missing so we don't no-op silently.
                         .onTapGesture(count: 2) {
-                            guard !self.unavailableIDs.contains(item.id) else { return }
+                            guard !entry.isUnavailable else { return }
                             Task {
-                                await self.vm.playFromQueueIndex(offset)
+                                await self.vm.playFromQueueIndex(entry.index)
                                 await self.refreshQueue()
                             }
                         }
@@ -183,12 +205,33 @@ private struct QueueContentView: View {
 
     private func moveItems(from source: IndexSet, to destination: Int) async {
         guard let queue = vm.queuePlayer?.queue else { return }
+        // Up Next shows a contiguous slice starting at the playhead, so map the
+        // slice-relative move offsets back onto absolute queue positions.
+        let start = self.upcoming.first?.index ?? 0
         var newItems = self.items
-        newItems.move(fromOffsets: source, toOffset: destination)
-        // Replace queue with reordered items, preserve currentIndex into new order.
+        newItems.move(fromOffsets: IndexSet(source.map { $0 + start }), toOffset: destination + start)
+        // Keep the currently-playing track at its new position in the queue.
         let currentID = self.currentIndex.map { self.items[$0].id }
         await queue.replace(with: newItems, startAt: newItems.firstIndex { $0.id == currentID } ?? self.currentIndex ?? 0)
         await self.refreshQueue()
+    }
+}
+
+// MARK: - UpNextEntry
+
+/// One row in the Up Next list: a queue item plus its absolute queue index and
+/// the derived flags the row and its context menu need. Carrying the absolute
+/// index lets the view render only the current-and-after slice while still
+/// driving actions (play-from, reorder, remove) against real queue positions.
+private struct UpNextEntry: Identifiable {
+    let index: Int
+    let item: QueueItem
+    let isCurrent: Bool
+    let isUnavailable: Bool
+    let isAlreadyNext: Bool
+    let albumName: String?
+    var id: QueueItem.ID {
+        self.item.id
     }
 }
 

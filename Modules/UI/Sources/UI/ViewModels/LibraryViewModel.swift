@@ -1090,13 +1090,18 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    /// Moves a queue item to the top of the queue.  Used by the Up Next
-    /// "Move to Top" context-menu action (Phase 5 audit M1).
-    public func moveQueueItemToTop(id: QueueItem.ID) async {
+    /// Moves a queue item so it plays immediately after the current track. Used
+    /// by the Up Next "Play Next" context-menu action. With Up Next pinned to the
+    /// now-playing track, the top of the visible list is the slot right after the
+    /// playhead, so this targets `currentIndex + 1` rather than absolute index 0.
+    public func playQueueItemNext(id: QueueItem.ID) async {
         guard let qp = engine as? QueuePlayer else { return }
         let items = await qp.queue.items
-        guard let from = items.firstIndex(where: { $0.id == id }), from != 0 else { return }
-        await qp.queue.move(fromIndex: from, toIndex: 0)
+        let currentIndex = await qp.queue.currentIndex
+        guard let from = items.firstIndex(where: { $0.id == id }) else { return }
+        let target = (currentIndex ?? -1) + 1
+        guard from != target else { return }
+        await qp.queue.move(fromIndex: from, toIndex: target)
     }
 
     /// Moves a queue item to the bottom of the queue.  Used by the Up Next
