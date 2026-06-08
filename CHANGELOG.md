@@ -5,6 +5,20 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0](https://github.com/bocan/bocan-music/compare/v1.7.1...v1.8.0) (2026-06-08)
+
+
+### ### Added
+
+* **ui:** pin now-playing track to top of Up Next ([a1557b4](https://github.com/bocan/bocan-music/commit/a1557b43728dbbbeaf936cb736b56c08a2d76366))
+
+
+### ### Fixed
+
+* **ui:** give the playlist-row track-drop highlight room to breathe ([7f903a1](https://github.com/bocan/bocan-music/commit/7f903a1afdc5311fb766a17d5c36ecc071344c2f))
+* **ui:** group Remove from Playlist under Add to Playlist ([9548b66](https://github.com/bocan/bocan-music/commit/9548b66c0d8ce2eeb3e84517fdfeeff166ace10b))
+* **ui:** stop the scan overlay covering non-Songs views on launch ([9f08a9b](https://github.com/bocan/bocan-music/commit/9f08a9b4acdf5d2c1605765478b802df5a186c38))
+
 ## [1.7.1](https://github.com/bocan/bocan-music/compare/v1.7.0...v1.7.1) (2026-06-02)
 
 
