@@ -9,6 +9,7 @@ public struct PlaylistRow: View {
     public let depth: Int
     @ObservedObject public var vm: PlaylistSidebarViewModel
     @State private var draftName = ""
+    @State private var isDropTargeted = false
     @FocusState private var isRenameFieldFocused: Bool
 
     public init(node: PlaylistNode, depth: Int, vm: PlaylistSidebarViewModel) {
@@ -32,16 +33,33 @@ public struct PlaylistRow: View {
             }
         }
         .padding(.leading, CGFloat(self.depth) * 14)
+        // Vertical padding gives the drop highlight room to breathe so it no
+        // longer crowds the title, and enlarges the drop hit area.
+        .padding(.vertical, 4)
         .focusable()
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(self.isDropTargeted ? Color.accentColor.opacity(0.25) : Color.clear)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(self.isDropTargeted ? Color.accentColor : Color.clear, lineWidth: 2)
+                )
+                .padding(.horizontal, -6)
+                .animation(.easeInOut(duration: 0.15), value: self.isDropTargeted)
+        )
         .draggable(PlaylistDragPayload(
             playlistID: self.node.id,
             sourceFolderID: self.node.parentID
         ))
         .contextMenu { self.contextMenuContent }
         .overlay(
-            TrackDropTarget(isActive: self.node.kind == .manual) { ids in
-                Task { await self.vm.addTracks(ids, to: self.node.id) }
-            }
+            TrackDropTarget(
+                isActive: self.node.kind == .manual,
+                onTargetedChange: { self.isDropTargeted = $0 },
+                onReceive: { ids in
+                    Task { await self.vm.addTracks(ids, to: self.node.id) }
+                }
+            )
         )
         .help(self.node.name)
         .accessibilityLabel("Playlist: \(self.node.name)")
@@ -115,8 +133,9 @@ public struct PlaylistRow: View {
                 .frame(width: 20, height: 20)
         } else {
             Image(systemName: self.node.kind == .smart ? "sparkles" : "music.note.list")
-                .foregroundStyle(self.accentColour ?? Color.textSecondary)
+                .foregroundStyle(self.isDropTargeted ? Color.accentColor : (self.accentColour ?? Color.textSecondary))
                 .frame(width: 16)
+                .animation(.easeInOut(duration: 0.15), value: self.isDropTargeted)
         }
     }
 
