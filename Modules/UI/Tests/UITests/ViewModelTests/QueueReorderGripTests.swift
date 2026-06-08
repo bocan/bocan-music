@@ -31,4 +31,26 @@ struct QueueReorderGripTests {
             "The grip must be revealed on hover so the reorder affordance is discoverable"
         )
     }
+
+    @Test("Up Next pins the now-playing track at the top of the list")
+    func upNextPinsNowPlayingAtTop() throws {
+        let source = try self.queueSource()
+        // The list iterates the `upcoming` slice, not the full enumerated queue,
+        // so the playhead and everything after it is what gets rendered.
+        #expect(
+            source.contains("ForEach(self.upcoming)"),
+            "Up Next must render the `upcoming` slice so the current track leads the list"
+        )
+        // `upcoming` is a suffix anchored at the current index: the now-playing
+        // track is the first visible row, tracks behind the playhead are hidden.
+        #expect(
+            source.contains("start ..< self.items.count"),
+            "`upcoming` must slice from the playhead to the end of the queue"
+        )
+        // The current row is visually distinguished (the 'highlighted/selected' ask).
+        #expect(
+            source.contains("listRowBackground") && source.contains("entry.isCurrent"),
+            "The now-playing row must be visually highlighted"
+        )
+    }
 }
