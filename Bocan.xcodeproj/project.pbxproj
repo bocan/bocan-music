@@ -39,6 +39,7 @@
 		3FB4528537852FD978925C7E /* LibraryViewModelClearQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3ABBFFC5CC427A5F3C2AE6B /* LibraryViewModelClearQueueTests.swift */; };
 		4048626C7584950E6D201081 /* LaunchSanity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DE49AE8BEADA5F7A3D8406 /* LaunchSanity.swift */; };
 		46B88126867F417C1F626EFA /* LogConsoleAppConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F3ECEBA0831D7E932406AE /* LogConsoleAppConventionTests.swift */; };
+		48F02DEF188788635F6AB26F /* PlaylistRowDropHighlightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2583AD98028864A547B9DB /* PlaylistRowDropHighlightTests.swift */; };
 		497105A9654862C212C4BDB1 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 3D4AE0034D5FCF6A0BB9DD4B /* AppIcon.icns */; };
 		4E28FD52431FE8283F39B506 /* InitialScanOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A7D0056F94537B0919CE3D4 /* InitialScanOverlayTests.swift */; };
 		4F09E6E2D97B11F4A6C7AED4 /* BocanApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */; };
@@ -141,6 +142,7 @@
 		216DCF58F03059415AAC99AA /* SubsonicBrowseViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicBrowseViewModelTests.swift; sourceTree = "<group>"; };
 		2281C47BF7969849A1BCBFA6 /* ReduceTransparencyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReduceTransparencyTests.swift; sourceTree = "<group>"; };
 		22ABB61CDA09CFEAD5A710DC /* LibraryViewModelDeleteFromDiskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModelDeleteFromDiskTests.swift; sourceTree = "<group>"; };
+		2A2583AD98028864A547B9DB /* PlaylistRowDropHighlightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistRowDropHighlightTests.swift; sourceTree = "<group>"; };
 		2DB88DBD9C7383F071E14E0A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistSidebarViewModelTests.swift; sourceTree = "<group>"; };
 		335B0C06DAF35F96240EF261 /* QueueReorderGripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueReorderGripTests.swift; sourceTree = "<group>"; };
@@ -236,7 +238,7 @@
 		F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_5A629D02-ACBA-4347-AC6A-1B509EAF8850" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_CE8224E1-651F-45EF-9AEF-ED7A8F106BED" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -358,6 +360,7 @@
 				F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */,
 				64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */,
 				8929B62314FB8D67123CC447 /* PlaylistDetailViewModelTests.swift */,
+				2A2583AD98028864A547B9DB /* PlaylistRowDropHighlightTests.swift */,
 				30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */,
 				335B0C06DAF35F96240EF261 /* QueueReorderGripTests.swift */,
 				86609285677EA66C846D3FDC /* QuitGuardStateTests.swift */,
@@ -525,10 +528,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_C9EC35E6-F072-474B-A8B0-1BA79FACD9F8" /* bocan-music */ = {
+		"TEMP_4814B0AD-BDEB-4E83-9BAB-BF0C5CBE15B1" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_5A629D02-ACBA-4347-AC6A-1B509EAF8850" /* Secrets.xcconfig */,
+				"TEMP_CE8224E1-651F-45EF-9AEF-ED7A8F106BED" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -748,6 +751,7 @@
 				FC6DA6C23E318DB31AA2E2E2 /* MenuAnimationTests.swift in Sources */,
 				77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */,
 				5CBE9166A007819CF6F242ED /* PlaylistDetailViewModelTests.swift in Sources */,
+				48F02DEF188788635F6AB26F /* PlaylistRowDropHighlightTests.swift in Sources */,
 				BBA841A811484687BE460646 /* PlaylistSidebarViewModelTests.swift in Sources */,
 				89BD8F709DD5D630E449B97D /* QueueReorderGripTests.swift in Sources */,
 				C7A80E3167450AFA86AB6A2B /* QuitGuardStateTests.swift in Sources */,
@@ -855,7 +859,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_5A629D02-ACBA-4347-AC6A-1B509EAF8850" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_CE8224E1-651F-45EF-9AEF-ED7A8F106BED" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -991,7 +995,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_5A629D02-ACBA-4347-AC6A-1B509EAF8850" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_CE8224E1-651F-45EF-9AEF-ED7A8F106BED" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;

@@ -22,8 +22,20 @@ public final class DropTargetNSView: NSView {
     /// Called on the main thread when the user completes a valid drop.
     public var onReceive: (([Int64]) -> Void)?
 
+    /// When `true` this view draws its own accent border highlight. Set `false`
+    /// to let SwiftUI draw the highlight instead (via `onHighlightChange`), which
+    /// can extend beyond the tight row bounds for a less cramped target.
+    public var drawsHighlight = true
+
+    /// Reports highlight on/off to SwiftUI so a `.background`/`.overlay` can react.
+    public var onHighlightChange: ((Bool) -> Void)?
+
     private var isHighlighted = false {
-        didSet { needsDisplay = true }
+        didSet {
+            guard self.isHighlighted != oldValue else { return }
+            self.needsDisplay = self.drawsHighlight
+            self.onHighlightChange?(self.isHighlighted)
+        }
     }
 
     override public init(frame: NSRect) {
@@ -87,7 +99,7 @@ public final class DropTargetNSView: NSView {
     // MARK: - Drawing
 
     override public func draw(_ dirtyRect: NSRect) {
-        guard self.isHighlighted else { return }
+        guard self.isHighlighted, self.drawsHighlight else { return }
         let path = NSBezierPath(
             roundedRect: bounds.insetBy(dx: 1, dy: 1),
             xRadius: 4,
@@ -124,24 +136,35 @@ public final class DropTargetNSView: NSView {
 public struct TrackDropTarget: NSViewRepresentable {
     public let isActive: Bool
     public let onReceive: ([Int64]) -> Void
+    /// When supplied, the view stops drawing its own AppKit border and instead
+    /// reports its highlight state here so the caller can draw a SwiftUI
+    /// highlight (e.g. a roomier, bleeding `.background`).
+    public let onTargetedChange: ((Bool) -> Void)?
 
     public init(
         isActive: Bool = true,
+        onTargetedChange: ((Bool) -> Void)? = nil,
         onReceive: @escaping ([Int64]) -> Void
     ) {
         self.isActive = isActive
+        self.onTargetedChange = onTargetedChange
         self.onReceive = onReceive
     }
 
     public func makeNSView(context: Context) -> DropTargetNSView {
         let view = DropTargetNSView()
-        view.isActive = self.isActive
-        view.onReceive = self.onReceive
+        self.apply(to: view)
         return view
     }
 
     public func updateNSView(_ view: DropTargetNSView, context: Context) {
+        self.apply(to: view)
+    }
+
+    private func apply(to view: DropTargetNSView) {
         view.isActive = self.isActive
         view.onReceive = self.onReceive
+        view.onHighlightChange = self.onTargetedChange
+        view.drawsHighlight = self.onTargetedChange == nil
     }
 }
