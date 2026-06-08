@@ -238,9 +238,6 @@ public extension LibraryViewModel {
     internal func triggerScan(mode: ScanMode) {
         guard let scanner else { return }
         guard !self.isScanning else { return }
-        // Flag a fresh (empty-library) scan so ContentPane can show the
-        // progress overlay instead of an empty track list.
-        self.isInitialScan = self.tracks.rows.isEmpty
         self.isScanning = true
         self.scanWalked = 0
         self.scanInserted = 0
@@ -256,6 +253,14 @@ public extension LibraryViewModel {
         self.startScanFlush()
         self.scanTask = Task { [weak self] in
             guard let self else { return }
+            // Show the full-screen progress overlay only for a genuine first-run
+            // (empty-library) scan. Keying this off the Songs view's row count
+            // wrongly fired on relaunches into a playlist/album/folder view,
+            // which never populate `tracks.rows` (those detail views self-load),
+            // so the overlay covered already-populated content during the
+            // routine startup rescan.
+            let trackCount = await (try? TrackRepository(database: self.database).count()) ?? 0
+            self.isInitialScan = trackCount == 0
             let stream = await scanner.scan(mode: mode)
             for await event in stream {
                 self.handleScanEvent(event)
