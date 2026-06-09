@@ -73,7 +73,7 @@ public struct PresetManagerView: View {
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             } else {
-                Text(preset.name)
+                Text(preset.displayName)
                 Spacer()
                 if !isBuiltIn {
                     Button {
@@ -83,13 +83,13 @@ public struct PresetManagerView: View {
                         Image(systemName: "pencil")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.string("Rename \(preset.name)"))
+                    .accessibilityLabel(L10n.string("Rename \(preset.displayName)"))
 
                     Button { self.duplicate(preset: preset) } label: {
                         Image(systemName: "plus.square.on.square")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.string("Duplicate \(preset.name)"))
+                    .accessibilityLabel(L10n.string("Duplicate \(preset.displayName)"))
 
                     Button(role: .destructive) {
                         self.vm.deleteUserPreset(id: preset.id)
@@ -97,7 +97,7 @@ public struct PresetManagerView: View {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.string("Delete \(preset.name)"))
+                    .accessibilityLabel(L10n.string("Delete \(preset.displayName)"))
                 } else {
                     Label(L10n.string("Built-in"), systemImage: "lock")
                         .font(.caption)
@@ -130,7 +130,7 @@ public struct PresetManagerView: View {
     private func duplicate(preset: EQPreset) {
         let copy = EQPreset(
             id: UUID().uuidString,
-            name: "\(preset.name) Copy",
+            name: L10n.string("\(preset.displayName) Copy"),
             bandGainsDB: preset.bandGainsDB,
             isBuiltIn: false,
             outputGainDB: preset.outputGainDB
