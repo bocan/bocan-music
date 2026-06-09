@@ -122,20 +122,20 @@ public struct EQView: View {
     private var presetPicker: some View {
         Menu {
             ForEach(BuiltInPresets.all) { preset in
-                Button(preset.name) { self.vm.selectPreset(preset) }
+                Button(preset.displayName) { self.vm.selectPreset(preset) }
             }
             if self.vm.presets.contains(where: { !$0.isBuiltIn }) {
                 Divider()
                 ForEach(self.vm.presets.filter { !$0.isBuiltIn }) { preset in
-                    Button(preset.name) { self.vm.selectPreset(preset) }
+                    Button(preset.displayName) { self.vm.selectPreset(preset) }
                 }
             }
             Divider()
             Button(L10n.string("Save as Preset…")) { self.showSaveSheet = true }
             Button(L10n.string("Manage Presets…")) { self.showManagePresets = true }
         } label: {
-            Label(self.currentPreset?.name ?? L10n.string("Custom"), systemImage: "music.note.list")
-                .accessibilityLabel(L10n.string("EQ preset: \(self.currentPreset?.name ?? L10n.string("Custom"))"))
+            Label(self.currentPreset?.displayName ?? L10n.string("Custom"), systemImage: "music.note.list")
+                .accessibilityLabel(L10n.string("EQ preset: \(self.currentPreset?.displayName ?? L10n.string("Custom"))"))
         }
         .menuStyle(.borderlessButton)
         .fixedSize()

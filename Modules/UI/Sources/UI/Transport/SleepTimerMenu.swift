@@ -104,10 +104,10 @@ public struct SleepTimerMenu: View {
 
         ForEach(SleepTimerPreset.allCases.filter { $0 != .off }, id: \.displayName) { preset in
             if let minutes = preset.minutes {
-                Button(preset.displayName) {
+                Button(Self.presetLabel(preset)) {
                     Task { await self.vm.setSleepTimer(minutes: minutes, fadeOut: self.vm.sleepTimerFadeOut) }
                 }
-                .help(L10n.string("Stop playback after \(preset.displayName)"))
+                .help(L10n.string("Stop playback after \(Self.presetLabel(preset))"))
             }
         }
 
@@ -152,6 +152,36 @@ public struct SleepTimerMenu: View {
     }
 
     // MARK: - Helpers
+
+    /// UI-side labels for ``SleepTimerPreset``. The Playback-owned
+    /// `displayName` raw values stay English; translation happens here.
+    private static func presetLabel(_ preset: SleepTimerPreset) -> String {
+        switch preset {
+        case .off:
+            L10n.string("Off")
+
+        case .minutes15:
+            L10n.string("15 min")
+
+        case .minutes30:
+            L10n.string("30 min")
+
+        case .minutes45:
+            L10n.string("45 min")
+
+        case .minutes60:
+            L10n.string("1 hr")
+
+        case .minutes90:
+            L10n.string("1 hr 30 min")
+
+        case .minutes120:
+            L10n.string("2 hr")
+
+        case let .custom(minutes):
+            L10n.string("\(minutes) min")
+        }
+    }
 
     private func formattedRemaining(_ seconds: TimeInterval) -> String {
         let total = Int(seconds)
