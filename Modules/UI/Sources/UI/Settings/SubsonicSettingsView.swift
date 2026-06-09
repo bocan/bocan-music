@@ -29,7 +29,7 @@ public struct SubsonicSettingsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .task { await self.vm.reload() }
-        .navigationTitle("Sources")
+        .navigationTitle(L10n.string("Sources"))
     }
 
     // MARK: - Sidebar
@@ -49,22 +49,22 @@ public struct SubsonicSettingsView: View {
                     )
                     .tag(server.id)
                     .contextMenu {
-                        Button("Edit") {
+                        Button(L10n.string("Edit")) {
                             Task { await self.vm.selectServer(server.id) }
                         }
-                        .accessibilityLabel("Edit \(server.name)")
-                        Button("Reveal Credential in Keychain") {
+                        .accessibilityLabel(L10n.string("Edit \(server.name)"))
+                        Button(L10n.string("Reveal Credential in Keychain")) {
                             Self.revealInKeychain()
                         }
-                        .accessibilityLabel("Reveal \(server.name) credential in Keychain Access")
+                        .accessibilityLabel(L10n.string("Reveal \(server.name) credential in Keychain Access"))
                         Divider()
-                        Button("Remove", role: .destructive) {
+                        Button(L10n.string("Remove"), role: .destructive) {
                             Task {
                                 await self.vm.selectServer(server.id)
                                 await self.vm.deleteSelected()
                             }
                         }
-                        .accessibilityLabel("Remove \(server.name)")
+                        .accessibilityLabel(L10n.string("Remove \(server.name)"))
                     }
                 }
             }
@@ -75,19 +75,19 @@ public struct SubsonicSettingsView: View {
                 Button {
                     self.vm.beginAddServer()
                 } label: {
-                    Label("Add Server", systemImage: "plus")
+                    Label(L10n.string("Add Server"), systemImage: "plus")
                 }
-                .help("Add a new Subsonic-compatible server")
-                .accessibilityLabel("Add new source server")
+                .help(L10n.string("Add a new Subsonic-compatible server"))
+                .accessibilityLabel(L10n.string("Add new source server"))
 
                 Spacer()
 
-                Button("Test All") {
+                Button(L10n.string("Test All")) {
                     Task { await self.vm.testAllConnections() }
                 }
                 .disabled(self.vm.servers.isEmpty || self.vm.isTesting)
-                .help("Ping every configured server")
-                .accessibilityLabel("Test all configured source connections")
+                .help(L10n.string("Ping every configured server"))
+                .accessibilityLabel(L10n.string("Test all configured source connections"))
             }
             .padding(8)
         }
@@ -141,7 +141,9 @@ private struct SubsonicServerRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.server.name), \(self.server.serverURL.host ?? self.server.serverURL.absoluteString)")
+        .accessibilityLabel(
+            L10n.string("\(self.server.name), \(self.server.serverURL.host ?? self.server.serverURL.absoluteString)")
+        )
         .accessibilityValue(self.status.localizedDescription)
     }
 
@@ -175,10 +177,9 @@ private struct SubsonicEmptyState: View {
             Image(systemName: "server.rack")
                 .font(.system(size: 48, weight: .light))
                 .foregroundStyle(.secondary)
-            Text("No Sources Configured")
+            Text(localized: "No Sources Configured")
                 .font(.title3)
-            Text("Add a Subsonic, Navidrome, or other compatible server "
-                + "to stream your remote music library.")
+            Text(localized: "Add a Subsonic, Navidrome, or other compatible server to stream your remote music library.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -186,7 +187,7 @@ private struct SubsonicEmptyState: View {
             Button {
                 self.onAdd()
             } label: {
-                Label("Add Server", systemImage: "plus")
+                Label(L10n.string("Add Server"), systemImage: "plus")
             }
             .keyboardShortcut(.defaultAction)
         }
@@ -202,10 +203,10 @@ private struct SubsonicServerEditorView: View {
 
     var body: some View {
         Form {
-            Section("Identity") {
-                TextField("Display Name", text: self.$vm.editor.name)
+            Section(L10n.string("Identity")) {
+                TextField(L10n.string("Display Name"), text: self.$vm.editor.name)
                 TextField(
-                    "Server URL",
+                    L10n.string("Server URL"),
                     text: self.$vm.editor.serverURLText,
                     prompt: Text(verbatim: "https://music.example.com")
                 )
@@ -219,29 +220,28 @@ private struct SubsonicServerEditorView: View {
                 }
             }
 
-            Section("Authentication") {
-                Picker("Method", selection: self.$vm.editor.authKind) {
-                    Text("Token + Password (Subsonic / Navidrome)")
+            Section(L10n.string("Authentication")) {
+                Picker(L10n.string("Method"), selection: self.$vm.editor.authKind) {
+                    Text(localized: "Token + Password (Subsonic / Navidrome)")
                         .tag(SubsonicAuthKind.tokenSalt)
-                    Text("API Key (OpenSubsonic)")
+                    Text(localized: "API Key (OpenSubsonic)")
                         .tag(SubsonicAuthKind.apiKey)
                 }
                 .pickerStyle(.menu)
                 if self.vm.editor.authKind == .tokenSalt {
-                    TextField("Username", text: self.$vm.editor.username)
+                    TextField(L10n.string("Username"), text: self.$vm.editor.username)
                         .autocorrectionDisabled(true)
-                    SecureField("Password", text: self.$vm.editor.secret)
+                    SecureField(L10n.string("Password"), text: self.$vm.editor.secret)
                 } else {
-                    SecureField("API Key", text: self.$vm.editor.secret)
+                    SecureField(L10n.string("API Key"), text: self.$vm.editor.secret)
                 }
             }
 
-            Section("Security") {
-                Toggle("Allow self-signed TLS certificate", isOn: self.$vm.editor.allowSelfSignedTLS)
+            Section(L10n.string("Security")) {
+                Toggle(L10n.string("Allow self-signed TLS certificate"), isOn: self.$vm.editor.allowSelfSignedTLS)
                 if self.vm.editor.allowSelfSignedTLS {
                     Label(
-                        "Allowing self-signed certificates means Bòcan cannot verify that"
-                            + " the server is who it claims to be. Use only on a network you control.",
+                        self.selfSignedWarning,
                         systemImage: "exclamationmark.triangle.fill"
                     )
                     .font(.caption)
@@ -249,42 +249,42 @@ private struct SubsonicServerEditorView: View {
                 }
             }
 
-            Section("Streaming") {
-                Picker("Maximum Bitrate", selection: self.$vm.editor.bitrateKind) {
-                    Text("Original quality").tag(SubsonicSettingsViewModel.BitrateKind.original)
-                    Text("Cap at…").tag(SubsonicSettingsViewModel.BitrateKind.kbps)
+            Section(L10n.string("Streaming")) {
+                Picker(L10n.string("Maximum Bitrate"), selection: self.$vm.editor.bitrateKind) {
+                    Text(localized: "Original quality").tag(SubsonicSettingsViewModel.BitrateKind.original)
+                    Text(localized: "Cap at…").tag(SubsonicSettingsViewModel.BitrateKind.kbps)
                 }
                 .pickerStyle(.segmented)
 
                 if self.vm.editor.bitrateKind == .kbps {
-                    Picker("Bitrate", selection: self.$vm.editor.bitrateKbps) {
+                    Picker(L10n.string("Bitrate"), selection: self.$vm.editor.bitrateKbps) {
                         ForEach([96, 128, 192, 256, 320], id: \.self) { kbps in
-                            Text("\(kbps) kbps").tag(kbps)
+                            Text(localized: "\(kbps) kbps").tag(kbps)
                         }
                     }
                     .pickerStyle(.menu)
                 }
 
-                Picker("Preferred Format", selection: self.$vm.editor.preferredFormat) {
+                Picker(L10n.string("Preferred Format"), selection: self.$vm.editor.preferredFormat) {
                     ForEach(SubsonicStreamFormat.allCases, id: \.self) { fmt in
                         Text(self.label(for: fmt)).tag(fmt)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Toggle("Pre-cache the next track", isOn: self.$vm.editor.precacheNext)
+                Toggle(L10n.string("Pre-cache the next track"), isOn: self.$vm.editor.precacheNext)
             }
 
-            Section("Integration") {
-                Toggle("Include in global search", isOn: self.$vm.editor.includeInGlobalSearch)
-                Toggle("Show in sidebar", isOn: self.$vm.editor.showInSidebar)
-                Toggle("Scrobble to this server", isOn: self.$vm.editor.scrobble)
-                Toggle("Sync starred items", isOn: self.$vm.editor.syncStars)
-                Toggle("Sync star ratings", isOn: self.$vm.editor.syncRatings)
+            Section(L10n.string("Integration")) {
+                Toggle(L10n.string("Include in global search"), isOn: self.$vm.editor.includeInGlobalSearch)
+                Toggle(L10n.string("Show in sidebar"), isOn: self.$vm.editor.showInSidebar)
+                Toggle(L10n.string("Scrobble to this server"), isOn: self.$vm.editor.scrobble)
+                Toggle(L10n.string("Sync starred items"), isOn: self.$vm.editor.syncStars)
+                Toggle(L10n.string("Sync star ratings"), isOn: self.$vm.editor.syncRatings)
             }
 
             if let test = self.vm.lastTestResult {
-                Section("Last Test") {
+                Section(L10n.string("Last Test")) {
                     TestResultBlock(result: test)
                 }
             }
@@ -298,40 +298,47 @@ private struct SubsonicServerEditorView: View {
 
             Section {
                 HStack {
-                    Button("Test Connection") {
+                    Button(L10n.string("Test Connection")) {
                         Task { await self.vm.testCurrentEditor() }
                     }
                     .disabled(self.vm.isTesting)
-                    .help("Ping this server and report its capabilities")
-                    .accessibilityLabel("Test connection to this server")
+                    .help(L10n.string("Ping this server and report its capabilities"))
+                    .accessibilityLabel(L10n.string("Test connection to this server"))
 
                     Spacer()
 
                     if self.vm.editor.id != nil {
-                        Button("Delete", role: .destructive) {
+                        Button(L10n.string("Delete"), role: .destructive) {
                             Task { await self.vm.deleteSelected() }
                         }
-                        .help("Remove this server and its Keychain credential")
-                        .accessibilityLabel("Delete this server")
+                        .help(L10n.string("Remove this server and its Keychain credential"))
+                        .accessibilityLabel(L10n.string("Delete this server"))
                     }
 
-                    Button("Save") {
+                    Button(L10n.string("Save")) {
                         Task { await self.vm.save() }
                     }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.vm.editor.firstValidationError != nil)
-                    .help("Save changes to this server (\u{2318}\u{21A9})")
-                    .accessibilityLabel("Save server settings")
+                    .help(L10n.string("Save changes to this server (\u{2318}\u{21A9})"))
+                    .accessibilityLabel(L10n.string("Save server settings"))
                 }
             }
         }
         .formStyle(.grouped)
     }
 
+    /// Warning shown when self-signed TLS is allowed. Two sentence keys joined
+    /// in code so each stays within the line limit (#314).
+    private var selfSignedWarning: String {
+        L10n.string("Allowing self-signed certificates means Bòcan cannot verify that the server is who it claims to be.")
+            + " " + L10n.string("Use only on a network you control.")
+    }
+
     private func label(for format: SubsonicStreamFormat) -> String {
         switch format {
         case .original:
-            "Original (no transcode)"
+            L10n.string("Original (no transcode)")
 
         case .mp3:
             "MP3"
@@ -359,19 +366,19 @@ private struct TestResultBlock: View {
                 Label(self.headline(for: caps), systemImage: "checkmark.seal.fill")
                     .foregroundStyle(.green)
                 if !self.extensions(from: caps).isEmpty {
-                    Text("Advertised extensions: " + self.extensions(from: caps).joined(separator: ", "))
+                    Text(localized: "Advertised extensions: \(self.extensions(from: caps).joined(separator: ", "))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         } else {
-            Label(self.result.message ?? "Connection failed.", systemImage: "exclamationmark.octagon.fill")
+            Label(self.result.message ?? L10n.string("Connection failed."), systemImage: "exclamationmark.octagon.fill")
                 .foregroundStyle(.red)
         }
     }
 
     private func headline(for caps: SubsonicCapabilities) -> String {
-        let kind = caps.serverType?.capitalized ?? "Subsonic-compatible server"
+        let kind = caps.serverType?.capitalized ?? L10n.string("Subsonic-compatible server")
         let version = caps.serverVersion.map { " \($0)" } ?? ""
         let api = caps.apiVersion.map { " (API \($0))" } ?? ""
         return "\(kind)\(version)\(api)"

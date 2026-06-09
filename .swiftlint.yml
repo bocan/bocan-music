@@ -96,6 +96,8 @@ custom_rules:
       - "Modules/UI/Sources/UI/Settings/LibrarySettingsView\\.swift"
       - "Modules/UI/Sources/UI/Settings/SettingsScene\\.swift"
       - "Modules/UI/Sources/UI/Settings/AboutView\\.swift"
+      - "Modules/UI/Sources/UI/Settings/SubsonicSettingsView\\.swift"
+      - "Modules/UI/Sources/UI/Settings/SubsonicSettingsViewModel\\.swift"
       - "Modules/UI/Sources/UI/Common/EmptyState\\.swift"
       - "Modules/UI/Sources/UI/Common/ErrorState\\.swift"
       - "Modules/UI/Sources/UI/Common/LoadingState\\.swift"

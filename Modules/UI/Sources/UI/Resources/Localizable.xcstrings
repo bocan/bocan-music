@@ -1,6 +1,156 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "API key is required." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API key is required."
+          }
+        }
+      }
+    },
+    "Add a Subsonic, Navidrome, or other compatible server to stream your remote music library." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a Subsonic, Navidrome, or other compatible server to stream your remote music library."
+          }
+        }
+      }
+    },
+    "Advertised extensions: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Advertised extensions: %@"
+          }
+        }
+      }
+    },
+    "Allowing self-signed certificates means Bòcan cannot verify that the server is who it claims to be." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allowing self-signed certificates means Bòcan cannot verify that the server is who it claims to be."
+          }
+        }
+      }
+    },
+    "Connection failed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connection failed."
+          }
+        }
+      }
+    },
+    "Couldn't read the stored password right now. Your saved credential is intact; reopen Settings to try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't read the stored password right now. Your saved credential is intact; reopen Settings to try again."
+          }
+        }
+      }
+    },
+    "Display name is required." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display name is required."
+          }
+        }
+      }
+    },
+    "New Server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Server"
+          }
+        }
+      }
+    },
+    "Original (no transcode)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original (no transcode)"
+          }
+        }
+      }
+    },
+    "Password is required." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password is required."
+          }
+        }
+      }
+    },
+    "Server URL must be a valid http or https URL." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server URL must be a valid http or https URL."
+          }
+        }
+      }
+    },
+    "Server URL must use http or https." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server URL must use http or https."
+          }
+        }
+      }
+    },
+    "Subsonic-compatible server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subsonic-compatible server"
+          }
+        }
+      }
+    },
+    "Use only on a network you control." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use only on a network you control."
+          }
+        }
+      }
+    },
+    "Username is required for token-and-password authentication." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Username is required for token-and-password authentication."
+          }
+        }
+      }
+    },
     "Now Playing" : {
       "localizations" : {
         "en" : {
