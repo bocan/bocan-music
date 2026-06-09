@@ -181,6 +181,35 @@ struct L10nTests {
         #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
     }
 
+    @Test("Phase 5 plural keys collapse to singular forms (#314)")
+    func phase5Plurals() throws {
+        let strings = try self.catalog()
+        let lines = try #require(self.plural("%lld lines", in: strings))
+        #expect(lines.one == "1 line")
+        let tracks = try #require(self.plural("%lld tracks", in: strings))
+        #expect(tracks.one == "%lld track")
+        let artists = try #require(self.plural("%lld artists", in: strings))
+        #expect(artists.one == "%lld artist")
+        let remove = try #require(self.plural("Remove %lld tracks from library?", in: strings))
+        #expect(remove.one == "Remove %lld track from library?")
+    }
+
+    @Test(
+        "Last unconverted surfaces route copy through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/Common/TrackInfoPanel.swift",
+            "Sources/UI/Console/LogConsoleView.swift",
+            "Sources/UI/Theme/ContrastAudit.swift",
+            "Sources/UI/Theme/ThemeAudit.swift",
+            "Sources/UI/Playlists/PlaylistHeader.swift",
+        ]
+    )
+    func phase5SurfacesUseHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test("Phase 3 plural keys collapse to singular forms (#314)")
     func phase3Plurals() throws {
         let strings = try self.catalog()

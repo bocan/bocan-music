@@ -22,12 +22,12 @@ public struct ThemeAuditView: View {
 
     public var body: some View {
         HStack(spacing: 0) {
-            self.swatchColumn(scheme: .light, label: "Light")
+            self.swatchColumn(scheme: .light, label: L10n.string("Light"))
             Divider()
-            self.swatchColumn(scheme: .dark, label: "Dark")
+            self.swatchColumn(scheme: .dark, label: L10n.string("Dark"))
         }
         .frame(minWidth: 480, minHeight: 320)
-        .navigationTitle("Theme Audit")
+        .navigationTitle(L10n.string("Theme Audit"))
     }
 
     private func swatchColumn(scheme: ColorScheme, label: String) -> some View {

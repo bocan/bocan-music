@@ -42,7 +42,7 @@ public struct LogConsoleRow: View {
         .font(.system(.caption, design: .monospaced))
         .padding(.vertical, 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(self.entry.level.label), \(self.entry.category.rawValue), \(self.entry.message)")
+        .accessibilityLabel(Text(verbatim: "\(self.entry.level.label), \(self.entry.category.rawValue), \(self.entry.message)"))
     }
 
     // MARK: - Level colour

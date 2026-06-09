@@ -179,12 +179,12 @@ public struct SmartPlaylistDetailView: View {
 
     private var subtitle: String {
         let count = self.vm.trackCount
-        let countText = count == 1 ? "1 song" : "\(count) songs"
+        let countText = L10n.string("\(count) songs")
         let mins = Int(self.vm.totalDuration / 60)
         let durationText = mins < 60
-            ? "\(mins) min"
-            : "\(mins / 60) hr \(mins % 60) min"
-        return "\(countText) · \(durationText)"
+            ? L10n.string("\(mins) min")
+            : L10n.string("\(mins / 60) hr \(mins % 60) min")
+        return L10n.string("\(countText) · \(durationText)")
     }
 
     private var snapshotSubtitle: String? {

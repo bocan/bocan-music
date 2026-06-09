@@ -72,13 +72,11 @@ analyzer_rules:
   - unused_declaration
 
 custom_rules:
-  # Localization regression guard (#314). In files already converted to the
-  # module String Catalog, user-facing copy must resolve through the L10n
-  # helper (Text(localized:) / L10n.string). A bare literal in this SPM module
-  # resolves against Bundle.main and silently never localizes. The `included`
-  # list below is the allowlist of converted files; add each file as you
-  # convert it, and flip to all of Modules/UI/Sources/UI when the migration
-  # completes. Workflow: docs/design-spec/localization.md.
+  # Localization regression guard (#314). User-facing copy in the UI module
+  # must resolve through the L10n helper (Text(localized:) / L10n.string).
+  # A bare literal in this SPM module resolves against Bundle.main and
+  # silently never localizes. Enforced module-wide since the #314 migration
+  # completed. Workflow: docs/design-spec/localization.md.
   no_bare_user_facing_literal:
     name: "Bare user-facing string literal"
     regex: '\b(?:Text|Button|Toggle|Label|Picker|Menu|TextField|SecureField|Section|Stepper|LabeledContent|ProgressView|ContentUnavailableView)\(\s*"[^"]|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog)\(\s*"[^"]'
@@ -88,51 +86,7 @@ custom_rules:
     message: "Converted file: route user-facing copy through L10n (Text(localized:) or L10n.string) so it resolves against the module catalog (#314). See docs/design-spec/localization.md."
     severity: error
     included:
-      - "Modules/UI/Sources/UI/Browse/.*\\.swift"
-      - "Modules/UI/Sources/UI/Playlists/.*\\.swift"
-      - "Modules/UI/Sources/UI/MetadataEditor/.*\\.swift"
-      - "Modules/UI/Sources/UI/Lyrics/.*\\.swift"
-      - "Modules/UI/Sources/UI/DSP/.*\\.swift"
-      - "Modules/UI/Sources/UI/Scrobble/.*\\.swift"
-      - "Modules/UI/Sources/UI/Fingerprint/.*\\.swift"
-      - "Modules/UI/Sources/UI/Tools/.*\\.swift"
-      - "Modules/UI/Sources/UI/Visualizers/.*\\.swift"
-      - "Modules/UI/Sources/UI/PlaylistIO/.*\\.swift"
-      - "Modules/UI/Sources/UI/Import/.*\\.swift"
-      - "Modules/UI/Sources/UI/ViewModels/.*\\.swift"
-      - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
-      - "Modules/UI/Sources/UI/Settings/GeneralSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/AppearanceSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/PlaybackSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/LibrarySettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/SettingsScene\\.swift"
-      - "Modules/UI/Sources/UI/Settings/AboutView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/SubsonicSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/SubsonicSettingsViewModel\\.swift"
-      - "Modules/UI/Sources/UI/Settings/DiagnosticsSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/AdvancedSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/BackupSettingsViewModel\\.swift"
-      - "Modules/UI/Sources/UI/Settings/SmartPlaylistsSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Settings/DSPSettingsView\\.swift"
-      - "Modules/UI/Sources/UI/Common/EmptyState\\.swift"
-      - "Modules/UI/Sources/UI/Common/ErrorState\\.swift"
-      - "Modules/UI/Sources/UI/Common/LoadingState\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/ContentPane\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/CrashRecoveryBanner\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/DiagnosticsConsentBanner\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/NowPlayingStrip\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/RootView\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/ScanProgressPane\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/Sidebar\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/SidebarSectionExpansion\\.swift"
-      - "Modules/UI/Sources/UI/AppRoot/SubsonicSidebarSection\\.swift"
-      - "Modules/UI/Sources/UI/Transport/SleepTimerMenu\\.swift"
-      - "Modules/UI/Sources/UI/Transport/SpeedPickerView\\.swift"
-      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerCompact\\.swift"
-      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerSquare\\.swift"
-      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerView\\.swift"
-      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerVisualizer\\.swift"
-      - "Modules/UI/Sources/UI/MenuBarExtra/MenuBarExtraScene\\.swift"
+      - "Modules/UI/Sources/UI/.*\\.swift"
 
 line_length:
   warning: 140
