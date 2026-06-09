@@ -62,7 +62,7 @@ public final class PlaylistDetailViewModel: ObservableObject {
             self.tracks = try await self.service.tracks(in: playlistID)
         } catch {
             self.log.error("playlist.detail.load.failed", ["error": String(reflecting: error)])
-            self.lastError = "Could not load playlist."
+            self.lastError = L10n.string("Could not load playlist.")
         }
         self.isLoading = false
         self.scheduleMosaicCompute()

@@ -41,8 +41,8 @@ public struct PlaylistDetailView: View {
                 } else if self.vm.tracks.isEmpty {
                     EmptyState(
                         symbol: "music.note.list",
-                        title: "Empty Playlist",
-                        message: "Drag tracks here, or use \"Add to Playlist\" from the Songs view."
+                        title: L10n.string("Empty Playlist"),
+                        message: L10n.string("Drag tracks here, or use \"Add to Playlist\" from the Songs view.")
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {

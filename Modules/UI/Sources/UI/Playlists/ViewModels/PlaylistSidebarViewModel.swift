@@ -70,7 +70,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             self.isLoaded = true
         } catch {
             self.log.error("playlist.sidebar.reload.failed", ["error": String(reflecting: error)])
-            self.lastError = "Could not load playlists."
+            self.lastError = L10n.string("Could not load playlists.")
         }
     }
 
@@ -129,7 +129,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
-        let base = "New Playlist \(formatter.string(from: Date()))"
+        let base = L10n.string("New Playlist \(formatter.string(from: Date()))")
         return self.uniqueSiblingName(base: base, parentID: parentID)
     }
 
@@ -322,8 +322,8 @@ public final class PlaylistSidebarViewModel: ObservableObject {
         panel.allowedContentTypes = [.jpeg, .png, .tiff, .heic, .webP]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.message = "Choose an image to use as the cover art for \"\(node.name)\"."
-        panel.prompt = "Set Cover Art"
+        panel.message = L10n.string("Choose an image to use as the cover art for \"\(node.name)\".")
+        panel.prompt = L10n.string("Set Cover Art")
 
         let response = await Self.openPanelAsync(panel)
         guard response == .OK, let url = panel.url else { return }
@@ -336,7 +336,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             self.log.debug("playlist.setCoverArt.done", ["id": node.id, "path": destPath])
         } catch {
             self.log.error("playlist.setCoverArt.failed", ["error": String(reflecting: error)])
-            self.lastError = "Could not set cover art."
+            self.lastError = L10n.string("Could not set cover art.")
         }
     }
 
@@ -347,7 +347,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             await self.reload()
         } catch {
             self.log.error("playlist.setAccentColor.failed", ["error": String(reflecting: error)])
-            self.lastError = "Could not update accent colour."
+            self.lastError = L10n.string("Could not update accent colour.")
         }
     }
 

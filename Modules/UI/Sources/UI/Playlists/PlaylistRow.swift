@@ -27,7 +27,7 @@ public struct PlaylistRow: View {
             Spacer(minLength: 4)
 
             if self.node.trackCount > 0, !self.isInlineRenaming {
-                Text("\(self.node.trackCount)")
+                Text(verbatim: String(self.node.trackCount))
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -62,7 +62,7 @@ public struct PlaylistRow: View {
             )
         )
         .help(self.node.name)
-        .accessibilityLabel("Playlist: \(self.node.name)")
+        .accessibilityLabel(L10n.string("Playlist: \(self.node.name)"))
         .accessibilityIdentifier(A11y.PlaylistSidebar.row(self.node.id))
         .onAppear { self.syncDraftName() }
         .onChange(of: self.vm.renamingPlaylistID) { _, newValue in
@@ -89,11 +89,11 @@ public struct PlaylistRow: View {
     @ViewBuilder
     private var nameView: some View {
         if self.isInlineRenaming {
-            TextField("Playlist Name", text: self.$draftName)
+            TextField(L10n.string("Playlist Name"), text: self.$draftName)
                 .font(Typography.body)
                 .textFieldStyle(.roundedBorder)
                 .focused(self.$isRenameFieldFocused)
-                .accessibilityLabel("Playlist name")
+                .accessibilityLabel(L10n.string("Playlist name"))
                 .accessibilityIdentifier(A11y.PlaylistSidebar.newNameField)
                 .onAppear {
                     self.draftName = self.node.name
@@ -141,36 +141,36 @@ public struct PlaylistRow: View {
 
     @ViewBuilder
     private var contextMenuContent: some View {
-        Button("Rename") { self.vm.renameTarget = self.node }
-        Button("Duplicate") { Task { _ = await self.vm.duplicate(self.node) } }
+        Button(L10n.string("Rename")) { self.vm.renameTarget = self.node }
+        Button(L10n.string("Duplicate")) { Task { _ = await self.vm.duplicate(self.node) } }
         if self.node.kind == .manual {
-            Button("Export…") {
+            Button(L10n.string("Export…")) {
                 self.vm.onRequestExport?(self.node.id, self.node.name)
             }
-            Menu("Sort Contents") {
-                Button("By Title") {
+            Menu(L10n.string("Sort Contents")) {
+                Button(L10n.string("By Title")) {
                     Task { await self.vm.sortContents(self.node, by: .title) }
                 }
-                Button("By Artist") {
+                Button(L10n.string("By Artist")) {
                     Task { await self.vm.sortContents(self.node, by: .artist) }
                 }
-                Button("By Date Added") {
+                Button(L10n.string("By Date Added")) {
                     Task { await self.vm.sortContents(self.node, by: .dateAdded) }
                 }
             }
         }
         self.moveToFolderMenu
         Divider()
-        Button("Set Cover Art…") {
+        Button(L10n.string("Set Cover Art…")) {
             Task { await self.vm.setCoverArt(for: self.node) }
         }
-        .help("Choose an image file to use as the cover art for this playlist")
-        Button("Set Accent Colour…") {
+        .help(L10n.string("Choose an image file to use as the cover art for this playlist"))
+        Button(L10n.string("Set Accent Colour…")) {
             self.vm.accentColorTarget = self.node
         }
-        .help("Set a custom accent colour for this playlist")
+        .help(L10n.string("Set a custom accent colour for this playlist"))
         Divider()
-        Button("Delete", role: .destructive) { self.vm.deleteTarget = self.node }
+        Button(L10n.string("Delete"), role: .destructive) { self.vm.deleteTarget = self.node }
     }
 
     @ViewBuilder
@@ -178,8 +178,8 @@ public struct PlaylistRow: View {
         let folders = self.vm.allFolders()
         if !folders.isEmpty {
             Divider()
-            Menu("Move to Folder") {
-                Button("Top Level") {
+            Menu(L10n.string("Move to Folder")) {
+                Button(L10n.string("Top Level")) {
                     Task { await self.vm.move(self.node, toParent: nil) }
                 }
                 Divider()
