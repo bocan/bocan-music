@@ -174,6 +174,10 @@ public actor SleepTimer {
     }
 
     private func tick(remaining: TimeInterval, expiresAt: Date) async {
+        // fire() or cancel() can land between the countdown loop computing a
+        // tick and the actor executing it; a stale tick must not resurrect
+        // `remaining` after the timer fired or was rescheduled.
+        guard self.expiresAt == expiresAt else { return }
         self.remaining = remaining
 
         guard self.fadeOut, remaining <= Self.fadeDuration else { return }
