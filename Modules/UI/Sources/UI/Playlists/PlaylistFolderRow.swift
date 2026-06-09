@@ -33,9 +33,9 @@ public struct PlaylistFolderRow: View {
                     .frame(width: 12)
             }
             .buttonStyle(.plain)
-            .help(self.isExpanded ? "Collapse folder" : "Expand folder")
-            .accessibilityLabel(self.isExpanded ? "Collapse folder" : "Expand folder")
-            .accessibilityValue(self.isExpanded ? "Expanded" : "Collapsed")
+            .help(self.isExpanded ? L10n.string("Collapse folder") : L10n.string("Expand folder"))
+            .accessibilityLabel(self.isExpanded ? L10n.string("Collapse folder") : L10n.string("Expand folder"))
+            .accessibilityValue(self.isExpanded ? L10n.string("Expanded") : L10n.string("Collapsed"))
 
             Image(systemName: self.isDropTargeted ? "folder.fill.badge.plus" : "folder")
                 .foregroundStyle(self.isDropTargeted ? Color.accentColor : Color.textSecondary)
@@ -77,7 +77,7 @@ public struct PlaylistFolderRow: View {
         }
         .contextMenu { self.contextMenuContent }
         .help(self.node.name)
-        .accessibilityLabel("Folder: \(self.node.name)")
+        .accessibilityLabel(L10n.string("Folder: \(self.node.name)"))
         .accessibilityIdentifier(A11y.PlaylistSidebar.folderRow(self.node.id))
         .onAppear { self.syncDraftName() }
         .onChange(of: self.vm.renamingPlaylistID) { _, newValue in
@@ -108,11 +108,11 @@ public struct PlaylistFolderRow: View {
     @ViewBuilder
     private var nameView: some View {
         if self.isInlineRenaming {
-            TextField("Folder Name", text: self.$draftName)
+            TextField(L10n.string("Folder Name"), text: self.$draftName)
                 .font(Typography.body)
                 .textFieldStyle(.roundedBorder)
                 .focused(self.$isRenameFieldFocused)
-                .accessibilityLabel("Folder name")
+                .accessibilityLabel(L10n.string("Folder name"))
                 .accessibilityIdentifier(A11y.PlaylistSidebar.newNameField)
                 .onAppear {
                     self.draftName = self.node.name
@@ -140,14 +140,14 @@ public struct PlaylistFolderRow: View {
 
     @ViewBuilder
     private var contextMenuContent: some View {
-        Button("New Playlist in Folder") { self.vm.beginNewPlaylist(parent: self.node.id) }
-        Button("New Subfolder") { self.vm.beginNewFolder(parent: self.node.id) }
+        Button(L10n.string("New Playlist in Folder")) { self.vm.beginNewPlaylist(parent: self.node.id) }
+        Button(L10n.string("New Subfolder")) { self.vm.beginNewFolder(parent: self.node.id) }
         Divider()
-        Button("Rename") { self.vm.renameTarget = self.node }
+        Button(L10n.string("Rename")) { self.vm.renameTarget = self.node }
         self.moveToFolderMenu
         Divider()
-        Button("Delete Folder (Keep Contents)") { self.vm.deleteTarget = self.node }
-        Button("Delete Folder and Contents", role: .destructive) {
+        Button(L10n.string("Delete Folder (Keep Contents)")) { self.vm.deleteTarget = self.node }
+        Button(L10n.string("Delete Folder and Contents"), role: .destructive) {
             self.vm.deleteRecursiveTarget = self.node
         }
     }
@@ -156,8 +156,8 @@ public struct PlaylistFolderRow: View {
     private var moveToFolderMenu: some View {
         let folders = self.vm.allFolders().filter { $0.id != self.node.id }
         if !folders.isEmpty {
-            Menu("Move to Folder") {
-                Button("Top Level") {
+            Menu(L10n.string("Move to Folder")) {
+                Button(L10n.string("Top Level")) {
                     Task { await self.vm.move(self.node, toParent: nil) }
                 }
                 Divider()

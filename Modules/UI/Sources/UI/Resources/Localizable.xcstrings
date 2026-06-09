@@ -1,6 +1,210 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Choose an image to use as the cover art for \"%@\"." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose an image to use as the cover art for \"%@\"."
+          }
+        }
+      }
+    },
+    "Could not load playlist." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not load playlist."
+          }
+        }
+      }
+    },
+    "Could not load playlists." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not load playlists."
+          }
+        }
+      }
+    },
+    "Could not load smart playlist." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not load smart playlist."
+          }
+        }
+      }
+    },
+    "Could not refresh playlist." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not refresh playlist."
+          }
+        }
+      }
+    },
+    "Could not set cover art." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not set cover art."
+          }
+        }
+      }
+    },
+    "Could not update accent colour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not update accent colour."
+          }
+        }
+      }
+    },
+    "Drag playlists here or use \"New Playlist in Folder\" from the sidebar." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag playlists here or use \"New Playlist in Folder\" from the sidebar."
+          }
+        }
+      }
+    },
+    "Drag tracks here, or use \"Add to Playlist\" from the Songs view." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drag tracks here, or use \"Add to Playlist\" from the Songs view."
+          }
+        }
+      }
+    },
+    "Empty Folder" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty Folder"
+          }
+        }
+      }
+    },
+    "Empty Playlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empty Playlist"
+          }
+        }
+      }
+    },
+    "Live updates unavailable." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live updates unavailable."
+          }
+        }
+      }
+    },
+    "Set Cover Art" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Cover Art"
+          }
+        }
+      }
+    },
+    "New Playlist %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Playlist %@"
+          }
+        }
+      }
+    },
+    "Playlist: %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playlist: %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Smart Playlist: %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Playlist: %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%lld items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld items"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "From selection (%lld tracks)" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "From selection (%lld track)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "From selection (%lld tracks)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "(unreadable)" : {
       "localizations" : {
         "en" : {

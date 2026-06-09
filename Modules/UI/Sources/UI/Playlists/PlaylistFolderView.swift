@@ -27,8 +27,8 @@ public struct PlaylistFolderView: View {
             if self.node.children.isEmpty {
                 EmptyState(
                     symbol: "folder",
-                    title: "Empty Folder",
-                    message: "Drag playlists here or use \"New Playlist in Folder\" from the sidebar."
+                    title: L10n.string("Empty Folder"),
+                    message: L10n.string("Drag playlists here or use \"New Playlist in Folder\" from the sidebar.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -63,7 +63,7 @@ public struct PlaylistFolderView: View {
         .padding(.vertical, 16)
         .accessibilityIdentifier(A11y.PlaylistFolderDetail.header)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Folder: \(self.node.name), \(self.childCountLabel)")
+        .accessibilityLabel(L10n.string("Folder: \(self.node.name), \(self.childCountLabel)"))
     }
 
     // MARK: - Child list
@@ -100,7 +100,7 @@ public struct PlaylistFolderView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(self.accessibilityLabel(for: child))
             .accessibilityIdentifier(A11y.PlaylistFolderDetail.childRow(child.id))
-            .help("Open \"\(child.name)\"")
+            .help(L10n.string("Open \"\(child.name)\""))
         }
         .listStyle(.plain)
     }
@@ -108,8 +108,7 @@ public struct PlaylistFolderView: View {
     // MARK: - Helpers
 
     private var childCountLabel: String {
-        let n = self.node.children.count
-        return n == 1 ? "1 item" : "\(n) items"
+        L10n.string("\(self.node.children.count) items")
     }
 
     private func destination(for child: PlaylistNode) -> SidebarDestination {
@@ -140,23 +139,21 @@ public struct PlaylistFolderView: View {
 
     private func subtitle(for child: PlaylistNode) -> String {
         if child.kind == .folder {
-            let n = child.children.count
-            return n == 1 ? "1 item" : "\(n) items"
+            return L10n.string("\(child.children.count) items")
         }
-        let n = child.trackCount
-        return n == 1 ? "1 song" : "\(n) songs"
+        return L10n.string("\(child.trackCount) songs")
     }
 
     private func accessibilityLabel(for child: PlaylistNode) -> String {
         switch child.kind {
         case .folder:
-            "Folder: \(child.name), \(self.subtitle(for: child))"
+            L10n.string("Folder: \(child.name), \(self.subtitle(for: child))")
 
         case .smart:
-            "Smart Playlist: \(child.name), \(self.subtitle(for: child))"
+            L10n.string("Smart Playlist: \(child.name), \(self.subtitle(for: child))")
 
         case .manual:
-            "Playlist: \(child.name), \(self.subtitle(for: child))"
+            L10n.string("Playlist: \(child.name), \(self.subtitle(for: child))")
         }
     }
 }
