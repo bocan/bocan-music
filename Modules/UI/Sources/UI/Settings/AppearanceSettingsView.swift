@@ -11,31 +11,33 @@ public struct AppearanceSettingsView: View {
 
     public var body: some View {
         Form {
-            Section("Theme") {
-                Picker("Appearance", selection: self.$colorScheme) {
-                    Text("System").tag("system")
-                    Text("Light").tag("light")
-                    Text("Dark").tag("dark")
+            Section(L10n.string("Theme")) {
+                Picker(L10n.string("Appearance"), selection: self.$colorScheme) {
+                    Text(localized: "System").tag("system")
+                    Text(localized: "Light").tag("light")
+                    Text(localized: "Dark").tag("dark")
                 }
                 .pickerStyle(.segmented)
-                .help("System follows your macOS system appearance setting. Light or Dark overrides it for Bòcan only.")
+                .help(L10n.string(
+                    "System follows your macOS system appearance setting. Light or Dark overrides it for Bòcan only."
+                ))
             }
 
-            Section("Accent Colour") {
+            Section(L10n.string("Accent Colour")) {
                 AccentPaletteView(selection: self.$accentColor)
             }
 
-            Section("Layout") {
-                Picker("Row density", selection: self.$rowDensity) {
-                    Text("Compact").tag("compact")
-                    Text("Regular").tag("regular")
-                    Text("Spacious").tag("spacious")
+            Section(L10n.string("Layout")) {
+                Picker(L10n.string("Row density"), selection: self.$rowDensity) {
+                    Text(localized: "Compact").tag("compact")
+                    Text(localized: "Regular").tag("regular")
+                    Text(localized: "Spacious").tag("spacious")
                 }
                 .pickerStyle(.segmented)
-                .help("Compact fits more tracks on screen; Spacious is easier to read at a distance.")
+                .help(L10n.string("Compact fits more tracks on screen; Spacious is easier to read at a distance."))
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Appearance")
+        .navigationTitle(L10n.string("Appearance"))
     }
 }

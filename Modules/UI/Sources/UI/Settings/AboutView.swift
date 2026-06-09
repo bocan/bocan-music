@@ -21,29 +21,29 @@ public struct AboutView: View {
                 .frame(width: 96, height: 96)
 
             VStack(spacing: 4) {
-                Text("Bòcan")
+                Text(verbatim: "Bòcan")
                     .font(.title.bold())
-                Text("Version \(self.version) (\(self.build))")
+                Text(localized: "Version \(self.version) (\(self.build))")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
-            Text("A thoughtful local music player for macOS.")
+            Text(localized: "A thoughtful local music player for macOS.")
                 .font(.body)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            Button("Check for Updates\u{2026}") {
+            Button(L10n.string("Check for Updates\u{2026}")) {
                 self.onCheckForUpdates()
             }
             .buttonStyle(.borderedProminent)
             .disabled(!self.canCheckForUpdates)
-            .help("Check whether a newer version of Bòcan is available.")
+            .help(L10n.string("Check whether a newer version of Bòcan is available."))
 
             Divider()
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("Third-Party Notices")
+                Text(localized: "Third-Party Notices")
                     .font(.caption.bold())
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -56,6 +56,6 @@ public struct AboutView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .navigationTitle("About")
+        .navigationTitle(L10n.string("About"))
     }
 }

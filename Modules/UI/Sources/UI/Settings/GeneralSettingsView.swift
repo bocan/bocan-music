@@ -16,37 +16,39 @@ public struct GeneralSettingsView: View {
 
     public var body: some View {
         Form {
-            Section("Startup") {
-                Toggle("Launch Bòcan at login", isOn: self.$launchAtLogin)
-                    .help("Register Bòcan as a macOS login item.")
-                Toggle("Restore last window mode on launch", isOn: self.$restoresLastMode)
+            Section(L10n.string("Startup")) {
+                Toggle(L10n.string("Launch Bòcan at login"), isOn: self.$launchAtLogin)
+                    .help(L10n.string("Register Bòcan as a macOS login item."))
+                Toggle(L10n.string("Restore last window mode on launch"), isOn: self.$restoresLastMode)
             }
 
-            Section("Menu Bar") {
-                Toggle("Show Bòcan in menu bar", isOn: self.showMenuBarExtra)
+            Section(L10n.string("Menu Bar")) {
+                Toggle(L10n.string("Show Bòcan in menu bar"), isOn: self.showMenuBarExtra)
             }
 
-            Section("Dock") {
-                Toggle("Show album art as Dock icon while playing", isOn: self.$showAlbumArtInDock)
-                    .help("Replaces the Dock icon with the current track's cover art while something is playing.")
-                Toggle("Show playback state badge on Dock icon", isOn: self.$showPlaybackBadge)
-                    .help("Displays a small play ▶ or pause ‖ badge on the Dock icon so you can see playback state at a glance.")
-                Toggle("Show progress bar on Dock icon", isOn: self.$showDockProgress)
-                    .help("Shows a thin progress bar along the bottom of the Dock icon while a track is playing.")
+            Section(L10n.string("Dock")) {
+                Toggle(L10n.string("Show album art as Dock icon while playing"), isOn: self.$showAlbumArtInDock)
+                    .help(L10n.string("Replaces the Dock icon with the current track's cover art while something is playing."))
+                Toggle(L10n.string("Show playback state badge on Dock icon"), isOn: self.$showPlaybackBadge)
+                    .help(L10n.string(
+                        "Displays a small play ▶ or pause ‖ badge on the Dock icon so you can see playback state at a glance."
+                    ))
+                Toggle(L10n.string("Show progress bar on Dock icon"), isOn: self.$showDockProgress)
+                    .help(L10n.string("Shows a thin progress bar along the bottom of the Dock icon while a track is playing."))
             }
 
-            Section("Notifications") {
-                Toggle("Show track-change notifications", isOn: self.$showNotifications)
+            Section(L10n.string("Notifications")) {
+                Toggle(L10n.string("Show track-change notifications"), isOn: self.$showNotifications)
                     .onChange(of: self.showNotifications) { _, enabled in
                         if enabled { self.requestNotificationAuth() }
                     }
-                Text("Notifications only appear when Bòcan is not in the foreground.")
+                Text(localized: "Notifications only appear when Bòcan is not in the foreground.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("General")
+        .navigationTitle(L10n.string("General"))
     }
 
     private func requestNotificationAuth() {

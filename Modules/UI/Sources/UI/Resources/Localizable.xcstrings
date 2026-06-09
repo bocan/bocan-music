@@ -1,6 +1,56 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Now Playing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now Playing"
+          }
+        }
+      }
+    },
+    "Scrobbling" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scrobbling"
+          }
+        }
+      }
+    },
+    "Smart Playlists" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Playlists"
+          }
+        }
+      }
+    },
+    "When off, art is stored only in Bòcan's cache and won't appear in other apps." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When off, art is stored only in Bòcan's cache and won't appear in other apps."
+          }
+        }
+      }
+    },
+    "When on, saving cover art rewrites the audio file to embed the image." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When on, saving cover art rewrites the audio file to embed the image."
+          }
+        }
+      }
+    },
     "%@ (%lld)" : {
       "localizations" : {
         "en" : {
