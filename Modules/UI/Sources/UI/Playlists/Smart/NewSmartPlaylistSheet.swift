@@ -34,18 +34,18 @@ struct NewSmartPlaylistSheet: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("New Smart Playlist")
+            Text(localized: "New Smart Playlist")
                 .font(Typography.largeTitle)
                 .foregroundStyle(Color.textPrimary)
 
-            TextField("Name", text: self.$name)
+            TextField(L10n.string("Name"), text: self.$name)
                 .textFieldStyle(.roundedBorder)
                 .focused(self.$isNameFocused)
                 .frame(minWidth: 280)
                 .onSubmit { Task { await self.save() } }
 
-            Picker("Folder", selection: self.$selectedParentID) {
-                Text("Top Level").tag(nil as Int64?)
+            Picker(L10n.string("Folder"), selection: self.$selectedParentID) {
+                Text(localized: "Top Level").tag(nil as Int64?)
                 ForEach(self.availableFolders, id: \.id) { folder in
                     Text(folder.name).tag(Optional(folder.id))
                 }
@@ -58,7 +58,7 @@ struct NewSmartPlaylistSheet: View {
             }
 
             HStack(spacing: 12) {
-                Button("Cancel") { self.dismiss() }
+                Button(L10n.string("Cancel")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
 
                 Button {
@@ -67,7 +67,7 @@ struct NewSmartPlaylistSheet: View {
                     if self.isSaving {
                         ProgressView().controlSize(.small)
                     } else {
-                        Text("Create")
+                        Text(localized: "Create")
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -166,6 +166,6 @@ struct NewSmartPlaylistSheet: View {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
-        return "New Smart Playlist \(formatter.string(from: date))"
+        return L10n.string("New Smart Playlist \(formatter.string(from: date))")
     }
 }

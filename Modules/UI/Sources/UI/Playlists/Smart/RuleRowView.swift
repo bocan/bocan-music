@@ -18,7 +18,7 @@ struct RuleRowView: View {
                         self.adaptComparatorAndValue(for: newField)
                     }
                     .frame(minWidth: 140)
-                    .help("Choose which track field this rule evaluates")
+                    .help(L10n.string("Choose which track field this rule evaluates"))
 
                 ComparatorMenu(
                     field: self.rule.field,
@@ -28,11 +28,11 @@ struct RuleRowView: View {
                     self.adaptValueForComparator(newComp)
                 }
                 .frame(minWidth: 120)
-                .help("Choose how the selected field is compared")
+                .help(L10n.string("Choose how the selected field is compared"))
 
                 ValueControl(rule: self.$rule)
                     .frame(maxWidth: .infinity)
-                    .help("Set the comparison value for this rule")
+                    .help(L10n.string("Set the comparison value for this rule"))
 
                 if let onRemove {
                     Button(action: onRemove) {
@@ -40,8 +40,8 @@ struct RuleRowView: View {
                             .foregroundStyle(Color.red.opacity(0.8))
                     }
                     .buttonStyle(.borderless)
-                    .help("Remove this rule")
-                    .accessibilityLabel("Remove rule")
+                    .help(L10n.string("Remove this rule"))
+                    .accessibilityLabel(L10n.string("Remove rule"))
                 }
             }
             .padding(.vertical, 2)
@@ -50,7 +50,7 @@ struct RuleRowView: View {
                 Text(validationMessage)
                     .font(Typography.caption)
                     .foregroundStyle(Color.red)
-                    .accessibilityLabel("Validation error: \(validationMessage)")
+                    .accessibilityLabel(L10n.string("Validation error: \(validationMessage)"))
             }
         }
     }
@@ -147,7 +147,7 @@ struct InvalidRuleRow: View {
                 .foregroundStyle(Color.textSecondary)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text("Unsupported rule")
+                Text(localized: "Unsupported rule")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                 Text(self.displayReason)
@@ -160,7 +160,7 @@ struct InvalidRuleRow: View {
         .padding(.horizontal, 8)
         .background(Color.bgSecondary)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .accessibilityLabel("Unsupported rule. \(self.displayReason)")
+        .accessibilityLabel(L10n.string("Unsupported rule. \(self.displayReason)"))
     }
 }
 
@@ -186,7 +186,7 @@ private struct FieldPicker: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.textSecondary)
-                    .help("Open field options")
+                    .help(L10n.string("Open field options"))
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
@@ -195,7 +195,7 @@ private struct FieldPicker: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .menuStyle(.borderlessButton)
-        .help("Field selector")
+        .help(L10n.string("Field selector"))
     }
 }
 
@@ -220,7 +220,7 @@ private struct ComparatorMenu: View {
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.textSecondary)
-                    .help("Open comparator options")
+                    .help(L10n.string("Open comparator options"))
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
@@ -229,7 +229,7 @@ private struct ComparatorMenu: View {
             .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .menuStyle(.borderlessButton)
-        .help("Comparator selector")
+        .help(L10n.string("Comparator selector"))
     }
 }
 
@@ -301,7 +301,7 @@ private struct ValueControl: View {
         if case .between = self.rule.comparator {
             // between: low/high text
             HStack {
-                TextField("from", text: Binding(
+                TextField(L10n.string("from"), text: Binding(
                     get: {
                         if case let .range(.text(lo), _) = self.rule.value { return lo }
                         return ""
@@ -315,9 +315,9 @@ private struct ValueControl: View {
                     }
                 ))
                 .textFieldStyle(.roundedBorder)
-                Text("to")
+                Text(localized: "to")
                     .foregroundStyle(Color.textSecondary)
-                TextField("to", text: Binding(
+                TextField(L10n.string("to"), text: Binding(
                     get: {
                         if case let .range(_, .text(hi)) = self.rule.value { return hi }
                         return ""
@@ -333,7 +333,7 @@ private struct ValueControl: View {
                 .textFieldStyle(.roundedBorder)
             }
         } else {
-            TextField("value", text: Binding(
+            TextField(L10n.string("value"), text: Binding(
                 get: {
                     if case let .text(t) = self.rule.value { return t }
                     return ""
@@ -359,16 +359,16 @@ private struct ValueControl: View {
                 in: 1 ... 3650
             ) {
                 if case let .int(n) = self.rule.value {
-                    Text("\(n)")
+                    Text(verbatim: String(n))
                         .frame(minWidth: 36, alignment: .trailing)
                 } else {
-                    Text("30")
+                    Text(verbatim: "30")
                 }
             }
 
         case .between:
             HStack {
-                IntField(label: "from", value: Binding(
+                IntField(label: L10n.string("from"), value: Binding(
                     get: { if case let .range(.int(lo), _) = self.rule.value { return lo }
                         return 0
                     },
@@ -380,8 +380,8 @@ private struct ValueControl: View {
                         }
                     }
                 ))
-                Text("to").foregroundStyle(Color.textSecondary)
-                IntField(label: "to", value: Binding(
+                Text(localized: "to").foregroundStyle(Color.textSecondary)
+                IntField(label: L10n.string("to"), value: Binding(
                     get: { if case let .range(_, .int(hi)) = self.rule.value { return hi }
                         return 100
                     },
@@ -396,7 +396,7 @@ private struct ValueControl: View {
             }
 
         default:
-            IntField(label: "value", value: Binding(
+            IntField(label: L10n.string("value"), value: Binding(
                 get: { if case let .int(n) = self.rule.value { return n }
                     return 0
                 },
@@ -453,7 +453,7 @@ private struct ValueControl: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
-            .accessibilityLabel(Text("File format"))
+            .accessibilityLabel(Text(localized: "File format"))
         )
     }
 
@@ -492,7 +492,7 @@ private struct DurationField: View {
     @State private var isEditing = false
 
     var body: some View {
-        TextField("M:SS", text: self.$text) { editing in
+        TextField(L10n.string("M:SS"), text: self.$text) { editing in
             self.isEditing = editing
             if !editing {
                 self.commit()
@@ -533,97 +533,97 @@ extension Field {
     var displayName: String {
         switch self {
         case .title:
-            "Title"
+            L10n.string("Title")
 
         case .artist:
-            "Artist"
+            L10n.string("Artist")
 
         case .albumArtist:
-            "Album Artist"
+            L10n.string("Album Artist")
 
         case .album:
-            "Album"
+            L10n.string("Album")
 
         case .genre:
-            "Genre"
+            L10n.string("Genre")
 
         case .composer:
-            "Composer"
+            L10n.string("Composer")
 
         case .comment:
-            "Comment"
+            L10n.string("Comment")
 
         case .year:
-            "Year"
+            L10n.string("Year")
 
         case .trackNumber:
-            "Track #"
+            L10n.string("Track #")
 
         case .discNumber:
-            "Disc #"
+            L10n.string("Disc #")
 
         case .playCount:
-            "Play Count"
+            L10n.string("Play Count")
 
         case .skipCount:
-            "Skip Count"
+            L10n.string("Skip Count")
 
         case .rating:
-            "Rating"
+            L10n.string("Rating")
 
         case .bpm:
-            "BPM"
+            L10n.string("BPM")
 
         case .bitrate:
-            "Bitrate"
+            L10n.string("Bitrate")
 
         case .sampleRate:
-            "Sample Rate"
+            L10n.string("Sample Rate")
 
         case .bitDepth:
-            "Bit Depth"
+            L10n.string("Bit Depth")
 
         case .duration:
-            "Duration"
+            L10n.string("Duration")
 
         case .addedAt:
-            "Date Added"
+            L10n.string("Date Added")
 
         case .lastPlayedAt:
-            "Last Played"
+            L10n.string("Last Played")
 
         case .loved:
-            "Loved"
+            L10n.string("Loved")
 
         case .excludedFromShuffle:
-            "Skip in Shuffle"
+            L10n.string("Skip in Shuffle")
 
         case .isLossless:
-            "Lossless"
+            L10n.string("Lossless")
 
         case .hasCoverArt:
-            "Has Cover Art"
+            L10n.string("Has Cover Art")
 
         case .hasLyrics:
-            "Has Lyrics"
+            L10n.string("Has Lyrics")
 
         case .hasMusicBrainzReleaseID:
-            "Has MusicBrainz ID"
+            L10n.string("Has MusicBrainz ID")
 
         case .fileFormat:
-            "File Format"
+            L10n.string("File Format")
 
         case .inPlaylist:
-            "In Playlist"
+            L10n.string("In Playlist")
 
         case .notInPlaylist:
-            "Not in Playlist"
+            L10n.string("Not in Playlist")
 
         case .pathUnder:
-            "File Path"
+            L10n.string("File Path")
 
         case .unknown:
-            "Unknown Field"
+            L10n.string("Unknown Field")
         }
     }
 }
@@ -634,31 +634,31 @@ extension Library.Comparator {
     var displayName: String {
         switch self {
         case .is:
-            "is"
+            L10n.string("is")
 
         case .isNot:
-            "is not"
+            L10n.string("is not")
 
         case .contains:
-            "contains"
+            L10n.string("contains")
 
         case .doesNotContain:
-            "doesn't contain"
+            L10n.string("doesn't contain")
 
         case .startsWith:
-            "starts with"
+            L10n.string("starts with")
 
         case .endsWith:
-            "ends with"
+            L10n.string("ends with")
 
         case .matchesRegex:
-            "matches regex"
+            L10n.string("matches regex")
 
         case .isEmpty:
-            "is empty"
+            L10n.string("is empty")
 
         case .isNotEmpty:
-            "is not empty"
+            L10n.string("is not empty")
 
         case .equalTo:
             "="
@@ -679,49 +679,49 @@ extension Library.Comparator {
             "≥"
 
         case .between:
-            "is between"
+            L10n.string("is between")
 
         case .isNull:
-            "is not set"
+            L10n.string("is not set")
 
         case .isNotNull:
-            "is set"
+            L10n.string("is set")
 
         case .inLastDays:
-            "in last (days)"
+            L10n.string("in last (days)")
 
         case .inLastMonths:
-            "in last (months)"
+            L10n.string("in last (months)")
 
         case .inLastYears:
-            "in last (years)"
+            L10n.string("in last (years)")
 
         case .beforeDate:
-            "before"
+            L10n.string("before")
 
         case .afterDate:
-            "after"
+            L10n.string("after")
 
         case .onDate:
-            "on"
+            L10n.string("on")
 
         case .isTrue:
-            "is true"
+            L10n.string("is true")
 
         case .isFalse:
-            "is false"
+            L10n.string("is false")
 
         case .memberOf:
-            "is in playlist"
+            L10n.string("is in playlist")
 
         case .notMemberOf:
-            "is not in playlist"
+            L10n.string("is not in playlist")
 
         case .pathUnder:
-            "is under path"
+            L10n.string("is under path")
 
         case .unknown:
-            "unknown comparator"
+            L10n.string("unknown comparator")
         }
     }
 }
@@ -734,19 +734,19 @@ enum FieldGroup: CaseIterable {
     var displayName: String {
         switch self {
         case .text:
-            "Text"
+            L10n.string("Text")
 
         case .numbers:
-            "Numbers"
+            L10n.string("Numbers")
 
         case .dates:
-            "Dates"
+            L10n.string("Dates")
 
         case .flags:
-            "Flags"
+            L10n.string("Flags")
 
         case .membership:
-            "Membership"
+            L10n.string("Membership")
         }
     }
 
