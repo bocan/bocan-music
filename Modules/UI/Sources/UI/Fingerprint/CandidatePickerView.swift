@@ -21,13 +21,13 @@ struct CandidatePickerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Select a match")
+            Text(localized: "Select a match")
                 .font(.headline)
                 .padding(.horizontal)
                 .padding(.top, 16)
                 .padding(.bottom, 4)
 
-            Text("Tick the fields you want to accept — anything unchecked is left as-is.")
+            Text(localized: "Tick the fields you want to accept — anything unchecked is left as-is.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
@@ -37,7 +37,7 @@ struct CandidatePickerView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Text("Low confidence — verify tags before applying.")
+                    Text(localized: "Low confidence — verify tags before applying.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -48,7 +48,7 @@ struct CandidatePickerView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
                 .padding(.horizontal)
                 .padding(.bottom, 6)
-                .accessibilityLabel("Warning: low confidence match — verify tags before applying")
+                .accessibilityLabel(L10n.string("Warning: low confidence match — verify tags before applying"))
             }
 
             Divider()
@@ -96,9 +96,9 @@ struct CandidatePickerView: View {
 
             HStack {
                 Spacer()
-                Button("Skip", action: self.onSkip)
+                Button(L10n.string("Skip"), action: self.onSkip)
                     .keyboardShortcut(.escape, modifiers: [])
-                    .help("Skip this track without applying changes")
+                    .help(L10n.string("Skip this track without applying changes"))
             }
             .padding()
         }
@@ -184,7 +184,7 @@ private struct CandidateRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(
-                "\(self.candidate.title) by \(self.candidate.artist), confidence \(Int(self.candidate.score * 100))%"
+                L10n.string("\(self.candidate.title) by \(self.candidate.artist), confidence \(Int(self.candidate.score * 100))%")
             )
 
             if self.isExpanded {
@@ -197,7 +197,7 @@ private struct CandidateRow: View {
 
                 if let mbid = self.candidate.mbRecordingID {
                     HStack(spacing: 6) {
-                        Text("MBID")
+                        Text(verbatim: "MBID")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                         Text(mbid)
@@ -210,24 +210,24 @@ private struct CandidateRow: View {
                 }
 
                 HStack {
-                    Button("Select All") { self.selectAll() }
+                    Button(L10n.string("Select All")) { self.selectAll() }
                         .buttonStyle(.borderless)
                         .controlSize(.small)
-                        .help("Select all available tag fields")
-                    Button("Select None") { self.selection.removeAll() }
+                        .help(L10n.string("Select all available tag fields"))
+                    Button(L10n.string("Select None")) { self.selection.removeAll() }
                         .buttonStyle(.borderless)
                         .controlSize(.small)
-                        .help("Deselect all tag fields")
+                        .help(L10n.string("Deselect all tag fields"))
                     Spacer()
                     if self.isApplied {
-                        Label("Applied", systemImage: "checkmark.circle.fill")
+                        Label(L10n.string("Applied"), systemImage: "checkmark.circle.fill")
                             .foregroundStyle(.green)
                             .font(.subheadline)
                     } else {
-                        Button("Apply Selected") { self.onApply() }
+                        Button(L10n.string("Apply Selected")) { self.onApply() }
                             .buttonStyle(.borderedProminent)
                             .disabled(self.selection.isEmpty || self.isApplying)
-                            .help("Write selected fields to the track's tags")
+                            .help(L10n.string("Write selected fields to the track's tags"))
                             .overlay {
                                 if self.isApplying {
                                     ProgressView().scaleEffect(0.7)
@@ -305,7 +305,7 @@ private struct FieldSelectionGrid: View {
             Toggle("", isOn: isOn)
                 .toggleStyle(.checkbox)
                 .labelsHidden()
-                .accessibilityLabel("Accept \(field.displayName)")
+                .accessibilityLabel(L10n.string("Accept \(field.displayName)"))
                 .disabled(unchanged)
             Text(field.displayName)
                 .font(.caption)
@@ -410,7 +410,7 @@ private struct ConfidenceBadge: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Text("\(self.percent)%")
+            Text(localized: "\(self.percent)%")
                 .font(.caption.bold())
                 .foregroundStyle(self.color)
             GeometryReader { proxy in
@@ -422,6 +422,6 @@ private struct ConfidenceBadge: View {
             }
             .frame(width: 48, height: 6)
         }
-        .accessibilityLabel("Confidence \(self.percent)%")
+        .accessibilityLabel(L10n.string("Confidence \(self.percent)%"))
     }
 }

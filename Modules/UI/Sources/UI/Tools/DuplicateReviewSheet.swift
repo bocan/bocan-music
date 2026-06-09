@@ -43,11 +43,11 @@ public struct DuplicateReviewSheet: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Find Duplicates")
+                Text(localized: "Find Duplicates")
                     .font(.title3.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
                 if !self.vm.groups.isEmpty {
-                    Text("\(self.vm.groups.count) group\(self.vm.groups.count == 1 ? "" : "s") found")
+                    Text(localized: "\(self.vm.groups.count) groups found")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -61,19 +61,19 @@ public struct DuplicateReviewSheet: View {
     @ViewBuilder
     private var content: some View {
         if self.vm.isLoading {
-            LoadingState(title: "Scanning library…")
+            LoadingState(title: L10n.string("Scanning library…"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let err = self.vm.loadError {
             ContentUnavailableView {
-                Label("Could Not Load", systemImage: "exclamationmark.triangle")
+                Label(L10n.string("Could Not Load"), systemImage: "exclamationmark.triangle")
             } description: {
                 Text(err)
             }
         } else if self.vm.groups.isEmpty {
             ContentUnavailableView {
-                Label("No Duplicates Found", systemImage: "checkmark.seal")
+                Label(L10n.string("No Duplicates Found"), systemImage: "checkmark.seal")
             } description: {
-                Text("No tracks in your library share the same title, artist and duration.")
+                Text(localized: "No tracks in your library share the same title, artist and duration.")
             }
         } else {
             List(self.vm.groups) { group in
@@ -94,7 +94,7 @@ public struct DuplicateReviewSheet: View {
                     .lineLimit(1)
             }
             Spacer()
-            Button("Done") { self.isPresented = false }
+            Button(L10n.string("Done")) { self.isPresented = false }
                 .keyboardShortcut(.escape, modifiers: [])
         }
         .padding(.horizontal, 20)
@@ -119,14 +119,14 @@ private struct DuplicateGroupRow: View {
                 Text(self.group.representativeTitle)
                     .font(.callout.weight(.semibold))
                 if !self.group.representativeArtist.isEmpty {
-                    Text("•")
+                    Text(verbatim: "•")
                         .foregroundStyle(.tertiary)
                     Text(self.group.representativeArtist)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("\(self.group.tracks.count) copies")
+                Text(localized: "\(self.group.tracks.count) copies")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -150,7 +150,7 @@ private struct TrackDuplicateRow: View {
                     .truncationMode(.middle)
                 HStack(spacing: 8) {
                     if let bitrate = self.track.bitrate {
-                        Text("\(bitrate) kbps")
+                        Text(localized: "\(bitrate) kbps")
                     }
                     Text(Self.formatDuration(self.track.duration))
                     Text(Self.formatSize(self.track.fileSize))
@@ -159,13 +159,13 @@ private struct TrackDuplicateRow: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Remove") {
+            Button(L10n.string("Remove")) {
                 if let id = self.track.id {
                     self.onRemove(id)
                 }
             }
             .foregroundStyle(.red)
-            .help("Remove this track from the library (does not delete the file)")
+            .help(L10n.string("Remove this track from the library (does not delete the file)"))
         }
         .padding(.vertical, 2)
     }

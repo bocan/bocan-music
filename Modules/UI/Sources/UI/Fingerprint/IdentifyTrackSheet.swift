@@ -21,17 +21,17 @@ public struct IdentifyTrackSheet: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Identify Track")
+                Text(localized: "Identify Track")
                     .font(.title2.bold())
                 Spacer()
-                Button("Close", systemImage: "xmark.circle.fill") {
+                Button(L10n.string("Close"), systemImage: "xmark.circle.fill") {
                     self.vm.cancel()
                     self.dismiss()
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
-                .help("Close")
+                .help(L10n.string("Close"))
             }
             .padding([.horizontal, .top], 16)
             .padding(.bottom, 8)
@@ -51,10 +51,10 @@ public struct IdentifyTrackSheet: View {
     private var phaseContent: some View {
         switch self.vm.phase {
         case .fingerprinting:
-            self.spinnerView(label: "Computing fingerprint…")
+            self.spinnerView(label: L10n.string("Computing fingerprint…"))
 
         case .lookingUp:
-            self.spinnerView(label: "Looking up…")
+            self.spinnerView(label: L10n.string("Looking up…"))
 
         case let .results(candidates):
             CandidatePickerView(
@@ -96,11 +96,11 @@ public struct IdentifyTrackSheet: View {
 
     private var noMatchView: some View {
         ContentUnavailableView {
-            Label("No Match Found", systemImage: "music.note.list")
+            Label(L10n.string("No Match Found"), systemImage: "music.note.list")
         } description: {
-            Text("No AcoustID match was found for this track. Try editing tags manually.")
+            Text(localized: "No AcoustID match was found for this track. Try editing tags manually.")
         } actions: {
-            Button("Edit Tags") {
+            Button(L10n.string("Edit Tags")) {
                 self.vm.requestTagEditor()
                 self.dismiss()
             }
@@ -111,12 +111,12 @@ public struct IdentifyTrackSheet: View {
 
     private func errorView(message: String) -> some View {
         ContentUnavailableView {
-            Label("Identification Failed", systemImage: "exclamationmark.triangle")
+            Label(L10n.string("Identification Failed"), systemImage: "exclamationmark.triangle")
         } description: {
             Text(message)
                 .multilineTextAlignment(.center)
         } actions: {
-            Button("Retry") {
+            Button(L10n.string("Retry")) {
                 self.vm.retry()
             }
             .buttonStyle(.borderedProminent)

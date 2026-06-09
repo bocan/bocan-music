@@ -29,33 +29,35 @@ public struct PlaylistExportSheet: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Export “\(self.playlistName)”")
+            Text(localized: "Export “\(self.playlistName)”")
                 .font(.title2.weight(.semibold))
 
             Form {
-                Picker("Format", selection: self.$format) {
-                    Text("M3U8").tag(PlaylistFormat.m3u8)
-                    Text("M3U").tag(PlaylistFormat.m3u)
-                    Text("PLS").tag(PlaylistFormat.pls)
-                    Text("XSPF").tag(PlaylistFormat.xspf)
+                Picker(L10n.string("Format"), selection: self.$format) {
+                    Text(verbatim: "M3U8").tag(PlaylistFormat.m3u8)
+                    Text(verbatim: "M3U").tag(PlaylistFormat.m3u)
+                    Text(verbatim: "PLS").tag(PlaylistFormat.pls)
+                    Text(verbatim: "XSPF").tag(PlaylistFormat.xspf)
                 }
-                .help("Choose the playlist file format to export")
+                .help(L10n.string("Choose the playlist file format to export"))
 
-                Picker("Paths", selection: self.$pathStyle) {
-                    Text("Absolute").tag(PathStyle.absolute)
-                    Text("Relative").tag(PathStyle.relative)
+                Picker(L10n.string("Paths"), selection: self.$pathStyle) {
+                    Text(localized: "Absolute").tag(PathStyle.absolute)
+                    Text(localized: "Relative").tag(PathStyle.relative)
                 }
-                .help("Absolute paths work on any machine; relative paths are portable if you move the playlist alongside the music folder")
+                .help(L10n.string(
+                    "Absolute paths work on any machine; relative paths are portable if you move the playlist alongside the music folder"
+                ))
 
                 if self.pathStyle == .relative {
                     HStack {
-                        Text(self.relativeRoot?.path ?? "Choose root…")
+                        Text(self.relativeRoot?.path ?? L10n.string("Choose root…"))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                         Spacer()
-                        Button("Choose…") { self.pickRoot() }
-                            .help("Choose the root folder that relative paths will be calculated from")
-                            .accessibilityLabel("Choose relative root folder")
+                        Button(L10n.string("Choose…")) { self.pickRoot() }
+                            .help(L10n.string("Choose the root folder that relative paths will be calculated from"))
+                            .accessibilityLabel(L10n.string("Choose relative root folder"))
                     }
                 }
             }
@@ -67,19 +69,19 @@ public struct PlaylistExportSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) { self.isPresented = false }
+                Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
-                    .help("Dismiss this sheet without exporting")
-                Button("Export…") { Task { await self.runExport() } }
+                    .help(L10n.string("Dismiss this sheet without exporting"))
+                Button(L10n.string("Export…")) { Task { await self.runExport() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.isExporting || (self.pathStyle == .relative && self.relativeRoot == nil))
                     .help(
                         self.pathStyle == .relative && self.relativeRoot == nil
-                            ? "Choose a relative root folder before exporting"
-                            : "Choose a save location and export the playlist"
+                            ? L10n.string("Choose a relative root folder before exporting")
+                            : L10n.string("Choose a save location and export the playlist")
                     )
                     .accessibilityLabel(
-                        self.isExporting ? "Exporting, please wait" : "Export playlist"
+                        self.isExporting ? L10n.string("Exporting, please wait") : L10n.string("Export playlist")
                     )
             }
         }
@@ -136,7 +138,7 @@ public struct PlaylistExportSheet: View {
             ))
             self.isPresented = false
         } catch {
-            self.errorMessage = "Export failed: \(error.localizedDescription)"
+            self.errorMessage = L10n.string("Export failed: \(error.localizedDescription)")
         }
     }
 }

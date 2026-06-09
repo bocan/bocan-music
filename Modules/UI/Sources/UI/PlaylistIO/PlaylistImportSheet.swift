@@ -26,7 +26,7 @@ public struct PlaylistImportSheet: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Import Playlist")
+            Text(localized: "Import Playlist")
                 .font(.title2.weight(.semibold))
 
             if self.pickedURLs.isEmpty {
@@ -40,23 +40,23 @@ public struct PlaylistImportSheet: View {
             }
 
             HStack {
-                Button("Choose Files…") { self.pickFiles() }
-                    .help("Open a file picker to select one or more playlist files to import")
-                    .accessibilityLabel("Choose playlist files")
+                Button(L10n.string("Choose Files…")) { self.pickFiles() }
+                    .help(L10n.string("Open a file picker to select one or more playlist files to import"))
+                    .accessibilityLabel(L10n.string("Choose playlist files"))
                 Spacer()
-                Button("Cancel", role: .cancel) { self.isPresented = false }
+                Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
-                    .help("Dismiss this sheet without importing")
-                Button("Import") { Task { await self.runImport() } }
+                    .help(L10n.string("Dismiss this sheet without importing"))
+                Button(L10n.string("Import")) { Task { await self.runImport() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.pickedURLs.isEmpty || self.isImporting)
                     .help(
                         self.pickedURLs.isEmpty
-                            ? "Select at least one playlist file before importing"
-                            : "Import the selected playlist files into your library"
+                            ? L10n.string("Select at least one playlist file before importing")
+                            : L10n.string("Import the selected playlist files into your library")
                     )
                     .accessibilityLabel(
-                        self.isImporting ? "Importing, please wait" : "Import selected playlists"
+                        self.isImporting ? L10n.string("Importing, please wait") : L10n.string("Import selected playlists")
                     )
             }
         }
@@ -71,7 +71,7 @@ public struct PlaylistImportSheet: View {
             Image(systemName: "square.and.arrow.down")
                 .font(.system(size: 36))
                 .foregroundStyle(.secondary)
-            Text("Pick one or more playlist files (.m3u, .m3u8, .pls, .xspf).")
+            Text(localized: "Pick one or more playlist files (.m3u, .m3u8, .pls, .xspf).")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -87,11 +87,11 @@ public struct PlaylistImportSheet: View {
                 }
                 Spacer()
                 if row.matched > 0 {
-                    Text("\(row.matched) matched")
+                    Text(localized: "\(row.matched) matched")
                         .font(.caption2).foregroundStyle(.green)
                 }
                 if row.missed > 0 {
-                    Text("\(row.missed) missing")
+                    Text(localized: "\(row.missed) missing")
                         .font(.caption2).foregroundStyle(.orange)
                 }
             }
@@ -137,30 +137,30 @@ public struct PlaylistImportSheet: View {
                 let format = PlaylistFormat.sniff(data: data, fallback: url.pathExtension)
                 let summary = switch format {
                 case .m3u:
-                    "M3U playlist"
+                    L10n.string("M3U playlist")
 
                 case .m3u8:
-                    "M3U8 playlist"
+                    L10n.string("M3U8 playlist")
 
                 case .pls:
-                    "PLS playlist"
+                    L10n.string("PLS playlist")
 
                 case .xspf:
-                    "XSPF playlist"
+                    L10n.string("XSPF playlist")
 
                 case .cue:
-                    "CUE sheet"
+                    L10n.string("CUE sheet")
 
                 case .itunesXML:
-                    "iTunes Library.xml"
+                    L10n.string("iTunes Library.xml")
 
                 case nil:
-                    "Unknown format"
+                    L10n.string("Unknown format")
                 }
                 let counts = await self.importer.previewFile(at: url)
                 rows.append(PreviewRow(id: url, url: url, summary: summary, matched: counts.matched, missed: counts.missed))
             } catch {
-                rows.append(PreviewRow(id: url, url: url, summary: "Could not read", matched: 0, missed: 0))
+                rows.append(PreviewRow(id: url, url: url, summary: L10n.string("Could not read"), matched: 0, missed: 0))
             }
         }
         await MainActor.run { self.preview = rows }

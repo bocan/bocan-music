@@ -11,10 +11,10 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .spectrumBars:
-            "Spectrum Bars"
+            L10n.string("Spectrum Bars")
 
         case .oscilloscope:
-            "Oscilloscope"
+            L10n.string("Oscilloscope")
         }
     }
 

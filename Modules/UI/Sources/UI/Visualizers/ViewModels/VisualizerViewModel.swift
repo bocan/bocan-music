@@ -226,13 +226,13 @@ public enum FPSCap: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .thirty:
-            "30 fps"
+            L10n.string("30 fps")
 
         case .sixty:
-            "60 fps"
+            L10n.string("60 fps")
 
         case .unlimited:
-            "Unlimited"
+            L10n.string("Unlimited")
         }
     }
 }

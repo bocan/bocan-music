@@ -74,7 +74,7 @@ public struct VisualizerFullscreenView: View {
             self.overlayTrigger += 1
             self.scheduleHide()
         }
-        .accessibilityLabel("Fullscreen Visualizer: \(self.vm.mode.displayName)")
+        .accessibilityLabel(L10n.string("Fullscreen Visualizer: \(self.vm.mode.displayName)"))
     }
 
     // MARK: - Screen picker
@@ -107,12 +107,12 @@ public struct VisualizerFullscreenView: View {
                 )
                 .foregroundStyle(.white)
         }
-        .help("Move visualizer to a different display")
-        .accessibilityLabel("Choose display — currently \(self.pickerLabel)")
+        .help(L10n.string("Move visualizer to a different display"))
+        .accessibilityLabel(L10n.string("Choose display — currently \(self.pickerLabel)"))
     }
 
     private var pickerLabel: String {
-        self.vm.targetScreenName.isEmpty ? "Display" : self.vm.targetScreenName
+        self.vm.targetScreenName.isEmpty ? L10n.string("Display") : self.vm.targetScreenName
     }
 
     // MARK: - Window placement

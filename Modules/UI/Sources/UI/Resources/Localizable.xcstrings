@@ -1,6 +1,402 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ files walked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ files walked"
+          }
+        }
+      }
+    },
+    "%@ new" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ new"
+          }
+        }
+      }
+    },
+    "%@ unchanged" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ unchanged"
+          }
+        }
+      }
+    },
+    "%@ updated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ updated"
+          }
+        }
+      }
+    },
+    "Scanned %@ files — %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanned %1$@ files — %2$@"
+          }
+        }
+      }
+    },
+    "Scan complete. Scanned %@ files: %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan complete. Scanned %1$@ files: %2$@."
+          }
+        }
+      }
+    },
+    "30 fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 fps"
+          }
+        }
+      }
+    },
+    "60 fps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "60 fps"
+          }
+        }
+      }
+    },
+    "Accent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accent"
+          }
+        }
+      }
+    },
+    "CUE sheet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CUE sheet"
+          }
+        }
+      }
+    },
+    "Choose root…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose root…"
+          }
+        }
+      }
+    },
+    "Computing fingerprint…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Computing fingerprint…"
+          }
+        }
+      }
+    },
+    "Could not read" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not read"
+          }
+        }
+      }
+    },
+    "Disc No." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disc No."
+          }
+        }
+      }
+    },
+    "Ember" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ember"
+          }
+        }
+      }
+    },
+    "Export failed: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export failed: %@"
+          }
+        }
+      }
+    },
+    "Looking up…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking up…"
+          }
+        }
+      }
+    },
+    "M3U playlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "M3U playlist"
+          }
+        }
+      }
+    },
+    "M3U8 playlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "M3U8 playlist"
+          }
+        }
+      }
+    },
+    "One album is requested per second to respect the MusicBrainz rate limit." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One album is requested per second to respect the MusicBrainz rate limit."
+          }
+        }
+      }
+    },
+    "Oscilloscope" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oscilloscope"
+          }
+        }
+      }
+    },
+    "PLS playlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PLS playlist"
+          }
+        }
+      }
+    },
+    "Preparing…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing…"
+          }
+        }
+      }
+    },
+    "Scanning library…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanning library…"
+          }
+        }
+      }
+    },
+    "Spectrum" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spectrum"
+          }
+        }
+      }
+    },
+    "Spectrum Bars" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spectrum Bars"
+          }
+        }
+      }
+    },
+    "This will search MusicBrainz for front cover art for every album in your library that currently has no artwork." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This will search MusicBrainz for front cover art for every album in your library that currently has no artwork."
+          }
+        }
+      }
+    },
+    "Track No." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Track No."
+          }
+        }
+      }
+    },
+    "Unknown format" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown format"
+          }
+        }
+      }
+    },
+    "Unlimited" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlimited"
+          }
+        }
+      }
+    },
+    "Visualizer: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizer: %@"
+          }
+        }
+      }
+    },
+    "XSPF playlist" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "XSPF playlist"
+          }
+        }
+      }
+    },
+    "iTunes Library.xml" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iTunes Library.xml"
+          }
+        }
+      }
+    },
+    "%lld errors" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld error"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld errors"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld groups found" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld group found"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld groups found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Done — %lld images saved" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Done — %lld image saved"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Done — %lld images saved"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%@ by %@, played %@" : {
       "localizations" : {
         "en" : {

@@ -72,7 +72,7 @@ public struct VisualizerPane: View {
                 }
             }
             .accessibilityIdentifier(A11y.Visualizer.pane)
-            .accessibilityLabel("Visualizer pane, \(self.vm.mode.displayName)")
+            .accessibilityLabel(L10n.string("Visualizer pane, \(self.vm.mode.displayName)"))
             .transition(self.reduceMotion ? .opacity : .move(edge: .trailing))
             .onAppear { self.vm.start() }
             .onDisappear { self.vm.stop() }
@@ -83,7 +83,7 @@ public struct VisualizerPane: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text("Visualizer")
+            Text(localized: "Visualizer")
                 .font(.headline)
                 .foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
@@ -97,8 +97,8 @@ public struct VisualizerPane: View {
                     .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
-            .help("Open fullscreen visualizer (⌘⇧F)")
-            .accessibilityLabel("Open fullscreen visualizer")
+            .help(L10n.string("Open fullscreen visualizer (⌘⇧F)"))
+            .accessibilityLabel(L10n.string("Open fullscreen visualizer"))
 
             Button {
                 if self.reduceMotion {
@@ -113,8 +113,8 @@ public struct VisualizerPane: View {
                     .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
-            .help("Close visualizer pane")
-            .accessibilityLabel("Close visualizer pane")
+            .help(L10n.string("Close visualizer pane"))
+            .accessibilityLabel(L10n.string("Close visualizer pane"))
             .accessibilityIdentifier(A11y.Visualizer.closeButton)
         }
         .padding(.horizontal, 12)
