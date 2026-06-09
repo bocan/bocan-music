@@ -46,7 +46,7 @@ public struct MenuBarExtraScene: View {
             // Track info
             VStack(spacing: 3) {
                 MarqueeText(
-                    self.vm.title.isEmpty ? "Not playing" : self.vm.title,
+                    self.vm.title.isEmpty ? L10n.string("Not playing") : self.vm.title,
                     font: .headline,
                     foregroundStyle: Color.primary
                 )
@@ -76,7 +76,7 @@ public struct MenuBarExtraScene: View {
                     }
                 }
                 .controlSize(.small)
-                .accessibilityLabel("Playback position")
+                .accessibilityLabel(L10n.string("Playback position"))
             }
 
             // Transport
@@ -88,8 +88,8 @@ public struct MenuBarExtraScene: View {
                         .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
-                .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
-                .accessibilityLabel("Previous or restart")
+                .help(L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
+                .accessibilityLabel(L10n.string("Previous or restart"))
 
                 Button {
                     Task { await self.vm.playPause() }
@@ -98,7 +98,7 @@ public struct MenuBarExtraScene: View {
                         .scaledSystemFont(size: 22, weight: .bold)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(self.vm.isPlaying ? "Pause" : "Play")
+                .accessibilityLabel(self.vm.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
 
                 Button {
                     Task { await self.vm.next() }
@@ -107,12 +107,12 @@ public struct MenuBarExtraScene: View {
                         .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Next")
+                .accessibilityLabel(L10n.string("Next"))
             }
 
             Divider()
 
-            Button("Show Bòcan") {
+            Button(L10n.string("Show Bòcan")) {
                 self.openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             }
@@ -123,6 +123,6 @@ public struct MenuBarExtraScene: View {
         .padding(16)
         .frame(width: 200)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Bòcan mini controls")
+        .accessibilityLabel(L10n.string("Bòcan mini controls"))
     }
 }

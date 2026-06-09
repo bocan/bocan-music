@@ -40,8 +40,8 @@ public struct SpeedPickerView: View {
                     .padding(-3)
             }
         }
-        .help("Playback speed")
-        .accessibilityLabel("Speed: \(self.rateLabel)")
+        .help(L10n.string("Playback speed"))
+        .accessibilityLabel(L10n.string("Speed: \(self.rateLabel)"))
         .accessibilityIdentifier(A11y.NowPlaying.speedPicker)
         .popover(isPresented: self.$isPopoverShown, arrowEdge: .top) {
             self.popoverContent
@@ -52,7 +52,7 @@ public struct SpeedPickerView: View {
 
     private var popoverContent: some View {
         VStack(spacing: 12) {
-            Text("Playback Speed")
+            Text(localized: "Playback Speed")
                 .font(.headline)
 
             Text(self.rateLabel)
@@ -73,7 +73,7 @@ public struct SpeedPickerView: View {
                 }
             }
             .frame(width: 200)
-            .accessibilityLabel("Speed slider")
+            .accessibilityLabel(L10n.string("Speed slider"))
 
             HStack(spacing: 8) {
                 ForEach(Self.quickRates, id: \.self) { rate in
@@ -86,7 +86,7 @@ public struct SpeedPickerView: View {
                 }
             }
 
-            Button("Reset to 1×") {
+            Button(L10n.string("Reset to 1×")) {
                 Task { await self.vm.setRate(1.0) }
             }
             .buttonStyle(.plain)
