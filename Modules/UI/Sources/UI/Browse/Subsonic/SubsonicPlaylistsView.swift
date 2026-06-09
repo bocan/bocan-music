@@ -37,7 +37,7 @@ public final class SubsonicPlaylistsViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.playlists.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load playlists from this server."
+                ?? L10n.string("Could not load playlists from this server.")
         }
     }
 }
@@ -69,19 +69,19 @@ public struct SubsonicPlaylistsView: View {
         Group {
             if self.vm.playlists.isEmpty, !self.vm.isLoading {
                 ContentUnavailableView(
-                    "No Playlists",
+                    L10n.string("No Playlists"),
                     systemImage: "music.note.list",
-                    description: Text("This server hasn't returned any playlists.")
+                    description: Text(localized: "This server hasn't returned any playlists.")
                 )
             } else {
                 self.list
             }
         }
-        .navigationTitle("Playlists")
+        .navigationTitle(L10n.string("Playlists"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { Task { await self.vm.load() } } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
             }
@@ -90,12 +90,12 @@ public struct SubsonicPlaylistsView: View {
             if self.vm.playlists.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load playlists",
+            L10n.string("Couldn't load playlists"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -120,7 +120,7 @@ public struct SubsonicPlaylistsView: View {
                                 .font(Typography.subheadline)
                                 .foregroundStyle(Color.textPrimary)
                                 .lineLimit(1)
-                            let count = "\(playlist.songCount) \(playlist.songCount == 1 ? "song" : "songs")"
+                            let count = L10n.string("\(playlist.songCount) songs")
                             Text(count)
                                 .font(Typography.caption)
                                 .foregroundStyle(Color.textSecondary)
@@ -131,7 +131,7 @@ public struct SubsonicPlaylistsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(playlist.name), \(playlist.songCount) songs")
+                .accessibilityLabel(L10n.string("\(playlist.name), \(playlist.songCount) songs"))
             }
             if self.vm.isLoading {
                 HStack { Spacer()
@@ -177,7 +177,7 @@ public final class SubsonicPlaylistDetailViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.playlist.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load this playlist."
+                ?? L10n.string("Could not load this playlist.")
         }
     }
 }
@@ -220,23 +220,23 @@ public struct SubsonicPlaylistDetailView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView(
-                    "Playlist Unavailable",
+                    L10n.string("Playlist Unavailable"),
                     systemImage: "music.note.list",
-                    description: Text("This playlist could not be loaded.")
+                    description: Text(localized: "This playlist could not be loaded.")
                 )
             }
         }
-        .navigationTitle(self.vm.playlist?.name ?? "Playlist")
+        .navigationTitle(self.vm.playlist?.name ?? L10n.string("Playlist"))
         .task(id: self.playlistID) {
             if self.vm.playlist == nil { await self.vm.load() }
         }
         .alert(
-            "Couldn't load playlist",
+            L10n.string("Couldn't load playlist"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }

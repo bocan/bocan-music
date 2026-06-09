@@ -36,13 +36,13 @@ public struct SubsonicOfflineBanner: View {
                         .lineLimit(2)
                 }
                 Spacer(minLength: 8)
-                Button("Retry now") {
+                Button(L10n.string("Retry now")) {
                     self.onRetry()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .accessibilityLabel("Retry connection now")
-                .help("Re-ping this server immediately, bypassing the backoff timer")
+                .accessibilityLabel(L10n.string("Retry connection now"))
+                .help(L10n.string("Re-ping this server immediately, bypassing the backoff timer"))
             }
             .padding(10)
             .background(Color.orange.opacity(0.12))
@@ -53,7 +53,7 @@ public struct SubsonicOfflineBanner: View {
                 alignment: .bottom
             )
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(self.headline): \(self.state.displayLabel)")
+            .accessibilityLabel(L10n.string("\(self.headline): \(self.state.displayLabel)"))
         }
     }
 
@@ -73,13 +73,13 @@ public struct SubsonicOfflineBanner: View {
     private var headline: String {
         switch self.state {
         case .authFailed:
-            "Authentication failed"
+            L10n.string("Authentication failed")
 
         case .serverError:
-            "Server returned an error"
+            L10n.string("Server returned an error")
 
         default:
-            "Server unreachable"
+            L10n.string("Server unreachable")
         }
     }
 }

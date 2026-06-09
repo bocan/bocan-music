@@ -29,12 +29,12 @@ public struct SubsonicSongsView: View {
         library: LibraryViewModel,
         dataSource: any SubsonicBrowseDataSource,
         coverArtProvider: SubsonicCoverArtProvider?,
-        title: String = "Songs"
+        title: String? = nil
     ) {
         self.serverID = serverID
         self.library = library
         self.coverArtProvider = coverArtProvider
-        self.title = title
+        self.title = title ?? L10n.string("Songs")
         self._vm = StateObject(
             wrappedValue: SubsonicSongsViewModel(
                 serverID: serverID,
@@ -77,22 +77,22 @@ public struct SubsonicSongsView: View {
                 Button {
                     Task { await self.vm.refresh() }
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading || self.isSearching)
-                .help(self.isSearching ? "Refresh is disabled during search" : "Reshuffle the sample")
+                .help(self.isSearching ? L10n.string("Refresh is disabled during search") : L10n.string("Reshuffle the sample"))
             }
         }
         .task(id: self.serverID) {
             if self.vm.songs.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load songs",
+            L10n.string("Couldn't load songs"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -103,9 +103,9 @@ public struct SubsonicSongsView: View {
     private var regularBody: some View {
         if self.vm.songs.isEmpty, !self.vm.isLoading {
             ContentUnavailableView(
-                "No Songs",
+                L10n.string("No Songs"),
                 systemImage: "music.note",
-                description: Text("This server hasn't returned any songs yet.")
+                description: Text(localized: "This server hasn't returned any songs yet.")
             )
         } else if self.vm.songs.isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -176,7 +176,7 @@ public struct SubsonicSongsView: View {
     private var searchBody: some View {
         if self.search.songs.isEmpty {
             if self.search.isSearching {
-                ProgressView("Searching…")
+                ProgressView(L10n.string("Searching…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView.search(text: self.library.searchQuery)

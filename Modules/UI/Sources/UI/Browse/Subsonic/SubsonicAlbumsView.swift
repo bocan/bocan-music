@@ -69,12 +69,12 @@ public struct SubsonicAlbumsView: View {
             if self.vm.albums.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load albums",
+            L10n.string("Couldn't load albums"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -83,9 +83,9 @@ public struct SubsonicAlbumsView: View {
     private var regularBody: some View {
         if self.vm.albums.isEmpty, !self.vm.isLoading {
             ContentUnavailableView(
-                "No Albums",
+                L10n.string("No Albums"),
                 systemImage: "square.grid.2x2",
-                description: Text("This server hasn't returned any albums yet.")
+                description: Text(localized: "This server hasn't returned any albums yet.")
             )
         } else {
             ScrollView {
@@ -124,7 +124,7 @@ public struct SubsonicAlbumsView: View {
         let hits = self.search.albums
         if hits.isEmpty {
             if self.search.isSearching {
-                ProgressView("Searching\u{2026}")
+                ProgressView(L10n.string("Searching\u{2026}"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView.search(text: self.library.searchQuery)
@@ -189,13 +189,13 @@ private struct SubsonicAlbumCell: View {
                 .foregroundStyle(Color.textPrimary)
                 .lineLimit(1)
 
-            Text(self.album.artist ?? "Various Artists")
+            Text(self.album.artist ?? L10n.string("Various Artists"))
                 .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .lineLimit(1)
 
             let yearString = self.album.year.map { String($0) }
-            let countString = "\(self.album.songCount) \(self.album.songCount == 1 ? "song" : "songs")"
+            let countString = L10n.string("\(self.album.songCount) songs")
             let subtitle = [yearString, countString].compactMap(\.self).joined(separator: " · ")
             if !subtitle.isEmpty {
                 Text(subtitle)

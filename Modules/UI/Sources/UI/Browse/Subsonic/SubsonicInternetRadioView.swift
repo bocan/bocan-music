@@ -37,7 +37,7 @@ public final class SubsonicInternetRadioViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.radio.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load internet radio stations."
+                ?? L10n.string("Could not load internet radio stations.")
         }
     }
 }
@@ -67,9 +67,9 @@ public struct SubsonicInternetRadioView: View {
         Group {
             if self.vm.stations.isEmpty, !self.vm.isLoading {
                 ContentUnavailableView(
-                    "No Stations",
+                    L10n.string("No Stations"),
                     systemImage: "dot.radiowaves.left.and.right",
-                    description: Text("This server has no internet radio stations.")
+                    description: Text(localized: "This server has no internet radio stations.")
                 )
             } else {
                 List {
@@ -84,11 +84,11 @@ public struct SubsonicInternetRadioView: View {
                 .listStyle(.inset)
             }
         }
-        .navigationTitle("Internet Radio")
+        .navigationTitle(L10n.string("Internet Radio"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { Task { await self.vm.load() } } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
             }
@@ -97,12 +97,12 @@ public struct SubsonicInternetRadioView: View {
             if self.vm.stations.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load stations",
+            L10n.string("Couldn't load stations"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
         .sheet(item: self.$infoStation) { station in
@@ -154,13 +154,13 @@ private struct SubsonicInternetRadioRow: View {
                     Image(systemName: "info.circle")
                 }
                 .buttonStyle(.plain)
-                .help("Show station details")
+                .help(L10n.string("Show station details"))
 
                 Button(action: self.onPlay) {
                     Image(systemName: "play.fill")
                 }
                 .buttonStyle(.plain)
-                .help("Play this station")
+                .help(L10n.string("Play this station"))
             }
         }
         .padding(.vertical, 2)
@@ -169,7 +169,7 @@ private struct SubsonicInternetRadioRow: View {
         .onTapGesture(count: 2, perform: self.onPlay)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(self.station.name)
-        .accessibilityHint("Double-tap to play")
+        .accessibilityHint(L10n.string("Double-tap to play"))
     }
 }
 
@@ -193,11 +193,11 @@ private struct SubsonicInternetRadioInfoSheet: View {
                 Spacer()
             }
 
-            self.field(label: "Stream URL", value: self.station.streamUrl, copyable: true)
+            self.field(label: L10n.string("Stream URL"), value: self.station.streamUrl, copyable: true)
 
             if let home = station.homePageUrl, !home.isEmpty, let url = URL(string: home) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Homepage")
+                    Text(localized: "Homepage")
                         .font(Typography.caption.weight(.semibold))
                         .foregroundStyle(Color.textSecondary)
                     Link(home, destination: url)
@@ -208,7 +208,7 @@ private struct SubsonicInternetRadioInfoSheet: View {
 
             HStack {
                 Spacer()
-                Button("Close", action: self.onDismiss)
+                Button(L10n.string("Close"), action: self.onDismiss)
                     .keyboardShortcut(.defaultAction)
             }
         }
@@ -229,7 +229,7 @@ private struct SubsonicInternetRadioInfoSheet: View {
                         pb.clearContents()
                         pb.setString(value, forType: .string)
                     } label: {
-                        Label("Copy", systemImage: "doc.on.doc")
+                        Label(L10n.string("Copy"), systemImage: "doc.on.doc")
                     }
                     .buttonStyle(.borderless)
                     .controlSize(.small)

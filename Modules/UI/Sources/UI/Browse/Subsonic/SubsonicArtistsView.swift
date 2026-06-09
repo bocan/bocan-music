@@ -57,13 +57,13 @@ public struct SubsonicArtistsView: View {
                 self.regularBody
             }
         }
-        .navigationTitle("Artists")
+        .navigationTitle(L10n.string("Artists"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     Task { await self.vm.load() }
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading || self.isSearching)
             }
@@ -72,12 +72,12 @@ public struct SubsonicArtistsView: View {
             if self.vm.sections.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load artists",
+            L10n.string("Couldn't load artists"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -88,9 +88,9 @@ public struct SubsonicArtistsView: View {
     private var regularBody: some View {
         if self.vm.sections.isEmpty, !self.vm.isLoading {
             ContentUnavailableView(
-                "No Artists",
+                L10n.string("No Artists"),
                 systemImage: "music.mic",
-                description: Text("This server hasn't returned any artists yet.")
+                description: Text(localized: "This server hasn't returned any artists yet.")
             )
         } else {
             List {
@@ -124,7 +124,7 @@ public struct SubsonicArtistsView: View {
         let hits = self.search.artists
         if hits.isEmpty {
             if self.search.isSearching {
-                ProgressView("Searching\u{2026}")
+                ProgressView(L10n.string("Searching\u{2026}"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView.search(text: self.library.searchQuery)

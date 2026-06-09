@@ -65,11 +65,11 @@ public struct AlbumDetailView: View {
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Artist: \(self.artistName)")
+                    .accessibilityLabel(L10n.string("Artist: \(self.artistName)"))
                 }
 
                 if let total = album?.totalTracks {
-                    Text("\(total) songs")
+                    Text(localized: "\(total) songs")
                         .font(Typography.footnote)
                         .foregroundStyle(Color.textSecondary)
                 }
@@ -83,24 +83,24 @@ public struct AlbumDetailView: View {
                             }
                         }
                     } label: {
-                        Label("Play", systemImage: "play.fill")
+                        Label(L10n.string("Play"), systemImage: "play.fill")
                             .font(Typography.body)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .accessibilityLabel("Play Album")
-                    .help("Play this album from the first track")
+                    .accessibilityLabel(L10n.string("Play Album"))
+                    .help(L10n.string("Play this album from the first track"))
 
                     Button {
                         Task { await self.playShuffled() }
                     } label: {
-                        Label("Shuffle", systemImage: "shuffle")
+                        Label(L10n.string("Shuffle"), systemImage: "shuffle")
                             .font(Typography.body)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .accessibilityLabel("Shuffle Album")
-                    .help("Play this album in shuffled order")
+                    .accessibilityLabel(L10n.string("Shuffle Album"))
+                    .help(L10n.string("Play this album in shuffled order"))
                     .disabled(self.library.tracks.tracks.isEmpty)
                 }
                 .padding(.top, 4)
@@ -123,13 +123,13 @@ public struct AlbumDetailView: View {
                             .resizable()
                             .scaledToFill()
                     }
-                    .accessibilityLabel("\(self.album?.title ?? "Album") artwork")
+                    .accessibilityLabel(L10n.string("\(self.album?.title ?? L10n.string("Album")) artwork"))
             } else if let path = album?.coverArtPath {
                 Artwork(artPath: path, seed: Int(self.albumID), size: 180)
-                    .accessibilityLabel("\(self.album?.title ?? "Album") artwork")
+                    .accessibilityLabel(L10n.string("\(self.album?.title ?? L10n.string("Album")) artwork"))
             } else {
                 GradientPlaceholder(seed: Int(self.albumID))
-                    .accessibilityLabel("\(self.album?.title ?? "Album") artwork placeholder")
+                    .accessibilityLabel(L10n.string("\(self.album?.title ?? L10n.string("Album")) artwork placeholder"))
             }
         }
         .frame(width: 180, height: 180)

@@ -68,15 +68,15 @@ public struct TracksView: View {
                 if !activeQuery.isEmpty {
                     EmptyState(
                         symbol: "magnifyingglass",
-                        title: "No Results",
-                        message: "No songs match \u{201C}\(activeQuery)\u{201D}."
+                        title: L10n.string("No Results"),
+                        message: L10n.string("No songs match \u{201C}\(activeQuery)\u{201D}.")
                     )
                 } else {
                     EmptyState(
                         symbol: "music.note",
-                        title: "No Songs",
-                        message: "Add a music folder to start building your library.",
-                        actionLabel: "Add Music Folder"
+                        title: L10n.string("No Songs"),
+                        message: L10n.string("Add a music folder to start building your library."),
+                        actionLabel: L10n.string("Add Music Folder")
                     ) {
                         Task { await self.library.addFolderByPicker() }
                     }
@@ -85,14 +85,14 @@ public struct TracksView: View {
                 self.trackTable
             }
         }
-        .navigationTitle(self.title ?? "Songs")
+        .navigationTitle(self.title ?? L10n.string("Songs"))
         .toolbar {
             if self.sortable, self.sortOrder != TracksViewModel.defaultSortOrder {
                 ToolbarItem(placement: .primaryAction) {
-                    Button("Clear Sort") {
+                    Button(L10n.string("Clear Sort")) {
                         self.sortOrder = TracksViewModel.defaultSortOrder
                     }
-                    .help("Reset to default sort order")
+                    .help(L10n.string("Reset to default sort order"))
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                 }
             }
@@ -163,17 +163,17 @@ extension TracksView {
 
         let alert = NSAlert()
         if tracks.count == 1 {
-            let title = tracks.first?.title ?? "track"
-            alert.messageText = "Remove “\(title)” from this playlist?"
+            let title = tracks.first?.title ?? L10n.string("track")
+            alert.messageText = L10n.string("Remove “\(title)” from this playlist?")
         } else {
-            alert.messageText = "Remove \(tracks.count) tracks from this playlist?"
+            alert.messageText = L10n.string("Remove \(tracks.count) tracks from this playlist?")
         }
-        alert.informativeText = "Tracks stay in your library and in other playlists."
+        alert.informativeText = L10n.string("Tracks stay in your library and in other playlists.")
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Remove")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.string("Remove"))
+        alert.addButton(withTitle: L10n.string("Cancel"))
         alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = "Don’t ask again"
+        alert.suppressionButton?.title = L10n.string("Don’t ask again")
 
         guard await Self.runAlertAsync(alert) == .alertFirstButtonReturn else { return }
 

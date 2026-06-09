@@ -41,17 +41,17 @@ public struct SubsonicGenresView: View {
             self.songsPane
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("Genres")
+        .navigationTitle(L10n.string("Genres"))
         .task(id: self.serverID) {
             if self.vm.genres.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load genres",
+            L10n.string("Couldn't load genres"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -60,9 +60,9 @@ public struct SubsonicGenresView: View {
     private var genreList: some View {
         if self.vm.genres.isEmpty, !self.vm.isLoadingGenres {
             ContentUnavailableView(
-                "No Genres",
+                L10n.string("No Genres"),
                 systemImage: "tag",
-                description: Text("This server hasn't returned any genres.")
+                description: Text(localized: "This server hasn't returned any genres.")
             )
         } else {
             List(selection: Binding(
@@ -76,13 +76,13 @@ public struct SubsonicGenresView: View {
                             .foregroundStyle(Color.textPrimary)
                             .lineLimit(1)
                         Spacer()
-                        Text("\(genre.songCount)")
+                        Text(verbatim: String(genre.songCount))
                             .font(Typography.caption.monospacedDigit())
                             .foregroundStyle(Color.textTertiary)
                     }
                     .tag(genre.value)
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("\(genre.value), \(genre.songCount) songs")
+                    .accessibilityLabel(L10n.string("\(genre.value), \(genre.songCount) songs"))
                 }
             }
             .listStyle(.inset)
@@ -98,7 +98,7 @@ public struct SubsonicGenresView: View {
                         .font(Typography.title)
                         .foregroundStyle(Color.textPrimary)
                     Spacer()
-                    Text("\(self.vm.genreSongs.count) \(self.vm.genreSongs.count == 1 ? "song" : "songs")")
+                    Text(localized: "\(self.vm.genreSongs.count) songs")
                         .font(Typography.caption)
                         .foregroundStyle(Color.textSecondary)
                 }
@@ -140,9 +140,9 @@ public struct SubsonicGenresView: View {
             }
         } else {
             ContentUnavailableView(
-                "Select a Genre",
+                L10n.string("Select a Genre"),
                 systemImage: "tag",
-                description: Text("Pick a genre on the left to browse its songs.")
+                description: Text(localized: "Pick a genre on the left to browse its songs.")
             )
         }
     }

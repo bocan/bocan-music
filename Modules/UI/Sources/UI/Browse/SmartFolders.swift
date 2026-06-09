@@ -54,34 +54,34 @@ extension SidebarDestination {
     var displayTitle: String {
         switch self {
         case .songs:
-            "Songs"
+            L10n.string("Songs")
 
         case .albums:
-            "Albums"
+            L10n.string("Albums")
 
         case .artists:
-            "Artists"
+            L10n.string("Artists")
 
         case .genres:
-            "Genres"
+            L10n.string("Genres")
 
         case .composers:
-            "Composers"
+            L10n.string("Composers")
 
         case .recentlyAdded:
-            "Recently Added"
+            L10n.string("Recently Added")
 
         case .recentlyPlayed:
-            "Recently Played"
+            L10n.string("Recently Played")
 
         case .mostPlayed:
-            "Most Played"
+            L10n.string("Most Played")
 
         case .artist:
-            "Artist"
+            L10n.string("Artist")
 
         case .album:
-            "Album"
+            L10n.string("Album")
 
         case let .genre(genre):
             genre
@@ -90,67 +90,67 @@ extension SidebarDestination {
             composer
 
         case .playlist:
-            "Playlist"
+            L10n.string("Playlist")
 
         case .folder:
-            "Folder"
+            L10n.string("Folder")
 
         case .smartPlaylist:
-            "Smart Playlist"
+            L10n.string("Smart Playlist")
 
         case .upNext:
-            "Up Next"
+            L10n.string("Up Next")
 
         case let .search(searchQuery):
-            "Search: \(searchQuery)"
+            L10n.string("Search: \(searchQuery)")
 
         case .subsonicSongs:
-            "Songs"
+            L10n.string("Songs")
 
         case .subsonicAlbums:
-            "Albums"
+            L10n.string("Albums")
 
         case .subsonicArtists:
-            "Artists"
+            L10n.string("Artists")
 
         case .subsonicGenres:
-            "Genres"
+            L10n.string("Genres")
 
         case .subsonicPlaylists:
-            "Playlists"
+            L10n.string("Playlists")
 
         case .subsonicPlaylist:
-            "Playlist"
+            L10n.string("Playlist")
 
         case .subsonicStarred:
-            "Starred"
+            L10n.string("Starred")
 
         case .subsonicRandom:
-            "Random"
+            L10n.string("Random")
 
         case .subsonicRecentlyAdded:
-            "Recently Added"
+            L10n.string("Recently Added")
 
         case .subsonicMostPlayed:
-            "Most Played"
+            L10n.string("Most Played")
 
         case .subsonicInternetRadio:
-            "Internet Radio"
+            L10n.string("Internet Radio")
 
         case .subsonicPodcasts:
-            "Podcasts"
+            L10n.string("Podcasts")
 
         case .subsonicBookmarks:
-            "Bookmarks"
+            L10n.string("Bookmarks")
 
         case .subsonicRoot:
-            "Songs"
+            L10n.string("Songs")
 
         case .subsonicArtist:
-            "Artist"
+            L10n.string("Artist")
 
         case .subsonicAlbum:
-            "Album"
+            L10n.string("Album")
         }
     }
 }

@@ -98,6 +98,44 @@ struct L10nTests {
         #expect(variation.other == "This removes the %lld tracks in your queue and stops playback.")
     }
 
+    @Test("Browse plural keys collapse to singular forms (#314)")
+    func browsePlurals() throws {
+        let strings = try self.catalog()
+        let albums = try #require(self.plural("%lld albums", in: strings))
+        #expect(albums.one == "%lld album")
+        let stars = try #require(self.plural("%lld stars", in: strings))
+        #expect(stars.one == "%lld star")
+        let removeAlbums = try #require(self.plural("Remove %lld albums from library?", in: strings))
+        #expect(removeAlbums.one == "Remove %lld album from library?")
+    }
+
+    @Test(
+        "Phase 2 Browse routes copy through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/Browse/TracksView.swift",
+            "Sources/UI/Browse/TracksView+Actions.swift",
+            "Sources/UI/Browse/ArtistsView.swift",
+            "Sources/UI/Browse/AlbumDetailView.swift",
+            "Sources/UI/Browse/QueueView.swift",
+            "Sources/UI/Browse/GenresComposersView.swift",
+            "Sources/UI/Browse/SmartFolders.swift",
+            "Sources/UI/Browse/RemoveFromLibraryConfirm.swift",
+            "Sources/UI/Browse/TrackTable+ColSpecs.swift",
+            "Sources/UI/Browse/TrackTableCoordinator.swift",
+            "Sources/UI/Browse/TrackTableHelpers.swift",
+            "Sources/UI/Browse/Subsonic/SubsonicSongsView.swift",
+            "Sources/UI/Browse/Subsonic/SubsonicAlbumsView.swift",
+            "Sources/UI/Browse/Subsonic/SubsonicSongTableCells.swift",
+            "Sources/UI/Browse/Subsonic/SubsonicSongTableCoordinator.swift",
+            "Sources/UI/Browse/Subsonic/SubsonicOfflineBanner.swift",
+        ]
+    )
+    func phase2BrowseUsesHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test(
         "Phase 1 chrome routes copy through the localization helper (#314)",
         arguments: [

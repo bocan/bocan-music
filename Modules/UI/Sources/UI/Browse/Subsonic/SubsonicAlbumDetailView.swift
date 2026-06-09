@@ -36,7 +36,7 @@ public final class SubsonicAlbumDetailViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.album.detail.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load this album."
+                ?? L10n.string("Could not load this album.")
         }
     }
 }
@@ -81,23 +81,23 @@ public struct SubsonicAlbumDetailView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView(
-                    "Album Unavailable",
+                    L10n.string("Album Unavailable"),
                     systemImage: "square.stack",
-                    description: Text("This album could not be loaded.")
+                    description: Text(localized: "This album could not be loaded.")
                 )
             }
         }
-        .navigationTitle(self.vm.album?.name ?? "Album")
+        .navigationTitle(self.vm.album?.name ?? L10n.string("Album"))
         .task(id: self.albumID) {
             if self.vm.album == nil { await self.vm.load() }
         }
         .alert(
-            "Couldn't load album",
+            L10n.string("Couldn't load album"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -114,9 +114,9 @@ public struct SubsonicAlbumDetailView: View {
             Divider()
             if songs.isEmpty {
                 ContentUnavailableView(
-                    "No Songs",
+                    L10n.string("No Songs"),
                     systemImage: "music.note",
-                    description: Text("This album has no songs to display.")
+                    description: Text(localized: "This album has no songs to display.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -237,7 +237,7 @@ public struct SubsonicAlbumDetailView: View {
             }
             let count = songs.count
             if count > 0 {
-                Text(count == 1 ? "1 song" : "\(count) songs")
+                Text(localized: "\(count) songs")
                     .font(Typography.caption)
                     .foregroundStyle(Color.textTertiary)
             }
@@ -258,7 +258,7 @@ public struct SubsonicAlbumDetailView: View {
                 )
             }
         } label: {
-            Label("Play", systemImage: "play.fill")
+            Label(L10n.string("Play"), systemImage: "play.fill")
         }
         .buttonStyle(.borderedProminent)
         .padding(.top, 6)

@@ -64,17 +64,17 @@ private struct QueueContentView: View {
                     // so this view doesn't dead-end users.
                     EmptyState(
                         symbol: "list.bullet.indent",
-                        title: "Queue is Empty",
-                        message: "Add a music folder to start building your library.",
-                        actionLabel: "Add Music Folder"
+                        title: L10n.string("Queue is Empty"),
+                        message: L10n.string("Add a music folder to start building your library."),
+                        actionLabel: L10n.string("Add Music Folder")
                     ) {
                         Task { await self.vm.addFolderByPicker() }
                     }
                 } else {
                     EmptyState(
                         symbol: "list.bullet.indent",
-                        title: "Queue is Empty",
-                        message: "Double-click a track, or right-click to add to queue."
+                        title: L10n.string("Queue is Empty"),
+                        message: L10n.string("Double-click a track, or right-click to add to queue.")
                     )
                 }
             } else {
@@ -90,7 +90,7 @@ private struct QueueContentView: View {
                         )
                         .listRowBackground(entry.isCurrent ? Color.accentColor.opacity(0.15) : Color.clear)
                         .contextMenu {
-                            Button("Play From Here") {
+                            Button(L10n.string("Play From Here")) {
                                 Task {
                                     await self.vm.playFromQueueIndex(entry.index)
                                     await self.refreshQueue()
@@ -100,7 +100,7 @@ private struct QueueContentView: View {
 
                             Divider()
 
-                            Button("Play Next") {
+                            Button(L10n.string("Play Next")) {
                                 Task {
                                     await self.vm.playQueueItemNext(id: entry.item.id)
                                     await self.refreshQueue()
@@ -108,7 +108,7 @@ private struct QueueContentView: View {
                             }
                             .disabled(entry.isCurrent || entry.isAlreadyNext)
 
-                            Button("Move to Bottom") {
+                            Button(L10n.string("Move to Bottom")) {
                                 Task {
                                     await self.vm.moveQueueItemToBottom(id: entry.item.id)
                                     await self.refreshQueue()
@@ -118,32 +118,32 @@ private struct QueueContentView: View {
 
                             Divider()
 
-                            Button("Show in Finder") {
+                            Button(L10n.string("Show in Finder")) {
                                 if let url = URL(string: entry.item.fileURL) {
                                     NSWorkspace.shared.activateFileViewerSelecting([url])
                                 }
                             }
                             .disabled(entry.isUnavailable)
 
-                            Button("Get Info") {
+                            Button(L10n.string("Get Info")) {
                                 self.vm.tagEditorTrackIDs = [entry.item.trackID]
                             }
 
                             if let albumID = entry.item.albumID {
-                                Button("Go to Album") {
+                                Button(L10n.string("Go to Album")) {
                                     Task { await self.vm.selectDestination(.album(albumID)) }
                                 }
                             }
 
                             if let artistID = entry.item.artistID {
-                                Button("Go to Artist") {
+                                Button(L10n.string("Go to Artist")) {
                                     Task { await self.vm.selectDestination(.artist(artistID)) }
                                 }
                             }
 
                             Divider()
 
-                            Button("Remove from Queue") {
+                            Button(L10n.string("Remove from Queue")) {
                                 Task {
                                     await self.vm.queuePlayer?.queue.remove(ids: Set([entry.item.id]))
                                     await self.refreshQueue()
@@ -169,7 +169,7 @@ private struct QueueContentView: View {
                 .listStyle(.inset)
             }
         }
-        .navigationTitle("Up Next")
+        .navigationTitle(L10n.string("Up Next"))
         // Accept streamed Subsonic songs dragged in from a server's song list (#332).
         .overlay(SubsonicSongDropTarget { payloads in
             Task {
@@ -327,19 +327,21 @@ private struct QueueRow: View {
         }
         .padding(.vertical, 3)
         .opacity(self.isUnavailable ? 0.55 : 1.0)
-        .help(self.isUnavailable ? "File missing — original location no longer exists" : "")
+        .help(self.isUnavailable ? L10n.string("File missing — original location no longer exists") : "")
         .onHover { self.isHovered = $0 }
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.rowLabel)
         .accessibilityHint(self.isUnavailable
-            ? "File is missing. Use the context menu to remove it from the queue."
-            : "Double-tap to play from this item. Use the context menu to reorder, jump to album or artist, or remove from the queue.")
+            ? L10n.string("File is missing. Use the context menu to remove it from the queue.")
+            : L10n.string(
+                "Double-tap to play from this item. Use the context menu to reorder, jump to album or artist, or remove from the queue."
+            ))
         .accessibilityAddTraits(self.isCurrent ? .isSelected : [])
     }
 
     private var titleWithSuffix: String {
-        self.isUnavailable ? "\(self.displayTitle) (missing)" : self.displayTitle
+        self.isUnavailable ? L10n.string("\(self.displayTitle) (missing)") : self.displayTitle
     }
 
     private var titleColor: Color {
@@ -348,8 +350,8 @@ private struct QueueRow: View {
     }
 
     private var rowLabel: String {
-        var parts = [self.isCurrent ? "Now playing: \(self.displayTitle)" : self.displayTitle]
-        if self.isUnavailable { parts.append("file missing") }
+        var parts = [self.isCurrent ? L10n.string("Now playing: \(self.displayTitle)") : self.displayTitle]
+        if self.isUnavailable { parts.append(L10n.string("file missing")) }
         if let sub = self.displaySubtitle { parts.append(sub) }
         if let genre = item.genre, !genre.isEmpty { parts.append(genre) }
         parts.append(Formatters.duration(self.item.duration))

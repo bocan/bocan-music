@@ -90,8 +90,8 @@ struct SubsonicStarButton: View {
                 .foregroundStyle(starred ? Color.starTint : Color.textTertiary)
         }
         .buttonStyle(.plain)
-        .help(starred ? "Unstar" : "Star")
-        .accessibilityLabel(starred ? "Unstar \(self.song.title)" : "Star \(self.song.title)")
+        .help(starred ? L10n.string("Unstar") : L10n.string("Star"))
+        .accessibilityLabel(starred ? L10n.string("Unstar \(self.song.title)") : L10n.string("Star \(self.song.title)"))
     }
 }
 
@@ -104,7 +104,7 @@ struct SubsonicRatingMenu: View {
 
     var body: some View {
         let current = self.coordinator.rating(songID: self.song.id, serverRating: self.song.userRating)
-        Menu("Rating") {
+        Menu(L10n.string("Rating")) {
             ForEach(0 ... 5, id: \.self) { stars in
                 Button {
                     self.coordinator.setRating(
@@ -115,7 +115,7 @@ struct SubsonicRatingMenu: View {
                     )
                 } label: {
                     HStack {
-                        Text(stars == 0 ? "None" : String(repeating: "★", count: stars))
+                        Text(stars == 0 ? L10n.string("None") : String(repeating: "★", count: stars))
                         if stars == current { Image(systemName: "checkmark") }
                     }
                 }

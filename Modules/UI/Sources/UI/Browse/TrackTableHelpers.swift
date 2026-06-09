@@ -67,7 +67,7 @@ final class ShuffleCheckCell: NSTableCellView {
     }
 
     private func updateAccessibilityLabel() {
-        self.checkbox.setAccessibilityLabel("Exclude \(self.trackTitle) from shuffle")
+        self.checkbox.setAccessibilityLabel(L10n.string("Exclude \(self.trackTitle) from shuffle"))
     }
 }
 
@@ -113,8 +113,8 @@ final class LoveButtonCell: NSTableCellView {
             .foregroundColor: row.loved ? Self.lovedColor : NSColor.tertiaryLabelColor,
         ]
         self.button.attributedTitle = NSAttributedString(string: row.loved ? "\u{2665}" : "\u{2661}", attributes: attrs)
-        self.button.setAccessibilityLabel(row.loved ? "Loved" : "Not loved")
-        self.button.toolTip = row.loved ? "Loved — click to unlove" : "Click to love"
+        self.button.setAccessibilityLabel(row.loved ? L10n.string("Loved") : L10n.string("Not loved"))
+        self.button.toolTip = row.loved ? L10n.string("Loved — click to unlove") : L10n.string("Click to love")
     }
 
     @objc private func tapped() {
@@ -174,7 +174,7 @@ final class CoverArtImageCell: NSTableCellView {
     func configure(artPath: String?, trackTitle: String) {
         self.loadTask?.cancel()
         self.artImageView.image = nil
-        setAccessibilityLabel(artPath == nil ? "No artwork" : "\(trackTitle) artwork")
+        setAccessibilityLabel(artPath == nil ? L10n.string("No artwork") : L10n.string("\(trackTitle) artwork"))
         guard let path = artPath else { return }
         self.loadTask = Task { @MainActor [weak self] in
             guard let self else { return }

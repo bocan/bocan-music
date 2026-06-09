@@ -17,7 +17,7 @@ struct SubsonicSourcePill: View {
                 Capsule(style: .continuous)
                     .fill(Color.black.opacity(0.55))
             )
-            .accessibilityLabel("Source: \(self.name)")
+            .accessibilityLabel(L10n.string("Source: \(self.name)"))
     }
 }
 
@@ -33,7 +33,7 @@ struct SubsonicSearchFailedBanner: View {
         HStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color.orange)
-            Text("Some servers didn't respond: \(self.serverNames.joined(separator: ", "))")
+            Text(localized: "Some servers didn't respond: \(self.serverNames.joined(separator: ", "))")
                 .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
             Spacer()

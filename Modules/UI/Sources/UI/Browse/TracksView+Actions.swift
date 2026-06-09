@@ -172,17 +172,19 @@ extension TracksView {
 
         let alert = NSAlert()
         if tracks.count == 1 {
-            let title = tracks.first?.title ?? "track"
-            alert.messageText = "Remove “\(title)” from library?"
+            let title = tracks.first?.title ?? L10n.string("track")
+            alert.messageText = L10n.string("Remove “\(title)” from library?")
         } else {
-            alert.messageText = "Remove \(tracks.count) tracks from library?"
+            alert.messageText = L10n.string("Remove \(tracks.count) tracks from library?")
         }
-        alert.informativeText = "The files will stay on disk and can be re-added later by rescanning the folder."
+        alert.informativeText = L10n.string(
+            "The files will stay on disk and can be re-added later by rescanning the folder."
+        )
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Remove")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.string("Remove"))
+        alert.addButton(withTitle: L10n.string("Cancel"))
         alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = "Don’t ask again"
+        alert.suppressionButton?.title = L10n.string("Don’t ask again")
 
         let response = await runAlertAsync(alert)
         guard response == .alertFirstButtonReturn else { return }
@@ -205,17 +207,21 @@ extension TracksView {
 
         let alert = NSAlert()
         if tracks.count == 1 {
-            let title = tracks[0].title ?? "this track"
-            alert.messageText = "Move “\(title)” to Trash and remove from Bòcan?"
-            alert.informativeText = "The file will be moved to the Trash. You can restore it from the Trash until you empty it."
+            let title = tracks[0].title ?? L10n.string("this track")
+            alert.messageText = L10n.string("Move “\(title)” to Trash and remove from Bòcan?")
+            alert.informativeText = L10n.string(
+                "The file will be moved to the Trash. You can restore it from the Trash until you empty it."
+            )
         } else {
-            alert.messageText = "Move \(tracks.count) tracks to Trash and remove from Bòcan?"
-            alert.informativeText = "The files will be moved to the Trash. You can restore them from the Trash until you empty it."
+            alert.messageText = L10n.string("Move \(tracks.count) tracks to Trash and remove from Bòcan?")
+            alert.informativeText = L10n.string(
+                "The files will be moved to the Trash. You can restore them from the Trash until you empty it."
+            )
         }
         alert.alertStyle = .warning
-        let trashButton = alert.addButton(withTitle: "Move to Trash")
+        let trashButton = alert.addButton(withTitle: L10n.string("Move to Trash"))
         trashButton.hasDestructiveAction = true
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.string("Cancel"))
 
         let response = await runAlertAsync(alert)
         guard response == .alertFirstButtonReturn else { return }
@@ -241,16 +247,16 @@ extension TracksView {
         library: LibraryViewModel
     ) async {
         guard let id = track.id else { return }
-        let title = track.title ?? "this track"
+        let title = track.title ?? L10n.string("this track")
 
         let alert = NSAlert()
-        alert.messageText = "Move to Trash failed: \(error.localizedDescription)"
+        alert.messageText = L10n.string("Move to Trash failed: \(error.localizedDescription)")
         alert.informativeText =
-            "Permanently delete “\(title)”? This cannot be undone — the file will not be moved to the Trash."
+            L10n.string("Permanently delete “\(title)”? This cannot be undone — the file will not be moved to the Trash.")
         alert.alertStyle = .critical
-        let deleteButton = alert.addButton(withTitle: "Delete Permanently")
+        let deleteButton = alert.addButton(withTitle: L10n.string("Delete Permanently"))
         deleteButton.hasDestructiveAction = true
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.string("Cancel"))
 
         guard await self.runAlertAsync(alert) == .alertFirstButtonReturn else { return }
 

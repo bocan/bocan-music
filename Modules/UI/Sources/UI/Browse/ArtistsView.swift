@@ -31,7 +31,7 @@ public struct ArtistDetailView: View {
                     .padding(20)
                     .background(Color.bgSecondary)
                     .contextMenu {
-                        Button("Remove Artist from Library", role: .destructive) {
+                        Button(L10n.string("Remove Artist from Library"), role: .destructive) {
                             Task {
                                 await RemoveFromLibraryConfirm.artist(
                                     id: self.artistID, name: artist.name, library: self.library
@@ -44,7 +44,7 @@ public struct ArtistDetailView: View {
 
             // Albums section — scrollable, capped so Songs table gets most of the space
             if !self.albums.isEmpty {
-                self.sectionLabel("Albums", count: self.albums.count)
+                self.sectionLabel(L10n.string("Albums"), count: self.albums.count)
                 ScrollView {
                     LazyVGrid(columns: self.albumColumns, spacing: Theme.albumGridSpacing) {
                         ForEach(self.albums, id: \.id) { album in
@@ -58,7 +58,7 @@ public struct ArtistDetailView: View {
             }
 
             // Songs — full TracksView with context menus, drag, columns, sorting
-            self.sectionLabel("Songs", count: self.library.tracks.rows.count)
+            self.sectionLabel(L10n.string("Songs"), count: self.library.tracks.rows.count)
             TracksView(vm: self.library.tracks, library: self.library, sortable: true)
         }
         .task {
@@ -87,18 +87,18 @@ public struct ArtistDetailView: View {
 
                 HStack(spacing: 8) {
                     if !self.albums.isEmpty {
-                        Text(self.albums.count == 1 ? "1 album" : "\(self.albums.count) albums")
+                        Text(localized: "\(self.albums.count) albums")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textSecondary)
                     }
                     let trackCount = self.library.tracks.rows.count
                     if !self.albums.isEmpty, trackCount > 0 {
-                        Text("·")
+                        Text(verbatim: "·")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
                     if trackCount > 0 {
-                        Text(trackCount == 1 ? "1 song" : "\(trackCount) songs")
+                        Text(localized: "\(trackCount) songs")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textSecondary)
                     }
@@ -110,7 +110,7 @@ public struct ArtistDetailView: View {
     }
 
     private func sectionLabel(_ title: String, count: Int? = nil) -> some View {
-        let label = count.map { "\(title) (\($0))" } ?? title
+        let label = count.map { L10n.string("\(title) (\($0))") } ?? title
         return Text(label)
             .font(Typography.title)
             .foregroundStyle(Color.textPrimary)
@@ -125,12 +125,12 @@ public struct ArtistDetailView: View {
             Group {
                 if let path = album.coverArtPath {
                     Artwork(artPath: path, seed: Int(album.id ?? 0), size: Theme.albumGridMinWidth)
-                        .accessibilityLabel("\(album.title) artwork")
+                        .accessibilityLabel(L10n.string("\(album.title) artwork"))
                 } else {
                     GradientPlaceholder(seed: Int(album.id ?? 0))
                         .aspectRatio(1, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                        .accessibilityLabel("\(album.title) artwork placeholder")
+                        .accessibilityLabel(L10n.string("\(album.title) artwork placeholder"))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -142,7 +142,7 @@ public struct ArtistDetailView: View {
 
             // Year · track count
             let yearString = album.year.map { String($0) }
-            let countString = trackCount.map { "\($0) \($0 == 1 ? "song" : "songs")" }
+            let countString = trackCount.map { L10n.string("\($0) songs") }
             let subtitle = [yearString, countString].compactMap(\.self).joined(separator: " · ")
             if !subtitle.isEmpty {
                 Text(subtitle)
@@ -167,12 +167,12 @@ public struct ArtistDetailView: View {
                 .compactMap(\.self)
                 .joined(separator: ", ")
         )
-        .accessibilityHint("Double-tap to open album")
+        .accessibilityHint(L10n.string("Double-tap to open album"))
     }
 
     @ViewBuilder
     private func albumContextMenu(album: Album) -> some View {
-        Button("Play Album") {
+        Button(L10n.string("Play Album")) {
             if let id = album.id {
                 Task { await self.library.selectDestination(.album(id)) }
             }
@@ -180,7 +180,7 @@ public struct ArtistDetailView: View {
         .disabled(album.id == nil)
 
         Divider()
-        Toggle("Force Gapless Playback", isOn: Binding(
+        Toggle(L10n.string("Force Gapless Playback"), isOn: Binding(
             get: { album.forceGapless },
             set: { forced in
                 if let id = album.id {
@@ -188,7 +188,7 @@ public struct ArtistDetailView: View {
                 }
             }
         ))
-        Toggle("Exclude from Shuffle", isOn: Binding(
+        Toggle(L10n.string("Exclude from Shuffle"), isOn: Binding(
             get: { album.excludedFromShuffle },
             set: { excluded in
                 if let id = album.id {
@@ -198,7 +198,7 @@ public struct ArtistDetailView: View {
         ))
 
         Divider()
-        Button("Get Info") {
+        Button(L10n.string("Get Info")) {
             if let id = album.id {
                 Task { await self.openInspector(forAlbumID: id) }
             }
@@ -206,7 +206,7 @@ public struct ArtistDetailView: View {
         .disabled(album.id == nil)
 
         Divider()
-        Button("Remove Album from Library", role: .destructive) {
+        Button(L10n.string("Remove Album from Library"), role: .destructive) {
             if let id = album.id {
                 Task {
                     await RemoveFromLibraryConfirm.albums(
@@ -269,15 +269,15 @@ public struct ArtistsView: View {
                 if !activeQuery.isEmpty {
                     EmptyState(
                         symbol: "magnifyingglass",
-                        title: "No Results",
-                        message: "No artists match \u{201C}\(activeQuery)\u{201D}."
+                        title: L10n.string("No Results"),
+                        message: L10n.string("No artists match \u{201C}\(activeQuery)\u{201D}.")
                     )
                 } else {
                     EmptyState(
                         symbol: "music.mic",
-                        title: "No Artists",
-                        message: "Add a music folder to start building your library.",
-                        actionLabel: "Add Music Folder"
+                        title: L10n.string("No Artists"),
+                        message: L10n.string("Add a music folder to start building your library."),
+                        actionLabel: L10n.string("Add Music Folder")
                     ) {
                         Task { await self.library.addFolderByPicker() }
                     }
@@ -286,7 +286,7 @@ public struct ArtistsView: View {
                 self.artistList
             }
         }
-        .navigationTitle("Artists")
+        .navigationTitle(L10n.string("Artists"))
     }
 
     private var artistList: some View {
@@ -312,9 +312,9 @@ public struct ArtistsView: View {
                         let albumCount = self.vm.albumCounts[id] ?? 0
                         let trackCount = self.vm.trackCounts[id] ?? 0
                         if albumCount > 0 || trackCount > 0 {
-                            let albumPart = albumCount == 1 ? "1 album" : "\(albumCount) albums"
-                            let songPart = trackCount == 1 ? "1 song" : "\(trackCount) songs"
-                            Text("\(albumPart), \(songPart)")
+                            let albumPart = L10n.string("\(albumCount) albums")
+                            let songPart = L10n.string("\(trackCount) songs")
+                            Text(localized: "\(albumPart), \(songPart)")
                                 .font(Typography.caption)
                                 .foregroundStyle(Color.textSecondary)
                         }
@@ -333,7 +333,7 @@ public struct ArtistsView: View {
             .accessibilityLabel(artist.name)
             .contextMenu {
                 if let id = artist.id {
-                    Button("Remove Artist from Library", role: .destructive) {
+                    Button(L10n.string("Remove Artist from Library"), role: .destructive) {
                         Task {
                             await RemoveFromLibraryConfirm.artist(
                                 id: id, name: artist.name, library: self.library
