@@ -91,6 +91,7 @@ custom_rules:
       - "Modules/UI/Sources/UI/Browse/.*\\.swift"
       - "Modules/UI/Sources/UI/Playlists/.*\\.swift"
       - "Modules/UI/Sources/UI/MetadataEditor/.*\\.swift"
+      - "Modules/UI/Sources/UI/Lyrics/.*\\.swift"
       - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
       - "Modules/UI/Sources/UI/Settings/GeneralSettingsView\\.swift"
       - "Modules/UI/Sources/UI/Settings/AppearanceSettingsView\\.swift"

@@ -105,7 +105,7 @@ public struct LyricsPane: View {
         VStack(alignment: .leading, spacing: 4) {
             // Row 1: title, source badge, close
             HStack(spacing: 6) {
-                Text("Lyrics")
+                Text(localized: "Lyrics")
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
 
@@ -127,8 +127,8 @@ public struct LyricsPane: View {
                     Image(systemName: "xmark")
                 }
                 .buttonStyle(.plain)
-                .help("Close lyrics pane (⌘L)")
-                .accessibilityLabel("Close lyrics pane")
+                .help(L10n.string("Close lyrics pane (⌘L)"))
+                .accessibilityLabel(L10n.string("Close lyrics pane"))
                 .accessibilityIdentifier(A11y.Lyrics.closeButton)
             }
 
@@ -159,8 +159,8 @@ public struct LyricsPane: View {
                     Image(systemName: "magnifyingglass")
                 }
                 .buttonStyle(.plain)
-                .help("Find in lyrics")
-                .accessibilityLabel("Search lyrics")
+                .help(L10n.string("Find in lyrics"))
+                .accessibilityLabel(L10n.string("Search lyrics"))
 
                 Button {
                     self.vm.isEditorPresented = true
@@ -168,8 +168,8 @@ public struct LyricsPane: View {
                     Image(systemName: "square.and.pencil")
                 }
                 .buttonStyle(.plain)
-                .help("Edit lyrics (⌘⌥⇧L)")
-                .accessibilityLabel("Edit lyrics")
+                .help(L10n.string("Edit lyrics (⌘⌥⇧L)"))
+                .accessibilityLabel(L10n.string("Edit lyrics"))
             }
         }
         .padding(.horizontal, 12)
@@ -179,15 +179,15 @@ public struct LyricsPane: View {
 
     private func sourceBadge(_ label: String) -> some View {
         let isSynced = if case .synced = self.vm.document { true } else { false }
-        let detail = isSynced ? "Synced" : "Plain"
-        return Text("\(label) · \(detail)")
+        let detail = isSynced ? L10n.string("Synced") : L10n.string("Plain")
+        return Text(localized: "\(label) · \(detail)")
             .font(.caption2)
             .foregroundStyle(.secondary)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
             .background(.quaternary, in: Capsule())
-            .help("Lyrics source: \(label) (\(detail))")
-            .accessibilityLabel("Lyrics source: \(label), \(detail)")
+            .help(L10n.string("Lyrics source: \(label) (\(detail))"))
+            .accessibilityLabel(L10n.string("Lyrics source: \(label), \(detail)"))
     }
 
     private var fontSizePicker: some View {
@@ -206,8 +206,8 @@ public struct LyricsPane: View {
                         : Color.clear
                 )
                 .cornerRadius(4)
-                .help("\(size.fullName) font size")
-                .accessibilityLabel("\(size.fullName) font size")
+                .help(L10n.string("\(size.fullName) font size"))
+                .accessibilityLabel(L10n.string("\(size.fullName) font size"))
             }
         }
     }
@@ -217,7 +217,7 @@ public struct LyricsPane: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
                 .font(.caption)
-            TextField("Find in lyrics", text: self.$searchText)
+            TextField(L10n.string("Find in lyrics"), text: self.$searchText)
                 .textFieldStyle(.plain)
             if !self.searchText.isEmpty {
                 Button {
@@ -227,8 +227,8 @@ public struct LyricsPane: View {
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .help("Clear search")
-                .accessibilityLabel("Clear search")
+                .help(L10n.string("Clear search"))
+                .accessibilityLabel(L10n.string("Clear search"))
             }
         }
         .padding(.horizontal, 12)
@@ -246,9 +246,10 @@ public struct LyricsPane: View {
                 .foregroundStyle(self.vm.userOffsetMS != 0 ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
         }
         .buttonStyle(.plain)
-        .help(self.vm
-            .userOffsetMS == 0 ? "Adjust sync offset" : "Sync offset: \(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms")
-        .accessibilityLabel("Adjust lyrics sync offset")
+        .help(self.vm.userOffsetMS == 0
+            ? L10n.string("Adjust sync offset")
+            : L10n.string("Sync offset: \(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms"))
+        .accessibilityLabel(L10n.string("Adjust lyrics sync offset"))
         .accessibilityIdentifier(A11y.Lyrics.offsetButton)
         .popover(isPresented: self.$showOffsetPopover, arrowEdge: .bottom) {
             self.offsetPopover
@@ -261,11 +262,11 @@ public struct LyricsPane: View {
             set: { self.vm.userOffsetMS = Int($0.rounded()) }
         )
         return VStack(alignment: .leading, spacing: 12) {
-            Text("Sync Offset")
+            Text(localized: "Sync Offset")
                 .font(.headline)
 
             Slider(value: offsetBinding, in: -5000 ... 5000, step: 50) {
-                Text("Offset")
+                Text(localized: "Offset")
             }
             .accessibilityIdentifier(A11y.Lyrics.offsetSlider)
             .frame(width: 220)
@@ -281,7 +282,7 @@ public struct LyricsPane: View {
 
                 Spacer()
 
-                Button("Reset") {
+                Button(L10n.string("Reset")) {
                     self.vm.userOffsetMS = 0
                 }
                 .buttonStyle(.plain)
@@ -289,7 +290,7 @@ public struct LyricsPane: View {
                 .disabled(self.vm.userOffsetMS == 0)
             }
 
-            Text("Shifts highlighted line timing.\nResets when the track changes.")
+            Text(localized: "Shifts highlighted line timing.\nResets when the track changes.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -304,7 +305,7 @@ public struct LyricsPane: View {
             if self.vm.isFetching {
                 ProgressView()
                     .controlSize(.small)
-                    .help("Fetching from LRClib\u{2026}")
+                    .help(L10n.string("Fetching from LRClib\u{2026}"))
             } else {
                 Button {
                     self.vm.forceFetch()
@@ -312,8 +313,8 @@ public struct LyricsPane: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.plain)
-                .help("Replace with LRClib result")
-                .accessibilityLabel("Replace lyrics with LRClib result")
+                .help(L10n.string("Replace with LRClib result"))
+                .accessibilityLabel(L10n.string("Replace lyrics with LRClib result"))
                 .accessibilityIdentifier(A11y.Lyrics.replaceButton)
             }
         }

@@ -86,16 +86,16 @@ public final class LyricsViewModel: ObservableObject {
     public var documentSourceLabel: String? {
         switch self.documentSource {
         case "embedded":
-            "Embedded"
+            L10n.string("Embedded")
 
         case "sidecar":
-            "Sidecar"
+            L10n.string("Sidecar")
 
         case "lrclib":
             "LRClib"
 
         case "user":
-            "Edited"
+            L10n.string("Edited")
 
         default:
             nil
@@ -331,16 +331,16 @@ public enum LyricsFontSize: String, CaseIterable, Sendable {
     public var fullName: String {
         switch self {
         case .small:
-            "Small"
+            L10n.string("Small")
 
         case .medium:
-            "Medium"
+            L10n.string("Medium")
 
         case .large:
-            "Large"
+            L10n.string("Large")
 
         case .extraLarge:
-            "Extra Large"
+            L10n.string("Extra Large")
         }
     }
 }
