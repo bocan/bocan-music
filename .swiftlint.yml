@@ -89,6 +89,8 @@ custom_rules:
     severity: error
     included:
       - "Modules/UI/Sources/UI/Browse/.*\\.swift"
+      - "Modules/UI/Sources/UI/Playlists/[^/]*\\.swift"
+      - "Modules/UI/Sources/UI/Playlists/ViewModels/.*\\.swift"
       - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
       - "Modules/UI/Sources/UI/Settings/GeneralSettingsView\\.swift"
       - "Modules/UI/Sources/UI/Settings/AppearanceSettingsView\\.swift"

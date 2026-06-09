@@ -20,13 +20,13 @@ struct AccentColorSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("Accent Colour — \(self.node.name)")
+            Text(localized: "Accent Colour — \(self.node.name)")
                 .font(Typography.title)
                 .lineLimit(1)
 
             HStack(spacing: 16) {
                 ColorPicker(selection: self.$color, supportsOpacity: false) {
-                    Text("Colour")
+                    Text(localized: "Colour")
                 }
 
                 RoundedRectangle(cornerRadius: Theme.cornerRadiusSmall)
@@ -39,24 +39,24 @@ struct AccentColorSheet: View {
             }
 
             HStack {
-                Button("Remove Colour") {
+                Button(L10n.string("Remove Colour")) {
                     Task {
                         await self.onSave(nil)
                         self.dismiss()
                     }
                 }
                 .buttonStyle(.bordered)
-                .help("Remove the custom accent colour from this playlist")
+                .help(L10n.string("Remove the custom accent colour from this playlist"))
 
                 Spacer()
 
-                Button("Cancel") {
+                Button(L10n.string("Cancel")) {
                     self.dismiss()
                 }
                 .buttonStyle(.bordered)
                 .keyboardShortcut(.cancelAction)
 
-                Button("Save") {
+                Button(L10n.string("Save")) {
                     Task {
                         let hex = self.color.toHex()
                         await self.onSave(hex)
@@ -69,6 +69,6 @@ struct AccentColorSheet: View {
         }
         .padding(24)
         .frame(minWidth: 320)
-        .accessibilityLabel("Set accent colour for \(self.node.name)")
+        .accessibilityLabel(L10n.string("Set accent colour for \(self.node.name)"))
     }
 }

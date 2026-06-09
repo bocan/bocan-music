@@ -55,25 +55,25 @@ public struct PlaylistHeader: View {
 
             HStack(spacing: 8) {
                 Button(action: self.playAction) {
-                    Label("Play", systemImage: "play.fill")
+                    Label(L10n.string("Play"), systemImage: "play.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(self.trackCount == 0)
-                .help("Play this playlist in order")
-                .accessibilityLabel("Play")
-                .accessibilityHint("Starts playback from the first track in this playlist")
+                .help(L10n.string("Play this playlist in order"))
+                .accessibilityLabel(L10n.string("Play"))
+                .accessibilityHint(L10n.string("Starts playback from the first track in this playlist"))
                 .accessibilityIdentifier(A11y.PlaylistDetail.playButton)
 
                 Button(action: self.shuffleAction) {
-                    Label("Shuffle", systemImage: "shuffle")
+                    Label(L10n.string("Shuffle"), systemImage: "shuffle")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(self.trackCount == 0)
-                .help("Shuffle and play this playlist")
-                .accessibilityLabel("Shuffle")
-                .accessibilityHint("Starts playback in shuffled order")
+                .help(L10n.string("Shuffle and play this playlist"))
+                .accessibilityLabel(L10n.string("Shuffle"))
+                .accessibilityHint(L10n.string("Starts playback in shuffled order"))
                 .accessibilityIdentifier(A11y.PlaylistDetail.shuffleButton)
             }
         }

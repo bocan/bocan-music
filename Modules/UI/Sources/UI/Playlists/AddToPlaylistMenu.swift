@@ -22,8 +22,8 @@ public struct AddToPlaylistMenu: View {
     }
 
     public var body: some View {
-        Menu("Add to Playlist") {
-            Button("New Playlist from Selection…", action: self.onNewPlaylistFromSelection)
+        Menu(L10n.string("Add to Playlist")) {
+            Button(L10n.string("New Playlist from Selection…"), action: self.onNewPlaylistFromSelection)
             if !self.nodes.isEmpty {
                 Divider()
                 ForEach(self.nodes, id: \.id) { node in
@@ -42,7 +42,7 @@ public struct AddToPlaylistMenu: View {
                     AnyView(self.menuItem(for: child))
                 }
                 if node.children.isEmpty {
-                    Text("Empty folder")
+                    Text(localized: "Empty folder")
                         .foregroundStyle(.secondary)
                 }
             }

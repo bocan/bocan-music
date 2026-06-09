@@ -41,14 +41,14 @@ public struct NewPlaylistSheet: View {
                 .foregroundStyle(Color.textPrimary)
 
             Form {
-                TextField("Name", text: self.$name)
+                TextField(L10n.string("Name"), text: self.$name)
                     .focused(self.$nameFocused)
                     .accessibilityIdentifier(A11y.PlaylistSidebar.newNameField)
                     .onSubmit { Task { await self.commit() } }
 
                 if self.kind == .playlist {
-                    Picker("Folder", selection: self.$selectedParentID) {
-                        Text("Top Level").tag(nil as Int64?)
+                    Picker(L10n.string("Folder"), selection: self.$selectedParentID) {
+                        Text(localized: "Top Level").tag(nil as Int64?)
                         ForEach(self.availableFolders, id: \.id) { folder in
                             Text(folder.name).tag(Optional(folder.id))
                         }
@@ -56,11 +56,11 @@ public struct NewPlaylistSheet: View {
 
                     if self.pendingSelectionCount > 0 {
                         Toggle(
-                            "From selection (\(self.pendingSelectionCount) track\(self.pendingSelectionCount == 1 ? "" : "s"))",
+                            L10n.string("From selection (\(self.pendingSelectionCount) tracks)"),
                             isOn: self.$includeSelection
                         )
-                        .help("Preload this playlist with the current track selection")
-                        .accessibilityLabel("Create from current selection")
+                        .help(L10n.string("Preload this playlist with the current track selection"))
+                        .accessibilityLabel(L10n.string("Create from current selection"))
                     }
                 }
             }
@@ -68,9 +68,9 @@ public struct NewPlaylistSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) { self.isPresented = false }
+                Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
-                Button("Create") { Task { await self.commit() } }
+                Button(L10n.string("Create")) { Task { await self.commit() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.trimmed.isEmpty || self.isCommitting)
             }
@@ -89,10 +89,10 @@ public struct NewPlaylistSheet: View {
     private var title: String {
         switch self.kind {
         case .playlist:
-            "New Playlist"
+            L10n.string("New Playlist")
 
         case .folder:
-            "New Folder"
+            L10n.string("New Folder")
         }
     }
 
@@ -121,7 +121,7 @@ public struct NewPlaylistSheet: View {
             formatter.calendar = Calendar(identifier: .gregorian)
             formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.dateFormat = "yyyy-MM-dd"
-            let fallback = "New Playlist \(formatter.string(from: Date()))"
+            let fallback = L10n.string("New Playlist \(formatter.string(from: Date()))")
             self.suggestedName = fallback
             if self.trimmed.isEmpty {
                 self.name = fallback

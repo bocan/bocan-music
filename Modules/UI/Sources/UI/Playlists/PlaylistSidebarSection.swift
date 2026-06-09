@@ -24,7 +24,7 @@ public struct PlaylistSidebarSection: View {
         Section {
             if !self.isCollapsed {
                 if self.vm.nodes.isEmpty {
-                    Text("No playlists yet")
+                    Text(localized: "No playlists yet")
                         .font(Typography.footnote)
                         .foregroundStyle(Color.textTertiary)
                         .padding(.vertical, 2)
@@ -42,22 +42,22 @@ public struct PlaylistSidebarSection: View {
                     }
                 } label: {
                     HStack(spacing: 4) {
-                        Text("Playlists")
+                        Text(localized: "Playlists")
                         Image(systemName: self.isCollapsed ? "chevron.down" : "chevron.up")
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundStyle(Color.textTertiary)
                     }
                 }
                 .buttonStyle(.plain)
-                .help(self.isCollapsed ? "Expand Playlists" : "Collapse Playlists")
-                .accessibilityLabel(self.isCollapsed ? "Expand Playlists" : "Collapse Playlists")
-                .accessibilityValue(self.isCollapsed ? "Collapsed" : "Expanded")
+                .help(self.isCollapsed ? L10n.string("Expand Playlists") : L10n.string("Collapse Playlists"))
+                .accessibilityLabel(self.isCollapsed ? L10n.string("Expand Playlists") : L10n.string("Collapse Playlists"))
+                .accessibilityValue(self.isCollapsed ? L10n.string("Collapsed") : L10n.string("Expanded"))
 
                 Spacer()
                 Menu {
-                    Button("New Playlist") { self.vm.beginNewPlaylist() }
-                    Button("New Smart Playlist") { self.vm.beginNewSmartPlaylist() }
-                    Button("New Folder") { self.vm.beginNewFolder() }
+                    Button(L10n.string("New Playlist")) { self.vm.beginNewPlaylist() }
+                    Button(L10n.string("New Smart Playlist")) { self.vm.beginNewSmartPlaylist() }
+                    Button(L10n.string("New Folder")) { self.vm.beginNewFolder() }
                 } label: {
                     Image(systemName: "plus")
                         .font(Typography.footnote)
@@ -65,8 +65,8 @@ public struct PlaylistSidebarSection: View {
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
                 .fixedSize()
-                .help("Create a new playlist, smart playlist, or folder")
-                .accessibilityLabel("New Playlist or Folder")
+                .help(L10n.string("Create a new playlist, smart playlist, or folder"))
+                .accessibilityLabel(L10n.string("New Playlist or Folder"))
                 .accessibilityIdentifier(A11y.PlaylistSidebar.addButton)
             }
         }
@@ -271,38 +271,39 @@ private struct DeleteDialogsModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .confirmationDialog(
-                "Delete Playlist",
+                L10n.string("Delete Playlist"),
                 isPresented: Binding(
                     get: { self.vm.deleteTarget != nil },
                     set: { newValue in if !newValue { self.vm.deleteTarget = nil } }
                 ),
                 presenting: self.vm.deleteTarget
             ) { target in
-                Button("Delete", role: .destructive) {
+                Button(L10n.string("Delete"), role: .destructive) {
                     Task { await self.vm.delete(target) }
                 }
-                Button("Cancel", role: .cancel) {
+                Button(L10n.string("Cancel"), role: .cancel) {
                     self.vm.deleteTarget = nil
                 }
             } message: { target in
-                Text("Delete \"\(target.name)\"? Tracks remain in your library.")
+                Text(localized: "Delete \"\(target.name)\"? Tracks remain in your library.")
             }
             .confirmationDialog(
-                "Delete Folder and Contents",
+                L10n.string("Delete Folder and Contents"),
                 isPresented: Binding(
                     get: { self.vm.deleteRecursiveTarget != nil },
                     set: { newValue in if !newValue { self.vm.deleteRecursiveTarget = nil } }
                 ),
                 presenting: self.vm.deleteRecursiveTarget
             ) { target in
-                Button("Delete Folder and Contents", role: .destructive) {
+                Button(L10n.string("Delete Folder and Contents"), role: .destructive) {
                     Task { await self.vm.delete(target, recursive: true) }
                 }
-                Button("Cancel", role: .cancel) {
+                Button(L10n.string("Cancel"), role: .cancel) {
                     self.vm.deleteRecursiveTarget = nil
                 }
             } message: { target in
-                Text("Delete \"\(target.name)\" and all playlists inside it? This cannot be undone. Tracks remain in your library.")
+                Text(localized:
+                    "Delete \"\(target.name)\" and all playlists inside it? This cannot be undone. Tracks remain in your library.")
             }
     }
 }
@@ -327,13 +328,13 @@ private struct SidebarErrorAlertModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content.alert(
-            "Playlist Error",
+            L10n.string("Playlist Error"),
             isPresented: Binding(
                 get: { self.vm.lastError != nil },
                 set: { if !$0 { self.vm.lastError = nil } }
             )
         ) {
-            Button("OK") { self.vm.lastError = nil }
+            Button(L10n.string("OK")) { self.vm.lastError = nil }
         } message: {
             Text(self.vm.lastError ?? "")
         }

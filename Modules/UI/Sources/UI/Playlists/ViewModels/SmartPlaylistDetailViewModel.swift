@@ -76,7 +76,7 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
             }
         } catch {
             self.log.error("smartPlaylist.detail.load.failed", ["error": String(reflecting: error)])
-            self.lastError = "Could not load smart playlist."
+            self.lastError = L10n.string("Could not load smart playlist.")
             self.isLoading = false
         }
     }
@@ -94,7 +94,7 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
             self.tracks = try await self.service.tracks(for: id)
         } catch {
             self.log.error("smartPlaylist.refresh.failed", ["error": String(reflecting: error)])
-            self.lastError = "Could not refresh playlist."
+            self.lastError = L10n.string("Could not refresh playlist.")
         }
     }
 
@@ -118,7 +118,7 @@ public final class SmartPlaylistDetailViewModel: ObservableObject {
                     // Task cancellation is normal when the view dismisses — don't report it as an error.
                     guard !(error is CancellationError) else { return }
                     self.log.error("smartPlaylist.observe.failed", ["error": String(reflecting: error)])
-                    self.lastError = "Live updates unavailable."
+                    self.lastError = L10n.string("Live updates unavailable.")
                 }
             }
         }

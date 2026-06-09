@@ -18,11 +18,11 @@ public struct RenamePlaylistSheet: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Rename")
+            Text(localized: "Rename")
                 .font(Typography.title)
 
             Form {
-                TextField("Name", text: self.$name)
+                TextField(L10n.string("Name"), text: self.$name)
                     .focused(self.$nameFocused)
                     .onSubmit { Task { await self.commit() } }
             }
@@ -30,9 +30,9 @@ public struct RenamePlaylistSheet: View {
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) { self.target = nil }
+                Button(L10n.string("Cancel"), role: .cancel) { self.target = nil }
                     .keyboardShortcut(.cancelAction)
-                Button("Rename") { Task { await self.commit() } }
+                Button(L10n.string("Rename")) { Task { await self.commit() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
