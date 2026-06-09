@@ -109,6 +109,37 @@ struct L10nTests {
         #expect(removeAlbums.one == "Remove %lld album from library?")
     }
 
+    @Test("'Keep %lld backups' stepper pluralizes (#314)")
+    func keepBackupsPlural() throws {
+        let variation = try #require(self.plural("Keep %lld backups", in: self.catalog()))
+        #expect(variation.one == "Keep %lld backup")
+        #expect(variation.other == "Keep %lld backups")
+    }
+
+    @Test(
+        "Phase 3 Settings panes route copy through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/Settings/GeneralSettingsView.swift",
+            "Sources/UI/Settings/AppearanceSettingsView.swift",
+            "Sources/UI/Settings/PlaybackSettingsView.swift",
+            "Sources/UI/Settings/LibrarySettingsView.swift",
+            "Sources/UI/Settings/SettingsScene.swift",
+            "Sources/UI/Settings/AboutView.swift",
+            "Sources/UI/Settings/SubsonicSettingsView.swift",
+            "Sources/UI/Settings/SubsonicSettingsViewModel.swift",
+            "Sources/UI/Settings/DiagnosticsSettingsView.swift",
+            "Sources/UI/Settings/AdvancedSettingsView.swift",
+            "Sources/UI/Settings/BackupSettingsViewModel.swift",
+            "Sources/UI/Settings/SmartPlaylistsSettingsView.swift",
+            "Sources/UI/Settings/DSPSettingsView.swift",
+        ]
+    )
+    func phase3SettingsUsesHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test(
         "Phase 2 Browse routes copy through the localization helper (#314)",
         arguments: [

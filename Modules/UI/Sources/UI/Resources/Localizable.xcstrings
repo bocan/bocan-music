@@ -1,6 +1,168 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "(unreadable)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(unreadable)"
+          }
+        }
+      }
+    },
+    "Attach a report to a GitHub issue to help diagnose a problem." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Attach a report to a GitHub issue to help diagnose a problem."
+          }
+        }
+      }
+    },
+    "Capture has no effect on external log tools such as Console.app." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture has no effect on external log tools such as Console.app."
+          }
+        }
+      }
+    },
+    "Diagnostic reports are stored locally on this Mac and only shared when you choose to." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diagnostic reports are stored locally on this Mac and only shared when you choose to."
+          }
+        }
+      }
+    },
+    "Disabling stops new entries from being captured; system log output via Console.app is unaffected." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disabling stops new entries from being captured; system log output via Console.app is unaffected."
+          }
+        }
+      }
+    },
+    "Green ✓ = pass, Red ✗ = fail." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Green ✓ = pass, Red ✗ = fail."
+          }
+        }
+      }
+    },
+    "Mass auto-refresh interval for snapshot playlists is intentionally not user-configurable yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mass auto-refresh interval for snapshot playlists is intentionally not user-configurable yet."
+          }
+        }
+      }
+    },
+    "Never" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Never"
+          }
+        }
+      }
+    },
+    "No personal data leaves your Mac without your permission." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No personal data leaves your Mac without your permission."
+          }
+        }
+      }
+    },
+    "Normal text requires ≥ 4.5 : 1; non-text UI components require ≥ 3 : 1." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Normal text requires ≥ 4.5 : 1; non-text UI components require ≥ 3 : 1."
+          }
+        }
+      }
+    },
+    "Reports are stored in ~/Library/Logs/Bocan/diagnostics/." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reports are stored in ~/Library/Logs/Bocan/diagnostics/."
+          }
+        }
+      }
+    },
+    "Snapshot mode remains on-demand (Refresh now) until a dedicated scheduler design lands." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Snapshot mode remains on-demand (Refresh now) until a dedicated scheduler design lands."
+          }
+        }
+      }
+    },
+    "The in-memory buffer holds the most recent %lld entries since launch." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The in-memory buffer holds the most recent %lld entries since launch."
+          }
+        }
+      }
+    },
+    "When enabled, log entries are captured to an in-memory ring buffer for the Log Console." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When enabled, log entries are captured to an in-memory ring buffer for the Log Console."
+          }
+        }
+      }
+    },
+    "Keep %lld backups" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Keep %lld backup"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Keep %lld backups"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "API key is required." : {
       "localizations" : {
         "en" : {
