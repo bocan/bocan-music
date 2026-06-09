@@ -34,6 +34,7 @@ The mini-player and other secondary windows call `.commandsRemoved()` so SwiftUI
 - The **View menu** is the system one: `SidebarCommands()` plus `CommandGroup(after: .sidebar)`, not a custom `CommandMenu("View")` (a custom one risks a duplicate next to the system View menu). Window/Edit standard groups (Cut/Copy/Paste in `.pasteboard`, Undo/Redo in `.undoRedo`, Zoom in the Window menu) are left intact; only `.textEditing` is replaced so Cmd-F focuses the library search.
 - This file sits at the SwiftLint **500-line `file_length` limit**. Adding items usually means trimming a comment elsewhere; do not add a `swiftlint:disable`.
 - To open a specific Settings page from a menu item (or any button), use the injected `SettingsRouter`: `settingsRouter.open(.page); openSettings()`. The router persists the request so it survives a first-ever Settings open. See `Modules/UI/Sources/UI/Settings/SettingsRouter.swift`.
+- **Localization: do not add new user-facing copy to `App/`.** The app target has no String Catalog, so a literal here ships English-only and is invisible to the `UI` module's lint guard and `L10nTests`. New user-facing surfaces belong in the `UI` module, where copy routes through `L10n` and is enforced in CI (see the root `CLAUDE.md` and `docs/design-spec/localization.md`). If copy genuinely must live in `App/` (menu items are the main case), add an app-target String Catalog and route the copy through it in the same change; never extend the unlocalized status quo.
 
 ## Adapters: how the module DAG stays acyclic
 
