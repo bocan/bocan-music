@@ -18,35 +18,38 @@ public struct SmartPlaylistsSettingsView: View {
 
     public var body: some View {
         Form {
-            Section("Defaults") {
-                Toggle("New smart playlists use live update", isOn: self.$defaultLiveUpdate)
-                    .help("If off, new smart playlists start in snapshot mode and only change on Refresh now")
+            Section(L10n.string("Defaults")) {
+                Toggle(L10n.string("New smart playlists use live update"), isOn: self.$defaultLiveUpdate)
+                    .help(L10n.string("If off, new smart playlists start in snapshot mode and only change on Refresh now"))
             }
 
-            Section("Live Observation") {
+            Section(L10n.string("Live Observation")) {
                 Stepper(value: self.$observeDebounceMilliseconds, in: 0 ... 5000, step: 25) {
-                    Text("Debounce window: \(self.observeDebounceMilliseconds) ms")
+                    Text(localized: "Debounce window: \(self.observeDebounceMilliseconds) ms")
                 }
-                .help("Minimum delay before publishing live smart-playlist updates")
+                .help(L10n.string("Minimum delay before publishing live smart-playlist updates"))
             }
 
-            Section("Random Sort") {
-                Toggle("Re-roll random order on app launch", isOn: self.$randomRerollOnLaunch)
-                    .help("When enabled, smart playlists sorted by Random use a per-launch seed")
+            Section(L10n.string("Random Sort")) {
+                Toggle(L10n.string("Re-roll random order on app launch"), isOn: self.$randomRerollOnLaunch)
+                    .help(L10n.string("When enabled, smart playlists sorted by Random use a per-launch seed"))
             }
 
-            Section("Not Exposed Yet") {
-                Text(
-                    "Mass auto-refresh interval for snapshot playlists is intentionally " +
-                        "not user-configurable yet. Snapshot mode remains on-demand " +
-                        "(Refresh now) until a dedicated scheduler design lands."
-                )
-                .font(Typography.caption)
-                .foregroundStyle(Color.textSecondary)
+            Section(L10n.string("Not Exposed Yet")) {
+                Text(self.notExposedFooter)
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textSecondary)
             }
         }
         .formStyle(.grouped)
         .padding()
         .frame(minWidth: 440, minHeight: 320)
+    }
+
+    /// Multi-sentence copy as two sentence keys joined in code (#314).
+    private var notExposedFooter: String {
+        L10n.string("Mass auto-refresh interval for snapshot playlists is intentionally not user-configurable yet.")
+            + " "
+            + L10n.string("Snapshot mode remains on-demand (Refresh now) until a dedicated scheduler design lands.")
     }
 }

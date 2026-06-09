@@ -22,7 +22,7 @@ public struct EQSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Equaliser")
+        .navigationTitle(L10n.string("Equaliser"))
     }
 }
 
@@ -36,7 +36,7 @@ public struct EffectsSettingsView: View {
 
     public var body: some View {
         DSPView(vm: self.dsp)
-            .navigationTitle("Effects")
+            .navigationTitle(L10n.string("Effects"))
     }
 }
 
@@ -50,6 +50,6 @@ public struct ReplayGainSettingsTabView: View {
 
     public var body: some View {
         ReplayGainSettingsView(vm: self.dsp)
-            .navigationTitle("ReplayGain")
+            .navigationTitle(L10n.string("ReplayGain"))
     }
 }

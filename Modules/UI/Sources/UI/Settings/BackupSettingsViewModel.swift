@@ -129,7 +129,7 @@ public final class BackupSettingsViewModel {
 
     /// Human-readable description of the last iCloud backup time.
     public var lastBackupDescription: String {
-        guard let date = self.lastBackupDate else { return "Never" }
+        guard let date = self.lastBackupDate else { return L10n.string("Never") }
         let fmt = RelativeDateTimeFormatter()
         fmt.unitsStyle = .full
         return fmt.localizedString(for: date, relativeTo: Date())
@@ -137,7 +137,7 @@ public final class BackupSettingsViewModel {
 
     /// Human-readable description of the last local backup time.
     public var lastLocalBackupDescription: String {
-        guard let date = self.lastLocalBackupDate else { return "Never" }
+        guard let date = self.lastLocalBackupDate else { return L10n.string("Never") }
         let fmt = RelativeDateTimeFormatter()
         fmt.unitsStyle = .full
         return fmt.localizedString(for: date, relativeTo: Date())

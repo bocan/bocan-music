@@ -14,12 +14,12 @@ public struct AdvancedSettingsView: View {
 
     public var body: some View {
         Form {
-            Section("iCloud Backup") {
-                Toggle("Back up library database to iCloud Drive on launch", isOn: self.$backupVM.isEnabled)
+            Section(L10n.string("iCloud Backup")) {
+                Toggle(L10n.string("Back up library database to iCloud Drive on launch"), isOn: self.$backupVM.isEnabled)
                     .disabled(!self.backupVM.iCloudAvailable)
-                    .help("Keeps up to 3 rolling backups in iCloud Drive › Documents › Bocan.")
+                    .help(L10n.string("Keeps up to 3 rolling backups in iCloud Drive › Documents › Bocan."))
 
-                LabeledContent("Last backup") {
+                LabeledContent(L10n.string("Last backup")) {
                     Text(self.backupVM.lastBackupDescription)
                         .foregroundStyle(.secondary)
                 }
@@ -30,17 +30,18 @@ public struct AdvancedSettingsView: View {
                     if self.backupVM.isBackingUp {
                         HStack(spacing: 6) {
                             ProgressView().controlSize(.small)
-                            Text("Backing up…")
+                            Text(localized: "Backing up…")
                         }
                     } else {
-                        Text("Back Up Now")
+                        Text(localized: "Back Up Now")
                     }
                 }
                 .disabled(!self.backupVM.iCloudAvailable || self.backupVM.isBackingUp)
-                .help("Writes a consistent snapshot using the SQLite backup API.")
+                .help(L10n.string("Writes a consistent snapshot using the SQLite backup API."))
 
                 if !self.backupVM.iCloudAvailable {
-                    Text("iCloud Drive is not available on this Mac. Sign in to iCloud in System Settings to enable backups.")
+                    Text(localized:
+                        "iCloud Drive is not available on this Mac. Sign in to iCloud in System Settings to enable backups.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -53,18 +54,18 @@ public struct AdvancedSettingsView: View {
             }
             .task { await self.backupVM.load() }
 
-            Section("Local Backup") {
-                Toggle("Back up library database to local storage on launch", isOn: self.$backupVM.isLocalEnabled)
-                    .help("Saves a rolling set of backups to ~/Library/Application Support/Bocan/Backups/.")
+            Section(L10n.string("Local Backup")) {
+                Toggle(L10n.string("Back up library database to local storage on launch"), isOn: self.$backupVM.isLocalEnabled)
+                    .help(L10n.string("Saves a rolling set of backups to ~/Library/Application Support/Bocan/Backups/."))
 
                 Stepper(
-                    "Keep \(self.backupVM.localKeepCount) backup\(self.backupVM.localKeepCount == 1 ? "" : "s")",
+                    L10n.string("Keep \(self.backupVM.localKeepCount) backups"),
                     value: self.$backupVM.localKeepCount,
                     in: 1 ... 20
                 )
-                .help("How many local backup files to retain. Older ones are deleted automatically.")
+                .help(L10n.string("How many local backup files to retain. Older ones are deleted automatically."))
 
-                LabeledContent("Last backup") {
+                LabeledContent(L10n.string("Last backup")) {
                     Text(self.backupVM.lastLocalBackupDescription)
                         .foregroundStyle(.secondary)
                 }
@@ -76,21 +77,21 @@ public struct AdvancedSettingsView: View {
                         if self.backupVM.isLocalBackingUp {
                             HStack(spacing: 6) {
                                 ProgressView().controlSize(.small)
-                                Text("Backing up…")
+                                Text(localized: "Backing up…")
                             }
                         } else {
-                            Text("Back Up Now")
+                            Text(localized: "Back Up Now")
                         }
                     }
                     .disabled(self.backupVM.isLocalBackingUp)
-                    .help("Writes a consistent snapshot to the local backup folder.")
+                    .help(L10n.string("Writes a consistent snapshot to the local backup folder."))
 
-                    Button("Show in Finder") {
+                    Button(L10n.string("Show in Finder")) {
                         NSWorkspace.shared.activateFileViewerSelecting(
                             [self.backupVM.localBackupDirectory]
                         )
                     }
-                    .help("Opens ~/Library/Application Support/Bocan/Backups/ in Finder.")
+                    .help(L10n.string("Opens ~/Library/Application Support/Bocan/Backups/ in Finder."))
                 }
 
                 if let err = self.backupVM.localErrorMessage {
@@ -100,50 +101,50 @@ public struct AdvancedSettingsView: View {
                 }
             }
 
-            Section("Logging") {
-                Picker("Log level", selection: self.$logLevel) {
-                    Text("Debug").tag("debug")
-                    Text("Info").tag("info")
-                    Text("Warning").tag("warning")
-                    Text("Error").tag("error")
+            Section(L10n.string("Logging")) {
+                Picker(L10n.string("Log level"), selection: self.$logLevel) {
+                    Text(localized: "Debug").tag("debug")
+                    Text(localized: "Info").tag("info")
+                    Text(localized: "Warning").tag("warning")
+                    Text(localized: "Error").tag("error")
                 }
             }
 
-            Section("Database") {
-                Button("Reveal Database in Finder") {
+            Section(L10n.string("Database")) {
+                Button(L10n.string("Reveal Database in Finder")) {
                     self.revealDatabase()
                 }
 
-                Button("Rebuild Full-Text Search Index") {
+                Button(L10n.string("Rebuild Full-Text Search Index")) {
                     // Phase 11 will implement this
                 }
                 .disabled(true)
-                .help("Not yet available")
+                .help(L10n.string("Not yet available"))
             }
 
-            Section("Reset") {
-                Button("Reset All Preferences…") {
+            Section(L10n.string("Reset")) {
+                Button(L10n.string("Reset All Preferences…")) {
                     self.showResetConfirm = true
                 }
                 .foregroundStyle(.red)
                 .confirmationDialog(
-                    "Reset all preferences?",
+                    L10n.string("Reset all preferences?"),
                     isPresented: self.$showResetConfirm,
                     titleVisibility: .visible
                 ) {
-                    Button("Reset", role: .destructive) { self.resetPreferences() }
-                    Button("Cancel", role: .cancel) {}
+                    Button(L10n.string("Reset"), role: .destructive) { self.resetPreferences() }
+                    Button(L10n.string("Cancel"), role: .cancel) {}
                 } message: {
-                    Text("This cannot be undone. Bòcan will restart with default settings.")
+                    Text(localized: "This cannot be undone. Bòcan will restart with default settings.")
                 }
 
-                Button("Export Diagnostics…") {
+                Button(L10n.string("Export Diagnostics…")) {
                     self.exportDiagnostics()
                 }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Advanced")
+        .navigationTitle(L10n.string("Advanced"))
     }
 
     // MARK: - Actions
