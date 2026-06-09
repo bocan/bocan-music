@@ -122,7 +122,7 @@ public extension LibraryViewModel {
             return .trashed
         } catch {
             self.log.error("library.deleteFromDisk.failed", ["id": id, "error": String(reflecting: error)])
-            self.playbackErrorMessage = "Could not delete the file from disk: \(error.localizedDescription)"
+            self.playbackErrorMessage = L10n.string("Could not delete the file from disk: \(error.localizedDescription)")
             return .failed(error: error)
         }
     }
@@ -139,7 +139,7 @@ public extension LibraryViewModel {
         do {
             var track = try await trackRepo.fetch(id: id)
             guard let url = URL(string: track.fileURL) else {
-                self.playbackErrorMessage = "Could not delete: the file path is invalid."
+                self.playbackErrorMessage = L10n.string("Could not delete: the file path is invalid.")
                 return
             }
             try fileOps.remove(url)
@@ -153,7 +153,7 @@ public extension LibraryViewModel {
                 "library.permanentlyDeleteFromDisk.failed",
                 ["id": id, "error": String(reflecting: error)]
             )
-            self.playbackErrorMessage = "Could not permanently delete the file: \(error.localizedDescription)"
+            self.playbackErrorMessage = L10n.string("Could not permanently delete the file: \(error.localizedDescription)")
         }
     }
 

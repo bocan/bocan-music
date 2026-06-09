@@ -15,7 +15,7 @@ public extension LibraryViewModel {
     /// `.subsonic` source to a local playable URL on demand.
     func play(subsonicSongs songs: [Song], serverID: UUID, startingAt index: Int = 0) async {
         guard let qp = self.queuePlayer else {
-            self.playbackErrorMessage = "Playback engine isn't available."
+            self.playbackErrorMessage = L10n.string("Playback engine isn't available.")
             return
         }
         guard !songs.isEmpty else { return }
@@ -25,7 +25,7 @@ public extension LibraryViewModel {
             try await qp.play(items: items, startingAt: safeIndex, shuffle: self.nowPlaying.shuffleOn)
         } catch {
             let title = songs[safeIndex].title
-            self.playbackErrorMessage = "Could not play \"\(title)\" from this server."
+            self.playbackErrorMessage = L10n.string("Could not play \"\(title)\" from this server.")
         }
     }
 
@@ -37,8 +37,8 @@ public extension LibraryViewModel {
         let items = payloads.map { QueueItem.makeSubsonic(from: $0) }
         await qp.addToQueue(items: items)
         let text = payloads.count == 1
-            ? "Added \u{201C}\(payloads[0].title)\u{201D} to Up Next"
-            : "Added \(payloads.count) songs to Up Next"
+            ? L10n.string("Added \u{201C}\(payloads[0].title)\u{201D} to Up Next")
+            : L10n.string("Added \(payloads.count) songs to Up Next")
         self.showToast(.init(text: text, kind: .success))
     }
 
@@ -48,18 +48,18 @@ public extension LibraryViewModel {
     /// support seek — the engine simply reads frames as they arrive.
     func play(internetRadioStation station: InternetRadioStation, serverID: UUID) async {
         guard let qp = self.queuePlayer else {
-            self.playbackErrorMessage = "Playback engine isn't available."
+            self.playbackErrorMessage = L10n.string("Playback engine isn't available.")
             return
         }
         guard let url = URL(string: station.streamUrl) else {
-            self.playbackErrorMessage = "\u{201C}\(station.name)\u{201D} has no valid stream URL."
+            self.playbackErrorMessage = L10n.string("\u{201C}\(station.name)\u{201D} has no valid stream URL.")
             return
         }
         let item = QueueItem.makeInternetRadio(station: station, serverID: serverID, streamURL: url)
         do {
             try await qp.play(items: [item], startingAt: 0, shuffle: false)
         } catch {
-            self.playbackErrorMessage = "Could not start \u{201C}\(station.name)\u{201D}."
+            self.playbackErrorMessage = L10n.string("Could not start \u{201C}\(station.name)\u{201D}.")
         }
     }
 
@@ -68,7 +68,7 @@ public extension LibraryViewModel {
     /// queue stamps the right server on each `QueueItem`.
     func play(subsonicMultiSource hits: [SubsonicSongHit], startingAt index: Int = 0) async {
         guard let qp = self.queuePlayer else {
-            self.playbackErrorMessage = "Playback engine isn't available."
+            self.playbackErrorMessage = L10n.string("Playback engine isn't available.")
             return
         }
         guard !hits.isEmpty else { return }
@@ -78,7 +78,7 @@ public extension LibraryViewModel {
             try await qp.play(items: queueItems, startingAt: safeIndex, shuffle: self.nowPlaying.shuffleOn)
         } catch {
             let title = hits[safeIndex].song.title
-            self.playbackErrorMessage = "Could not play \"\(title)\" from this server."
+            self.playbackErrorMessage = L10n.string("Could not play \"\(title)\" from this server.")
         }
     }
 }
@@ -108,7 +108,7 @@ extension QueueItem {
             duration: 0,
             sourceFormat: fmt,
             title: station.name,
-            artistName: "Internet Radio",
+            artistName: L10n.string("Internet Radio"),
             albumName: station.homePageUrl,
             genre: nil,
             playableSource: .internetRadio(streamURL: streamURL)

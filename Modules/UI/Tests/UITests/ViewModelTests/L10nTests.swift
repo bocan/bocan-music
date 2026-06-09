@@ -155,6 +155,32 @@ struct L10nTests {
         #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
     }
 
+    @Test("Up Next toast pluralizes (#314)")
+    func upNextToastPlural() throws {
+        let variation = try #require(self.plural("Added %lld songs to Up Next", in: self.catalog()))
+        #expect(variation.one == "Added %lld song to Up Next")
+        #expect(variation.other == "Added %lld songs to Up Next")
+    }
+
+    @Test(
+        "View-model copy routes through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/ViewModels/LibraryViewModel.swift",
+            "Sources/UI/ViewModels/LibraryViewModel+Delete.swift",
+            "Sources/UI/ViewModels/LibraryViewModel+Scanning.swift",
+            "Sources/UI/ViewModels/LibraryViewModel+Subsonic.swift",
+            "Sources/UI/ViewModels/LibraryViewModel+PlaylistDrop.swift",
+            "Sources/UI/ViewModels/NowPlayingViewModel.swift",
+            "Sources/UI/ViewModels/TracksViewModel.swift",
+            "Sources/UI/Visualizers/ViewModels/VisualizerViewModel.swift",
+        ]
+    )
+    func viewModelCopyUsesHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test("Phase 3 plural keys collapse to singular forms (#314)")
     func phase3Plurals() throws {
         let strings = try self.catalog()

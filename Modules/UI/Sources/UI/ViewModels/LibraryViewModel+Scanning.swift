@@ -29,8 +29,8 @@ public extension LibraryViewModel {
         // Phase 5.5 audit L1: spell out exactly what the panel accepts so users
         // aren't left wondering why "Open" became "Add" or what the file
         // filter does on the sibling files panel.
-        panel.message = "Choose one or more folders containing music to add to your library."
-        panel.prompt = "Add"
+        panel.message = L10n.string("Choose one or more folders containing music to add to your library.")
+        panel.prompt = L10n.string("Add")
         // Phase 5.5 audit L2: use non-blocking `begin(completionHandler:)`
         // instead of `runModal()` so the modal run loop doesn't starve the
         // audio render callback on slower machines.
@@ -53,8 +53,8 @@ public extension LibraryViewModel {
         // Phase 5.5 audit L1: explicitly list the accepted formats so the
         // greyed-out non-audio files in the panel don't look like a bug.
         panel.message =
-            "Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library."
-        panel.prompt = "Add"
+            L10n.string("Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library.")
+        panel.prompt = L10n.string("Add")
         // Phase 5.5 audit L2: non-blocking begin() — see `addFolderByPicker`.
         let response = await Self.runOpenPanelAsync(panel)
         guard response == .OK else { return }
@@ -370,17 +370,17 @@ public extension LibraryViewModel {
         do {
             let track = try await trackRepo.fetch(id: id)
             guard let url = URL(string: track.fileURL) else {
-                self.rescanErrorMessage = "Could not re-scan: the file path is invalid."
+                self.rescanErrorMessage = L10n.string("Could not re-scan: the file path is invalid.")
                 return
             }
             _ = try await scanner.scanSingleFile(url: url)
             await self.tracks.load()
             self.log.debug("library.rescanTrack", ["id": id])
             let title = track.title ?? url.lastPathComponent
-            self.showToast(ToastMessage(text: "Re-scanned “\(title)”", kind: .success))
+            self.showToast(ToastMessage(text: L10n.string("Re-scanned “\(title)”"), kind: .success))
         } catch {
             self.log.error("library.rescanTrack.failed", ["id": id, "error": String(reflecting: error)])
-            self.rescanErrorMessage = "Could not re-scan the file: \(error.localizedDescription)"
+            self.rescanErrorMessage = L10n.string("Could not re-scan the file: \(error.localizedDescription)")
         }
     }
 

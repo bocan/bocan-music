@@ -1,6 +1,338 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Could not play \"%@\". Try re-scanning your library." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not play \"%@\". Try re-scanning your library."
+          }
+        }
+      }
+    },
+    "Could not play tracks. Try re-scanning your library." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not play tracks. Try re-scanning your library."
+          }
+        }
+      }
+    },
+    "Could not play album." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not play album."
+          }
+        }
+      }
+    },
+    "Could not play artist." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not play artist."
+          }
+        }
+      }
+    },
+    "Could not delete the file from disk: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not delete the file from disk: %@"
+          }
+        }
+      }
+    },
+    "Could not delete: the file path is invalid." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not delete: the file path is invalid."
+          }
+        }
+      }
+    },
+    "Could not permanently delete the file: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not permanently delete the file: %@"
+          }
+        }
+      }
+    },
+    "Choose one or more folders containing music to add to your library." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose one or more folders containing music to add to your library."
+          }
+        }
+      }
+    },
+    "Add" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        }
+      }
+    },
+    "Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library."
+          }
+        }
+      }
+    },
+    "Could not re-scan: the file path is invalid." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not re-scan: the file path is invalid."
+          }
+        }
+      }
+    },
+    "Re-scanned “%@”" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Re-scanned “%@”"
+          }
+        }
+      }
+    },
+    "Could not re-scan the file: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not re-scan the file: %@"
+          }
+        }
+      }
+    },
+    "Playback engine isn't available." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Playback engine isn't available."
+          }
+        }
+      }
+    },
+    "Could not play \"%@\" from this server." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not play \"%@\" from this server."
+          }
+        }
+      }
+    },
+    "Added “%@” to Up Next" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added “%@” to Up Next"
+          }
+        }
+      }
+    },
+    "“%@” has no valid stream URL." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” has no valid stream URL."
+          }
+        }
+      }
+    },
+    "Could not start “%@”." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not start “%@”."
+          }
+        }
+      }
+    },
+    "Dropped Playlists – %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dropped Playlists – %@"
+          }
+        }
+      }
+    },
+    "Unknown Track" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unknown Track"
+          }
+        }
+      }
+    },
+    "15 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "15 min"
+          }
+        }
+      }
+    },
+    "30 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 min"
+          }
+        }
+      }
+    },
+    "45 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "45 min"
+          }
+        }
+      }
+    },
+    "1 hr" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 hr"
+          }
+        }
+      }
+    },
+    "1 hr 30 min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 hr 30 min"
+          }
+        }
+      }
+    },
+    "2 hr" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 hr"
+          }
+        }
+      }
+    },
+    "Time" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time"
+          }
+        }
+      }
+    },
+    "Switched to Spectrum Bars for performance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switched to Spectrum Bars for performance."
+          }
+        }
+      }
+    },
+    "Couldn't load configured servers: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load configured servers: %@"
+          }
+        }
+      }
+    },
+    "Save the server first, then test the connection." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save the server first, then test the connection."
+          }
+        }
+      }
+    },
+    "Failed to import %1$@: %2$@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to import %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Added %lld songs to Up Next" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Added %lld song to Up Next"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Added %lld songs to Up Next"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%@ files walked" : {
       "localizations" : {
         "en" : {

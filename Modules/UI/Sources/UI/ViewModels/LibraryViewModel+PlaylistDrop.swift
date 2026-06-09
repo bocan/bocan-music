@@ -19,7 +19,7 @@ extension LibraryViewModel {
             let formatter = DateFormatter()
             formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.dateFormat = "yyyy-MM-dd HH:mm"
-            let folderName = "Dropped Playlists \u{2013} \(formatter.string(from: Date()))"
+            let folderName = L10n.string("Dropped Playlists \u{2013} \(formatter.string(from: Date()))")
             do {
                 let folder = try await self.playlistService.createFolder(name: folderName)
                 parentID = folder.id

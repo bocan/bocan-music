@@ -159,7 +159,7 @@ public final class VisualizerViewModel: ObservableObject {
         self.modeBeforeAutoSimplify = previous
         self.mode = .spectrumBars
         self.log.info("visualizer.autoSimplify: switched from \(previous.rawValue) to spectrumBars due to sustained FPS drop")
-        let toast = ToastMessage(text: "Switched to Spectrum Bars for performance.", kind: .info)
+        let toast = ToastMessage(text: L10n.string("Switched to Spectrum Bars for performance."), kind: .info)
         self.performanceToast = toast
         self.performanceToastTask?.cancel()
         self.performanceToastTask = Task { @MainActor [weak self] in
