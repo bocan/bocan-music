@@ -28,11 +28,8 @@ public struct DiagnosticsSettingsView: View {
             // MARK: Consent toggle
 
             Section {
-                Toggle("Share crash reports with the developer", isOn: self.$consented)
-                    .help(
-                        "Diagnostic reports are stored locally on this Mac and only shared"
-                            + " when you choose to. No personal data leaves your Mac without your permission."
-                    )
+                Toggle(L10n.string("Share crash reports with the developer"), isOn: self.$consented)
+                    .help(self.consentHelp)
                     .onChange(of: self.consented) { _, enabled in
                         self.consentAsked = true
                         if enabled {
@@ -41,18 +38,18 @@ public struct DiagnosticsSettingsView: View {
                             MetricKitListener.shared.stop()
                         }
                     }
-                Text("Reports from crashes are available the next day, after macOS processes them overnight.")
+                Text(localized: "Reports from crashes are available the next day, after macOS processes them overnight.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
-                Text("Crash Reporting")
+                Text(localized: "Crash Reporting")
             }
 
             // MARK: Report list
 
             Section {
                 if self.reports.isEmpty {
-                    Text("No diagnostic reports found.")
+                    Text(localized: "No diagnostic reports found.")
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
@@ -61,54 +58,45 @@ public struct DiagnosticsSettingsView: View {
                     }
                 }
 
-                Button("Open Reports Folder in Finder") {
+                Button(L10n.string("Open Reports Folder in Finder")) {
                     let dir = MetricKitListener.reportsDirectory
                     try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
                     NSWorkspace.shared.activateFileViewerSelecting([dir])
                 }
-                .help("Opens ~/Library/Logs/Bocan/diagnostics/ in Finder.")
-                .accessibilityLabel("Open diagnostic reports folder in Finder")
+                .help(L10n.string("Opens ~/Library/Logs/Bocan/diagnostics/ in Finder."))
+                .accessibilityLabel(L10n.string("Open diagnostic reports folder in Finder"))
             } header: {
-                Text("Diagnostic Reports")
+                Text(localized: "Diagnostic Reports")
             } footer: {
-                Text(
-                    "Reports are stored in ~/Library/Logs/Bocan/diagnostics/. Attach a report to a GitHub issue to help diagnose a problem."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(self.reportsFooter)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             // MARK: Log console
 
             Section {
-                Button("Open Log Console") {
+                Button(L10n.string("Open Log Console")) {
                     self.openWindow(id: "log-console")
                 }
-                .help("Open the floating Log Console window.")
-                .accessibilityLabel("Open log console window")
+                .help(L10n.string("Open the floating Log Console window."))
+                .accessibilityLabel(L10n.string("Open log console window"))
 
-                Toggle("Capture in-app logs", isOn: self.$captureEnabled)
-                    .help(
-                        "When enabled, log entries are captured to an in-memory ring buffer for"
-                            + " the Log Console. Disabling stops new entries from being captured;"
-                            + " system log output via Console.app is unaffected."
-                    )
+                Toggle(L10n.string("Capture in-app logs"), isOn: self.$captureEnabled)
+                    .help(self.captureHelp)
                     .onChange(of: self.captureEnabled) { _, enabled in
                         LogStore.shared.isCaptureEnabled = enabled
                     }
 
-                Text("\(self.logBufferCount) of \(LogStore.shared.capacity) entries in buffer")
+                Text(localized: "\(self.logBufferCount) of \(LogStore.shared.capacity) entries in buffer")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
-                Text("Log Console")
+                Text(localized: "Log Console")
             } footer: {
-                Text(
-                    "The in-memory buffer holds the most recent \(LogStore.shared.capacity) entries since launch."
-                        + " Capture has no effect on external log tools such as Console.app."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(self.logBufferFooter)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             // MARK: Colour contrast audit
@@ -117,18 +105,15 @@ public struct DiagnosticsSettingsView: View {
                 ContrastAuditView()
                     .listRowInsets(EdgeInsets())
             } header: {
-                Text("Colour Contrast Audit (WCAG 2.1 AA)")
+                Text(localized: "Colour Contrast Audit (WCAG 2.1 AA)")
             } footer: {
-                Text(
-                    "Normal text requires ≥ 4.5 : 1; non-text UI components require ≥ 3 : 1."
-                        + " Green ✓ = pass, Red ✗ = fail."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(self.contrastFooter)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Diagnostics")
+        .navigationTitle(L10n.string("Diagnostics"))
         .task {
             self.reports = MetricKitListener.listReports()
             self.logBufferCount = LogStore.shared.count
@@ -136,6 +121,34 @@ public struct DiagnosticsSettingsView: View {
     }
 
     // MARK: - Private helpers
+
+    /// Multi-sentence copy lives in computed properties so each catalog key
+    /// stays a full sentence within the line-length limit (#314).
+    private var consentHelp: String {
+        L10n.string("Diagnostic reports are stored locally on this Mac and only shared when you choose to.")
+            + " " + L10n.string("No personal data leaves your Mac without your permission.")
+    }
+
+    private var captureHelp: String {
+        L10n.string("When enabled, log entries are captured to an in-memory ring buffer for the Log Console.")
+            + " "
+            + L10n.string("Disabling stops new entries from being captured; system log output via Console.app is unaffected.")
+    }
+
+    private var reportsFooter: String {
+        L10n.string("Reports are stored in ~/Library/Logs/Bocan/diagnostics/.")
+            + " " + L10n.string("Attach a report to a GitHub issue to help diagnose a problem.")
+    }
+
+    private var logBufferFooter: String {
+        L10n.string("The in-memory buffer holds the most recent \(LogStore.shared.capacity) entries since launch.")
+            + " " + L10n.string("Capture has no effect on external log tools such as Console.app.")
+    }
+
+    private var contrastFooter: String {
+        L10n.string("Normal text requires ≥ 4.5 : 1; non-text UI components require ≥ 3 : 1.")
+            + " " + L10n.string("Green ✓ = pass, Red ✗ = fail.")
+    }
 
     private func reportRow(for url: URL) -> some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -149,30 +162,32 @@ public struct DiagnosticsSettingsView: View {
 
                 Spacer()
 
-                Button("Copy Path") {
+                Button(L10n.string("Copy Path")) {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(url.path, forType: .string)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
-                .help("Copy the full path to this report to the clipboard for pasting into a GitHub issue.")
-                .accessibilityLabel("Copy path of \(url.lastPathComponent)")
+                .help(L10n.string(
+                    "Copy the full path to this report to the clipboard for pasting into a GitHub issue."
+                ))
+                .accessibilityLabel(L10n.string("Copy path of \(url.lastPathComponent)"))
 
                 let isExpanded = self.expandedReport == url
-                Button(isExpanded ? "Hide" : "View") {
+                Button(isExpanded ? L10n.string("Hide") : L10n.string("View")) {
                     if isExpanded {
                         self.expandedReport = nil
                         self.expandedContent = ""
                     } else {
                         self.expandedReport = url
                         self.expandedContent = (try? String(contentsOf: url, encoding: .utf8))
-                            ?? "(unreadable)"
+                            ?? L10n.string("(unreadable)")
                     }
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
-                .help(isExpanded ? "Collapse this report." : "Preview the raw JSON report inline.")
-                .accessibilityLabel(isExpanded ? "Collapse report" : "View report \(url.lastPathComponent)")
+                .help(isExpanded ? L10n.string("Collapse this report.") : L10n.string("Preview the raw JSON report inline."))
+                .accessibilityLabel(isExpanded ? L10n.string("Collapse report") : L10n.string("View report \(url.lastPathComponent)"))
             }
 
             if self.expandedReport == url {
@@ -186,7 +201,7 @@ public struct DiagnosticsSettingsView: View {
                 .frame(maxHeight: 200)
                 .background(.background.secondary)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
-                .accessibilityLabel("Report content")
+                .accessibilityLabel(L10n.string("Report content"))
             }
         }
     }
