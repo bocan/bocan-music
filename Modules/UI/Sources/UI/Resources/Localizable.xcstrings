@@ -1,6 +1,198 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@, %lld failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$lld failed"
+          }
+        }
+      }
+    },
+    "0 (Gapless)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0 (Gapless)"
+          }
+        }
+      }
+    },
+    "0 s = sample-accurate gapless (Phase 5 path)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0 s = sample-accurate gapless (Phase 5 path)."
+          }
+        }
+      }
+    },
+    "1.0× (off)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1.0× (off)"
+          }
+        }
+      }
+    },
+    "Album gain when playing a complete album; track gain otherwise." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Album gain when playing a complete album; track gain otherwise."
+          }
+        }
+      }
+    },
+    "Custom" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        }
+      }
+    },
+    "Crossfade applies at every track boundary." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crossfade applies at every track boundary."
+          }
+        }
+      }
+    },
+    "Each track is normalised individually to −18 LUFS." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Each track is normalised individually to −18 LUFS."
+          }
+        }
+      }
+    },
+    "Global" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Global"
+          }
+        }
+      }
+    },
+    "This Album" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Album"
+          }
+        }
+      }
+    },
+    "This Track" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Track"
+          }
+        }
+      }
+    },
+    "It will be applied automatically when this %@ plays." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "It will be applied automatically when this %@ plays."
+          }
+        }
+      }
+    },
+    "No loudness normalisation applied." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No loudness normalisation applied."
+          }
+        }
+      }
+    },
+    "Pin the current EQ preset to this %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pin the current EQ preset to this %@."
+          }
+        }
+      }
+    },
+    "The whole album is normalised together, preserving relative dynamics between tracks." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The whole album is normalised together, preserving relative dynamics between tracks."
+          }
+        }
+      }
+    },
+    "Within-album boundaries use gapless; cross-album boundaries use crossfade." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Within-album boundaries use gapless; cross-album boundaries use crossfade."
+          }
+        }
+      }
+    },
+    "album" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "album"
+          }
+        }
+      }
+    },
+    "Analysis complete — %lld tracks analysed" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Analysis complete — %lld track analysed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Analysis complete — %lld tracks analysed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Edited" : {
       "localizations" : {
         "en" : {
