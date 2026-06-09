@@ -1,6 +1,126 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Edited" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edited"
+          }
+        }
+      }
+    },
+    "Embedded" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Embedded"
+          }
+        }
+      }
+    },
+    "Extra Large" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Extra Large"
+          }
+        }
+      }
+    },
+    "Fetched lyrics may be copyrighted; opt-in use is your responsibility." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fetched lyrics may be copyrighted; opt-in use is your responsibility."
+          }
+        }
+      }
+    },
+    "LRClib is a community-maintained database." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LRClib is a community-maintained database."
+          }
+        }
+      }
+    },
+    "Large" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Large"
+          }
+        }
+      }
+    },
+    "Medium" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Medium"
+          }
+        }
+      }
+    },
+    "Prefer embedded tags" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefer embedded tags"
+          }
+        }
+      }
+    },
+    "Prefer my edits" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefer my edits"
+          }
+        }
+      }
+    },
+    "Prefer synced (sidecar .lrc)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prefer synced (sidecar .lrc)"
+          }
+        }
+      }
+    },
+    "Sidecar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sidecar"
+          }
+        }
+      }
+    },
+    "Small" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Small"
+          }
+        }
+      }
+    },
     "Artist / album names are not compared here." : {
       "localizations" : {
         "en" : {

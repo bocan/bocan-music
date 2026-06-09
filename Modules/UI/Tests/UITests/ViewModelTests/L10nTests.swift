@@ -116,6 +116,43 @@ struct L10nTests {
         #expect(variation.other == "Keep %lld backups")
     }
 
+    @Test("Phase 3 plural keys collapse to singular forms (#314)")
+    func phase3Plurals() throws {
+        let strings = try self.catalog()
+        let items = try #require(self.plural("%lld items", in: strings))
+        #expect(items.one == "%lld item")
+        let fromSelection = try #require(self.plural("From selection (%lld tracks)", in: strings))
+        #expect(fromSelection.one == "From selection (%lld track)")
+        let fields = try #require(self.plural("%lld fields will be updated", in: strings))
+        #expect(fields.one == "%lld field will be updated")
+    }
+
+    @Test(
+        "Phase 3 Playlists, MetadataEditor and Lyrics route copy through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/Playlists/PlaylistSidebarSection.swift",
+            "Sources/UI/Playlists/PlaylistRow.swift",
+            "Sources/UI/Playlists/PlaylistFolderView.swift",
+            "Sources/UI/Playlists/ViewModels/PlaylistSidebarViewModel.swift",
+            "Sources/UI/Playlists/Smart/RuleRowView.swift",
+            "Sources/UI/Playlists/Smart/RuleBuilderView.swift",
+            "Sources/UI/Playlists/Smart/SmartPlaylistDetailView.swift",
+            "Sources/UI/MetadataEditor/TagEditorSheet.swift",
+            "Sources/UI/MetadataEditor/TagEditorSheet+DetailsTab.swift",
+            "Sources/UI/MetadataEditor/TagFieldRow.swift",
+            "Sources/UI/MetadataEditor/ConflictDiffSheet.swift",
+            "Sources/UI/Lyrics/LyricsPane.swift",
+            "Sources/UI/Lyrics/LyricsEditorSheet.swift",
+            "Sources/UI/Lyrics/LyricsSettingsView.swift",
+            "Sources/UI/Lyrics/LyricsView.swift",
+        ]
+    )
+    func phase3AreasUseHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test(
         "Phase 3 Settings panes route copy through the localization helper (#314)",
         arguments: [
