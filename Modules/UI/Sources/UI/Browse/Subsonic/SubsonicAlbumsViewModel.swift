@@ -80,7 +80,7 @@ public final class SubsonicAlbumsViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.albums.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load albums from this server."
+                ?? L10n.string("Could not load albums from this server.")
         }
     }
 

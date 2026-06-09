@@ -38,7 +38,7 @@ public final class SubsonicBookmarksViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.bookmarks.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load bookmarks."
+                ?? L10n.string("Could not load bookmarks.")
         }
     }
 
@@ -74,19 +74,19 @@ public struct SubsonicBookmarksView: View {
         Group {
             if self.vm.bookmarks.isEmpty, !self.vm.isLoading {
                 ContentUnavailableView(
-                    "No Bookmarks",
+                    L10n.string("No Bookmarks"),
                     systemImage: "bookmark",
-                    description: Text("Bookmarks saved on the server appear here.")
+                    description: Text(localized: "Bookmarks saved on the server appear here.")
                 )
             } else {
                 self.list
             }
         }
-        .navigationTitle("Bookmarks")
+        .navigationTitle(L10n.string("Bookmarks"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { Task { await self.vm.load() } } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
             }
@@ -95,12 +95,12 @@ public struct SubsonicBookmarksView: View {
             if self.vm.bookmarks.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load bookmarks",
+            L10n.string("Couldn't load bookmarks"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }

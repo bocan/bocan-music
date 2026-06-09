@@ -42,7 +42,7 @@ public final class SubsonicStarredViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.starred.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load starred items."
+                ?? L10n.string("Could not load starred items.")
         }
     }
 }
@@ -74,19 +74,19 @@ public struct SubsonicStarredView: View {
         Group {
             if self.vm.songs.isEmpty, !self.vm.isLoading {
                 ContentUnavailableView(
-                    "Nothing Starred",
+                    L10n.string("Nothing Starred"),
                     systemImage: "star",
-                    description: Text("Star a song on the server to see it here.")
+                    description: Text(localized: "Star a song on the server to see it here.")
                 )
             } else {
                 self.list
             }
         }
-        .navigationTitle("Starred")
+        .navigationTitle(L10n.string("Starred"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { Task { await self.vm.load() } } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
             }
@@ -95,12 +95,12 @@ public struct SubsonicStarredView: View {
             if self.vm.songs.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load starred items",
+            L10n.string("Couldn't load starred items"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -109,12 +109,12 @@ public struct SubsonicStarredView: View {
         List {
             if self.vm.albumCount > 0 || self.vm.artistCount > 0 {
                 Section {
-                    Text("\(self.vm.artistCount) artists · \(self.vm.albumCount) albums also starred")
+                    Text(localized: "\(self.vm.artistCount) artists · \(self.vm.albumCount) albums also starred")
                         .font(Typography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
             }
-            Section("Songs") {
+            Section(L10n.string("Songs")) {
                 ForEach(Array(self.vm.songs.enumerated()), id: \.element.id) { index, song in
                     SubsonicSongRow(
                         song: song,

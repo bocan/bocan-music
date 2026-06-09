@@ -182,9 +182,11 @@ struct VoiceOverTests {
     @Test("ArtistsView album cell has accessibilityHint for opening album")
     func artistsViewAlbumCellHasOpenHint() throws {
         let source = try self.sourceContents(at: "Browse/ArtistsView.swift")
+        // Copy may be wrapped in L10n.string(...) for localization (#314); match the text itself.
         #expect(
-            source.contains("accessibilityHint(\"Double-tap to open album\")"),
-            "ArtistsView album cell must declare accessibilityHint(\"Double-tap to open album\")"
+            source.contains("accessibilityHint(L10n.string(\"Double-tap to open album\"))")
+                || source.contains("accessibilityHint(\"Double-tap to open album\")"),
+            "ArtistsView album cell must declare the Double-tap to open album accessibility hint"
         )
     }
 

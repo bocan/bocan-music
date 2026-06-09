@@ -89,7 +89,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
             self.makeTextCell(cellID: cellID)
         }
         cell.textField?.stringValue = self.displayValue(colID: colID, row: row)
-        cell.setAccessibilityLabel("\(column.title): \(cell.textField?.stringValue ?? "")")
+        cell.setAccessibilityLabel(L10n.string("\(column.title): \(cell.textField?.stringValue ?? "")"))
         return cell
     }
 
@@ -134,7 +134,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     private func displayValue(colID: String, row: SubsonicSongTableRow) -> String {
         switch colID {
         case "scol.title":
-            return row.title.isEmpty ? "Unknown" : row.title
+            return row.title.isEmpty ? L10n.string("Unknown") : row.title
 
         case "scol.artist":
             return row.artist
@@ -157,7 +157,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
             return row.trackNumber > 0 ? String(row.trackNumber) : ""
 
         case "scol.bitrate":
-            return row.bitrate > 0 ? "\(row.bitrate) kbps" : ""
+            return row.bitrate > 0 ? L10n.string("\(row.bitrate) kbps") : ""
 
         case "scol.rating":
             let n = row.rating
@@ -275,7 +275,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         let selectedRows = Array(tv.selectedRowIndexes).sorted()
         guard !selectedRows.isEmpty else { return }
 
-        let playItem = ActionMenuItem("Play") { [weak self] in
+        let playItem = ActionMenuItem(L10n.string("Play")) { [weak self] in
             guard let first = selectedRows.first else { return }
             self?.parent.actions.playNow(first)
         }
@@ -286,21 +286,21 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
             let row = self.rows[rowIdx]
             menu.addItem(NSMenuItem.separator())
 
-            let starTitle = row.starred ? "Unstar" : "Star"
+            let starTitle = row.starred ? L10n.string("Unstar") : L10n.string("Star")
             menu.addItem(ActionMenuItem(starTitle) { [weak self] in
                 self?.parent.actions.toggleStar(row.id)
             })
 
-            let ratingMenu = NSMenu(title: "Rating")
+            let ratingMenu = NSMenu(title: L10n.string("Rating"))
             for stars in 0 ... 5 {
-                let label = stars == 0 ? "None" : String(repeating: "★", count: stars)
+                let label = stars == 0 ? L10n.string("None") : String(repeating: "★", count: stars)
                 let rItem = ActionMenuItem(label) { [weak self] in
                     self?.parent.actions.setRating(row.id, stars)
                 }
                 if stars == row.rating { rItem.state = .on }
                 ratingMenu.addItem(rItem)
             }
-            let ratingParent = NSMenuItem(title: "Rating", action: nil, keyEquivalent: "")
+            let ratingParent = NSMenuItem(title: L10n.string("Rating"), action: nil, keyEquivalent: "")
             ratingParent.submenu = ratingMenu
             menu.addItem(ratingParent)
         }

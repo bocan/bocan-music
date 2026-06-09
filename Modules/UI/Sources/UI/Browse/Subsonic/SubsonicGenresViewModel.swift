@@ -59,7 +59,7 @@ public final class SubsonicGenresViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.genres.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load genres from this server."
+                ?? L10n.string("Could not load genres from this server.")
         }
     }
 
@@ -95,7 +95,7 @@ public final class SubsonicGenresViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.genreSongs.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load songs for this genre."
+                ?? L10n.string("Could not load songs for this genre.")
         }
     }
 

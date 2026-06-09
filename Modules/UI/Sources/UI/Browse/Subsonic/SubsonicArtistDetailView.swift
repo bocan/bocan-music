@@ -45,7 +45,7 @@ public final class SubsonicArtistDetailViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.artist.detail.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load this artist."
+                ?? L10n.string("Could not load this artist.")
         }
     }
 
@@ -140,23 +140,23 @@ public struct SubsonicArtistDetailView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ContentUnavailableView(
-                    "Artist Unavailable",
+                    L10n.string("Artist Unavailable"),
                     systemImage: "music.mic",
-                    description: Text("This artist could not be loaded.")
+                    description: Text(localized: "This artist could not be loaded.")
                 )
             }
         }
-        .navigationTitle(self.vm.artist?.name ?? "Artist")
+        .navigationTitle(self.vm.artist?.name ?? L10n.string("Artist"))
         .task(id: self.artistID) {
             if self.vm.artist == nil { await self.vm.load() }
         }
         .alert(
-            "Couldn't load artist",
+            L10n.string("Couldn't load artist"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }
@@ -171,7 +171,7 @@ public struct SubsonicArtistDetailView: View {
             Divider()
 
             if !self.vm.albums.isEmpty {
-                self.sectionLabel("Albums", count: self.vm.albums.count)
+                self.sectionLabel(L10n.string("Albums"), count: self.vm.albums.count)
                 ScrollView {
                     LazyVGrid(columns: self.albumColumns, spacing: Theme.albumGridSpacing) {
                         ForEach(self.vm.albums, id: \.id) { album in
@@ -184,16 +184,16 @@ public struct SubsonicArtistDetailView: View {
                 Divider()
             }
 
-            self.sectionLabel("Songs", count: self.vm.tracks.count)
+            self.sectionLabel(L10n.string("Songs"), count: self.vm.tracks.count)
             if self.vm.tracks.isEmpty {
                 if self.vm.isLoadingTracks {
-                    ProgressView("Loading songs\u{2026}")
+                    ProgressView(L10n.string("Loading songs\u{2026}"))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ContentUnavailableView(
-                        "No Songs",
+                        L10n.string("No Songs"),
                         systemImage: "music.note",
-                        description: Text("This artist has no songs to display.")
+                        description: Text(localized: "This artist has no songs to display.")
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
@@ -229,7 +229,7 @@ public struct SubsonicArtistDetailView: View {
                     }
                     let trackCount = self.vm.tracks.count
                     if albumCount > 0, trackCount > 0 {
-                        Text("\u{00B7}")
+                        Text(verbatim: "\u{00B7}")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
@@ -238,7 +238,7 @@ public struct SubsonicArtistDetailView: View {
                             .font(Typography.caption)
                             .foregroundStyle(Color.textSecondary)
                     } else if self.vm.isLoadingTracks {
-                        Text("loading songs\u{2026}")
+                        Text(localized: "loading songs\u{2026}")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textTertiary)
                     }
@@ -276,7 +276,7 @@ public struct SubsonicArtistDetailView: View {
                 .lineLimit(1)
 
             let yearString = album.year.map { String($0) }
-            let countString = "\(album.songCount) \(album.songCount == 1 ? "song" : "songs")"
+            let countString = L10n.string("\(album.songCount) songs")
             let subtitle = [yearString, countString].compactMap(\.self).joined(separator: " · ")
             if !subtitle.isEmpty {
                 Text(subtitle)
@@ -298,7 +298,7 @@ public struct SubsonicArtistDetailView: View {
                 .compactMap(\.self)
                 .joined(separator: ", ")
         )
-        .accessibilityHint("Double-tap to open album")
+        .accessibilityHint(L10n.string("Double-tap to open album"))
     }
 
     @ViewBuilder

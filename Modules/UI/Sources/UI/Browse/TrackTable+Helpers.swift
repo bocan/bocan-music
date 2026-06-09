@@ -257,7 +257,7 @@ extension TrackTable {
             return row.discTotal == 0 ? "" : String(row.discTotal)
 
         case .title:
-            return row.title.isEmpty ? "Unknown" : row.title
+            return row.title.isEmpty ? L10n.string("Unknown") : row.title
 
         case .artist:
             return row.artistName
@@ -288,7 +288,7 @@ extension TrackTable {
             return row.fileFormat
 
         case .bitrate:
-            return row.bitrate > 0 ? "\(row.bitrate) kbps" : ""
+            return row.bitrate > 0 ? L10n.string("\(row.bitrate) kbps") : ""
 
         case .sampleRate:
             return self.formatSampleRate(row.sampleRate)
@@ -307,7 +307,7 @@ extension TrackTable {
             return row.key
 
         case .bitDepth:
-            return row.bitDepth > 0 ? "\(row.bitDepth)-bit" : ""
+            return row.bitDepth > 0 ? L10n.string("\(row.bitDepth)-bit") : ""
 
         case .channelCount:
             switch row.channelCount {
@@ -315,13 +315,13 @@ extension TrackTable {
                 return ""
 
             case 1:
-                return "Mono"
+                return L10n.string("Mono")
 
             case 2:
-                return "Stereo"
+                return L10n.string("Stereo")
 
             default:
-                return "\(row.channelCount) ch"
+                return L10n.string("\(row.channelCount) ch")
             }
 
         case .isLossless:

@@ -56,7 +56,7 @@ public final class SubsonicArtistsViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.artists.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load artists from this server."
+                ?? L10n.string("Could not load artists from this server.")
         }
     }
 

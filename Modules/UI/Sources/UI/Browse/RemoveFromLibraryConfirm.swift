@@ -32,18 +32,17 @@ enum RemoveFromLibraryConfirm {
     /// removing exactly one and its title is known.
     nonisolated static func albumsMessage(count: Int, soleTitle: String?) -> String {
         if count <= 1, let title = soleTitle, !title.isEmpty {
-            return "Remove “\(title)” from library?"
+            return L10n.string("Remove “\(title)” from library?")
         }
-        let noun = count == 1 ? "album" : "albums"
-        return "Remove \(count) \(noun) from library?"
+        return L10n.string("Remove \(count) albums from library?")
     }
 
     /// Confirmation title for removing all music by an artist.
     nonisolated static func artistMessage(name: String?) -> String {
         if let name, !name.isEmpty {
-            return "Remove all music by “\(name)” from library?"
+            return L10n.string("Remove all music by “\(name)” from library?")
         }
-        return "Remove this artist from library?"
+        return L10n.string("Remove this artist from library?")
     }
 
     // MARK: - Presentation
@@ -58,12 +57,14 @@ enum RemoveFromLibraryConfirm {
 
         let alert = NSAlert()
         alert.messageText = messageText
-        alert.informativeText = "The files will stay on disk and can be re-added later by rescanning the folder."
+        alert.informativeText = L10n.string(
+            "The files will stay on disk and can be re-added later by rescanning the folder."
+        )
         alert.alertStyle = .warning
-        alert.addButton(withTitle: "Remove")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.string("Remove"))
+        alert.addButton(withTitle: L10n.string("Cancel"))
         alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = "Don’t ask again"
+        alert.suppressionButton?.title = L10n.string("Don’t ask again")
 
         guard await TracksView.runAlertAsync(alert) == .alertFirstButtonReturn else { return }
 

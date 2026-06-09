@@ -213,16 +213,16 @@ struct SubsonicSongTable: NSViewRepresentable {
     }
 
     private static let colDefs: [ColDef] = [
-        ColDef(rawID: "art", title: "Art", min: 18, ideal: 32, max: 44, sortKey: nil),
-        ColDef(rawID: "title", title: "Title", min: 140, ideal: 220, max: 2000, sortKey: "title"),
-        ColDef(rawID: "artist", title: "Artist", min: 80, ideal: 160, max: 2000, sortKey: "artist"),
-        ColDef(rawID: "album", title: "Album", min: 80, ideal: 160, max: 2000, sortKey: "album"),
-        ColDef(rawID: "year", title: "Year", min: 40, ideal: 56, max: 80, sortKey: "year"),
-        ColDef(rawID: "genre", title: "Genre", min: 60, ideal: 120, max: 2000, sortKey: "genre"),
-        ColDef(rawID: "duration", title: "Length", min: 48, ideal: 60, max: 72, sortKey: "duration"),
-        ColDef(rawID: "trackNum", title: "Track", min: 28, ideal: 40, max: 56, sortKey: "trackNum"),
-        ColDef(rawID: "bitrate", title: "Bitrate", min: 56, ideal: 72, max: 96, sortKey: "bitrate", hidden: true),
-        ColDef(rawID: "rating", title: "Rating", min: 52, ideal: 64, max: 72, sortKey: "rating"),
+        ColDef(rawID: "art", title: L10n.string("Art"), min: 18, ideal: 32, max: 44, sortKey: nil),
+        ColDef(rawID: "title", title: L10n.string("Title"), min: 140, ideal: 220, max: 2000, sortKey: "title"),
+        ColDef(rawID: "artist", title: L10n.string("Artist"), min: 80, ideal: 160, max: 2000, sortKey: "artist"),
+        ColDef(rawID: "album", title: L10n.string("Album"), min: 80, ideal: 160, max: 2000, sortKey: "album"),
+        ColDef(rawID: "year", title: L10n.string("Year"), min: 40, ideal: 56, max: 80, sortKey: "year"),
+        ColDef(rawID: "genre", title: L10n.string("Genre"), min: 60, ideal: 120, max: 2000, sortKey: "genre"),
+        ColDef(rawID: "duration", title: L10n.string("Length"), min: 48, ideal: 60, max: 72, sortKey: "duration"),
+        ColDef(rawID: "trackNum", title: L10n.string("Track"), min: 28, ideal: 40, max: 56, sortKey: "trackNum"),
+        ColDef(rawID: "bitrate", title: L10n.string("Bitrate"), min: 56, ideal: 72, max: 96, sortKey: "bitrate", hidden: true),
+        ColDef(rawID: "rating", title: L10n.string("Rating"), min: 52, ideal: 64, max: 72, sortKey: "rating"),
         ColDef(rawID: "starred", title: "\u{2605}", min: 24, ideal: 32, max: 40, sortKey: "starred"),
     ]
 
@@ -230,7 +230,7 @@ struct SubsonicSongTable: NSViewRepresentable {
     /// table is rendering multi-source search results and the user needs to
     /// distinguish rows by originating server.
     private static let sourceColDef = ColDef(
-        rawID: "source", title: "Source", min: 80, ideal: 120, max: 240, sortKey: "source"
+        rawID: "source", title: L10n.string("Source"), min: 80, ideal: 120, max: 240, sortKey: "source"
     )
 
     private static func addColumns(to tableView: NSTableView, includingSource: Bool) {
