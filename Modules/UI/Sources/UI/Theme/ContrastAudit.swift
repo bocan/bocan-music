@@ -70,20 +70,20 @@ public struct ContrastAuditView: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("WCAG 2.1 Colour Contrast")
+            Text(localized: "WCAG 2.1 Colour Contrast")
                 .font(.headline)
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
             HStack(spacing: 0) {
-                self.column(appearance: .init(named: .aqua), label: "Light")
+                self.column(appearance: .init(named: .aqua), label: L10n.string("Light"))
                 Divider()
-                self.column(appearance: .init(named: .darkAqua), label: "Dark")
+                self.column(appearance: .init(named: .darkAqua), label: L10n.string("Dark"))
             }
         }
         .frame(minWidth: 640, minHeight: 320)
-        .navigationTitle("Contrast Audit")
+        .navigationTitle(L10n.string("Contrast Audit"))
     }
 
     // MARK: Private

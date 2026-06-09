@@ -1,6 +1,118 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%lld min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        }
+      }
+    },
+    "%lld hr %lld min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld hr %2$lld min"
+          }
+        }
+      }
+    },
+    "%@ · %@ also starred" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$@ also starred"
+          }
+        }
+      }
+    },
+    "%lld artists" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld artist"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld artists"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Not Playing" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Playing"
+          }
+        }
+      }
+    },
+    "%lld kHz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld kHz"
+          }
+        }
+      }
+    },
+    "%@ kHz" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kHz"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "1 (Mono)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 (Mono)"
+          }
+        }
+      }
+    },
+    "2 (Stereo)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 (Stereo)"
+          }
+        }
+      }
+    },
     "Could not play \"%@\". Try re-scanning your library." : {
       "localizations" : {
         "en" : {
@@ -301,7 +413,7 @@
         }
       }
     },
-    "Failed to import %1$@: %2$@" : {
+    "Failed to import %@: %@" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2652,9 +2764,21 @@
     "Move %lld tracks to Trash and remove from Bòcan?" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Move %lld tracks to Trash and remove from Bòcan?"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld track to Trash and remove from Bòcan?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Move %lld tracks to Trash and remove from Bòcan?"
+                }
+              }
+            }
           }
         }
       }
@@ -2872,9 +2996,21 @@
     "Remove %lld tracks from library?" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove %lld tracks from library?"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld track from library?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld tracks from library?"
+                }
+              }
+            }
           }
         }
       }
@@ -2882,9 +3018,21 @@
     "Remove %lld tracks from this playlist?" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove %lld tracks from this playlist?"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld track from this playlist?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld tracks from this playlist?"
+                }
+              }
+            }
           }
         }
       }
@@ -3560,7 +3708,27 @@
     },
     "%lld copies" : {
       "comment" : "A label showing the number of copies of a track in a duplicate group. The argument is the number of tracks in the group.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld copy"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld copies"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld field(s) will be updated" : {
       "comment" : "A footnote that shows the number of fields that will be updated when saving.",
@@ -3585,11 +3753,51 @@
     },
     "%lld lines" : {
       "comment" : "A description of the number of visible log lines.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "1 line"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld lines"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld log entries visible" : {
       "comment" : "A label that shows the number of log entries currently visible in the view.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld log entry visible"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld log entries visible"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld matched" : {
       "comment" : "A label indicating that a playlist file has been successfully imported. The argument is the number of matched tracks in the playlist.",
@@ -3651,7 +3859,27 @@
     },
     "%lld tracks" : {
       "comment" : "A label displaying the number of tracks in the playlist. The argument is the number of tracks in the playlist.",
-      "isCommentAutoGenerated" : true
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld track"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld tracks"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld-bit" : {
       "comment" : "A label that shows the bit depth of an audio file. The argument is the bit depth.",

@@ -22,7 +22,7 @@ public struct TrackInfoPanel: View {
         .frame(width: 320)
         .background(.background)
         .navigationTitle(
-            self.library.nowPlaying.title.isEmpty ? "Track Info" : self.library.nowPlaying.title
+            self.library.nowPlaying.title.isEmpty ? L10n.string("Track Info") : self.library.nowPlaying.title
         )
     }
 
@@ -45,7 +45,7 @@ public struct TrackInfoPanel: View {
             .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(np.title.isEmpty ? "Not Playing" : np.title)
+                Text(np.title.isEmpty ? L10n.string("Not Playing") : np.title)
                     .font(.system(size: 13, weight: .semibold))
                     .lineLimit(2)
                 if !np.artist.isEmpty {
@@ -79,45 +79,45 @@ public struct TrackInfoPanel: View {
                     || track.trackNumber != nil
                     || track.discNumber != nil
                 if hasTags {
-                    Section("Tags") {
+                    Section(L10n.string("Tags")) {
                         if let year = track.year {
-                            LabeledContent("Year") { Text(verbatim: "\(year)") }
+                            LabeledContent(L10n.string("Year")) { Text(verbatim: "\(year)") }
                         }
                         if let genre = track.genre, !genre.isEmpty {
-                            LabeledContent("Genre") { Text(genre) }
+                            LabeledContent(L10n.string("Genre")) { Text(genre) }
                         }
                         if let composer = track.composer, !composer.isEmpty {
-                            LabeledContent("Composer") { Text(composer) }
+                            LabeledContent(L10n.string("Composer")) { Text(composer) }
                         }
                         if track.trackNumber != nil || track.trackTotal != nil {
-                            LabeledContent("Track") {
+                            LabeledContent(L10n.string("Track")) {
                                 Text(Self.formatNumber(track.trackNumber, of: track.trackTotal))
                             }
                         }
                         if track.discNumber != nil || track.discTotal != nil {
-                            LabeledContent("Disc") {
+                            LabeledContent(L10n.string("Disc")) {
                                 Text(Self.formatNumber(track.discNumber, of: track.discTotal))
                             }
                         }
                     }
                 }
-                Section("Audio") {
-                    LabeledContent("Format") { Text(track.fileFormat.uppercased()) }
-                    LabeledContent("Duration") { Text(Self.formatDuration(np.duration)) }
+                Section(L10n.string("Audio")) {
+                    LabeledContent(L10n.string("Format")) { Text(track.fileFormat.uppercased()) }
+                    LabeledContent(L10n.string("Duration")) { Text(Self.formatDuration(np.duration)) }
                     if let bitDepth = track.bitDepth {
-                        LabeledContent("Bit Depth") { Text("\(bitDepth)-bit") }
+                        LabeledContent(L10n.string("Bit Depth")) { Text(localized: "\(bitDepth)-bit") }
                     }
-                    LabeledContent("Sample Rate") { Text(Self.formatSampleRate(track.sampleRate)) }
+                    LabeledContent(L10n.string("Sample Rate")) { Text(Self.formatSampleRate(track.sampleRate)) }
                     if let bitrate = track.bitrate {
-                        LabeledContent("Bitrate") { Text("\(bitrate) kbps") }
+                        LabeledContent(L10n.string("Bitrate")) { Text(localized: "\(bitrate) kbps") }
                     }
                     if let channels = track.channelCount {
-                        LabeledContent("Channels") { Text(Self.formatChannels(channels)) }
+                        LabeledContent(L10n.string("Channels")) { Text(Self.formatChannels(channels)) }
                     }
                 }
-                Section("File") {
-                    LabeledContent("Size") { Text(Self.formatFileSize(track.fileSize)) }
-                    LabeledContent("Location") {
+                Section(L10n.string("File")) {
+                    LabeledContent(L10n.string("Size")) { Text(Self.formatFileSize(track.fileSize)) }
+                    LabeledContent(L10n.string("Location")) {
                         Text(track.filePathDisplay ?? track.fileURL)
                             .textSelection(.enabled)
                             .font(.system(size: 10))
@@ -126,8 +126,8 @@ public struct TrackInfoPanel: View {
                     .help(track.fileURL)
                 }
             } else {
-                Section("Audio") {
-                    LabeledContent("Duration") { Text(Self.formatDuration(np.duration)) }
+                Section(L10n.string("Audio")) {
+                    LabeledContent(L10n.string("Duration")) { Text(Self.formatDuration(np.duration)) }
                 }
             }
         }
@@ -139,7 +139,7 @@ public struct TrackInfoPanel: View {
     private static func formatNumber(_ number: Int?, of total: Int?) -> String {
         switch (number, total) {
         case let (n?, t?):
-            "\(n) of \(t)"
+            L10n.string("\(n) of \(t)")
 
         case let (n?, nil):
             "\(n)"
@@ -161,17 +161,17 @@ public struct TrackInfoPanel: View {
     private static func formatSampleRate(_ hz: Int?) -> String {
         guard let hz else { return "—" }
         let khz = Double(hz) / 1000.0
-        if khz == khz.rounded() { return "\(Int(khz)) kHz" }
-        return String(format: "%.1f kHz", khz)
+        if khz == khz.rounded() { return L10n.string("\(Int(khz)) kHz") }
+        return L10n.string("\(String(format: "%.1f", khz)) kHz")
     }
 
     private static func formatChannels(_ count: Int) -> String {
         switch count {
         case 1:
-            "1 (Mono)"
+            L10n.string("1 (Mono)")
 
         case 2:
-            "2 (Stereo)"
+            L10n.string("2 (Stereo)")
 
         default:
             "\(count)"

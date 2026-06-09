@@ -58,8 +58,7 @@ silently never localizes. Every user-facing string must therefore go through
    values match the old literals).
 5. **Extend `L10nTests`** with catalog-content assertions for any new plural
    keys (see "Testing strategy" below for why content, not runtime).
-6. **Add the file to the regression guard** allowlist (next section).
-7. `make format && make lint && make test-coverage`; commit
+6. `make format && make lint && make test-coverage`; commit
    `feat(ui): localize <area> (#314)`; tick the box in the #314 roadmap.
 
 ## Regression guard
@@ -71,18 +70,17 @@ flags bare string literals at user-facing call sites (`Text("`, `Button("`,
 `.confirmationDialog("`). It runs in the pre-commit hook and in `make lint`,
 both CI gates.
 
-The rule's `included` list is the **allowlist of converted files**. Unconverted
-areas are not listed, so they do not fail the build yet. The workflow is:
-
-- When you convert a file, append its path (regex-escaped) to the rule's
-  `included` list in the same PR.
-- When the migration completes (#314 Phase 5), replace the per-file list with
-  `Modules/UI/Sources/UI/.*\.swift` to enforce module-wide, and delete the
-  allowlist commentary.
+Since the #314 Phase 5 flip, the rule is enforced **module-wide**
+(`Modules/UI/Sources/UI/.*\.swift`); the per-file allowlist that tracked the
+migration is gone. Any new view file is covered automatically.
 
 The rule is line-based and deliberately simple. It cannot see a literal passed
-through a variable or built in a view model; those are covered by the Phase 5
-cross-cutting sweeps in #314, not by lint.
+through a variable or built in a view model; those were converted by the
+Phase 5 cross-cutting sweep and are protected by the `L10nTests`
+source-convention tests, not by lint. Multi-argument format keys look up under
+the non-positional form Foundation generates (`Failed to import %@: %@`) while
+their catalog *values* use positional specifiers (`%1$@`, `%2$@`) so
+translators can reorder arguments.
 
 ## Testing strategy
 

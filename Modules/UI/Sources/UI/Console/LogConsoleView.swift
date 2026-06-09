@@ -61,7 +61,7 @@ public struct LogConsoleView: View {
         HStack(spacing: 4) {
             Text(localized: "Level:")
                 .foregroundStyle(.secondary)
-            Picker("Level", selection: self.$vm.minimumLevel) {
+            Picker(L10n.string("Level"), selection: self.$vm.minimumLevel) {
                 ForEach(LogLevel.allCases, id: \.self) { level in
                     Text(verbatim: level.label.localizedCapitalized).tag(level)
                 }
@@ -70,7 +70,7 @@ public struct LogConsoleView: View {
             .pickerStyle(.menu)
             .fixedSize()
         }
-        .help("Minimum log level to show")
+        .help(L10n.string("Minimum log level to show"))
     }
 
     private var categoriesMenu: some View {
@@ -105,14 +105,14 @@ public struct LogConsoleView: View {
         } label: {
             Label(self.categoriesMenuTitle, systemImage: "line.3.horizontal.decrease")
         }
-        .help("Filter by log category")
+        .help(L10n.string("Filter by log category"))
     }
 
     private var searchField: some View {
         TextField("", text: self.$vm.searchText, prompt: Text(localized: "Search\u{2026}"))
             .textFieldStyle(.roundedBorder)
             .frame(minWidth: 120, maxWidth: 200)
-            .help("Filter entries by message text")
+            .help(L10n.string("Filter entries by message text"))
             .accessibilityLabel(L10n.string("Search log entries"))
     }
 
@@ -128,8 +128,8 @@ public struct LogConsoleView: View {
         }
         .help(
             self.vm.isPaused
-                ? "Resume ingesting new log entries"
-                : "Pause new entries from flowing in"
+                ? L10n.string("Resume ingesting new log entries")
+                : L10n.string("Pause new entries from flowing in")
         )
     }
 
@@ -140,7 +140,7 @@ public struct LogConsoleView: View {
             } label: {
                 Label(L10n.string("Clear View"), systemImage: "xmark")
             }
-            .help("Remove all entries from the visible list without emptying the ring buffer")
+            .help(L10n.string("Remove all entries from the visible list without emptying the ring buffer"))
 
             Divider()
 
@@ -149,11 +149,11 @@ public struct LogConsoleView: View {
             } label: {
                 Label(L10n.string("Clear Buffer"), systemImage: "trash.fill")
             }
-            .help("Empty both the visible list and the underlying ring buffer")
+            .help(L10n.string("Empty both the visible list and the underlying ring buffer"))
         } label: {
             Label(L10n.string("Clear"), systemImage: "trash")
         }
-        .help("Clear the log view; expand for option to also clear the ring buffer")
+        .help(L10n.string("Clear the log view; expand for option to also clear the ring buffer"))
     }
 
     private var copyButton: some View {
@@ -163,7 +163,7 @@ public struct LogConsoleView: View {
         } label: {
             Label(L10n.string("Copy"), systemImage: "doc.on.doc")
         }
-        .help("Copy visible log lines to the clipboard")
+        .help(L10n.string("Copy visible log lines to the clipboard"))
     }
 
     private var exportButton: some View {
@@ -172,7 +172,7 @@ public struct LogConsoleView: View {
         } label: {
             Label(L10n.string("Export\u{2026}"), systemImage: "square.and.arrow.up")
         }
-        .help("Save visible log lines to a .log file")
+        .help(L10n.string("Save visible log lines to a .log file"))
     }
 
     private var tailToggle: some View {
@@ -180,7 +180,7 @@ public struct LogConsoleView: View {
             Label(L10n.string("Tail"), systemImage: "arrow.down.to.line")
         }
         .toggleStyle(.button)
-        .help("Auto-scroll to the newest entry as lines arrive")
+        .help(L10n.string("Auto-scroll to the newest entry as lines arrive"))
     }
 
     private var lineCountLabel: some View {
@@ -229,7 +229,7 @@ public struct LogConsoleView: View {
         }
         .buttonStyle(.borderedProminent)
         .padding(12)
-        .help("Scroll to the most recent entry and resume tailing")
+        .help(L10n.string("Scroll to the most recent entry and resume tailing"))
     }
 
     // MARK: - Capacity banner
@@ -265,8 +265,7 @@ public struct LogConsoleView: View {
     // MARK: - Helpers
 
     private var lineCountText: String {
-        let n = self.vm.visible.count
-        return n == 1 ? L10n.string("1 line") : L10n.string("\(n) lines")
+        L10n.string("\(self.vm.visible.count) lines")
     }
 
     private var categoriesMenuTitle: String {

@@ -105,11 +105,19 @@ public struct SubsonicStarredView: View {
         )
     }
 
+    /// "%lld artists" and "%lld albums" pluralize independently, so the
+    /// summary is composed from the two count keys rather than one format.
+    private var alsoStarredSummary: String {
+        let artists = L10n.string("\(self.vm.artistCount) artists")
+        let albums = L10n.string("\(self.vm.albumCount) albums")
+        return L10n.string("\(artists) · \(albums) also starred")
+    }
+
     private var list: some View {
         List {
             if self.vm.albumCount > 0 || self.vm.artistCount > 0 {
                 Section {
-                    Text(localized: "\(self.vm.artistCount) artists · \(self.vm.albumCount) albums also starred")
+                    Text(self.alsoStarredSummary)
                         .font(Typography.caption)
                         .foregroundStyle(Color.textTertiary)
                 }
