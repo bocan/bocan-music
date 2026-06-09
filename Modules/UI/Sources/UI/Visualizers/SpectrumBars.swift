@@ -13,16 +13,16 @@ public enum VisualizerPalette: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .accent:
-            "Accent"
+            L10n.string("Accent")
 
         case .spectrum:
-            "Spectrum"
+            L10n.string("Spectrum")
 
         case .mono:
-            "Mono"
+            L10n.string("Mono")
 
         case .ember:
-            "Ember"
+            L10n.string("Ember")
         }
     }
 }

@@ -116,6 +116,45 @@ struct L10nTests {
         #expect(variation.other == "Keep %lld backups")
     }
 
+    @Test("Phase 4 plural keys collapse to singular forms (#314)")
+    func phase4Plurals() throws {
+        let strings = try self.catalog()
+        let analysed = try #require(self.plural("Analysis complete — %lld tracks analysed", in: strings))
+        #expect(analysed.one == "Analysis complete — %lld track analysed")
+        let errors = try #require(self.plural("%lld errors", in: strings))
+        #expect(errors.one == "%lld error")
+        let groups = try #require(self.plural("%lld groups found", in: strings))
+        #expect(groups.one == "%lld group found")
+        let images = try #require(self.plural("Done — %lld images saved", in: strings))
+        #expect(images.one == "Done — %lld image saved")
+    }
+
+    @Test(
+        "Phase 4 areas route copy through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/DSP/EQView.swift",
+            "Sources/UI/DSP/DSPView.swift",
+            "Sources/UI/DSP/ReplayGainSettingsView.swift",
+            "Sources/UI/Scrobble/ConnectSheet.swift",
+            "Sources/UI/Scrobble/ScrobbleSettingsView.swift",
+            "Sources/UI/Scrobble/RecentScrobblesView.swift",
+            "Sources/UI/Fingerprint/CandidatePickerView.swift",
+            "Sources/UI/Fingerprint/IdentifyTrackSheet.swift",
+            "Sources/UI/Tools/BatchCoverArtSheet.swift",
+            "Sources/UI/Tools/DuplicateReviewSheet.swift",
+            "Sources/UI/Visualizers/VisualizerSettingsView.swift",
+            "Sources/UI/Visualizers/VisualizerPane.swift",
+            "Sources/UI/PlaylistIO/PlaylistImportSheet.swift",
+            "Sources/UI/PlaylistIO/PlaylistExportSheet.swift",
+            "Sources/UI/Import/ScanBanner.swift",
+        ]
+    )
+    func phase4AreasUseHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test("Phase 3 plural keys collapse to singular forms (#314)")
     func phase3Plurals() throws {
         let strings = try self.catalog()

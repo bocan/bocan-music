@@ -121,7 +121,7 @@ public final class DuplicateReviewViewModel: ObservableObject, Identifiable {
             .filter { $0.value.count >= 2 }
             .map { _, groupTracks in
                 let rep = groupTracks[0]
-                let title = rep.title ?? "Unknown"
+                let title = rep.title ?? L10n.string("Unknown")
                 let artist = rep.artistID.flatMap { artistNames[$0] } ?? ""
                 return DuplicateGroup(
                     tracks: groupTracks,
