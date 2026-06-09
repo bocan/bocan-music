@@ -108,5 +108,21 @@ translators can reorder arguments.
 - Strings assembled from fragments (common in view-model toasts) cannot be
   translated word-by-word; restructure them into a single format key with
   arguments before converting.
-- The end state (#314 Phase 5) adds a pseudolocale (for example `en-XA`) to
-  prove translations take effect and layouts survive roughly 30% expansion.
+
+## Pseudolocale (en-XA)
+
+The catalog carries an `en-XA` pseudolocale: accented English expanded by
+roughly 30% (`Could not play album.` becomes `Çóúĺđ ñóţ ƥĺáý áĺƀúḿ. one two`).
+It is generated, not hand-maintained:
+
+- `make pseudolocale` (runs `Scripts/gen-pseudolocale.py`) regenerates every
+  `en-XA` value from the English copy. Re-run it after adding or changing
+  catalog keys; the script is idempotent and rewrites the catalog in Xcode's
+  canonical sorted form.
+- `L10nTests` asserts every key has an `en-XA` variant, that lettered copy is
+  at least ~30% longer than the English, and that format specifiers survive.
+- **Manual check:** build the app, then launch it with the pseudolocale:
+  `open build/Build/Products/Debug/Bocan.app --args -AppleLanguages '(en-XA)'`.
+  Accented text everywhere proves copy resolves through the module catalog (a
+  plain-English string is a missed conversion); clipped or truncated controls
+  show where layouts cannot absorb ~30% expansion.
