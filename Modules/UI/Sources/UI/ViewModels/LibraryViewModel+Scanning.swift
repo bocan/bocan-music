@@ -96,7 +96,9 @@ public extension LibraryViewModel {
         do {
             try await scanner.removeRoot(id: id)
             await self.refreshRoots()
-            await self.tracks.load()
+            // Albums/Artists are separate models; tracks are reloaded for the
+            // active destination via loadCurrentDestination() so a scoped
+            // detail view isn't clobbered with the full library.
             await self.albums.load()
             await self.artists.load()
             await self.loadCurrentDestination()
@@ -142,7 +144,10 @@ public extension LibraryViewModel {
         watcherReloadTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(500))
             guard let self, !Task.isCancelled else { return }
-            await self.tracks.load()
+            // Refresh Albums/Artists (separate models), then reload tracks for
+            // the active destination only. A bare tracks.load() here would dump
+            // the full library into the shared tracks model and clobber a
+            // playlist/album/folder detail view that owns its own content.
             await self.albums.load()
             await self.artists.load()
             await self.loadCurrentDestination()
@@ -309,14 +314,24 @@ public extension LibraryViewModel {
             self.scanCurrentPath = ""
             Task { [weak self] in
                 guard let self else { return }
-                // Reload all views — the user may have navigated away from Songs
-                // before the scan completed, leaving Albums/Artists stale.
-                await self.tracks.load()
+                // Refresh the Albums/Artists backing models so navigating to
+                // them after a background scan shows fresh data. They are
+                // separate from the shared `tracks` model, so reloading them
+                // never disturbs whatever view is on screen.
                 await self.albums.load()
                 await self.artists.load()
+                // Reload tracks for the ACTIVE destination only. Calling
+                // tracks.load() unconditionally loaded the full library into the
+                // shared tracks model even when a playlist/album/folder detail
+                // view (which owns its own scoped content via setTracks) was on
+                // screen, replacing the playlist's tracks with the entire song
+                // list. loadCurrentDestination() reloads Songs/Album/Artist/etc
+                // and leaves self-loading detail views (playlist/smart
+                // playlist/folder) untouched.
+                await self.loadCurrentDestination()
                 await self.refreshRoots()
                 // Clear the initial-scan overlay AFTER tracks are loaded so the
-                // transition from progress view → track list is instant rather
+                // transition from progress view to track list is instant rather
                 // than showing an empty list first.
                 self.isInitialScan = false
                 await self.startOrStopWatcher()
