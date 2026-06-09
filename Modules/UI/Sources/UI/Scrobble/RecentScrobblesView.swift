@@ -179,9 +179,9 @@ public struct RecentScrobblesView: View {
         Image(systemName: imageName)
             .foregroundStyle(color)
             .imageScale(.medium)
-            .help(L10n.string("\(providerName): \(status.displayLabel)"))
+            .help(L10n.string("\(providerName): \(Self.statusLabel(for: status))"))
             .accessibilityLabel(providerName)
-            .accessibilityValue(status.displayLabel)
+            .accessibilityValue(Self.statusLabel(for: status))
     }
 
     private static func providerDisplayName(_ providerID: String) -> String {
@@ -197,6 +197,32 @@ public struct RecentScrobblesView: View {
 
         default:
             providerID
+        }
+    }
+
+    /// UI-side labels for the per-provider submission state. The
+    /// Scrobble-owned `displayLabel` stays English; translation happens here.
+    private static func statusLabel(
+        for status: ScrobbleQueueRepository.RecentRow.SubmissionStatus
+    ) -> String {
+        switch status {
+        case .pending:
+            L10n.string("Queued")
+
+        case .retry:
+            L10n.string("Retrying")
+
+        case .sent:
+            L10n.string("Sent")
+
+        case .sentUnconfirmed:
+            L10n.string("Sent (unconfirmed)")
+
+        case .failed:
+            L10n.string("Failed")
+
+        case .ignored:
+            L10n.string("Ignored")
         }
     }
 
@@ -240,7 +266,7 @@ public struct RecentScrobblesView: View {
         let summaryParts: [String] = visibleProviderIDs.compactMap { pid -> String? in
             guard let status = row.statusByProvider[pid] else { return nil }
             let name = pid == "lastfm" ? "Last.fm" : "ListenBrainz"
-            return "\(name): \(status.displayLabel)"
+            return L10n.string("\(name): \(Self.statusLabel(for: status))")
         }
         let providerSummary = summaryParts.joined(separator: ", ")
 

@@ -622,9 +622,17 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         Task { [weak self] in
             for await message in qp.schemaWarnings {
                 guard let self else { return }
-                self.showToast(ToastMessage(text: message, kind: .info))
+                self.showToast(ToastMessage(text: Self.localizedSchemaWarning(message), kind: .info))
             }
         }
+    }
+
+    /// `QueuePersistence` yields a single fixed warning today; translate it
+    /// through the catalog and pass any unrecognized message through untouched.
+    private static func localizedSchemaWarning(_ message: String) -> String {
+        message == "Saved queue is from a newer version of Bòcan — starting fresh."
+            ? L10n.string("Saved queue is from a newer version of Bòcan — starting fresh.")
+            : message
     }
 
     /// Phase 19 step 17: powers the per-view "Retry now" button by asking
