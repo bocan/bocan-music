@@ -32,7 +32,7 @@ public struct TagEditorSheet: View {
             }
 
             // Tab picker
-            Picker("Tab", selection: self.$selectedTab) {
+            Picker(L10n.string("Tab"), selection: self.$selectedTab) {
                 ForEach(Tab.allCases) { tab in
                     Text(tab.label).tag(tab)
                 }
@@ -73,11 +73,11 @@ public struct TagEditorSheet: View {
         .frame(minWidth: 520, idealWidth: 600, minHeight: 420)
         .task { await self.vm.load() }
         .onAppear { self.focusedField = .title }
-        .alert("Error", isPresented: Binding(
+        .alert(L10n.string("Error"), isPresented: Binding(
             get: { self.vm.lastError != nil },
             set: { if !$0 { self.vm.lastError = nil } }
         )) {
-            Button("OK") { self.vm.lastError = nil }
+            Button(L10n.string("OK")) { self.vm.lastError = nil }
         } message: {
             Text(self.vm.lastError ?? "")
         }
@@ -102,36 +102,36 @@ public struct TagEditorSheet: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.yellow)
                 .accessibilityHidden(true)
-            Text("This file was changed on disk after your last edit.")
+            Text(localized: "This file was changed on disk after your last edit.")
                 .font(.subheadline)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Keep My Edits") {
+            Button(L10n.string("Keep My Edits")) {
                 Task { await self.vm.keepMyEdits() }
             }
-            .help("Preserve your stored tag values and dismiss this warning")
-            Button("Take Disk Version") {
+            .help(L10n.string("Preserve your stored tag values and dismiss this warning"))
+            Button(L10n.string("Take Disk Version")) {
                 Task { await self.vm.takeDiskVersion() }
             }
-            .help("Load the tags now on disk, discarding your previous edits")
-            Button("Show Diff…") {
+            .help(L10n.string("Load the tags now on disk, discarding your previous edits"))
+            Button(L10n.string("Show Diff…")) {
                 self.isPresentingConflictDiff = true
             }
-            .help("Compare your stored edits side-by-side with what's on disk")
+            .help(L10n.string("Compare your stored edits side-by-side with what's on disk"))
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color.yellow.opacity(0.12))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Conflict: file was changed on disk after your last edit")
+        .accessibilityLabel(L10n.string("Conflict: file was changed on disk after your last edit"))
     }
 
     // MARK: - Bulk Actions (multi-track only)
 
     var bulkActionsSection: some View {
-        Section("Bulk Actions") {
+        Section(L10n.string("Bulk Actions")) {
             // Renumber tracks in current sort order
-            LabeledContent("Track Numbers") {
-                Button("Renumber 1…\(self.vm.trackCount)") {
+            LabeledContent(L10n.string("Track Numbers")) {
+                Button(L10n.string("Renumber 1…\(self.vm.trackCount)")) {
                     if self.vm.tracksSpanMultipleAlbums {
                         self.isPresentingRenumberConfirm = true
                     } else {
@@ -139,32 +139,33 @@ public struct TagEditorSheet: View {
                     }
                 }
                 .disabled(self.vm.isApplyingBulkAction)
-                .help("Assign sequential track numbers (1…N) in the current sort order")
+                .help(L10n.string("Assign sequential track numbers (1…N) in the current sort order"))
             }
             .confirmationDialog(
-                "Tracks span multiple albums",
+                L10n.string("Tracks span multiple albums"),
                 isPresented: self.$isPresentingRenumberConfirm,
                 titleVisibility: .visible
             ) {
-                Button("Renumber Anyway", role: .destructive) {
+                Button(L10n.string("Renumber Anyway"), role: .destructive) {
                     Task { await self.vm.renumberTracks() }
                 }
-                Button("Cancel", role: .cancel) {}
+                Button(L10n.string("Cancel"), role: .cancel) {}
             } message: {
-                Text("The selected tracks belong to more than one album. Renumbering will overwrite each track's number. Continue?")
+                Text(localized:
+                    "The selected tracks belong to more than one album. Renumbering will overwrite each track's number. Continue?")
             }
 
             // Copy each track's artist into its album artist field
-            LabeledContent("Album Artist") {
-                Button("Set from Artist") {
+            LabeledContent(L10n.string("Album Artist")) {
+                Button(L10n.string("Set from Artist")) {
                     Task { await self.vm.copyArtistToAlbumArtist() }
                 }
                 .disabled(self.vm.isApplyingBulkAction)
-                .help("Copy each track's Artist value into its Album Artist field")
+                .help(L10n.string("Copy each track's Artist value into its Album Artist field"))
             }
 
             // Text case buttons for all text fields
-            LabeledContent("Text Case") {
+            LabeledContent(L10n.string("Text Case")) {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 4) {
                     ForEach(TagEditorViewModel.StringField.allCases, id: \.self) { field in
                         GridRow {
@@ -190,36 +191,38 @@ public struct TagEditorSheet: View {
     private var lyricsTab: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !self.vm.isSingleTrack, let eb = self.enabledFor(.lyrics) {
-                Toggle("Apply lyrics to all tracks", isOn: eb)
+                Toggle(L10n.string("Apply lyrics to all tracks"), isOn: eb)
                     .toggleStyle(.checkbox)
                     .padding(.horizontal)
-                    .help("When checked, the lyrics text will be written to every selected track on Save")
+                    .help(L10n.string("When checked, the lyrics text will be written to every selected track on Save"))
             }
             HStack {
-                Text("Lyrics")
+                Text(localized: "Lyrics")
                     .font(Typography.footnote)
                     .foregroundStyle(Color.textTertiary)
                 Spacer()
                 Picker("", selection: self.$vm.lyricsMode) {
-                    Text("Auto").tag(TagEditorViewModel.LyricsMode.auto)
-                    Text("Synced").tag(TagEditorViewModel.LyricsMode.synced)
-                    Text("Plain").tag(TagEditorViewModel.LyricsMode.plain)
+                    Text(localized: "Auto").tag(TagEditorViewModel.LyricsMode.auto)
+                    Text(localized: "Synced").tag(TagEditorViewModel.LyricsMode.synced)
+                    Text(localized: "Plain").tag(TagEditorViewModel.LyricsMode.plain)
                 }
                 .pickerStyle(.segmented)
                 .frame(width: 180)
-                .help("Auto: detect LRC timestamps. Synced: always save as synced (LRC). Plain: always save as plain text.")
+                .help(L10n.string(
+                    "Auto: detect LRC timestamps. Synced: always save as synced (LRC). Plain: always save as plain text."
+                ))
             }
             .padding(.horizontal)
             if self.vm.lyricsMode == .auto, self.vm.lrcTimestampsDetected {
                 HStack(spacing: 4) {
                     Image(systemName: "clock.badge.checkmark")
                         .imageScale(.small)
-                    Text("LRC timestamps detected — will be saved as synced lyrics")
+                    Text(localized: "LRC timestamps detected — will be saved as synced lyrics")
                         .font(Typography.footnote)
                 }
                 .foregroundStyle(Color.accentColor)
                 .padding(.horizontal)
-                .accessibilityLabel("LRC timestamps detected, lyrics will be saved as synced")
+                .accessibilityLabel(L10n.string("LRC timestamps detected, lyrics will be saved as synced"))
             }
             TextEditor(text: self.fieldBinding(\.lyrics))
                 .font(Typography.body)
@@ -238,16 +241,16 @@ public struct TagEditorSheet: View {
     private var bottomBar: some View {
         HStack {
             if self.vm.lastEditID != nil {
-                Button("Undo") { Task { await self.vm.undo() } }
+                Button(L10n.string("Undo")) { Task { await self.vm.undo() } }
                     .keyboardShortcut("z", modifiers: .command)
             }
             Spacer()
             if self.vm.isSaving {
                 ProgressView().scaleEffect(0.7)
             }
-            Button("Cancel") { self.isPresented = false }
+            Button(L10n.string("Cancel")) { self.isPresented = false }
                 .keyboardShortcut(.escape)
-            Button("Save") {
+            Button(L10n.string("Save")) {
                 Task {
                     await self.vm.save()
                     if self.vm.lastError == nil { self.isPresented = false }
@@ -315,25 +318,25 @@ private enum Tab: String, CaseIterable, Identifiable {
         self.rawValue
     }
 
-    var label: LocalizedStringKey {
+    var label: String {
         switch self {
         case .details:
-            "Details"
+            L10n.string("Details")
 
         case .artwork:
-            "Artwork"
+            L10n.string("Artwork")
 
         case .lyrics:
-            "Lyrics"
+            L10n.string("Lyrics")
 
         case .fileInfo:
-            "File Info"
+            L10n.string("File Info")
 
         case .sorting:
-            "Sorting"
+            L10n.string("Sorting")
 
         case .advanced:
-            "Advanced"
+            L10n.string("Advanced")
         }
     }
 }

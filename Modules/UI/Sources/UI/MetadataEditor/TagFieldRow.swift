@@ -8,10 +8,10 @@ import SwiftUI
 /// the Tag Editor — these IDs come from file tags and the DB scanner.
 /// Renders an em-dash when no value exists for the loaded track(s).
 public struct ReadOnlyIDRow: View {
-    public let label: LocalizedStringKey
+    public let label: String
     public let value: String
 
-    public init(label: LocalizedStringKey, value: String) {
+    public init(label: String, value: String) {
         self.label = label
         self.value = value
     }
@@ -25,7 +25,7 @@ public struct ReadOnlyIDRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityLabel(self.value.isEmpty ? "Not set" : self.value)
+                .accessibilityLabel(self.value.isEmpty ? L10n.string("Not set") : self.value)
         }
     }
 }
@@ -39,14 +39,14 @@ public struct ReadOnlyIDRow: View {
 /// In multi-track mode pass `enabledBinding` to show a leading checkbox;
 /// unchecking it prevents the field from being applied on Save.
 public struct TagFieldRow: View {
-    public let label: LocalizedStringKey
+    public let label: String
     @Binding public var text: String
     public let isVarious: Bool
     public var axis: Axis = .horizontal
     public var enabledBinding: Binding<Bool>?
 
     public init(
-        _ label: LocalizedStringKey,
+        _ label: String,
         text: Binding<String>,
         isVarious: Bool = false,
         axis: Axis = .horizontal,
@@ -63,7 +63,7 @@ public struct TagFieldRow: View {
         LabeledContent {
             TextField(
                 self.isVarious
-                    ? String(localized: "<various>", comment: "Placeholder for mixed multi-edit values")
+                    ? String(localized: "<various>", bundle: .module, comment: "Placeholder for mixed multi-edit values")
                     : "",
                 text: self.$text,
                 axis: self.axis
@@ -77,7 +77,7 @@ public struct TagFieldRow: View {
                     Toggle("", isOn: eb)
                         .toggleStyle(.checkbox)
                         .labelsHidden()
-                        .help("Include this field when saving")
+                        .help(L10n.string("Include this field when saving"))
                         .fixedSize()
                 }
                 Text(self.label)
@@ -91,7 +91,7 @@ public struct TagFieldRow: View {
 /// A label + integer text field that converts between `String` and `Int?`.
 /// In multi-track mode pass `enabledBinding` to show a leading checkbox.
 public struct IntFieldRow: View {
-    public let label: LocalizedStringKey
+    public let label: String
     @Binding public var value: Int?
     public let isVarious: Bool
     public var enabledBinding: Binding<Bool>?
@@ -99,7 +99,7 @@ public struct IntFieldRow: View {
     @State private var text = ""
 
     public init(
-        _ label: LocalizedStringKey,
+        _ label: String,
         value: Binding<Int?>,
         isVarious: Bool = false,
         enabledBinding: Binding<Bool>? = nil
@@ -113,7 +113,8 @@ public struct IntFieldRow: View {
     public var body: some View {
         LabeledContent {
             TextField(
-                self.isVarious ? "<various>" : "",
+                self.isVarious
+                    ? String(localized: "<various>", bundle: .module, comment: "Placeholder for mixed multi-edit values") : "",
                 text: Binding(
                     get: { self.value.map { String($0) } ?? "" },
                     set: { self.value = Int($0) }
@@ -128,7 +129,7 @@ public struct IntFieldRow: View {
                     Toggle("", isOn: eb)
                         .toggleStyle(.checkbox)
                         .labelsHidden()
-                        .help("Include this field when saving")
+                        .help(L10n.string("Include this field when saving"))
                         .fixedSize()
                 }
                 Text(self.label)
@@ -142,12 +143,12 @@ public struct IntFieldRow: View {
 /// A 0–5 star rating control (backed by 0–100 integer).
 /// In multi-track mode pass `enabledBinding` to show a leading checkbox.
 public struct StarRatingRow: View {
-    public let label: LocalizedStringKey
+    public let label: String
     @Binding public var rating: Int?
     public var enabledBinding: Binding<Bool>?
 
     public init(
-        _ label: LocalizedStringKey,
+        _ label: String,
         rating: Binding<Int?>,
         enabledBinding: Binding<Bool>? = nil
     ) {
@@ -167,7 +168,7 @@ public struct StarRatingRow: View {
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("\(star) \(star == 1 ? "star" : "stars")")
+                    .accessibilityLabel(L10n.string("\(star) stars"))
                 }
                 if self.rating != nil {
                     Button(
@@ -175,7 +176,7 @@ public struct StarRatingRow: View {
                         label: { Image(systemName: "xmark.circle").foregroundStyle(Color.textTertiary) }
                     )
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Clear rating")
+                    .accessibilityLabel(L10n.string("Clear rating"))
                 }
             }
             .disabled(self.enabledBinding.map { !$0.wrappedValue } ?? false)
@@ -185,7 +186,7 @@ public struct StarRatingRow: View {
                     Toggle("", isOn: eb)
                         .toggleStyle(.checkbox)
                         .labelsHidden()
-                        .help("Include this field when saving")
+                        .help(L10n.string("Include this field when saving"))
                         .fixedSize()
                 }
                 Text(self.label)
@@ -217,12 +218,12 @@ public struct StarRatingRow: View {
 ///
 /// In multi-track mode pass `enabledBinding` to show a leading checkbox;\n/// unchecking it prevents the field from being applied on Save.
 public struct ToggleFieldRow: View {
-    public let label: LocalizedStringKey
+    public let label: String
     @Binding public var value: Bool
     public var enabledBinding: Binding<Bool>?
 
     public init(
-        _ label: LocalizedStringKey,
+        _ label: String,
         value: Binding<Bool>,
         enabledBinding: Binding<Bool>? = nil
     ) {
@@ -242,7 +243,7 @@ public struct ToggleFieldRow: View {
                     Toggle("", isOn: eb)
                         .toggleStyle(.checkbox)
                         .labelsHidden()
-                        .help("Include this field when saving")
+                        .help(L10n.string("Include this field when saving"))
                         .fixedSize()
                 }
                 Text(self.label)

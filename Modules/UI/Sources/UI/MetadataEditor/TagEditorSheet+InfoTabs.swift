@@ -9,41 +9,41 @@ extension TagEditorSheet {
     @ViewBuilder var fileInfoTab: some View {
         if let track = self.vm.singleTrack {
             Form {
-                Section("Audio") {
-                    LabeledContent("Format") {
+                Section(L10n.string("Audio")) {
+                    LabeledContent(L10n.string("Format")) {
                         Text(track.fileFormat.uppercased())
                     }
-                    .help("Audio codec / container format")
+                    .help(L10n.string("Audio codec / container format"))
 
                     if let bitDepth = track.bitDepth {
-                        LabeledContent("Bit Depth") {
-                            Text("\(bitDepth)-bit")
+                        LabeledContent(L10n.string("Bit Depth")) {
+                            Text(localized: "\(bitDepth)-bit")
                         }
                     }
 
-                    LabeledContent("Sample Rate") {
+                    LabeledContent(L10n.string("Sample Rate")) {
                         Text(Self.formatSampleRate(track.sampleRate))
                     }
 
                     if let bitrate = track.bitrate {
-                        LabeledContent("Bitrate") {
-                            Text("\(bitrate) kbps")
+                        LabeledContent(L10n.string("Bitrate")) {
+                            Text(localized: "\(bitrate) kbps")
                         }
                     }
 
-                    LabeledContent("Duration") {
+                    LabeledContent(L10n.string("Duration")) {
                         Text(Self.formatDuration(track.duration))
                     }
 
                     if let channels = track.channelCount {
-                        LabeledContent("Channels") {
+                        LabeledContent(L10n.string("Channels")) {
                             Text(Self.formatChannels(channels))
                         }
                     }
 
                     if let lossless = track.isLossless {
-                        LabeledContent("Lossless") {
-                            Text(lossless ? "Yes" : "No")
+                        LabeledContent(L10n.string("Lossless")) {
+                            Text(lossless ? L10n.string("Yes") : L10n.string("No"))
                         }
                     }
                 }
@@ -52,40 +52,40 @@ extension TagEditorSheet {
                     || track.replaygainAlbumGain != nil
                     || track.replaygainTrackPeak != nil
                     || track.replaygainAlbumPeak != nil {
-                    Section("ReplayGain") {
+                    Section(L10n.string("ReplayGain")) {
                         if let tg = track.replaygainTrackGain {
-                            LabeledContent("Track Gain") {
+                            LabeledContent(L10n.string("Track Gain")) {
                                 Text(Self.formatGain(tg))
                             }
-                            .help("EBU R128 / ReplayGain track-level loudness adjustment")
+                            .help(L10n.string("EBU R128 / ReplayGain track-level loudness adjustment"))
                         }
                         if let tp = track.replaygainTrackPeak {
-                            LabeledContent("Track Peak") {
+                            LabeledContent(L10n.string("Track Peak")) {
                                 Text(Self.formatPeak(tp))
                             }
-                            .help("Sample peak level for this track")
+                            .help(L10n.string("Sample peak level for this track"))
                         }
                         if let ag = track.replaygainAlbumGain {
-                            LabeledContent("Album Gain") {
+                            LabeledContent(L10n.string("Album Gain")) {
                                 Text(Self.formatGain(ag))
                             }
-                            .help("EBU R128 / ReplayGain album-level loudness adjustment")
+                            .help(L10n.string("EBU R128 / ReplayGain album-level loudness adjustment"))
                         }
                         if let ap = track.replaygainAlbumPeak {
-                            LabeledContent("Album Peak") {
+                            LabeledContent(L10n.string("Album Peak")) {
                                 Text(Self.formatPeak(ap))
                             }
-                            .help("Sample peak level for the album")
+                            .help(L10n.string("Sample peak level for the album"))
                         }
                     }
                 }
 
-                Section("File") {
-                    LabeledContent("Size") {
+                Section(L10n.string("File")) {
+                    LabeledContent(L10n.string("Size")) {
                         Text(Self.formatFileSize(track.fileSize))
                     }
 
-                    LabeledContent("Location") {
+                    LabeledContent(L10n.string("Location")) {
                         Text(track.filePathDisplay ?? track.fileURL)
                             .textSelection(.enabled)
                             .font(Typography.footnote)
@@ -93,11 +93,11 @@ extension TagEditorSheet {
                     }
                     .help(track.fileURL)
 
-                    LabeledContent("Date Added") {
+                    LabeledContent(L10n.string("Date Added")) {
                         Text(Self.formatDate(track.addedAt))
                     }
 
-                    LabeledContent("Date Modified") {
+                    LabeledContent(L10n.string("Date Modified")) {
                         Text(Self.formatDate(track.fileMtime))
                     }
                 }
@@ -106,9 +106,9 @@ extension TagEditorSheet {
             .padding()
         } else {
             ContentUnavailableView(
-                "Multiple Files Selected",
+                L10n.string("Multiple Files Selected"),
                 systemImage: "doc.on.doc",
-                description: Text("Select a single track to view its file information.")
+                description: Text(localized: "Select a single track to view its file information.")
             )
             .padding()
         }
@@ -119,10 +119,10 @@ extension TagEditorSheet {
     @ViewBuilder var advancedTab: some View {
         if let track = self.vm.singleTrack {
             Form {
-                Section("Edit History") {
-                    LabeledContent("Manually Edited") {
+                Section(L10n.string("Edit History")) {
+                    LabeledContent(L10n.string("Manually Edited")) {
                         HStack(spacing: 6) {
-                            Text(track.userEdited ? "Yes" : "No")
+                            Text(track.userEdited ? L10n.string("Yes") : L10n.string("No"))
 
                             if track.userEdited {
                                 Image(systemName: "pencil.circle.fill")
@@ -130,20 +130,20 @@ extension TagEditorSheet {
                             }
                         }
                     }
-                    .help("When Yes, library rescans will not overwrite your manual tag changes.")
+                    .help(L10n.string("When Yes, library rescans will not overwrite your manual tag changes."))
                 }
 
-                Section("Play Statistics") {
-                    LabeledContent("Play Count") {
-                        Text("\(track.playCount)")
+                Section(L10n.string("Play Statistics")) {
+                    LabeledContent(L10n.string("Play Count")) {
+                        Text(verbatim: String(track.playCount))
                     }
 
-                    LabeledContent("Skip Count") {
-                        Text("\(track.skipCount)")
+                    LabeledContent(L10n.string("Skip Count")) {
+                        Text(verbatim: String(track.skipCount))
                     }
 
                     if let lastPlayed = track.lastPlayedAt {
-                        LabeledContent("Last Played") {
+                        LabeledContent(L10n.string("Last Played")) {
                             Text(Self.formatDate(lastPlayed))
                         }
                     }
@@ -153,9 +153,9 @@ extension TagEditorSheet {
             .padding()
         } else {
             ContentUnavailableView(
-                "Multiple Files Selected",
+                L10n.string("Multiple Files Selected"),
                 systemImage: "doc.on.doc",
-                description: Text("Select a single track to view its information.")
+                description: Text(localized: "Select a single track to view its information.")
             )
             .padding()
         }

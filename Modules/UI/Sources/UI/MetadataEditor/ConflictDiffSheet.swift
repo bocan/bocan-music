@@ -23,12 +23,12 @@ public struct ConflictDiffSheet: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.yellow)
                     .accessibilityHidden(true)
-                Text("Field-by-field Comparison")
+                Text(localized: "Field-by-field Comparison")
                     .font(.headline)
                 Spacer()
-                Button("Done") { self.isPresented = false }
+                Button(L10n.string("Done")) { self.isPresented = false }
                     .keyboardShortcut(.defaultAction)
-                    .accessibilityLabel("Close diff sheet")
+                    .accessibilityLabel(L10n.string("Close diff sheet"))
             }
             .padding()
 
@@ -36,30 +36,30 @@ public struct ConflictDiffSheet: View {
 
             if self.vm.conflictDiffRows.isEmpty {
                 ContentUnavailableView(
-                    "No Differences Found",
+                    L10n.string("No Differences Found"),
                     systemImage: "checkmark.circle",
                     description: Text(
-                        "The tracked fields (title, genre, year, etc.) are identical. " +
-                            "Artist / album names are not compared here."
+                        L10n.string("The tracked fields (title, genre, year, etc.) are identical.")
+                            + " " + L10n.string("Artist / album names are not compared here.")
                     )
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 // Column headers
                 HStack(spacing: 0) {
-                    Text("Field")
+                    Text(localized: "Field")
                         .frame(width: 110, alignment: .leading)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .padding(.leading)
                     Divider().frame(maxHeight: 20)
-                    Text("Your Edits (stored)")
+                    Text(localized: "Your Edits (stored)")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 12)
                     Divider().frame(maxHeight: 20)
-                    Text("On Disk (new)")
+                    Text(localized: "On Disk (new)")
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -81,24 +81,24 @@ public struct ConflictDiffSheet: View {
 
             // Footer with resolution actions
             HStack {
-                Text("Resolve via the banner in the Tag Editor.")
+                Text(localized: "Resolve via the banner in the Tag Editor.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button("Keep My Edits") {
+                Button(L10n.string("Keep My Edits")) {
                     Task {
                         await self.vm.keepMyEdits()
                         self.isPresented = false
                     }
                 }
-                .help("Preserve your stored tag values; acknowledge the on-disk change")
-                Button("Take Disk Version") {
+                .help(L10n.string("Preserve your stored tag values; acknowledge the on-disk change"))
+                Button(L10n.string("Take Disk Version")) {
                     Task {
                         await self.vm.takeDiskVersion()
                         self.isPresented = false
                     }
                 }
-                .help("Accept the on-disk tags; your edits will be discarded")
+                .help(L10n.string("Accept the on-disk tags; your edits will be discarded"))
             }
             .padding()
         }
@@ -133,7 +133,7 @@ private struct DiffRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(self.row.label): stored \(self.row.stored), on disk \(self.row.disk)"
+            L10n.string("\(self.row.label): stored \(self.row.stored), on disk \(self.row.disk)")
         )
     }
 }

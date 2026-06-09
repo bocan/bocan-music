@@ -48,21 +48,21 @@ public struct ArtworkEditor: View {
             .onDrop(of: [.image, .fileURL], isTargeted: self.$isTargeted) { providers in
                 self.handleDrop(providers: providers)
             }
-            .accessibilityLabel("Cover art")
+            .accessibilityLabel(L10n.string("Cover art"))
 
             // Action buttons
             HStack(spacing: 8) {
-                Button("Choose File…") { self.isPickingFile = true }
-                    .help("Open an image file to use as cover art")
-                Button("Paste") { self.pasteFromClipboard() }
+                Button(L10n.string("Choose File…")) { self.isPickingFile = true }
+                    .help(L10n.string("Open an image file to use as cover art"))
+                Button(L10n.string("Paste")) { self.pasteFromClipboard() }
                     .disabled(!NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))
-                    .help("Paste an image from the clipboard")
-                Button("Fetch…") { self.isPresentingFetchSheet = true }
-                    .help("Search MusicBrainz for cover art online")
+                    .help(L10n.string("Paste an image from the clipboard"))
+                Button(L10n.string("Fetch…")) { self.isPresentingFetchSheet = true }
+                    .help(L10n.string("Search MusicBrainz for cover art online"))
                 if self.vm.pendingArtData != nil || self.vm.existingArtData != nil {
-                    Button("Remove") { self.vm.clearArtwork() }
+                    Button(L10n.string("Remove")) { self.vm.clearArtwork() }
                         .foregroundStyle(.red)
-                        .help("Remove the cover art from this track")
+                        .help(L10n.string("Remove the cover art from this track"))
                 }
             }
             .buttonStyle(.bordered)
