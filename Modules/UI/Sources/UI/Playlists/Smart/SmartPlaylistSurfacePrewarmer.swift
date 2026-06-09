@@ -44,15 +44,15 @@ private struct SmartPlaylistWarmupProbeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            TextField("Name", text: self.$text)
+            TextField(L10n.string("Name"), text: self.$text)
                 .textFieldStyle(.roundedBorder)
             Picker("", selection: self.$mode) {
-                Text("all").tag(0)
-                Text("any").tag(1)
+                Text(localized: "all").tag(0)
+                Text(localized: "any").tag(1)
             }
             .pickerStyle(.segmented)
-            Menu("Preset") {
-                Button("Built-in") {}
+            Menu(L10n.string("Preset")) {
+                Button(L10n.string("Built-in")) {}
             }
         }
         .hidden()

@@ -16,11 +16,11 @@ struct SmartPresetPickerView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Start from a Preset")
+                Text(localized: "Start from a Preset")
                     .font(Typography.largeTitle)
                     .foregroundStyle(Color.textPrimary)
                 Spacer()
-                Button("Cancel") { self.dismiss() }
+                Button(L10n.string("Cancel")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
             .padding(20)
@@ -32,8 +32,8 @@ struct SmartPresetPickerView: View {
             } else if self.presets.isEmpty {
                 EmptyState(
                     symbol: "sparkles",
-                    title: "No Presets",
-                    message: "No built-in presets are available."
+                    title: L10n.string("No Presets"),
+                    message: L10n.string("No built-in presets are available.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {

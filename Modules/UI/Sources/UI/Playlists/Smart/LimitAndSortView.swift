@@ -9,13 +9,13 @@ struct LimitAndSortView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Limit & Sort")
+            Text(localized: "Limit & Sort")
                 .font(Typography.title)
                 .foregroundStyle(Color.textPrimary)
 
             // Sort row
             HStack(spacing: 8) {
-                Text("Sort by")
+                Text(localized: "Sort by")
                     .font(Typography.body)
                     .foregroundStyle(Color.textSecondary)
                     .frame(width: 80, alignment: .trailing)
@@ -32,12 +32,12 @@ struct LimitAndSortView: View {
                         .foregroundStyle(Color.textPrimary)
                 }
                 .toggleStyle(.button)
-                .help(self.limitSort.ascending ? "Ascending" : "Descending")
+                .help(self.limitSort.ascending ? L10n.string("Ascending") : L10n.string("Descending"))
             }
 
             // Limit row
             HStack(spacing: 8) {
-                Toggle("Limit to", isOn: Binding(
+                Toggle(L10n.string("Limit to"), isOn: Binding(
                     get: { self.limitSort.limit != nil },
                     set: { enabled in
                         self.limitSort.limit = enabled ? 25 : nil
@@ -55,7 +55,7 @@ struct LimitAndSortView: View {
                         in: 1 ... 10000,
                         step: 5
                     ) {
-                        Text("\(limit) tracks")
+                        Text(localized: "\(limit) tracks")
                     }
                 }
             }
@@ -63,9 +63,9 @@ struct LimitAndSortView: View {
             // Live update toggle
             HStack(spacing: 8) {
                 Color.clear.frame(width: 80)
-                Toggle("Live update", isOn: self.$limitSort.liveUpdate)
+                Toggle(L10n.string("Live update"), isOn: self.$limitSort.liveUpdate)
                     .font(Typography.body)
-                    .help("When enabled, the playlist updates automatically when library changes")
+                    .help(L10n.string("When enabled, the playlist updates automatically when library changes"))
             }
         }
     }
@@ -77,37 +77,37 @@ extension SortKey {
     var displayName: String {
         switch self {
         case .title:
-            "Title"
+            L10n.string("Title")
 
         case .artist:
-            "Artist"
+            L10n.string("Artist")
 
         case .album:
-            "Album"
+            L10n.string("Album")
 
         case .year:
-            "Year"
+            L10n.string("Year")
 
         case .addedAt:
-            "Date Added"
+            L10n.string("Date Added")
 
         case .lastPlayedAt:
-            "Last Played"
+            L10n.string("Last Played")
 
         case .playCount:
-            "Play Count"
+            L10n.string("Play Count")
 
         case .rating:
-            "Rating"
+            L10n.string("Rating")
 
         case .duration:
-            "Duration"
+            L10n.string("Duration")
 
         case .bpm:
-            "BPM"
+            L10n.string("BPM")
 
         case .random:
-            "Random"
+            L10n.string("Random")
         }
     }
 }

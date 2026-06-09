@@ -65,19 +65,19 @@ struct GroupEditorView: View {
         VStack(alignment: .leading, spacing: 6) {
             // Header row: Match [all|any] of these rules
             HStack(spacing: 6) {
-                Text("Match")
+                Text(localized: "Match")
                     .foregroundStyle(Color.textSecondary)
                     .font(Typography.subheadline)
                 Picker("", selection: self.$op) {
-                    Text("all").tag(LogicalOp.and)
-                    Text("any").tag(LogicalOp.or)
+                    Text(localized: "all").tag(LogicalOp.and)
+                    Text(localized: "any").tag(LogicalOp.or)
                 }
                 .pickerStyle(.segmented)
                 .fixedSize()
-                .help("Choose whether all rules or any rule must match")
-                .accessibilityLabel("Match mode")
-                .accessibilityValue(self.op == .and ? "all" : "any")
-                Text("of the following rules:")
+                .help(L10n.string("Choose whether all rules or any rule must match"))
+                .accessibilityLabel(L10n.string("Match mode"))
+                .accessibilityValue(self.op == .and ? L10n.string("all") : L10n.string("any"))
+                Text(localized: "of the following rules:")
                     .foregroundStyle(Color.textSecondary)
                     .font(Typography.subheadline)
                 Spacer()
@@ -88,9 +88,9 @@ struct GroupEditorView: View {
                         .foregroundStyle(Color.accentColor)
                 }
                 .buttonStyle(.borderless)
-                .help("Add a rule to this group")
+                .help(L10n.string("Add a rule to this group"))
                 .accessibilityIdentifier(A11y.RuleBuilder.addRuleButton)
-                .accessibilityLabel("Add rule")
+                .accessibilityLabel(L10n.string("Add rule"))
                 if self.depth < 2 {
                     Button {
                         self.children.append(.defaultGroup())
@@ -99,8 +99,8 @@ struct GroupEditorView: View {
                             .foregroundStyle(Color.accentColor)
                     }
                     .buttonStyle(.borderless)
-                    .help("Add a nested rule group")
-                    .accessibilityLabel("Add group")
+                    .help(L10n.string("Add a nested rule group"))
+                    .accessibilityLabel(L10n.string("Add group"))
                 }
             }
             .padding(.bottom, 2)
@@ -109,7 +109,7 @@ struct GroupEditorView: View {
                 Text(validationMessage)
                     .font(Typography.caption)
                     .foregroundStyle(Color.red)
-                    .accessibilityLabel("Validation error: \(validationMessage)")
+                    .accessibilityLabel(L10n.string("Validation error: \(validationMessage)"))
             }
 
             // Children
@@ -137,8 +137,8 @@ struct GroupEditorView: View {
                             .foregroundStyle(Color.red.opacity(0.8))
                     }
                     .buttonStyle(.borderless)
-                    .help("Remove this row")
-                    .accessibilityLabel("Remove rule")
+                    .help(L10n.string("Remove this row"))
+                    .accessibilityLabel(L10n.string("Remove rule"))
                     .opacity(self.children.count > 1 ? 1 : 0.3)
                     .disabled(self.children.count <= 1)
                 }

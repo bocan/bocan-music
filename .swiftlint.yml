@@ -81,7 +81,7 @@ custom_rules:
   # completes. Workflow: docs/design-spec/localization.md.
   no_bare_user_facing_literal:
     name: "Bare user-facing string literal"
-    regex: '\b(?:Text|Button|Toggle|Label|Picker|Menu|TextField|SecureField|Section|Stepper|LabeledContent|ProgressView|ContentUnavailableView)\(\s*"|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog)\(\s*"'
+    regex: '\b(?:Text|Button|Toggle|Label|Picker|Menu|TextField|SecureField|Section|Stepper|LabeledContent|ProgressView|ContentUnavailableView)\(\s*"[^"]|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog)\(\s*"[^"]'
     excluded_match_kinds:
       - comment
       - doccomment
@@ -89,8 +89,7 @@ custom_rules:
     severity: error
     included:
       - "Modules/UI/Sources/UI/Browse/.*\\.swift"
-      - "Modules/UI/Sources/UI/Playlists/[^/]*\\.swift"
-      - "Modules/UI/Sources/UI/Playlists/ViewModels/.*\\.swift"
+      - "Modules/UI/Sources/UI/Playlists/.*\\.swift"
       - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
       - "Modules/UI/Sources/UI/Settings/GeneralSettingsView\\.swift"
       - "Modules/UI/Sources/UI/Settings/AppearanceSettingsView\\.swift"

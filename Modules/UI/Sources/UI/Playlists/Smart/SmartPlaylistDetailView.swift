@@ -30,8 +30,8 @@ public struct SmartPlaylistDetailView: View {
             } else if self.vm.tracks.isEmpty {
                 EmptyState(
                     symbol: "sparkles",
-                    title: "No Matching Tracks",
-                    message: "Adjust the rules to find tracks in your library."
+                    title: L10n.string("No Matching Tracks"),
+                    message: L10n.string("Adjust the rules to find tracks in your library.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -72,12 +72,12 @@ public struct SmartPlaylistDetailView: View {
                 }
             }
         }
-        .alert("Error", isPresented: Binding(
+        .alert(L10n.string("Error"), isPresented: Binding(
             get: { self.vm.lastError != nil },
             set: { if !$0 { self.vm.lastError = nil } }
         )) {
-            Button("OK") { self.vm.lastError = nil }
-                .help("Dismiss this error")
+            Button(L10n.string("OK")) { self.vm.lastError = nil }
+                .help(L10n.string("Dismiss this error"))
         } message: {
             Text(self.vm.lastError ?? "")
         }
@@ -117,34 +117,34 @@ public struct SmartPlaylistDetailView: View {
                 Button {
                     Task { await self.library.play(tracks: self.vm.tracks) }
                 } label: {
-                    Label("Play", systemImage: "play.fill")
+                    Label(L10n.string("Play"), systemImage: "play.fill")
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(self.vm.tracks.isEmpty)
-                .help("Play the current smart playlist in order")
-                .accessibilityHint("Starts playback from the first matching track")
+                .help(L10n.string("Play the current smart playlist in order"))
+                .accessibilityHint(L10n.string("Starts playback from the first matching track"))
 
                 Button {
                     Task { await self.playShuffled() }
                 } label: {
-                    Label("Shuffle", systemImage: "shuffle")
+                    Label(L10n.string("Shuffle"), systemImage: "shuffle")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(self.vm.tracks.isEmpty)
-                .help("Shuffle and play the matching tracks")
-                .accessibilityHint("Starts playback in shuffled order")
+                .help(L10n.string("Shuffle and play the matching tracks"))
+                .accessibilityHint(L10n.string("Starts playback in shuffled order"))
 
                 if !self.vm.isLive {
                     Button {
                         Task { await self.vm.refresh() }
                     } label: {
-                        Label("Refresh now", systemImage: "arrow.clockwise")
+                        Label(L10n.string("Refresh now"), systemImage: "arrow.clockwise")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .help("Re-run the rules and update the saved snapshot")
+                    .help(L10n.string("Re-run the rules and update the saved snapshot"))
                     .keyboardShortcut("r", modifiers: [.command])
                     .accessibilityIdentifier(A11y.SmartPlaylistDetail.refreshButton)
                 }
@@ -153,22 +153,22 @@ public struct SmartPlaylistDetailView: View {
                     Button {
                         Task { await self.reshuffle() }
                     } label: {
-                        Label("Reshuffle", systemImage: "arrow.triangle.2.circlepath")
+                        Label(L10n.string("Reshuffle"), systemImage: "arrow.triangle.2.circlepath")
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
-                    .help("Pick a new random order")
+                    .help(L10n.string("Pick a new random order"))
                 }
 
                 Button {
                     self.isEditingRules = true
                 } label: {
-                    Label("Edit Rules", systemImage: "slider.horizontal.3")
+                    Label(L10n.string("Edit Rules"), systemImage: "slider.horizontal.3")
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
-                .help("Open the rule builder to edit this smart playlist")
-                .accessibilityHint("Opens criteria, limit, and sort controls")
+                .help(L10n.string("Open the rule builder to edit this smart playlist"))
+                .accessibilityHint(L10n.string("Opens criteria, limit, and sort controls"))
                 .accessibilityIdentifier(A11y.SmartPlaylistDetail.editButton)
             }
         }
@@ -189,13 +189,13 @@ public struct SmartPlaylistDetailView: View {
 
     private var snapshotSubtitle: String? {
         guard let unix = self.vm.lastSnapshottedAt else {
-            return "Snapshot not created yet"
+            return L10n.string("Snapshot not created yet")
         }
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         let text = formatter.string(from: Date(timeIntervalSince1970: TimeInterval(unix)))
-        return "Snapshotted at \(text)"
+        return L10n.string("Snapshotted at \(text)")
     }
 
     // MARK: - Actions
@@ -214,7 +214,7 @@ public struct SmartPlaylistDetailView: View {
                 await self.vm.refresh()
             }
         } catch {
-            self.vm.lastError = "Could not reshuffle playlist."
+            self.vm.lastError = L10n.string("Could not reshuffle playlist.")
         }
     }
 }

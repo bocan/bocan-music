@@ -55,12 +55,12 @@ public struct RuleBuilderView: View {
         .frame(minWidth: 620, idealWidth: 720, minHeight: 420)
         .accessibilityIdentifier(A11y.RuleBuilder.view)
         .environment(\.playlistServiceForRules, self.playlistService)
-        .alert("Save Error", isPresented: Binding(
+        .alert(L10n.string("Save Error"), isPresented: Binding(
             get: { self.saveError != nil },
             set: { if !$0 { self.saveError = nil } }
         )) {
-            Button("OK") { self.saveError = nil }
-                .help("Dismiss this message")
+            Button(L10n.string("OK")) { self.saveError = nil }
+                .help(L10n.string("Dismiss this message"))
         } message: {
             Text(self.saveError ?? "")
         }
@@ -88,24 +88,24 @@ public struct RuleBuilderView: View {
             Button {
                 self.showPresets = true
             } label: {
-                Label("Presets…", systemImage: "star")
+                Label(L10n.string("Presets…"), systemImage: "star")
             }
             .buttonStyle(.borderless)
-            .help("Load criteria from a built-in smart playlist preset")
+            .help(L10n.string("Load criteria from a built-in smart playlist preset"))
 
             Spacer()
 
-            Text("Edit Smart Playlist Rules")
+            Text(localized: "Edit Smart Playlist Rules")
                 .font(Typography.title)
                 .foregroundStyle(Color.textPrimary)
 
             Spacer()
 
-            Button("Cancel") {
+            Button(L10n.string("Cancel")) {
                 self.dismiss()
             }
             .keyboardShortcut(.cancelAction)
-            .help("Close this editor without saving changes")
+            .help(L10n.string("Close this editor without saving changes"))
 
             Button {
                 Task { await self.save() }
@@ -113,7 +113,7 @@ public struct RuleBuilderView: View {
                 if self.isSaving {
                     ProgressView().controlSize(.small)
                 } else {
-                    Text("Save")
+                    Text(localized: "Save")
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -151,9 +151,9 @@ public struct RuleBuilderView: View {
 
     private var saveHelpText: String {
         if let validationError {
-            return "Fix validation errors before saving: \(validationError)"
+            return L10n.string("Fix validation errors before saving: \(validationError)")
         }
-        return "Save these rules and update the smart playlist"
+        return L10n.string("Save these rules and update the smart playlist")
     }
 
     private func refreshValidation() {
@@ -192,27 +192,27 @@ public struct RuleBuilderView: View {
             if rule.comparator == .matchesRegex,
                case let .text(pattern) = rule.value,
                !Self.isValidRegex(pattern) {
-                result.add(nodeID: id, message: "Invalid regex pattern: \(pattern)")
+                result.add(nodeID: id, message: L10n.string("Invalid regex pattern: \(pattern)"))
             }
             if rule.comparator == .between,
                case let .range(low, high) = rule.value,
                Self.isReversedRange(low, high) {
                 result.add(
                     nodeID: parentGroupID ?? id,
-                    message: "Between range is reversed (from must be <= to)"
+                    message: L10n.string("Between range is reversed (from must be <= to)")
                 )
             }
 
         case let .group(id, _, children):
             if children.isEmpty {
-                result.add(nodeID: id, message: "Group must contain at least one rule")
+                result.add(nodeID: id, message: L10n.string("Group must contain at least one rule"))
             }
             for child in children {
                 Self.validateNode(child, parentGroupID: id, result: &result)
             }
 
         case let .invalid(id, reason):
-            result.add(nodeID: id, message: "Invalid rule: \(reason)")
+            result.add(nodeID: id, message: L10n.string("Invalid rule: \(reason)"))
         }
     }
 
@@ -247,16 +247,16 @@ public struct RuleBuilderView: View {
     private static func message(for error: SmartPlaylistError) -> String {
         switch error {
         case .emptyGroup:
-            "Group must contain at least one rule"
+            L10n.string("Group must contain at least one rule")
 
         case .betweenRangeReversed:
-            "Between range is reversed (from must be <= to)"
+            L10n.string("Between range is reversed (from must be <= to)")
 
         case let .invalidRegex(pattern):
-            "Invalid regex pattern: \(pattern)"
+            L10n.string("Invalid regex pattern: \(pattern)")
 
         case let .invalidRule(reason):
-            "Invalid rule: \(reason)"
+            L10n.string("Invalid rule: \(reason)")
 
         default:
             error.localizedDescription
