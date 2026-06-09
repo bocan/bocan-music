@@ -8,11 +8,11 @@ struct ConnectLastFmSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Connect Last.fm")
+            Text(localized: "Connect Last.fm")
                 .font(.title2.weight(.semibold))
             Text(
-                "Bòcan will open last.fm in your browser to authorise this device. " +
-                    "Once you approve, return here — your account will appear automatically."
+                L10n.string("Bòcan will open last.fm in your browser to authorise this device.")
+                    + " " + L10n.string("Once you approve, return here — your account will appear automatically.")
             )
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -21,8 +21,8 @@ struct ConnectLastFmSheet: View {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
-                        .accessibilityLabel("Waiting for Last.fm authorisation")
-                    Text("Waiting for browser authorisation…")
+                        .accessibilityLabel(L10n.string("Waiting for Last.fm authorisation"))
+                    Text(localized: "Waiting for browser authorisation…")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -33,10 +33,10 @@ struct ConnectLastFmSheet: View {
             }
 
             HStack {
-                Button("Cancel", role: .cancel) { self.isPresented = false }
-                    .help("Cancel the Last.fm connection flow")
+                Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
+                    .help(L10n.string("Cancel the Last.fm connection flow"))
                 Spacer()
-                Button(self.viewModel.lastFm.isConnected ? "Done" : "Open last.fm") {
+                Button(self.viewModel.lastFm.isConnected ? L10n.string("Done") : L10n.string("Open last.fm")) {
                     if self.viewModel.lastFm.isConnected {
                         self.isPresented = false
                     } else {
@@ -51,8 +51,8 @@ struct ConnectLastFmSheet: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.viewModel.isAuthenticatingLastFm)
                 .help(self.viewModel.lastFm.isConnected
-                    ? "Close this sheet"
-                    : "Open last.fm in your browser to authorise Bòcan")
+                    ? L10n.string("Close this sheet")
+                    : L10n.string("Open last.fm in your browser to authorise Bòcan"))
             }
         }
         .padding(24)
@@ -70,18 +70,18 @@ struct ConnectRockskySheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Connect Rocksky")
+            Text(localized: "Connect Rocksky")
                 .font(.title2.weight(.semibold))
             Text(
-                "Enter your API key from your Rocksky account settings at rocksky.app/apikeys."
+                L10n.string("Enter your API key from your Rocksky account settings at rocksky.app/apikeys.")
             )
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
-            LabeledContent("API Key") {
-                SecureField("API key", text: self.$apiKey)
+            LabeledContent(L10n.string("API Key")) {
+                SecureField(L10n.string("API key"), text: self.$apiKey)
                     .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel("Rocksky API key")
+                    .accessibilityLabel(L10n.string("Rocksky API key"))
             }
 
             if let err = viewModel.rockskyConnectError {
@@ -91,10 +91,10 @@ struct ConnectRockskySheet: View {
             }
 
             HStack {
-                Button("Cancel", role: .cancel) { self.isPresented = false }
-                    .help("Cancel the Rocksky connection")
+                Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
+                    .help(L10n.string("Cancel the Rocksky connection"))
                 Spacer()
-                Button("Connect") {
+                Button(L10n.string("Connect")) {
                     self.submitting = true
                     Task {
                         await self.viewModel.connectRocksky(apiKey: self.apiKey)
@@ -106,7 +106,7 @@ struct ConnectRockskySheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.apiKey.isEmpty || self.submitting)
-                .help("Save your Rocksky API key and connect your account")
+                .help(L10n.string("Save your Rocksky API key and connect your account"))
             }
         }
         .padding(24)
@@ -122,18 +122,17 @@ struct ConnectListenBrainzSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Connect ListenBrainz")
+            Text(localized: "Connect ListenBrainz")
                 .font(.title2.weight(.semibold))
             Text(
-                "Paste your ListenBrainz user token. You can find it on " +
-                    "listenbrainz.org/profile/."
+                L10n.string("Paste your ListenBrainz user token. You can find it on listenbrainz.org/profile/.")
             )
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
-            SecureField("User token", text: self.$token)
+            SecureField(L10n.string("User token"), text: self.$token)
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("ListenBrainz user token")
+                .accessibilityLabel(L10n.string("ListenBrainz user token"))
 
             if let err = viewModel.listenBrainzTokenError {
                 Text(err)
@@ -142,10 +141,10 @@ struct ConnectListenBrainzSheet: View {
             }
 
             HStack {
-                Button("Cancel", role: .cancel) { self.isPresented = false }
-                    .help("Cancel the ListenBrainz connection flow")
+                Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
+                    .help(L10n.string("Cancel the ListenBrainz connection flow"))
                 Spacer()
-                Button("Connect") {
+                Button(L10n.string("Connect")) {
                     self.submitting = true
                     Task {
                         await self.viewModel.connectListenBrainz(token: self.token)
@@ -157,7 +156,7 @@ struct ConnectListenBrainzSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.token.isEmpty || self.submitting)
-                .help("Submit your ListenBrainz token and connect your account")
+                .help(L10n.string("Submit your ListenBrainz token and connect your account"))
             }
         }
         .padding(24)

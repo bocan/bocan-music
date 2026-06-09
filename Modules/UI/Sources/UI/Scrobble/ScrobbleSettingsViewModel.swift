@@ -120,7 +120,7 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
         defer { self.isAuthenticatingLastFm = false }
 
         guard let provider = await self.service.provider(id: "lastfm") as? LastFmProvider else {
-            self.lastFmAuthError = "Last.fm is not configured. Set BocanLastFmApiKey in Info.plist."
+            self.lastFmAuthError = L10n.string("Last.fm is not configured. Set BocanLastFmApiKey in Info.plist.")
             return
         }
         let auth = LastFmAuth(
@@ -147,7 +147,7 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     public func connectListenBrainz(token: String) async {
         self.listenBrainzTokenError = nil
         guard let provider = await self.service.provider(id: "listenbrainz") as? ListenBrainzProvider else {
-            self.listenBrainzTokenError = "ListenBrainz is unavailable."
+            self.listenBrainzTokenError = L10n.string("ListenBrainz is unavailable.")
             return
         }
         do {

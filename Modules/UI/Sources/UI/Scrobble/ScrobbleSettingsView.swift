@@ -18,7 +18,7 @@ public struct ScrobbleSettingsView: View {
 
     public var body: some View {
         Form {
-            Section("Last.fm") {
+            Section(L10n.string("Last.fm")) {
                 self.providerRow(
                     status: self.viewModel.lastFm,
                     connectAction: { self.showLastFmSheet = true },
@@ -30,7 +30,7 @@ public struct ScrobbleSettingsView: View {
                         .foregroundStyle(.red)
                 }
             }
-            Section("ListenBrainz") {
+            Section(L10n.string("ListenBrainz")) {
                 self.providerRow(
                     status: self.viewModel.listenBrainz,
                     connectAction: { self.showListenBrainzSheet = true },
@@ -42,7 +42,7 @@ public struct ScrobbleSettingsView: View {
                         .foregroundStyle(.red)
                 }
             }
-            Section("Rocksky") {
+            Section(L10n.string("Rocksky")) {
                 self.providerRow(
                     status: self.viewModel.rocksky,
                     connectAction: { self.showRockskySheet = true },
@@ -55,29 +55,29 @@ public struct ScrobbleSettingsView: View {
                 }
             }
             if let stats = viewModel.stats {
-                Section("Queue") {
-                    LabeledContent("Pending", value: "\(stats.pending)")
-                        .accessibilityHint("Number of scrobbles waiting to be submitted")
-                    LabeledContent("Failed (dead)", value: "\(stats.dead)")
-                        .accessibilityHint("Scrobbles that have exhausted all retry attempts")
-                    LabeledContent("Sent today", value: "\(stats.submittedToday)")
-                        .accessibilityHint("Scrobbles successfully submitted in the last 24 hours")
+                Section(L10n.string("Queue")) {
+                    LabeledContent(L10n.string("Pending"), value: String(stats.pending))
+                        .accessibilityHint(L10n.string("Number of scrobbles waiting to be submitted"))
+                    LabeledContent(L10n.string("Failed (dead)"), value: String(stats.dead))
+                        .accessibilityHint(L10n.string("Scrobbles that have exhausted all retry attempts"))
+                    LabeledContent(L10n.string("Sent today"), value: String(stats.submittedToday))
+                        .accessibilityHint(L10n.string("Scrobbles successfully submitted in the last 24 hours"))
                     if stats.dead > 0 {
                         HStack {
-                            Button("Retry failed") {
+                            Button(L10n.string("Retry failed")) {
                                 Task { await self.viewModel.resubmitDeadLetters() }
                             }
-                            .help("Re-queue all dead scrobbles and attempt immediate resubmission")
-                            Button("Discard failed", role: .destructive) {
+                            .help(L10n.string("Re-queue all dead scrobbles and attempt immediate resubmission"))
+                            Button(L10n.string("Discard failed"), role: .destructive) {
                                 Task { await self.viewModel.purgeDeadLetters() }
                             }
-                            .help("Permanently delete all failed scrobbles from the queue")
+                            .help(L10n.string("Permanently delete all failed scrobbles from the queue"))
                         }
                     }
-                    Button("Recent Scrobbles…") {
+                    Button(L10n.string("Recent Scrobbles…")) {
                         self.showRecentSheet = true
                     }
-                    .help("View the last 50 scrobbled tracks and their submission status")
+                    .help(L10n.string("View the last 50 scrobbled tracks and their submission status"))
                 }
             }
         }
@@ -111,27 +111,27 @@ public struct ScrobbleSettingsView: View {
                     .font(.headline)
                 if status.isConnected {
                     if let user = status.username {
-                        Text("Connected as \(user)")
+                        Text(localized: "Connected as \(user)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("Connected")
+                        Text(localized: "Connected")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 } else {
-                    Text("Not connected")
+                    Text(localized: "Not connected")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer()
             if status.isConnected {
-                Button("Disconnect", role: .destructive, action: disconnectAction)
-                    .help("Disconnect \(status.displayName) and remove stored credentials")
+                Button(L10n.string("Disconnect"), role: .destructive, action: disconnectAction)
+                    .help(L10n.string("Disconnect \(status.displayName) and remove stored credentials"))
             } else {
-                Button("Connect…", action: connectAction)
-                    .help("Connect your \(status.displayName) account")
+                Button(L10n.string("Connect…"), action: connectAction)
+                    .help(L10n.string("Connect your \(status.displayName) account"))
             }
         }
     }

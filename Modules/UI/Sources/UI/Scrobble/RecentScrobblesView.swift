@@ -26,6 +26,12 @@ public struct RecentScrobblesView: View {
         case listenbrainz = "ListenBrainz"
         case rocksky = "Rocksky"
 
+        /// Localized segment label; provider names are proper nouns and stay
+        /// verbatim (#314).
+        var displayName: String {
+            self == .all ? L10n.string("All") : self.rawValue
+        }
+
         var id: String {
             self.rawValue
         }
@@ -62,19 +68,19 @@ public struct RecentScrobblesView: View {
         VStack(spacing: 0) {
             // Toolbar with title + filter picker + done button
             HStack(spacing: 12) {
-                Text("Recent Scrobbles")
+                Text(localized: "Recent Scrobbles")
                     .font(.headline)
                 Spacer()
                 Picker(selection: self.$filter) {
                     ForEach(ProviderFilter.allCases) { option in
-                        Text(option.rawValue).tag(option)
+                        Text(option.displayName).tag(option)
                     }
                 } label: { EmptyView() }
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     .frame(width: 300)
-                    .accessibilityLabel("Filter by provider")
-                Button("Done") { self.dismiss() }
+                    .accessibilityLabel(L10n.string("Filter by provider"))
+                Button(L10n.string("Done")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
             .padding(.horizontal, 16)
@@ -86,9 +92,9 @@ public struct RecentScrobblesView: View {
             let rows = self.filteredRows
             if rows.isEmpty {
                 ContentUnavailableView(
-                    "No Scrobbles Yet",
+                    L10n.string("No Scrobbles Yet"),
                     systemImage: "music.note.list",
-                    description: Text("Tracks you play will appear here once they have been scrobbled.")
+                    description: Text(localized: "Tracks you play will appear here once they have been scrobbled.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -127,7 +133,7 @@ public struct RecentScrobblesView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                     if let album = row.album {
-                        Text("·")
+                        Text(verbatim: "·")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text(album)
@@ -173,8 +179,8 @@ public struct RecentScrobblesView: View {
         Image(systemName: imageName)
             .foregroundStyle(color)
             .imageScale(.medium)
-            .help("\(providerName): \(status.displayLabel)")
-            .accessibilityLabel("\(providerName)")
+            .help(L10n.string("\(providerName): \(status.displayLabel)"))
+            .accessibilityLabel(providerName)
             .accessibilityValue(status.displayLabel)
     }
 
@@ -238,7 +244,7 @@ public struct RecentScrobblesView: View {
         }
         let providerSummary = summaryParts.joined(separator: ", ")
 
-        var label = "\(row.title) by \(row.artist), played \(time)"
+        var label = L10n.string("\(row.title) by \(row.artist), played \(time)")
         if !providerSummary.isEmpty {
             label += ", \(providerSummary)"
         }
