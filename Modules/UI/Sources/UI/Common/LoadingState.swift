@@ -24,10 +24,10 @@ public struct LoadingState: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
-        title: String = "Loading…",
+        title: String? = nil,
         message: String? = nil
     ) {
-        self.title = title
+        self.title = title ?? L10n.string("Loading…")
         self.message = message
     }
 
@@ -63,7 +63,7 @@ public struct LoadingState: View {
         .padding(40)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.message.map { "\(self.title). \($0)" } ?? self.title)
-        .accessibilityValue("Loading")
+        .accessibilityValue(L10n.string("Loading"))
     }
 }
 

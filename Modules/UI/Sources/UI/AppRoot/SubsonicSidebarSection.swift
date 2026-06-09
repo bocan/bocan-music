@@ -62,18 +62,18 @@ public struct SubsonicSidebarSection: View {
                     // a plain label only if no add handler was injected.
                     if let onAddSource {
                         Button { onAddSource() } label: {
-                            Label("Add a Server\u{2026}", systemImage: "plus.circle")
+                            Label(L10n.string("Add a Server\u{2026}"), systemImage: "plus.circle")
                                 .font(Typography.body)
                         }
                         .buttonStyle(.plain)
-                        .help("Connect a Subsonic-compatible music server")
+                        .help(L10n.string("Connect a Subsonic-compatible music server"))
                         .accessibilityIdentifier(A11y.SourcesSidebar.emptyStateAddButton)
                     } else {
-                        Text("No sources yet")
+                        Text(localized: "No sources yet")
                             .font(Typography.footnote)
                             .foregroundStyle(Color.textTertiary)
                             .padding(.vertical, 2)
-                            .accessibilityLabel("No Subsonic sources configured")
+                            .accessibilityLabel(L10n.string("No Subsonic sources configured"))
                     }
                 } else {
                     ForEach(Array(self.servers.enumerated()), id: \.element.id) { index, server in
@@ -87,16 +87,16 @@ public struct SubsonicSidebarSection: View {
                     withAnimation(.easeInOut(duration: 0.2)) { self.sectionExpanded.toggle() }
                 } label: {
                     HStack(spacing: 4) {
-                        Text("Sources")
+                        Text(localized: "Sources")
                         Image(systemName: self.sectionExpanded ? "chevron.up" : "chevron.down")
                             .font(.system(size: 9, weight: .semibold))
                             .foregroundStyle(Color.textTertiary)
                     }
                 }
                 .buttonStyle(.plain)
-                .help(self.sectionExpanded ? "Collapse Sources" : "Expand Sources")
-                .accessibilityLabel(self.sectionExpanded ? "Collapse Sources" : "Expand Sources")
-                .accessibilityValue(self.sectionExpanded ? "Expanded" : "Collapsed")
+                .help(self.sectionExpanded ? L10n.string("Collapse Sources") : L10n.string("Expand Sources"))
+                .accessibilityLabel(self.sectionExpanded ? L10n.string("Collapse Sources") : L10n.string("Expand Sources"))
+                .accessibilityValue(self.sectionExpanded ? L10n.string("Expanded") : L10n.string("Collapsed"))
 
                 Spacer()
 
@@ -107,24 +107,24 @@ public struct SubsonicSidebarSection: View {
                     }
                     .buttonStyle(.borderless)
                     .fixedSize()
-                    .help("Add a new source server")
-                    .accessibilityLabel("Add Source")
+                    .help(L10n.string("Add a new source server"))
+                    .accessibilityLabel(L10n.string("Add Source"))
                     .accessibilityIdentifier(A11y.SourcesSidebar.addButton)
                 }
             }
             .contentShape(Rectangle())
             .contextMenu {
                 if let onAddSource {
-                    Button("Add Server") { onAddSource() }
+                    Button(L10n.string("Add Server")) { onAddSource() }
                 }
                 if let onManageSources {
-                    Button("Manage Sources") { onManageSources() }
+                    Button(L10n.string("Manage Sources")) { onManageSources() }
                 }
                 if !self.hiddenServers.isEmpty, let onEnableServerInSidebar {
                     Divider()
-                    Menu("Hidden Sources") {
+                    Menu(L10n.string("Hidden Sources")) {
                         ForEach(self.hiddenServers, id: \.id) { server in
-                            Button("Show \"\(server.name)\"") {
+                            Button(L10n.string("Show \"\(server.name)\"")) {
                                 onEnableServerInSidebar(server.id)
                             }
                         }
@@ -151,23 +151,23 @@ public struct SubsonicSidebarSection: View {
         self.disclosureButton(for: server, binding: binding, state: state, shortcutIndex: shortcutIndex)
 
         if binding.wrappedValue {
-            self.row(.subsonicSongs(server.id), symbol: "music.note", label: "Songs")
-            self.row(.subsonicAlbums(server.id), symbol: "square.grid.2x2", label: "Albums")
-            self.row(.subsonicArtists(server.id), symbol: "music.mic", label: "Artists")
-            self.row(.subsonicGenres(server.id), symbol: "tag", label: "Genres")
-            self.row(.subsonicPlaylists(server.id), symbol: "music.note.list", label: "Playlists")
-            self.row(.subsonicStarred(server.id), symbol: "star", label: "Starred")
-            self.row(.subsonicRandom(server.id), symbol: "shuffle", label: "Random")
-            self.row(.subsonicRecentlyAdded(server.id), symbol: "clock.badge.checkmark", label: "Recently Added")
-            self.row(.subsonicMostPlayed(server.id), symbol: "chart.line.uptrend.xyaxis", label: "Most Played")
+            self.row(.subsonicSongs(server.id), symbol: "music.note", label: L10n.string("Songs"))
+            self.row(.subsonicAlbums(server.id), symbol: "square.grid.2x2", label: L10n.string("Albums"))
+            self.row(.subsonicArtists(server.id), symbol: "music.mic", label: L10n.string("Artists"))
+            self.row(.subsonicGenres(server.id), symbol: "tag", label: L10n.string("Genres"))
+            self.row(.subsonicPlaylists(server.id), symbol: "music.note.list", label: L10n.string("Playlists"))
+            self.row(.subsonicStarred(server.id), symbol: "star", label: L10n.string("Starred"))
+            self.row(.subsonicRandom(server.id), symbol: "shuffle", label: L10n.string("Random"))
+            self.row(.subsonicRecentlyAdded(server.id), symbol: "clock.badge.checkmark", label: L10n.string("Recently Added"))
+            self.row(.subsonicMostPlayed(server.id), symbol: "chart.line.uptrend.xyaxis", label: L10n.string("Most Played"))
             if server.supportsInternetRadio {
-                self.row(.subsonicInternetRadio(server.id), symbol: "dot.radiowaves.left.and.right", label: "Internet Radio")
+                self.row(.subsonicInternetRadio(server.id), symbol: "dot.radiowaves.left.and.right", label: L10n.string("Internet Radio"))
             }
             if server.supportsPodcasts {
-                self.row(.subsonicPodcasts(server.id), symbol: "antenna.radiowaves.left.and.right", label: "Podcasts")
+                self.row(.subsonicPodcasts(server.id), symbol: "antenna.radiowaves.left.and.right", label: L10n.string("Podcasts"))
             }
             if server.supportsBookmarks {
-                self.row(.subsonicBookmarks(server.id), symbol: "bookmark", label: "Bookmarks")
+                self.row(.subsonicBookmarks(server.id), symbol: "bookmark", label: L10n.string("Bookmarks"))
             }
         }
     }
@@ -197,9 +197,11 @@ public struct SubsonicSidebarSection: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("\(server.name) — \(state.displayLabel)")
+        .help(L10n.string("\(server.name) — \(state.displayLabel)"))
         .accessibilityLabel(server.name)
-        .accessibilityValue("\(state.displayLabel). \(binding.wrappedValue ? "Expanded" : "Collapsed")")
+        .accessibilityValue(L10n.string(
+            "\(state.displayLabel). \(binding.wrappedValue ? L10n.string("Expanded") : L10n.string("Collapsed"))"
+        ))
         .modifier(SourceServerShortcut(index: shortcutIndex))
         .contextMenu { self.serverContextMenu(for: server) }
     }
@@ -207,23 +209,23 @@ public struct SubsonicSidebarSection: View {
     @ViewBuilder
     private func serverContextMenu(for server: SubsonicSidebarServer) -> some View {
         if let onRefreshServer {
-            Button("Refresh") { onRefreshServer(server.id) }
+            Button(L10n.string("Refresh")) { onRefreshServer(server.id) }
         }
         if let onTestServerConnection {
-            Button("Test Connection") { onTestServerConnection(server.id) }
+            Button(L10n.string("Test Connection")) { onTestServerConnection(server.id) }
         }
         if let onEditServer {
-            Button("Edit…") { onEditServer(server.id) }
+            Button(L10n.string("Edit…")) { onEditServer(server.id) }
         }
         if let onDisableServerInSidebar {
             Divider()
-            Button("Disable in Sidebar") { onDisableServerInSidebar(server.id) }
+            Button(L10n.string("Disable in Sidebar")) { onDisableServerInSidebar(server.id) }
         }
         if let onRemoveServer {
             Divider()
             // Opens a confirm-delete dialog (the "…" + destructive role are now
             // honest: this really removes the server, not just navigates) (#306).
-            Button("Remove…", role: .destructive) { onRemoveServer(server) }
+            Button(L10n.string("Remove…"), role: .destructive) { onRemoveServer(server) }
         }
     }
 
@@ -277,9 +279,9 @@ struct SidebarSectionHeader: View {
                 }
             }
             .buttonStyle(.plain)
-            .help(self.isExpanded ? "Collapse \(self.title)" : "Expand \(self.title)")
-            .accessibilityLabel(self.isExpanded ? "Collapse \(self.title)" : "Expand \(self.title)")
-            .accessibilityValue(self.isExpanded ? "Expanded" : "Collapsed")
+            .help(self.isExpanded ? L10n.string("Collapse \(self.title)") : L10n.string("Expand \(self.title)"))
+            .accessibilityLabel(self.isExpanded ? L10n.string("Collapse \(self.title)") : L10n.string("Expand \(self.title)"))
+            .accessibilityValue(self.isExpanded ? L10n.string("Expanded") : L10n.string("Collapsed"))
 
             Spacer()
 
@@ -301,7 +303,7 @@ struct SidebarSectionHeader: View {
         // action-less headers (Recents, Queue) don't get an empty right-click menu.
         if let action {
             header.contextMenu {
-                Button("\(action.title)\u{2026}") { action.perform() }
+                Button(L10n.string("\(action.title)\u{2026}")) { action.perform() }
             }
         } else {
             header

@@ -22,6 +22,20 @@ struct MiniPlayerVisualizer: View {
         self.vm.nowPlaying
     }
 
+    /// Localized label for the current repeat mode ("Off" / "All" / "One").
+    private var repeatModeLabel: String {
+        switch self.np.repeatMode {
+        case .off:
+            L10n.string("Off")
+
+        case .all:
+            L10n.string("All")
+
+        case .one:
+            L10n.string("One")
+        }
+    }
+
     private var trackSubtitle: String? {
         let parts = [self.np.artist, self.np.album]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -71,7 +85,7 @@ struct MiniPlayerVisualizer: View {
             // Title + artist – album (white text on dark gradient)
             VStack(spacing: 2) {
                 MarqueeText(
-                    self.np.title.isEmpty ? "Not playing" : self.np.title,
+                    self.np.title.isEmpty ? L10n.string("Not playing") : self.np.title,
                     font: .system(size: 13, weight: .semibold),
                     foregroundStyle: Color.white
                 )
@@ -101,8 +115,8 @@ struct MiniPlayerVisualizer: View {
             .controlSize(.mini)
             .tint(.white)
             .disabled(self.np.duration == 0)
-            .help("Scrub to position")
-            .accessibilityLabel("Playback position")
+            .help(L10n.string("Scrub to position"))
+            .accessibilityLabel(L10n.string("Playback position"))
 
             // Transport
             HStack(spacing: 16) {
@@ -115,8 +129,8 @@ struct MiniPlayerVisualizer: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.nowPlayingTrackID != nil ? .white.opacity(0.85) : .white.opacity(0.35))
                 .disabled(self.np.nowPlayingTrackID == nil)
-                .help("Get info for current track")
-                .accessibilityLabel("Track Info")
+                .help(L10n.string("Get info for current track"))
+                .accessibilityLabel(L10n.string("Track Info"))
 
                 Button {
                     Task { await self.np.previous() }
@@ -126,8 +140,8 @@ struct MiniPlayerVisualizer: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
-                .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
-                .accessibilityLabel("Previous or restart")
+                .help(L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
+                .accessibilityLabel(L10n.string("Previous or restart"))
 
                 Button {
                     Task { await self.np.playPause() }
@@ -137,8 +151,8 @@ struct MiniPlayerVisualizer: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
-                .help(self.np.isPlaying ? "Pause" : "Play")
-                .accessibilityLabel(self.np.isPlaying ? "Pause" : "Play")
+                .help(self.np.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
+                .accessibilityLabel(self.np.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
 
                 Button {
                     Task { await self.np.next() }
@@ -148,8 +162,8 @@ struct MiniPlayerVisualizer: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
-                .help("Next track")
-                .accessibilityLabel("Next")
+                .help(L10n.string("Next track"))
+                .accessibilityLabel(L10n.string("Next"))
 
                 Button {
                     Task { await self.np.toggleShuffle() }
@@ -159,8 +173,8 @@ struct MiniPlayerVisualizer: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
-                .help(self.np.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
-                .accessibilityLabel(self.np.shuffleOn ? "Shuffle On" : "Shuffle Off")
+                .help(self.np.shuffleOn ? L10n.string("Shuffle: On — click to disable") : L10n.string("Shuffle: Off — click to enable"))
+                .accessibilityLabel(self.np.shuffleOn ? L10n.string("Shuffle On") : L10n.string("Shuffle Off"))
                 .accessibilityAddTraits(.isToggle)
 
                 Button {
@@ -171,8 +185,8 @@ struct MiniPlayerVisualizer: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.repeatMode == .off ? .white.opacity(0.6) : AccentPalette.color(for: self.accentColorKey))
-                .help("Repeat: \(self.np.repeatMode == .off ? "Off" : self.np.repeatMode == .all ? "All" : "One") — click to cycle")
-                .accessibilityLabel("Repeat \(self.np.repeatMode == .off ? "Off" : self.np.repeatMode == .all ? "All" : "One")")
+                .help(L10n.string("Repeat: \(self.repeatModeLabel) — click to cycle"))
+                .accessibilityLabel(L10n.string("Repeat \(self.repeatModeLabel)"))
                 .accessibilityAddTraits(.isToggle)
 
                 Button {
@@ -183,8 +197,12 @@ struct MiniPlayerVisualizer: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(self.np.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
-                .help(self.np.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
-                .accessibilityLabel(self.np.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
+                .help(self.np.stopAfterCurrent
+                    ? L10n.string("Stop after current track: On")
+                    : L10n.string("Stop after current track: Off"))
+                .accessibilityLabel(self.np.stopAfterCurrent
+                    ? L10n.string("Stop After Current: On")
+                    : L10n.string("Stop After Current: Off"))
                 .accessibilityAddTraits(.isToggle)
             }
         }

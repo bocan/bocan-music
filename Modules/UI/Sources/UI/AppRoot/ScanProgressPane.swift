@@ -22,20 +22,20 @@ struct ScanProgressPane: View {
                 .padding(.bottom, 4)
 
             VStack(spacing: 6) {
-                Text("Scanning Library")
+                Text(localized: "Scanning Library")
                     .font(.title2.weight(.semibold))
 
                 if self.walked > 0 {
-                    Text("\(self.walked.formatted()) files found")
+                    Text(localized: "\(self.walked.formatted()) files found")
                         .foregroundStyle(.secondary)
 
                     if self.inserted > 0 {
-                        Text("\(self.inserted.formatted()) added to library")
+                        Text(localized: "\(self.inserted.formatted()) added to library")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                 } else {
-                    Text("Looking for music files…")
+                    Text(localized: "Looking for music files…")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -54,8 +54,8 @@ struct ScanProgressPane: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             self.walked > 0
-                ? "Scanning library. \(self.walked.formatted()) files found, \(self.inserted.formatted()) added."
-                : "Scanning library. Looking for music files."
+                ? L10n.string("Scanning library. \(self.walked.formatted()) files found, \(self.inserted.formatted()) added.")
+                : L10n.string("Scanning library. Looking for music files.")
         )
     }
 }

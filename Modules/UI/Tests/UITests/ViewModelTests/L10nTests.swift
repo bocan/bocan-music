@@ -89,6 +89,36 @@ struct L10nTests {
         #expect(source.contains("defaultLocalization:"), "Package.swift must set defaultLocalization for the catalog to compile")
     }
 
+    @Test("Clear-queue alert message pluralizes (#314)")
+    func clearQueuePlural() throws {
+        let variation = try #require(
+            self.plural("This removes the %lld tracks in your queue and stops playback.", in: self.catalog())
+        )
+        #expect(variation.one == "This removes the %lld track in your queue and stops playback.")
+        #expect(variation.other == "This removes the %lld tracks in your queue and stops playback.")
+    }
+
+    @Test(
+        "Phase 1 chrome routes copy through the localization helper (#314)",
+        arguments: [
+            "Sources/UI/Common/LoadingState.swift",
+            "Sources/UI/AppRoot/RootView.swift",
+            "Sources/UI/AppRoot/Sidebar.swift",
+            "Sources/UI/AppRoot/SubsonicSidebarSection.swift",
+            "Sources/UI/AppRoot/NowPlayingStrip.swift",
+            "Sources/UI/AppRoot/DiagnosticsConsentBanner.swift",
+            "Sources/UI/AppRoot/CrashRecoveryBanner.swift",
+            "Sources/UI/Transport/SleepTimerMenu.swift",
+            "Sources/UI/MiniPlayer/MiniPlayerView.swift",
+            "Sources/UI/MenuBarExtra/MenuBarExtraScene.swift",
+        ]
+    )
+    func phase1ChromeUsesHelper(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
+    }
+
     @Test("AlbumsGridView routes copy through the localization helper (#314)")
     func referenceScreenUsesHelper() throws {
         let url = self.moduleRoot.appendingPathComponent("Sources/UI/Browse/AlbumsGridView.swift")
