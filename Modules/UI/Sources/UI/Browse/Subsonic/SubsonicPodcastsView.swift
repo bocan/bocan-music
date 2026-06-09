@@ -36,7 +36,7 @@ public final class SubsonicPodcastsViewModel: ObservableObject {
         } catch {
             self.log.error("subsonic.podcasts.load.failed", ["error": String(reflecting: error)])
             self.errorMessage = (error as? LocalizedError)?.errorDescription
-                ?? "Could not load podcasts."
+                ?? L10n.string("Could not load podcasts.")
         }
     }
 }
@@ -65,9 +65,9 @@ public struct SubsonicPodcastsView: View {
         Group {
             if self.vm.channels.isEmpty, !self.vm.isLoading {
                 ContentUnavailableView(
-                    "No Podcasts",
+                    L10n.string("No Podcasts"),
                     systemImage: "antenna.radiowaves.left.and.right",
-                    description: Text("This server has no podcast subscriptions.")
+                    description: Text(localized: "This server has no podcast subscriptions.")
                 )
             } else {
                 List {
@@ -107,11 +107,11 @@ public struct SubsonicPodcastsView: View {
                 .listStyle(.inset)
             }
         }
-        .navigationTitle("Podcasts")
+        .navigationTitle(L10n.string("Podcasts"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { Task { await self.vm.load() } } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
             }
@@ -120,12 +120,12 @@ public struct SubsonicPodcastsView: View {
             if self.vm.channels.isEmpty { await self.vm.load() }
         }
         .alert(
-            "Couldn't load podcasts",
+            L10n.string("Couldn't load podcasts"),
             isPresented: Binding(
                 get: { self.vm.errorMessage != nil },
                 set: { if !$0 { self.vm.errorMessage = nil } }
             ),
-            actions: { Button("OK", role: .cancel) {} },
+            actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(self.vm.errorMessage ?? "") }
         )
     }

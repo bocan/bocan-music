@@ -88,7 +88,7 @@ custom_rules:
     message: "Converted file: route user-facing copy through L10n (Text(localized:) or L10n.string) so it resolves against the module catalog (#314). See docs/design-spec/localization.md."
     severity: error
     included:
-      - "Modules/UI/Sources/UI/Browse/AlbumsGridView\\.swift"
+      - "Modules/UI/Sources/UI/Browse/.*\\.swift"
       - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
       - "Modules/UI/Sources/UI/Common/EmptyState\\.swift"
       - "Modules/UI/Sources/UI/Common/ErrorState\\.swift"

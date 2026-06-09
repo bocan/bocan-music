@@ -55,7 +55,7 @@ final class SubsonicCoverArtCell: NSTableCellView {
     ) {
         self.loadTask?.cancel()
         self.artImageView.image = nil
-        setAccessibilityLabel(entityID == nil ? "No artwork" : "\(title) artwork")
+        setAccessibilityLabel(entityID == nil ? L10n.string("No artwork") : L10n.string("\(title) artwork"))
         guard let provider, let entityID else { return }
         self.loadTask = Task { @MainActor [weak self] in
             guard let self else { return }
@@ -119,8 +119,8 @@ final class SubsonicStarButtonCell: NSTableCellView {
         let color: NSColor = self.isStarred ? Self.starredColor : Self.unstarredColor
         let attrs: [NSAttributedString.Key: Any] = [.font: bodyFont, .foregroundColor: color]
         self.button.attributedTitle = NSAttributedString(string: "\u{2605}", attributes: attrs)
-        self.button.setAccessibilityLabel(self.isStarred ? "Starred" : "Not starred")
-        self.button.toolTip = self.isStarred ? "Starred — click to unstar" : "Click to star"
+        self.button.setAccessibilityLabel(self.isStarred ? L10n.string("Starred") : L10n.string("Not starred"))
+        self.button.toolTip = self.isStarred ? L10n.string("Starred — click to unstar") : L10n.string("Click to star")
     }
 
     @objc private func tapped() {

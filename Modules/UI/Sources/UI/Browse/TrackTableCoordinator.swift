@@ -99,11 +99,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let spokenValue: String
         if column.identifier == .rating {
             let stars = Formatters.stars(from: row.rating)
-            spokenValue = stars == 0 ? "Not rated" : "\(stars) star\(stars == 1 ? "" : "s")"
+            spokenValue = stars == 0 ? L10n.string("Not rated") : L10n.string("\(stars) stars")
         } else {
             spokenValue = cell.textField?.stringValue ?? ""
         }
-        cell.setAccessibilityLabel("\(colTitle): \(spokenValue)")
+        cell.setAccessibilityLabel(L10n.string("\(colTitle): \(spokenValue)"))
         return cell
     }
 
@@ -157,7 +157,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let r = self.rows[row]
         let duration = Formatters.duration(r.duration)
         let isNowPlaying = self.parent.nowPlayingTrackID == r.id
-        let prefix = isNowPlaying ? "Now playing, " : ""
+        let prefix = isNowPlaying ? L10n.string("Now playing, ") : ""
         return "\(prefix)\(r.title), \(r.artistName), \(r.albumName), \(duration)"
     }
 
@@ -317,31 +317,31 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         acts: TrackContextMenuActions
     ) {
         if let track = first {
-            menu.addItem(ActionMenuItem("Play Now") { acts.playNow(track) })
+            menu.addItem(ActionMenuItem(L10n.string("Play Now")) { acts.playNow(track) })
         }
-        let playNextItem = ActionMenuItem("Play Next") { acts.playNext(selected) }
+        let playNextItem = ActionMenuItem(L10n.string("Play Next")) { acts.playNext(selected) }
         playNextItem.isEnabled = !selected.isEmpty
         menu.addItem(playNextItem)
-        let addQueueItem = ActionMenuItem("Add to Queue") { acts.addToQueue(selected) }
+        let addQueueItem = ActionMenuItem(L10n.string("Add to Queue")) { acts.addToQueue(selected) }
         addQueueItem.isEnabled = !selected.isEmpty
         menu.addItem(addQueueItem)
 
         let sub = NSMenu()
-        sub.addItem(ActionMenuItem("New Playlist from Selection…") {
+        sub.addItem(ActionMenuItem(L10n.string("New Playlist from Selection…")) {
             acts.newPlaylistFromSelection(selected)
         })
         if !self.parent.playlistNodes.isEmpty { sub.addItem(.separator()) }
         Self.fillPlaylistSubmenu(
             sub, nodes: self.parent.playlistNodes, tracks: selected, action: acts.addToPlaylist
         )
-        let playlistItem = NSMenuItem(title: "Add to Playlist", action: nil, keyEquivalent: "")
+        let playlistItem = NSMenuItem(title: L10n.string("Add to Playlist"), action: nil, keyEquivalent: "")
         playlistItem.submenu = sub
         menu.addItem(playlistItem)
 
         // Grouped under "Add to Playlist", not among the library/disk removals
         // below. The ⌫ equivalent is display-only; the table handles the press.
         if let removeFromPlaylist = acts.removeFromPlaylist {
-            let rp = ActionMenuItem("Remove from Playlist") { removeFromPlaylist(selected) }
+            let rp = ActionMenuItem(L10n.string("Remove from Playlist")) { removeFromPlaylist(selected) }
             rp.isEnabled = !selected.isEmpty
             rp.keyEquivalent = "\u{8}"
             rp.keyEquivalentModifierMask = []
@@ -357,7 +357,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         guard !selected.isEmpty else { return }
         let allLoved = selected.allSatisfy(\.loved)
         menu.addItem(.separator())
-        menu.addItem(ActionMenuItem(allLoved ? "Unlove" : "Love") { acts.love(selected) })
+        menu.addItem(ActionMenuItem(allLoved ? L10n.string("Unlove") : L10n.string("Love")) { acts.love(selected) })
     }
 
     private func addRateItem(
@@ -366,14 +366,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         acts: TrackContextMenuActions
     ) {
         guard !selected.isEmpty else { return }
-        let rateMenu = NSMenu(title: "Rate")
+        let rateMenu = NSMenu(title: L10n.string("Rate"))
         for star in 0 ... 5 {
             let label = star == 0
-                ? "None"
+                ? L10n.string("None")
                 : String(repeating: "\u{2605}", count: star) + String(repeating: "\u{2606}", count: 5 - star)
             rateMenu.addItem(ActionMenuItem(label) { acts.rate(selected, star) })
         }
-        let item = NSMenuItem(title: "Rate", action: nil, keyEquivalent: "")
+        let item = NSMenuItem(title: L10n.string("Rate"), action: nil, keyEquivalent: "")
         item.submenu = rateMenu
         menu.addItem(item)
     }
@@ -395,12 +395,12 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             && selected.allSatisfy { $0.artistID != nil && $0.artistID == selected[0].artistID }
 
         if let track = first, allSameAlbum {
-            menu.addItem(ActionMenuItem("Play Album") { acts.playAlbum(track) })
-            menu.addItem(ActionMenuItem("Shuffle Album") { acts.shuffleAlbum(track) })
+            menu.addItem(ActionMenuItem(L10n.string("Play Album")) { acts.playAlbum(track) })
+            menu.addItem(ActionMenuItem(L10n.string("Shuffle Album")) { acts.shuffleAlbum(track) })
             hasNav = true
         }
         if let track = first, allSameArtist {
-            menu.addItem(ActionMenuItem("Play Artist") { acts.playArtist(track) })
+            menu.addItem(ActionMenuItem(L10n.string("Play Artist")) { acts.playArtist(track) })
             hasNav = true
         }
         if hasNav { menu.addItem(.separator())
@@ -408,11 +408,11 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         }
 
         if let id = first?.artistID {
-            menu.addItem(ActionMenuItem("Go to Artist") { acts.goToArtist(id) })
+            menu.addItem(ActionMenuItem(L10n.string("Go to Artist")) { acts.goToArtist(id) })
             hasNav = true
         }
         if let id = first?.albumID {
-            menu.addItem(ActionMenuItem("Go to Album") { acts.goToAlbum(id) })
+            menu.addItem(ActionMenuItem(L10n.string("Go to Album")) { acts.goToAlbum(id) })
             hasNav = true
         }
         if hasNav { menu.addItem(.separator()) }
@@ -428,12 +428,12 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         guard acts.editLyrics != nil || acts.fetchLyricsFromLRClib != nil else { return }
         menu.addItem(.separator())
         if let editLyrics = acts.editLyrics, let track = first {
-            let item = ActionMenuItem("Edit Lyrics\u{2026}") { editLyrics(track) }
+            let item = ActionMenuItem(L10n.string("Edit Lyrics\u{2026}")) { editLyrics(track) }
             item.isEnabled = selected.count == 1
             menu.addItem(item)
         }
         if let fetchLyrics = acts.fetchLyricsFromLRClib, let track = first {
-            let item = ActionMenuItem("Fetch Lyrics from LRClib") { fetchLyrics(track) }
+            let item = ActionMenuItem(L10n.string("Fetch Lyrics from LRClib")) { fetchLyrics(track) }
             item.isEnabled = selected.count == 1
             menu.addItem(item)
         }
@@ -446,33 +446,33 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         acts: TrackContextMenuActions
     ) {
         if let track = first {
-            menu.addItem(ActionMenuItem("Show in Finder") { acts.showInFinder(track) })
-            menu.addItem(ActionMenuItem("Re-scan File") { acts.rescanFile(track) })
+            menu.addItem(ActionMenuItem(L10n.string("Show in Finder")) { acts.showInFinder(track) })
+            menu.addItem(ActionMenuItem(L10n.string("Re-scan File")) { acts.rescanFile(track) })
         }
-        let infoItem = ActionMenuItem("Get Info") { acts.getInfo(selected) }
+        let infoItem = ActionMenuItem(L10n.string("Get Info")) { acts.getInfo(selected) }
         infoItem.isEnabled = !selected.isEmpty
         menu.addItem(infoItem)
 
         if let track = first {
-            let identifyItem = ActionMenuItem("Identify Track\u{2026}") { acts.identify(track) }
+            let identifyItem = ActionMenuItem(L10n.string("Identify Track\u{2026}")) { acts.identify(track) }
             identifyItem.isEnabled = selected.count == 1
             menu.addItem(identifyItem)
         }
 
-        let rgItem = ActionMenuItem("Compute Replay Gain") { acts.computeReplayGain(selected) }
+        let rgItem = ActionMenuItem(L10n.string("Compute Replay Gain")) { acts.computeReplayGain(selected) }
         rgItem.isEnabled = !selected.isEmpty
         menu.addItem(rgItem)
 
         menu.addItem(.separator())
-        let removeItem = ActionMenuItem("Remove from Library") { acts.removeFromLibrary(selected) }
+        let removeItem = ActionMenuItem(L10n.string("Remove from Library")) { acts.removeFromLibrary(selected) }
         removeItem.isEnabled = !selected.isEmpty
         menu.addItem(removeItem)
-        let deleteItem = ActionMenuItem("Delete from Disk") { acts.deleteFromDisk(selected) }
+        let deleteItem = ActionMenuItem(L10n.string("Delete from Disk")) { acts.deleteFromDisk(selected) }
         deleteItem.isEnabled = !selected.isEmpty
         menu.addItem(deleteItem)
         menu.addItem(.separator())
         let selectedRows = self.parent.selection.compactMap { id in id.flatMap { self.rowsByID[$0] } }
-        let copyItem = ActionMenuItem("Copy") { acts.copy(selectedRows) }
+        let copyItem = ActionMenuItem(L10n.string("Copy")) { acts.copy(selectedRows) }
         copyItem.isEnabled = !selectedRows.isEmpty
         menu.addItem(copyItem)
     }

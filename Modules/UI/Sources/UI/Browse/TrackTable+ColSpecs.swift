@@ -25,7 +25,7 @@ extension TrackTable {
     static let columnSpecs: [ColSpec] = [
         ColSpec(
             id: .albumArt,
-            title: "Art",
+            title: L10n.string("Art"),
             minWidth: 18,
             idealWidth: 32,
             maxWidth: 44,
@@ -34,7 +34,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .databaseID,
-            title: "ID",
+            title: L10n.string("ID"),
             minWidth: 36,
             idealWidth: 52,
             maxWidth: 72,
@@ -43,7 +43,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .title,
-            title: "Title",
+            title: L10n.string("Title"),
             minWidth: 140,
             idealWidth: 220,
             maxWidth: 2000,
@@ -52,7 +52,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .artist,
-            title: "Artist",
+            title: L10n.string("Artist"),
             minWidth: 100,
             idealWidth: 160,
             maxWidth: 2000,
@@ -61,7 +61,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .album,
-            title: "Album",
+            title: L10n.string("Album"),
             minWidth: 100,
             idealWidth: 160,
             maxWidth: 2000,
@@ -70,7 +70,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .year,
-            title: "Year",
+            title: L10n.string("Year"),
             minWidth: 48,
             idealWidth: 72,
             maxWidth: 120,
@@ -79,7 +79,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .genre,
-            title: "Genre",
+            title: L10n.string("Genre"),
             minWidth: 80,
             idealWidth: 120,
             maxWidth: 2000,
@@ -88,7 +88,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .duration,
-            title: "Length",
+            title: L10n.string("Length"),
             minWidth: 48,
             idealWidth: 60,
             maxWidth: 72,
@@ -97,7 +97,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .trackNumber,
-            title: "Track",
+            title: L10n.string("Track"),
             minWidth: 28,
             idealWidth: 40,
             maxWidth: 56,
@@ -106,7 +106,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .trackTotal,
-            title: "Of",
+            title: L10n.string("Of"),
             minWidth: 28,
             idealWidth: 40,
             maxWidth: 56,
@@ -115,7 +115,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .discNumber,
-            title: "Disc",
+            title: L10n.string("Disc"),
             minWidth: 28,
             idealWidth: 40,
             maxWidth: 56,
@@ -124,7 +124,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .discTotal,
-            title: "Discs",
+            title: L10n.string("Discs"),
             minWidth: 28,
             idealWidth: 40,
             maxWidth: 56,
@@ -133,7 +133,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .playCount,
-            title: "Plays",
+            title: L10n.string("Plays"),
             minWidth: 36,
             idealWidth: 48,
             maxWidth: 56,
@@ -142,7 +142,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .rating,
-            title: "Rating",
+            title: L10n.string("Rating"),
             minWidth: 52,
             idealWidth: 64,
             maxWidth: 72,
@@ -151,7 +151,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .loved,
-            title: "\u{2665}",
+            title: L10n.string("\u{2665}"),
             minWidth: 24,
             idealWidth: 32,
             maxWidth: 40,
@@ -160,7 +160,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .addedAt,
-            title: "Date Added",
+            title: L10n.string("Date Added"),
             minWidth: 72,
             idealWidth: 88,
             maxWidth: 2000,
@@ -169,7 +169,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .fileFormat,
-            title: "Codec",
+            title: L10n.string("Codec"),
             minWidth: 40,
             idealWidth: 52,
             maxWidth: 64,
@@ -178,7 +178,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .bitrate,
-            title: "Bitrate",
+            title: L10n.string("Bitrate"),
             minWidth: 64,
             idealWidth: 80,
             maxWidth: 96,
@@ -187,7 +187,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .sampleRate,
-            title: "Sample Rate",
+            title: L10n.string("Sample Rate"),
             minWidth: 64,
             idealWidth: 80,
             maxWidth: 96,
@@ -196,7 +196,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .shuffleExclude,
-            title: "Shuffle Exclude",
+            title: L10n.string("Shuffle Exclude"),
             minWidth: 48,
             idealWidth: 56,
             maxWidth: 64,
@@ -205,7 +205,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .composer,
-            title: "Composer",
+            title: L10n.string("Composer"),
             minWidth: 80,
             idealWidth: 140,
             maxWidth: 2000,
@@ -214,7 +214,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .bpm,
-            title: "BPM",
+            title: L10n.string("BPM"),
             minWidth: 40,
             idealWidth: 52,
             maxWidth: 72,
@@ -223,7 +223,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .key,
-            title: "Key",
+            title: L10n.string("Key"),
             minWidth: 40,
             idealWidth: 56,
             maxWidth: 80,
@@ -232,7 +232,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .bitDepth,
-            title: "Bit Depth",
+            title: L10n.string("Bit Depth"),
             minWidth: 56,
             idealWidth: 64,
             maxWidth: 80,
@@ -241,7 +241,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .channelCount,
-            title: "Channels",
+            title: L10n.string("Channels"),
             minWidth: 56,
             idealWidth: 64,
             maxWidth: 80,
@@ -250,7 +250,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .isLossless,
-            title: "Lossless",
+            title: L10n.string("Lossless"),
             minWidth: 40,
             idealWidth: 52,
             maxWidth: 64,
@@ -259,7 +259,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .skipCount,
-            title: "Skips",
+            title: L10n.string("Skips"),
             minWidth: 36,
             idealWidth: 48,
             maxWidth: 56,
@@ -268,7 +268,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .lastPlayedAt,
-            title: "Last Played",
+            title: L10n.string("Last Played"),
             minWidth: 72,
             idealWidth: 88,
             maxWidth: 2000,
@@ -277,7 +277,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .fileSize,
-            title: "File Size",
+            title: L10n.string("File Size"),
             minWidth: 64,
             idealWidth: 80,
             maxWidth: 96,
@@ -286,7 +286,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .fileMtime,
-            title: "Date Modified",
+            title: L10n.string("Date Modified"),
             minWidth: 72,
             idealWidth: 88,
             maxWidth: 2000,
@@ -295,7 +295,7 @@ extension TrackTable {
         ),
         ColSpec(
             id: .musicBrainzID,
-            title: "MBID",
+            title: L10n.string("MBID"),
             minWidth: 80,
             idealWidth: 240,
             maxWidth: 320,

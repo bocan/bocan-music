@@ -19,10 +19,12 @@ struct RemoveFromLibraryConfirmTests {
 
     @Test("a single album with no known title falls back to a count")
     func singleAlbumNoTitle() {
-        #expect(
-            RemoveFromLibraryConfirm.albumsMessage(count: 1, soleTitle: nil)
-                == "Remove 1 album from library?"
-        )
+        // The singular wording ("1 album") is a catalog plural rule, asserted in
+        // L10nTests; only Xcode builds compile plural variations, so this stays
+        // harness-independent (#314).
+        let message = RemoveFromLibraryConfirm.albumsMessage(count: 1, soleTitle: nil)
+        #expect(message.hasPrefix("Remove 1 album"))
+        #expect(message.hasSuffix("from library?"))
     }
 
     @Test("multiple albums use a pluralised count and ignore any title")

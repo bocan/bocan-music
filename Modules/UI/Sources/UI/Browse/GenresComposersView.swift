@@ -23,14 +23,14 @@ public struct GenresView: View {
             } else if self.genres.isEmpty {
                 EmptyState(
                     symbol: "tag",
-                    title: "No Genres",
-                    message: "No genre tags found in your library."
+                    title: L10n.string("No Genres"),
+                    message: L10n.string("No genre tags found in your library.")
                 )
             } else {
                 self.genreList
             }
         }
-        .navigationTitle("Genres")
+        .navigationTitle(L10n.string("Genres"))
         .task {
             let repo = TrackRepository(database: self.library.database)
             async let genresFetch = try? repo.allGenres()
@@ -62,7 +62,7 @@ public struct GenresView: View {
                         .foregroundStyle(Color.textPrimary)
 
                     if let count = self.trackCounts[genre], count > 0 {
-                        Text(count == 1 ? "1 song" : "\(count) songs")
+                        Text(localized: "\(count) songs")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textSecondary)
                     }
@@ -107,14 +107,14 @@ public struct ComposersView: View {
             } else if self.composers.isEmpty {
                 EmptyState(
                     symbol: "music.note.list",
-                    title: "No Composers",
-                    message: "No composer tags found in your library."
+                    title: L10n.string("No Composers"),
+                    message: L10n.string("No composer tags found in your library.")
                 )
             } else {
                 self.composerList
             }
         }
-        .navigationTitle("Composers")
+        .navigationTitle(L10n.string("Composers"))
         .task {
             let repo = TrackRepository(database: self.library.database)
             async let composersFetch = try? repo.allComposers()
@@ -144,7 +144,7 @@ public struct ComposersView: View {
                         .foregroundStyle(Color.textPrimary)
 
                     if let count = self.trackCounts[composer], count > 0 {
-                        Text(count == 1 ? "1 song" : "\(count) songs")
+                        Text(localized: "\(count) songs")
                             .font(Typography.caption)
                             .foregroundStyle(Color.textSecondary)
                     }
