@@ -71,6 +71,26 @@ analyzer_rules:
   - unused_import
   - unused_declaration
 
+custom_rules:
+  # Localization regression guard (#314). In files already converted to the
+  # module String Catalog, user-facing copy must resolve through the L10n
+  # helper (Text(localized:) / L10n.string). A bare literal in this SPM module
+  # resolves against Bundle.main and silently never localizes. The `included`
+  # list below is the allowlist of converted files; add each file as you
+  # convert it, and flip to all of Modules/UI/Sources/UI when the migration
+  # completes. Workflow: docs/design-spec/localization.md.
+  no_bare_user_facing_literal:
+    name: "Bare user-facing string literal"
+    regex: '\b(?:Text|Button|Toggle|Label|Picker)\(\s*"|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|alert|confirmationDialog)\(\s*"'
+    excluded_match_kinds:
+      - comment
+      - doccomment
+    message: "Converted file: route user-facing copy through L10n (Text(localized:) or L10n.string) so it resolves against the module catalog (#314). See docs/design-spec/localization.md."
+    severity: error
+    included:
+      - "Modules/UI/Sources/UI/Browse/AlbumsGridView\\.swift"
+      - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
+
 line_length:
   warning: 140
   error: 180

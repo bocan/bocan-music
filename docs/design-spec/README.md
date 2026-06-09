@@ -14,6 +14,7 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | Phase | File | Output |
 |---|---|---|
 | — | [_standards.md](_standards.md) | Cross-cutting rules referenced by every phase |
+| n/a | [localization.md](localization.md) | UI string-catalog workflow, conversion recipe, regression guard (#314) |
 | 0 | [phase-00-foundations.md](phase-00-foundations.md) | Repo, CI, Makefile, logger, empty app |
 | 1 | [phase-01-audio-engine.md](phase-01-audio-engine.md) | Single-file playback, AVFoundation + FFmpeg decoders |
 | 2 | [phase-02-persistence.md](phase-02-persistence.md) | GRDB + schema + repositories |
