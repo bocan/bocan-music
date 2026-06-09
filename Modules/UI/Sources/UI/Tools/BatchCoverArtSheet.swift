@@ -38,7 +38,7 @@ public struct BatchCoverArtSheet: View {
     // MARK: - Subviews
 
     private var header: some View {
-        Text("Fetch Missing Cover Art")
+        Text(localized: "Fetch Missing Cover Art")
             .font(.title3.weight(.semibold))
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityAddTraits(.isHeader)
@@ -54,7 +54,7 @@ public struct BatchCoverArtSheet: View {
                         : 0
                 )
                 .progressViewStyle(.linear)
-                .accessibilityLabel("Progress: \(self.vm.processed) of \(self.vm.total)")
+                .accessibilityLabel(L10n.string("Progress: \(self.vm.processed) of \(self.vm.total)"))
 
                 if !self.vm.currentAlbumTitle.isEmpty, self.vm.isRunning {
                     Text(self.vm.currentAlbumTitle)
@@ -62,26 +62,22 @@ public struct BatchCoverArtSheet: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                        .accessibilityLabel("Searching for \(self.vm.currentAlbumTitle)")
+                        .accessibilityLabel(L10n.string("Searching for \(self.vm.currentAlbumTitle)"))
                 }
 
                 HStack {
-                    Text("\(self.vm.processed) of \(self.vm.total) checked")
+                    Text(localized: "\(self.vm.processed) of \(self.vm.total) checked")
                     Spacer()
-                    Text("\(self.vm.found) found")
+                    Text(localized: "\(self.vm.found) found")
                 }
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
             }
         } else {
-            Text(
-                "This will search MusicBrainz for front cover art for every album " +
-                    "in your library that currently has no artwork. One album is " +
-                    "requested per second to respect the MusicBrainz rate limit."
-            )
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+            Text(self.introText)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -99,12 +95,12 @@ public struct BatchCoverArtSheet: View {
     private var completionBadge: some View {
         if self.vm.isDone {
             Label(
-                "Done — \(self.vm.found) image\(self.vm.found == 1 ? "" : "s") saved",
+                L10n.string("Done — \(self.vm.found) images saved"),
                 systemImage: "checkmark.circle.fill"
             )
             .foregroundStyle(.green)
             .font(.callout.weight(.medium))
-            .accessibilityLabel("Completed. \(self.vm.found) images saved.")
+            .accessibilityLabel(L10n.string("Completed. \(self.vm.found) images saved."))
         }
     }
 
@@ -112,18 +108,24 @@ public struct BatchCoverArtSheet: View {
         HStack {
             Spacer()
             if self.vm.isRunning {
-                Button("Cancel") { self.vm.cancel() }
-                    .accessibilityHint("Stops the batch fetch operation")
+                Button(L10n.string("Cancel")) { self.vm.cancel() }
+                    .accessibilityHint(L10n.string("Stops the batch fetch operation"))
             } else if self.vm.isDone {
-                Button("Close") { self.isPresented = false }
+                Button(L10n.string("Close")) { self.isPresented = false }
                     .keyboardShortcut(.escape, modifiers: [])
             } else {
-                Button("Cancel") { self.isPresented = false }
-                Button("Start") { self.vm.start() }
+                Button(L10n.string("Cancel")) { self.isPresented = false }
+                Button(L10n.string("Start")) { self.vm.start() }
                     .keyboardShortcut(.return, modifiers: .command)
                     .buttonStyle(.borderedProminent)
-                    .accessibilityHint("Begins fetching missing cover art from MusicBrainz")
+                    .accessibilityHint(L10n.string("Begins fetching missing cover art from MusicBrainz"))
             }
         }
+    }
+
+    /// Multi-sentence intro as sentence keys joined in code (#314).
+    private var introText: String {
+        L10n.string("This will search MusicBrainz for front cover art for every album in your library that currently has no artwork.")
+            + " " + L10n.string("One album is requested per second to respect the MusicBrainz rate limit.")
     }
 }

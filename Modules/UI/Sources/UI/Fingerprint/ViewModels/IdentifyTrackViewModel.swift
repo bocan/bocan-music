@@ -24,28 +24,28 @@ public enum IdentifyTagField: String, CaseIterable, Hashable, Sendable {
     public var displayName: String {
         switch self {
         case .title:
-            "Title"
+            L10n.string("Title")
 
         case .artist:
-            "Artist"
+            L10n.string("Artist")
 
         case .albumArtist:
-            "Album Artist"
+            L10n.string("Album Artist")
 
         case .album:
-            "Album"
+            L10n.string("Album")
 
         case .genre:
-            "Genre"
+            L10n.string("Genre")
 
         case .trackNumber:
-            "Track No."
+            L10n.string("Track No.")
 
         case .discNumber:
-            "Disc No."
+            L10n.string("Disc No.")
 
         case .year:
-            "Year"
+            L10n.string("Year")
         }
     }
 }

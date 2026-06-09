@@ -141,7 +141,7 @@ public struct VisualizerHost: View {
     }
 
     private var accessibilityLabel: String {
-        "Visualizer: \(self.vm.mode.displayName)"
+        L10n.string("Visualizer: \(self.vm.mode.displayName)")
     }
 
     // MARK: - Performance toast
@@ -153,10 +153,10 @@ public struct VisualizerHost: View {
             Text(toast.text)
                 .font(.subheadline)
             if self.vm.modeBeforeAutoSimplify != nil {
-                Button("Revert") { self.vm.revertAutoSimplify() }
+                Button(L10n.string("Revert")) { self.vm.revertAutoSimplify() }
                     .buttonStyle(.plain)
                     .foregroundStyle(Color.accentColor)
-                    .accessibilityLabel("Revert visualizer mode")
+                    .accessibilityLabel(L10n.string("Revert visualizer mode"))
             }
         }
         .padding(.horizontal, 16)

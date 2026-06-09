@@ -53,7 +53,7 @@ public struct ScanBanner: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text("Scanning…")
+                Text(localized: "Scanning…")
                     .font(Typography.footnote.weight(.medium))
                     .foregroundStyle(Color.textPrimary)
 
@@ -66,15 +66,15 @@ public struct ScanBanner: View {
 
             Spacer()
 
-            Button("Cancel") {
+            Button(L10n.string("Cancel")) {
                 self.vm.cancelScan()
             }
             .buttonStyle(.borderless)
             .font(Typography.footnote)
             .foregroundStyle(Color.textSecondary)
-            .help("Cancel the running library scan")
-            .accessibilityLabel("Cancel scan")
-            .accessibilityHint("Stops the in-progress library scan. Files already imported are kept.")
+            .help(L10n.string("Cancel the running library scan"))
+            .accessibilityLabel(L10n.string("Cancel scan"))
+            .accessibilityHint(L10n.string("Stops the in-progress library scan. Files already imported are kept."))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -106,9 +106,9 @@ public struct ScanBanner: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(Color.textSecondary)
-            .help("Dismiss the scan summary")
-            .accessibilityLabel("Dismiss")
-            .accessibilityHint("Hides the scan summary banner.")
+            .help(L10n.string("Dismiss the scan summary"))
+            .accessibilityLabel(L10n.string("Dismiss"))
+            .accessibilityHint(L10n.string("Hides the scan summary banner."))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -126,18 +126,18 @@ public struct ScanBanner: View {
     private var scanSubtitle: String {
         var parts: [String] = []
         if self.vm.scanWalked > 0 {
-            parts.append("\(self.vm.scanWalked.formatted(.number)) files walked")
+            parts.append(L10n.string("\(self.vm.scanWalked.formatted(.number)) files walked"))
         }
         if self.vm.scanInserted > 0 {
-            parts.append("\(self.vm.scanInserted.formatted(.number)) new")
+            parts.append(L10n.string("\(self.vm.scanInserted.formatted(.number)) new"))
         }
         if self.vm.scanUpdated > 0 {
-            parts.append("\(self.vm.scanUpdated.formatted(.number)) updated")
+            parts.append(L10n.string("\(self.vm.scanUpdated.formatted(.number)) updated"))
         }
         if !self.vm.scanCurrentPath.isEmpty {
             parts.append(self.vm.scanCurrentPath)
         }
-        return parts.isEmpty ? "Preparing…" : parts.joined(separator: " · ")
+        return parts.isEmpty ? L10n.string("Preparing…") : parts.joined(separator: " · ")
     }
 
     private var summaryText: String {
@@ -149,26 +149,26 @@ public struct ScanBanner: View {
         // unchanged / errors. All counts use locale-aware formatting.
         let total = s.inserted + s.updated + s.skipped
         var parts: [String] = []
-        parts.append("\(s.inserted.formatted(.number)) new")
-        if s.updated > 0 { parts.append("\(s.updated.formatted(.number)) updated") }
-        if s.skipped > 0 { parts.append("\(s.skipped.formatted(.number)) unchanged") }
+        parts.append(L10n.string("\(s.inserted.formatted(.number)) new"))
+        if s.updated > 0 { parts.append(L10n.string("\(s.updated.formatted(.number)) updated")) }
+        if s.skipped > 0 { parts.append(L10n.string("\(s.skipped.formatted(.number)) unchanged")) }
         if s.errors > 0 {
-            parts.append("\(s.errors.formatted(.number)) error\(s.errors == 1 ? "" : "s")")
+            parts.append(L10n.string("\(s.errors) errors"))
         }
-        return "Scanned \(total.formatted(.number)) files — \(parts.joined(separator: ", "))"
+        return L10n.string("Scanned \(total.formatted(.number)) files — \(parts.joined(separator: ", "))")
     }
 
     private var summaryAccessibilityLabel: String {
         guard let s = self.vm.scanSummary else { return "" }
         let total = s.inserted + s.updated + s.skipped
         var parts: [String] = []
-        parts.append("\(s.inserted.formatted(.number)) new")
-        if s.updated > 0 { parts.append("\(s.updated.formatted(.number)) updated") }
-        if s.skipped > 0 { parts.append("\(s.skipped.formatted(.number)) unchanged") }
+        parts.append(L10n.string("\(s.inserted.formatted(.number)) new"))
+        if s.updated > 0 { parts.append(L10n.string("\(s.updated.formatted(.number)) updated")) }
+        if s.skipped > 0 { parts.append(L10n.string("\(s.skipped.formatted(.number)) unchanged")) }
         if s.errors > 0 {
-            parts.append("\(s.errors.formatted(.number)) error\(s.errors == 1 ? "" : "s")")
+            parts.append(L10n.string("\(s.errors) errors"))
         }
-        return "Scan complete. Scanned \(total.formatted(.number)) files: \(parts.joined(separator: ", "))."
+        return L10n.string("Scan complete. Scanned \(total.formatted(.number)) files: \(parts.joined(separator: ", ")).")
     }
 
     private func scheduleDismiss() {
