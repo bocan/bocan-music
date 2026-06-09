@@ -28,12 +28,12 @@ public struct CoverArtFetchSheet: View {
             // Search bar
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    TextField("Artist", text: self.$vm.searchArtist)
+                    TextField(L10n.string("Artist"), text: self.$vm.searchArtist)
                         .textFieldStyle(.roundedBorder)
-                    TextField("Album", text: self.$vm.searchAlbum)
+                    TextField(L10n.string("Album"), text: self.$vm.searchAlbum)
                         .textFieldStyle(.roundedBorder)
                 }
-                Button("Search") { self.vm.search() }
+                Button(L10n.string("Search")) { self.vm.search() }
                     .keyboardShortcut(.return)
                     .disabled(self.vm.searchArtist.isEmpty && self.vm.searchAlbum.isEmpty)
             }
@@ -43,7 +43,7 @@ public struct CoverArtFetchSheet: View {
 
             // Results grid
             if self.vm.isSearching {
-                ProgressView("Searching…")
+                ProgressView(L10n.string("Searching…"))
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let error = self.vm.lastError {
@@ -52,7 +52,7 @@ public struct CoverArtFetchSheet: View {
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if self.vm.candidates.isEmpty {
-                Text("No results")
+                Text(localized: "No results")
                     .foregroundStyle(Color.textTertiary)
                     .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -79,9 +79,9 @@ public struct CoverArtFetchSheet: View {
             // Bottom actions
             HStack {
                 Spacer()
-                Button("Cancel") { self.isPresented = false }
+                Button(L10n.string("Cancel")) { self.isPresented = false }
                     .keyboardShortcut(.escape)
-                Button("Apply") {
+                Button(L10n.string("Apply")) {
                     guard let id = self.vm.selectedCandidateID else { return }
                     Task {
                         if let data = try? await self.vm.fullImage(for: id) {
@@ -135,7 +135,7 @@ private struct CandidateCell: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(self.candidate.title) by \(self.candidate.artist)")
+        .accessibilityLabel(L10n.string("\(self.candidate.title) by \(self.candidate.artist)"))
     }
 }
 

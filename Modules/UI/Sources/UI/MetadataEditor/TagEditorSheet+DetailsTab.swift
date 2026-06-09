@@ -12,44 +12,44 @@ extension TagEditorSheet {
                 self.bulkActionsSection
             }
 
-            Section("Track Info") {
+            Section(L10n.string("Track Info")) {
                 TagFieldRow(
-                    "Title",
+                    L10n.string("Title"),
                     text: self.fieldBinding(\.title),
                     isVarious: self.vm.title == .various,
                     enabledBinding: self.enabledFor(.title)
                 )
                 .focused(self.$focusedField, equals: .title)
                 TagFieldRow(
-                    "Artist",
+                    L10n.string("Artist"),
                     text: self.fieldBinding(\.artist),
                     isVarious: self.vm.artist == .various,
                     enabledBinding: self.enabledFor(.artist)
                 )
                 .focused(self.$focusedField, equals: .artist)
                 TagFieldRow(
-                    "Album Artist",
+                    L10n.string("Album Artist"),
                     text: self.fieldBinding(\.albumArtist),
                     isVarious: self.vm.albumArtist == .various,
                     enabledBinding: self.enabledFor(.albumArtist)
                 )
                 .focused(self.$focusedField, equals: .albumArtist)
                 TagFieldRow(
-                    "Album",
+                    L10n.string("Album"),
                     text: self.fieldBinding(\.album),
                     isVarious: self.vm.album == .various,
                     enabledBinding: self.enabledFor(.album)
                 )
                 .focused(self.$focusedField, equals: .album)
                 TagFieldRow(
-                    "Genre",
+                    L10n.string("Genre"),
                     text: self.fieldBinding(\.genre),
                     isVarious: self.vm.genre == .various,
                     enabledBinding: self.enabledFor(.genre)
                 )
                 .focused(self.$focusedField, equals: .genre)
                 TagFieldRow(
-                    "Composer",
+                    L10n.string("Composer"),
                     text: self.fieldBinding(\.composer),
                     isVarious: self.vm.composer == .various,
                     enabledBinding: self.enabledFor(.composer)
@@ -57,29 +57,29 @@ extension TagEditorSheet {
                 .focused(self.$focusedField, equals: .composer)
             }
 
-            Section("Numbering") {
+            Section(L10n.string("Numbering")) {
                 IntFieldRow(
-                    "Year",
+                    L10n.string("Year"),
                     value: self.intBinding(\.year),
                     isVarious: self.vm.year == .various,
                     enabledBinding: self.enabledFor(.year)
                 )
                 .focused(self.$focusedField, equals: .year)
                 if self.vm.isSingleTrack {
-                    IntFieldRow("Track", value: self.intBinding(\.trackNumber), isVarious: false)
+                    IntFieldRow(L10n.string("Track"), value: self.intBinding(\.trackNumber), isVarious: false)
                         .focused(self.$focusedField, equals: .trackNumber)
-                    IntFieldRow("Of", value: self.intBinding(\.trackTotal), isVarious: false)
+                    IntFieldRow(L10n.string("Of"), value: self.intBinding(\.trackTotal), isVarious: false)
                         .focused(self.$focusedField, equals: .trackTotal)
                 }
                 IntFieldRow(
-                    "Disc",
+                    L10n.string("Disc"),
                     value: self.intBinding(\.discNumber),
                     isVarious: self.vm.discNumber == .various,
                     enabledBinding: self.enabledFor(.discNumber)
                 )
                 .focused(self.$focusedField, equals: .discNumber)
                 IntFieldRow(
-                    "Discs",
+                    L10n.string("Discs"),
                     value: self.intBinding(\.discTotal),
                     isVarious: self.vm.discTotal == .various,
                     enabledBinding: self.enabledFor(.discTotal)
@@ -87,9 +87,9 @@ extension TagEditorSheet {
                 .focused(self.$focusedField, equals: .discTotal)
             }
 
-            Section("Extended") {
+            Section(L10n.string("Extended")) {
                 IntFieldRow(
-                    "BPM",
+                    L10n.string("BPM"),
                     value: Binding(
                         get: {
                             switch self.vm.bpm {
@@ -110,21 +110,21 @@ extension TagEditorSheet {
                 )
                 .focused(self.$focusedField, equals: .bpm)
                 TagFieldRow(
-                    "Key",
+                    L10n.string("Key"),
                     text: self.fieldBinding(\.key),
                     isVarious: self.vm.key == .various,
                     enabledBinding: self.enabledFor(.musicalKey)
                 )
                 .focused(self.$focusedField, equals: .key)
                 TagFieldRow(
-                    "ISRC",
+                    L10n.string("ISRC"),
                     text: self.fieldBinding(\.isrc),
                     isVarious: self.vm.isrc == .various,
                     enabledBinding: self.enabledFor(.isrc)
                 )
                 .focused(self.$focusedField, equals: .isrc)
                 TagFieldRow(
-                    "Comment",
+                    L10n.string("Comment"),
                     text: self.fieldBinding(\.comment),
                     isVarious: self.vm.comment == .various,
                     enabledBinding: self.enabledFor(.comment)
@@ -132,14 +132,14 @@ extension TagEditorSheet {
                 .focused(self.$focusedField, equals: .comment)
             }
 
-            Section("Identifiers") {
-                ReadOnlyIDRow(label: "Recording MBID", value: self.vm.recordingMBIDDisplay)
-                ReadOnlyIDRow(label: "Album MBID", value: self.vm.releaseMBIDDisplay)
+            Section(L10n.string("Identifiers")) {
+                ReadOnlyIDRow(label: L10n.string("Recording MBID"), value: self.vm.recordingMBIDDisplay)
+                ReadOnlyIDRow(label: L10n.string("Album MBID"), value: self.vm.releaseMBIDDisplay)
             }
 
-            Section("Rating") {
+            Section(L10n.string("Rating")) {
                 StarRatingRow(
-                    "Rating",
+                    L10n.string("Rating"),
                     rating: Binding(
                         get: { self.vm.rating.currentValue.flatMap(\.self) },
                         set: { self.vm.setRating($0) }
@@ -148,7 +148,7 @@ extension TagEditorSheet {
                 )
                 .focused(self.$focusedField, equals: .rating)
                 ToggleFieldRow(
-                    "Loved",
+                    L10n.string("Loved"),
                     value: Binding(
                         get: { self.vm.loved.currentValue.flatMap(\.self) ?? false },
                         set: { self.vm.setLoved($0) }
@@ -157,7 +157,7 @@ extension TagEditorSheet {
                 )
                 .focused(self.$focusedField, equals: .loved)
                 ToggleFieldRow(
-                    "Excluded from Shuffle",
+                    L10n.string("Excluded from Shuffle"),
                     value: Binding(
                         get: { self.vm.excludedFromShuffle.currentValue.flatMap(\.self) ?? false },
                         set: { self.vm.setExcludedFromShuffle($0) }
@@ -175,21 +175,21 @@ extension TagEditorSheet {
 
     var sortingTab: some View {
         Form {
-            Section("Sort Names") {
+            Section(L10n.string("Sort Names")) {
                 TagFieldRow(
-                    "Sort Artist",
+                    L10n.string("Sort Artist"),
                     text: self.fieldBinding(\.sortArtist),
                     isVarious: self.vm.sortArtist == .various,
                     enabledBinding: self.enabledFor(.sortArtist)
                 )
                 TagFieldRow(
-                    "Sort Album Artist",
+                    L10n.string("Sort Album Artist"),
                     text: self.fieldBinding(\.sortAlbumArtist),
                     isVarious: self.vm.sortAlbumArtist == .various,
                     enabledBinding: self.enabledFor(.sortAlbumArtist)
                 )
                 TagFieldRow(
-                    "Sort Album",
+                    L10n.string("Sort Album"),
                     text: self.fieldBinding(\.sortAlbum),
                     isVarious: self.vm.sortAlbum == .various,
                     enabledBinding: self.enabledFor(.sortAlbum)
@@ -224,13 +224,13 @@ extension TagEditorSheet {
     var selectAllNoneSection: some View {
         Section {
             HStack {
-                Button("Select All") { self.vm.enableAllFields() }
-                    .help("Mark all fields as enabled for saving")
-                Button("None") { self.vm.disableAllFields() }
-                    .help("Uncheck all fields so nothing is overwritten")
+                Button(L10n.string("Select All")) { self.vm.enableAllFields() }
+                    .help(L10n.string("Mark all fields as enabled for saving"))
+                Button(L10n.string("None")) { self.vm.disableAllFields() }
+                    .help(L10n.string("Uncheck all fields so nothing is overwritten"))
                 Spacer()
                 if !self.vm.enabledFields.isEmpty {
-                    Text("\(self.vm.enabledFields.count) field(s) will be updated")
+                    Text(localized: "\(self.vm.enabledFields.count) fields will be updated")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -344,29 +344,29 @@ extension TagEditorSheet {
     /// Three compact case-transformation buttons for a single text field.
     func casePillButtons(for field: TagEditorViewModel.StringField) -> some View {
         HStack(spacing: 4) {
-            Button("Aa") {
+            Button(L10n.string("Aa")) {
                 self.vm.applyTextCase(.titleCase, to: field)
             }
             .buttonStyle(.bordered)
             .controlSize(.mini)
-            .help("Title Case")
-            .accessibilityLabel("Title Case for \(String(describing: field))")
+            .help(L10n.string("Title Case"))
+            .accessibilityLabel(L10n.string("Title Case for \(String(describing: field))"))
 
-            Button("AA") {
+            Button(L10n.string("AA")) {
                 self.vm.applyTextCase(.upper, to: field)
             }
             .buttonStyle(.bordered)
             .controlSize(.mini)
-            .help("UPPERCASE")
-            .accessibilityLabel("Uppercase for \(String(describing: field))")
+            .help(L10n.string("UPPERCASE"))
+            .accessibilityLabel(L10n.string("Uppercase for \(String(describing: field))"))
 
-            Button("aa") {
+            Button(L10n.string("aa")) {
                 self.vm.applyTextCase(.lower, to: field)
             }
             .buttonStyle(.bordered)
             .controlSize(.mini)
-            .help("lowercase")
-            .accessibilityLabel("Lowercase for \(String(describing: field))")
+            .help(L10n.string("lowercase"))
+            .accessibilityLabel(L10n.string("Lowercase for \(String(describing: field))"))
         }
     }
 }

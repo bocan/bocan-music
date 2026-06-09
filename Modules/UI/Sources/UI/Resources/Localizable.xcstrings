@@ -1,6 +1,58 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Artist / album names are not compared here." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Artist / album names are not compared here."
+          }
+        }
+      }
+    },
+    "Not set" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not set"
+          }
+        }
+      }
+    },
+    "The tracked fields (title, genre, year, etc.) are identical." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The tracked fields (title, genre, year, etc.) are identical."
+          }
+        }
+      }
+    },
+    "%lld fields will be updated" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld field will be updated"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld fields will be updated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Adjust the rules to find tracks in your library." : {
       "localizations" : {
         "en" : {
