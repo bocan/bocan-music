@@ -25,7 +25,7 @@ struct PlaylistPicker: View {
     var body: some View {
         Menu {
             if self.manualEntries.isEmpty {
-                Text("No manual playlists yet")
+                Text(localized: "No manual playlists yet")
                     .foregroundStyle(Color.textSecondary)
             } else {
                 self.menuContent(for: self.nodes)
@@ -50,7 +50,7 @@ struct PlaylistPicker: View {
         .menuStyle(.borderlessButton)
         .disabled(self.loaded && self.manualEntries.isEmpty)
         .help(self.helpText)
-        .accessibilityLabel("Playlist")
+        .accessibilityLabel(L10n.string("Playlist"))
         .accessibilityValue(self.labelText)
         .task(id: self.taskKey) {
             guard let service else { return }
@@ -135,16 +135,16 @@ struct PlaylistPicker: View {
             return match.name
         }
         if self.loaded, self.manualEntries.isEmpty {
-            return "No manual playlists"
+            return L10n.string("No manual playlists")
         }
-        return "Choose a playlist…"
+        return L10n.string("Choose a playlist…")
     }
 
     private var helpText: String {
         if self.loaded, self.manualEntries.isEmpty {
-            return "Create a manual playlist first to use this rule"
+            return L10n.string("Create a manual playlist first to use this rule")
         }
-        return "Pick a manual playlist"
+        return L10n.string("Pick a manual playlist")
     }
 
     /// `task(id:)` only re-runs when the identifier changes. We want one
