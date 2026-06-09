@@ -210,6 +210,57 @@ struct L10nTests {
         #expect(source.contains("L10n.string("), "\(relativePath) should localize copy via L10n.string")
     }
 
+    /// Flattens a localization entry to its concrete display values, keyed by
+    /// plural category ("=" for a plain stringUnit).
+    private func values(of localization: [String: Any]?) -> [String: String] {
+        guard let localization else { return [:] }
+        if let su = localization["stringUnit"] as? [String: Any], let value = su["value"] as? String {
+            return ["=": value]
+        }
+        guard let variations = localization["variations"] as? [String: Any],
+              let plural = variations["plural"] as? [String: Any] else { return [:] }
+        var out: [String: String] = [:]
+        for (category, node) in plural {
+            if let su = (node as? [String: Any])?["stringUnit"] as? [String: Any],
+               let value = su["value"] as? String {
+                out[category] = value
+            }
+        }
+        return out
+    }
+
+    @Test("Every key carries an en-XA pseudolocale variant (#314)")
+    func pseudolocaleCoverage() throws {
+        let strings = try self.catalog()
+        for (key, entry) in strings where !key.isEmpty {
+            let locs = (entry as? [String: Any])?["localizations"] as? [String: Any]
+            #expect(locs?["en-XA"] != nil, "Missing en-XA for key: \(key)")
+        }
+    }
+
+    @Test("en-XA expands lettered copy by ~30% and keeps format specifiers (#314)")
+    func pseudolocaleExpansionAndSpecifiers() throws {
+        let strings = try self.catalog()
+        for (key, entry) in strings where !key.isEmpty {
+            guard let dict = entry as? [String: Any],
+                  let locs = dict["localizations"] as? [String: Any] else { continue }
+            let en = self.values(of: locs["en"] as? [String: Any])
+            let xa = self.values(of: locs["en-XA"] as? [String: Any])
+            for (category, xaValue) in xa {
+                let enValue = en[category] ?? key
+                #expect(
+                    xaValue.count { $0 == "%" } == enValue.count { $0 == "%" },
+                    "en-XA dropped a format specifier for \(key) [\(category)]"
+                )
+                guard enValue.contains(where: \.isLetter) else { continue }
+                #expect(
+                    Double(xaValue.count) >= Double(enValue.count) * 1.25,
+                    "en-XA for \(key) [\(category)] is not ~30% longer than the English"
+                )
+            }
+        }
+    }
+
     @Test("Phase 3 plural keys collapse to singular forms (#314)")
     func phase3Plurals() throws {
         let strings = try self.catalog()

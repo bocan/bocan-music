@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-observability uitest lint format format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-observability uitest lint format pseudolocale format-check install-hooks clean
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -223,6 +223,10 @@ lint:
 ## format: Run SwiftFormat (modifies files)
 format:
 	swiftformat .
+
+## pseudolocale: Regenerate the en-XA pseudolocale in the UI String Catalog
+pseudolocale:
+	python3 Scripts/gen-pseudolocale.py
 
 ## format-check: Run SwiftFormat in lint mode (CI)
 format-check:
