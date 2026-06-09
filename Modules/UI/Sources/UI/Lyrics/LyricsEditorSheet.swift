@@ -45,7 +45,7 @@ public struct LyricsEditorSheet: View {
             TextEditor(text: self.$text)
                 .font(.body.monospaced())
                 .focused(self.$editorFocused)
-                .accessibilityLabel("Lyrics editor")
+                .accessibilityLabel(L10n.string("Lyrics editor"))
                 .accessibilityIdentifier(A11y.Lyrics.editor)
             Divider()
             self.footer
@@ -58,17 +58,17 @@ public struct LyricsEditorSheet: View {
             return .handled
         }
         .confirmationDialog(
-            "Delete Lyrics?",
+            L10n.string("Delete Lyrics?"),
             isPresented: self.$showDeleteConfirm,
             titleVisibility: .visible
         ) {
-            Button("Delete Lyrics", role: .destructive) {
+            Button(L10n.string("Delete Lyrics"), role: .destructive) {
                 self.vm.deleteLyrics()
                 self.isPresented = false
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.string("Cancel"), role: .cancel) {}
         } message: {
-            Text("This will permanently remove all stored lyrics for the current track.")
+            Text(localized: "This will permanently remove all stored lyrics for the current track.")
         }
     }
 
@@ -76,15 +76,15 @@ public struct LyricsEditorSheet: View {
 
     private var toolbar: some View {
         HStack {
-            Text("Edit Lyrics")
+            Text(localized: "Edit Lyrics")
                 .font(.headline)
             Spacer()
-            Button("Cancel") {
+            Button(L10n.string("Cancel")) {
                 self.isPresented = false
             }
             .keyboardShortcut(.cancelAction)
 
-            Button("Save") {
+            Button(L10n.string("Save")) {
                 self.saveLyrics()
                 self.isPresented = false
             }
@@ -100,19 +100,19 @@ public struct LyricsEditorSheet: View {
             Button {
                 self.insertTimestamp()
             } label: {
-                Label("Insert Timestamp", systemImage: "timer")
+                Label(L10n.string("Insert Timestamp"), systemImage: "timer")
             }
             .keyboardShortcut("t", modifiers: .command)
-            .help("Insert [mm:ss.xx] at cursor (⌘T)")
+            .help(L10n.string("Insert [mm:ss.xx] at cursor (⌘T)"))
             .accessibilityIdentifier(A11y.Lyrics.insertTimestampButton)
 
             Spacer()
 
-            Toggle("Embed in file", isOn: self.$embedOnSave)
+            Toggle(L10n.string("Embed in file"), isOn: self.$embedOnSave)
                 .toggleStyle(.checkbox)
-                .help("Write lyrics back into the audio file on save (requires write permission)")
+                .help(L10n.string("Write lyrics back into the audio file on save (requires write permission)"))
 
-            Button("Delete", role: .destructive) {
+            Button(L10n.string("Delete"), role: .destructive) {
                 self.showDeleteConfirm = true
             }
         }

@@ -60,30 +60,30 @@ public struct LyricsView: View {
                 VStack(spacing: 10) {
                     ProgressView()
                         .controlSize(.regular)
-                    Text("Fetching lyrics\u{2026}")
+                    Text(localized: "Fetching lyrics\u{2026}")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Fetching lyrics")
+                .accessibilityLabel(L10n.string("Fetching lyrics"))
             } else {
                 VStack(spacing: 12) {
                     Image(systemName: "music.note")
                         .font(.system(size: 40))
                         .foregroundStyle(.tertiary)
-                    Text("No Lyrics")
+                    Text(localized: "No Lyrics")
                         .font(.headline)
                         .foregroundStyle(.secondary)
 
                     if self.vm.lrclibEnabled {
-                        Button("Fetch from LRClib") {
+                        Button(L10n.string("Fetch from LRClib")) {
                             self.vm.forceFetch()
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .accessibilityIdentifier(A11y.Lyrics.fetchButton)
                     } else {
-                        Text("Paste lyrics in the editor, or enable LRClib in Settings.")
+                        Text(localized: "Paste lyrics in the editor, or enable LRClib in Settings.")
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                             .multilineTextAlignment(.center)
@@ -164,14 +164,14 @@ public struct LyricsView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 28))
                 .foregroundStyle(.tertiary)
-            Text("No matches for \u{201C}\(self.searchText)\u{201D}")
+            Text(localized: "No matches for \u{201C}\(self.searchText)\u{201D}")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityLabel("No lyrics match the search term \(self.searchText)")
+        .accessibilityLabel(L10n.string("No lyrics match the search term \(self.searchText)"))
     }
 }
 
@@ -198,6 +198,6 @@ private struct SyncedLineRow: View {
         .buttonStyle(.plain)
         .accessibilityLabel(self.line.text)
         .accessibilityAddTraits(self.isCurrent ? [.isSelected] : [])
-        .accessibilityHint("Seek to this line")
+        .accessibilityHint(L10n.string("Seek to this line"))
     }
 }
