@@ -26,40 +26,40 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
     public var displayName: String {
         switch self {
         case .title:
-            "Title"
+            L10n.string("Title")
 
         case .artist:
-            "Artist"
+            L10n.string("Artist")
 
         case .album:
-            "Album"
+            L10n.string("Album")
 
         case .year:
-            "Year"
+            L10n.string("Year")
 
         case .genre:
-            "Genre"
+            L10n.string("Genre")
 
         case .duration:
-            "Time"
+            L10n.string("Time")
 
         case .playCount:
-            "Plays"
+            L10n.string("Plays")
 
         case .rating:
-            "Rating"
+            L10n.string("Rating")
 
         case .addedAt:
-            "Date Added"
+            L10n.string("Date Added")
 
         case .trackNumber:
-            "Track"
+            L10n.string("Track")
 
         case .trackTotal:
-            "Of"
+            L10n.string("Of")
 
         case .databaseID:
-            "ID"
+            L10n.string("ID")
         }
     }
 }

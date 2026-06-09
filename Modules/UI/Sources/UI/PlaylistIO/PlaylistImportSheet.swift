@@ -175,7 +175,7 @@ public struct PlaylistImportSheet: View {
                 let report = try await self.importer.importFile(at: url, parentID: nil)
                 lastID = report.playlistID
             } catch {
-                self.errorMessage = "Failed to import \(url.lastPathComponent): \(error.localizedDescription)"
+                self.errorMessage = L10n.string("Failed to import \(url.lastPathComponent): \(error.localizedDescription)")
                 return
             }
         }

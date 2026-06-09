@@ -843,7 +843,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 try await qp.play(items: items, startingAt: startIndex, shuffle: self.nowPlaying.shuffleOn)
             } catch {
                 self.log.error("library.play.failed", ["error": String(reflecting: error)])
-                self.playbackErrorMessage = "Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library."
+                self.playbackErrorMessage = L10n.string("Could not play \"\(track.title ?? track.fileURL)\". Try re-scanning your library.")
             }
             return
         }
@@ -876,7 +876,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             try await qp.play(items: items, startingAt: index, shuffle: shuffle)
         } catch {
             self.log.error("library.playAll.failed", ["error": String(reflecting: error)])
-            self.playbackErrorMessage = "Could not play tracks. Try re-scanning your library."
+            self.playbackErrorMessage = L10n.string("Could not play tracks. Try re-scanning your library.")
         }
     }
 
@@ -982,7 +982,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             try await qp.playAlbum(albumID, shuffle: shuffle)
         } catch {
             self.log.error("library.playAlbum.failed", ["error": String(reflecting: error)])
-            self.playbackErrorMessage = "Could not play album."
+            self.playbackErrorMessage = L10n.string("Could not play album.")
         }
     }
 
@@ -993,7 +993,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             try await qp.playArtist(artistID)
         } catch {
             self.log.error("library.playArtist.failed", ["error": String(reflecting: error)])
-            self.playbackErrorMessage = "Could not play artist."
+            self.playbackErrorMessage = L10n.string("Could not play artist.")
         }
     }
 

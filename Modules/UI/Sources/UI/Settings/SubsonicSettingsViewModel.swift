@@ -73,7 +73,7 @@ public final class SubsonicSettingsViewModel: ObservableObject {
                 self.editor = ServerEditor()
             }
         } catch {
-            self.errorMessage = "Couldn't load configured servers: \(error.localizedDescription)"
+            self.errorMessage = L10n.string("Couldn't load configured servers: \(error.localizedDescription)")
             self.log.error("subsonic.settings.reload.failed", ["error": String(reflecting: error)])
         }
     }
@@ -190,7 +190,7 @@ public final class SubsonicSettingsViewModel: ObservableObject {
         // `Test Connection` for a server that has been saved at least once,
         // and surface a clear message otherwise.
         guard let id = self.editor.id else {
-            self.errorMessage = "Save the server first, then test the connection."
+            self.errorMessage = L10n.string("Save the server first, then test the connection.")
             return
         }
         do {

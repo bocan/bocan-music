@@ -170,7 +170,7 @@ public final class NowPlayingViewModel {
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
         self.nowPlayingIsLoved = track.loved
-        self.title = track.title ?? "Unknown Track"
+        self.title = track.title ?? L10n.string("Unknown Track")
         self.artist = ""
         self.album = ""
         self.duration = track.duration
@@ -344,13 +344,13 @@ public final class NowPlayingViewModel {
 
     /// Sleep timer presets shared with the Playback menu.
     public static let sleepPresets: [(label: String, minutes: Int?)] = [
-        ("Off", nil),
-        ("15 min", 15),
-        ("30 min", 30),
-        ("45 min", 45),
-        ("1 hr", 60),
-        ("1 hr 30 min", 90),
-        ("2 hr", 120),
+        (L10n.string("Off"), nil),
+        (L10n.string("15 min"), 15),
+        (L10n.string("30 min"), 30),
+        (L10n.string("45 min"), 45),
+        (L10n.string("1 hr"), 60),
+        (L10n.string("1 hr 30 min"), 90),
+        (L10n.string("2 hr"), 120),
     ]
 
     /// Configure the sleep timer.  Pass `nil` minutes to cancel.
@@ -368,7 +368,7 @@ public final class NowPlayingViewModel {
         self.nowPlayingTrackID = nil
         self.nowPlayingAlbumID = nil
         self.nowPlayingArtistID = nil
-        self.title = item.title ?? "Unknown Track"
+        self.title = item.title ?? L10n.string("Unknown Track")
         self.artist = item.artistName ?? ""
         self.album = item.albumName ?? ""
         self.duration = item.duration
