@@ -111,8 +111,9 @@ public final class SubsonicSettingsViewModel: ObservableObject {
             // sync so a save that doesn't touch the password can't clobber the stored
             // secret, and we surface a recoverable, non-destructive note.
             editor.secret = ""
-            self.errorMessage = "Couldn't read the stored password right now. Your saved credential is intact; "
-                + "reopen Settings to try again."
+            self.errorMessage = L10n.string(
+                "Couldn't read the stored password right now. Your saved credential is intact; reopen Settings to try again."
+            )
             self.log.warning(
                 "subsonic.settings.secret.readFailed",
                 ["id": id.uuidString, "error": String(reflecting: error)]
@@ -278,7 +279,7 @@ public extension SubsonicSettingsViewModel {
 
         public static func blankNew() -> Self {
             var editor = Self()
-            editor.name = "New Server"
+            editor.name = L10n.string("New Server")
             // Left empty so the field shows the example placeholder prompt rather
             // than a bare "https://" the user has to position the cursor after (issue #310).
             editor.serverURLText = ""
@@ -308,20 +309,20 @@ public extension SubsonicSettingsViewModel {
         /// Returns the first validation problem as a human-readable string.
         public var firstValidationError: String? {
             if self.name.trimmingCharacters(in: .whitespaces).isEmpty {
-                return "Display name is required."
+                return L10n.string("Display name is required.")
             }
             guard let url = Self.parseURL(self.serverURLText) else {
-                return "Server URL must be a valid http or https URL."
+                return L10n.string("Server URL must be a valid http or https URL.")
             }
             if !["http", "https"].contains(url.scheme ?? "") {
-                return "Server URL must use http or https."
+                return L10n.string("Server URL must use http or https.")
             }
             if self.authKind == .tokenSalt,
                self.username.trimmingCharacters(in: .whitespaces).isEmpty {
-                return "Username is required for token-and-password authentication."
+                return L10n.string("Username is required for token-and-password authentication.")
             }
             if self.secret.isEmpty {
-                return self.authKind == .apiKey ? "API key is required." : "Password is required."
+                return self.authKind == .apiKey ? L10n.string("API key is required.") : L10n.string("Password is required.")
             }
             return nil
         }
