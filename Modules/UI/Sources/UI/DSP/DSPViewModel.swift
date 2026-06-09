@@ -13,6 +13,20 @@ public enum EQScope: String, CaseIterable, Sendable {
     case global = "Global"
     case album = "This Album"
     case track = "This Track"
+
+    /// Localized display label; the raw value stays stable for persistence (#314).
+    var displayName: String {
+        switch self {
+        case .global:
+            L10n.string("Global")
+
+        case .album:
+            L10n.string("This Album")
+
+        case .track:
+            L10n.string("This Track")
+        }
+    }
 }
 
 // MARK: - DSPViewModel
@@ -149,7 +163,7 @@ public final class DSPViewModel {
             let customID = "bocan.custom-edit"
             let custom = EQPreset(
                 id: customID,
-                name: "Custom",
+                name: L10n.string("Custom"),
                 bandGainsDB: newGains,
                 isBuiltIn: false,
                 outputGainDB: preset.outputGainDB
@@ -182,7 +196,7 @@ public final class DSPViewModel {
             let customID = "bocan.custom-edit"
             let custom = EQPreset(
                 id: customID,
-                name: "Custom",
+                name: L10n.string("Custom"),
                 bandGainsDB: preset.bandGainsDB,
                 isBuiltIn: false,
                 outputGainDB: gain
