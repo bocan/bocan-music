@@ -102,8 +102,8 @@ public struct PlaylistImportSheet: View {
 
     private static func rowAccessibilityLabel(for row: PreviewRow) -> String {
         var parts = [row.url.lastPathComponent, row.summary]
-        if row.matched > 0 { parts.append("\(row.matched) matched") }
-        if row.missed > 0 { parts.append("\(row.missed) missing") }
+        if row.matched > 0 { parts.append(L10n.string("\(row.matched) matched")) }
+        if row.missed > 0 { parts.append(L10n.string("\(row.missed) missing")) }
         return parts.joined(separator: ", ")
     }
 

@@ -116,16 +116,16 @@ public struct PlaylistHeader: View {
     }
 
     private var subtitle: String {
-        let countText = self.trackCount == 1 ? "1 song" : "\(self.trackCount) songs"
+        let countText = L10n.string("\(self.trackCount) songs")
         let durationText = Self.formatTotal(self.duration)
-        return "\(countText) · \(durationText)"
+        return L10n.string("\(countText) · \(durationText)")
     }
 
     private static func formatTotal(_ seconds: TimeInterval) -> String {
         let total = Int(seconds.rounded())
         let hours = total / 3600
         let minutes = (total % 3600) / 60
-        if hours > 0 { return "\(hours) hr \(minutes) min" }
-        return "\(minutes) min"
+        if hours > 0 { return L10n.string("\(hours) hr \(minutes) min") }
+        return L10n.string("\(minutes) min")
     }
 }
