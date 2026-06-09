@@ -81,7 +81,7 @@ custom_rules:
   # completes. Workflow: docs/design-spec/localization.md.
   no_bare_user_facing_literal:
     name: "Bare user-facing string literal"
-    regex: '\b(?:Text|Button|Toggle|Label|Picker|Menu|TextField|ContentUnavailableView)\(\s*"|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog)\(\s*"'
+    regex: '\b(?:Text|Button|Toggle|Label|Picker|Menu|TextField|SecureField|Section|Stepper|LabeledContent|ProgressView|ContentUnavailableView)\(\s*"|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog)\(\s*"'
     excluded_match_kinds:
       - comment
       - doccomment
@@ -90,6 +90,12 @@ custom_rules:
     included:
       - "Modules/UI/Sources/UI/Browse/.*\\.swift"
       - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
+      - "Modules/UI/Sources/UI/Settings/GeneralSettingsView\\.swift"
+      - "Modules/UI/Sources/UI/Settings/AppearanceSettingsView\\.swift"
+      - "Modules/UI/Sources/UI/Settings/PlaybackSettingsView\\.swift"
+      - "Modules/UI/Sources/UI/Settings/LibrarySettingsView\\.swift"
+      - "Modules/UI/Sources/UI/Settings/SettingsScene\\.swift"
+      - "Modules/UI/Sources/UI/Settings/AboutView\\.swift"
       - "Modules/UI/Sources/UI/Common/EmptyState\\.swift"
       - "Modules/UI/Sources/UI/Common/ErrorState\\.swift"
       - "Modules/UI/Sources/UI/Common/LoadingState\\.swift"
