@@ -13,26 +13,23 @@ public struct LibrarySettingsView: View {
 
     public var body: some View {
         Form {
-            Section("Scanning") {
-                Toggle("Watch folders for new files", isOn: self.$watchForChanges)
-                Toggle("Use quick scan by default", isOn: self.$quickScan)
-                Text("Quick scan reads only file metadata tags without computing replay gain.")
+            Section(L10n.string("Scanning")) {
+                Toggle(L10n.string("Watch folders for new files"), isOn: self.$watchForChanges)
+                Toggle(L10n.string("Use quick scan by default"), isOn: self.$quickScan)
+                Text(localized: "Quick scan reads only file metadata tags without computing replay gain.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Metadata") {
-                Toggle("Embed cover art directly into audio files", isOn: self.$embedCoverArt)
-                    .help(
-                        "When on, saving cover art rewrites the audio file to embed the image. " +
-                            "When off, art is stored only in Bòcan's cache and won't appear in other apps."
-                    )
+            Section(L10n.string("Metadata")) {
+                Toggle(L10n.string("Embed cover art directly into audio files"), isOn: self.$embedCoverArt)
+                    .help(self.embedCoverArtHelp)
                 if self.embedCoverArt {
-                    Text("Files will be modified when you save cover art changes.")
+                    Text(localized: "Files will be modified when you save cover art changes.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("Cover art is stored in Bòcan's cache only and won't be visible in other apps.")
+                    Text(localized: "Cover art is stored in Bòcan's cache only and won't be visible in other apps.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -40,7 +37,7 @@ public struct LibrarySettingsView: View {
 
             Section {
                 if self.vm.libraryRoots.isEmpty {
-                    Text("No folders or files added yet.")
+                    Text(localized: "No folders or files added yet.")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(self.vm.libraryRoots, id: \.id) { root in
@@ -67,53 +64,61 @@ public struct LibrarySettingsView: View {
                                     .foregroundStyle(.red)
                             }
                             .buttonStyle(.borderless)
-                            .help("Remove \(url.lastPathComponent) from library (does not delete files on disk)")
-                            .accessibilityLabel("Remove \(url.lastPathComponent) from library")
+                            .help(L10n.string("Remove \(url.lastPathComponent) from library (does not delete files on disk)"))
+                            .accessibilityLabel(L10n.string("Remove \(url.lastPathComponent) from library"))
                         }
                         .help(root.path)
                     }
                 }
 
                 HStack {
-                    Button("Add Folder…") {
+                    Button(L10n.string("Add Folder…")) {
                         Task { await self.vm.addFolderByPicker() }
                     }
-                    .help("Choose a folder containing music to add to your library")
-                    .accessibilityLabel("Add folder to library")
-                    Button("Add Files…") {
+                    .help(L10n.string("Choose a folder containing music to add to your library"))
+                    .accessibilityLabel(L10n.string("Add folder to library"))
+                    Button(L10n.string("Add Files…")) {
                         Task { await self.vm.addFilesByPicker() }
                     }
-                    .help("Choose individual audio files to add to your library")
-                    .accessibilityLabel("Add files to library")
+                    .help(L10n.string("Choose individual audio files to add to your library"))
+                    .accessibilityLabel(L10n.string("Add files to library"))
                 }
                 .buttonStyle(.borderless)
             } header: {
                 HStack(spacing: 6) {
-                    Text("Music Sources")
+                    Text(localized: "Music Sources")
                     if self.vm.isScanning {
                         ProgressView()
                             .controlSize(.mini)
                             .padding(.leading, 2)
-                        Text(self.vm.scanCurrentPath.isEmpty ? "Scanning…" : self.vm.scanCurrentPath)
+                        Text(self.vm.scanCurrentPath.isEmpty ? L10n.string("Scanning…") : self.vm.scanCurrentPath)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .frame(maxWidth: 200, alignment: .leading)
                         Spacer()
-                        Button("Cancel") {
+                        Button(L10n.string("Cancel")) {
                             self.vm.cancelScan()
                         }
                         .font(.caption)
                         .buttonStyle(.borderless)
                         .foregroundStyle(.secondary)
-                        .help("Cancel the in-progress library scan")
-                        .accessibilityLabel("Cancel library scan")
+                        .help(L10n.string("Cancel the in-progress library scan"))
+                        .accessibilityLabel(L10n.string("Cancel library scan"))
                     }
                 }
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Library")
+        .navigationTitle(L10n.string("Library"))
+    }
+
+    /// Help copy for the embed toggle. Two full-sentence keys joined in code;
+    /// each sentence is independently translatable (#314).
+    private var embedCoverArtHelp: String {
+        L10n.string("When on, saving cover art rewrites the audio file to embed the image.")
+            + " "
+            + L10n.string("When off, art is stored only in Bòcan's cache and won't appear in other apps.")
     }
 }

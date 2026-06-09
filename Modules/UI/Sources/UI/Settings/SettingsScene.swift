@@ -87,9 +87,9 @@ public struct SettingsScene: View {
                 SubsonicSettingsView(viewModel: subsonicViewModel)
             } else {
                 ContentUnavailableView(
-                    "Sources Unavailable",
+                    L10n.string("Sources Unavailable"),
                     systemImage: "server.rack",
-                    description: Text("Music server sources can't be configured right now.")
+                    description: Text(localized: "Music server sources can't be configured right now.")
                 )
             }
 
@@ -152,10 +152,10 @@ struct SettingsSection: Identifiable {
         advanced.append(contentsOf: [.advanced, .diagnostics])
         return [
             Self(title: nil, pages: [.general, .appearance]),
-            Self(title: "Library", pages: [.library, .sources, .smartPlaylists]),
-            Self(title: "Playback", pages: [.playback, .equaliser, .effects, .replayGain]),
-            Self(title: "Now Playing", pages: [.lyrics, .visualizer]),
-            Self(title: "Advanced", pages: advanced),
+            Self(title: L10n.string("Library"), pages: [.library, .sources, .smartPlaylists]),
+            Self(title: L10n.string("Playback"), pages: [.playback, .equaliser, .effects, .replayGain]),
+            Self(title: L10n.string("Now Playing"), pages: [.lyrics, .visualizer]),
+            Self(title: L10n.string("Advanced"), pages: advanced),
         ]
     }
 }
@@ -166,46 +166,46 @@ extension SettingsPage {
     var title: String {
         switch self {
         case .general:
-            "General"
+            L10n.string("General")
 
         case .library:
-            "Library"
+            L10n.string("Library")
 
         case .sources:
-            "Sources"
+            L10n.string("Sources")
 
         case .playback:
-            "Playback"
+            L10n.string("Playback")
 
         case .equaliser:
-            "Equaliser"
+            L10n.string("Equaliser")
 
         case .effects:
-            "Effects"
+            L10n.string("Effects")
 
         case .replayGain:
-            "ReplayGain"
+            L10n.string("ReplayGain")
 
         case .appearance:
-            "Appearance"
+            L10n.string("Appearance")
 
         case .advanced:
-            "Advanced"
+            L10n.string("Advanced")
 
         case .lyrics:
-            "Lyrics"
+            L10n.string("Lyrics")
 
         case .visualizer:
-            "Visualizer"
+            L10n.string("Visualizer")
 
         case .smartPlaylists:
-            "Smart Playlists"
+            L10n.string("Smart Playlists")
 
         case .scrobble:
-            "Scrobbling"
+            L10n.string("Scrobbling")
 
         case .diagnostics:
-            "Diagnostics"
+            L10n.string("Diagnostics")
         }
     }
 
