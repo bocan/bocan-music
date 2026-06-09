@@ -1,6 +1,66 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ by %@, played %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ by %2$@, played %3$@"
+          }
+        }
+      }
+    },
+    "Bòcan will open last.fm in your browser to authorise this device." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bòcan will open last.fm in your browser to authorise this device."
+          }
+        }
+      }
+    },
+    "Last.fm is not configured. Set BocanLastFmApiKey in Info.plist." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last.fm is not configured. Set BocanLastFmApiKey in Info.plist."
+          }
+        }
+      }
+    },
+    "ListenBrainz is unavailable." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz is unavailable."
+          }
+        }
+      }
+    },
+    "Once you approve, return here — your account will appear automatically." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Once you approve, return here — your account will appear automatically."
+          }
+        }
+      }
+    },
+    "Paste your ListenBrainz user token. You can find it on listenbrainz.org/profile/." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste your ListenBrainz user token. You can find it on listenbrainz.org/profile/."
+          }
+        }
+      }
+    },
     "%@, %lld failed" : {
       "localizations" : {
         "en" : {
