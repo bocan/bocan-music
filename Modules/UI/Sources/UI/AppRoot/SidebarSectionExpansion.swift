@@ -98,22 +98,22 @@ public enum SubsonicSidebarConnectionState: Sendable, Hashable {
     public var displayLabel: String {
         switch self {
         case .unknown:
-            "Not yet connected"
+            L10n.string("Not yet connected")
 
         case .connecting:
-            "Connecting\u{2026}"
+            L10n.string("Connecting\u{2026}")
 
         case .online:
-            "Online"
+            L10n.string("Online")
 
         case let .authFailed(msg):
-            "Authentication failed: \(msg)"
+            L10n.string("Authentication failed: \(msg)")
 
         case let .unreachable(msg):
-            "Unreachable: \(msg)"
+            L10n.string("Unreachable: \(msg)")
 
         case let .serverError(msg):
-            "Server error: \(msg)"
+            L10n.string("Server error: \(msg)")
         }
     }
 

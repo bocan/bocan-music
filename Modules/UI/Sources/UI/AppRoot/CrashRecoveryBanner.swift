@@ -26,10 +26,10 @@ struct CrashRecoveryBanner: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Bòcan quit unexpectedly")
+                Text(localized: "Bòcan quit unexpectedly")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                Text("Your queue has been restored from the last auto-save. You can continue listening or start with a fresh queue.")
+                Text(self.detailText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -37,7 +37,7 @@ struct CrashRecoveryBanner: View {
             Spacer(minLength: 8)
 
             HStack(spacing: 8) {
-                Button("Start Fresh") {
+                Button(L10n.string("Start Fresh")) {
                     Task { @MainActor in
                         await self.vm.clearQueue()
                         self.didCrashPreviously = false
@@ -45,16 +45,16 @@ struct CrashRecoveryBanner: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .help("Clear the restored queue and start with nothing queued.")
-                .accessibilityLabel("Start with an empty queue")
+                .help(L10n.string("Clear the restored queue and start with nothing queued."))
+                .accessibilityLabel(L10n.string("Start with an empty queue"))
 
-                Button("Recover") {
+                Button(L10n.string("Recover")) {
                     self.didCrashPreviously = false
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .help("Keep the restored queue and continue where you left off.")
-                .accessibilityLabel("Keep the restored queue")
+                .help(L10n.string("Keep the restored queue and continue where you left off."))
+                .accessibilityLabel(L10n.string("Keep the restored queue"))
             }
         }
         .padding(.horizontal, 16)
@@ -64,6 +64,14 @@ struct CrashRecoveryBanner: View {
             Divider()
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Crash recovery banner")
+        .accessibilityLabel(L10n.string("Crash recovery banner"))
+    }
+
+    /// Explanatory copy under the headline, extracted so the catalog key fits
+    /// the line-length limit at this indentation.
+    private var detailText: String {
+        L10n.string(
+            "Your queue has been restored from the last auto-save. You can continue listening or start with a fresh queue."
+        )
     }
 }

@@ -66,7 +66,7 @@ public struct MiniPlayerView: View {
             .preferredColorScheme(self.preferredColorScheme)
             .tint(AccentPalette.color(for: self.accentColorKey))
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Mini Player")
+            .accessibilityLabel(L10n.string("Mini Player"))
     }
 
     // MARK: - Layout selection
@@ -109,7 +109,7 @@ public struct MiniPlayerView: View {
     private var stripLayout: some View {
         HStack(spacing: 10) {
             MarqueeText(
-                self.vm.nowPlaying.title.isEmpty ? "Not playing" : self.vm.nowPlaying.title,
+                self.vm.nowPlaying.title.isEmpty ? L10n.string("Not playing") : self.vm.nowPlaying.title,
                 font: .system(size: 12, weight: .medium),
                 foregroundStyle: Color.textPrimary
             )
@@ -125,8 +125,8 @@ public struct MiniPlayerView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
-            .help(self.vm.nowPlaying.isPlaying ? "Pause" : "Play")
-            .accessibilityLabel(self.vm.nowPlaying.isPlaying ? "Pause" : "Play")
+            .help(self.vm.nowPlaying.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
+            .accessibilityLabel(self.vm.nowPlaying.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
 
             Button {
                 Task { await self.vm.nowPlaying.toggleShuffle() }
@@ -136,8 +136,10 @@ public struct MiniPlayerView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
-            .help(self.vm.nowPlaying.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
-            .accessibilityLabel(self.vm.nowPlaying.shuffleOn ? "Shuffle On" : "Shuffle Off")
+            .help(self.vm.nowPlaying.shuffleOn
+                ? L10n.string("Shuffle: On — click to disable")
+                : L10n.string("Shuffle: Off — click to enable"))
+            .accessibilityLabel(self.vm.nowPlaying.shuffleOn ? L10n.string("Shuffle On") : L10n.string("Shuffle Off"))
             .accessibilityAddTraits(.isToggle)
 
             Button {
@@ -148,8 +150,8 @@ public struct MiniPlayerView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
-            .help("Repeat: \(self.repeatModeLabel) — click to cycle")
-            .accessibilityLabel("Repeat \(self.repeatModeLabel)")
+            .help(L10n.string("Repeat: \(self.repeatModeLabel) — click to cycle"))
+            .accessibilityLabel(L10n.string("Repeat \(self.repeatModeLabel)"))
             .accessibilityAddTraits(.isToggle)
 
             Button {
@@ -160,8 +162,12 @@ public struct MiniPlayerView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlaying.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
-            .help(self.vm.nowPlaying.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
-            .accessibilityLabel(self.vm.nowPlaying.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
+            .help(self.vm.nowPlaying.stopAfterCurrent
+                ? L10n.string("Stop after current track: On")
+                : L10n.string("Stop after current track: Off"))
+            .accessibilityLabel(self.vm.nowPlaying.stopAfterCurrent
+                ? L10n.string("Stop After Current: On")
+                : L10n.string("Stop After Current: Off"))
             .accessibilityAddTraits(.isToggle)
 
             Divider().frame(height: 14)
@@ -216,8 +222,10 @@ public struct MiniPlayerView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Layout: \(self.vm.layout.rawValue.capitalized) — click to cycle Strip → Compact → Square → Visualizer")
-        .accessibilityLabel("Cycle mini player layout, currently \(self.vm.layout.rawValue)")
+        .help(L10n.string(
+            "Layout: \(self.vm.layout.rawValue.capitalized) — click to cycle Strip → Compact → Square → Visualizer"
+        ))
+        .accessibilityLabel(L10n.string("Cycle mini player layout, currently \(self.vm.layout.rawValue)"))
     }
 
     private var pinButton: some View {
@@ -231,8 +239,12 @@ public struct MiniPlayerView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(self.vm.alwaysOnTop ? "Unpin — stop floating above other windows" : "Pin — float above other windows")
-        .accessibilityLabel(self.vm.alwaysOnTop ? "Unpin mini player" : "Pin mini player above other windows")
+        .help(self.vm.alwaysOnTop
+            ? L10n.string("Unpin — stop floating above other windows")
+            : L10n.string("Pin — float above other windows"))
+        .accessibilityLabel(self.vm.alwaysOnTop
+            ? L10n.string("Unpin mini player")
+            : L10n.string("Pin mini player above other windows"))
     }
 
     private var dismissButton: some View {
@@ -246,8 +258,8 @@ public struct MiniPlayerView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Return to main window")
-        .accessibilityLabel("Return to main window")
+        .help(L10n.string("Return to main window"))
+        .accessibilityLabel(L10n.string("Return to main window"))
     }
 
     // MARK: - Window helpers
@@ -300,13 +312,13 @@ public struct MiniPlayerView: View {
     private var repeatModeLabel: String {
         switch self.vm.nowPlaying.repeatMode {
         case .off:
-            "Off"
+            L10n.string("Off")
 
         case .all:
-            "All"
+            L10n.string("All")
 
         case .one:
-            "One"
+            L10n.string("One")
         }
     }
 }

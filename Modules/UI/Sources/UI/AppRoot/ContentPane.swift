@@ -107,9 +107,9 @@ public struct ContentPane: View {
             } else if self.vm.playlistSidebar.isLoaded {
                 // Sidebar has fully loaded — the folder is genuinely gone.
                 ContentUnavailableView(
-                    "Folder Not Found",
+                    L10n.string("Folder Not Found"),
                     systemImage: "folder",
-                    description: Text("This folder may have been deleted.")
+                    description: Text(localized: "This folder may have been deleted.")
                 )
             }
             // else: sidebar not loaded yet — render nothing rather than
@@ -233,7 +233,7 @@ public struct ContentPane: View {
                     library: self.vm,
                     dataSource: ds,
                     coverArtProvider: self.vm.subsonicCoverArtProvider,
-                    title: "Random"
+                    title: L10n.string("Random")
                 )
             } else {
                 self.subsonicUnavailable
@@ -247,7 +247,7 @@ public struct ContentPane: View {
                     dataSource: ds,
                     coverArtProvider: self.vm.subsonicCoverArtProvider,
                     listType: .newest,
-                    title: "Recently Added"
+                    title: L10n.string("Recently Added")
                 )
             } else {
                 self.subsonicUnavailable
@@ -261,7 +261,7 @@ public struct ContentPane: View {
                     dataSource: ds,
                     coverArtProvider: self.vm.subsonicCoverArtProvider,
                     listType: .frequent,
-                    title: "Most Played"
+                    title: L10n.string("Most Played")
                 )
             } else {
                 self.subsonicUnavailable
@@ -331,9 +331,9 @@ public struct ContentPane: View {
 
     private var subsonicUnavailable: some View {
         ContentUnavailableView(
-            "Subsonic Unavailable",
+            L10n.string("Subsonic Unavailable"),
             systemImage: "exclamationmark.icloud",
-            description: Text("Sources aren't wired in to this build.")
+            description: Text(localized: "Sources aren't wired in to this build.")
         )
     }
 }

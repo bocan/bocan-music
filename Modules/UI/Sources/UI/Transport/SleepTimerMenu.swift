@@ -25,10 +25,12 @@ public struct SleepTimerMenu: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help(self.vm.sleepTimerRemaining != nil
-            ? "Sleep timer active — \(self.formattedRemaining(self.vm.sleepTimerRemaining ?? 0)) remaining. Click to change."
-            : "Sleep timer — automatically stop playback after a set time")
+            ? L10n.string("Sleep timer active — \(self.formattedRemaining(self.vm.sleepTimerRemaining ?? 0)) remaining. Click to change.")
+            : L10n.string("Sleep timer — automatically stop playback after a set time"))
         .accessibilityLabel(self.accessibilityLabel)
-        .accessibilityHint("Opens a menu of sleep timer presets. Choose a duration to automatically stop playback.")
+        .accessibilityHint(
+            L10n.string("Opens a menu of sleep timer presets. Choose a duration to automatically stop playback.")
+        )
         .accessibilityIdentifier(A11y.NowPlaying.sleepTimer)
         .popover(isPresented: self.$showCustomField, arrowEdge: .top) {
             self.customDurationPopover
@@ -39,34 +41,34 @@ public struct SleepTimerMenu: View {
 
     private var customDurationPopover: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Custom Sleep Timer")
+            Text(localized: "Custom Sleep Timer")
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
             HStack(spacing: 8) {
                 Stepper(value: self.$customMinutes, in: 1 ... 480) {
                     HStack(spacing: 4) {
-                        TextField("Minutes", value: self.$customMinutes, format: .number)
+                        TextField(L10n.string("Minutes"), value: self.$customMinutes, format: .number)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 60)
                             .multilineTextAlignment(.trailing)
-                            .accessibilityLabel("Minutes")
-                        Text(self.customMinutes == 1 ? "minute" : "minutes")
+                            .accessibilityLabel(L10n.string("Minutes"))
+                        Text(self.customMinutes == 1 ? L10n.string("minute") : L10n.string("minutes"))
                             .foregroundStyle(Color.textSecondary)
                     }
                 }
-                .help("Set the number of minutes (1–480) before playback stops")
+                .help(L10n.string("Set the number of minutes (1–480) before playback stops"))
             }
 
             HStack {
                 Spacer()
-                Button("Cancel", role: .cancel) {
+                Button(L10n.string("Cancel"), role: .cancel) {
                     self.showCustomField = false
                 }
                 .keyboardShortcut(.cancelAction)
-                .help("Close without changing the sleep timer")
+                .help(L10n.string("Close without changing the sleep timer"))
 
-                Button("Start") {
+                Button(L10n.string("Start")) {
                     let mins = max(1, min(480, self.customMinutes))
                     Task {
                         await self.vm.setSleepTimer(minutes: mins, fadeOut: self.vm.sleepTimerFadeOut)
@@ -74,7 +76,7 @@ public struct SleepTimerMenu: View {
                     self.showCustomField = false
                 }
                 .keyboardShortcut(.defaultAction)
-                .help("Start the sleep timer with the chosen duration")
+                .help(L10n.string("Start the sleep timer with the chosen duration"))
             }
         }
         .padding(16)
@@ -87,16 +89,16 @@ public struct SleepTimerMenu: View {
     private var menuItems: some View {
         // Active timer info header
         if let remaining = self.vm.sleepTimerRemaining {
-            Text("Stops in \(self.formattedRemaining(remaining))")
+            Text(localized: "Stops in \(self.formattedRemaining(remaining))")
                 .foregroundStyle(Color.textSecondary)
             Divider()
         }
 
-        Button("Off") {
+        Button(L10n.string("Off")) {
             Task { await self.vm.setSleepTimer(minutes: nil) }
         }
         .disabled(self.vm.sleepTimerRemaining == nil)
-        .help("Cancel the active sleep timer")
+        .help(L10n.string("Cancel the active sleep timer"))
 
         Divider()
 
@@ -105,18 +107,18 @@ public struct SleepTimerMenu: View {
                 Button(preset.displayName) {
                     Task { await self.vm.setSleepTimer(minutes: minutes, fadeOut: self.vm.sleepTimerFadeOut) }
                 }
-                .help("Stop playback after \(preset.displayName)")
+                .help(L10n.string("Stop playback after \(preset.displayName)"))
             }
         }
 
-        Button("Custom…") {
+        Button(L10n.string("Custom…")) {
             self.showCustomField = true
         }
-        .help("Set a custom sleep timer duration")
+        .help(L10n.string("Set a custom sleep timer duration"))
 
         Divider()
 
-        Toggle("Fade out in last 30 s", isOn: Binding(
+        Toggle(L10n.string("Fade out in last 30 s"), isOn: Binding(
             get: { self.vm.sleepTimerFadeOut },
             set: { newVal in
                 Task {
@@ -130,7 +132,7 @@ public struct SleepTimerMenu: View {
                 }
             }
         ))
-        .help("Gradually reduce volume to silence over the final 30 seconds before the timer fires")
+        .help(L10n.string("Gradually reduce volume to silence over the final 30 seconds before the timer fires"))
     }
 
     // MARK: - Label
@@ -178,8 +180,8 @@ public struct SleepTimerMenu: View {
 
     private var accessibilityLabel: String {
         if let remaining = self.vm.sleepTimerRemaining {
-            return "Sleep timer: \(self.formattedRemaining(remaining)) remaining"
+            return L10n.string("Sleep timer: \(self.formattedRemaining(remaining)) remaining")
         }
-        return "Sleep timer: Off"
+        return L10n.string("Sleep timer: Off")
     }
 }

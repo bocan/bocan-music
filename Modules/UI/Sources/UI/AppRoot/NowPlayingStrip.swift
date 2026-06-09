@@ -95,12 +95,12 @@ public struct NowPlayingStrip: View {
         }
         .buttonStyle(.plain)
         .disabled(self.vm.nowPlayingAlbumID == nil)
-        .help(self.vm.nowPlayingAlbumID != nil ? "Go to album: \(self.vm.album)" : "No album")
+        .help(self.vm.nowPlayingAlbumID != nil ? L10n.string("Go to album: \(self.vm.album)") : L10n.string("No album"))
         .keyboardShortcut(KeyBindings.goToCurrentAlbum)
         .accessibilityLabel(
             self.vm.nowPlayingAlbumID != nil
-                ? "Go to album \(self.vm.album) by \(self.vm.artist)"
-                : "No artwork"
+                ? L10n.string("Go to album \(self.vm.album) by \(self.vm.artist)")
+                : L10n.string("No artwork")
         )
         .accessibilityIdentifier(A11y.NowPlaying.artworkButton)
     }
@@ -111,7 +111,7 @@ public struct NowPlayingStrip: View {
             Button {
                 Task { await self.library.scrollToNowPlayingTrack() }
             } label: {
-                Text(self.vm.title.isEmpty ? "Not playing" : self.vm.title)
+                Text(self.vm.title.isEmpty ? L10n.string("Not playing") : self.vm.title)
                     .font(Typography.body)
                     .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
                     .lineLimit(1)
@@ -119,12 +119,14 @@ public struct NowPlayingStrip: View {
             }
             .buttonStyle(.plain)
             .disabled(self.vm.nowPlayingTrackID == nil)
-            .help(self.vm.nowPlayingTrackID != nil ? "Jump to \"\(self.vm.title)\" in track list" : "Not playing")
+            .help(self.vm.nowPlayingTrackID != nil
+                ? L10n.string("Jump to \"\(self.vm.title)\" in track list")
+                : L10n.string("Not playing"))
             .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
             .accessibilityLabel(
                 self.vm.nowPlayingTrackID != nil
-                    ? "Jump to \(self.vm.title) in track list"
-                    : "Not playing"
+                    ? L10n.string("Jump to \(self.vm.title) in track list")
+                    : L10n.string("Not playing")
             )
             .accessibilityAddTraits(.updatesFrequently)
             .accessibilityIdentifier(A11y.NowPlaying.titleButton)
@@ -142,9 +144,9 @@ public struct NowPlayingStrip: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(self.vm.nowPlayingArtistID == nil)
-                .help(self.vm.nowPlayingArtistID != nil ? "Go to artist: \(self.vm.artist)" : self.vm.artist)
+                .help(self.vm.nowPlayingArtistID != nil ? L10n.string("Go to artist: \(self.vm.artist)") : self.vm.artist)
                 .keyboardShortcut(KeyBindings.goToCurrentArtist)
-                .accessibilityLabel("Go to artist \(self.vm.artist)")
+                .accessibilityLabel(L10n.string("Go to artist \(self.vm.artist)"))
                 .accessibilityIdentifier(A11y.NowPlaying.subtitleButton)
             }
         }
@@ -153,7 +155,7 @@ public struct NowPlayingStrip: View {
             guard trackID != nil, !self.vm.title.isEmpty else { return }
             let msg = self.vm.artist.isEmpty
                 ? self.vm.title
-                : "\(self.vm.title) by \(self.vm.artist)"
+                : L10n.string("\(self.vm.title) by \(self.vm.artist)")
             NSAccessibility.post(
                 element: NSApplication.shared,
                 notification: .announcementRequested,
@@ -188,9 +190,9 @@ public struct NowPlayingStrip: View {
                     : (self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
             )
             .disabled(self.vm.nowPlayingTrackID == nil)
-            .help(self.vm.nowPlayingIsLoved ? "Unlove current track (⌘L)" : "Love current track (⌘L)")
-            .accessibilityLabel(self.vm.nowPlayingIsLoved ? "Loved" : "Not Loved")
-            .accessibilityHint(self.vm.nowPlayingIsLoved ? "Activate to unlove" : "Activate to love")
+            .help(self.vm.nowPlayingIsLoved ? L10n.string("Unlove current track (⌘L)") : L10n.string("Love current track (⌘L)"))
+            .accessibilityLabel(self.vm.nowPlayingIsLoved ? L10n.string("Loved") : L10n.string("Not Loved"))
+            .accessibilityHint(self.vm.nowPlayingIsLoved ? L10n.string("Activate to unlove") : L10n.string("Activate to love"))
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.loveButton)
 
@@ -204,8 +206,8 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
             .disabled(self.vm.nowPlayingTrackID == nil)
-            .help("Get info for current track")
-            .accessibilityLabel("Track Info")
+            .help(L10n.string("Get info for current track"))
+            .accessibilityLabel(L10n.string("Track Info"))
             .accessibilityIdentifier(A11y.NowPlaying.infoButton)
 
             Button {
@@ -218,8 +220,8 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
             .disabled(self.vm.title.isEmpty)
-            .help("Within first 3 seconds: previous track · After 3 seconds: restart current track")
-            .accessibilityLabel("Previous or restart")
+            .help(L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
+            .accessibilityLabel(L10n.string("Previous or restart"))
             .accessibilityIdentifier(A11y.NowPlaying.prev)
 
             Button {
@@ -232,8 +234,8 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(Color.textPrimary)
             .keyboardShortcut(KeyBindings.playPause)
-            .help(self.vm.isPlaying ? "Pause" : "Play")
-            .accessibilityLabel(self.vm.isPlaying ? "Pause" : "Play")
+            .help(self.vm.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
+            .accessibilityLabel(self.vm.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
             .accessibilityIdentifier(A11y.NowPlaying.playPause)
 
             Button {
@@ -246,8 +248,8 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
             .disabled(self.vm.title.isEmpty)
-            .help("Next track")
-            .accessibilityLabel("Next track")
+            .help(L10n.string("Next track"))
+            .accessibilityLabel(L10n.string("Next track"))
             .accessibilityIdentifier(A11y.NowPlaying.next)
 
             Button {
@@ -260,10 +262,10 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .activeToggleIndicator(self.vm.shuffleOn)
-            .help(self.vm.shuffleOn ? "Shuffle: On — click to disable" : "Shuffle: Off — click to enable")
-            .accessibilityLabel("Shuffle")
-            .accessibilityValue(self.vm.shuffleOn ? "on" : "off")
-            .accessibilityHint(self.vm.shuffleOn ? "Activate to turn shuffle off" : "Activate to turn shuffle on")
+            .help(self.vm.shuffleOn ? L10n.string("Shuffle: On — click to disable") : L10n.string("Shuffle: Off — click to enable"))
+            .accessibilityLabel(L10n.string("Shuffle"))
+            .accessibilityValue(self.vm.shuffleOn ? L10n.string("on") : L10n.string("off"))
+            .accessibilityHint(self.vm.shuffleOn ? L10n.string("Activate to turn shuffle off") : L10n.string("Activate to turn shuffle on"))
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.shuffleButton)
 
@@ -277,12 +279,13 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
             .activeToggleIndicator(self.vm.repeatMode != .off)
-            .help("Repeat: \(self.vm.repeatMode == .off ? "Off" : self.vm.repeatMode == .all ? "All" : "One") — click to cycle")
-            .accessibilityLabel("Repeat")
-            .accessibilityValue(self.vm.repeatMode == .off ? "off" : self.vm.repeatMode == .all ? "all" : "one")
-            .accessibilityHint(self.vm.repeatMode == .off ? "Activate to repeat all tracks"
-                : self.vm.repeatMode == .all ? "Activate to repeat current track"
-                : "Activate to turn repeat off")
+            .help(L10n.string("Repeat: \(self.repeatModeLabel) — click to cycle"))
+            .accessibilityLabel(L10n.string("Repeat"))
+            .accessibilityValue(self.vm.repeatMode == .off ? L10n.string("off")
+                : self.vm.repeatMode == .all ? L10n.string("all") : L10n.string("one"))
+            .accessibilityHint(self.vm.repeatMode == .off ? L10n.string("Activate to repeat all tracks")
+                : self.vm.repeatMode == .all ? L10n.string("Activate to repeat current track")
+                : L10n.string("Activate to turn repeat off"))
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.repeatButton)
 
@@ -296,10 +299,12 @@ public struct NowPlayingStrip: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
             .activeToggleIndicator(self.vm.stopAfterCurrent)
-            .help(self.vm.stopAfterCurrent ? "Stop after current track: On" : "Stop after current track: Off")
-            .accessibilityLabel(self.vm.stopAfterCurrent ? "Stop After Current: On" : "Stop After Current: Off")
-            .accessibilityHint(self.vm
-                .stopAfterCurrent ? "Activate to keep playing after this track" : "Activate to stop playback after this track")
+            .help(self.vm.stopAfterCurrent ? L10n.string("Stop after current track: On") : L10n.string("Stop after current track: Off"))
+            .accessibilityLabel(self.vm.stopAfterCurrent
+                ? L10n.string("Stop After Current: On") : L10n.string("Stop After Current: Off"))
+            .accessibilityHint(self.vm.stopAfterCurrent
+                ? L10n.string("Activate to keep playing after this track")
+                : L10n.string("Activate to stop playback after this track"))
             .accessibilityAddTraits(.isToggle)
             .accessibilityIdentifier(A11y.NowPlaying.stopAfterCurrentButton)
         }
@@ -333,10 +338,10 @@ public struct NowPlayingStrip: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.warningTint)
-                .help("Scrobbles pending: \(self.vm.pendingScrobbleCount) — click to view")
-                .accessibilityLabel("Scrobbles pending")
-                .accessibilityValue("\(self.vm.pendingScrobbleCount)")
-                .accessibilityHint("Click to view recent scrobbles")
+                .help(L10n.string("Scrobbles pending: \(self.vm.pendingScrobbleCount) — click to view"))
+                .accessibilityLabel(L10n.string("Scrobbles pending"))
+                .accessibilityValue(String(self.vm.pendingScrobbleCount))
+                .accessibilityHint(L10n.string("Click to view recent scrobbles"))
                 .accessibilityIdentifier(A11y.NowPlaying.scrobblePendingButton)
             }
 
@@ -365,10 +370,10 @@ public struct NowPlayingStrip: View {
                 (self.dsp.isEQActive || self.dsp.hasScopedPreset)
                     ? Color.accentColor : Color.textPrimary
             )
-            .help("Equaliser & DSP (⌘⌥E)")
+            .help(L10n.string("Equaliser & DSP (⌘⌥E)"))
             .accessibilityLabel(
                 self.dsp.isEQActive || self.dsp.hasScopedPreset
-                    ? "Equaliser & DSP — active" : "Equaliser & DSP"
+                    ? L10n.string("Equaliser & DSP — active") : L10n.string("Equaliser & DSP")
             )
             .accessibilityIdentifier(A11y.NowPlaying.dspButton)
         }
@@ -413,9 +418,11 @@ public struct NowPlayingStrip: View {
             .controlSize(.mini)
             .disabled(self.vm.duration == 0)
             .id(self.accentColorKey)
-            .help("Scrub to position")
-            .accessibilityLabel("Playback position")
-            .accessibilityValue(Formatters.duration(self.displayPosition) + " of " + Formatters.duration(self.vm.duration))
+            .help(L10n.string("Scrub to position"))
+            .accessibilityLabel(L10n.string("Playback position"))
+            .accessibilityValue(
+                L10n.string("\(Formatters.duration(self.displayPosition)) of \(Formatters.duration(self.vm.duration))")
+            )
             .accessibilityAdjustableAction { direction in
                 guard direction == .increment || direction == .decrement else { return }
                 let step = max(self.vm.duration * 0.05, 5)
@@ -442,8 +449,8 @@ public struct NowPlayingStrip: View {
                     .foregroundStyle(self.vm.isMuted ? Color.primary : Color.textTertiary)
             }
             .buttonStyle(.plain)
-            .help(self.vm.isMuted ? "Unmute" : "Mute")
-            .accessibilityLabel(self.vm.isMuted ? "Unmute" : "Mute")
+            .help(self.vm.isMuted ? L10n.string("Unmute") : L10n.string("Mute"))
+            .accessibilityLabel(self.vm.isMuted ? L10n.string("Unmute") : L10n.string("Mute"))
             .accessibilityIdentifier(A11y.NowPlaying.muteButton)
             .keyboardShortcut(KeyBindings.mute)
 
@@ -454,9 +461,9 @@ public struct NowPlayingStrip: View {
                 .controlSize(.mini)
                 .frame(maxWidth: 100)
                 .id(self.accentColorKey)
-                .help("Volume: \(Int(self.vm.volume * 100))%")
-                .accessibilityLabel("Volume")
-                .accessibilityValue("\(Int(self.vm.volume * 100)) percent")
+                .help(L10n.string("Volume: \(Int(self.vm.volume * 100))%"))
+                .accessibilityLabel(L10n.string("Volume"))
+                .accessibilityValue(L10n.string("\(Int(self.vm.volume * 100)) percent"))
                 .accessibilityAdjustableAction { direction in
                     guard direction == .increment || direction == .decrement else { return }
                     let vol = direction == .increment ? min(self.vm.volume + 0.1, 1) : max(self.vm.volume - 0.1, 0)
@@ -472,6 +479,11 @@ public struct NowPlayingStrip: View {
     }
 
     // MARK: - Helpers
+
+    private var repeatModeLabel: String {
+        self.vm.repeatMode == .off ? L10n.string("Off")
+            : self.vm.repeatMode == .all ? L10n.string("All") : L10n.string("One")
+    }
 
     /// Position shown under the scrubber — live engine position normally,
     /// but tracks the drag fraction while the user is scrubbing so the

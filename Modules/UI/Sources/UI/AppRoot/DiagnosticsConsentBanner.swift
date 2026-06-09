@@ -21,38 +21,35 @@ struct DiagnosticsConsentBanner: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Help improve Bòcan by sharing anonymous crash reports?")
+                Text(localized: "Help improve Bòcan by sharing anonymous crash reports?")
                     .font(.subheadline)
                     .fontWeight(.medium)
-                Text(
-                    "Reports are stored locally and only shared when you choose to."
-                        + " No personal data leaves your Mac without your permission."
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(self.detailText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 8)
 
             HStack(spacing: 8) {
-                Button("Not Now") {
+                Button(L10n.string("Not Now")) {
                     self.consentAsked = true
                     self.consented = false
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .help("Skip crash report sharing. You can enable it later in Settings › Diagnostics.")
-                .accessibilityLabel("Decline crash report sharing")
+                .help(L10n.string("Skip crash report sharing. You can enable it later in Settings › Diagnostics."))
+                .accessibilityLabel(L10n.string("Decline crash report sharing"))
 
-                Button("Share Crash Reports") {
+                Button(L10n.string("Share Crash Reports")) {
                     self.consented = true
                     self.consentAsked = true
                     MetricKitListener.shared.start()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .help("Share anonymous crash reports stored only on this Mac to help improve Bòcan.")
-                .accessibilityLabel("Accept crash report sharing")
+                .help(L10n.string("Share anonymous crash reports stored only on this Mac to help improve Bòcan."))
+                .accessibilityLabel(L10n.string("Accept crash report sharing"))
             }
         }
         .padding(.horizontal, 16)
@@ -62,6 +59,15 @@ struct DiagnosticsConsentBanner: View {
             Divider()
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Crash reporting consent request")
+        .accessibilityLabel(L10n.string("Crash reporting consent request"))
+    }
+
+    /// Secondary explanatory copy, extracted so the catalog key stays one
+    /// translatable unit (it was previously two concatenated literals, which
+    /// never localized at all).
+    private var detailText: String {
+        L10n.string(
+            "Reports are stored locally and only shared when you choose to. No personal data leaves your Mac without your permission."
+        )
     }
 }

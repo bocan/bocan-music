@@ -81,7 +81,7 @@ custom_rules:
   # completes. Workflow: docs/design-spec/localization.md.
   no_bare_user_facing_literal:
     name: "Bare user-facing string literal"
-    regex: '\b(?:Text|Button|Toggle|Label|Picker)\(\s*"|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|alert|confirmationDialog)\(\s*"'
+    regex: '\b(?:Text|Button|Toggle|Label|Picker|Menu|TextField|ContentUnavailableView)\(\s*"|\.(?:navigationTitle|help|accessibilityLabel|accessibilityHint|accessibilityValue|alert|confirmationDialog)\(\s*"'
     excluded_match_kinds:
       - comment
       - doccomment
@@ -90,6 +90,25 @@ custom_rules:
     included:
       - "Modules/UI/Sources/UI/Browse/AlbumsGridView\\.swift"
       - "Modules/UI/Sources/UI/Localization/L10n\\.swift"
+      - "Modules/UI/Sources/UI/Common/EmptyState\\.swift"
+      - "Modules/UI/Sources/UI/Common/ErrorState\\.swift"
+      - "Modules/UI/Sources/UI/Common/LoadingState\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/ContentPane\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/CrashRecoveryBanner\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/DiagnosticsConsentBanner\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/NowPlayingStrip\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/RootView\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/ScanProgressPane\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/Sidebar\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/SidebarSectionExpansion\\.swift"
+      - "Modules/UI/Sources/UI/AppRoot/SubsonicSidebarSection\\.swift"
+      - "Modules/UI/Sources/UI/Transport/SleepTimerMenu\\.swift"
+      - "Modules/UI/Sources/UI/Transport/SpeedPickerView\\.swift"
+      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerCompact\\.swift"
+      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerSquare\\.swift"
+      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerView\\.swift"
+      - "Modules/UI/Sources/UI/MiniPlayer/MiniPlayerVisualizer\\.swift"
+      - "Modules/UI/Sources/UI/MenuBarExtra/MenuBarExtraScene\\.swift"
 
 line_length:
   warning: 140

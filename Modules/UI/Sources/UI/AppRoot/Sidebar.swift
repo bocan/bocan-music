@@ -27,15 +27,15 @@ public struct Sidebar: View {
         )) {
             Section {
                 if self.vm.sectionExpansion.localLibrary {
-                    self.sidebarRow(.songs, symbol: "music.note", label: "Songs")
-                    self.sidebarRow(.albums, symbol: "square.grid.2x2", label: "Albums")
-                    self.sidebarRow(.artists, symbol: "music.mic", label: "Artists")
-                    self.sidebarRow(.genres, symbol: "tag", label: "Genres")
-                    self.sidebarRow(.composers, symbol: "music.note.list", label: "Composers")
+                    self.sidebarRow(.songs, symbol: "music.note", label: L10n.string("Songs"))
+                    self.sidebarRow(.albums, symbol: "square.grid.2x2", label: L10n.string("Albums"))
+                    self.sidebarRow(.artists, symbol: "music.mic", label: L10n.string("Artists"))
+                    self.sidebarRow(.genres, symbol: "tag", label: L10n.string("Genres"))
+                    self.sidebarRow(.composers, symbol: "music.note.list", label: L10n.string("Composers"))
                 }
             } header: {
                 SidebarSectionHeader(
-                    title: "Local Library",
+                    title: L10n.string("Local Library"),
                     isExpanded: Binding(
                         get: { self.vm.sectionExpansion.localLibrary },
                         set: { self.vm.sectionExpansion.localLibrary = $0 }
@@ -43,7 +43,7 @@ public struct Sidebar: View {
                     // Persistent "Add Folder" entry point, so adding music is reachable
                     // from any destination (not only the empty state / File menu) (#308).
                     action: .init(
-                        title: "Add Folder",
+                        title: L10n.string("Add Folder"),
                         identifier: A11y.Sidebar.addFolderButton
                     ) { Task { await self.vm.addFolderByPicker() } }
                 )
@@ -73,13 +73,13 @@ public struct Sidebar: View {
 
             Section {
                 if self.vm.sectionExpansion.recents {
-                    self.sidebarRow(.recentlyAdded, symbol: "clock", label: "Recently Added")
-                    self.sidebarRow(.recentlyPlayed, symbol: "clock.arrow.circlepath", label: "Recently Played")
-                    self.sidebarRow(.mostPlayed, symbol: "chart.bar", label: "Most Played")
+                    self.sidebarRow(.recentlyAdded, symbol: "clock", label: L10n.string("Recently Added"))
+                    self.sidebarRow(.recentlyPlayed, symbol: "clock.arrow.circlepath", label: L10n.string("Recently Played"))
+                    self.sidebarRow(.mostPlayed, symbol: "chart.bar", label: L10n.string("Most Played"))
                 }
             } header: {
                 SidebarSectionHeader(
-                    title: "Recents",
+                    title: L10n.string("Recents"),
                     isExpanded: Binding(
                         get: { self.vm.sectionExpansion.recents },
                         set: { self.vm.sectionExpansion.recents = $0 }
@@ -89,17 +89,19 @@ public struct Sidebar: View {
 
             Section {
                 if self.vm.sectionExpansion.queue {
-                    self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: "Up Next")
+                    self.sidebarRow(.upNext, symbol: "list.bullet.indent", label: L10n.string("Up Next"))
                         .overlay(TrackDropTarget { ids in
                             Task { await self.vm.addToQueue(trackIDs: ids) }
                         })
                         // Phase 5 audit L4: announce that this row is also a drop
                         // target for tracks dragged from the library.
-                        .accessibilityHint("Shows the playback queue. Drop tracks here to add them to the end of the queue.")
+                        .accessibilityHint(
+                            L10n.string("Shows the playback queue. Drop tracks here to add them to the end of the queue.")
+                        )
                 }
             } header: {
                 SidebarSectionHeader(
-                    title: "Queue",
+                    title: L10n.string("Queue"),
                     isExpanded: Binding(
                         get: { self.vm.sectionExpansion.queue },
                         set: { self.vm.sectionExpansion.queue = $0 }
@@ -121,7 +123,7 @@ public struct Sidebar: View {
             smartPlaylistService: self.vm.smartPlaylistService
         )
         .confirmationDialog(
-            self.vm.subsonicServerPendingRemoval.map { "Remove \u{201C}\($0.name)\u{201D}?" } ?? "Remove Server?",
+            self.vm.subsonicServerPendingRemoval.map { L10n.string("Remove \u{201C}\($0.name)\u{201D}?") } ?? L10n.string("Remove Server?"),
             isPresented: Binding(
                 get: { self.vm.subsonicServerPendingRemoval != nil },
                 set: { if !$0 { self.vm.subsonicServerPendingRemoval = nil } }
@@ -129,12 +131,12 @@ public struct Sidebar: View {
             titleVisibility: .visible,
             presenting: self.vm.subsonicServerPendingRemoval
         ) { _ in
-            Button("Remove Server", role: .destructive) {
+            Button(L10n.string("Remove Server"), role: .destructive) {
                 Task { await self.vm.confirmRemoveSubsonicServer() }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.string("Cancel"), role: .cancel) {}
         } message: { _ in
-            Text("This removes the server and its saved credentials from this Mac. Your music on the server isn't affected.")
+            Text(localized: "This removes the server and its saved credentials from this Mac. Your music on the server isn't affected.")
         }
     }
 
@@ -193,7 +195,7 @@ public struct Sidebar: View {
         }
         .help(root.path)
         .contextMenu {
-            Button("Remove from Library", role: .destructive) {
+            Button(L10n.string("Remove from Library"), role: .destructive) {
                 if let id = root.id {
                     Task { await self.vm.removeRoot(id: id) }
                 }

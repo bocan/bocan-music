@@ -91,34 +91,34 @@ public struct BocanRootView: View {
                 } detail: {
                     ContentPane(vm: self.vm)
                 }
-                .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: "Search")
+                .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: Text(localized: "Search"))
                 .searchFocused(self.$searchFocused)
                 .toolbar {
                     ToolbarItemGroup(placement: .navigation) {
-                        Button("Back", systemImage: "chevron.left") {
+                        Button(L10n.string("Back"), systemImage: "chevron.left") {
                             Task { await self.vm.goBack() }
                         }
                         .disabled(!self.vm.canGoBack)
-                        .help("Back")
+                        .help(L10n.string("Back"))
                         .keyboardShortcut("[", modifiers: .command)
 
-                        Button("Forward", systemImage: "chevron.right") {
+                        Button(L10n.string("Forward"), systemImage: "chevron.right") {
                             Task { await self.vm.goForward() }
                         }
                         .disabled(!self.vm.canGoForward)
-                        .help("Forward")
+                        .help(L10n.string("Forward"))
                         .keyboardShortcut("]", modifiers: .command)
 
                         Button(
-                            self.windowMode.miniPlayerOpen ? "Hide Mini Player" : "Show Mini Player",
+                            self.windowMode.miniPlayerOpen ? L10n.string("Hide Mini Player") : L10n.string("Show Mini Player"),
                             systemImage: "pip.enter"
                         ) {
                             self.windowMode.toggleMiniPlayer()
                         }
-                        .help("Toggle mini player (⌥⌘M)")
+                        .help(L10n.string("Toggle mini player (⌥⌘M)"))
 
                         Button(
-                            self.lyricsVM.paneVisible ? "Hide Lyrics" : "Show Lyrics",
+                            self.lyricsVM.paneVisible ? L10n.string("Hide Lyrics") : L10n.string("Show Lyrics"),
                             systemImage: "text.quote"
                         ) {
                             if self.reduceMotion {
@@ -129,10 +129,10 @@ public struct BocanRootView: View {
                                 }
                             }
                         }
-                        .help("Toggle lyrics pane (⌥⌘L)")
+                        .help(L10n.string("Toggle lyrics pane (⌥⌘L)"))
 
                         Button(
-                            self.visualizerVM.paneVisible ? "Hide Visualizer" : "Show Visualizer",
+                            self.visualizerVM.paneVisible ? L10n.string("Hide Visualizer") : L10n.string("Show Visualizer"),
                             systemImage: "waveform"
                         ) {
                             if self.reduceMotion {
@@ -143,13 +143,13 @@ public struct BocanRootView: View {
                                 }
                             }
                         }
-                        .help("Toggle visualizer pane (⇧⌘V)")
+                        .help(L10n.string("Toggle visualizer pane (⇧⌘V)"))
 
-                        Button("Identify Track", systemImage: "waveform.badge.magnifyingglass") {
+                        Button(L10n.string("Identify Track"), systemImage: "waveform.badge.magnifyingglass") {
                             self.vm.showIdentifyTrackForCurrentSelection()
                         }
                         .disabled(!self.vm.hasSingleTrackSelection)
-                        .help("Identify track using AcoustID (⌘⌥I)")
+                        .help(L10n.string("Identify track using AcoustID (⌘⌥I)"))
                     }
                 }
 
@@ -267,18 +267,18 @@ public struct BocanRootView: View {
                 Task { await self.vm.startOrStopWatcher() }
             }
             .alert(
-                "Playback Error",
+                L10n.string("Playback Error"),
                 isPresented: self.playbackErrorBinding
             ) {
-                Button("OK") { self.vm.playbackErrorMessage = nil }
+                Button(L10n.string("OK")) { self.vm.playbackErrorMessage = nil }
             } message: {
                 Text(self.vm.playbackErrorMessage ?? "")
             }
             .alert(
-                "Re-scan Failed",
+                L10n.string("Re-scan Failed"),
                 isPresented: self.rescanErrorBinding
             ) {
-                Button("OK") { self.vm.rescanErrorMessage = nil }
+                Button(L10n.string("OK")) { self.vm.rescanErrorMessage = nil }
             } message: {
                 Text(self.vm.rescanErrorMessage ?? "")
             }
@@ -484,11 +484,11 @@ private struct ClearQueueConfirmationModifier: ViewModifier {
     let onConfirm: () -> Void
 
     func body(content: Content) -> some View {
-        content.alert("Clear the queue?", isPresented: self.$isPresented) {
-            Button("Clear Queue", role: .destructive, action: self.onConfirm)
-            Button("Cancel", role: .cancel) {}
+        content.alert(L10n.string("Clear the queue?"), isPresented: self.$isPresented) {
+            Button(L10n.string("Clear Queue"), role: .destructive, action: self.onConfirm)
+            Button(L10n.string("Cancel"), role: .cancel) {}
         } message: {
-            Text("This removes the \(self.itemCount) tracks in your queue and stops playback.")
+            Text(localized: "This removes the \(self.itemCount) tracks in your queue and stops playback.")
         }
     }
 }
