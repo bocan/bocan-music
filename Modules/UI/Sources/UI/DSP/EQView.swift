@@ -48,18 +48,18 @@ public struct EQView: View {
 
     private var scopeRow: some View {
         HStack(spacing: 8) {
-            Text("Scope:")
+            Text(localized: "Scope:")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Picker("EQ Scope", selection: self.$vm.eqScope) {
+            Picker(L10n.string("EQ Scope"), selection: self.$vm.eqScope) {
                 ForEach(EQScope.allCases, id: \.self) { scope in
-                    Text(scope.rawValue).tag(scope)
+                    Text(scope.displayName).tag(scope)
                 }
             }
             .pickerStyle(.segmented)
-            .accessibilityLabel("EQ scope: Global, This Album, or This Track")
-            .help("Select which scope the EQ preset applies to")
+            .accessibilityLabel(L10n.string("EQ scope: Global, This Album, or This Track"))
+            .help(L10n.string("Select which scope the EQ preset applies to"))
             .fixedSize()
             .disabled(
                 (self.vm.eqScope == .track || self.vm.currentTrackID == nil) &&
@@ -71,31 +71,31 @@ public struct EQView: View {
 
             if self.vm.eqScope != .global {
                 if self.vm.hasScopedPreset {
-                    Button("Clear Override") {
+                    Button(L10n.string("Clear Override")) {
                         Task { await self.vm.clearCurrentScopePreset() }
                     }
                     .font(.caption)
                     .buttonStyle(.borderless)
                     .foregroundStyle(.red)
                     .accessibilityLabel(
-                        "Clear \(self.vm.eqScope.rawValue.lowercased()) EQ override"
+                        L10n.string("Clear \(self.vm.eqScope.displayName.lowercased()) EQ override")
                     )
-                    .help("Remove the EQ preset override for \(self.vm.eqScope.rawValue.lowercased())")
+                    .help(L10n.string("Remove the EQ preset override for \(self.vm.eqScope.displayName.lowercased())"))
                 }
-                let scopeName = self.vm.eqScope == .track ? "track" : "album"
+                let scopeName = self.vm.eqScope == .track ? L10n.string("track") : L10n.string("album")
                 let hasContext = self.vm.eqScope == .track
                     ? self.vm.currentTrackID != nil
                     : self.vm.currentAlbumID != nil
-                Button("Save for \(self.vm.eqScope.rawValue)") {
+                Button(L10n.string("Save for \(self.vm.eqScope.displayName)")) {
                     Task { await self.vm.saveCurrentScopePreset() }
                 }
                 .font(.caption)
                 .buttonStyle(.bordered)
                 .disabled(!hasContext || self.vm.state.eqPresetID == nil)
-                .accessibilityLabel("Save current preset for \(self.vm.eqScope.rawValue.lowercased())")
+                .accessibilityLabel(L10n.string("Save current preset for \(self.vm.eqScope.displayName.lowercased())"))
                 .help(
-                    "Pin the current EQ preset to this \(scopeName). " +
-                        "It will be applied automatically when this \(scopeName) plays."
+                    L10n.string("Pin the current EQ preset to this \(scopeName).")
+                        + " " + L10n.string("It will be applied automatically when this \(scopeName) plays.")
                 )
             }
         }
@@ -106,10 +106,10 @@ public struct EQView: View {
 
     private var topBar: some View {
         HStack {
-            Toggle("EQ", isOn: self.$vm.state.eqEnabled)
-                .accessibilityLabel("Enable equaliser")
+            Toggle(L10n.string("EQ"), isOn: self.$vm.state.eqEnabled)
+                .accessibilityLabel(L10n.string("Enable equaliser"))
                 .toggleStyle(.switch)
-                .help("Enable or bypass the 10-band equaliser")
+                .help(L10n.string("Enable or bypass the 10-band equaliser"))
 
             Spacer()
 
@@ -131,15 +131,15 @@ public struct EQView: View {
                 }
             }
             Divider()
-            Button("Save as Preset…") { self.showSaveSheet = true }
-            Button("Manage Presets…") { self.showManagePresets = true }
+            Button(L10n.string("Save as Preset…")) { self.showSaveSheet = true }
+            Button(L10n.string("Manage Presets…")) { self.showManagePresets = true }
         } label: {
-            Label(self.currentPreset?.name ?? "Custom", systemImage: "music.note.list")
-                .accessibilityLabel("EQ preset: \(self.currentPreset?.name ?? "Custom")")
+            Label(self.currentPreset?.name ?? L10n.string("Custom"), systemImage: "music.note.list")
+                .accessibilityLabel(L10n.string("EQ preset: \(self.currentPreset?.name ?? L10n.string("Custom"))"))
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Select a built-in or saved EQ preset")
+        .help(L10n.string("Select a built-in or saved EQ preset"))
     }
 
     private var abButton: some View {
@@ -164,9 +164,9 @@ public struct EQView: View {
                         self.isABFlat = false
                     }
             )
-            .accessibilityLabel("A/B compare: hold for flat reference")
-            .accessibilityHint("Hold to preview flat EQ; release to return to active preset")
-            .help("Hold for flat reference — release to return to active preset")
+            .accessibilityLabel(L10n.string("A/B compare: hold for flat reference"))
+            .accessibilityHint(L10n.string("Hold to preview flat EQ; release to return to active preset"))
+            .help(L10n.string("Hold for flat reference — release to return to active preset"))
             .contentShape(Rectangle())
     }
 
@@ -187,7 +187,7 @@ public struct EQView: View {
 
     private var outputGainRow: some View {
         HStack {
-            Text("Output")
+            Text(localized: "Output")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Slider(
@@ -195,9 +195,9 @@ public struct EQView: View {
                 in: -12 ... 12,
                 step: 0.5
             )
-            .accessibilityLabel("EQ output gain")
+            .accessibilityLabel(L10n.string("EQ output gain"))
             .accessibilityValue(String(format: "%+.1f dB", self.outputGainValue))
-            .help("Output trim after EQ — compensate for loudness change introduced by the curve")
+            .help(L10n.string("Output trim after EQ — compensate for loudness change introduced by the curve"))
             Text(String(format: "%+.1f dB", self.outputGainValue))
                 .font(.caption.monospacedDigit())
                 .frame(width: 52, alignment: .trailing)
@@ -208,14 +208,14 @@ public struct EQView: View {
 
     private var saveSheet: some View {
         VStack(spacing: 16) {
-            Text("Save EQ Preset")
+            Text(localized: "Save EQ Preset")
                 .font(.headline)
-            TextField("Preset name", text: self.$savePresetName)
+            TextField(L10n.string("Preset name"), text: self.$savePresetName)
                 .textFieldStyle(.roundedBorder)
             HStack {
-                Button("Cancel") { self.showSaveSheet = false }
+                Button(L10n.string("Cancel")) { self.showSaveSheet = false }
                 Spacer()
-                Button("Save") {
+                Button(L10n.string("Save")) {
                     self.vm.saveUserPreset(name: self.savePresetName)
                     self.savePresetName = ""
                     self.showSaveSheet = false
@@ -289,8 +289,8 @@ private struct BandSliderView: View {
                 .rotationEffect(.degrees(-90))
                 .frame(width: 28, height: 140)
                 .disabled(!self.isEnabled)
-                .help("\(self.label) Hz band: ±12 dB")
-                .accessibilityLabel("\(self.label) Hz EQ band")
+                .help(L10n.string("\(self.label) Hz band: ±12 dB"))
+                .accessibilityLabel(L10n.string("\(self.label) Hz EQ band"))
                 .accessibilityValue(String(format: "%+.1f dB", self.gain))
             Text(self.label)
                 .font(.system(size: 9))

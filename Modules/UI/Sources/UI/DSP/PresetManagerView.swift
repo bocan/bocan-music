@@ -18,7 +18,7 @@ public struct PresetManagerView: View {
 
     public var body: some View {
         VStack(spacing: 0) {
-            Text("Manage EQ Presets")
+            Text(localized: "Manage EQ Presets")
                 .font(.headline)
                 .padding()
 
@@ -26,7 +26,7 @@ public struct PresetManagerView: View {
 
             List {
                 if !BuiltInPresets.all.isEmpty {
-                    Section("Built-in") {
+                    Section(L10n.string("Built-in")) {
                         ForEach(BuiltInPresets.all) { preset in
                             self.presetRow(preset, isBuiltIn: true)
                         }
@@ -35,7 +35,7 @@ public struct PresetManagerView: View {
 
                 let userPresets = self.vm.presets.filter { !$0.isBuiltIn }
                 if !userPresets.isEmpty {
-                    Section("Your Presets") {
+                    Section(L10n.string("Your Presets")) {
                         ForEach(userPresets) { preset in
                             self.presetRow(preset, isBuiltIn: false)
                         }
@@ -52,7 +52,7 @@ public struct PresetManagerView: View {
 
             HStack {
                 Spacer()
-                Button("Done") { self.dismiss() }
+                Button(L10n.string("Done")) { self.dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
             .padding()
@@ -65,11 +65,11 @@ public struct PresetManagerView: View {
     private func presetRow(_ preset: EQPreset, isBuiltIn: Bool) -> some View {
         HStack {
             if self.renameID == preset.id {
-                TextField("Name", text: self.$renameDraft)
+                TextField(L10n.string("Name"), text: self.$renameDraft)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit { self.commitRename(preset: preset) }
-                    .accessibilityLabel("Rename preset")
-                Button("OK") { self.commitRename(preset: preset) }
+                    .accessibilityLabel(L10n.string("Rename preset"))
+                Button(L10n.string("OK")) { self.commitRename(preset: preset) }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
             } else {
@@ -83,13 +83,13 @@ public struct PresetManagerView: View {
                         Image(systemName: "pencil")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Rename \(preset.name)")
+                    .accessibilityLabel(L10n.string("Rename \(preset.name)"))
 
                     Button { self.duplicate(preset: preset) } label: {
                         Image(systemName: "plus.square.on.square")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Duplicate \(preset.name)")
+                    .accessibilityLabel(L10n.string("Duplicate \(preset.name)"))
 
                     Button(role: .destructive) {
                         self.vm.deleteUserPreset(id: preset.id)
@@ -97,9 +97,9 @@ public struct PresetManagerView: View {
                         Image(systemName: "trash")
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Delete \(preset.name)")
+                    .accessibilityLabel(L10n.string("Delete \(preset.name)"))
                 } else {
-                    Label("Built-in", systemImage: "lock")
+                    Label(L10n.string("Built-in"), systemImage: "lock")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .labelStyle(.iconOnly)

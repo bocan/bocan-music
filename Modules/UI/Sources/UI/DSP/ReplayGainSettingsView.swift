@@ -28,32 +28,34 @@ public struct ReplayGainSettingsView: View {
         }
         .formStyle(.grouped)
         .confirmationDialog(
-            "Recompute ReplayGain for all tracks?",
+            L10n.string("Recompute ReplayGain for all tracks?"),
             isPresented: self.$showRecomputeConfirm,
             titleVisibility: .visible
         ) {
-            Button("Recompute All", role: .destructive) {
+            Button(L10n.string("Recompute All"), role: .destructive) {
                 Task { await self.library.recomputeAllReplayGain() }
             }
-            Button("Cancel", role: .cancel) {}
+            Button(L10n.string("Cancel"), role: .cancel) {}
         } message: {
-            Text("This will re-analyse every track in the library. It may take several minutes.")
+            Text(localized: "This will re-analyse every track in the library. It may take several minutes.")
         }
     }
 
     // MARK: - Sections
 
     private var modeSection: some View {
-        Section("Playback Mode") {
-            Picker("ReplayGain", selection: self.$vm.state.replayGainMode) {
-                Text("Off").tag(ReplayGainMode.off)
-                Text("Track Gain").tag(ReplayGainMode.track)
-                Text("Album Gain").tag(ReplayGainMode.album)
-                Text("Auto").tag(ReplayGainMode.auto)
+        Section(L10n.string("Playback Mode")) {
+            Picker(L10n.string("ReplayGain"), selection: self.$vm.state.replayGainMode) {
+                Text(localized: "Off").tag(ReplayGainMode.off)
+                Text(localized: "Track Gain").tag(ReplayGainMode.track)
+                Text(localized: "Album Gain").tag(ReplayGainMode.album)
+                Text(localized: "Auto").tag(ReplayGainMode.auto)
             }
             .pickerStyle(.segmented)
-            .accessibilityLabel("ReplayGain mode")
-            .help("Off: none. Track: −18 LUFS. Album: preserves relative dynamics. Auto: album gain within albums, track gain otherwise.")
+            .accessibilityLabel(L10n.string("ReplayGain mode"))
+            .help(L10n.string(
+                "Off: none. Track: −18 LUFS. Album: preserves relative dynamics. Auto: album gain within albums, track gain otherwise."
+            ))
             Text(self.modeHelp)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -61,25 +63,28 @@ public struct ReplayGainSettingsView: View {
     }
 
     private var preAmpSection: some View {
-        Section("Pre-Amplifier") {
-            LabeledContent("Pre-amp") {
+        Section(L10n.string("Pre-Amplifier")) {
+            LabeledContent(L10n.string("Pre-amp")) {
                 HStack {
                     Slider(value: self.$vm.state.preAmpDB, in: -12 ... 12, step: 0.5)
-                        .accessibilityLabel("ReplayGain pre-amplifier")
-                        .help("Extra gain on top of the ReplayGain value. A clipping guard prevents the peak from exceeding −0.5 dBFS.")
+                        .accessibilityLabel(L10n.string("ReplayGain pre-amplifier"))
+                        .help(L10n.string(
+                            "Extra gain on top of the ReplayGain value. A clipping guard prevents the peak from exceeding −0.5 dBFS."
+                        ))
                     Text(String(format: "%+.1f dB", self.vm.state.preAmpDB))
                         .font(.caption.monospacedDigit())
                         .frame(width: 52, alignment: .trailing)
                 }
             }
-            Text("Applied on top of the resolved ReplayGain value. A clipping guard prevents the output peak from exceeding −0.5 dBFS.")
+            Text(localized:
+                "Applied on top of the resolved ReplayGain value. A clipping guard prevents the output peak from exceeding −0.5 dBFS.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
 
     private var analysisSection: some View {
-        Section("Analysis") {
+        Section(L10n.string("Analysis")) {
             if let progress = self.library.replayGainProgress {
                 self.progressRow(progress)
             } else {
@@ -91,21 +96,21 @@ public struct ReplayGainSettingsView: View {
     private var analysisButtons: some View {
         Group {
             HStack {
-                Text("Compute missing ReplayGain values")
+                Text(localized: "Compute missing ReplayGain values")
                 Spacer()
-                Button("Compute Missing") {
+                Button(L10n.string("Compute Missing")) {
                     Task { await self.library.computeMissingReplayGain() }
                 }
                 .buttonStyle(.bordered)
-                .help("Analyse any tracks that don't yet have ReplayGain data")
+                .help(L10n.string("Analyse any tracks that don't yet have ReplayGain data"))
             }
             .accessibilityElement(children: .combine)
 
-            Button("Recompute All…", role: .destructive) {
+            Button(L10n.string("Recompute All…"), role: .destructive) {
                 self.showRecomputeConfirm = true
             }
-            .accessibilityLabel("Recompute ReplayGain for all library tracks")
-            .help("Re-analyse every track in the library. This may take several minutes.")
+            .accessibilityLabel(L10n.string("Recompute ReplayGain for all library tracks"))
+            .help(L10n.string("Re-analyse every track in the library. This may take several minutes."))
         }
     }
 
@@ -118,7 +123,7 @@ public struct ReplayGainSettingsView: View {
                     Text(self.completionMessage(progress))
                         .font(.callout)
                 }
-                Button("Dismiss") { self.library.replayGainProgress = nil }
+                Button(L10n.string("Dismiss")) { self.library.replayGainProgress = nil }
                     .buttonStyle(.bordered)
             } else {
                 HStack(spacing: 8) {
@@ -126,12 +131,12 @@ public struct ReplayGainSettingsView: View {
                         value: Double(progress.done),
                         total: Double(progress.total)
                     )
-                    Text("\(progress.done) / \(progress.total)")
+                    Text(verbatim: "\(progress.done) / \(progress.total)")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .frame(width: 60, alignment: .trailing)
                 }
-                Text("Analysing\u{2026}")
+                Text(localized: "Analysing\u{2026}")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -142,24 +147,23 @@ public struct ReplayGainSettingsView: View {
     // MARK: - Labels
 
     private func completionMessage(_ progress: ReplayGainBatchProgress) -> String {
-        let noun = progress.succeeded == 1 ? "track" : "tracks"
-        let base = "Analysis complete — \(progress.succeeded) \(noun) analysed"
-        return progress.failed > 0 ? "\(base), \(progress.failed) failed" : base
+        let base = L10n.string("Analysis complete — \(progress.succeeded) tracks analysed")
+        return progress.failed > 0 ? L10n.string("\(base), \(progress.failed) failed") : base
     }
 
     private var modeHelp: String {
         switch self.vm.state.replayGainMode {
         case .off:
-            "No loudness normalisation applied."
+            L10n.string("No loudness normalisation applied.")
 
         case .track:
-            "Each track is normalised individually to −18 LUFS."
+            L10n.string("Each track is normalised individually to −18 LUFS.")
 
         case .album:
-            "The whole album is normalised together, preserving relative dynamics between tracks."
+            L10n.string("The whole album is normalised together, preserving relative dynamics between tracks.")
 
         case .auto:
-            "Album gain when playing a complete album; track gain otherwise."
+            L10n.string("Album gain when playing a complete album; track gain otherwise.")
         }
     }
 }

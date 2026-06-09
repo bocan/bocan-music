@@ -16,13 +16,13 @@ public struct DSPSheet: View {
     public var body: some View {
         TabView {
             EQView(vm: self.vm)
-                .tabItem { Label("Equaliser", systemImage: "slider.vertical.3") }
+                .tabItem { Label(L10n.string("Equaliser"), systemImage: "slider.vertical.3") }
 
             DSPView(vm: self.vm)
-                .tabItem { Label("Effects", systemImage: "waveform") }
+                .tabItem { Label(L10n.string("Effects"), systemImage: "waveform") }
 
             ReplayGainSettingsView(vm: self.vm)
-                .tabItem { Label("ReplayGain", systemImage: "chart.bar.fill") }
+                .tabItem { Label(L10n.string("ReplayGain"), systemImage: "chart.bar.fill") }
         }
     }
 }
