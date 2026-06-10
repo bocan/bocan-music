@@ -34,6 +34,11 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     private let log = AppLogger.make(.scrobble)
     private var statsTask: Task<Void, Never>?
     private var recentTask: Task<Void, Never>?
+    /// Number of visible surfaces (settings pane, recent-scrobbles sheet)
+    /// currently relying on the observation streams. The streams start when
+    /// this goes 0 -> 1 and stop when it returns to 0, so dismissing the sheet
+    /// over a still-visible settings pane does not cancel the pane's streams.
+    private var observerCount = 0
 
     public init(
         service: ScrobbleService,
@@ -50,6 +55,8 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
 
     public func appear() {
         Task { await self.refreshConnectionState() }
+        self.observerCount += 1
+        guard self.observerCount == 1 else { return }
         self.statsTask?.cancel()
         self.recentTask?.cancel()
         let repo = self.service.queueRepository
@@ -74,6 +81,8 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     }
 
     public func disappear() {
+        self.observerCount = max(0, self.observerCount - 1)
+        guard self.observerCount == 0 else { return }
         self.statsTask?.cancel()
         self.statsTask = nil
         self.recentTask?.cancel()
