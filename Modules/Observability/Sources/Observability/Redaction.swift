@@ -14,11 +14,16 @@ public enum Redaction {
     ]
 
     /// Lower-cased URL query-parameter names whose values are scrubbed when
-    /// they appear inside a logged URL string.
+    /// they appear inside a logged URL string. The single-letter names are
+    /// Subsonic's wire format (`u`/`t`/`s`/`p` carry username, auth token,
+    /// salt, and password; a captured `t`+`s` pair is a replayable
+    /// credential); `sk`/`api_sig` are Last.fm's session key and request
+    /// signature. Over-matching a harmless `t=` elsewhere is acceptable.
     public static let sensitiveQueryParams: Set = [
         "token", "salt", "api_key", "apikey", "password", "secret",
         "authorization", "access_token", "refresh_token", "sessionkey",
         "client_secret",
+        "u", "t", "s", "p", "sk", "api_sig",
     ]
 
     /// Return a copy of `fields` with sensitive values replaced by `"<redacted>"`.

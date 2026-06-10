@@ -69,6 +69,49 @@ struct RedactionTests {
         #expect(sanitized.contains("duration=259"), "non-sensitive param must be preserved")
     }
 
+    @Test("scrubURLQueryParams scrubs Subsonic wire-format auth params")
+    func scrubSubsonicWireParams() {
+        let url = "https://music.example.com/rest/stream.view"
+            + "?u=chris&t=0fd9a3f4c0de&s=ab12cd&v=1.16.1&c=bocan&f=json&id=42"
+        let scrubbed = Redaction.scrubURLQueryParams(in: url)
+        #expect(!scrubbed.contains("0fd9a3f4c0de"), "Subsonic auth token (t=) must be scrubbed")
+        #expect(!scrubbed.contains("ab12cd"), "Subsonic salt (s=) must be scrubbed")
+        #expect(!scrubbed.contains("chris"), "Subsonic username (u=) must be scrubbed")
+        #expect(scrubbed.contains("t=<redacted>"))
+        #expect(scrubbed.contains("s=<redacted>"))
+        #expect(scrubbed.contains("u=<redacted>"))
+        #expect(scrubbed.contains("v=1.16.1"), "non-sensitive params must be preserved")
+        #expect(scrubbed.contains("id=42"))
+    }
+
+    @Test("scrubURLQueryParams scrubs Last.fm session key and signature")
+    func scrubLastFmWireParams() {
+        let url = "https://ws.audioscrobbler.com/2.0/"
+            + "?method=track.love&sk=d580d57f32848f5d&api_sig=cafef00dba5eba11&api_key=0a1b2c3d&artist=Lankum&format=json"
+        let scrubbed = Redaction.scrubURLQueryParams(in: url)
+        #expect(!scrubbed.contains("d580d57f32848f5d"), "Last.fm session key (sk=) must be scrubbed")
+        #expect(!scrubbed.contains("cafef00dba5eba11"), "Last.fm api_sig must be scrubbed")
+        #expect(scrubbed.contains("sk=<redacted>"))
+        #expect(scrubbed.contains("api_sig=<redacted>"))
+        #expect(scrubbed.contains("api_key=<redacted>"))
+        #expect(scrubbed.contains("method=track.love"), "non-sensitive params must be preserved")
+        #expect(scrubbed.contains("artist=Lankum"))
+    }
+
+    @Test("sanitize scrubs auth params inside a reflected URLError string")
+    func sanitizeScrubsReflectedErrorURL() {
+        // String(reflecting:) of a URLError embeds the full failing URL; the
+        // scrubber must still catch credential params inside that larger string.
+        let reflected = "URLError(.timedOut, userInfo: [NSErrorFailingURLStringKey: "
+            + "https://music.example.com/rest/stream.view?u=chris&t=0fd9a3f4c0de&s=ab12cd&id=42])"
+        let result = Redaction.sanitize(["error": reflected])
+        let value = result["error"] ?? ""
+        #expect(!value.contains("0fd9a3f4c0de"), "auth token must not survive error reflection")
+        #expect(!value.contains("ab12cd"), "salt must not survive error reflection")
+        #expect(value.contains("t=<redacted>"))
+        #expect(value.contains("s=<redacted>"))
+    }
+
     @Test("scrubURLQueryParams leaves non-URL strings unchanged")
     func scrubURLQueryParamsNoop() {
         let plain = "just a plain log message"
