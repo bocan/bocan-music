@@ -64,6 +64,19 @@ struct RecentScrobblesConventionTests {
         )
     }
 
+    @Test("Provider filter segments derive from the loaded history")
+    func filterSegmentsAreDynamic() throws {
+        let source = try self.source("Scrobble/RecentScrobblesView.swift")
+        #expect(
+            source.contains("flatMap(\\.statusByProvider.keys)"),
+            "Filter segments must come from providers present in the history, so an unused provider shows no segment"
+        )
+        #expect(
+            source.contains("self.filter = .all"),
+            "The selected filter must fall back to All when its provider vanishes from the live-updating history"
+        )
+    }
+
     @Test("ScrobbleSettingsViewModel reference-counts observers")
     func viewModelReferenceCountsObservers() throws {
         let source = try self.source("Scrobble/ScrobbleSettingsViewModel.swift")

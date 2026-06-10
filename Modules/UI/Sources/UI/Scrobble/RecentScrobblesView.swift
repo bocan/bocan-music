@@ -60,6 +60,16 @@ public struct RecentScrobblesView: View {
 
     // MARK: - Filtering
 
+    /// Filter segments on offer: All, plus each provider that actually appears
+    /// in the loaded history. A provider with no submissions (e.g. Subsonic
+    /// when no server is configured) gets no segment.
+    private var availableFilters: [ProviderFilter] {
+        let present = Set(self.viewModel.recentScrobbles.flatMap(\.statusByProvider.keys))
+        return ProviderFilter.allCases.filter { option in
+            option.providerID.map { present.contains($0) } ?? true
+        }
+    }
+
     private var filteredRows: [ScrobbleQueueRepository.RecentRow] {
         guard let pid = self.filter.providerID else {
             return self.viewModel.recentScrobbles
@@ -76,15 +86,19 @@ public struct RecentScrobblesView: View {
                 Text(localized: "Recent Scrobbles")
                     .font(.headline)
                 Spacer()
-                Picker(selection: self.$filter) {
-                    ForEach(ProviderFilter.allCases) { option in
-                        Text(option.displayName).tag(option)
-                    }
-                } label: { EmptyView() }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 380)
-                    .accessibilityLabel(L10n.string("Filter by provider"))
+                // Only worth showing with at least two provider segments;
+                // "All | X" filters nothing.
+                if self.availableFilters.count > 2 {
+                    Picker(selection: self.$filter) {
+                        ForEach(self.availableFilters) { option in
+                            Text(option.displayName).tag(option)
+                        }
+                    } label: { EmptyView() }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .fixedSize()
+                        .accessibilityLabel(L10n.string("Filter by provider"))
+                }
                 Button(L10n.string("Done")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
             }
@@ -120,6 +134,13 @@ public struct RecentScrobblesView: View {
         .accessibilityIdentifier("recent-scrobbles")
         .onAppear { self.viewModel.appear() }
         .onDisappear { self.viewModel.disappear() }
+        .onChange(of: self.viewModel.recentScrobbles) { _, _ in
+            // Live updates can remove the last row for the selected provider;
+            // fall back to All rather than filtering against a vanished segment.
+            if !self.availableFilters.contains(self.filter) {
+                self.filter = .all
+            }
+        }
     }
 
     // MARK: - Row view
