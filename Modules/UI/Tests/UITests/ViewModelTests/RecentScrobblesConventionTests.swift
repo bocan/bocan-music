@@ -51,6 +51,19 @@ struct RecentScrobblesConventionTests {
         )
     }
 
+    @Test("Subsonic submission status is visible in the list")
+    func subsonicStatusVisible() throws {
+        let source = try self.source("Scrobble/RecentScrobblesView.swift")
+        #expect(
+            source.contains("\"lastfm\", \"listenbrainz\", \"rocksky\", \"subsonic\""),
+            "Subsonic must be in the default badge list; a subsonic-only queue row otherwise renders with no status at all"
+        )
+        #expect(
+            source.contains("case \"subsonic\":"),
+            "providerDisplayName must map the subsonic provider id"
+        )
+    }
+
     @Test("ScrobbleSettingsViewModel reference-counts observers")
     func viewModelReferenceCountsObservers() throws {
         let source = try self.source("Scrobble/ScrobbleSettingsViewModel.swift")
