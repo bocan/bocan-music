@@ -6,9 +6,10 @@ import SwiftUI
 /// Shows the last 50 scrobble-queue entries, their per-provider submission
 /// status, and a filter picker to narrow to a single provider.
 ///
-/// Presented as a sheet from `ScrobbleSettingsView`. The list updates live
-/// as the `ScrobbleSettingsViewModel` receives new data from its
-/// `observeRecent` stream.
+/// Presented as a sheet from `ScrobbleSettingsView` and from the
+/// `NowPlayingStrip` pending-scrobbles indicator. The view starts the
+/// view model's `observeRecent` stream itself via `appear()`/`disappear()`,
+/// so the list is populated no matter which surface presents it.
 public struct RecentScrobblesView: View {
     @ObservedObject var viewModel: ScrobbleSettingsViewModel
     @State private var filter: ProviderFilter = .all
@@ -113,6 +114,8 @@ public struct RecentScrobblesView: View {
             maxHeight: .infinity
         )
         .accessibilityIdentifier("recent-scrobbles")
+        .onAppear { self.viewModel.appear() }
+        .onDisappear { self.viewModel.disappear() }
     }
 
     // MARK: - Row view
