@@ -305,6 +305,12 @@ struct BocanApp: App {
 
         Self.registerDefaults()
 
+        // "scrobble.showRecentSheet" is a transient menu-to-strip signal
+        // (BocanCommands sets it, NowPlayingStrip presents the sheet on it).
+        // Clear any value persisted by a previous session so the sheet does
+        // not reopen at launch.
+        UserDefaults.standard.removeObject(forKey: "scrobble.showRecentSheet")
+
         // Phase 20: apply the persisted capture preference before the first log
         // line is emitted so the console backfills from the very start of this session.
         LogStore.shared.isCaptureEnabled = UserDefaults.standard.bool(forKey: "console.captureEnabled")
