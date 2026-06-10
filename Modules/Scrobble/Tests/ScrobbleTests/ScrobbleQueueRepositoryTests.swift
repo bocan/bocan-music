@@ -90,6 +90,44 @@ struct ScrobbleQueueRepositoryTests {
         #expect(afterRevive.isEmpty, "reviveDead must not resurrect sent_unconfirmed rows")
     }
 
+    @Test("markIgnored flips queue.submitted when it resolves the last live submission")
+    func ignoredRollsUpSubmittedFlag() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db)
+        let repo = ScrobbleQueueRepository(database: db)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let qid = try try await #require(repo.enqueue(
+            trackID: 1,
+            playedAt: now,
+            durationPlayed: 200,
+            providerIDs: ["lastfm", "subsonic"]
+        ))
+        try await repo.markSucceeded(queueID: qid, providerID: "lastfm")
+        let stats1 = try await repo.stats()
+        #expect(stats1.pending == 1) // still pending: subsonic outstanding
+
+        try await repo.markIgnored(queueID: qid, providerID: "subsonic", reason: "server skipped")
+        let stats2 = try await repo.stats()
+        #expect(stats2.pending == 0, "an ignored-resolved queue row must not strand in the pending count")
+    }
+
+    @Test("markIgnored alone resolves a single-provider queue row")
+    func ignoredOnlyRollsUpSubmittedFlag() async throws {
+        let db = try await self.makeDB()
+        try await self.seedTrack(db)
+        let repo = ScrobbleQueueRepository(database: db)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let qid = try try await #require(repo.enqueue(
+            trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["subsonic"]
+        ))
+        try await repo.markIgnored(queueID: qid, providerID: "subsonic", reason: "server skipped")
+
+        let stats = try await repo.stats()
+        #expect(stats.pending == 0)
+        let pending = try await repo.fetchPending(providerID: "subsonic", now: now)
+        #expect(pending.isEmpty, "ignored rows must not be re-submitted")
+    }
+
     @Test("markRetry hides row until next_attempt_at")
     func retryDelaysFetch() async throws {
         let db = try await self.makeDB()
