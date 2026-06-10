@@ -95,7 +95,7 @@ public struct RecentScrobblesView: View {
                 ContentUnavailableView(
                     L10n.string("No Scrobbles Yet"),
                     systemImage: "music.note.list",
-                    description: Text(localized: "Tracks you play will appear here once they have been scrobbled.")
+                    description: Text(localized: "Tracks you play will appear here with their scrobble submission status.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
