@@ -16618,12 +16618,12 @@
         }
       }
     },
-    "Tracks you play will appear here once they have been scrobbled." : {
+    "Tracks you play will appear here with their scrobble submission status." : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ţŕáçķš ýóú ƥĺáý ŵíĺĺ áƥƥéáŕ ĥéŕé óñçé ţĥéý ĥávé ƀééñ šçŕóƀƀĺéđ. one two three four"
+            "value" : "Ţŕáçķš ýóú ƥĺáý ŵíĺĺ áƥƥéáŕ ĥéŕé ŵíţĥ ţĥéíŕ šçŕóƀƀĺé šúƀḿíššíóñ šţáţúš. one two three four five"
           }
         }
       }
