@@ -49,6 +49,7 @@ public struct Migrator {
         M019PlaylistTrackUnique.register(in: &dm)
         M020SubsonicServers.register(in: &dm)
         M021SubsonicScrobble.register(in: &dm)
+        M022ScrobbleIgnoredRollup.register(in: &dm)
         return Self(inner: dm)
     }
 
@@ -57,5 +58,12 @@ public struct Migrator {
     /// Applies any pending migrations to `writer`.
     public mutating func migrate(_ writer: some DatabaseWriter) throws {
         try self.inner.migrate(writer)
+    }
+
+    /// Applies migrations up to and including `target`. Exists so tests of
+    /// data-repair migrations can seed pre-migration fixtures, then finish
+    /// migrating; production code always uses `migrate(_:)`.
+    public mutating func migrate(_ writer: some DatabaseWriter, upTo target: String) throws {
+        try self.inner.migrate(writer, upTo: target)
     }
 }

@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 21)
+        #expect(version == 22)
     }
 
     @Test("Integrity check passes after migration")
@@ -64,10 +64,43 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twenty-one migrations")
+    @Test("Migrator reports twenty-two migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 21)
+        #expect(migrator.migrations.count == 22)
+    }
+
+    @Test("M022 rolls up queue rows stranded by ignored submissions")
+    func m022RepairsStrandedIgnoredRows() throws {
+        let queue = try DatabaseQueue()
+        var migrator = Migrator.make()
+        try migrator.migrate(queue, upTo: "021_subsonic_scrobble")
+
+        // Seed two pre-022 queue rows (Subsonic identity, so no tracks FK):
+        // one stranded (only submission is ignored, never rolled up) and one
+        // legitimately pending (live submission outstanding).
+        try queue.write { db in
+            try db.execute(sql: """
+            INSERT INTO scrobble_queue
+              (id, track_id, played_at, duration_played, submitted, submission_attempts, dead,
+               subsonic_server_id, subsonic_song_id, payload_title, payload_artist, payload_duration)
+            VALUES (1, NULL, 1000, 200, 0, 0, 0, 'srv', 'song-1', 'Stranded', 'Artist', 240),
+                   (2, NULL, 2000, 200, 0, 0, 0, 'srv', 'song-2', 'Pending', 'Artist', 240)
+            """)
+            try db.execute(sql: """
+            INSERT INTO scrobble_submissions (queue_id, provider_id, status, attempts)
+            VALUES (1, 'subsonic', 'ignored', 1),
+                   (2, 'subsonic', 'ignored', 1),
+                   (2, 'lastfm', 'pending', 0)
+            """)
+        }
+
+        try migrator.migrate(queue)
+
+        let submittedFlags = try queue.read { db in
+            try Int.fetchAll(db, sql: "SELECT submitted FROM scrobble_queue ORDER BY id")
+        }
+        #expect(submittedFlags == [1, 0], "ignored-only row must roll up; row with a live submission must stay pending")
     }
 
     @Test("Playlists table has kind and accent_color after M007")

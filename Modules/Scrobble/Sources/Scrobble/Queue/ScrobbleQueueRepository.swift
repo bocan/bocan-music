@@ -341,6 +341,17 @@ public actor ScrobbleQueueRepository {
                SET status = 'ignored', last_error = ?
              WHERE queue_id = ? AND provider_id = ?
             """, arguments: [reason, queueID, providerID])
+            // Ignored is a successful terminal state for the rollup, same as in
+            // markSucceeded / markSentUnconfirmed. Without it, a queue row whose
+            // last live submission ends ignored strands at submitted = 0: counted
+            // by the pending badge forever but never claimable by any worker.
+            let pending = try Int.fetchOne(db, sql: """
+            SELECT COUNT(*) FROM scrobble_submissions
+             WHERE queue_id = ? AND status NOT IN ('sent', 'sent_unconfirmed', 'ignored')
+            """, arguments: [queueID]) ?? 0
+            if pending == 0 {
+                try db.execute(sql: "UPDATE scrobble_queue SET submitted = 1 WHERE id = ?", arguments: [queueID])
+            }
         }
     }
 
