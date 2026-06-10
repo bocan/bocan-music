@@ -18,6 +18,7 @@ public struct NowPlayingStrip: View {
     /// updates coming from the engine.  Seeking happens once on release.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
+    /// Menu-to-strip signal (BocanCommands sets it); cleared at launch by BocanApp.
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
     @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
