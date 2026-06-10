@@ -26,6 +26,7 @@ public struct RecentScrobblesView: View {
         case lastfm = "Last.fm"
         case listenbrainz = "ListenBrainz"
         case rocksky = "Rocksky"
+        case subsonic = "Subsonic"
 
         /// Localized segment label; provider names are proper nouns and stay
         /// verbatim (#314).
@@ -50,6 +51,9 @@ public struct RecentScrobblesView: View {
 
             case .rocksky:
                 "rocksky"
+
+            case .subsonic:
+                "subsonic"
             }
         }
     }
@@ -79,7 +83,7 @@ public struct RecentScrobblesView: View {
                 } label: { EmptyView() }
                     .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(width: 300)
+                    .frame(width: 380)
                     .accessibilityLabel(L10n.string("Filter by provider"))
                 Button(L10n.string("Done")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
@@ -122,7 +126,8 @@ public struct RecentScrobblesView: View {
 
     @ViewBuilder
     private func rowView(_ row: ScrobbleQueueRepository.RecentRow) -> some View {
-        let visibleProviderIDs: [String] = self.filter.providerID.map { [$0] } ?? ["lastfm", "listenbrainz", "rocksky"]
+        let visibleProviderIDs: [String] = self.filter.providerID.map { [$0] }
+            ?? ["lastfm", "listenbrainz", "rocksky", "subsonic"]
 
         HStack(alignment: .center, spacing: 10) {
             // Track info
@@ -198,6 +203,9 @@ public struct RecentScrobblesView: View {
         case "rocksky":
             "Rocksky"
 
+        case "subsonic":
+            "Subsonic"
+
         default:
             providerID
         }
@@ -268,7 +276,7 @@ public struct RecentScrobblesView: View {
         let time = self.relativeTime(for: row.playedAt)
         let summaryParts: [String] = visibleProviderIDs.compactMap { pid -> String? in
             guard let status = row.statusByProvider[pid] else { return nil }
-            let name = pid == "lastfm" ? "Last.fm" : "ListenBrainz"
+            let name = Self.providerDisplayName(pid)
             return L10n.string("\(name): \(Self.statusLabel(for: status))")
         }
         let providerSummary = summaryParts.joined(separator: ", ")
