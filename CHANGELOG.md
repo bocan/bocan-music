@@ -5,6 +5,35 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0](https://github.com/bocan/bocan-music/compare/v1.8.0...v1.9.0) (2026-06-09)
+
+
+### ### Added
+
+* **ui:** add en-XA pseudolocale and expansion checks ([#314](https://github.com/bocan/bocan-music/issues/314)) ([1f87af6](https://github.com/bocan/bocan-music/commit/1f87af6502bb403dd563d46888075ad8e9e25895))
+* **ui:** localize always-visible chrome and first-run surfaces ([#314](https://github.com/bocan/bocan-music/issues/314)) ([994f867](https://github.com/bocan/bocan-music/commit/994f8679a55f1d067460e9d02de9464c0b6ba76b))
+* **ui:** localize cross-module display strings ([#314](https://github.com/bocan/bocan-music/issues/314)) ([093ceed](https://github.com/bocan/bocan-music/commit/093ceed992309a967f8fc65c71fd94dd70cccc71))
+* **ui:** localize Fingerprint, Tools, Visualizers, PlaylistIO and Import ([#314](https://github.com/bocan/bocan-music/issues/314)) ([1aa138b](https://github.com/bocan/bocan-music/commit/1aa138b40e83b99c2bdb104b5f0a5cb452df8911))
+* **ui:** localize playlist sidebar, rows, sheets and detail views ([#314](https://github.com/bocan/bocan-music/issues/314)) ([5a9ffb0](https://github.com/bocan/bocan-music/commit/5a9ffb0d5f73674057fa3bf9f04a5b7060712d13))
+* **ui:** localize remaining surfaces and enforce the guard module-wide ([#314](https://github.com/bocan/bocan-music/issues/314)) ([7f11b81](https://github.com/bocan/bocan-music/commit/7f11b8106eb8d22592948064dbbeca3c1d1a1d93))
+* **ui:** localize the Browse area including AppKit table cells ([#314](https://github.com/bocan/bocan-music/issues/314)) ([6b6f58c](https://github.com/bocan/bocan-music/commit/6b6f58c1fd7bd968509bbff9cdbbcd54e1e20aa7))
+* **ui:** localize the Diagnostics, Advanced and remaining settings panes ([#314](https://github.com/bocan/bocan-music/issues/314)) ([5ea14b3](https://github.com/bocan/bocan-music/commit/5ea14b35fab037841cf211df1e62db7e9b444309))
+* **ui:** localize the DSP panes ([#314](https://github.com/bocan/bocan-music/issues/314)) ([fc4082c](https://github.com/bocan/bocan-music/commit/fc4082c3f0b017a16c8f1dc34c024a4b0052b4dc))
+* **ui:** localize the General, Appearance, Playback and Library settings panes ([#314](https://github.com/bocan/bocan-music/issues/314)) ([45d153a](https://github.com/bocan/bocan-music/commit/45d153add2a58cf09374dc15390d5ee7926bf8ea))
+* **ui:** localize the Lyrics pane, editor and settings ([#314](https://github.com/bocan/bocan-music/issues/314)) ([68457f5](https://github.com/bocan/bocan-music/commit/68457f5d512bb6b188a476b4544e16880fb216d1))
+* **ui:** localize the metadata editor ([#314](https://github.com/bocan/bocan-music/issues/314)) ([69480cf](https://github.com/bocan/bocan-music/commit/69480cf974a9b78d386dab18d7999693e489456a))
+* **ui:** localize the Scrobble surfaces ([#314](https://github.com/bocan/bocan-music/issues/314)) ([2d30aa4](https://github.com/bocan/bocan-music/commit/2d30aa44c7e26410fab5fb61ca75c96f62ae76be))
+* **ui:** localize the smart-playlist editor and presets ([#314](https://github.com/bocan/bocan-music/issues/314)) ([0339658](https://github.com/bocan/bocan-music/commit/0339658e8e001685e700f83b2cbfb2e090e046a4))
+* **ui:** localize the Sources (Subsonic) settings pane ([#314](https://github.com/bocan/bocan-music/issues/314)) ([c78b4fa](https://github.com/bocan/bocan-music/commit/c78b4fae697147d8f5bd0a430d52d7aae4402119))
+* **ui:** localize view-model copy ([#314](https://github.com/bocan/bocan-music/issues/314)) ([19e2e4a](https://github.com/bocan/bocan-music/commit/19e2e4af20385b74c1fe29cd5d1f73f365c21008))
+
+
+### ### Fixed
+
+* **playback:** drop stale sleep-timer ticks after fire or reschedule ([a6008a6](https://github.com/bocan/bocan-music/commit/a6008a6b1bfb8d8f4be14fa86775653353e96f59))
+* **ui:** regenerate en-XA pseudolocale after Xcode catalog re-sync ([bab6699](https://github.com/bocan/bocan-music/commit/bab66998d76a757960bdd7a0c6b2d4ac97aca851))
+* **ui:** stop post-scan reload clobbering scoped detail views with the full library ([266087f](https://github.com/bocan/bocan-music/commit/266087fa1c2faa1468fceb4a11f98c73e4326d0f))
+
 ## [1.8.0](https://github.com/bocan/bocan-music/compare/v1.7.1...v1.8.0) (2026-06-08)
 
 
