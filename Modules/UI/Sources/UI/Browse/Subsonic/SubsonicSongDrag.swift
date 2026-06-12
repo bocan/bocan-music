@@ -52,6 +52,7 @@ public enum SubsonicSongDrag {
     }
 
     /// Reads any `SubsonicSongDragPayload`s carried by a dragging session.
+    @MainActor
     public static func payloads(from info: NSDraggingInfo) -> [SubsonicSongDragPayload] {
         self.payloads(from: info.draggingPasteboard.pasteboardItems ?? [])
     }
