@@ -65,7 +65,7 @@ public final class WindowModeController: ObservableObject {
             // before we bring the main window forward.  The main window fades
             // in while the mini player is still fading out.
             DispatchQueue.main.async {
-                if let win = MainWindowTracker.shared.window {
+                if let win = MainWindowTracker.shared.resolveWindow() {
                     WindowFade.makeKeyAndOrderFront(win)
                     NSApp.activate(ignoringOtherApps: true)
                 } else {
