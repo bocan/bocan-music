@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import UI
@@ -141,6 +142,19 @@ struct SubsonicAnnotationCoordinatorTests {
         }
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == false)
         #expect(coord.isStarred(songID: "s2", serverStarred: nil) == true)
+    }
+
+    @Test("toggleStar and setRating perform a level-change haptic (#330)")
+    func annotationActionsPerformHaptic() {
+        let stub = StubAnnotationDelivery()
+        let coord = SubsonicAnnotationCoordinator(delivery: stub)
+        var patterns: [NSHapticFeedbackManager.FeedbackPattern] = []
+        let original = Haptics.performPattern
+        defer { Haptics.performPattern = original }
+        Haptics.performPattern = { patterns.append($0) }
+        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        coord.setRating(songID: "s1", serverID: self.serverID, newRating: 3, previousRating: nil)
+        #expect(patterns == [.levelChange, .levelChange])
     }
 
     @Test("reset(songID:) drops both star and rating overrides")

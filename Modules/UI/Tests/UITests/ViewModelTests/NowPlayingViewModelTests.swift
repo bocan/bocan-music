@@ -1,3 +1,4 @@
+import AppKit
 import AudioEngine
 import Foundation
 import Observability
@@ -371,6 +372,50 @@ struct NowPlayingViewModelTests {
         // Clamped at 0.0.
         await vm.decreaseVolume()
         #expect(vm.volume == 0.0)
+    }
+
+    // MARK: - Haptics (#330)
+
+    // A single sequential test: it suspends with the global spy installed, so
+    // two such tests running concurrently would swap each other's spy out.
+    // Other (non-spy) tests in this suite can still scrub concurrently and
+    // record extra `.alignment` entries here, so assertions use `contains`,
+    // never array equality.
+
+    @Test("scrub and end-of-queue perform haptics; pause does not")
+    func transportHaptics() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        var patterns: [NSHapticFeedbackManager.FeedbackPattern] = []
+        let original = Haptics.performPattern
+        defer { Haptics.performPattern = original }
+        Haptics.performPattern = { patterns.append($0) }
+
+        // Seek commit fires an alignment haptic.
+        await vm.scrub(to: 42.5)
+        #expect(patterns.contains(.alignment))
+
+        // Pause fires no level-change haptic.
+        patterns.removeAll()
+        engine.emit(.paused)
+        for _ in 0 ..< 100 {
+            if vm.isPaused { break }
+            await Task.yield()
+        }
+        try #require(vm.isPaused)
+        #expect(!patterns.contains(.levelChange))
+
+        // End of queue fires a level-change haptic.
+        patterns.removeAll()
+        engine.emit(.ended)
+        // Yield until the @MainActor stateTask processes the event.
+        for _ in 0 ..< 100 {
+            if patterns.contains(.levelChange) { break }
+            await Task.yield()
+        }
+        #expect(patterns.contains(.levelChange))
+        #expect(vm.position == 0)
     }
 
     // MARK: - Sleep timer

@@ -77,6 +77,7 @@ public extension LibraryViewModel {
     // MARK: - Persistence helpers
 
     private func applyLoved(_ loved: Bool, to tracks: [Track]) async {
+        Haptics.stateChange()
         let repo = TrackRepository(database: self.database)
         var updatedIDs: [Int64] = []
         for var track in tracks {
@@ -103,6 +104,7 @@ public extension LibraryViewModel {
     }
 
     private func applyRating(_ rating: Int, to tracks: [Track]) async {
+        Haptics.stateChange()
         let repo = TrackRepository(database: self.database)
         var updatedIDs: [Int64] = []
         for var track in tracks {

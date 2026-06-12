@@ -68,6 +68,7 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
 
     /// Toggles the star state for a song with optimistic update.
     public func toggleStar(songID: String, serverID: UUID, currentlyStarred: Bool) {
+        Haptics.stateChange()
         let newValue = !currentlyStarred
         self.previousStar[songID] = currentlyStarred
         self.starOverrides[songID] = newValue
@@ -87,6 +88,7 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
         newRating: Int,
         previousRating: Int?
     ) {
+        Haptics.stateChange()
         let clamped = max(0, min(5, newRating))
         self.previousRating[songID] = previousRating
         self.ratingOverrides[songID] = clamped
