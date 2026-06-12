@@ -53,7 +53,8 @@ Modules/UI/Sources/UI/Visualizers/Metal/
 ├── ColorPacking.swift               # NEW: Color -> SIMD4<Float> / UInt32 BGRA
 ├── OnsetEnvelope.swift              # NEW: shared attack/decay envelope
 ├── PolylineRibbon.swift             # NEW: polyline -> triangle strip expansion
-└── FrameRing.swift                  # NEW: triple-buffered per-frame MTLBuffers
+├── FrameRing.swift                  # NEW: triple-buffered per-frame MTLBuffers
+└── FrameRateMonitor.swift           # NEW: off-@State frame-rate watchdog
 
 Modules/UI/Sources/UI/Resources/Shaders/
 └── (empty in this phase; per-mode .metal files arrive in 12.7+)
@@ -207,11 +208,16 @@ which exist to dodge a specific known failure mode:
   See the colour-parity gotcha below.
 - **Frame pacing**: `preferredFramesPerSecond = vm.effectiveFPS`, re-applied in
   `updateNSView` so the Settings FPS cap and the battery cap keep working.
-- **Watchdog**: the representable takes `onFrame: (Date) -> Void`; the delegate
-  calls it once per `draw(in:)`. The host wires it to its existing
-  `recordFrameTick(at:)`, so a sustained sub-30 fps Metal mode auto-simplifies
-  to Spectrum Bars with the existing toast and Revert button, identical to the
-  Canvas path.
+- **Watchdog**: the coordinator owns a `FrameRateMonitor` (a pure value type)
+  and feeds it the present timestamp each frame; on the frame it trips it calls
+  `vm.autoSimplify()`. A sustained sub-30 fps Metal mode auto-simplifies to
+  Spectrum Bars with the existing toast and Revert button, identical to the
+  Canvas path. **Do not route this through the host's `@State`
+  `recordFrameTick`** (an early draft did, via an `onFrame` closure): mutating
+  `@State` every frame re-evaluates the host `body` (and re-queries the battery
+  via `effectiveFPS`) at the display rate, an update storm that starves the
+  draw loop and makes the watchdog fire against a renderer that is actually
+  fast. Measuring in the coordinator keeps it off the SwiftUI update cycle.
 - **Render scale**: `autoResizeDrawable = false`. The MTKView subclass
   overrides `layout()` and sets
   `drawableSize = convertToBacking(bounds.size) * renderer.renderScale`,
@@ -223,14 +229,20 @@ which exist to dodge a specific known failure mode:
   reduce motion, jump straight to 1). No spinner. This is the phase 12 gotcha
   about the first drawable.
 - **Per-frame flow** in `draw(in:)`:
-  1. read `vm.analysis` and `vm.latestSamples` (main thread, safe),
-  2. `renderer.update(analysis:samples:time:drawableSize:)` with
+  1. acquire `currentRenderPassDescriptor` / `currentDrawable` / command buffer
+     / encoder; return early if any is nil (window miniaturised, display
+     asleep) without logging per frame. **Guard before `update()`**: a renderer
+     may take a per-frame resource (a `FrameRing` slot) in `update()` and
+     release it in `didEncode()`, so a frame skipped after `update()` would
+     leak the slot and deadlock the ring. Guarding first keeps update -> encode
+     -> didEncode atomic.
+  2. read `vm.analysis` / `vm.latestSamples` and call
+     `renderer.update(analysis:samples:time:drawableSize:)` with
      `CACurrentMediaTime()` as time,
-  3. acquire `currentRenderPassDescriptor` / `currentDrawable` (return early
-     if nil, do not log per-frame),
-  4. make command buffer + encoder, call `renderer.encode(into:)`, end
-     encoding, present, commit,
-  5. `onFrame(Date())`.
+  3. `renderer.encode(into:)`, end encoding, `renderer.didEncode(commandBuffer:)`,
+     present, commit,
+  4. on the first presented frame, start the warm-up fade,
+  5. feed the present timestamp to the `FrameRateMonitor`.
 - **Teardown**: `dismantleNSView` sets `isPaused = true` and `delegate = nil`,
   or the GPU keeps drawing for a closed pane (phase 12 fullscreen open/close
   bug). Verify with the existing fullscreen test procedure.

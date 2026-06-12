@@ -59,10 +59,14 @@ struct TagEditorViewModelCoverArtTests {
         vm.coverArtFetchVM.searchAlbum = "Abbey Road"
         vm.coverArtFetchVM.search()
 
-        // Allow the Task inside search() to run.
-        // Use a generous timeout: the Task may be delayed if the main actor is
-        // busy when many suites execute in parallel.
-        try await Task.sleep(for: .milliseconds(1000))
+        // Poll until the Task inside search() has populated candidates, rather
+        // than sleeping a fixed time. A fixed sleep was flaky: when many suites
+        // run in parallel the main actor can be busy past the timeout. Polling
+        // returns as soon as the work lands and tolerates load up to the deadline.
+        let deadline = Date().addingTimeInterval(5)
+        while vm.coverArtFetchVM.candidates.isEmpty, Date() < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
 
         #expect(mock.searchCallCount == 1)
         #expect(mock.lastSearchArtist == "The Beatles")

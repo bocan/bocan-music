@@ -74,6 +74,12 @@ public struct VisualizerHost: View {
     /// The Metal path when a Metal renderer is active, otherwise the Canvas path.
     /// The `.id(rendererKey)` tears the `MTKView` down and rebuilds it on a mode,
     /// palette, or accessibility change rather than mutating a live renderer.
+    ///
+    /// The Metal path runs its own frame-rate watchdog inside the view's
+    /// coordinator (see ``FrameRateMonitor``); unlike the Canvas path's
+    /// `recordFrameTick`, it deliberately does not touch this view's `@State`,
+    /// because mutating it every frame would re-evaluate `body` (and re-query the
+    /// battery via `effectiveFPS`) at the display rate.
     @ViewBuilder
     private var activeContent: some View {
         if let metalRenderer, let device = MetalSupport.device {
@@ -84,9 +90,7 @@ public struct VisualizerHost: View {
                 pixelFormat: .bgra8Unorm,
                 preferredFPS: self.vm.effectiveFPS,
                 reduceMotion: self.reduceMotion
-            ) { date in
-                self.recordFrameTick(at: date)
-            }
+            )
             .id(self.rendererKey)
         } else {
             self.timelineCanvas
