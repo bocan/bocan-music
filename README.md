@@ -47,6 +47,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Import / export** M3U, PLS, and XSPF playlists, with fuzzy track matching on import.
 - **Real-time visualisers**: spectrum bars, oscilloscope, and a Metal GPU fluid shader, dockable or full-screen with `⌘⇧F`.
 - **Mini Player** in four layouts (Strip, Compact, Square, Visualizer) with always-on-top mode.
+- **Mac-native feel**: gentle trackpad haptics when you love, rate, seek, or release the volume slider, and a soft window cross-fade when swapping between the Mini Player and the main window. Respects Reduce Motion and the system trackpad haptics setting.
 - **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
 - **Subsonic / Navidrome / Airsonic** servers as first-class sources alongside your local library. Federated search across every server, per-server status dots, offline banners with one-tap retry, `⌘⇧1`–`⌘⇧9` to jump straight to a server, and drag a streamed song straight into Up Next.
 - **In-app Log Console** : open **Help -> Log Console** (`⌘⇧L`) to tail every log line since launch, filtered by level or category, with free-text search, live tailing, pause and resume, copy to clipboard, and export to a `.log` file. Diagnose a problem without ever leaving the app.
