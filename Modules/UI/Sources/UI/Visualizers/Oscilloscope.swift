@@ -43,7 +43,8 @@ public final class Oscilloscope: Visualizer {
         into context: inout GraphicsContext,
         size: CGSize,
         samples: AudioSamples,
-        analysis: Analysis
+        analysis: Analysis,
+        time: TimeInterval
     ) {
         let drawSamples: AudioSamples
         if self.reduceMotion {
@@ -61,10 +62,10 @@ public final class Oscilloscope: Visualizer {
 
         switch self.variant {
         case .waveform:
-            self.renderWaveform(into: &context, size: size, samples: drawSamples, analysis: analysis)
+            self.renderWaveform(into: &context, size: size, samples: drawSamples, analysis: analysis, time: time)
 
         case .lissajous:
-            self.renderLissajous(into: &context, size: size, samples: drawSamples, analysis: analysis)
+            self.renderLissajous(into: &context, size: size, samples: drawSamples, analysis: analysis, time: time)
         }
     }
 
@@ -74,7 +75,8 @@ public final class Oscilloscope: Visualizer {
         into context: inout GraphicsContext,
         size: CGSize,
         samples: AudioSamples,
-        analysis: Analysis
+        analysis: Analysis,
+        time: TimeInterval
     ) {
         let mono = samples.mono
         guard mono.count >= 2 else { return }
@@ -96,7 +98,7 @@ public final class Oscilloscope: Visualizer {
             }
         }
 
-        let strokeColor = self.lineColor(analysis: analysis)
+        let strokeColor = self.lineColor(analysis: analysis, time: time)
         context.stroke(path, with: .color(strokeColor), lineWidth: 1.5)
 
         // Faint centre line.
@@ -112,7 +114,8 @@ public final class Oscilloscope: Visualizer {
         into context: inout GraphicsContext,
         size: CGSize,
         samples: AudioSamples,
-        analysis: Analysis
+        analysis: Analysis,
+        time: TimeInterval
     ) {
         let left = samples.left
         let right = samples.right
@@ -140,25 +143,24 @@ public final class Oscilloscope: Visualizer {
             }
         }
 
-        let strokeColor = self.lineColor(analysis: analysis)
+        let strokeColor = self.lineColor(analysis: analysis, time: time)
         context.stroke(path, with: .color(strokeColor), lineWidth: 1.5)
     }
 
     // MARK: - Private
 
-    private func lineColor(analysis: Analysis) -> Color {
-        switch self.palette {
-        case .spectrum:
-            Color(hue: Double(analysis.rms) * 0.5, saturation: 0.9, brightness: 0.9)
-
-        case .mono:
-            .white
-
-        case .ember:
-            Color(hue: 0.03, saturation: 0.9, brightness: 0.9)
-
-        case .accent:
-            .accentColor
-        }
+    /// The single-line stroke colour, resolved through the shared palette mapping.
+    ///
+    /// The oscilloscope has no per-element position, so it queries the resolver
+    /// at `position: 0` with full magnitude. This keeps `mono` white and `accent`
+    /// at full opacity, matching the previous styling without a palette `switch`.
+    private func lineColor(analysis: Analysis, time: TimeInterval) -> Color {
+        PaletteResolver.color(
+            palette: self.palette,
+            position: 0,
+            magnitude: 1,
+            analysis: analysis,
+            time: time
+        )
     }
 }

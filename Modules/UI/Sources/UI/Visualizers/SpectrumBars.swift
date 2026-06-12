@@ -3,12 +3,18 @@ import SwiftUI
 
 // MARK: - VisualizerPalette
 
-/// The four curated colour palettes for the visualizer.
+/// The curated colour palettes for the visualizer.
+///
+/// Stored by `rawValue` in `@AppStorage`, so appending cases is backward
+/// compatible. ``drift`` and ``thermal`` are dynamic palettes for motion-heavy
+/// modes where the static palettes feel flat.
 public enum VisualizerPalette: String, CaseIterable, Sendable {
     case accent // tinted from the app accent colour
     case spectrum // classic rainbow
     case mono // single-colour (accessibility-friendly)
     case ember // warm red/orange
+    case drift // slowly evolving hue, steered by the music
+    case thermal // magnitude-to-heat colour ramp
 
     public var displayName: String {
         switch self {
@@ -23,6 +29,12 @@ public enum VisualizerPalette: String, CaseIterable, Sendable {
 
         case .ember:
             L10n.string("Ember")
+
+        case .drift:
+            L10n.string("Drift")
+
+        case .thermal:
+            L10n.string("Thermal")
         }
     }
 }
@@ -73,7 +85,8 @@ public final class SpectrumBars: Visualizer {
         into context: inout GraphicsContext,
         size: CGSize,
         samples: AudioSamples,
-        analysis: Analysis
+        analysis: Analysis,
+        time: TimeInterval
     ) {
         let bandCount = analysis.bands.count
         guard bandCount > 0 else { return }
@@ -88,8 +101,15 @@ public final class SpectrumBars: Visualizer {
             let barHeight = magnitude * maxBarHeight
             let y = size.height - barHeight
 
-            // Bar fill gradient
-            let barColor = self.bandColor(index: i, count: bandCount, magnitude: analysis.bands[i])
+            // Bar fill colour, resolved through the shared palette mapping.
+            let position = Double(i) / Double(max(bandCount - 1, 1))
+            let barColor = PaletteResolver.color(
+                palette: self.palette,
+                position: position,
+                magnitude: analysis.bands[i],
+                analysis: analysis,
+                time: time
+            )
             let barRect = CGRect(x: x, y: y, width: barWidth, height: barHeight)
             let barPath = RoundedRectangle(cornerRadius: min(3, barWidth / 2))
                 .path(in: barRect)
@@ -121,24 +141,6 @@ public final class SpectrumBars: Visualizer {
         } else {
             self.peakVelocity[i] += self.gravity
             self.peakHold[i] = max(0, self.peakHold[i] - self.peakVelocity[i])
-        }
-    }
-
-    private func bandColor(index: Int, count: Int, magnitude: Float) -> Color {
-        let t = Double(index) / Double(max(count - 1, 1))
-        switch self.palette {
-        case .spectrum:
-            return Color(hue: t * 0.75, saturation: 0.9, brightness: 0.9)
-
-        case .mono:
-            return Color(hue: 0, saturation: 0, brightness: 0.85)
-
-        case .ember:
-            return Color(hue: t * 0.08, saturation: 0.95, brightness: 0.95)
-
-        case .accent:
-            // Shift hue slightly per band for visual interest.
-            return Color.accentColor.opacity(0.7 + Double(magnitude) * 0.3)
         }
     }
 }
