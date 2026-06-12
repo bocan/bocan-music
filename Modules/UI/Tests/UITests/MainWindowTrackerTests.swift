@@ -13,11 +13,24 @@ import Testing
 /// when it is nil, and never return one of the auxiliary windows (which would
 /// otherwise let the swap hide the mini player instead of the main window, or
 /// spawn a duplicate main window on restore).
-@Suite("MainWindowTracker")
+/// `.serialized`: every test mutates the `MainWindowTracker.shared` singleton and
+/// reads the process-wide `NSApp.windows`, so they must not run concurrently.
+@Suite("MainWindowTracker", .serialized)
 @MainActor
 struct MainWindowTrackerTests {
+    /// Forces `canBecomeMain` so `resolveWindow`'s filter finds the test windows
+    /// regardless of the test process's activation policy. A plain `NSWindow`
+    /// reports `canBecomeMain == false` under the `.prohibited` policy a bare
+    /// `swift test` process runs in, which made these tests pass only when an
+    /// earlier test had promoted the app to a GUI state (the flakiness).
+    private final class MainCapableWindow: NSWindow {
+        override var canBecomeMain: Bool {
+            true
+        }
+    }
+
     private func makeWindow(title: String = "", identifier: String? = nil) -> NSWindow {
-        let win = NSWindow(
+        let win = MainCapableWindow(
             contentRect: NSRect(x: 0, y: 0, width: 200, height: 160),
             styleMask: [.titled],
             backing: .buffered,

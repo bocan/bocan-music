@@ -20,16 +20,13 @@ struct MetalVisualizerView: NSViewRepresentable {
     let pixelFormat: MTLPixelFormat
     let preferredFPS: Int
     let reduceMotion: Bool
-    /// Called once per presented frame, wired to the host's `recordFrameTick`.
-    let onFrame: (Date) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
             renderer: self.renderer,
             vm: self.vm,
             device: self.device,
-            reduceMotion: self.reduceMotion,
-            onFrame: self.onFrame
+            reduceMotion: self.reduceMotion
         )
     }
 
@@ -53,10 +50,8 @@ struct MetalVisualizerView: NSViewRepresentable {
     }
 
     func updateNSView(_ view: VisualizerMTKView, context: Context) {
-        // Re-apply on every update so the Settings FPS cap and battery cap keep
-        // working, and refresh the tick callback so it captures current state.
+        // Re-apply so the Settings FPS cap and battery cap keep working.
         view.preferredFramesPerSecond = self.preferredFPS
-        context.coordinator.onFrame = self.onFrame
     }
 
     static func dismantleNSView(_ view: VisualizerMTKView, coordinator: Coordinator) {
@@ -108,7 +103,9 @@ extension MetalVisualizerView {
         private let commandQueue: MTLCommandQueue?
         private let log = AppLogger.make(.ui)
         private var hasPresentedFirstFrame = false
-        var onFrame: (Date) -> Void
+        /// Frame-rate watchdog, kept here (not in SwiftUI @State) so measuring it
+        /// does not trigger a body re-evaluation every frame.
+        private var frameMonitor = FrameRateMonitor()
 
         private static let silentSamples = AudioSamples(
             timeStamp: .init(), sampleRate: 44100, mono: [], left: [], right: [], rms: 0, peak: 0
@@ -118,14 +115,12 @@ extension MetalVisualizerView {
             renderer: any MetalVisualizer,
             vm: VisualizerViewModel,
             device: MTLDevice,
-            reduceMotion: Bool,
-            onFrame: @escaping (Date) -> Void
+            reduceMotion: Bool
         ) {
             self.renderer = renderer
             self.vm = vm
             self.reduceMotion = reduceMotion
             self.commandQueue = device.makeCommandQueue()
-            self.onFrame = onFrame
             super.init()
             if self.commandQueue == nil {
                 self.log.error("visualizer.metal.commandQueue.failed")
@@ -182,7 +177,13 @@ extension MetalVisualizerView {
                 self.hasPresentedFirstFrame = true
                 self.fadeIn(view)
             }
-            self.onFrame(Date())
+
+            // Watchdog: measured here, off the SwiftUI update cycle. Trips at most
+            // once, then auto-simplifies to Spectrum Bars (which tears this view
+            // down via the host's renderer key, so the coordinator goes away).
+            if self.frameMonitor.record(time: CACurrentMediaTime()) {
+                self.vm.autoSimplify()
+            }
         }
 
         /// Fades the view up from transparent once the first frame is on screen,
