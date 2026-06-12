@@ -97,6 +97,9 @@ final class MetalSpectrumBars: MetalVisualizer {
     private(set) var instanceCount = 0
     private var currentBuffer: MTLBuffer?
     private var drawableSize: SIMD2<Float> = .zero
+    /// The analysis frame the peak physics last stepped on, so it steps once per
+    /// new frame rather than once per render (frame-rate-independent).
+    private var lastPeakFrameIndex: UInt64 = 0
 
     // MARK: - Init
 
@@ -142,6 +145,18 @@ final class MetalSpectrumBars: MetalVisualizer {
 
     func update(analysis: Analysis, samples: AudioSamples, time: TimeInterval, drawableSize: CGSize) {
         self.drawableSize = SIMD2(Float(drawableSize.width), Float(drawableSize.height))
+
+        // Step the peak physics once per NEW analysis frame (~43 Hz), not once
+        // per rendered frame. The physics is frame-based, so stepping it at the
+        // render rate makes the peaks fall faster the faster we draw. The Metal
+        // path renders faster than the Canvas one did (no drawingGroup), which
+        // made the peak markers fall noticeably lower; the analysis rate is the
+        // stable cadence the markers should track regardless of display rate.
+        if !self.reduceMotion, analysis.frameIndex != self.lastPeakFrameIndex {
+            self.lastPeakFrameIndex = analysis.frameIndex
+            self.peaks.step(magnitudes: analysis.bands)
+        }
+
         self.instanceCount = self.buildInstances(analysis: analysis, time: time, drawableSize: drawableSize)
 
         let buffer = self.frameRing.acquire()
@@ -177,7 +192,8 @@ final class MetalSpectrumBars: MetalVisualizer {
     // MARK: - Instance building (internal for testing)
 
     /// Builds bar instances (and peak markers when shown) into `self.instances`
-    /// and returns the count. Runs the peak physics one step per frame.
+    /// and returns the count, reading the current peak-hold positions (the
+    /// physics is stepped in `update`).
     func buildInstances(analysis: Analysis, time: TimeInterval, drawableSize: CGSize) -> Int {
         self.instances.removeAll(keepingCapacity: true)
         let bandCount = min(analysis.bands.count, Self.bandCount)
@@ -210,9 +226,10 @@ final class MetalSpectrumBars: MetalVisualizer {
             ))
         }
 
-        // Peaks second (skipped under reduce motion, matching the Canvas).
+        // Peaks second (skipped under reduce motion, matching the Canvas). The
+        // physics is stepped in `update`, on the analysis cadence; here we only
+        // read the current hold positions.
         if !self.reduceMotion {
-            self.peaks.step(magnitudes: analysis.bands)
             for band in 0 ..< bandCount {
                 let peakTop = layout.height - self.peaks.hold[band] * layout.maxBarHeight - layout.peakOffset
                 var color = bandColors[band]
