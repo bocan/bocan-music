@@ -12,7 +12,7 @@ struct MetalVisualizerFactoryTests {
     private enum BuildFailure: Error { case boom }
 
     /// Modes converted to Metal so far. Extend as each conversion phase lands.
-    private static let metalModes: Set<VisualizerMode> = [.oscilloscope, .cascade]
+    private static let metalModes: Set<VisualizerMode> = [.oscilloscope, .cascade, .spectrumBars]
 
     @Test("supports() is true exactly for the converted modes", arguments: VisualizerMode.allCases)
     func supportsMatchesConvertedModes(mode: VisualizerMode) {
