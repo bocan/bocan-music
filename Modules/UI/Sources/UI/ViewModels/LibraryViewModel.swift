@@ -272,6 +272,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// columns live when a play is counted mid-playback.
     private var nowPlayingStatsTask: Task<Void, Never>?
     private var selectedDestinationCancellable: AnyCancellable?
+    /// The manual playlist whose membership is currently driving the queue.
+    /// `nil` when the queue was populated from any other source (Songs, Albums, etc.).
+    var activePlaylistID: Int64?
+    /// Background task observing `activePlaylistID`'s membership so that
+    /// adds/removes/reorders are mirrored into the live queue.
+    var playlistSyncTask: Task<Void, Never>?
     /// Source of Subsonic servers for the sidebar (Phase 19 step 9). `nil`
     /// when running without the Subsonic module wired in (tests, snapshots).
     private let subsonicSidebarListing: SubsonicSidebarListing?
@@ -830,6 +836,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     ///
     /// Called by TracksView / AlbumDetailView on double-click or Return key.
     public func play(track: Track) async {
+        self.stopPlaylistSync()
         // Ensure the track list is populated.
         if self.tracks.tracks.isEmpty {
             await self.loadCurrentDestination()
@@ -874,6 +881,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Pass `shuffle: true` to pre-shuffle before playback so the very first
     /// track heard is randomly selected (not `tracks[0]`).
     public func play(tracks: [Track], startingAt index: Int = 0, shuffle: Bool = false) async {
+        self.stopPlaylistSync()
         guard let qp = engine as? QueuePlayer else { return }
         let names = self.tracks.artistNames
         let items: [QueueItem] = tracks.map { t in
@@ -985,6 +993,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     // Plays all tracks from the album of `track`.
 
     public func playAlbum(track: Track, shuffle: Bool = false) async {
+        self.stopPlaylistSync()
         guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
         do {
             try await qp.playAlbum(albumID, shuffle: shuffle)
@@ -996,6 +1005,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Plays all tracks by the artist of `track`.
     public func playArtist(track: Track) async {
+        self.stopPlaylistSync()
         guard let qp = engine as? QueuePlayer, let artistID = track.artistID else { return }
         do {
             try await qp.playArtist(artistID)
@@ -1079,6 +1089,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// invoked by the "Clear Queue" confirmation, the crash-recovery "Start Fresh"
     /// button, and the matching Up Next toolbar / context-menu surfaces.
     public func clearQueue() async {
+        self.stopPlaylistSync()
         guard let qp = engine as? QueuePlayer else { return }
         await qp.clearSavedState()
     }

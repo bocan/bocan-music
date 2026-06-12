@@ -90,12 +90,12 @@ public struct PlaylistDetailView: View {
     // MARK: - Actions
 
     private func playAll() async {
-        await self.library.play(tracks: self.vm.tracks, startingAt: 0)
+        await self.library.play(tracks: self.vm.tracks, fromPlaylistID: self.playlistID, startingAt: 0)
     }
 
     private func playShuffled() async {
         guard !self.vm.tracks.isEmpty else { return }
-        await self.library.play(tracks: self.vm.tracks, shuffle: true)
+        await self.library.play(tracks: self.vm.tracks, fromPlaylistID: self.playlistID, shuffle: true)
     }
 
     private var accentColour: Color? {

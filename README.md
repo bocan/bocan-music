@@ -44,6 +44,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 
 - **Three-pane browser**: Albums grid, Tracks list, Artists view, and Recently Added.
 - **Smart Playlists** built from a rule editor, compiled to live SQL and updated automatically as your library changes.
+- **Live playlist sync**: add or remove tracks from a manual playlist while it is playing and Up Next updates immediately. Sequential mode keeps your position and reorders around it; shuffle mode drops removed tracks and slots new ones in.
 - **Import / export** M3U, PLS, and XSPF playlists, with fuzzy track matching on import.
 - **Real-time visualisers**: spectrum bars, oscilloscope, and a Metal GPU fluid shader, dockable or full-screen with `⌘⇧F`.
 - **Mini Player** in four layouts (Strip, Compact, Square, Visualizer) with always-on-top mode.
