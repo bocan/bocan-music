@@ -14,13 +14,23 @@ import SwiftUI
 /// Call `start()` when the visualizer pane becomes visible and `stop()` when it hides.
 @MainActor
 public final class VisualizerViewModel: ObservableObject {
-    // MARK: - Published state
+    // MARK: - Frame state (deliberately not @Published)
 
     /// The latest analysis result, updated at the audio tap rate (~43×/s).
-    @Published public private(set) var analysis: Analysis = .silent
+    ///
+    /// **Not `@Published` on purpose.** Both renderers read this at draw time
+    /// (the Canvas `TimelineView` tick and the Metal `MTKView` display link),
+    /// driven by their own clocks, so they always see the current value without a
+    /// publish. Publishing it at the tap rate only forced a `VisualizerHost.body`
+    /// re-evaluation ~43×/s (plus the same again for `latestSamples`), an update
+    /// storm that ran `updateNSView` and an IOKit battery query per frame and
+    /// starved the Metal draw loop on the main thread badly enough that the
+    /// frame-rate watchdog auto-simplified a renderer that was actually fast.
+    public private(set) var analysis: Analysis = .silent
 
-    /// The most recent raw audio buffer — used by waveform-based visualizers (e.g. Oscilloscope).
-    @Published public private(set) var latestSamples: AudioSamples?
+    /// The most recent raw audio buffer, used by waveform visualizers. Not
+    /// `@Published` for the same reason as ``analysis``.
+    public private(set) var latestSamples: AudioSamples?
 
     /// Whether the visualizer pane is currently visible.
     @AppStorage("visualizer.paneVisible") public var paneVisible = false

@@ -50,8 +50,12 @@ struct MetalVisualizerView: NSViewRepresentable {
     }
 
     func updateNSView(_ view: VisualizerMTKView, context: Context) {
-        // Re-apply so the Settings FPS cap and battery cap keep working.
-        view.preferredFramesPerSecond = self.preferredFPS
+        // Re-apply so the Settings FPS cap and battery cap keep working. Only
+        // when it actually changes: assigning it reconfigures the display link,
+        // and an unchanged reassignment every update would be needless churn.
+        if view.preferredFramesPerSecond != self.preferredFPS {
+            view.preferredFramesPerSecond = self.preferredFPS
+        }
     }
 
     static func dismantleNSView(_ view: VisualizerMTKView, coordinator: Coordinator) {

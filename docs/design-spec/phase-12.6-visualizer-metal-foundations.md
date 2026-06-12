@@ -535,6 +535,17 @@ All CPU-side, no GPU required except where noted:
 - **MTKView delegate runs on the main thread**, so `@MainActor` renderers work
   without hops, but do not block in `draw(in:)` (no `waitUntilCompleted` in
   the live path; that is for the offscreen test renderer only).
+- **The MTKView draws on the main thread, so do not flood that thread with
+  SwiftUI updates.** `VisualizerViewModel.analysis` / `latestSamples` are
+  deliberately *not* `@Published`: both renderers read them at draw time off
+  their own clock (the `TimelineView` tick, the `MTKView` display link), so a
+  publish only forces a `VisualizerHost.body` re-evaluation at the tap rate
+  (~43x/s each). That storm runs `updateNSView` and an IOKit battery query
+  (`effectiveFPS`) per frame and starves the Metal draw loop badly enough that
+  the watchdog auto-simplifies a renderer that is actually fast. Symptom: the
+  Metal mode holds while paused and dies ~3 s after playback starts. Likewise
+  keep `updateNSView` cheap (guard the `preferredFramesPerSecond` reassignment;
+  setting it reconfigures the display link).
 - **`currentRenderPassDescriptor` can be nil** (window miniaturised, display
   asleep). Return early, silently. Logging per frame floods the ring buffer.
 - **Teardown ordering.** `dismantleNSView` must pause before nilling the
