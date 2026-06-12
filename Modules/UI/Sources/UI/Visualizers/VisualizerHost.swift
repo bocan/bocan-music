@@ -129,6 +129,13 @@ public struct VisualizerHost: View {
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
+
+        case .cascade:
+            self.renderer = Cascade(
+                palette: self.vm.palette,
+                reduceMotion: self.reduceMotion,
+                reduceTransparency: self.reduceTransparency
+            )
         }
     }
 
