@@ -1,6 +1,47 @@
 import Accelerate
 import Foundation
 
+// MARK: - SpectrumFrame
+
+/// One frame of enriched spectral analysis produced by ``FFTAnalyzer/analyze(_:)``.
+///
+/// Every field is derived from the real FFT magnitudes of the audio tap; there
+/// is no synthetic animation data. All values are computed on `@MainActor`,
+/// never on the realtime thread.
+public struct SpectrumFrame: Sendable {
+    /// 32 perceptual bands, 0…1 (unchanged semantics).
+    public let bands: [Float]
+    /// Spectral centroid on a log-frequency scale, 0…1
+    /// (0 = 20 Hz, 1 = 20 kHz). EMA-smoothed; relaxes toward 0.5 in silence.
+    public let centroid: Float
+    /// Positive spectral flux, normalised 0…1 by a running flux peak.
+    public let flux: Float
+    /// True when this frame contains a detected onset (transient).
+    public let onset: Bool
+    /// Mean of bands 0..<10, 10..<22, 22..<32 respectively, each 0…1.
+    public let bassEnergy: Float
+    public let midEnergy: Float
+    public let trebleEnergy: Float
+
+    public init(
+        bands: [Float],
+        centroid: Float,
+        flux: Float,
+        onset: Bool,
+        bassEnergy: Float,
+        midEnergy: Float,
+        trebleEnergy: Float
+    ) {
+        self.bands = bands
+        self.centroid = centroid
+        self.flux = flux
+        self.onset = onset
+        self.bassEnergy = bassEnergy
+        self.midEnergy = midEnergy
+        self.trebleEnergy = trebleEnergy
+    }
+}
+
 // MARK: - FFTAnalyzer
 
 /// vDSP-backed FFT analyser producing 32 perceptual frequency bands from audio samples.
@@ -8,7 +49,7 @@ import Foundation
 /// **Usage** (on `@MainActor`):
 /// ```swift
 /// let analyzer = FFTAnalyzer()
-/// let bands = analyzer.analyze(samples)   // [Float] × 32, normalised 0…1
+/// let frame = analyzer.analyze(samples)   // SpectrumFrame: bands ×32 + v2 features
 /// ```
 ///
 /// **Algorithm**:
@@ -45,15 +86,45 @@ public final class FFTAnalyzer {
     /// long enough to feel stable but fast enough to adapt after a genre change.
     private var bandPeaks: [Float]
 
-    // Band bin ranges, recomputed when sample rate changes.
+    /// Band bin ranges, recomputed when sample rate changes.
     private var bandBins: [(from: Int, to: Int)]
+    /// Per-bin centre frequency in Hz, recomputed when sample rate changes.
+    /// Used as the weighting vector for the spectral-centroid dot product.
+    private var binFrequencies: [Float]
     private var lastSampleRate: Double = 0
+
+    // MARK: - Analysis v2 state (centroid / flux / onset)
+
+    /// Pre-EMA band values from the previous frame. Flux is computed against the
+    /// raw (unsmoothed) bands because the smoothed values smear transients.
+    private var prevRawBands: [Float]
+    /// Running peak of the raw spectral flux, for adaptive 0…1 normalisation.
+    private var fluxPeak: Float = 0
+    /// Ring buffer of recent normalised-flux values for the adaptive onset threshold.
+    private var fluxHistory: [Float]
+    private var fluxHistoryIndex = 0
+    private var fluxHistorySum: Float = 0
+    /// Frames remaining before another onset may fire (transient debounce).
+    private var refractoryCounter = 0
+    /// EMA-smoothed spectral centroid, 0…1. Starts (and relaxes in silence) at 0.5.
+    private var centroidEMA: Float = 0.5
 
     // MARK: - EMA
 
     private let attackAlpha: Float = 0.6
     private let releaseAlpha: Float = 0.08
     private let peakDecay: Float = 0.995 // ~3 s half-life at 43 fps; was 0.9985 (11 s)
+
+    // MARK: - Analysis v2 constants
+
+    private let centroidAlpha: Float = 0.2 // EMA smoothing for the centroid
+    private static let fluxWindow = 43 // ~1 s of frames for the onset moving average
+    private let onsetThresholdMultiplier: Float = 1.8 // flux must exceed 1.8× the local mean
+    private let onsetFloor: Float = 0.05 // absolute floor so silence cannot trigger onsets
+    private let onsetRefractoryFrames = 4 // ~100 ms debounce: one kick → one onset
+    private let fluxPeakFloor: Float = 1e-4 // mirrors the bandPeaks content threshold
+    private static let minCentroidFreq: Double = 20
+    private static let maxCentroidFreq: Double = 20000
 
     // MARK: - Init
 
@@ -80,6 +151,9 @@ public final class FFTAnalyzer {
         self.smoothed = [Float](repeating: 0, count: Self.bandCount)
         self.bandPeaks = [Float](repeating: 0, count: Self.bandCount)
         self.bandBins = []
+        self.binFrequencies = [Float](repeating: 0, count: bins)
+        self.prevRawBands = [Float](repeating: 0, count: Self.bandCount)
+        self.fluxHistory = [Float](repeating: 0, count: Self.fluxWindow)
     }
 
     deinit {
@@ -97,19 +171,32 @@ public final class FFTAnalyzer {
         self.smoothed = [Float](repeating: 0, count: Self.bandCount)
         self.bandPeaks = [Float](repeating: 0, count: Self.bandCount)
         self.overlapBuffer = [Float](repeating: 0, count: Self.fftSize / 2)
+        // Analysis v2 transient state.
+        self.prevRawBands = [Float](repeating: 0, count: Self.bandCount)
+        self.fluxPeak = 0
+        self.fluxHistory = [Float](repeating: 0, count: Self.fluxWindow)
+        self.fluxHistoryIndex = 0
+        self.fluxHistorySum = 0
+        self.refractoryCounter = 0
+        self.centroidEMA = 0.5
     }
 
     // swiftlint:disable cyclomatic_complexity function_body_length
-    /// Analyse one buffer of audio, updating the overlap buffer and returning
-    /// 32 normalised band values (0…1).
+    /// Analyse one buffer of audio, updating the overlap buffer and returning a
+    /// ``SpectrumFrame``: 32 normalised band values (0…1) plus the v2 features
+    /// (centroid, flux, onset, and bass/mid/treble energy aggregates).
     ///
     /// - Parameter samples: Latest buffer from `AudioTap`.
-    /// - Returns: 32 perceptual band magnitudes, normalised so a full-scale sine
-    ///   at the centre frequency of a band ≈ 1.0.
-    public func analyze(_ samples: AudioSamples) -> [Float] {
+    /// - Returns: A ``SpectrumFrame`` whose `bands` are normalised so a full-scale
+    ///   sine at the centre frequency of a band ≈ 1.0.
+    public func analyze(_ samples: AudioSamples) -> SpectrumFrame {
         if samples.sampleRate != self.lastSampleRate {
             self.lastSampleRate = samples.sampleRate
             self.bandBins = Self.makeBandBins(sampleRate: samples.sampleRate)
+            // Per-bin centre frequencies: bin i sits at i · (sampleRate / fftSize).
+            var start: Float = 0
+            var step = Float(samples.sampleRate / Double(Self.fftSize))
+            vDSP_vramp(&start, &step, &self.binFrequencies, 1, vDSP_Length(Self.binCount))
         }
 
         let mono = samples.mono
@@ -214,10 +301,88 @@ public final class FFTAnalyzer {
         var one: Float = 1
         vDSP_vclip(result, 1, &zero, &one, &result, 1, vDSP_Length(Self.bandCount))
 
-        return result
+        // Analysis v2 features, all derived from data already in hand this frame.
+        self.updateCentroid()
+        let flux = self.computeFlux(rawBands: bands)
+        let onset = self.detectOnset(flux: flux)
+        self.prevRawBands = bands
+
+        // Energy aggregates over the final normalised bands (32 = 10 + 12 + 10).
+        let bassEnergy = result[0 ..< 10].reduce(0, +) / 10
+        let midEnergy = result[10 ..< 22].reduce(0, +) / 12
+        let trebleEnergy = result[22 ..< 32].reduce(0, +) / 10
+
+        return SpectrumFrame(
+            bands: result,
+            centroid: self.centroidEMA,
+            flux: flux,
+            onset: onset,
+            bassEnergy: bassEnergy,
+            midEnergy: midEnergy,
+            trebleEnergy: trebleEnergy
+        )
     }
 
     // swiftlint:enable cyclomatic_complexity function_body_length
+
+    // MARK: - Internal: analysis v2 features
+
+    /// Updates ``centroidEMA`` from the current squared-magnitude spectrum.
+    ///
+    /// Centroid frequency = `Σ(freqᵢ · magᵢ) / Σ(magᵢ)`, mapped onto a 20 Hz–20 kHz
+    /// log scale and EMA-smoothed. When the spectrum is effectively silent the
+    /// centroid relaxes toward the neutral midpoint (0.5) instead of collapsing.
+    private func updateCentroid() {
+        var totalMagnitude: Float = 0
+        vDSP_sve(self.magnitudes, 1, &totalMagnitude, vDSP_Length(Self.binCount))
+        if totalMagnitude < 1e-7 {
+            self.centroidEMA += self.centroidAlpha * (0.5 - self.centroidEMA)
+            return
+        }
+        var weightedSum: Float = 0
+        vDSP_dotpr(self.magnitudes, 1, self.binFrequencies, 1, &weightedSum, vDSP_Length(Self.binCount))
+        let centroidHz = Double(weightedSum / totalMagnitude)
+        let logMin = log10(Self.minCentroidFreq)
+        let logMax = log10(Self.maxCentroidFreq)
+        let mapped = centroidHz <= Self.minCentroidFreq ? 0 : (log10(centroidHz) - logMin) / (logMax - logMin)
+        let target = Float(min(1, max(0, mapped)))
+        self.centroidEMA += self.centroidAlpha * (target - self.centroidEMA)
+    }
+
+    /// Positive spectral flux against the previous frame's *raw* bands, normalised
+    /// 0…1 by a running peak (with a content floor, like ``bandPeaks``).
+    private func computeFlux(rawBands: [Float]) -> Float {
+        var rawFlux: Float = 0
+        for i in 0 ..< Self.bandCount {
+            let delta = rawBands[i] - self.prevRawBands[i]
+            if delta > 0 { rawFlux += delta }
+        }
+        self.fluxPeak = max(rawFlux, self.fluxPeak * self.peakDecay)
+        return self.fluxPeak > self.fluxPeakFloor ? rawFlux / self.fluxPeak : 0
+    }
+
+    /// Detects a transient: normalised flux exceeding an adaptive local-mean
+    /// threshold and an absolute floor, debounced by a short refractory period.
+    private func detectOnset(flux: Float) -> Bool {
+        let movingAverage = self.fluxHistorySum / Float(Self.fluxWindow)
+        let isCandidate = flux > self.onsetThresholdMultiplier * movingAverage && flux > self.onsetFloor
+
+        var onset = false
+        if self.refractoryCounter > 0 {
+            self.refractoryCounter -= 1
+        } else if isCandidate {
+            onset = true
+            self.refractoryCounter = self.onsetRefractoryFrames
+        }
+
+        // Slide the flux value into the moving-average ring buffer.
+        self.fluxHistorySum -= self.fluxHistory[self.fluxHistoryIndex]
+        self.fluxHistory[self.fluxHistoryIndex] = flux
+        self.fluxHistorySum += flux
+        self.fluxHistoryIndex = (self.fluxHistoryIndex + 1) % Self.fluxWindow
+
+        return onset
+    }
 
     // MARK: - Internal: band mapping
 

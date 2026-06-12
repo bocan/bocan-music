@@ -6135,6 +6135,22 @@
         }
       }
     },
+    "Drift" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drift"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đŕíƒţ one"
+          }
+        }
+      }
+    },
     "Dropped Playlists – %@" : {
       "localizations" : {
         "en" : {
@@ -16027,6 +16043,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţĥéḿé Áúđíţ one"
+          }
+        }
+      }
+    },
+    "Thermal" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thermal"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţĥéŕḿáĺ one"
           }
         }
       }

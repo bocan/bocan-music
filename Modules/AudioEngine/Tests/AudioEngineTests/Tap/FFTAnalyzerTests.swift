@@ -23,7 +23,7 @@ struct FFTAnalyzerTests {
             rms: 1.0,
             peak: 1.0
         )
-        let bands = analyzer.analyze(dc)
+        let bands = analyzer.analyze(dc).bands
         #expect(bands.count == FFTAnalyzer.bandCount)
         for (i, b) in bands.enumerated() {
             #expect(b.isFinite, "Band \(i) is non-finite: \(b)")
@@ -55,7 +55,7 @@ struct FFTAnalyzerTests {
         let analyzer = FFTAnalyzer()
         // Warm up overlap buffer with one identical buffer.
         _ = analyzer.analyze(samples)
-        let bands = analyzer.analyze(samples)
+        let bands = analyzer.analyze(samples).bands
 
         // Find the band index whose centre frequency contains 1 kHz.
         let binRanges = FFTAnalyzer.makeBandBins(sampleRate: sampleRate)
@@ -139,9 +139,9 @@ struct FFTAnalyzerTests {
             peak: 0
         )
 
-        var prevBands = analyzer.analyze(silentSamples)
+        var prevBands = analyzer.analyze(silentSamples).bands
         for _ in 0 ..< 10 {
-            let nextBands = analyzer.analyze(silentSamples)
+            let nextBands = analyzer.analyze(silentSamples).bands
             let prevSum = prevBands.reduce(0, +)
             let nextSum = nextBands.reduce(0, +)
             // Total energy must not increase during silence.
@@ -168,10 +168,213 @@ struct FFTAnalyzerTests {
         // Run many frames to let the EMA stabilise.
         var bands: [Float] = []
         for _ in 0 ..< 20 {
-            bands = analyzer.analyze(samples)
+            bands = analyzer.analyze(samples).bands
         }
         for (i, b) in bands.enumerated() {
             #expect(b >= 0 && b <= 1, "Band \(i) out of [0,1]: \(b)")
         }
+    }
+
+    // MARK: - Analysis v2 helpers
+
+    private func makeSamples(_ mono: [Float], sampleRate: Double = 44100) -> AudioSamples {
+        AudioSamples(
+            timeStamp: .init(),
+            sampleRate: sampleRate,
+            mono: mono,
+            left: mono,
+            right: mono,
+            rms: 0,
+            peak: 0
+        )
+    }
+
+    /// A phase-continuous block of summed sinusoids starting at absolute sample
+    /// `startSample`, so successive frames join without a midpoint discontinuity.
+    private func tone(
+        _ freqs: [Double],
+        from startSample: Int,
+        count: Int = 1024,
+        sampleRate: Double = 44100,
+        amplitude: Float = 1
+    ) -> [Float] {
+        (0 ..< count).map { i in
+            let n = Double(startSample + i)
+            var value = 0.0
+            for f in freqs {
+                value += sin(2 * Double.pi * f * n / sampleRate)
+            }
+            return amplitude * Float(value)
+        }
+    }
+
+    private func noiseFrame(count: Int = 1024) -> [Float] {
+        (0 ..< count).map { _ in Float.random(in: -1 ... 1) }
+    }
+
+    private var silentFrame: [Float] {
+        [Float](repeating: 0, count: 1024)
+    }
+
+    // MARK: - Centroid
+
+    @Test("A 100 Hz sine yields a low centroid (< 0.3)")
+    func centroidLowForBassTone() {
+        let analyzer = FFTAnalyzer()
+        var centroid: Float = 0
+        for idx in 0 ..< 40 {
+            centroid = analyzer.analyze(self.makeSamples(self.tone([100], from: idx * 1024))).centroid
+        }
+        #expect(centroid < 0.3, "100 Hz centroid \(centroid) should be < 0.3")
+    }
+
+    @Test("An 8 kHz sine yields a high centroid (> 0.75)")
+    func centroidHighForTrebleTone() {
+        let analyzer = FFTAnalyzer()
+        var centroid: Float = 0
+        for idx in 0 ..< 40 {
+            centroid = analyzer.analyze(self.makeSamples(self.tone([8000], from: idx * 1024))).centroid
+        }
+        #expect(centroid > 0.75, "8 kHz centroid \(centroid) should be > 0.75")
+    }
+
+    @Test("Sweeping low to high strictly increases the smoothed centroid")
+    func centroidIncreasesAcrossSweep() {
+        let analyzer = FFTAnalyzer()
+        let freqs = [100.0, 300, 1000, 3000, 9000]
+        var centroids: [Float] = []
+        var base = 0
+        for f in freqs {
+            var c: Float = 0
+            for idx in 0 ..< 15 {
+                c = analyzer.analyze(self.makeSamples(self.tone([f], from: base + idx * 1024))).centroid
+            }
+            base += 15 * 1024
+            centroids.append(c)
+        }
+        for i in 1 ..< centroids.count {
+            #expect(
+                centroids[i] > centroids[i - 1],
+                "Centroid did not increase at step \(i): \(centroids[i - 1]) → \(centroids[i])"
+            )
+        }
+    }
+
+    // MARK: - Flux / onset
+
+    @Test("Silence then a broadband impulse produces exactly one onset")
+    func singleImpulseOneOnset() {
+        let analyzer = FFTAnalyzer()
+        for _ in 0 ..< 5 {
+            _ = analyzer.analyze(self.makeSamples(self.silentFrame))
+        }
+        var onsets = 0
+        onsets += analyzer.analyze(self.makeSamples(self.noiseFrame())).onset ? 1 : 0
+        for _ in 0 ..< 6 {
+            onsets += analyzer.analyze(self.makeSamples(self.silentFrame)).onset ? 1 : 0
+        }
+        #expect(onsets == 1, "Expected one onset for a single impulse, got \(onsets)")
+    }
+
+    @Test("A sustained sine produces no onset after the attack frame")
+    func sustainedSineNoOnsetAfterAttack() {
+        let analyzer = FFTAnalyzer()
+        for _ in 0 ..< 3 {
+            _ = analyzer.analyze(self.makeSamples(self.silentFrame))
+        }
+        var onsets = 0
+        for idx in 0 ..< 25 {
+            onsets += analyzer.analyze(self.makeSamples(self.tone([1000], from: idx * 1024))).onset ? 1 : 0
+        }
+        #expect(onsets == 1, "Sustained sine should onset only on attack, got \(onsets)")
+    }
+
+    @Test("Two impulses 2 frames apart produce one onset (refractory)")
+    func closeImpulsesAreDebounced() {
+        let analyzer = FFTAnalyzer()
+        for _ in 0 ..< 5 {
+            _ = analyzer.analyze(self.makeSamples(self.silentFrame))
+        }
+        var onsets = 0
+        onsets += analyzer.analyze(self.makeSamples(self.noiseFrame())).onset ? 1 : 0 // impulse 1
+        onsets += analyzer.analyze(self.makeSamples(self.silentFrame)).onset ? 1 : 0
+        onsets += analyzer.analyze(self.makeSamples(self.noiseFrame())).onset ? 1 : 0 // impulse 2 (+2)
+        for _ in 0 ..< 4 {
+            onsets += analyzer.analyze(self.makeSamples(self.silentFrame)).onset ? 1 : 0
+        }
+        #expect(onsets == 1, "Two impulses within the refractory window should yield one onset, got \(onsets)")
+    }
+
+    @Test("Two impulses 10 frames apart produce two onsets")
+    func spacedImpulsesProduceTwoOnsets() {
+        let analyzer = FFTAnalyzer()
+        for _ in 0 ..< 5 {
+            _ = analyzer.analyze(self.makeSamples(self.silentFrame))
+        }
+        var onsets = 0
+        onsets += analyzer.analyze(self.makeSamples(self.noiseFrame())).onset ? 1 : 0 // impulse 1
+        for _ in 0 ..< 9 {
+            onsets += analyzer.analyze(self.makeSamples(self.silentFrame)).onset ? 1 : 0
+        }
+        onsets += analyzer.analyze(self.makeSamples(self.noiseFrame())).onset ? 1 : 0 // impulse 2 (+10)
+        for _ in 0 ..< 3 {
+            onsets += analyzer.analyze(self.makeSamples(self.silentFrame)).onset ? 1 : 0
+        }
+        #expect(onsets == 2, "Two well-spaced impulses should yield two onsets, got \(onsets)")
+    }
+
+    // MARK: - Energy aggregates
+
+    @Test("Bass-range content raises bassEnergy while trebleEnergy stays near zero")
+    func bassContentRaisesBassEnergy() {
+        let analyzer = FFTAnalyzer()
+        let bass = [30.0, 50, 75, 110, 150]
+        // Enough sustained frames for the attack transient (which briefly splatters
+        // broadband) to decay out of the off-band aggregate.
+        var frame = FFTAnalyzer().analyze(self.makeSamples(self.silentFrame))
+        for idx in 0 ..< 50 {
+            frame = analyzer.analyze(self.makeSamples(self.tone(bass, from: idx * 1024, amplitude: 0.18)))
+        }
+        #expect(frame.bassEnergy > 0.15, "bassEnergy \(frame.bassEnergy) should be raised")
+        #expect(frame.trebleEnergy < 0.08, "trebleEnergy \(frame.trebleEnergy) should stay near zero")
+        #expect(frame.bassEnergy > frame.trebleEnergy * 3, "bass should dominate treble")
+    }
+
+    @Test("Treble-range content raises trebleEnergy while bassEnergy stays near zero")
+    func trebleContentRaisesTrebleEnergy() {
+        let analyzer = FFTAnalyzer()
+        let treble = [3000.0, 5000, 8000, 12000, 16000]
+        var frame = FFTAnalyzer().analyze(self.makeSamples(self.silentFrame))
+        for idx in 0 ..< 50 {
+            frame = analyzer.analyze(self.makeSamples(self.tone(treble, from: idx * 1024, amplitude: 0.18)))
+        }
+        #expect(frame.trebleEnergy > 0.15, "trebleEnergy \(frame.trebleEnergy) should be raised")
+        #expect(frame.bassEnergy < 0.08, "bassEnergy \(frame.bassEnergy) should stay near zero")
+        #expect(frame.trebleEnergy > frame.bassEnergy * 3, "treble should dominate bass")
+    }
+
+    // MARK: - Reset
+
+    @Test("reset() restarts flux history and centroid EMA cleanly")
+    func resetRestartsState() {
+        let analyzer = FFTAnalyzer()
+        var preReset: Float = 0
+        for idx in 0 ..< 12 {
+            preReset = analyzer.analyze(self.makeSamples(self.tone([8000], from: idx * 1024))).centroid
+        }
+        #expect(preReset > 0.6, "Centroid should be elevated by treble before reset, was \(preReset)")
+
+        analyzer.reset()
+
+        // After reset, the centroid sits back at the neutral midpoint and flux is silent.
+        let silent = analyzer.analyze(self.makeSamples(self.silentFrame))
+        #expect(abs(silent.centroid - 0.5) < 0.05, "Centroid should restart at 0.5, was \(silent.centroid)")
+        #expect(silent.flux == 0)
+        #expect(!silent.onset)
+
+        // A fresh impulse against the cleared history still fires an onset.
+        let impulse = analyzer.analyze(self.makeSamples(self.noiseFrame()))
+        #expect(impulse.flux > 0.5, "Post-reset impulse flux \(impulse.flux) should be strong")
+        #expect(impulse.onset, "Post-reset impulse should produce an onset")
     }
 }

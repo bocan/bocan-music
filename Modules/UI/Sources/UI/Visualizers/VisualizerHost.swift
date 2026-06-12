@@ -67,10 +67,11 @@ public struct VisualizerHost: View {
     private var timelineCanvas: some View {
         let interval = 1.0 / Double(self.vm.effectiveFPS)
         TimelineView(.animation(minimumInterval: interval, paused: false)) { tl in
+            let time = tl.date.timeIntervalSinceReferenceDate
             Canvas { context, size in
                 guard let r = renderer else { return }
                 var ctx = context
-                r.render(into: &ctx, size: size, samples: self.latestSamples, analysis: self.vm.analysis)
+                r.render(into: &ctx, size: size, samples: self.latestSamples, analysis: self.vm.analysis, time: time)
             }
             .drawingGroup()
             .onChange(of: tl.date) { _, newDate in

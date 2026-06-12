@@ -298,6 +298,72 @@ struct UISnapshotTests {
                 named: "viz-oscilloscope-dark"
             )
         }
+
+        // MARK: - Dynamic palettes (drift / thermal)
+
+        /// A non-silent, hump-shaped analysis with a fixed centroid so the
+        /// dynamic palettes render deterministically.
+        private static let dynamicAnalysis: Analysis = {
+            var bands = [Float](repeating: 0, count: FFTAnalyzer.bandCount)
+            for i in 0 ..< bands.count {
+                let t = Float(i) / Float(bands.count)
+                bands[i] = sin(t * .pi) * 0.85
+            }
+            return Analysis(bands: bands, rms: 0.6, peak: 0.9, centroid: 0.6)
+        }()
+
+        @Test("SpectrumBars drift palette")
+        func spectrumBarsDrift() {
+            let view = StaticSpectrumCanvas(palette: .drift, analysis: Self.dynamicAnalysis, time: 1000)
+                .frame(width: 400, height: 200)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 400, height: 200)),
+                as: .image(precision: 0.95, perceptualPrecision: 0.98),
+                named: "viz-spectrum-bars-drift"
+            )
+        }
+
+        @Test("SpectrumBars thermal palette")
+        func spectrumBarsThermal() {
+            let view = StaticSpectrumCanvas(palette: .thermal, analysis: Self.dynamicAnalysis, time: 1000)
+                .frame(width: 400, height: 200)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: CGSize(width: 400, height: 200)),
+                as: .image(precision: 0.95, perceptualPrecision: 0.98),
+                named: "viz-spectrum-bars-thermal"
+            )
+        }
+    }
+
+    // MARK: - StaticSpectrumCanvas
+
+    /// Renders ``SpectrumBars`` once at a fixed time and analysis (no
+    /// `TimelineView`), so time-evolving palettes are deterministic in snapshots.
+    private struct StaticSpectrumCanvas: View {
+        let palette: VisualizerPalette
+        let analysis: Analysis
+        let time: TimeInterval
+
+        private static let silent = AudioSamples(
+            timeStamp: .init(),
+            sampleRate: 44100,
+            mono: [],
+            left: [],
+            right: [],
+            rms: 0,
+            peak: 0
+        )
+
+        var body: some View {
+            Canvas { context, size in
+                let viz = SpectrumBars(palette: self.palette, reduceMotion: true, reduceTransparency: true)
+                var ctx = context
+                viz.render(into: &ctx, size: size, samples: Self.silent, analysis: self.analysis, time: self.time)
+            }
+            .background(Color.black)
+        }
     }
 
     // MARK: - PlaylistFolderView Snapshots
