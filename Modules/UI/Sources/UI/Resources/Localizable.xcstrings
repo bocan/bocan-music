@@ -7835,6 +7835,22 @@
         }
       }
     },
+    "Halo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halo"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĥáĺó one"
+          }
+        }
+      }
+    },
     "Has Cover Art" : {
       "localizations" : {
         "en" : {
