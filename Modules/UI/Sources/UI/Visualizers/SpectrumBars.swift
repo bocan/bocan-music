@@ -53,6 +53,12 @@ public enum VisualizerPalette: String, CaseIterable, Sendable {
 public final class SpectrumBars: Visualizer {
     // MARK: - State
 
+    /// Display boost on bar height so loud passages reach near the top rather
+    /// than topping out partway down (the audio rarely hits a normalised 1.0).
+    /// Bars and peak markers are clamped to the full height. The Metal port
+    /// (`MetalSpectrumBars`) reads this so both renderers stay identical.
+    static let displayGain: CGFloat = 1.5
+
     private var peakHold: [Float]
     private var peakVelocity: [Float] // "gravity" fall speed per band
     private let gravity: Float = 0.004 // fall acceleration per frame
@@ -98,7 +104,7 @@ public final class SpectrumBars: Visualizer {
         for i in 0 ..< bandCount {
             let x = barSpacing + CGFloat(i) * (barWidth + barSpacing)
             let magnitude = CGFloat(analysis.bands[i])
-            let barHeight = magnitude * maxBarHeight
+            let barHeight = min(maxBarHeight, magnitude * maxBarHeight * Self.displayGain)
             let y = size.height - barHeight
 
             // Bar fill colour, resolved through the shared palette mapping.
@@ -122,7 +128,8 @@ public final class SpectrumBars: Visualizer {
             // Peak-hold marker
             if !self.reduceMotion {
                 self.updatePeak(band: i, magnitude: Float(magnitude))
-                let peakY = size.height - CGFloat(self.peakHold[i]) * maxBarHeight - 3
+                let peakHeight = min(maxBarHeight, CGFloat(self.peakHold[i]) * maxBarHeight * Self.displayGain)
+                let peakY = size.height - peakHeight - 3
                 let peakRect = CGRect(x: x, y: peakY, width: barWidth, height: 2)
                 context.fill(Path(peakRect), with: .color(barColor.opacity(0.9)))
             }

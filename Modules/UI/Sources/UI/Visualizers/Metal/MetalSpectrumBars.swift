@@ -212,9 +212,11 @@ final class MetalSpectrumBars: MetalVisualizer {
             )))
         }
 
-        // Bars first.
+        // Bars first. The display gain (shared with the Canvas renderer) lifts
+        // loud passages near the top; bars are clamped to the full height.
+        let gain = Float(SpectrumBars.displayGain)
         for band in 0 ..< bandCount {
-            let barHeight = analysis.bands[band] * layout.maxBarHeight
+            let barHeight = min(layout.maxBarHeight, analysis.bands[band] * layout.maxBarHeight * gain)
             let top = layout.height - barHeight
             var color = bandColors[band]
             color.w *= barAlpha
@@ -231,7 +233,8 @@ final class MetalSpectrumBars: MetalVisualizer {
         // read the current hold positions.
         if !self.reduceMotion {
             for band in 0 ..< bandCount {
-                let peakTop = layout.height - self.peaks.hold[band] * layout.maxBarHeight - layout.peakOffset
+                let peakHeight = min(layout.maxBarHeight, self.peaks.hold[band] * layout.maxBarHeight * gain)
+                let peakTop = layout.height - peakHeight - layout.peakOffset
                 var color = bandColors[band]
                 color.w *= Self.peakOpacity
                 self.instances.append(BarInstance(
