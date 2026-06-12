@@ -6,6 +6,7 @@ import Foundation
 public enum VisualizerMode: String, CaseIterable, Sendable {
     case spectrumBars
     case oscilloscope
+    case halo
 
     /// Human-readable name shown in the settings picker.
     public var displayName: String {
@@ -15,6 +16,9 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .oscilloscope:
             L10n.string("Oscilloscope")
+
+        case .halo:
+            L10n.string("Halo")
         }
     }
 
@@ -26,6 +30,9 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .oscilloscope:
             "waveform"
+
+        case .halo:
+            "circle.circle"
         }
     }
 }

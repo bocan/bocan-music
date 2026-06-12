@@ -122,6 +122,13 @@ public struct VisualizerHost: View {
 
         case .oscilloscope:
             self.renderer = Oscilloscope(palette: self.vm.palette, reduceMotion: self.reduceMotion)
+
+        case .halo:
+            self.renderer = Halo(
+                palette: self.vm.palette,
+                reduceMotion: self.reduceMotion,
+                reduceTransparency: self.reduceTransparency
+            )
         }
     }
 
