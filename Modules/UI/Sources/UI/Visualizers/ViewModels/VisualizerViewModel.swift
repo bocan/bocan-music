@@ -59,6 +59,7 @@ public final class VisualizerViewModel: ObservableObject {
     private let fftAnalyzer = FFTAnalyzer()
     private let log = AppLogger.make(.audio)
     private var tapTask: Task<Void, Never>?
+    private var nextFrameIndex: UInt64 = 1
     /// Reference count — incremented by start(), decremented by stop().
     /// The tap loop runs while isRunning is true; isRunning is set on the
     /// 0→1 and 1→0 transitions so the task body is identical to before.
@@ -145,6 +146,8 @@ public final class VisualizerViewModel: ObservableObject {
                 bands[i] = min(1, bands[i] * self.sensitivity)
             }
         }
+        let index = self.nextFrameIndex
+        self.nextFrameIndex &+= 1
         self.latestSamples = samples
         self.analysis = Analysis(
             bands: bands,
@@ -155,7 +158,8 @@ public final class VisualizerViewModel: ObservableObject {
             onset: frame.onset,
             bassEnergy: frame.bassEnergy,
             midEnergy: frame.midEnergy,
-            trebleEnergy: frame.trebleEnergy
+            trebleEnergy: frame.trebleEnergy,
+            frameIndex: index
         )
     }
 
