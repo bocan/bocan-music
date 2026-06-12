@@ -38,13 +38,17 @@ public struct MiniPlayerView: View {
             .background(MiniPlayerWindowSetup().frame(width: 0, height: 0).allowsHitTesting(false))
             .onAppear {
                 self.applyWindowLevel()
+                self.fadeInMiniWindow()
                 self.windowMode.miniPlayerOpen = true
                 // Defer orderOut by one run-loop tick so the mini player's first
                 // frame (including ultraThinMaterial blur) is committed before we
                 // hide the main window.  Doing both in the same tick stalls the
                 // main thread long enough to starve the CoreAudio render thread.
+                // The fade (#330) runs inside the deferred tick for the same reason.
                 DispatchQueue.main.async {
-                    MainWindowTracker.shared.window?.orderOut(nil)
+                    if let win = MainWindowTracker.shared.window {
+                        WindowFade.orderOut(win)
+                    }
                 }
             }
             .onDisappear {
@@ -56,7 +60,7 @@ public struct MiniPlayerView: View {
                 self.windowMode.miniPlayerOpen = false
                 guard needsRestore else { return }
                 if let win = MainWindowTracker.shared.window {
-                    win.makeKeyAndOrderFront(nil)
+                    WindowFade.makeKeyAndOrderFront(win)
                     NSApp.activate(ignoringOtherApps: true)
                 } else {
                     self.windowMode.openWindow?("main")
@@ -274,6 +278,15 @@ public struct MiniPlayerView: View {
             $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
         }) else { return }
         window.level = self.vm.alwaysOnTop ? .floating : .normal
+    }
+
+    /// Cross-fade (#330): fade the freshly-opened mini window in from
+    /// transparent. `WindowFade` no-ops under reduce motion.
+    private func fadeInMiniWindow() {
+        guard let window = NSApp.windows.first(where: {
+            $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
+        }) else { return }
+        WindowFade.fadeIn(window)
     }
 
     private func resizeWindow(for layout: MiniPlayerViewModel.Layout) {

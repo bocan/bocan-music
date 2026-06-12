@@ -42,5 +42,9 @@
   {
     "title": "A log console you can actually read.",
     "body": "Open <strong>Help &#x2192; Log Console</strong> (<kbd>&#x21E7;&#x2318;L</kbd>) to tail every debug, info, warning, and error line since launch. Filter by level or category, search free-text, pause, copy, and export to a <code>.log</code> file. No terminal required."
+  },
+  {
+    "title": "Feels like it belongs on a Mac.",
+    "body": "A tiny trackpad tick when you love a track, set a rating, land a seek, or release the volume slider. The Mini Player cross-fades with the main window instead of blinking. Honours Reduce Motion and your trackpad's haptic settings."
   }
 ]

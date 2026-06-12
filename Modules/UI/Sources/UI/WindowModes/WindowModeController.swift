@@ -52,14 +52,21 @@ public final class WindowModeController: ObservableObject {
                 $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
             }) {
                 miniWin.level = .normal
+                // Cross-fade (#330): fade the mini player to transparent, then
+                // dismiss the already-invisible window in the completion.
+                WindowFade.orderOut(miniWin) { [weak self] in
+                    self?.dismissWindow?("mini")
+                }
+            } else {
+                self.dismissWindow?("mini")
             }
-            self.dismissWindow?("mini")
             self.miniPlayerOpen = false
             // Defer restore by one tick so dismissWindow's animation completes
-            // before we bring the main window forward.
+            // before we bring the main window forward.  The main window fades
+            // in while the mini player is still fading out.
             DispatchQueue.main.async {
                 if let win = MainWindowTracker.shared.window {
-                    win.makeKeyAndOrderFront(nil)
+                    WindowFade.makeKeyAndOrderFront(win)
                     NSApp.activate(ignoringOtherApps: true)
                 } else {
                     self.openWindow?("main")
