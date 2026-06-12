@@ -46,7 +46,7 @@ public struct MiniPlayerView: View {
                 // main thread long enough to starve the CoreAudio render thread.
                 // The fade (#330) runs inside the deferred tick for the same reason.
                 DispatchQueue.main.async {
-                    if let win = MainWindowTracker.shared.window {
+                    if let win = MainWindowTracker.shared.resolveWindow() {
                         WindowFade.orderOut(win)
                     }
                 }
@@ -59,7 +59,7 @@ public struct MiniPlayerView: View {
                 let needsRestore = self.windowMode.miniPlayerOpen
                 self.windowMode.miniPlayerOpen = false
                 guard needsRestore else { return }
-                if let win = MainWindowTracker.shared.window {
+                if let win = MainWindowTracker.shared.resolveWindow() {
                     WindowFade.makeKeyAndOrderFront(win)
                     NSApp.activate(ignoringOtherApps: true)
                 } else {

@@ -13,6 +13,39 @@ final class MainWindowTracker {
     private init() {}
 
     weak var window: NSWindow?
+
+    /// Identifiers of the app's auxiliary windows (declared in `BocanApp.body`).
+    /// Used to exclude them when re-finding the main window by fallback search.
+    private static let secondaryIdentifiers: Set = [
+        "mini", "about", "bocan-help", "notices", "track-info",
+        "visualizer-fullscreen", "dsp", "log-console", "debug-audio",
+    ]
+
+    /// Returns the live main window.
+    ///
+    /// Prefers the tracked weak reference, but falls back to a search of
+    /// `NSApp.windows` when it is nil. The weak reference can be cleared out
+    /// from under us when macOS window restoration replaces the original
+    /// instance (e.g. after a version change / fresh build), which previously
+    /// left the mini-player swap unable to hide or restore the main window and
+    /// caused it to spawn a duplicate. The fallback identifies the main
+    /// `WindowGroup` window as the main-capable window that is not one of the
+    /// known auxiliary windows, then re-populates the tracker so later calls
+    /// stay cheap.
+    func resolveWindow() -> NSWindow? {
+        if let window { return window }
+        let found = NSApp.windows.first { win in
+            guard win.canBecomeMain else { return false }
+            let identifier = win.identifier?.rawValue ?? ""
+            if Self.secondaryIdentifiers.contains(identifier) { return false }
+            // Belt-and-suspenders: exclude the borderless mini player and the
+            // fullscreen visualizer by title in case their identifier is absent.
+            if win.title == "Mini Player" || win.title == "Visualizer" { return false }
+            return true
+        }
+        if let found { self.window = found }
+        return found
+    }
 }
 
 // MARK: - MiniPlayerWindowTracker
@@ -36,20 +69,22 @@ final class MiniPlayerWindowTracker {
 struct MainWindowGrabber: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-        DispatchQueue.main.async {
-            MainWindowTracker.shared.window = view.window
-        }
+        DispatchQueue.main.async { Self.capture(view.window) }
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async {
-            // Only update when non-nil: orderOut hides the window but keeps the
-            // NSWindow alive; clearing the reference here would break restore.
-            if let win = nsView.window {
-                MainWindowTracker.shared.window = win
-            }
-        }
+        DispatchQueue.main.async { Self.capture(nsView.window) }
+    }
+
+    /// Records the window only when non-nil. `view.window` is nil before the
+    /// view is added to the hierarchy and again while the window is ordered out;
+    /// writing nil in those moments would clear a still-valid reference and
+    /// break the mini-player restore. (Previously `makeNSView` wrote it
+    /// unconditionally, which could null the tracker on the first tick.)
+    private static func capture(_ window: NSWindow?) {
+        guard let window else { return }
+        MainWindowTracker.shared.window = window
     }
 }
 
