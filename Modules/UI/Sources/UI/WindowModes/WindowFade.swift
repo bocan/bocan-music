@@ -25,7 +25,12 @@ enum WindowFade {
 
     /// Fades `window` to transparent, orders it out on completion, then
     /// restores full alpha. Immediate `orderOut` under reduce motion.
-    static func orderOut(_ window: NSWindow, completion: (() -> Void)? = nil) {
+    ///
+    /// `completion` is `@MainActor` so it is Sendable to capture in the
+    /// animation's `@Sendable` completion handler (which AppKit invokes on the
+    /// main thread); `MainActor.assumeIsolated` re-enters that isolation to
+    /// touch the window safely.
+    static func orderOut(_ window: NSWindow, completion: (@MainActor () -> Void)? = nil) {
         guard !self.prefersReducedMotion() else {
             window.orderOut(nil)
             completion?()
@@ -35,9 +40,11 @@ enum WindowFade {
             ctx.duration = self.duration
             window.animator().alphaValue = 0
         } completionHandler: {
-            window.orderOut(nil)
-            window.alphaValue = 1
-            completion?()
+            MainActor.assumeIsolated {
+                window.orderOut(nil)
+                window.alphaValue = 1
+                completion?()
+            }
         }
     }
 
