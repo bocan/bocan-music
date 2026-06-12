@@ -136,6 +136,13 @@ public struct VisualizerHost: View {
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
+
+        case .starfield:
+            self.renderer = Starfield(
+                palette: self.vm.palette,
+                reduceMotion: self.reduceMotion,
+                reduceTransparency: self.reduceTransparency
+            )
         }
     }
 

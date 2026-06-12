@@ -3368,7 +3368,7 @@
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Çášçáđé one two"
+            "value" : "Çášçáđé one"
           }
         }
       }
@@ -15417,6 +15417,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šţáŕ á šóñĝ óñ ţĥé šéŕvéŕ ţó šéé íţ ĥéŕé. one two three"
+          }
+        }
+      }
+    },
+    "Starfield" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starfield"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šţáŕƒíéĺđ one"
           }
         }
       }
