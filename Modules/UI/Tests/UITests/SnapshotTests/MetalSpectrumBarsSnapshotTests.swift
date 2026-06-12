@@ -31,7 +31,9 @@ struct MetalSpectrumBarsSnapshotTests {
     }
 
     private static func analysis(_ bands: [Float]) -> Analysis {
-        Analysis(bands: bands, rms: 0.6, peak: 0.9, centroid: 0.5)
+        // frameIndex 1 so the single-frame render steps the peak physics once
+        // (peaks land just above each bar), matching the Canvas snapshot.
+        Analysis(bands: bands, rms: 0.6, peak: 0.9, centroid: 0.5, frameIndex: 1)
     }
 
     // MARK: - Palette variants
