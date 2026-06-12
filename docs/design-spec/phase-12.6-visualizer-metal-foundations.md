@@ -75,6 +75,15 @@ import MetalKit
 /// Split into `update` (CPU state, fully unit-testable, no GPU required) and
 /// `encode` (GPU commands, kept as thin as possible). All methods run on the
 /// main actor; MTKView invokes its delegate on the main thread.
+/// Palette + a11y flags bundled into one value so initializers and the factory
+/// stay within the 5-parameter lint budget (and a future flag touches one type).
+public struct MetalRendererConfig: Sendable, Equatable {
+    public let palette: VisualizerPalette
+    public let reduceMotion: Bool
+    public let reduceTransparency: Bool
+    public init(palette: VisualizerPalette, reduceMotion: Bool, reduceTransparency: Bool)
+}
+
 @MainActor
 public protocol MetalVisualizer: AnyObject {
     /// Create pipeline states, persistent textures, and buffers. Throwing here
@@ -83,9 +92,7 @@ public protocol MetalVisualizer: AnyObject {
     init(
         device: MTLDevice,
         pixelFormat: MTLPixelFormat,
-        palette: VisualizerPalette,
-        reduceMotion: Bool,
-        reduceTransparency: Bool
+        config: MetalRendererConfig
     ) throws
 
     /// Per-frame CPU work: integrate motion, pack uniforms, write textures.
@@ -143,9 +150,14 @@ enum MetalVisualizerFactory {
         mode: VisualizerMode,
         device: MTLDevice,
         pixelFormat: MTLPixelFormat,
-        palette: VisualizerPalette,
-        reduceMotion: Bool,
-        reduceTransparency: Bool
+        config: MetalRendererConfig
+    ) -> (any MetalVisualizer)?
+
+    /// Wraps a throwing initializer: logs + returns nil on failure, logs ok on
+    /// success. Conversion phases call this from `make`.
+    static func instantiate(
+        mode: VisualizerMode,
+        _ build: () throws -> any MetalVisualizer
     ) -> (any MetalVisualizer)?
 }
 ```
@@ -164,10 +176,11 @@ self.metalRenderer = nil
 if let device = MetalSupport.device,
    !UserDefaults.standard.bool(forKey: "visualizer.forceCanvas"),
    MetalVisualizerFactory.supports(vm.mode) {
+    let config = MetalRendererConfig(
+        palette: vm.palette, reduceMotion: reduceMotion, reduceTransparency: reduceTransparency
+    )
     self.metalRenderer = MetalVisualizerFactory.make(
-        mode: vm.mode, device: device, pixelFormat: .bgra8Unorm,
-        palette: vm.palette, reduceMotion: reduceMotion,
-        reduceTransparency: reduceTransparency
+        mode: vm.mode, device: device, pixelFormat: .bgra8Unorm, config: config
     )
 }
 // Always build the Canvas renderer too (it is the fallback and costs nothing
