@@ -106,41 +106,8 @@ struct CascadeTests {
         #expect(cascade.cursor == 3)
     }
 
-    // MARK: - LUT correctness
-
-    @Test("LUT thermal: index 0 is darker than index 255")
-    func lutThermalDarknessOrdering() {
-        var lut = [UInt32](repeating: 0, count: Cascade.lutSize)
-        Cascade.buildLUT(into: &lut, palette: .thermal, analysis: .silent, time: 0)
-        #expect(
-            luminance(lut[0]) < luminance(lut[Cascade.lutSize - 1]),
-            "thermal lut[0] not darker than lut[255]"
-        )
-    }
-
-    @Test("LUT thermal palette is monotonically non-decreasing in luminance")
-    func lutThermalMonotonic() {
-        var lut = [UInt32](repeating: 0, count: Cascade.lutSize)
-        Cascade.buildLUT(into: &lut, palette: .thermal, analysis: .silent, time: 0)
-        for i in 1 ..< Cascade.lutSize {
-            #expect(
-                luminance(lut[i]) >= luminance(lut[i - 1]) - 1,
-                "thermal LUT not monotonic at index \(i)"
-            )
-        }
-    }
-
-    @Test("LUT drift palette produces different entries at t=0 vs t=45 (half-cycle offset)")
-    func lutDriftRepaint() {
-        var lut0 = [UInt32](repeating: 0, count: Cascade.lutSize)
-        var lut45 = [UInt32](repeating: 0, count: Cascade.lutSize)
-        Cascade.buildLUT(into: &lut0, palette: .drift, analysis: .silent, time: 0)
-        Cascade.buildLUT(into: &lut45, palette: .drift, analysis: .silent, time: 45)
-        #expect(
-            !zip(lut0, lut45).allSatisfy { $0 == $1 },
-            "drift LUT identical at t=0 and t=45 (half-cycle)"
-        )
-    }
+    // LUT correctness moved to PaletteRampLUTTests (the ramp now lives in the
+    // shared PaletteRampLUT; Cascade's lut is a read-only view of it).
 
     // MARK: - Onset ticks
 
@@ -203,13 +170,4 @@ struct CascadeTests {
         #expect(cascade.cursor >= 0)
         #expect(cascade.cursor < Cascade.columnCount)
     }
-}
-
-// MARK: - Luminance helper
-
-private func luminance(_ packed: UInt32) -> Double {
-    let blue = Double(packed & 0xFF)
-    let green = Double((packed >> 8) & 0xFF)
-    let red = Double((packed >> 16) & 0xFF)
-    return 0.299 * red + 0.587 * green + 0.114 * blue
 }
