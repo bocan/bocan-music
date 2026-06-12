@@ -21,6 +21,10 @@ public struct Analysis: Sendable {
     public let bassEnergy: Float
     public let midEnergy: Float
     public let trebleEnergy: Float
+    /// Monotonically increasing counter incremented by `VisualizerViewModel`
+    /// on every new analysis frame. Used by renderers (Cascade, Starfield) to
+    /// detect new-frame arrivals without comparing all 32 band values.
+    public let frameIndex: UInt64
 
     /// New fields default to their silent values so existing call sites that
     /// construct an `Analysis` from bands/rms/peak alone keep compiling.
@@ -33,7 +37,8 @@ public struct Analysis: Sendable {
         onset: Bool = false,
         bassEnergy: Float = 0,
         midEnergy: Float = 0,
-        trebleEnergy: Float = 0
+        trebleEnergy: Float = 0,
+        frameIndex: UInt64 = 0
     ) {
         self.bands = bands
         self.rms = rms
@@ -44,16 +49,18 @@ public struct Analysis: Sendable {
         self.bassEnergy = bassEnergy
         self.midEnergy = midEnergy
         self.trebleEnergy = trebleEnergy
+        self.frameIndex = frameIndex
     }
 
     /// Silent frame used before the first real sample arrives. Centroid is the
     /// neutral midpoint (0.5) so dynamic palettes do not slam to one extreme on
-    /// pause; everything else is zero/false.
+    /// pause; everything else is zero/false. frameIndex 0 signals "not yet started".
     public static let silent = Self(
         bands: [Float](repeating: 0, count: FFTAnalyzer.bandCount),
         rms: 0,
         peak: 0,
-        centroid: 0.5
+        centroid: 0.5,
+        frameIndex: 0
     )
 }
 

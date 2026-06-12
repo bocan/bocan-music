@@ -7,6 +7,7 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
     case spectrumBars
     case oscilloscope
     case halo
+    case cascade
 
     /// Human-readable name shown in the settings picker.
     public var displayName: String {
@@ -19,6 +20,9 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .halo:
             L10n.string("Halo")
+
+        case .cascade:
+            L10n.string("Cascade")
         }
     }
 
@@ -33,6 +37,9 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .halo:
             "circle.circle"
+
+        case .cascade:
+            "water.waves"
         }
     }
 }
