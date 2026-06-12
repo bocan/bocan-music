@@ -29,8 +29,8 @@ public final class Halo: Visualizer {
     private static let breathingDepth: CGFloat = 0.06
     private static let rmsAttack: Float = 0.15
     private static let rmsAttackReduced: Float = 0.03
-    private static let bandAttack: Float = 0.08
-    private static let bandAttackReduced: Float = 0.03
+    private static let bandAttack: Float = 0.12
+    private static let bandAttackReduced: Float = 0.04
     private static let maxDeltaTime: TimeInterval = 0.1
 
     // MARK: - State (internal for testing)
@@ -95,7 +95,7 @@ public final class Halo: Visualizer {
 
         let tips = self.computeTips(center: center, breathingRadius: breathingRadius, extent: extent)
         let ringPath = self.buildCatmullRomPath(tips: tips)
-        self.drawRing(into: &context, path: ringPath, center: center, analysis: analysis, time: time)
+        self.drawRing(into: &context, path: ringPath, tips: tips, analysis: analysis, time: time)
         self.drawRipples(into: &context, center: center, minDim: minDim, time: time)
         self.drawCentreGlow(into: &context, center: center, radius: breathingRadius, analysis: analysis, time: time)
     }
@@ -180,40 +180,53 @@ public final class Halo: Visualizer {
     private func drawRing(
         into context: inout GraphicsContext,
         path: Path,
-        center: CGPoint,
+        tips: [CGPoint],
         analysis: Analysis,
         time: TimeInterval
     ) {
+        // Body: one solid fill of the closed membrane. Cheap at any resolution.
         let fillColor = PaletteResolver.color(
             palette: self.palette, position: 0.5, magnitude: self.rmsEMA, analysis: analysis, time: time
         )
         let fillOpacity = self.reduceTransparency ? 1.0 : 0.25
         context.fill(path, with: .color(fillColor.opacity(fillOpacity)))
 
-        let gradient = self.buildRingGradient(analysis: analysis, time: time)
-        let ringStartAngle = Angle.radians(self.rotationPhase * 2 * .pi)
-        context.stroke(
-            path,
-            with: .conicGradient(gradient, center: center, angle: ringStartAngle),
-            lineWidth: 2
-        )
+        // Rim: per-spoke solid-colour strokes. We deliberately avoid a conic
+        // (angular) gradient here. A 64-stop conic gradient stroke is evaluated
+        // per pixel and scales with canvas size, so it is fine in a 400x400
+        // snapshot but stalls a Retina fullscreen canvas (and can force a CPU
+        // rasterization fallback inside .drawingGroup). Solid strokes are GPU
+        // cheap and keep the per-band colouring the spectrum palette relies on.
+        let bandColors = self.resolveBandColors(analysis: analysis, time: time)
+        let style = StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
+        let count = tips.count
+        for index in 0 ..< count {
+            let prev = tips[(index - 1 + count) % count]
+            let curr = tips[index]
+            let next = tips[(index + 1) % count]
+            let afterNext = tips[(index + 2) % count]
+            let ctrl1 = CGPoint(x: curr.x + (next.x - prev.x) / 6, y: curr.y + (next.y - prev.y) / 6)
+            let ctrl2 = CGPoint(x: next.x - (afterNext.x - curr.x) / 6, y: next.y - (afterNext.y - curr.y) / 6)
+            var segment = Path()
+            segment.move(to: curr)
+            segment.addCurve(to: next, control1: ctrl1, control2: ctrl2)
+            let bandIndex = index < Self.bandCount ? index : index - Self.bandCount
+            context.stroke(segment, with: .color(bandColors[bandIndex]), style: style)
+        }
     }
 
-    private func buildRingGradient(analysis: Analysis, time: TimeInterval) -> Gradient {
-        var stops = [Gradient.Stop]()
-        stops.reserveCapacity(Self.spokeCount + 1)
-        for index in 0 ..< Self.spokeCount {
-            let bandIndex = index < Self.bandCount ? index : index - Self.bandCount
+    /// Resolves one colour per band (32), shared by both mirrored spoke copies.
+    private func resolveBandColors(analysis: Analysis, time: TimeInterval) -> [Color] {
+        (0 ..< Self.bandCount).map { bandIndex in
             let position = Double(bandIndex) / Double(Self.bandCount - 1)
-            let magnitude = self.smoothedBands[bandIndex]
-            let color = PaletteResolver.color(
-                palette: self.palette, position: position, magnitude: magnitude, analysis: analysis, time: time
+            return PaletteResolver.color(
+                palette: self.palette,
+                position: position,
+                magnitude: self.smoothedBands[bandIndex],
+                analysis: analysis,
+                time: time
             )
-            stops.append(.init(color: color, location: Double(index) / Double(Self.spokeCount)))
         }
-        // Close the gradient at 1.0 using the same color as spoke 0 for a seamless seam.
-        stops.append(.init(color: stops[0].color, location: 1.0))
-        return Gradient(stops: stops)
     }
 
     private func drawRipples(
