@@ -377,7 +377,7 @@ buffering, implemented once:
 /// blocks until a slot's previous GPU work finished; `release(when:)`
 /// registers the signal on the command buffer's completion handler.
 final class FrameRing {
-    init(device: MTLDevice, slots: Int = 3, bytesPerSlot: Int)
+    init?(device: MTLDevice, bytesPerSlot: Int, slots: Int = 3)
 
     /// Wait + return the next slot. Call exactly once per frame, before
     /// writing vertex/uniform data.
