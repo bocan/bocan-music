@@ -185,7 +185,7 @@ public final class LogStore: Sendable {
 
     private func _removeSubscriber(token: UInt64) {
         self._state.withLock { s in
-            s.subscribers.removeValue(forKey: token)
+            s.subscribers[token] = nil
         }
     }
 }
