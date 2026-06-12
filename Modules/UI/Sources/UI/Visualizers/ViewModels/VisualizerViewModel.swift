@@ -137,15 +137,26 @@ public final class VisualizerViewModel: ObservableObject {
     // MARK: - Private
 
     private func processSamples(_ samples: AudioSamples) {
-        var rawBands = self.fftAnalyzer.analyze(samples)
-        // Apply sensitivity multiplier before normalisation.
+        let frame = self.fftAnalyzer.analyze(samples)
+        var bands = frame.bands
+        // Apply sensitivity multiplier before display.
         if self.sensitivity != 1.0 {
-            for i in 0 ..< rawBands.count {
-                rawBands[i] = min(1, rawBands[i] * self.sensitivity)
+            for i in 0 ..< bands.count {
+                bands[i] = min(1, bands[i] * self.sensitivity)
             }
         }
         self.latestSamples = samples
-        self.analysis = Analysis(bands: rawBands, rms: samples.rms, peak: samples.peak)
+        self.analysis = Analysis(
+            bands: bands,
+            rms: samples.rms,
+            peak: samples.peak,
+            centroid: frame.centroid,
+            flux: frame.flux,
+            onset: frame.onset,
+            bassEnergy: frame.bassEnergy,
+            midEnergy: frame.midEnergy,
+            trebleEnergy: frame.trebleEnergy
+        )
     }
 
     // MARK: - Auto-simplify API

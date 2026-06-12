@@ -22,12 +22,13 @@ public struct VisualizerSettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
 
+                // Six palettes no longer fit a segmented control, so use a menu.
                 Picker(L10n.string("Colour Palette"), selection: self.$palette) {
                     ForEach(VisualizerPalette.allCases, id: \.self) { pal in
                         Text(pal.displayName).tag(pal)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(.menu)
             }
 
             Section(L10n.string("Performance")) {
