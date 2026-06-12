@@ -1,5 +1,11 @@
 # Phase 12.4: Visualizer Mode "Starfield" (Frequency-Coloured Warp Field)
 
+> **Renderer superseded.** Implement this mode via
+> `phase-12.11-visualizer-metal-starfield.md` (Metal), not as a Canvas
+> renderer. The visual design, motion model, accessibility behaviour, and
+> simulation test plan below remain binding; the Canvas/drawingGroup outcome
+> shape and the "No Metal" non-goal do not.
+>
 > Prerequisites: Phase 12.1 complete (Analysis v2, `PaletteResolver`,
 > `render(... time:)`). Phase 12.3 adds `Analysis.frameIndex` (used here).
 >
