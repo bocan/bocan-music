@@ -17,14 +17,12 @@ public final class Cascade: Visualizer {
 
     static let columnCount = 256 // ring-buffer width (≈ 6 s at 43 Hz)
     static let bandCount = 32 // bitmap height; one row per perceptual band
-    static let lutSize = 256 // colour ramp entries
+    static let lutSize = PaletteRampLUT.size // colour ramp entries
     /// Audio tap arrives at ~43 Hz; each column represents one analysis frame.
     static let columnPeriod: TimeInterval = 1.0 / 43.0
     private static let nowLineWidth: CGFloat = 1
     private static let newColumnGlowDuration: TimeInterval = 0.15
     private static let reduceMotionUpdateInterval: TimeInterval = 1.0
-    /// Drift LUT rebuilds when the base hue has moved by this fraction of a full cycle.
-    private static let driftLUTThreshold = 1.0 / 256.0
 
     // MARK: - State (internal visibility for testing)
 
@@ -34,10 +32,15 @@ public final class Cascade: Visualizer {
     private(set) var lastFrameIndex: UInt64 = 0
     /// Timestamp of the last column write. Used for sub-column smooth-scroll offset.
     private(set) var lastColumnTime: TimeInterval = 0
-    /// The 256-entry BGRA colour ramp, index 0 = darkest, 255 = brightest.
-    private(set) var lut: [UInt32]
+    /// The shared magnitude-to-colour ramp; built and drift-refreshed per frame.
+    private(set) var rampLUT: PaletteRampLUT
     /// Last CGImage generated from the bitmap. Nil until the first column is written.
     private(set) var cachedImage: CGImage?
+
+    /// Read-only view of the active colour ramp's packed entries, for tests.
+    var lut: [UInt32] {
+        self.rampLUT.colors
+    }
 
     // MARK: - Private state
 
@@ -47,9 +50,6 @@ public final class Cascade: Visualizer {
     private let bitmapCtx: CGContext
     private var imageIsDirty = false
     private var lastWriteTime: TimeInterval = 0
-    /// Sentinel -1 = LUT not yet built for live analysis; 0 = built (non-drift);
-    /// any other value = last hue at which drift LUT was built.
-    private var driftBaseHue: Double = -1
     /// Timestamp of last stepped-mode display update (reduceMotion only).
     /// `nil` = never stepped (triggers immediate first step).
     private var lastStepTime: TimeInterval?
@@ -60,7 +60,7 @@ public final class Cascade: Visualizer {
         self.palette = palette
         self.reduceMotion = reduceMotion
         self.reduceTransparency = reduceTransparency
-        self.lut = [UInt32](repeating: 0xFF00_0000, count: Self.lutSize)
+        self.rampLUT = PaletteRampLUT(palette: palette)
 
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         // arm64 is little-endian, so byteOrder32Little == kCGBitmapByteOrder32Host.
@@ -110,7 +110,10 @@ public final class Cascade: Visualizer {
     /// the stepped display in reduceMotion mode, and refreshes `cachedImage`.
     /// Separated from `render` so tests can drive it without a live GraphicsContext.
     func processFrame(analysis: Analysis, time: TimeInterval) {
-        self.maybeRebuildLUT(analysis: analysis, time: time)
+        // Static palettes build the ramp once; drift refreshes it as its hue moves.
+        // History pixels keep the colour they were written with, so a drifting
+        // palette paints a slow rainbow across the spectrogram's past.
+        _ = self.rampLUT.rebuildIfNeeded(analysis: analysis, time: time)
 
         if analysis.frameIndex != self.lastFrameIndex {
             self.lastFrameIndex = analysis.frameIndex
@@ -138,6 +141,9 @@ public final class Cascade: Visualizer {
         guard let rawData = self.bitmapCtx.data else { return }
         let pixels = rawData.bindMemory(to: UInt32.self, capacity: Self.columnCount * Self.bandCount)
         let col = self.cursor
+        // Capture the ramp once: the array is value-typed, so indexing the stored
+        // property repeatedly would churn copy-on-write handles in the loop.
+        let ramp = self.rampLUT.colors
 
         for band in 0 ..< Self.bandCount {
             let magnitude = band < analysis.bands.count ? analysis.bands[band] : 0
@@ -145,13 +151,13 @@ public final class Cascade: Visualizer {
             // Memory row 0 = top of image (treble); row (bandCount-1) = bottom (bass).
             // CGImage row 0 is top, so treble (band 31) at row 0, bass (band 0) at row 31.
             let row = Self.bandCount - 1 - band
-            pixels[row * Self.columnCount + col] = self.lut[lutIndex]
+            pixels[row * Self.columnCount + col] = ramp[lutIndex]
         }
 
         // Onset ticks: overwrite top 2 and bottom 2 rows at full LUT intensity,
         // leaving visible marks on transient edges that make rhythms readable.
         if analysis.onset {
-            let full = self.lut[Self.lutSize - 1]
+            let full = ramp[Self.lutSize - 1]
             pixels[0 * Self.columnCount + col] = full
             pixels[1 * Self.columnCount + col] = full
             pixels[(Self.bandCount - 2) * Self.columnCount + col] = full
@@ -161,75 +167,6 @@ public final class Cascade: Visualizer {
         self.cursor = (col + 1) % Self.columnCount
         self.lastColumnTime = time
         self.lastWriteTime = time
-    }
-
-    // MARK: - LUT management (internal for testing)
-
-    func maybeRebuildLUT(analysis: Analysis, time: TimeInterval) {
-        if self.palette != .drift {
-            // Static palettes: build once on first live render so NSColor can
-            // resolve dynamic colours (e.g. .accent) from the active environment.
-            if self.driftBaseHue < 0 {
-                Self.buildLUT(into: &self.lut, palette: self.palette, analysis: analysis, time: time)
-                self.driftBaseHue = 0 // mark as built
-            }
-            return
-        }
-        // Drift palette: rebuild whenever the base hue moves by > 1/256 of a cycle.
-        // History pixels retain their original colour (written with the old LUT) —
-        // this is intentional: a drifting palette paints a slow rainbow across time.
-        let raw = time / 90.0 + 0.25 * Double(analysis.centroid)
-        let hue = raw - floor(raw)
-        let diff: Double
-        if self.driftBaseHue < 0 {
-            diff = Self.driftLUTThreshold + 1 // force first build
-        } else {
-            let dist = abs(hue - self.driftBaseHue)
-            diff = min(dist, 1.0 - dist) // wrap-aware distance
-        }
-        if diff > Self.driftLUTThreshold {
-            Self.buildLUT(into: &self.lut, palette: .drift, analysis: analysis, time: time)
-            self.driftBaseHue = hue
-        }
-    }
-
-    /// Builds a 256-entry BGRA ramp by interpolating the 8 stops from
-    /// `PaletteResolver.rampStops`. Static so it can be called from tests without
-    /// a live instance, and so init can stage a call before `self` is complete.
-    static func buildLUT(
-        into lut: inout [UInt32],
-        palette: VisualizerPalette,
-        analysis: Analysis,
-        time: TimeInterval
-    ) {
-        let stops = PaletteResolver.rampStops(palette: palette, analysis: analysis, time: time)
-        let stopCount = stops.count // always 8
-        for i in 0 ..< Self.lutSize {
-            let t = Double(i) / Double(Self.lutSize - 1)
-            let segFloat = t * Double(stopCount - 1)
-            let seg = min(stopCount - 2, Int(segFloat))
-            let frac = segFloat - Double(seg)
-            lut[i] = Self.blendColors(stops[seg], stops[seg + 1], fraction: frac)
-        }
-    }
-
-    /// Linearly interpolates two SwiftUI `Color`s in sRGB and returns a packed
-    /// BGRA `UInt32` suitable for the bitmap buffer.
-    ///
-    /// On little-endian (ARM64) with `kCGBitmapByteOrder32Host | premultipliedFirst`
-    /// the byte order is B, G, R, A — packed as `B | (G<<8) | (R<<16) | (A<<24)`.
-    static func blendColors(_ colorA: Color, _ colorB: Color, fraction: Double) -> UInt32 {
-        func srgb(_ c: Color) -> SIMD3<Double> {
-            guard let ns = NSColor(c).usingColorSpace(.sRGB) else { return .zero }
-            return SIMD3(Double(ns.redComponent), Double(ns.greenComponent), Double(ns.blueComponent))
-        }
-        let ca = srgb(colorA)
-        let cb = srgb(colorB)
-        let mixed = ca + (cb - ca) * fraction
-        let ir = UInt32(max(0, min(255, mixed.x * 255 + 0.5)))
-        let ig = UInt32(max(0, min(255, mixed.y * 255 + 0.5)))
-        let ib = UInt32(max(0, min(255, mixed.z * 255 + 0.5)))
-        return ib | (ig << 8) | (ir << 16) | 0xFF00_0000
     }
 
     // MARK: - Pixel access (internal for testing)
