@@ -5,8 +5,12 @@ import SwiftUI
 
 /// Container view that drives the active visualizer mode at display rate.
 ///
-/// Uses `TimelineView(.animation(minimumInterval:))` to clock Canvas redraws.
-/// Canvas content is a stateless draw call into the appropriate ``Visualizer``.
+/// Most modes render through `TimelineView` + Canvas. When a mode has a Metal
+/// renderer and a Metal device is available, the host swaps in an
+/// `MTKView`-backed path instead; the Canvas renderer is always built too and
+/// serves as the fallback (no device, or the `visualizer.forceCanvas` debug
+/// default). Both paths share the toast overlay, accessibility label, and FPS
+/// watchdog.
 public struct VisualizerHost: View {
     // MARK: - Dependencies
 
@@ -16,8 +20,12 @@ public struct VisualizerHost: View {
 
     // MARK: - Local state
 
-    /// Active renderer instance. Rebuilt only when mode, palette, or a11y changes.
+    /// Active Canvas renderer instance. Rebuilt only when mode, palette, or a11y
+    /// changes. Always present (Metal fallback / reference).
     @State private var renderer: (any Visualizer)?
+    /// Active Metal renderer, or nil when the current mode has no Metal renderer
+    /// (every mode in the foundations phase) or Metal is unavailable.
+    @State private var metalRenderer: (any MetalVisualizer)?
     @State private var rendererKey = ""
 
     // MARK: - Frame-rate monitoring
@@ -37,7 +45,7 @@ public struct VisualizerHost: View {
     public var body: some View {
         ZStack {
             Color.black
-            self.timelineCanvas
+            self.activeContent
         }
         .overlay(alignment: .bottom) {
             if let toast = self.vm.performanceToast {
@@ -59,6 +67,30 @@ public struct VisualizerHost: View {
         .onChange(of: self.vm.palette) { _, _ in self.rebuildRenderer() }
         .onChange(of: self.reduceMotion) { _, _ in self.rebuildRenderer() }
         .onChange(of: self.reduceTransparency) { _, _ in self.rebuildRenderer() }
+    }
+
+    // MARK: - Content routing
+
+    /// The Metal path when a Metal renderer is active, otherwise the Canvas path.
+    /// The `.id(rendererKey)` tears the `MTKView` down and rebuilds it on a mode,
+    /// palette, or accessibility change rather than mutating a live renderer.
+    @ViewBuilder
+    private var activeContent: some View {
+        if let metalRenderer, let device = MetalSupport.device {
+            MetalVisualizerView(
+                renderer: metalRenderer,
+                vm: self.vm,
+                device: device,
+                pixelFormat: .bgra8Unorm,
+                preferredFPS: self.vm.effectiveFPS,
+                reduceMotion: self.reduceMotion
+            ) { date in
+                self.recordFrameTick(at: date)
+            }
+            .id(self.rendererKey)
+        } else {
+            self.timelineCanvas
+        }
     }
 
     // MARK: - Canvas (non-Metal modes)
@@ -112,6 +144,36 @@ public struct VisualizerHost: View {
         guard key != self.rendererKey else { return }
         self.rendererKey = key
 
+        self.buildMetalRenderer()
+        self.buildCanvasRenderer()
+    }
+
+    /// Attempts to build a Metal renderer for the current mode. Leaves
+    /// `metalRenderer` nil (Canvas fallback) when no device exists, the mode has
+    /// no Metal renderer, the user forced Canvas, or the renderer's init threw.
+    private func buildMetalRenderer() {
+        self.metalRenderer = nil
+        guard
+            let device = MetalSupport.device,
+            !UserDefaults.standard.bool(forKey: "visualizer.forceCanvas"),
+            MetalVisualizerFactory.supports(self.vm.mode) else { return }
+        let config = MetalRendererConfig(
+            palette: self.vm.palette,
+            reduceMotion: self.reduceMotion,
+            reduceTransparency: self.reduceTransparency
+        )
+        self.metalRenderer = MetalVisualizerFactory.make(
+            mode: self.vm.mode,
+            device: device,
+            pixelFormat: .bgra8Unorm,
+            config: config
+        )
+    }
+
+    /// Builds the Canvas renderer for the current mode. Always built: it is the
+    /// fallback when Metal is unavailable and the visual-parity reference, and it
+    /// costs nothing until actually rendered.
+    private func buildCanvasRenderer() {
         switch self.vm.mode {
         case .spectrumBars:
             self.renderer = SpectrumBars(
