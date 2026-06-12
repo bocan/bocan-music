@@ -3,17 +3,20 @@ import Testing
 
 // MARK: - MetalVisualizerFactoryTests
 
-/// Guards the factory contract the host depends on: no mode claims Metal support
-/// in the foundations phase, and the throwing-initializer wrapper turns a failure
-/// into a logged `nil` (Canvas fallback) rather than a crash.
+/// Guards the factory contract the host depends on: each mode reports Metal
+/// support only once its renderer exists, and the throwing-initializer wrapper
+/// turns a failure into a logged `nil` (Canvas fallback) rather than a crash.
 @Suite("MetalVisualizerFactory")
 @MainActor
 struct MetalVisualizerFactoryTests {
     private enum BuildFailure: Error { case boom }
 
-    @Test("No mode reports Metal support in the foundations phase", arguments: VisualizerMode.allCases)
-    func noModeSupportedYet(mode: VisualizerMode) {
-        #expect(MetalVisualizerFactory.supports(mode) == false)
+    /// Modes converted to Metal so far. Extend as each conversion phase lands.
+    private static let metalModes: Set<VisualizerMode> = [.oscilloscope]
+
+    @Test("supports() is true exactly for the converted modes", arguments: VisualizerMode.allCases)
+    func supportsMatchesConvertedModes(mode: VisualizerMode) {
+        #expect(MetalVisualizerFactory.supports(mode) == Self.metalModes.contains(mode))
     }
 
     @Test("instantiate returns nil when the renderer initializer throws")

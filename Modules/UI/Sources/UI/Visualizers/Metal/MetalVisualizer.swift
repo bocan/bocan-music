@@ -116,6 +116,9 @@ enum MetalVisualizerFactory {
     /// mode. Each conversion phase (12.7 onward) flips its own arm.
     static func supports(_ mode: VisualizerMode) -> Bool {
         switch mode {
+        case .oscilloscope:
+            true
+
         // Conversion phases add `case .<mode>: true` here.
         default:
             false
@@ -131,12 +134,17 @@ enum MetalVisualizerFactory {
         pixelFormat: MTLPixelFormat,
         config: MetalRendererConfig
     ) -> (any MetalVisualizer)? {
-        // Conversion phases (12.7 onward) add one `case` per mode here, each
-        // forwarding to `instantiate(mode:_:)` so a failed pipeline build logs
-        // and falls back to Canvas instead of crashing. The device, pixelFormat,
-        // and config are passed through to each renderer's throwing initializer.
-        // No mode is wired up in the foundations phase.
-        nil
+        // Each arm forwards to `instantiate(mode:_:)` so a failed pipeline build
+        // logs and falls back to Canvas instead of crashing.
+        switch mode {
+        case .oscilloscope:
+            self.instantiate(mode: mode) {
+                try MetalOscilloscope(device: device, pixelFormat: pixelFormat, config: config)
+            }
+
+        default:
+            nil
+        }
     }
 
     /// Wraps a throwing renderer initializer: returns the renderer on success and

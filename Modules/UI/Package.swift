@@ -48,7 +48,13 @@ let package = Package(
                 .product(name: "SwiftSonic", package: "swiftsonic"),
             ],
             resources: [
-                .process("Resources"),
+                // Process the string catalog for localization, but copy the
+                // shader sources verbatim: MetalShaderLibrary compiles them at
+                // runtime from source, so they must ship as .metal text, not be
+                // pre-compiled into a metallib (which .process would do and which
+                // swift test cannot then load by resource name).
+                .process("Resources/Localizable.xcstrings"),
+                .copy("Resources/Shaders"),
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
