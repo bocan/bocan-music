@@ -212,6 +212,7 @@ public final class NowPlayingViewModel {
 
     /// Seek to an absolute position.
     public func scrub(to time: TimeInterval) async {
+        Haptics.positionCommit()
         do {
             try await self.engine.seek(to: time)
         } catch {
@@ -477,7 +478,11 @@ public final class NowPlayingViewModel {
                     self.isPlaying = false
                     self.isPaused = false
                     self.stopPollingPosition()
-                    if state == .ended { self.position = 0 }
+                    if state == .ended {
+                        self.position = 0
+                        // Queue played through to its end (#330).
+                        Haptics.stateChange()
+                    }
 
                 case .ready:
                     self.isPlaying = false
