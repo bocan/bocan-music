@@ -13,9 +13,8 @@ public struct NowPlayingStrip: View {
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(DSPViewModel.self) private var dsp: DSPViewModel
 
-    /// While the user is actively dragging the scrubber, we hold the drag
-    /// fraction locally so the Slider doesn't fight the live `vm.position`
-    /// updates coming from the engine.  Seeking happens once on release.
+    /// While dragging the scrubber, the fraction is held locally so the Slider
+    /// doesn't fight live `vm.position` updates; seeking happens on release.
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var scrubDragFraction: Double?
     /// Menu-to-strip signal (BocanCommands sets it); cleared at launch by BocanApp.
@@ -403,8 +402,7 @@ public struct NowPlayingStrip: View {
                         return self.vm.duration > 0 ? self.vm.position / self.vm.duration : 0
                     },
                     set: { fraction in
-                        // Update only the local drag value while the user is
-                        // dragging; don't spawn a seek task per mouse move.
+                        // Hold the drag locally; seek once on release, not per move.
                         self.scrubDragFraction = fraction
                     }
                 ),
@@ -458,19 +456,21 @@ public struct NowPlayingStrip: View {
             Slider(value: Binding(
                 get: { Double(self.vm.volume) },
                 set: { newVolume in Task { await self.vm.setVolume(Float(newVolume)) } }
-            ), in: 0 ... 1)
-                .controlSize(.mini)
-                .frame(maxWidth: 100)
-                .id(self.accentColorKey)
-                .help(L10n.string("Volume: \(Int(self.vm.volume * 100))%"))
-                .accessibilityLabel(L10n.string("Volume"))
-                .accessibilityValue(L10n.string("\(Int(self.vm.volume * 100)) percent"))
-                .accessibilityAdjustableAction { direction in
-                    guard direction == .increment || direction == .decrement else { return }
-                    let vol = direction == .increment ? min(self.vm.volume + 0.1, 1) : max(self.vm.volume - 0.1, 0)
-                    Task { await self.vm.setVolume(vol) }
-                }
-                .accessibilityIdentifier(A11y.NowPlaying.volumeSlider)
+            ), in: 0 ... 1) { editing in
+                if !editing { Haptics.positionCommit() }
+            }
+            .controlSize(.mini)
+            .frame(maxWidth: 100)
+            .id(self.accentColorKey)
+            .help(L10n.string("Volume: \(Int(self.vm.volume * 100))%"))
+            .accessibilityLabel(L10n.string("Volume"))
+            .accessibilityValue(L10n.string("\(Int(self.vm.volume * 100)) percent"))
+            .accessibilityAdjustableAction { direction in
+                guard direction == .increment || direction == .decrement else { return }
+                let vol = direction == .increment ? min(self.vm.volume + 0.1, 1) : max(self.vm.volume - 0.1, 0)
+                Task { await self.vm.setVolume(vol) }
+            }
+            .accessibilityIdentifier(A11y.NowPlaying.volumeSlider)
 
             Image(systemName: "speaker.wave.3.fill")
                 .font(Typography.caption)
