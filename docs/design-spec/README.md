@@ -29,6 +29,11 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 10 | [phase-10-mini-player-polish.md](phase-10-mini-player-polish.md) | Mini player, themes, dock tile |
 | 11 | [phase-11-lyrics.md](phase-11-lyrics.md) | LRC + embedded lyrics |
 | 12 | [phase-12-visualizers.md](phase-12-visualizers.md) | FFT + Metal/Canvas visualizers |
+| 12.1 | [phase-12.1-visualizer-foundations.md](phase-12.1-visualizer-foundations.md) | Analysis v2 (centroid, flux, onsets), PaletteResolver, Drift + Thermal palettes |
+| 12.2 | [phase-12.2-visualizer-halo.md](phase-12.2-visualizer-halo.md) | Halo: radial spectrum ring, beat ripples |
+| 12.3 | [phase-12.3-visualizer-cascade.md](phase-12.3-visualizer-cascade.md) | Cascade: scrolling spectrogram waterfall |
+| 12.4 | [phase-12.4-visualizer-starfield.md](phase-12.4-visualizer-starfield.md) | Starfield: frequency-coloured warp particles |
+| 12.5 | [phase-12.5-visualizer-nebula.md](phase-12.5-visualizer-nebula.md) | Nebula: Metal gas clouds with moving wisps |
 | 13 | [phase-13-scrobbling.md](phase-13-scrobbling.md) | Last.fm + ListenBrainz |
 | 14 | [phase-14-playlist-import-export.md](phase-14-playlist-import-export.md) | M3U/M3U8/PLS/XSPF |
 | 15 | [phase-15-casting.md](phase-15-casting.md) | AirPlay 2 + Google Cast |
