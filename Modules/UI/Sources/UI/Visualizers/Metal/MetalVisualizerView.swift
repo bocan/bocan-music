@@ -147,6 +147,21 @@ extension MetalVisualizerView {
             view.targetScale = self.renderer.renderScale
             view.applyDrawableSize()
 
+            // Acquire the drawable and encoder BEFORE update(): a renderer may
+            // take a per-frame resource (a FrameRing slot) in update() and release
+            // it in didEncode(), so skipping the draw after update() would leak the
+            // slot and deadlock the ring. Guarding first keeps update -> encode ->
+            // didEncode atomic. A nil descriptor (window miniaturised, display
+            // asleep) skips the whole frame, silently (logging per frame would
+            // flood the ring buffer).
+            guard
+                let descriptor = view.currentRenderPassDescriptor,
+                let drawable = view.currentDrawable,
+                let commandBuffer = queue.makeCommandBuffer(),
+                let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else {
+                return
+            }
+
             // Read the freshest analysis at draw time: this is what keeps the
             // visuals locked to what is currently being heard.
             let samples = self.vm.latestSamples ?? Self.silentSamples
@@ -156,16 +171,6 @@ extension MetalVisualizerView {
                 time: CACurrentMediaTime(),
                 drawableSize: view.drawableSize
             )
-
-            guard
-                let descriptor = view.currentRenderPassDescriptor,
-                let drawable = view.currentDrawable,
-                let commandBuffer = queue.makeCommandBuffer(),
-                let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else {
-                // Window miniaturised or display asleep; skip silently (logging
-                // per frame would flood the ring buffer).
-                return
-            }
 
             self.renderer.encode(into: encoder)
             encoder.endEncoding()
