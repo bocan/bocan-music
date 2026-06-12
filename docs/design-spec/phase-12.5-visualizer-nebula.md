@@ -1,5 +1,11 @@
 # Phase 12.5: Visualizer Mode "Nebula" (Metal Gas Clouds + Moving Wisps)
 
+> **Plumbing superseded.** Implement this mode via
+> `phase-12.12-visualizer-metal-nebula.md`, which lands it on the shared
+> Metal foundations from phase 12.6. The visual design, audio mapping, test
+> plan, and gotchas below remain binding; the bespoke NebulaMetalView and
+> NebulaRenderer plumbing does not.
+>
 > Prerequisites: Phase 12.1 complete (Analysis v2, `PaletteResolver.rampStops`,
 > `render(... time:)`). Phases 12.2 to 12.4 are independent but land first;
 > this is the most ambitious mode and finally delivers the Metal mode that

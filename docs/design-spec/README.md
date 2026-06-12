@@ -32,8 +32,15 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 12.1 | [phase-12.1-visualizer-foundations.md](phase-12.1-visualizer-foundations.md) | Analysis v2 (centroid, flux, onsets), PaletteResolver, Drift + Thermal palettes |
 | 12.2 | [phase-12.2-visualizer-halo.md](phase-12.2-visualizer-halo.md) | Halo: radial spectrum ring, beat ripples |
 | 12.3 | [phase-12.3-visualizer-cascade.md](phase-12.3-visualizer-cascade.md) | Cascade: scrolling spectrogram waterfall |
-| 12.4 | [phase-12.4-visualizer-starfield.md](phase-12.4-visualizer-starfield.md) | Starfield: frequency-coloured warp particles |
-| 12.5 | [phase-12.5-visualizer-nebula.md](phase-12.5-visualizer-nebula.md) | Nebula: Metal gas clouds with moving wisps |
+| 12.4 | [phase-12.4-visualizer-starfield.md](phase-12.4-visualizer-starfield.md) | Starfield: frequency-coloured warp particles (renderer superseded by 12.11) |
+| 12.5 | [phase-12.5-visualizer-nebula.md](phase-12.5-visualizer-nebula.md) | Nebula: Metal gas clouds with moving wisps (plumbing superseded by 12.12) |
+| 12.6 | [phase-12.6-visualizer-metal-foundations.md](phase-12.6-visualizer-metal-foundations.md) | MetalVisualizer protocol, MTKView host, shared GPU helpers |
+| 12.7 | [phase-12.7-visualizer-metal-oscilloscope.md](phase-12.7-visualizer-metal-oscilloscope.md) | Oscilloscope on Metal (first conversion, pattern-setting) |
+| 12.8 | [phase-12.8-visualizer-metal-cascade.md](phase-12.8-visualizer-metal-cascade.md) | Cascade on Metal (history ring buffer as GPU texture) |
+| 12.9 | [phase-12.9-visualizer-metal-spectrum-bars.md](phase-12.9-visualizer-metal-spectrum-bars.md) | Spectrum Bars on Metal (instanced SDF quads) |
+| 12.10 | [phase-12.10-visualizer-metal-halo.md](phase-12.10-visualizer-metal-halo.md) | Halo on Metal (CPU geometry, GPU rasterisation) |
+| 12.11 | [phase-12.11-visualizer-metal-starfield.md](phase-12.11-visualizer-metal-starfield.md) | Starfield: Metal warp field (implements 12.4's design) |
+| 12.12 | [phase-12.12-visualizer-metal-nebula.md](phase-12.12-visualizer-metal-nebula.md) | Nebula on the 12.6 foundations (delta over 12.5) |
 | 13 | [phase-13-scrobbling.md](phase-13-scrobbling.md) | Last.fm + ListenBrainz |
 | 14 | [phase-14-playlist-import-export.md](phase-14-playlist-import-export.md) | M3U/M3U8/PLS/XSPF |
 | 15 | [phase-15-casting.md](phase-15-casting.md) | AirPlay 2 + Google Cast |
