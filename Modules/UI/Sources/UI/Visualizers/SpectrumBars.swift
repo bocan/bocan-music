@@ -57,7 +57,7 @@ public final class SpectrumBars: Visualizer {
     /// than topping out partway down (the audio rarely hits a normalised 1.0).
     /// Bars and peak markers are clamped to the full height. The Metal port
     /// (`MetalSpectrumBars`) reads this so both renderers stay identical.
-    static let displayGain: CGFloat = 1.5
+    static let displayGain: CGFloat = 1.1
 
     private var peakHold: [Float]
     private var peakVelocity: [Float] // "gravity" fall speed per band
