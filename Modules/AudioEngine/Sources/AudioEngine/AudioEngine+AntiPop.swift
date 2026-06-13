@@ -57,6 +57,13 @@ public extension AudioEngine {
     /// the system default output, the HAL listener fires, and the engine follows
     /// it here. The `device` is logged so the routing path is traceable.
     func handleDefaultDeviceChange(_ device: DeviceInfo? = nil) async {
+        // Serialized with the user transport ops (play/seek/pause/stop): a device
+        // change tears down and rebuilds the pump, so it must not interleave with
+        // one of those at an await point. Uses performPlay() below, not play(),
+        // because it already holds the gate.
+        await self.acquireTransport()
+        defer { self.releaseTransport() }
+
         let resumeAfter = self.isPlaying
         self.log.notice("audio.device.reconfigure.start", [
             "device": device?.name ?? "system-default",
@@ -71,7 +78,7 @@ public extension AudioEngine {
             // Best-effort resume; if the new device fails to open, swallow the
             // error here (the public state stream will surface .failed).
             do {
-                try await self.play()
+                try await self.performPlay()
                 self.log.notice("audio.device.reconfigure.resumed", ["device": device?.name ?? "?"])
             } catch {
                 self.log.error("audio.device.reconfigure.resume.failed", ["error": String(reflecting: error)])
