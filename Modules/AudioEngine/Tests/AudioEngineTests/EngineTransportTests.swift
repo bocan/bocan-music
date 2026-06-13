@@ -201,6 +201,33 @@ struct EngineTransportTests {
         await engine.stop() // returns promptly only if the gate did not deadlock
     }
 
+    /// Seeking while paused stops and nils the pump but leaves the state at
+    /// `.paused`. Resuming must rebuild the pump rather than take the
+    /// resume-from-pause fast path (which assumes a live pump and would restart a
+    /// silent, unrecoverable node).
+    @Test(
+        "resume after a paused seek rebuilds the pump (no silent disconnect)",
+        .enabled(if: audioOutputAvailable())
+    )
+    func resumeAfterPausedSeek() async throws {
+        let engine = AudioEngine()
+        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        try await engine.load(url)
+        try await engine.play()
+        try await Task.sleep(for: .milliseconds(100))
+        await engine.pause()
+
+        try await engine.seek(to: 0.3) // paused seek: pump stopped and nilled
+        try await engine.play() // resume: must NOT take the no-pump fast path
+
+        let isPlaying = await engine.isPlaying
+        #expect(isPlaying, "Engine should resume playing after a paused seek")
+        let pump = await engine.pump
+        #expect(pump != nil, "Resume after a paused seek must rebuild the pump")
+
+        await engine.stop()
+    }
+
     // MARK: - No duplicate states
 
     @Test("PlaybackState stream: no consecutive duplicates")
