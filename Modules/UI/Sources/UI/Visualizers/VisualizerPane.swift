@@ -43,6 +43,13 @@ public struct VisualizerPane: View {
                         fadeAfter: 3,
                         refreshTrigger: self.overlayTrigger
                     )
+                    VisualizerControlOverlay(
+                        vm: self.vm,
+                        reduceMotion: self.reduceMotion,
+                        fadeAfter: 3,
+                        refreshTrigger: self.overlayTrigger
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 }
                 .onHover { _ in self.overlayTrigger += 1 }
             }

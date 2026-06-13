@@ -9954,12 +9954,32 @@
         }
       }
     },
+    "Next palette" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñéxţ ƥáĺéţţé one"
+          }
+        }
+      }
+    },
     "Next track" : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ñéxţ ţŕáçķ one"
+          }
+        }
+      }
+    },
+    "Next visualizer" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñéxţ víšúáĺížéŕ one two"
           }
         }
       }
@@ -12143,6 +12163,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƥŕévíóúš óŕ ŕéšţáŕţ one two"
+          }
+        }
+      }
+    },
+    "Previous palette" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥŕévíóúš ƥáĺéţţé one two"
+          }
+        }
+      }
+    },
+    "Previous visualizer" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥŕévíóúš víšúáĺížéŕ one two"
           }
         }
       }
@@ -17237,6 +17277,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Víšúáĺížéŕ one"
+          }
+        }
+      }
+    },
+    "Visualizer mode" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Víšúáĺížéŕ ḿóđé one two"
           }
         }
       }
