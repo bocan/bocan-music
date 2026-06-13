@@ -76,6 +76,7 @@ public struct MiniPlayerView: View {
                 }
             }
             .onChange(of: self.vm.alwaysOnTop) { _, _ in self.applyWindowLevel() }
+            .onChange(of: self.vm.layout) { _, newLayout in self.resizeWindow(for: newLayout) }
             .preferredColorScheme(self.preferredColorScheme)
             .tint(AccentPalette.color(for: self.accentColorKey))
             .accessibilityElement(children: .contain)
@@ -226,7 +227,7 @@ public struct MiniPlayerView: View {
     private var layoutButton: some View {
         Button {
             self.vm.cycleLayout()
-            self.resizeWindow(for: self.vm.layout)
+            // The window snap is driven by .onChange(of: vm.layout) on the body.
         } label: {
             Image(systemName: self.vm.layout.icon)
                 .scaledSystemFont(size: 11, weight: .medium)
@@ -298,11 +299,19 @@ public struct MiniPlayerView: View {
         WindowFade.fadeIn(window)
     }
 
+    /// The mini-player NSWindow, found the same reliable way `applyWindowLevel`
+    /// and `fadeInMiniWindow` find it (not the weak tracker).
+    private var miniWindow: NSWindow? {
+        NSApp.windows.first { $0.title == "Mini Player" || $0.identifier?.rawValue == "mini" }
+    }
+
     /// Snaps the mini-player window to `layout`'s default size. Animated on a user
-    /// layout switch; instant on open (the fade hides it). `.contentMinSize` keeps
-    /// the new size from being overridden, so it sticks while staying resizable.
+    /// layout switch; instant on open. A user drag is ephemeral: frame autosave is
+    /// cleared so the OS neither persists the resized size nor re-applies it on a
+    /// layout change (which would override this snap and make the resize "stick").
     private func resizeWindow(for layout: MiniPlayerViewModel.Layout, animated: Bool = true) {
-        guard let win = MiniPlayerWindowTracker.shared.window else { return }
+        guard let win = self.miniWindow else { return }
+        win.setFrameAutosaveName("")
         let size = layout.defaultWindowSize
         let targetSize = NSSize(width: size.width, height: size.height)
         guard animated, !self.reduceMotion else {
