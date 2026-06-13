@@ -35,7 +35,7 @@ struct MetalNebulaTests {
 
     // MARK: - Renderer defaults
 
-    @Test("Render scale defaults to 0.6")
+    @Test("Renders at native resolution (renderScale 1.0)")
     func renderScaleDefault() {
         guard let device = MetalSupport.device else { return }
         guard let nebula = try? MetalNebula(
@@ -43,10 +43,12 @@ struct MetalNebulaTests {
             pixelFormat: .bgra8Unorm,
             config: MetalRendererConfig(palette: .thermal, reduceMotion: false, reduceTransparency: false)
         ) else { return }
-        #expect(nebula.renderScale == 0.6)
+        // Native resolution. Sub-1.0 drawable scaling re-entered the AppKit layout
+        // pass and collapsed the live MTKView to a 1x1 drawable (a flat colour).
+        #expect(nebula.renderScale == 1.0)
     }
 
-    @Test("update advances flowTime and refreshes the published render scale")
+    @Test("update advances the flow clock and renders at native resolution")
     func updateAdvancesState() {
         guard let device = MetalSupport.device else { return }
         guard let nebula = try? MetalNebula(
@@ -67,7 +69,9 @@ struct MetalNebulaTests {
             drawableSize: CGSize(width: 400, height: 300)
         )
         #expect(nebula.uniforms.flowTime > 0)
-        #expect(nebula.renderScale == nebula.state.renderScale)
+        // Native resolution: the protocol default, after dropping the buggy
+        // sub-1.0 drawable scale that collapsed the live view to a single pixel.
+        #expect(nebula.renderScale == 1.0)
     }
 
     // MARK: - Source convention: no audio math in the shader
