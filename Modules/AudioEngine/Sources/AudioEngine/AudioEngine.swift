@@ -256,8 +256,44 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         }
     }
 
+    // MARK: - Transport serialization
+
+    // play / pause / seek / stop all suspend partway through (pump.stop,
+    // pump.start, fade ramps). The actor is reentrant at those suspension points,
+    // so without a gate a second transport call interleaves and can tear down the
+    // pump the first one just built, leaving the node "playing" (position keeps
+    // advancing) with no audio. This async mutex serializes them: a second op
+    // waits for the first to finish. Internal callers (seek's resume, the
+    // device-change handler) use the `perform*` variants directly so they do not
+    // re-acquire and deadlock.
+    private var transportBusy = false
+    private var transportWaiters: [CheckedContinuation<Void, Never>] = []
+
+    func acquireTransport() async {
+        while self.transportBusy {
+            await withCheckedContinuation { self.transportWaiters.append($0) }
+        }
+        self.transportBusy = true
+    }
+
+    func releaseTransport() {
+        self.transportBusy = false
+        guard !self.transportWaiters.isEmpty else { return }
+        self.transportWaiters.removeFirst().resume()
+    }
+
     public func play() async throws {
+        await self.acquireTransport()
+        defer { self.releaseTransport() }
+        try await self.performPlay()
+    }
+
+    func performPlay() async throws {
         guard let dec = decoder else { return }
+        // Already playing with a live pump: a redundant play() (a double-tap, or a
+        // remote command racing the on-screen button) is a no-op, not a pump
+        // rebuild that would hiccup the audio or, under reentrancy, strand it.
+        if self._state == .playing, self.pump != nil { return }
         let start = Date()
         self.log.debug("engine.play.start")
 
@@ -326,6 +362,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     }
 
     public func pause() async {
+        await self.acquireTransport()
+        defer { self.releaseTransport() }
+        await self.performPause()
+    }
+
+    func performPause() async {
         self.log.debug("engine.pause")
         let playerNode = self.graph.playerNode
         // Capture position *before* the fade so the displayed time doesn't
@@ -346,6 +388,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     }
 
     public func stop() async {
+        await self.acquireTransport()
+        defer { self.releaseTransport() }
+        await self.performStop()
+    }
+
+    func performStop() async {
         self.log.debug("engine.stop")
         await self.cancelGaplessNext()
         // 10 ms fade keeps stop() from popping mid-cycle.
@@ -361,6 +409,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     }
 
     public func seek(to time: TimeInterval) async throws {
+        await self.acquireTransport()
+        defer { self.releaseTransport() }
+        try await self.performSeek(to: time)
+    }
+
+    func performSeek(to time: TimeInterval) async throws {
         guard let dec = decoder else { return }
         guard self._duration == 0 || time <= self._duration + 0.001 else {
             throw AudioEngineError.seekOutOfRange(requested: time, duration: self._duration)
@@ -385,7 +439,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self._playerTimeOffset = 0
 
         if wasPlaying {
-            try await self.play()
+            try await self.performPlay()
         }
     }
 
