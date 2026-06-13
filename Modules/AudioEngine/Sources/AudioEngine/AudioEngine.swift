@@ -305,14 +305,21 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             throw ae
         }
 
-        // Resuming from pause: the pump is already running and the player node's
-        // buffer FIFO is intact — just restart the node. Recreating the pump here
-        // causes a deadlock (pump.stop() awaits a task blocked in
+        // Resuming from pause WITH a live pump: the pump is already running and the
+        // player node's buffer FIFO is intact — just restart the node. Recreating
+        // the pump here causes a deadlock (pump.stop() awaits a task blocked in
         // withCheckedContinuation waiting for dataPlayedBack callbacks that can
         // never fire on a paused node) and, if multiple play() calls pile up while
         // suspended, results in several concurrent pumps all writing to the same
         // AVAudioPlayerNode, producing audible judder.
-        if self._state == .paused {
+        //
+        // The `pump != nil` guard matters: seek() stops and nils the pump while
+        // leaving the state at .paused. Without the guard, resuming after a paused
+        // seek took this fast path and restarted the node with no pump feeding it —
+        // silent, unrecoverable audio. With it, that case falls through to a fresh
+        // start (the pump is already nil, so its stop() below is a harmless no-op,
+        // not the paused-pump deadlock the warning above is about).
+        if self._state == .paused, self.pump != nil {
             // Fade in from the muted state we entered on pause.
             self.graph.playerNode.volume = 0
             self.graph.playerNode.play()
