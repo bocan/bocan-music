@@ -206,6 +206,28 @@ public final class VisualizerViewModel: ObservableObject {
         self.log.info("visualizer.autoSimplify.reverted: restored mode \(previous.rawValue)")
     }
 
+    // MARK: - Mode / palette cycling (pure, testable)
+
+    /// The visualizer modes selectable right now. The Metal-only Nebula is left
+    /// out when there is no Metal device or reduce motion is on, because the host
+    /// substitutes Spectrum Bars for it in those cases, so cycling onto it would
+    /// show a name that does not match the picture.
+    public static func availableModes(reduceMotion: Bool, hasMetalDevice: Bool) -> [VisualizerMode] {
+        VisualizerMode.allCases.filter { mode in
+            !(mode.requiresMetal && (reduceMotion || !hasMetalDevice))
+        }
+    }
+
+    /// The element `delta` steps from `current` in `options`, wrapping at both
+    /// ends. Returns the first option (or `current` when `options` is empty) if
+    /// `current` is not present, so a stale selection cannot wedge the stepper.
+    public static func cycled<Option: Equatable>(_ current: Option, in options: [Option], by delta: Int) -> Option {
+        guard !options.isEmpty else { return current }
+        let count = options.count
+        let index = options.firstIndex(of: current) ?? 0
+        return options[((index + delta) % count + count) % count]
+    }
+
     // MARK: - FPS effective
 
     /// Effective frame rate target considering battery state and user setting.

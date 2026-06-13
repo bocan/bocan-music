@@ -180,3 +180,80 @@ struct VisualizerModeTests {
         }
     }
 }
+
+// MARK: - Mode / palette cycling
+
+@Suite("VisualizerViewModel Cycling")
+@MainActor
+struct VisualizerCyclingTests {
+    @Test("availableModes lists every mode when Metal is present and reduce motion is off")
+    func availableModesFull() {
+        #expect(VisualizerViewModel.availableModes(reduceMotion: false, hasMetalDevice: true) == VisualizerMode.allCases)
+    }
+
+    @Test("availableModes drops Nebula under reduce motion or without a Metal device")
+    func availableModesGatesNebula() {
+        #expect(!VisualizerViewModel.availableModes(reduceMotion: true, hasMetalDevice: true).contains(.nebula))
+        #expect(!VisualizerViewModel.availableModes(reduceMotion: false, hasMetalDevice: false).contains(.nebula))
+        // The other five always remain, regardless of the flags.
+        for mode in VisualizerMode.allCases where mode != .nebula {
+            #expect(VisualizerViewModel.availableModes(reduceMotion: true, hasMetalDevice: false).contains(mode))
+        }
+    }
+
+    @Test("cycled wraps both ends and is identity-safe")
+    func cycledWraps() {
+        let palettes = VisualizerPalette.allCases
+        let first = palettes[0]
+        let last = palettes[palettes.count - 1]
+        #expect(VisualizerViewModel.cycled(first, in: palettes, by: -1) == last)
+        #expect(VisualizerViewModel.cycled(last, in: palettes, by: 1) == first)
+        #expect(VisualizerViewModel.cycled(.accent, in: palettes, by: 0) == .accent)
+        // A value absent from the options falls back to the first option.
+        #expect(VisualizerViewModel.cycled(.accent, in: [VisualizerPalette.mono], by: 1) == .mono)
+        // Empty options returns the current value rather than crashing.
+        #expect(VisualizerViewModel.cycled(VisualizerMode.halo, in: [], by: 1) == .halo)
+    }
+
+    @Test("cycled advances by exactly one step through the mode list")
+    func cycledSteps() {
+        var mode = VisualizerMode.allCases[0]
+        for expected in VisualizerMode.allCases.dropFirst() {
+            mode = VisualizerViewModel.cycled(mode, in: VisualizerMode.allCases, by: 1)
+            #expect(mode == expected)
+        }
+    }
+}
+
+// MARK: - Control overlay embedding (source convention)
+
+@Suite("VisualizerControlOverlay embedding")
+struct VisualizerControlOverlayEmbeddingTests {
+    private var uiSourcesURL: URL {
+        URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Sources/UI")
+    }
+
+    @Test("The pane, fullscreen, and mini player each embed VisualizerControlOverlay", arguments: [
+        "Visualizers/VisualizerPane.swift",
+        "Visualizers/FullscreenWindow.swift",
+        "MiniPlayer/MiniPlayerVisualizer.swift",
+    ])
+    func surfacesEmbedControl(path: String) throws {
+        let source = try String(contentsOf: self.uiSourcesURL.appendingPathComponent(path), encoding: .utf8)
+        #expect(source.contains("VisualizerControlOverlay"), "\(path) must embed VisualizerControlOverlay")
+    }
+
+    @Test("The mini player only shows the control when the live visualizer runs (reduce motion off)")
+    func miniPlayerGatesControl() throws {
+        let source = try String(
+            contentsOf: self.uiSourcesURL.appendingPathComponent("MiniPlayer/MiniPlayerVisualizer.swift"),
+            encoding: .utf8
+        )
+        #expect(source.contains("if !self.reduceMotion"))
+    }
+}

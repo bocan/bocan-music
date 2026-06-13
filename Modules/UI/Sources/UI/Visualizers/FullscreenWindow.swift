@@ -16,6 +16,7 @@ public struct VisualizerFullscreenView: View {
     public var nowPlayingVM: NowPlayingViewModel
     @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var hideTask: Task<Void, Never>?
     @State private var overlayTrigger = 0
@@ -38,8 +39,16 @@ public struct VisualizerFullscreenView: View {
                 refreshTrigger: self.overlayTrigger
             )
             .padding(.top, 20) // clear the traffic-light buttons
+            VisualizerControlOverlay(
+                vm: self.vm,
+                reduceMotion: self.reduceMotion,
+                fadeAfter: 2,
+                refreshTrigger: self.overlayTrigger
+            )
+            .padding(.top, 20) // align with the now-playing overlay, clear of the menu bar
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         }
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .bottomTrailing) {
             if NSScreen.screens.count > 1 {
                 self.screenPickerButton
                     .padding(12)
