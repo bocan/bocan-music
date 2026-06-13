@@ -39,11 +39,14 @@ public final class Starfield: Visualizer {
     static let minStarSize: Float = 0.8
     static let maxStarSize: Float = 2.4
     static let glowRadiusFraction: CGFloat = 0.22
-    private static let minDrawOpacity = 0.05
-    private static let twinkleBase = 0.85
-    private static let twinkleAmplitude = 0.15
-    private static let twinkleReducedAmplitude = 0.05
-    private static let reduceTransparencyFloor = 0.6
+    // Visibility widened from `private` so `MetalStarfield` can reproduce the
+    // exact opacity and twinkle math by composition. Values and behaviour are
+    // unchanged; the Canvas renderer still reads them the same way.
+    static let minDrawOpacity = 0.05
+    static let twinkleBase = 0.85
+    static let twinkleAmplitude = 0.15
+    static let twinkleReducedAmplitude = 0.05
+    static let reduceTransparencyFloor = 0.6
 
     // MARK: - State (internal for testing)
 
