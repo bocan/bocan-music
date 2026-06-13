@@ -91,20 +91,6 @@ struct NebulaState {
     /// Extra wisp radius at full group energy.
     static let wispRadiusGain: Float = 0.14
 
-    /// Default render scale: the gas is soft, so 0.6x is visually free.
-    static let renderScaleHigh: CGFloat = 0.6
-    /// Reduced render scale once the frame budget is exceeded.
-    static let renderScaleLow: CGFloat = 0.4
-    /// Frame-time (seconds) above which the rolling average trips the scale down.
-    /// 1/45 s: a sustained drop below 45 fps starts shedding resolution before the
-    /// 30 fps watchdog would ever fire.
-    static let frameTimeDropThreshold = 1.0 / 45.0
-    /// Frame-time below which the scale recovers. Lower than the drop threshold so
-    /// scripted slow-then-fast frame times cannot oscillate (hysteresis).
-    static let frameTimeRecoverThreshold = 1.0 / 55.0
-    /// Smoothing factor for the rolling frame-time average (newest frame weight).
-    static let frameTimeSmoothing = 0.1
-
     // MARK: - Lissajous orbit definitions
 
     /// Per-wisp co-prime-ish frequency pairs and phase offsets so the four orbits
@@ -135,10 +121,6 @@ struct NebulaState {
     private(set) var flowTime: Double = 0
     private var onsetEnvelope = OnsetEnvelope(tau: Self.onsetTau)
     private var lastTime: TimeInterval?
-    /// Rolling frame-time average for the render-scale state machine.
-    private var rollingFrameTime: Double = Self.frameTimeDropThreshold * 0.5
-    /// Current render scale; stored so the renderer can publish it without recomputing.
-    private(set) var renderScale: CGFloat = Self.renderScaleHigh
 
     init() {}
 
@@ -179,24 +161,6 @@ struct NebulaState {
         return SIMD2(posX, posY)
     }
 
-    // MARK: - Render-scale state machine
-
-    /// Advances the rolling frame-time average by one `dt` and applies the
-    /// hysteresis: drop to the low scale once the average exceeds the drop
-    /// threshold, recover to the high scale only once it falls below the lower
-    /// recover threshold. Pure: same inputs, same transition.
-    private mutating func advanceRenderScale(dt: Double) {
-        guard dt > 0 else { return }
-        self.rollingFrameTime += (dt - self.rollingFrameTime) * Self.frameTimeSmoothing
-        if self.renderScale == Self.renderScaleHigh {
-            if self.rollingFrameTime > Self.frameTimeDropThreshold {
-                self.renderScale = Self.renderScaleLow
-            }
-        } else if self.rollingFrameTime < Self.frameTimeRecoverThreshold {
-            self.renderScale = Self.renderScaleHigh
-        }
-    }
-
     // MARK: - Per-frame update
 
     /// Advances the flow clock, onset envelope, orbits, and render scale by one
@@ -216,8 +180,6 @@ struct NebulaState {
         let bass = Double(min(1, max(0, analysis.bassEnergy)))
         let flowRate = Self.flowBaseRate + Self.flowBassRate * bass + Self.flowOnsetRate * onset
         self.flowTime += dt * flowRate
-
-        self.advanceRenderScale(dt: dt)
 
         return self.pack(analysis: analysis, drawableSize: drawableSize)
     }

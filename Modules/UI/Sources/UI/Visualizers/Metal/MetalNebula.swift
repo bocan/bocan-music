@@ -12,9 +12,10 @@ import simd
 ///
 /// All audio-reactive work lives in the pure ``NebulaState`` and the shader is a
 /// function of the packed ``NebulaUniforms``; this class only owns the pipeline,
-/// the palette LUT texture, and the once-per-frame `update`/`encode` glue. The
-/// `renderScale` adapts (0.6 default, down to 0.4 under load) from the state
-/// machine inside `update`, which the 12.6 host re-reads each frame.
+/// the palette LUT texture, and the once-per-frame `update`/`encode` glue. It
+/// renders at native resolution (the default ``MetalVisualizer/renderScale``);
+/// the host's frame-rate watchdog auto-simplifies to Spectrum Bars if a slow GPU
+/// ever cannot keep up.
 @MainActor
 final class MetalNebula: MetalVisualizer {
     // MARK: - Configuration
@@ -47,11 +48,6 @@ final class MetalNebula: MetalVisualizer {
         wispStrengths: .zero,
         wispRadii: .zero
     )
-
-    /// Stored render scale, updated from the ``NebulaState`` machine in `update`.
-    /// Stored (not computed) because the host reads it every frame; the rolling
-    /// average lives in the state, so a read here is just a property load.
-    private(set) var renderScale: CGFloat = NebulaState.renderScaleHigh
 
     // MARK: - Init
 
@@ -104,7 +100,6 @@ final class MetalNebula: MetalVisualizer {
             self.rampLUT.upload(into: self.lutTexture)
         }
         self.uniforms = self.state.update(analysis: analysis, time: time, drawableSize: drawableSize)
-        self.renderScale = self.state.renderScale
     }
 
     func encode(into encoder: MTLRenderCommandEncoder) {
