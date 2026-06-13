@@ -142,6 +142,34 @@ actor BufferPump {
         self.task = nil
     }
 
+    /// Seek in place WITHOUT tearing the pump down: stop the current feed, flush
+    /// the player node's queued (old-position) buffers, reseek the shared decoder,
+    /// and resume feeding from the new position. Reuses this pump and its
+    /// converter, so a seek costs a feed restart plus one buffer's decode rather
+    /// than a full pump teardown and rebuild. The feed task is fully drained before
+    /// the reseek, so no in-flight read can schedule a stale buffer. The caller
+    /// mutes/plays the node around this; the node is left stopped with the first
+    /// new-position buffers queued.
+    func reschedule(to time: TimeInterval) async throws {
+        // Stop the feed loop fully (resume any slot wait so a parked loop can exit).
+        self.task?.cancel()
+        self.slotContinuation?.resume()
+        self.slotContinuation = nil
+        _ = await self.task?.result
+        self.task = nil
+
+        // Flush the node's queued buffers and reset its sample time, then reseek.
+        self.playerNode.stop()
+        try await self.decoder.seek(to: time)
+
+        // Restore the window and resume feeding from the new position.
+        self.availableSlots = BufferPump.windowSize
+        self.log.debug("pump.reschedule", ["id": self.id, "time": time])
+        self.task = Task { [weak self] in
+            try await self?.run()
+        }
+    }
+
     // MARK: - Private pump loop
 
     private func run() async throws {

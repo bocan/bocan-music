@@ -258,14 +258,11 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     // MARK: - Transport serialization
 
-    // play / pause / seek / stop all suspend partway through (pump.stop,
-    // pump.start, fade ramps). The actor is reentrant at those suspension points,
-    // so without a gate a second transport call interleaves and can tear down the
-    // pump the first one just built, leaving the node "playing" (position keeps
-    // advancing) with no audio. This async mutex serializes them: a second op
-    // waits for the first to finish. Internal callers (seek's resume, the
-    // device-change handler) use the `perform*` variants directly so they do not
-    // re-acquire and deadlock.
+    // play / pause / seek / stop suspend partway through, and the actor is
+    // reentrant at those await points, so without a gate a second transport call
+    // interleaves and strands the pump (node "playing", no audio). This async
+    // mutex serializes them; the `perform*` variants let internal callers (seek's
+    // resume, the device-change handler) run without re-acquiring and deadlocking.
     private var transportBusy = false
     private var transportWaiters: [CheckedContinuation<Void, Never>] = []
 
@@ -290,9 +287,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     func performPlay() async throws {
         guard let dec = decoder else { return }
-        // Already playing with a live pump: a redundant play() (a double-tap, or a
-        // remote command racing the on-screen button) is a no-op, not a pump
-        // rebuild that would hiccup the audio or, under reentrancy, strand it.
+        // Already playing with a live pump: a redundant play() (double-tap, or a
+        // remote command racing the button) is a no-op, not a pump rebuild.
         if self._state == .playing, self.pump != nil { return }
         let start = Date()
         self.log.debug("engine.play.start")
@@ -305,20 +301,11 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             throw ae
         }
 
-        // Resuming from pause WITH a live pump: the pump is already running and the
-        // player node's buffer FIFO is intact — just restart the node. Recreating
-        // the pump here causes a deadlock (pump.stop() awaits a task blocked in
-        // withCheckedContinuation waiting for dataPlayedBack callbacks that can
-        // never fire on a paused node) and, if multiple play() calls pile up while
-        // suspended, results in several concurrent pumps all writing to the same
-        // AVAudioPlayerNode, producing audible judder.
-        //
-        // The `pump != nil` guard matters: seek() stops and nils the pump while
-        // leaving the state at .paused. Without the guard, resuming after a paused
-        // seek took this fast path and restarted the node with no pump feeding it —
-        // silent, unrecoverable audio. With it, that case falls through to a fresh
-        // start (the pump is already nil, so its stop() below is a harmless no-op,
-        // not the paused-pump deadlock the warning above is about).
+        // Resuming from pause WITH a live pump: just restart the node (its FIFO is
+        // intact). Recreating the pump here would deadlock (pump.stop() awaits
+        // dataPlayedBack callbacks that never fire on a paused node). The
+        // `pump != nil` guard matters because a paused CUE seek nils the pump; that
+        // case falls through to a fresh start (the nil pump's stop() is a no-op).
         if self._state == .paused, self.pump != nil {
             // Fade in from the muted state we entered on pause.
             self.graph.playerNode.volume = 0
@@ -431,22 +418,49 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
         let wasPlaying = self._state == .playing
 
-        // Pause the player while we seek. Fade first to suppress the click
-        // produced by stopping mid-cycle.
-        if wasPlaying {
-            await self.fadePlayerNode(to: 0)
+        // CUE virtual track (a frame-limited segment): rebuild the pump so its
+        // frame-limit accounting resets cleanly. Rare path; keep the teardown.
+        if self.segmentEndTime != nil {
+            if wasPlaying {
+                await self.fadePlayerNode(to: 0)
+            }
+            self.graph.playerNode.stop()
+            await self.pump?.stop()
+            self.pump = nil
+            try await dec.seek(to: time)
+            self._currentTime = time
+            self._playerTimeOffset = 0
+            if wasPlaying {
+                try await self.performPlay()
+            }
+            return
         }
-        self.graph.playerNode.stop()
-        await self.pump?.stop()
-        self.pump = nil
 
-        // Seek the decoder.
-        try await dec.seek(to: time)
+        // No pump yet (seek before play, or after stop): just reposition the
+        // decoder; the next play() builds a fresh pump from here.
+        guard let pump = self.pump else {
+            try await dec.seek(to: time)
+            self._currentTime = time
+            self._playerTimeOffset = 0
+            return
+        }
+
+        // Ordinary track: reschedule the live pump in place instead of tearing it
+        // down, so the seek is a feed restart at the new position rather than a
+        // full stop + pump rebuild (the old path's audible gap). Mute first so the
+        // old position is not heard while the node is flushed; the new position
+        // fades in. When paused, the node is left stopped with the new buffers
+        // queued, and resume() plays them via its fast path (the pump stays alive,
+        // so it is not nil).
+        if wasPlaying {
+            self.graph.playerNode.volume = 0
+        }
+        try await pump.reschedule(to: time)
         self._currentTime = time
         self._playerTimeOffset = 0
-
         if wasPlaying {
-            try await self.performPlay()
+            self.graph.playerNode.play()
+            await self.fadePlayerNode(to: 1)
         }
     }
 
