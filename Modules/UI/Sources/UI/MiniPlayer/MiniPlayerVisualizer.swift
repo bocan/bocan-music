@@ -57,7 +57,9 @@ struct MiniPlayerVisualizer: View {
                     .accessibilityHidden(true)
             }
 
-            // Hover-revealed mode/palette steppers, top-right. Only when the live
+            // Hover-revealed mode/palette steppers, top-left. The mini player's own
+            // chrome pill (layout / pin / dismiss) sits at the top-right, so the
+            // steppers go on the left to stay clear of it. Only shown when the live
             // visualizer is running (reduce motion shows a static tint instead).
             if !self.reduceMotion {
                 VisualizerControlOverlay(
@@ -66,7 +68,7 @@ struct MiniPlayerVisualizer: View {
                     compact: true,
                     refreshTrigger: self.overlayTrigger
                 )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
 
             // Overlay gradient + controls (identical to MiniPlayerSquare)
