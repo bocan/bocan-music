@@ -36,16 +36,16 @@ public final class MiniPlayerViewModel: ObservableObject {
         var defaultWindowSize: CGSize {
             switch self {
             case .strip:
-                CGSize(width: 420, height: 72)
+                CGSize(width: 420, height: 58)
 
             case .compact:
-                CGSize(width: 450, height: 145)
+                CGSize(width: 585, height: 145)
 
             case .square:
-                CGSize(width: 310, height: 310)
+                CGSize(width: 372, height: 372)
 
             case .visualizer:
-                CGSize(width: 310, height: 310)
+                CGSize(width: 372, height: 372)
             }
         }
 
