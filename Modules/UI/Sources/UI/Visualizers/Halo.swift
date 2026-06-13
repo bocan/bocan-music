@@ -26,12 +26,16 @@ public final class Halo: Visualizer {
     static let rippleLifetime: TimeInterval = 1.2
     static let baseRadiusFraction: CGFloat = 0.32
     static let extentFraction: CGFloat = 0.18
-    private static let breathingDepth: CGFloat = 0.06
+    /// Internal (was private) so ``MetalHalo`` reuses the same breathing depth
+    /// rather than redefining it; behaviour is unchanged.
+    static let breathingDepth: CGFloat = 0.06
     private static let rmsAttack: Float = 0.15
     private static let rmsAttackReduced: Float = 0.03
     private static let bandAttack: Float = 0.12
     private static let bandAttackReduced: Float = 0.04
-    private static let maxDeltaTime: TimeInterval = 0.1
+    /// Internal (was private) so ``MetalHalo`` reuses the same dt clamp ceiling
+    /// rather than redefining it; behaviour is unchanged.
+    static let maxDeltaTime: TimeInterval = 0.1
 
     // MARK: - State (internal for testing)
 
