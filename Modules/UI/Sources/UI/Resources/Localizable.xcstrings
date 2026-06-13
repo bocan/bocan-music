@@ -9776,6 +9776,22 @@
         }
       }
     },
+    "Nebula" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nebula"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñéƀúĺá one"
+          }
+        }
+      }
+    },
     "Never" : {
       "localizations" : {
         "en" : {
@@ -13248,6 +13264,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŕéƥóŕţš ƒŕóḿ çŕášĥéš áŕé áváíĺáƀĺé ţĥé ñéxţ đáý, áƒţéŕ ḿáçÓŠ ƥŕóçéššéš ţĥéḿ óvéŕñíĝĥţ. one two three four five six"
+          }
+        }
+      }
+    },
+    "Requires Metal graphics support, which this Mac does not provide." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requires Metal graphics support, which this Mac does not provide."
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéqúíŕéš Ḿéţáĺ ĝŕáƥĥíçš šúƥƥóŕţ, ŵĥíçĥ ţĥíš Ḿáç đóéš ñóţ ƥŕóvíđé. one two three four five"
           }
         }
       }
@@ -16761,6 +16793,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ÚŠƁ one"
+          }
+        }
+      }
+    },
+    "Unavailable while Reduce Motion is on." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable while Reduce Motion is on."
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Úñáváíĺáƀĺé ŵĥíĺé Ŕéđúçé Ḿóţíóñ íš óñ. one two three"
           }
         }
       }
