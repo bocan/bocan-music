@@ -228,6 +228,36 @@ struct EngineTransportTests {
         await engine.stop()
     }
 
+    /// Seeking while playing reschedules the live pump in place (same instance)
+    /// rather than tearing it down and rebuilding, and stays playing at the new
+    /// position.
+    @Test(
+        "seek while playing reschedules the same pump in place",
+        .enabled(if: audioOutputAvailable())
+    )
+    func seekWhilePlayingReschedulesInPlace() async throws {
+        let engine = AudioEngine()
+        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        try await engine.load(url)
+        try await engine.play()
+        try await Task.sleep(for: .milliseconds(100))
+        let pumpBefore = await engine.pump
+
+        // Seek to 0.1 s: the 0.9 s remaining is beyond the pump's 0.8 s read-ahead
+        // window, so it does not immediately hit EOF and the engine stays playing.
+        try await engine.seek(to: 0.1)
+
+        let isPlaying = await engine.isPlaying
+        #expect(isPlaying, "Engine should stay playing across a seek")
+        let pumpAfter = await engine.pump
+        #expect(pumpAfter != nil, "Pump must stay live across a seek")
+        #expect(pumpAfter === pumpBefore, "Seek should reschedule the same pump, not rebuild it")
+        let t = await engine.currentTime
+        #expect(t >= 0.1 - 0.05, "currentTime should reflect the seek target, got \(t)")
+
+        await engine.stop()
+    }
+
     // MARK: - No duplicate states
 
     @Test("PlaybackState stream: no consecutive duplicates")
