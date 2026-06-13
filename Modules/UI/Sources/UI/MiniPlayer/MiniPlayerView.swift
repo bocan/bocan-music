@@ -28,12 +28,20 @@ public struct MiniPlayerView: View {
 
     public var body: some View {
         self.content
-            // Spring-animate layout switches; skipped when reduce-motion is active.
+            // Each layout has a fixed window size, and switching snaps to it. The
+            // window uses .windowResizability(.contentSize), so the content's frame
+            // drives the window size; a flexible (maxWidth/maxHeight .infinity) frame
+            // here left the window stuck at the previous layout's size (a strip shown
+            // as a square, a compact too short for its controls). The spring animates
+            // the frame change, which the window follows; skipped under reduce motion.
+            .frame(
+                width: self.vm.layout.defaultWindowSize.width,
+                height: self.vm.layout.defaultWindowSize.height
+            )
             .animation(
                 self.reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.8),
                 value: self.vm.layout
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .adaptiveMaterial()
             .background(MiniPlayerWindowSetup().frame(width: 0, height: 0).allowsHitTesting(false))
             .onAppear {
@@ -217,7 +225,6 @@ public struct MiniPlayerView: View {
     private var layoutButton: some View {
         Button {
             self.vm.cycleLayout()
-            self.resizeWindow(for: self.vm.layout)
         } label: {
             Image(systemName: self.vm.layout.icon)
                 .scaledSystemFont(size: 11, weight: .medium)
@@ -287,24 +294,6 @@ public struct MiniPlayerView: View {
             $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
         }) else { return }
         WindowFade.fadeIn(window)
-    }
-
-    private func resizeWindow(for layout: MiniPlayerViewModel.Layout) {
-        guard let win = MiniPlayerWindowTracker.shared.window else { return }
-        let size = layout.defaultWindowSize
-        let targetSize = NSSize(width: size.width, height: size.height)
-        guard !self.reduceMotion else {
-            win.setContentSize(targetSize)
-            return
-        }
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.35
-            // Approximate spring(response: 0.35, dampingFraction: 0.8) — slight
-            // overshoot on P2/P3 gives the same barely-perceptible spring feel
-            // that the SwiftUI .animation applies to the content inside the window.
-            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.2, 0.64, 1.0)
-            win.animator().setContentSize(targetSize)
-        }
     }
 
     // MARK: - Color scheme
