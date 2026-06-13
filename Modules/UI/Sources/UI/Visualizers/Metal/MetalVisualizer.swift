@@ -116,7 +116,7 @@ enum MetalVisualizerFactory {
     /// mode. Each conversion phase (12.7 onward) flips its own arm.
     static func supports(_ mode: VisualizerMode) -> Bool {
         switch mode {
-        case .oscilloscope, .cascade, .spectrumBars, .halo:
+        case .oscilloscope, .cascade, .spectrumBars, .halo, .starfield:
             true
 
         // Conversion phases add `case .<mode>: true` here.
@@ -155,6 +155,11 @@ enum MetalVisualizerFactory {
         case .halo:
             self.instantiate(mode: mode) {
                 try MetalHalo(device: device, pixelFormat: pixelFormat, config: config)
+            }
+
+        case .starfield:
+            self.instantiate(mode: mode) {
+                try MetalStarfield(device: device, pixelFormat: pixelFormat, config: config)
             }
 
         default:
