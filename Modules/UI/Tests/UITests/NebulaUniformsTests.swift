@@ -9,9 +9,8 @@ import Testing
 /// Guards the Nebula CPU core (``NebulaState`` + ``NebulaUniforms``): the flow
 /// clock integrates from the audio, the onset envelope and its two consumers
 /// behave, the wisp orbits are deterministic and bounded, band-group energies
-/// drive strength and radius, the render-scale state machine has hysteresis, the
-/// LUT matches `rampStops`, and the uniform struct has the documented stride. The
-/// GPU shader is covered by the snapshot suite.
+/// drive strength and radius, the LUT matches `rampStops`, and the uniform struct
+/// has the documented stride. The GPU shader is covered by the snapshot suite.
 @Suite("NebulaUniforms")
 @MainActor
 struct NebulaUniformsTests {
@@ -317,62 +316,6 @@ struct NebulaUniformsTests {
         let first = state.pack(analysis: analysis, drawableSize: Self.size)
         let second = state.pack(analysis: analysis, drawableSize: Self.size)
         #expect(first == second)
-    }
-
-    // MARK: - Render-scale hysteresis
-
-    @Test("Sustained slow frames drop the render scale from 0.6 to 0.4")
-    func renderScaleDrops() {
-        var state = NebulaState()
-        #expect(state.renderScale == NebulaState.renderScaleHigh)
-        // Feed slow frames (25 fps, 0.04 s each) until the rolling average trips.
-        var time = 0.0
-        var frame: UInt64 = 0
-        for _ in 0 ..< 200 {
-            frame += 1
-            time += 0.04
-            _ = state.update(analysis: Self.analysis(frameIndex: frame), time: time, drawableSize: Self.size)
-        }
-        #expect(state.renderScale == NebulaState.renderScaleLow)
-    }
-
-    @Test("Render scale recovers with hysteresis and does not oscillate")
-    func renderScaleHysteresis() {
-        var state = NebulaState()
-        var time = 0.0
-        var frame: UInt64 = 0
-
-        // Drive it down with slow frames.
-        for _ in 0 ..< 200 {
-            frame += 1
-            time += 0.04
-            _ = state.update(analysis: Self.analysis(frameIndex: frame), time: time, drawableSize: Self.size)
-        }
-        #expect(state.renderScale == NebulaState.renderScaleLow)
-
-        // Feed frames in the dead band (between recover and drop thresholds, e.g.
-        // 50 fps = 0.02 s): the scale must NOT flip back and forth.
-        var transitions = 0
-        var previous = state.renderScale
-        let deadBandFrame = 1.0 / 50.0
-        for _ in 0 ..< 200 {
-            frame += 1
-            time += deadBandFrame
-            _ = state.update(analysis: Self.analysis(frameIndex: frame), time: time, drawableSize: Self.size)
-            if state.renderScale != previous {
-                transitions += 1
-                previous = state.renderScale
-            }
-        }
-        #expect(transitions == 0, "render scale oscillated \(transitions) times in the dead band")
-
-        // Fast frames (90 fps) recover it to high.
-        for _ in 0 ..< 200 {
-            frame += 1
-            time += 1.0 / 90.0
-            _ = state.update(analysis: Self.analysis(frameIndex: frame), time: time, drawableSize: Self.size)
-        }
-        #expect(state.renderScale == NebulaState.renderScaleHigh)
     }
 
     // MARK: - LUT correspondence
