@@ -166,6 +166,41 @@ struct EngineTransportTests {
         #expect(t == 0.0, "currentTime should reset to 0 after stop")
     }
 
+    // MARK: - Reentrancy: concurrent transport calls
+
+    /// A burst of overlapping `play()`/`seek()` calls (the double-invocation that
+    /// the logs showed) must serialize through the transport gate: no deadlock,
+    /// and the node must not be left "playing" with a torn-down pump (which read
+    /// as silent audio with an advancing progress bar). We assert the engine
+    /// settles to `.playing` with a live pump and that a follow-up `stop()`
+    /// returns promptly (it would hang if the gate had deadlocked).
+    @Test(
+        "concurrent play/seek serialize without deadlock or a stranded pump",
+        .enabled(if: audioOutputAvailable())
+    )
+    func concurrentTransportSerializes() async throws {
+        let engine = AudioEngine()
+        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        try await engine.load(url)
+
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0 ..< 6 {
+                group.addTask { try? await engine.play() }
+                group.addTask { try? await engine.seek(to: 0.2) }
+            }
+            await group.waitForAll()
+        }
+        // Settle to a known state after the burst.
+        try await engine.play()
+
+        let isPlaying = await engine.isPlaying
+        #expect(isPlaying, "Engine should be playing after the burst")
+        let pump = await engine.pump
+        #expect(pump != nil, "A live pump must remain (not stranded) after concurrent play/seek")
+
+        await engine.stop() // returns promptly only if the gate did not deadlock
+    }
+
     // MARK: - No duplicate states
 
     @Test("PlaybackState stream: no consecutive duplicates")
