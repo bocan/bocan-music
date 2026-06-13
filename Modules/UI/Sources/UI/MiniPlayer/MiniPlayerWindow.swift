@@ -19,8 +19,10 @@ public struct MiniPlayerWindow: Scene {
         Window("Mini Player", id: "mini") {
             MiniPlayerView(vm: self.vm)
         }
-        .windowResizability(.contentSize)
-        .defaultSize(width: 420, height: 72)
+        // .contentMinSize (not .contentSize) keeps the window user-resizable: the
+        // content sets the minimum, and the per-layout snap in MiniPlayerView sticks.
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 585, height: 145)
         .defaultPosition(.bottomTrailing)
         .windowStyle(.hiddenTitleBar)
         // SwiftUI's `Window` scene auto-injects a "Mini Player" item into the

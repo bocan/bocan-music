@@ -28,16 +28,13 @@ public struct MiniPlayerView: View {
 
     public var body: some View {
         self.content
-            // Each layout has a fixed window size, and switching snaps to it. The
-            // window uses .windowResizability(.contentSize), so the content's frame
-            // drives the window size; a flexible (maxWidth/maxHeight .infinity) frame
-            // here left the window stuck at the previous layout's size (a strip shown
-            // as a square, a compact too short for its controls). The spring animates
-            // the frame change, which the window follows; skipped under reduce motion.
-            .frame(
-                width: self.vm.layout.defaultWindowSize.width,
-                height: self.vm.layout.defaultWindowSize.height
-            )
+            // Layouts fill the window so it stays user-resizable; switching snaps the
+            // window to the layout's size via resizeWindow(for:). The window uses
+            // .windowResizability(.contentMinSize) so the manual snap sticks and the
+            // user can still drag-resize, unlike .contentSize, which pinned the window
+            // to the content's fitting size and fought the snap (a strip shown as a
+            // square, a compact too short). Spring-animate the content transition.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(
                 self.reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.8),
                 value: self.vm.layout
@@ -54,6 +51,10 @@ public struct MiniPlayerView: View {
                 // main thread long enough to starve the CoreAudio render thread.
                 // The fade (#330) runs inside the deferred tick for the same reason.
                 DispatchQueue.main.async {
+                    // Snap the window to the restored layout's size (instant: it is
+                    // masked by the open fade), in case the saved layout differs from
+                    // the scene's defaultSize.
+                    self.resizeWindow(for: self.vm.layout, animated: false)
                     if let win = MainWindowTracker.shared.resolveWindow() {
                         WindowFade.orderOut(win)
                     }
@@ -225,6 +226,7 @@ public struct MiniPlayerView: View {
     private var layoutButton: some View {
         Button {
             self.vm.cycleLayout()
+            self.resizeWindow(for: self.vm.layout)
         } label: {
             Image(systemName: self.vm.layout.icon)
                 .scaledSystemFont(size: 11, weight: .medium)
@@ -294,6 +296,26 @@ public struct MiniPlayerView: View {
             $0.title == "Mini Player" || $0.identifier?.rawValue == "mini"
         }) else { return }
         WindowFade.fadeIn(window)
+    }
+
+    /// Snaps the mini-player window to `layout`'s default size. Animated on a user
+    /// layout switch; instant on open (the fade hides it). `.contentMinSize` keeps
+    /// the new size from being overridden, so it sticks while staying resizable.
+    private func resizeWindow(for layout: MiniPlayerViewModel.Layout, animated: Bool = true) {
+        guard let win = MiniPlayerWindowTracker.shared.window else { return }
+        let size = layout.defaultWindowSize
+        let targetSize = NSSize(width: size.width, height: size.height)
+        guard animated, !self.reduceMotion else {
+            win.setContentSize(targetSize)
+            return
+        }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.35
+            // Approximate spring(response: 0.35, dampingFraction: 0.8): a slight
+            // overshoot matches the SwiftUI spring on the content inside the window.
+            ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.2, 0.64, 1.0)
+            win.animator().setContentSize(targetSize)
+        }
     }
 
     // MARK: - Color scheme
