@@ -9,6 +9,7 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
     case halo
     case cascade
     case starfield
+    case nebula
 
     /// Human-readable name shown in the settings picker.
     public var displayName: String {
@@ -27,6 +28,9 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .starfield:
             L10n.string("Starfield")
+
+        case .nebula:
+            L10n.string("Nebula")
         }
     }
 
@@ -47,6 +51,15 @@ public enum VisualizerMode: String, CaseIterable, Sendable {
 
         case .starfield:
             "sparkles"
+
+        case .nebula:
+            "hurricane"
         }
+    }
+
+    /// Modes with no Canvas renderer: selectable only with a Metal device and
+    /// Reduce Motion off. The host substitutes Spectrum Bars otherwise.
+    public var requiresMetal: Bool {
+        self == .nebula
     }
 }

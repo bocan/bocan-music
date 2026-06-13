@@ -9,15 +9,34 @@ public struct VisualizerSettingsView: View {
     @AppStorage("visualizer.fpsCap") private var fpsCap: FPSCap = .sixty
     @AppStorage("visualizer.sensitivityRaw") private var sensitivityRaw = 1.0
     @AppStorage("visualizer.simplifyOnBattery") private var simplifyOnBattery = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
+
+    /// Why `mode` cannot be selected right now, or `nil` when it is available.
+    /// Only Metal-only modes (Nebula) are ever unavailable; the Metal-absent
+    /// reason wins over Reduce Motion when both apply.
+    private func unavailabilityReason(for mode: VisualizerMode) -> String? {
+        guard mode.requiresMetal else { return nil }
+        if MetalSupport.device == nil {
+            return L10n.string("Requires Metal graphics support, which this Mac does not provide.")
+        }
+        if self.reduceMotion {
+            return L10n.string("Unavailable while Reduce Motion is on.")
+        }
+        return nil
+    }
 
     public var body: some View {
         Form {
             Section(L10n.string("Display")) {
                 Picker(L10n.string("Mode"), selection: self.$mode) {
                     ForEach(VisualizerMode.allCases, id: \.self) { vizMode in
-                        Label(vizMode.displayName, systemImage: vizMode.symbolName).tag(vizMode)
+                        let reason = self.unavailabilityReason(for: vizMode)
+                        Label(vizMode.displayName, systemImage: vizMode.symbolName)
+                            .tag(vizMode)
+                            .disabled(reason != nil)
+                            .help(reason ?? "")
                     }
                 }
                 .pickerStyle(.radioGroup)

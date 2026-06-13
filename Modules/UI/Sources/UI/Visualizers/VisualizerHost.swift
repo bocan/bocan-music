@@ -160,7 +160,8 @@ public struct VisualizerHost: View {
         guard
             let device = MetalSupport.device,
             !UserDefaults.standard.bool(forKey: "visualizer.forceCanvas"),
-            MetalVisualizerFactory.supports(self.vm.mode) else { return }
+            MetalVisualizerFactory.supports(self.vm.mode),
+            !(self.vm.mode.requiresMetal && self.reduceMotion) else { return }
         let config = MetalRendererConfig(
             palette: self.vm.palette,
             reduceMotion: self.reduceMotion,
@@ -205,6 +206,15 @@ public struct VisualizerHost: View {
 
         case .starfield:
             self.renderer = Starfield(
+                palette: self.vm.palette,
+                reduceMotion: self.reduceMotion,
+                reduceTransparency: self.reduceTransparency
+            )
+
+        case .nebula:
+            // Nebula is Metal-only; the Canvas fallback used when Metal is
+            // unavailable, forced off, or Reduce Motion is on is the calm Spectrum Bars.
+            self.renderer = SpectrumBars(
                 palette: self.vm.palette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
