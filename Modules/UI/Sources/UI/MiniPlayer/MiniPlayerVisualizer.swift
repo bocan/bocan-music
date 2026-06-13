@@ -13,6 +13,7 @@ struct MiniPlayerVisualizer: View {
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
     @State private var dragPosition: Double?
+    @State private var overlayTrigger = 0
 
     private var reduceMotion: Bool {
         self.systemReduceMotion || self.appReduceMotion
@@ -56,6 +57,18 @@ struct MiniPlayerVisualizer: View {
                     .accessibilityHidden(true)
             }
 
+            // Hover-revealed mode/palette steppers, top-right. Only when the live
+            // visualizer is running (reduce motion shows a static tint instead).
+            if !self.reduceMotion {
+                VisualizerControlOverlay(
+                    vm: self.visualizerVM,
+                    reduceMotion: self.reduceMotion,
+                    compact: true,
+                    refreshTrigger: self.overlayTrigger
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
+
             // Overlay gradient + controls (identical to MiniPlayerSquare)
             VStack(spacing: 0) {
                 Spacer()
@@ -74,6 +87,7 @@ struct MiniPlayerVisualizer: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .onHover { _ in self.overlayTrigger += 1 }
         .onAppear { self.visualizerVM.start() }
         .onDisappear { self.visualizerVM.stop() }
     }
