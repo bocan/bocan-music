@@ -5,6 +5,64 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0](https://github.com/bocan/bocan-music/compare/v1.9.0...v1.10.0) (2026-06-14)
+
+
+### ### Added
+
+* **ui:** add Cascade scrolling spectrogram visualizer ([5f82082](https://github.com/bocan/bocan-music/commit/5f82082538a2d96417641fb2995209df3c234cdf))
+* **ui:** add Halo radial spectrum visualizer with beat ripples ([90b1d55](https://github.com/bocan/bocan-music/commit/90b1d5567926be27c25098228198434dcf60e69c))
+* **ui:** add in-visualizer mode and palette steppers ([a059283](https://github.com/bocan/bocan-music/commit/a0592838111b47f2875af94b028c67c93b012fe8))
+* **ui:** add MetalVisualizer protocol and runtime shader library ([51de5ee](https://github.com/bocan/bocan-music/commit/51de5ee4e303143c7ddbfd432cb9fe6ee6a7de8a))
+* **ui:** add MTKView host and route VisualizerHost through the Metal factory ([3147731](https://github.com/bocan/bocan-music/commit/3147731ceae33778a9a704cac21bd46a8b9f8a0a))
+* **ui:** add Nebula visualizer on Metal (phases 12.5, 12.12) ([5f94710](https://github.com/bocan/bocan-music/commit/5f94710a78c54d8673a5de983c5796b0bbac93eb))
+* **ui:** add OnsetEnvelope, PolylineRibbon, and FrameRing helpers ([9b46325](https://github.com/bocan/bocan-music/commit/9b46325181cbfb22f930adf9cc46b9bd46f38cfe))
+* **ui:** add Starfield visualizer (frequency-coloured warp field) ([1cc84ab](https://github.com/bocan/bocan-music/commit/1cc84abeca64ec6304fc3694dd2fd2e719dcb33e))
+* **ui:** add trackpad haptics for love, rating, seek, volume, and end of queue ([c3d581c](https://github.com/bocan/bocan-music/commit/c3d581c3f740974a9786c6fc770198ff633a264d)), closes [#330](https://github.com/bocan/bocan-music/issues/330)
+* **ui:** cross-fade the mini player and main window swap ([5126e08](https://github.com/bocan/bocan-music/commit/5126e0849c477a6ae3639ee2dc7ca4e131cbef85)), closes [#330](https://github.com/bocan/bocan-music/issues/330)
+* **ui:** derive Recent Scrobbles filter segments from history ([428b57d](https://github.com/bocan/bocan-music/commit/428b57d58b0c559c9ae29332dd6e3871cee9e8ce))
+* **ui:** raise spectrum bar height so loud passages reach the top ([870d891](https://github.com/bocan/bocan-music/commit/870d8913df88dd2c6459a73819f11096305c9c81))
+* **ui:** render Cascade through Metal (phase 12.8) ([951168a](https://github.com/bocan/bocan-music/commit/951168abf82412dbc0a7be48969ae27279690555))
+* **ui:** render Halo through Metal (phase 12.10) ([50add38](https://github.com/bocan/bocan-music/commit/50add38f5f8168d91722f32dd0f3246c70ccf86f))
+* **ui:** render Spectrum Bars through Metal (phase 12.9) ([160a38c](https://github.com/bocan/bocan-music/commit/160a38c2b4ed044f7c6a55ecf2c2afb6b16a6689))
+* **ui:** render Starfield through Metal (phase 12.11) ([47958d7](https://github.com/bocan/bocan-music/commit/47958d75e8cfb5fe1d4b7c432db3fc6ab7193a5e))
+* **ui:** render the Oscilloscope through Metal (phase 12.7) ([639d12b](https://github.com/bocan/bocan-music/commit/639d12bf92b7b538446700b2940622fcb15f60f9))
+* **ui:** soften spectrum bar display gain to 1.1 ([4a4c9f9](https://github.com/bocan/bocan-music/commit/4a4c9f9f71f01078d29e94af972ecd9a3b9db012))
+* **ui:** sync Up Next queue with live manual playlist edits ([e67df5e](https://github.com/bocan/bocan-music/commit/e67df5e13893231a4e5d8c5541677d7136cd8452))
+* **ui:** visualizer Analysis v2, PaletteResolver, and Drift/Thermal palettes ([68dab85](https://github.com/bocan/bocan-music/commit/68dab85dda07b6433b49a9338adaea9ffbe5a614))
+
+
+### ### Fixed
+
+* **app:** clear stale recent-scrobbles sheet flag at launch ([929ccea](https://github.com/bocan/bocan-music/commit/929ccea37fd2cc949e4597fd23b8a97fa962dedd))
+* **audio:** rebuild the pump when resuming after a paused seek ([6bb3b2f](https://github.com/bocan/bocan-music/commit/6bb3b2f9e7352cd7f5851c5cc833b7f8df195ed5))
+* **audio:** reschedule the pump in place on seek for a seamless jump ([50ff84f](https://github.com/bocan/bocan-music/commit/50ff84faa71b661bf6bb009c24661ee6ae5e3d11))
+* **audio:** serialize transport ops to stop the silent-playback race ([b5eefbd](https://github.com/bocan/bocan-music/commit/b5eefbd2338467fc04427788ebe529131c667cd9))
+* **observability:** scrub Subsonic and Last.fm wire-format auth params ([fbb5770](https://github.com/bocan/bocan-music/commit/fbb5770e7d18a00f26894b2ad0bbd2d0a0c81c46))
+* **observability:** suppress unused-result warning in _removeSubscriber ([ef5199f](https://github.com/bocan/bocan-music/commit/ef5199f6235da90ea8eacd0f041f2afe402326e8))
+* **scrobble:** roll up queue row when ignored resolves last submission ([3fd78ac](https://github.com/bocan/bocan-music/commit/3fd78ac10ce636c218ca1b2d5ec9c2a9c905655b))
+* **ui:** centre the compact mini-player transport and scrubber ([8c934b6](https://github.com/bocan/bocan-music/commit/8c934b6dffe2f445ad853791f0739537fb3fed3f))
+* **ui:** clarify Recent Scrobbles empty-state copy ([4dde406](https://github.com/bocan/bocan-music/commit/4dde4065a25588342f5381ac1928ed5e2ab7e404))
+* **ui:** give each mini-player layout a fixed window size ([1da8b49](https://github.com/bocan/bocan-music/commit/1da8b496e8aac1beefcaefc3d4d04afbbe7cfa3b))
+* **ui:** harden mini-player swap against a stale main-window reference ([d72098e](https://github.com/bocan/bocan-music/commit/d72098efcdbfce97a9357eb27a18406f575c7ee1))
+* **ui:** keep the mini player resizable, snap to size on layout switch ([cd11783](https://github.com/bocan/bocan-music/commit/cd1178347feb0b33713463a2b67450d69deeded0))
+* **ui:** make the mini-player layout snap stick by dropping frame autosave ([3582c6e](https://github.com/bocan/bocan-music/commit/3582c6e72c1fcd6828ea779d1ac5e3510de5ffbe))
+* **ui:** mark SubsonicSongDrag.payloads(from:NSDraggingInfo) @MainActor ([185bc30](https://github.com/bocan/bocan-music/commit/185bc3050b2aab5b83f6e8c6484123a39a7e2965))
+* **ui:** move the mini-player visualizer steppers to the top-left ([d0c9e6f](https://github.com/bocan/bocan-music/commit/d0c9e6f649125b2da98a008f63c56af398b64f3f))
+* **ui:** render Nebula at native resolution to stop the live collapse ([7761232](https://github.com/bocan/bocan-music/commit/7761232ace54c5a916c4841cc9640014c8bbe980))
+* **ui:** show Subsonic submission status in Recent Scrobbles ([50115b2](https://github.com/bocan/bocan-music/commit/50115b2f35e439e5c13a9b5d84b9187855d2d8f6))
+* **ui:** silence WindowFade strict-concurrency warnings in the fade completion ([916613f](https://github.com/bocan/bocan-music/commit/916613f46f7e56f622eda69c6f23bf95aba027a9))
+* **ui:** start Recent Scrobbles observation from any presenting surface ([8bbc60f](https://github.com/bocan/bocan-music/commit/8bbc60f3840f37ba796b71e33ae40538297cb417))
+* **ui:** step Metal spectrum peak markers on the analysis cadence ([e1aa563](https://github.com/bocan/bocan-music/commit/e1aa5638dbf4c061a545d96a78e8ad5a2f85dcb2))
+* **ui:** stop the audio-tap publish storm starving the Metal draw loop ([9ba48a3](https://github.com/bocan/bocan-music/commit/9ba48a36d82b6f67a88b3d788d5d5774c6b1a78b))
+* **ui:** stop the Metal watchdog from auto-simplifying a fast renderer ([3c898ee](https://github.com/bocan/bocan-music/commit/3c898ee8c898ccf763eb8e794b3e11d3dfbfd6eb))
+
+
+### ### Changed
+
+* **ui:** drop Halo conic gradient that triggered FPS auto-simplify ([1ce0a11](https://github.com/bocan/bocan-music/commit/1ce0a11ffb5a34bb0cfee468f8eb5a1559762656))
+* **ui:** extract ColorPacking and PaletteRampLUT from Cascade ([fc4dc47](https://github.com/bocan/bocan-music/commit/fc4dc471ba6c8022da2d7de7078ce29d33646a18))
+
 ## [1.9.0](https://github.com/bocan/bocan-music/compare/v1.8.0...v1.9.0) (2026-06-09)
 
 
