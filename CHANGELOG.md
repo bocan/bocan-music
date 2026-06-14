@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.10.0](https://github.com/bocan/bocan-music/compare/v1.9.0...v1.10.0) (2026-06-14)
 
+Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is drawn on the GPU and stays buttery smooth even on the busiest passages. Six visualizers now ship in the box: classic Spectrum Bars and Oscilloscope alongside four new ones, the scrolling Cascade spectrogram, the beat-rippling Halo, a frequency-warped Starfield, and the slow-burn Nebula. Cycle modes and color palettes right inside the visualizer, and let the music paint the window.
 
 ### ### Added
 
