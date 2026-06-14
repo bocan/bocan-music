@@ -54,6 +54,13 @@ struct MiniPlayerCompact: View {
             self.transport
 
             self.scrubberStack
+
+            // Balances the title's greedy leading frame above. It must be the SAME
+            // construct (.frame(maxWidth: .infinity)), not a Spacer: a Spacer is a
+            // weaker claim and collapses next to a .frame(maxWidth: .infinity)
+            // sibling, leaving the controls pinned right. Two equal frames split the
+            // slack 50/50, centring the transport + scrubber group.
+            Color.clear.frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
