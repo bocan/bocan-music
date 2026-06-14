@@ -21,7 +21,7 @@
   },
   {
     "title": "Visualisers that watch the signal.",
-    "body": "Six GPU visualisers on Metal: spectrum bars, oscilloscope, a breathing Halo ring, a Cascade spectrogram, a Starfield warp field, and a Nebula gas cloud that churns with the bass and ripples on every beat. Dockable or full-screen, six colour palettes, locked to the audio you're actually hearing. Hover to switch mode or palette right on the visualiser."
+    "body": "Six GPU visualisers on Metal: spectrum bars, oscilloscope, a breathing Halo ring, a Cascade spectrogram, a Starfield warp field, and a Nebula gas cloud that churns with the bass and ripples on every beat. Moving them onto the GPU frees the CPU for the audio and keeps them smooth at Retina resolution, so Nebula's churn is a live shader, not a looping texture. Dockable or full-screen, six colour palettes, locked to the audio you're actually hearing. Hover to switch mode or palette right on the visualiser."
   },
   {
     "title": "Lyrics, scrolling, synced.",
