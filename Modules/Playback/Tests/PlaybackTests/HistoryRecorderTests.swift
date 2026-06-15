@@ -87,7 +87,7 @@ struct HistoryRecorderTests {
         let db = await makeDatabase()
         try await Self.insertTrack(id: 42, in: db)
         try await Self.insertTrack(id: 43, in: db)
-        let recorder = await PlayHistoryRecorder(database: db, scrobbleSink: sink)
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
         await recorder.trackDidStart(trackID: 42, duration: 180)
         await recorder.trackDidEndNaturally()
         // After end, starting another track must not double-scrobble the previous one.
@@ -106,7 +106,7 @@ struct HistoryRecorderTests {
         let sink = CapturingScrobbleSink()
         let db = await makeDatabase()
         try await Self.insertTrack(id: 99, in: db)
-        let recorder = await PlayHistoryRecorder(database: db, scrobbleSink: sink)
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
         await recorder.trackDidStart(trackID: 99, duration: 200)
         // nowPlaying is dispatched fire-and-forget; yield to let the task run.
         await Task.yield()
@@ -124,7 +124,7 @@ struct HistoryRecorderTests {
             title: "Song", artist: "Artist",
             duration: 180
         )
-        let recorder = await PlayHistoryRecorder(database: db, scrobbleSink: sink)
+        let recorder = PlayHistoryRecorder(database: db, scrobbleSink: sink)
         await recorder.trackDidStart(subsonic: context)
         await Task.yield()
         let nowPlaying = await sink.nowPlayingSubsonicCalls
