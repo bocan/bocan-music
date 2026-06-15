@@ -156,8 +156,8 @@ struct FFmpegDecoderTests {
 
     @Test("remote inputs are restricted to safe network protocols")
     func allowedRemoteProtocolsRestrictToNetwork() {
-        let allowed = try? #require(FFmpegDecoder.allowedRemoteProtocols(isRemote: true))
-        let protocols = Set((allowed ?? "").split(separator: ",").map(String.init))
+        let allowed = FFmpegDecoder.allowedRemoteProtocols(isRemote: true) ?? ""
+        let protocols = Set(allowed.split(separator: ",").map(String.init))
         // Network protocols a legitimate http/https stream needs.
         #expect(protocols.isSuperset(of: ["http", "https", "tls", "tcp"]))
         // The dangerous, local-file-reaching protocols must NOT be allowed.

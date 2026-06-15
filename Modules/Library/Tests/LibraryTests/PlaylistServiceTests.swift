@@ -28,8 +28,7 @@ struct PlaylistServiceTests {
             updatedAt: now
         )
         let repo = TrackRepository(database: db)
-        let id = try await repo.insert(track)
-        return id ?? -1
+        return try await repo.insert(track)
     }
 
     private func tracks(_ count: Int, in db: Persistence.Database) async throws -> [Int64] {

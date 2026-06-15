@@ -22,8 +22,8 @@ struct LastFmProviderTests {
     }
 
     @Test("error code 9 surfaces as invalidCredentials")
-    func invalidSessionError() async throws {
-        try await withStubLock {
+    func invalidSessionError() async {
+        await withStubLock {
             StubProtocol.reset()
             StubProtocol.registerJSON(matching: "audioscrobbler.com", status: 200, json: [
                 "error": 9, "message": "Invalid session key",
@@ -74,8 +74,8 @@ struct LastFmProviderTests {
     }
 
     @Test("submit with no session throws notAuthenticated")
-    func unauthSubmit() async throws {
-        try await withStubLock {
+    func unauthSubmit() async {
+        await withStubLock {
             StubProtocol.reset()
             let provider = LastFmProvider(config: self.config, http: URLSession.stubbed, credentials: StubLastFmCreds())
             await #expect(throws: ScrobbleError.self) {

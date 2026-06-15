@@ -230,13 +230,13 @@ struct DecoderFactoryTests {
     /// decoder; when absent, it is skipped so CI without DSD assets stays
     /// green.  See `Scripts/gen-audio-fixtures.sh` for the placeholder.
     @Test("DSF → FFmpegDecoder (fixture-conditional)")
-    func dsfDecodesWithFFmpeg() throws {
+    func dsfDecodesWithFFmpeg() {
         let candidate = Bundle.module.url(
             forResource: "sine-1s-dsd64-stereo",
             withExtension: "dsf",
             subdirectory: "Fixtures"
         )
-        try withKnownIssue("DSF fixture not provided", isIntermittent: true) {
+        withKnownIssue("DSF fixture not provided", isIntermittent: true) {
             let url = try #require(candidate, "DSF fixture absent — skipped")
             let decoder = try DecoderFactory.make(for: url)
             #expect(decoder is FFmpegDecoder)

@@ -33,8 +33,8 @@ struct ListenBrainzProviderTests {
     }
 
     @Test("401 → invalid credentials")
-    func unauthorized() async throws {
-        try await withStubLock {
+    func unauthorized() async {
+        await withStubLock {
             StubProtocol.reset()
             StubProtocol.register({ $0.url?.absoluteString.contains("submit-listens") ?? false }, {
                 let url = URL(string: "https://stub")!

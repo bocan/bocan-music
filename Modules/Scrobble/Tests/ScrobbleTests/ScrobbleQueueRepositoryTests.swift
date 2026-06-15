@@ -49,7 +49,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(
+        let qid = try await #require(repo.enqueue(
             trackID: 1,
             playedAt: now,
             durationPlayed: 200,
@@ -70,7 +70,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(
+        let qid = try await #require(repo.enqueue(
             trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]
         ))
         try await repo.markSentUnconfirmed(queueID: qid, providerID: "lastfm", reason: "confirm failed", at: now)
@@ -96,7 +96,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(
+        let qid = try await #require(repo.enqueue(
             trackID: 1,
             playedAt: now,
             durationPlayed: 200,
@@ -117,7 +117,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(
+        let qid = try await #require(repo.enqueue(
             trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["subsonic"]
         ))
         try await repo.markIgnored(queueID: qid, providerID: "subsonic", reason: "server skipped")
@@ -134,7 +134,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
+        let qid = try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
         try await repo.markRetry(queueID: qid, providerID: "lastfm", nextAttemptAt: now.addingTimeInterval(120), attempts: 1, reason: "5xx")
 
         let earlyPending = try await repo.fetchPending(providerID: "lastfm", now: now.addingTimeInterval(60))
@@ -150,7 +150,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
+        let qid = try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
         try await repo.markDead(queueID: qid, providerID: "lastfm", reason: "exhausted")
         let stats = try await repo.stats()
         #expect(stats.pending == 0)
@@ -163,7 +163,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
+        let qid = try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
         try await repo.markDead(queueID: qid, providerID: "lastfm", reason: "x")
         try await repo.reviveDead()
         let pending = try await repo.fetchPending(providerID: "lastfm", now: now)
@@ -176,7 +176,7 @@ struct ScrobbleQueueRepositoryTests {
         try await self.seedTrack(db)
         let repo = ScrobbleQueueRepository(database: db)
         let now = Date(timeIntervalSince1970: 1_700_000_000)
-        let qid = try try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
+        let qid = try await #require(repo.enqueue(trackID: 1, playedAt: now, durationPlayed: 200, providerIDs: ["lastfm"]))
         try await repo.markDead(queueID: qid, providerID: "lastfm", reason: "x")
         try await repo.purgeDead()
         let stats = try await repo.stats()
@@ -286,11 +286,9 @@ struct ScrobbleQueueRepositoryTests {
 
         // Noon on an arbitrary reference date.
         let noon = Date(timeIntervalSince1970: 1_700_000_000)
-        // A different day — far enough in the past that yesterday's noon is before today's start.
-        let yesterday = noon.addingTimeInterval(-86400)
 
         // Enqueue and mark succeeded so submitted_at is around noon.
-        let qid = try try await #require(repo.enqueue(
+        let qid = try await #require(repo.enqueue(
             trackID: 1, playedAt: noon, durationPlayed: 200, providerIDs: ["lastfm"]
         ))
         try await repo.markSucceeded(queueID: qid, providerID: "lastfm", at: noon)

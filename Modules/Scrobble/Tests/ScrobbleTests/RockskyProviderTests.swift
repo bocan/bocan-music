@@ -26,8 +26,8 @@ struct RockskyProviderTests {
     }
 
     @Test("401 response surfaces as invalidCredentials")
-    func unauthorisedError() async throws {
-        try await withStubLock {
+    func unauthorisedError() async {
+        await withStubLock {
             StubProtocol.reset()
             StubProtocol.register({ $0.url?.absoluteString.contains("rocksky.app") ?? false }, {
                 let url = URL(string: "https://stub")!
@@ -85,8 +85,8 @@ struct RockskyProviderTests {
     }
 
     @Test("submit with no api key throws notAuthenticated")
-    func unauthSubmit() async throws {
-        try await withStubLock {
+    func unauthSubmit() async {
+        await withStubLock {
             StubProtocol.reset()
             let provider = RockskyProvider(config: self.config, http: URLSession.stubbed, credentials: StubRockskyCreds())
             await #expect(throws: ScrobbleError.self) {

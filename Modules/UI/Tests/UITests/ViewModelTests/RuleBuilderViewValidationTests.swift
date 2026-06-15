@@ -6,6 +6,7 @@ import Testing
 @Suite("RuleBuilderView validation")
 struct RuleBuilderViewValidationTests {
     @Test("invalid regex disables save")
+    @MainActor
     func invalidRegexDisablesSave() {
         let root = EditableCriterion.group(
             id: UUID(),
