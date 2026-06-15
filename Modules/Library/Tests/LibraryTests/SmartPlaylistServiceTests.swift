@@ -41,7 +41,7 @@ struct SmartPlaylistServiceTests {
         track.loved = loved
         track.genre = genre
         let repo = TrackRepository(database: db)
-        return try await repo.insert(track) ?? -1
+        return try await repo.insert(track)
     }
 
     // MARK: - CRUD: create
