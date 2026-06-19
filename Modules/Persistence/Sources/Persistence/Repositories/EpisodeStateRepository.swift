@@ -39,6 +39,21 @@ public struct EpisodeStateRepository: Sendable {
         }
     }
 
+    /// Returns every state row whose `download_state` is one of `states`, across
+    /// all podcasts. Used by the download manager to resume interrupted downloads
+    /// on launch (`.downloading` / `.queued`) and to enumerate downloaded
+    /// episodes for storage eviction (`.downloaded`). Returns `[]` for an empty
+    /// `states` array.
+    public func fetchByDownloadState(_ states: [EpisodeDownloadState]) async throws -> [PodcastEpisodeState] {
+        guard !states.isEmpty else { return [] }
+        let raws = states.map(\.rawValue)
+        return try await self.database.read { db in
+            try PodcastEpisodeState
+                .filter(raws.contains(Column("download_state")))
+                .fetchAll(db)
+        }
+    }
+
     // MARK: - Write
 
     /// Persists the current play position and flips `play_state` to `inProgress`,
