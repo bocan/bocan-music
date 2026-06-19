@@ -161,6 +161,89 @@ public actor EpisodeDownloadManager {
         }
     }
 
+    // MARK: - Storage management
+
+    /// Total bytes of all downloaded episodes, summed from their recorded sizes.
+    public func totalBytesOnDisk() async -> Int64 {
+        let rows = await (try? self.stateRepo.fetchByDownloadState([.downloaded])) ?? []
+        return rows.reduce(0) { $0 + ($1.downloadBytes ?? 0) }
+    }
+
+    /// Delete every download, cancel anything in flight, and reset all download
+    /// state to `none`.
+    public func clearAll() async {
+        for activeDownload in self.active.values {
+            activeDownload.handle.cancel()
+        }
+        self.active.removeAll()
+        self.pending.removeAll()
+        self.paused.removeAll()
+        self.resumeData.removeAll()
+        self.episodes.removeAll()
+
+        let rows = await (try? self.stateRepo.fetchByDownloadState(
+            [.downloaded, .downloading, .queued, .failed]
+        )) ?? []
+        for row in rows {
+            let key = Key(podcastID: row.podcastID, guid: row.guid)
+            await self.persist(key, .none, path: nil, bytes: nil)
+            self.emit(key, status: .none, fraction: 0, written: 0, total: 0)
+        }
+        self.store.deleteAll()
+        self.log.debug("download.clearAll", ["count": rows.count])
+    }
+
+    /// Evict **played + downloaded** episodes, oldest first, until total downloaded
+    /// bytes are at or under `maxBytes`. Never evicts an unplayed or in-progress
+    /// download (the user's queued listening). A no-op when already under budget.
+    public func enforceStorageBudget(maxBytes: Int64) async {
+        let rows = await (try? self.stateRepo.fetchByDownloadState([.downloaded])) ?? []
+        var total = rows.reduce(Int64(0)) { $0 + ($1.downloadBytes ?? 0) }
+        guard total > maxBytes else { return }
+
+        let evictable = rows
+            .filter { $0.playState == .played }
+            .sorted { Self.evictionAge($0) < Self.evictionAge($1) }
+
+        for row in evictable {
+            if total <= maxBytes { break }
+            await self.evict(row)
+            total -= (row.downloadBytes ?? 0)
+        }
+        self.log.debug("download.enforceBudget", ["maxBytes": maxBytes, "remaining": total])
+    }
+
+    /// Delete downloaded files for **played** episodes whose completion is older
+    /// than `days` (the opt-in "auto-delete played downloads" policy; default off
+    /// in settings). Resets their download state to `none`, preserving play
+    /// history. Never touches unplayed or in-progress downloads.
+    public func deletePlayedDownloads(olderThanDays days: Int, now: Date = Date()) async {
+        guard days >= 0 else { return }
+        let cutoff = now.timeIntervalSince1970 - Double(days) * 86400
+        let rows = await (try? self.stateRepo.fetchByDownloadState([.downloaded])) ?? []
+        for row in rows where row.playState == .played {
+            if Self.evictionAge(row) <= cutoff {
+                await self.evict(row)
+            }
+        }
+    }
+
+    /// Most recent "finished with it" timestamp used to order eviction: prefer
+    /// `completedAt`, fall back to `lastPlayedAt`, then 0 (oldest).
+    private static func evictionAge(_ row: PodcastEpisodeState) -> Double {
+        row.completedAt ?? row.lastPlayedAt ?? 0
+    }
+
+    /// Delete a downloaded file and reset its download state to `none`, leaving
+    /// the play state intact (`setDownloadState` does not touch play fields).
+    private func evict(_ row: PodcastEpisodeState) async {
+        let key = Key(podcastID: row.podcastID, guid: row.guid)
+        if let path = row.downloadPath { self.store.deleteFile(atPath: path) }
+        await self.persist(key, .none, path: nil, bytes: nil)
+        self.emit(key, status: .none, fraction: 0, written: 0, total: 0)
+        self.log.debug("download.evicted", ["guid": row.guid, "bytes": row.downloadBytes ?? 0])
+    }
+
     /// On launch: re-enqueue any episode left `.downloading` / `.queued` by a prior
     /// quit, using saved resume data when available (none, after a fresh launch).
     public func resumeInterrupted() async {
