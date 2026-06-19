@@ -32,6 +32,11 @@ public struct Sidebar: View {
                     self.sidebarRow(.artists, symbol: "music.mic", label: L10n.string("Artists"))
                     self.sidebarRow(.genres, symbol: "tag", label: L10n.string("Genres"))
                     self.sidebarRow(.composers, symbol: "music.note.list", label: L10n.string("Composers"))
+                    self.sidebarRow(
+                        .podcasts,
+                        symbol: "antenna.radiowaves.left.and.right",
+                        label: L10n.string("Podcasts")
+                    )
                 }
             } header: {
                 SidebarSectionHeader(

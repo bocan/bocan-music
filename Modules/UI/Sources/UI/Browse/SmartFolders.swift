@@ -151,6 +151,12 @@ extension SidebarDestination {
 
         case .subsonicAlbum:
             L10n.string("Album")
+
+        case .podcasts:
+            L10n.string("Podcasts")
+
+        case .podcastShow:
+            L10n.string("Podcast")
         }
     }
 }

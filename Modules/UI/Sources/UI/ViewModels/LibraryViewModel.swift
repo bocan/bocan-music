@@ -240,6 +240,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public let smartPlaylistService: SmartPlaylistService
     public let playlistImporter: PlaylistImportService
     public let playlistExporter: PlaylistExportService
+    /// Phase 21-7: drives the Podcasts home grid and show episode list.
+    public let podcasts: PodcastsViewModel
+
+    // MARK: - Phase 21 seams (nil when Podcasts feature not wired in)
+
+    public let podcastLibrary: (any PodcastLibraryDataSource)?
+    public let podcastActions: (any PodcastActions)?
 
     // MARK: - Dependencies
 
@@ -338,7 +345,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicMetadataCache: (any SubsonicMetadataCaching)? = nil,
         subsonicAnnotationDelivery: (any SubsonicAnnotationDelivering)? = nil,
         subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil,
-        subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil
+        subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil,
+        podcastLibrary: (any PodcastLibraryDataSource)? = nil,
+        podcastActions: (any PodcastActions)? = nil
     ) {
         self.database = database
         self.engine = engine
@@ -387,6 +396,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             scrobbleRepository: scrobbleRepository,
             subsonicCoverArtProvider: subsonicCoverArtProvider
         )
+
+        self.podcastLibrary = podcastLibrary
+        self.podcastActions = podcastActions
+        self.podcasts = PodcastsViewModel(library: podcastLibrary, actions: podcastActions)
 
         self.searchQueryCancellable = self.makeSearchQuerySubscription()
 

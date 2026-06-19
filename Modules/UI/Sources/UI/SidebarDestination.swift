@@ -81,6 +81,13 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     /// `String` is the album's upstream Subsonic ID.
     case subsonicAlbum(UUID, String)
 
+    // MARK: - Phase 21 (Podcasts)
+
+    /// The local Podcasts library root: Add bar + subscribed-shows grid.
+    case podcasts
+    /// A subscribed show's episode list. Associated value is `podcasts.id`.
+    case podcastShow(Int64)
+
     // MARK: - Search
 
     case search(String)
