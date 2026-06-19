@@ -229,7 +229,8 @@ public actor PodcastService {
         return RefreshOutcome(
             notModified: false,
             newEpisodeCount: newGUIDs.count,
-            totalEpisodeCount: episodes.count
+            totalEpisodeCount: episodes.count,
+            newEpisodeGUIDs: Array(newGUIDs)
         )
     }
 
@@ -443,4 +444,19 @@ public struct RefreshOutcome: Sendable {
     public var notModified: Bool
     public var newEpisodeCount: Int
     public var totalEpisodeCount: Int
+    /// Guids of episodes that did not exist before this refresh. Drives
+    /// auto-download (phase 21-6); unordered, the caller orders by publish date.
+    public var newEpisodeGUIDs: [String]
+
+    public init(
+        notModified: Bool,
+        newEpisodeCount: Int,
+        totalEpisodeCount: Int,
+        newEpisodeGUIDs: [String] = []
+    ) {
+        self.notModified = notModified
+        self.newEpisodeCount = newEpisodeCount
+        self.totalEpisodeCount = totalEpisodeCount
+        self.newEpisodeGUIDs = newEpisodeGUIDs
+    }
 }
