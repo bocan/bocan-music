@@ -12407,6 +12407,16 @@
         }
       }
     },
+    "RSS Feed" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ŔŠŠ Ƒééđ one"
+          }
+        }
+      }
+    },
     "Random" : {
       "localizations" : {
         "en" : {
@@ -17630,6 +17640,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŵáţçĥ ƒóĺđéŕš ƒóŕ ñéŵ ƒíĺéš one two three"
+          }
+        }
+      }
+    },
+    "Website" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŵéƀšíţé one"
           }
         }
       }
