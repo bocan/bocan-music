@@ -1,0 +1,21 @@
+{
+  "status": "true",
+  "feed": {
+    "id": 111,
+    "url": "https://www.swiftbysundell.com/feed/podcast/",
+    "title": "Swift by Sundell",
+    "author": "John Sundell",
+    "description": "A podcast about building apps and tools with Swift. (enriched)",
+    "image": "https://swiftbysundell.com/artwork.jpg",
+    "artwork": "https://swiftbysundell.com/artwork-hd.jpg",
+    "link": "https://swiftbysundell.com",
+    "lastUpdateTime": 1717200000,
+    "newestItemPubdate": 1717200000,
+    "episodeCount": 121,
+    "categories": { "1": "Technology", "9": "Software How-To" },
+    "explicit": false,
+    "language": "en",
+    "ownerName": "John Sundell"
+  },
+  "query": "https://www.swiftbysundell.com/feed/podcast/"
+}
