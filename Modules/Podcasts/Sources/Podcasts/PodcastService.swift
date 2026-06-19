@@ -23,6 +23,7 @@ public actor PodcastService {
     private let fetcher: FeedFetcher
     private let parser: FeedParser
     private let artwork: PodcastArtworkCache
+    private let downloadStore: DownloadStore
     private let search: PodcastSearchService?
     private let now: @Sendable () -> Date
     private let log: AppLogger
@@ -38,6 +39,7 @@ public actor PodcastService {
         fetcher: FeedFetcher = FeedFetcher(),
         parser: FeedParser = FeedParser(),
         artwork: PodcastArtworkCache,
+        downloadStore: DownloadStore = DownloadStore(),
         search: PodcastSearchService? = nil,
         now: @escaping @Sendable () -> Date = { Date() },
         log: AppLogger = .make(.podcasts)
@@ -48,6 +50,7 @@ public actor PodcastService {
         self.fetcher = fetcher
         self.parser = parser
         self.artwork = artwork
+        self.downloadStore = downloadStore
         self.search = search
         self.now = now
         self.log = log
@@ -112,6 +115,8 @@ public actor PodcastService {
         self.idCache.removeValue(forKey: podcast.feedURL)
         // Evict artwork (fast filesystem op; awaited so callers see clean state).
         await self.artwork.evict(podcastID: podcastID)
+        // Delete every downloaded episode for the show (state cascades via the DB).
+        self.downloadStore.deletePodcast(podcastID: podcastID)
         self.log.info("podcast.unsubscribe", ["id": podcastID, "title": podcast.title])
     }
 
@@ -291,11 +296,30 @@ public actor PodcastService {
         }
 
         // Return the downloaded file URL when available (phase 21-6 populates this).
+        // State, not the file, is the source of truth for the badge, but verify the
+        // file actually exists: a user may have cleared Application Support out of
+        // band. If the state says downloaded but the file is gone, reset state to
+        // none and stream instead.
         if let state = try await stateRepo.fetch(podcastID: podcastID, guid: episodeGUID),
            state.downloadState == .downloaded,
-           let path = state.downloadPath,
-           FileManager.default.fileExists(atPath: path) {
-            return URL(fileURLWithPath: path)
+           let path = state.downloadPath {
+            if FileManager.default.fileExists(atPath: path) {
+                return URL(fileURLWithPath: path)
+            }
+            self.log.warning(
+                "podcast.audioURL.downloadMissing",
+                ["podcastID": podcastID, "guid": episodeGUID]
+            )
+            do {
+                try await self.stateRepo.setDownloadState(
+                    podcastID: podcastID, guid: episodeGUID, state: .none, path: nil, bytes: nil
+                )
+            } catch {
+                self.log.warning(
+                    "podcast.audioURL.resetFailed",
+                    ["guid": episodeGUID, "error": String(reflecting: error)]
+                )
+            }
         }
 
         guard let url = URL(string: episode.audioURL) else {
