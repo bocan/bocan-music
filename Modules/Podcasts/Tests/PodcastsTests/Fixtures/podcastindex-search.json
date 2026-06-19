@@ -1,0 +1,41 @@
+{
+  "status": "true",
+  "feeds": [
+    {
+      "id": 111,
+      "url": "https://www.swiftbysundell.com/feed/podcast/",
+      "title": "Swift by Sundell",
+      "author": "John Sundell",
+      "description": "A podcast about building apps and tools with Swift.",
+      "image": "https://swiftbysundell.com/artwork.jpg",
+      "artwork": "https://swiftbysundell.com/artwork-hd.jpg",
+      "link": "https://swiftbysundell.com",
+      "lastUpdateTime": 1717200000,
+      "newestItemPubdate": 1717200000,
+      "episodeCount": 120,
+      "categories": { "1": "Technology", "9": "Software How-To" },
+      "explicit": false,
+      "language": "en",
+      "ownerName": "John Sundell"
+    },
+    {
+      "id": 222,
+      "url": "https://pionly.example.com/feed.xml",
+      "title": "Podcast Index Only Show",
+      "author": "PI Author",
+      "description": "A show only in the Podcast Index.",
+      "image": "https://pionly.example.com/art.jpg",
+      "artwork": "https://pionly.example.com/art.jpg",
+      "link": "https://pionly.example.com",
+      "lastUpdateTime": 1716000000,
+      "newestItemPubdate": 1716000000,
+      "episodeCount": 50,
+      "categories": {},
+      "explicit": false,
+      "language": "en",
+      "ownerName": "PI Author"
+    }
+  ],
+  "count": 2,
+  "query": "swift"
+}

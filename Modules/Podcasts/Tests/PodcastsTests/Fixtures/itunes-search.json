@@ -1,0 +1,50 @@
+{
+  "resultCount": 3,
+  "results": [
+    {
+      "wrapperType": "track",
+      "kind": "podcast",
+      "collectionId": 1234567,
+      "trackId": 1234567,
+      "artistName": "John Sundell",
+      "collectionName": "Swift by Sundell",
+      "trackName": "Swift by Sundell",
+      "feedUrl": "http://www.swiftbysundell.com/feed/podcast/",
+      "artworkUrl30": "https://artwork.example.com/art30.jpg",
+      "artworkUrl60": "https://artwork.example.com/art60.jpg",
+      "artworkUrl100": "https://artwork.example.com/art100.jpg",
+      "artworkUrl600": "https://artwork.example.com/art600.jpg",
+      "genres": ["Technology"],
+      "trackCount": 115
+    },
+    {
+      "wrapperType": "track",
+      "kind": "podcast",
+      "collectionId": 9999999,
+      "trackId": 9999999,
+      "artistName": "iTunes Author",
+      "collectionName": "iTunes Only Show",
+      "trackName": "iTunes Only Show",
+      "feedUrl": "https://itunesonly.example.com/feed.xml",
+      "artworkUrl30": "https://artwork.example.com/it30.jpg",
+      "artworkUrl60": "https://artwork.example.com/it60.jpg",
+      "artworkUrl100": "https://artwork.example.com/it100.jpg",
+      "artworkUrl600": "https://artwork.example.com/it600.jpg",
+      "genres": ["Arts"],
+      "trackCount": 30
+    },
+    {
+      "wrapperType": "track",
+      "kind": "podcast",
+      "collectionId": 7777777,
+      "trackId": 7777777,
+      "artistName": "No Feed Author",
+      "collectionName": "No Feed URL Show",
+      "trackName": "No Feed URL Show",
+      "artworkUrl100": "https://artwork.example.com/nf100.jpg",
+      "artworkUrl600": "https://artwork.example.com/nf600.jpg",
+      "genres": ["Music"],
+      "trackCount": 5
+    }
+  ]
+}
