@@ -47,6 +47,18 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 16 | [phase-16-distribution.md](phase-16-distribution.md) | Sign, notarize, DMG, Sparkle |
 | 18 | [phase-18-remote-control.md](phase-18-remote-control.md) | Remote control server — Bonjour discovery, PIN pairing, REST/WebSocket API |
 | 19 | [phase-19-subsonic.md](phase-19-subsonic.md) | Subsonic / Navidrome / OpenSubsonic client — sidebar "Sources" section, federated search, streaming cache, write-through annotations |
+| 20 | [phase-20-console.md](phase-20-console.md) | In-app log console backed by `LogStore` |
+| 21.0 | [phase21-0-overview.md](phase21-0-overview.md) | Podcasts: architecture, data model, cross-phase contract (read first) |
+| 21.1 | [phase21-1-persistence.md](phase21-1-persistence.md) | Podcasts: schema (3 tables), records, repositories |
+| 21.2 | [phase21-2-feeds.md](phase21-2-feeds.md) | Podcasts: module scaffold, feed fetch, RSS + Atom parsing |
+| 21.3 | [phase21-3-search.md](phase21-3-search.md) | Podcasts: Podcast Index + iTunes dual search, dedupe/merge |
+| 21.4 | [phase21-4-subscriptions.md](phase21-4-subscriptions.md) | Podcasts: `PodcastService` subscribe/refresh/state, artwork cache |
+| 21.5 | [phase21-5-playback.md](phase21-5-playback.md) | Podcasts: `PlayableSource.podcast`, resolver seam, per-episode resume |
+| 21.6 | [phase21-6-downloads.md](phase21-6-downloads.md) | Podcasts: episode downloads + offline (enhancement) |
+| 21.7 | [phase21-7-ui-podcasts-home.md](phase21-7-ui-podcasts-home.md) | Podcasts UI: sidebar item, subscribed grid, Add bar, UI seams |
+| 21.8 | [phase21-8-ui-search-detail.md](phase21-8-ui-search-detail.md) | Podcasts UI: search results (source badges), detail, Subscribe |
+| 21.9 | [phase21-9-ui-episodes.md](phase21-9-ui-episodes.md) | Podcasts UI: episode list (date/duration/progress), show notes |
+| 21.10 | [phase21-10-nowplaying-polish.md](phase21-10-nowplaying-polish.md) | Podcasts: Now Playing podcast mode, speed/skip, settings, docs |
 
 ## Conventions used in every phase file
 
