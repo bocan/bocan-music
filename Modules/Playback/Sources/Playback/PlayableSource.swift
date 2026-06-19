@@ -17,6 +17,7 @@ import Foundation
 /// { "kind": "localBookmark", "bookmark": "<base64>" }
 /// { "kind": "subsonic", "serverID": "<uuid>", "songID": "tr-1234" }
 /// { "kind": "internetRadio", "streamURL": "<absolute URL>" }
+/// { "kind": "podcast", "feedURL": "<absolute URL>", "episodeGUID": "<guid>" }
 /// ```
 /// Legacy persisted queues (v1 schema) lack this field entirely; the
 /// restore path in `QueuePersistence` upgrades those to
@@ -42,22 +43,30 @@ public enum PlayableSource: Sendable, Hashable, Codable {
     /// it or the network drops.
     case internetRadio(streamURL: URL)
 
+    /// A podcast episode from the local Podcasts library. Identified by its
+    /// canonical feed URL and the episode's feed `guid`. The audio (a remote
+    /// enclosure, or a local file once downloaded), the resume position, and the
+    /// position write-back are all resolved through an App-injected
+    /// `PodcastEpisodeResolving`; Playback never imports the Podcasts module.
+    case podcast(feedURL: URL, episodeGUID: String)
+
     // MARK: - Convenience
 
     /// `true` when the source must be streamed from a remote server.
     public var isRemote: Bool {
         switch self {
         case .localBookmark: false
-        case .subsonic, .internetRadio: true
+        case .subsonic, .internetRadio, .podcast: true
         }
     }
 
     /// `true` when the source is a live (open-ended) stream rather than
     /// a finite track. Used by scrobble / history / now-playing paths to
-    /// skip duration-based logic.
+    /// skip duration-based logic. Podcasts are finite and seekable, so they
+    /// are not live streams.
     public var isLiveStream: Bool {
         switch self {
-        case .localBookmark, .subsonic: false
+        case .localBookmark, .subsonic, .podcast: false
         case .internetRadio: true
         }
     }
@@ -80,12 +89,19 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         return nil
     }
 
+    /// The (feedURL, guid) pair when the source is `.podcast`. `nil` otherwise.
+    public var podcastEpisode: (feedURL: URL, guid: String)? {
+        if case let .podcast(feedURL, guid) = self { return (feedURL, guid) }
+        return nil
+    }
+
     // MARK: - Codable
 
     private enum Kind: String, Codable {
         case localBookmark
         case subsonic
         case internetRadio
+        case podcast
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -94,6 +110,8 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case serverID
         case songID
         case streamURL
+        case feedURL
+        case episodeGUID
     }
 
     public init(from decoder: Decoder) throws {
@@ -110,6 +128,10 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case .internetRadio:
             let url = try container.decode(URL.self, forKey: .streamURL)
             self = .internetRadio(streamURL: url)
+        case .podcast:
+            let feedURL = try container.decode(URL.self, forKey: .feedURL)
+            let guid = try container.decode(String.self, forKey: .episodeGUID)
+            self = .podcast(feedURL: feedURL, episodeGUID: guid)
         }
     }
 
@@ -128,6 +150,10 @@ public enum PlayableSource: Sendable, Hashable, Codable {
         case let .internetRadio(url):
             try container.encode(Kind.internetRadio, forKey: .kind)
             try container.encode(url, forKey: .streamURL)
+        case let .podcast(feedURL, guid):
+            try container.encode(Kind.podcast, forKey: .kind)
+            try container.encode(feedURL, forKey: .feedURL)
+            try container.encode(guid, forKey: .episodeGUID)
         }
     }
 }
