@@ -41,17 +41,8 @@ extension LibraryViewModel {
         case let .composer(c):
             await self.tracks.load(composer: c)
 
-        case .playlist:
-            break // PlaylistDetailView handles its own loading
-
-        case .folder:
-            break // PlaylistFolderView reads directly from PlaylistSidebarViewModel.nodes
-
-        case .smartPlaylist:
-            break // SmartPlaylistDetailView handles its own loading
-
-        case .upNext:
-            break // QueueView reads directly from QueuePlayer.queue
+        case .playlist, .folder, .smartPlaylist, .upNext:
+            break // each destination manages its own loading
 
         case let .search(searchQuery):
             self.searchQuery = searchQuery
@@ -70,6 +61,12 @@ extension LibraryViewModel {
             // Per-server Subsonic destinations manage their own loading via
             // dedicated view models. Nothing to fan out here.
             break
+
+        case .podcasts:
+            await self.podcasts.loadSubscribed()
+
+        case let .podcastShow(id):
+            await self.podcasts.loadShow(id)
         }
     }
 
