@@ -21,12 +21,15 @@ struct PodcastsGridView: View {
         ScrollView {
             LazyVGrid(columns: self.columns, spacing: Theme.albumGridSpacing) {
                 ForEach(self.vm.subscribed, id: \.feedURL) { podcast in
-                    PodcastCell(podcast: podcast)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            if let id = podcast.id { self.vm.openShow(id) }
-                        }
-                        .contextMenu { self.contextMenu(for: podcast) }
+                    PodcastCell(
+                        podcast: podcast,
+                        episodeCount: podcast.id.flatMap { self.vm.podcastEpisodeCounts[$0] }
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if let id = podcast.id { self.vm.openShow(id) }
+                    }
+                    .contextMenu { self.contextMenu(for: podcast) }
                 }
             }
             .padding(Theme.albumGridSpacing)
@@ -61,9 +64,10 @@ struct PodcastsGridView: View {
 
 // MARK: - PodcastCell
 
-/// A single podcast cell: artwork + title + author. Feed content is verbatim.
+/// A single podcast cell: artwork + title + author + episode count. Feed content is verbatim.
 private struct PodcastCell: View {
     let podcast: Podcast
+    let episodeCount: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -103,6 +107,13 @@ private struct PodcastCell: View {
                 .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .lineLimit(1)
+
+            if let count = self.episodeCount {
+                Text(L10n.string("\(count) episodes"))
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .lineLimit(1)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)

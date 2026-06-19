@@ -131,6 +131,20 @@ public struct EpisodeRepository: Sendable {
         }
     }
 
+    /// Returns episode counts keyed by podcast ID, in a single GROUP BY query.
+    public func fetchAllPodcastCounts() async throws -> [Int64: Int] {
+        try await self.database.read { db in
+            let rows = try Row.fetchAll(
+                db,
+                sql: "SELECT podcast_id, COUNT(*) AS cnt FROM podcast_episodes GROUP BY podcast_id"
+            )
+            return Dictionary(uniqueKeysWithValues: rows.compactMap { row -> (Int64, Int)? in
+                guard let id: Int64 = row["podcast_id"], let cnt: Int = row["cnt"] else { return nil }
+                return (id, cnt)
+            })
+        }
+    }
+
     // MARK: - Private helpers
 
     @discardableResult
