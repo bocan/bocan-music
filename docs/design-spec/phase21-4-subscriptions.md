@@ -200,6 +200,8 @@ public actor FeedRefreshScheduler {
 
 ## Context7 lookups
 
+With Context7 lookups, ALWAYS choose the latest version of a dependency (FeedKit, GRDB, etc.) and avoid any deprecated APIs. Where the spec deviates from this, stop and ask for clarification before proceeding.
+
 - Apple `URLSession` download-to-file (`URLSessionDownloadTask`) vs `data(for:)`
   for the artwork cache (a plain `data(for:)` + write is fine here; downloads
   proper are phase 21-6).
