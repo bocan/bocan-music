@@ -1486,6 +1486,17 @@ public actor QueuePlayer: Transport {
             commands.onSeek = { [weak self] time in
                 try? await self?.seek(to: time)
             }
+            commands.onSkipBack = { [weak self] interval in
+                guard let self else { return }
+                let current = await self.currentTime
+                try? await self.seek(to: max(0, current - interval))
+            }
+            commands.onSkipForward = { [weak self] interval in
+                guard let self else { return }
+                let current = await self.currentTime
+                let dur = await self.duration
+                try? await self.seek(to: min(dur, current + interval))
+            }
             commands.register()
         }
     }
@@ -1498,5 +1509,21 @@ public actor QueuePlayer: Transport {
         } else {
             try? await self.play()
         }
+    }
+
+    /// Switches the lock-screen / headphone remote commands to podcast skip-interval mode.
+    /// Call from `NowPlayingViewModel` when a podcast episode becomes the current item.
+    public func configureRemoteCommandsForPodcast(backInterval: TimeInterval, forwardInterval: TimeInterval) async {
+        let commands = self.remoteCommands
+        await MainActor.run {
+            commands?.configureForPodcast(backInterval: backInterval, forwardInterval: forwardInterval)
+        }
+    }
+
+    /// Restores the lock-screen / headphone remote commands to music (prev/next) mode.
+    /// Call from `NowPlayingViewModel` when a non-podcast item becomes current.
+    public func configureRemoteCommandsForMusic() async {
+        let commands = self.remoteCommands
+        await MainActor.run { commands?.configureForMusic() }
     }
 }

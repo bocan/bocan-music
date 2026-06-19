@@ -18,6 +18,8 @@ public final class RemoteCommands {
     public var onNextTrack: (@Sendable () async -> Void)?
     public var onPreviousTrack: (@Sendable () async -> Void)?
     public var onSeek: (@Sendable (TimeInterval) async -> Void)?
+    public var onSkipBack: (@Sendable (TimeInterval) async -> Void)?
+    public var onSkipForward: (@Sendable (TimeInterval) async -> Void)?
 
     private let log = AppLogger.make(.playback)
     private var isRegistered = false
@@ -82,13 +84,52 @@ public final class RemoteCommands {
         }
 
         // Disable commands we don't implement.
-        center.skipForwardCommand.isEnabled = false
-        center.skipBackwardCommand.isEnabled = false
         center.seekForwardCommand.isEnabled = false
         center.seekBackwardCommand.isEnabled = false
         center.ratingCommand.isEnabled = false
 
+        center.skipBackwardCommand.addTarget { [weak self] event in
+            guard let self,
+                  let ev = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            let interval = ev.interval
+            Task { await self.onSkipBack?(interval) }
+            return .success
+        }
+        center.skipBackwardCommand.isEnabled = false
+        center.skipForwardCommand.addTarget { [weak self] event in
+            guard let self,
+                  let ev = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            let interval = ev.interval
+            Task { await self.onSkipForward?(interval) }
+            return .success
+        }
+        center.skipForwardCommand.isEnabled = false
+
         self.log.debug("remotecommands.registered")
+    }
+
+    /// Configures remote commands for podcast playback: enables skip-interval
+    /// commands with the given intervals, disables prev/next track commands.
+    func configureForPodcast(backInterval: TimeInterval, forwardInterval: TimeInterval) {
+        let center = MPRemoteCommandCenter.shared()
+        center.previousTrackCommand.isEnabled = false
+        center.nextTrackCommand.isEnabled = false
+        let back = center.skipBackwardCommand
+        back.preferredIntervals = [NSNumber(value: backInterval)]
+        back.isEnabled = true
+        let fwd = center.skipForwardCommand
+        fwd.preferredIntervals = [NSNumber(value: forwardInterval)]
+        fwd.isEnabled = true
+    }
+
+    /// Configures remote commands for music playback: restores prev/next track
+    /// commands and disables skip-interval commands.
+    func configureForMusic() {
+        let center = MPRemoteCommandCenter.shared()
+        center.previousTrackCommand.isEnabled = true
+        center.nextTrackCommand.isEnabled = true
+        center.skipBackwardCommand.isEnabled = false
+        center.skipForwardCommand.isEnabled = false
     }
 
     /// Remove all command targets and disable commands.
