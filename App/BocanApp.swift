@@ -638,11 +638,13 @@ extension BocanApp {
             player: qp,
             downloads: podcastDownloads
         )
-        // Phase 21-8: Podcast Index search defaults to empty credentials (iTunes-only).
-        // A future settings screen can surface Podcast Index API key entry.
+        let piCredentials = PodcastIndexCredentials(
+            apiKey: Bundle.main.object(forInfoDictionaryKey: "BocanPodcastIndexApiKey") as? String ?? "",
+            apiSecret: Bundle.main.object(forInfoDictionaryKey: "BocanPodcastIndexApiSecret") as? String ?? ""
+        )
         let podcastSearch = AppPodcastSearch(
             searchService: PodcastSearchService(
-                podcastIndex: nil,
+                podcastIndex: piCredentials.isConfigured ? PodcastIndexClient(credentials: piCredentials) : nil,
                 itunes: ITunesSearchClient()
             ),
             fetcher: FeedFetcher(),
