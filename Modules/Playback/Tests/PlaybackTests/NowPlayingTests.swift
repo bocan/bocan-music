@@ -52,6 +52,23 @@ struct NowPlayingTests {
         centre.clear()
     }
 
+    @Test("updatePodcast then clear does not crash")
+    @MainActor
+    func updatePodcastDoesNotCrash() {
+        let centre = NowPlayingCentre()
+        centre.updatePodcast(
+            title: "Episode 42",
+            showName: "The Show",
+            duration: 1800,
+            positionProvider: { 12 }
+        )
+        // As with update(track:), we cannot assert MPNowPlayingInfoCenter state
+        // in a unit test (it requires a running app); verify no crash occurs.
+        centre.setPlaying(true)
+        centre.setPlaying(false)
+        centre.clear()
+    }
+
     @Test("setPlaying false clears playback rate")
     @MainActor
     func setPlayingFalseClearsRate() {

@@ -46,6 +46,37 @@ public final class NowPlayingCentre {
         self.log.debug("nowplaying.update", ["title": track.title ?? "unknown"])
     }
 
+    /// Update the displayed item for a podcast episode. Maps the episode title
+    /// to the title slot and the show name to the artist + podcast-title slots
+    /// (per the Phase 21 brief: the artist slot carries the show name).
+    ///
+    /// Note: `MPNowPlayingInfoMediaType` has only `.none` / `.audio` / `.video`
+    /// (there is no `.podcast` member in the MediaPlayer framework, contrary to
+    /// the phase 21-5 spec). The podcast nature is conveyed to the system via
+    /// `MPMediaItemPropertyPodcastTitle`; the media type stays `.audio`, which
+    /// is the only correct audio value.
+    public func updatePodcast(
+        title: String,
+        showName: String,
+        duration: TimeInterval,
+        positionProvider: @Sendable @escaping () async -> TimeInterval
+    ) {
+        self.getPosition = positionProvider
+
+        var info: [String: Any] = [:]
+        info[MPMediaItemPropertyTitle] = title
+        info[MPMediaItemPropertyArtist] = showName
+        info[MPMediaItemPropertyPodcastTitle] = showName
+        info[MPMediaItemPropertyPlaybackDuration] = duration
+        info[MPNowPlayingInfoPropertyPlaybackRate] = self.isPlaying ? 1.0 : 0.0
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = 0.0
+        info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        if self.isPlaying { self.startPositionTimer() }
+        self.log.debug("nowplaying.update.podcast", ["title": title, "show": showName])
+    }
+
     /// Called when playback state changes.
     public func setPlaying(_ playing: Bool) {
         self.isPlaying = playing
