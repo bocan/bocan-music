@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 22)
+        #expect(version == 23)
     }
 
     @Test("Integrity check passes after migration")
@@ -30,7 +30,9 @@ struct MigrationTests {
         let expected = [
             "albums", "app_metadata", "artists", "cover_art",
             "grdb_migrations", "lyrics", "play_history",
-            "playlist_tracks", "playlists", "scrobble_queue", "settings", "tracks",
+            "playlist_tracks", "playlists", "podcast_episode_state",
+            "podcast_episodes", "podcasts",
+            "scrobble_queue", "settings", "tracks",
         ]
         for name in expected {
             #expect(tables.contains(name), "Expected table '\(name)' not found")
@@ -64,10 +66,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twenty-two migrations")
+    @Test("Migrator reports twenty-three migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 22)
+        #expect(migrator.migrations.count == 23)
     }
 
     @Test("M022 rolls up queue rows stranded by ignored submissions")
