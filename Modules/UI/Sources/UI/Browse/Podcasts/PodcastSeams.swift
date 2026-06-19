@@ -194,6 +194,7 @@ public protocol PodcastActions: Sendable {
     func play(episode: EpisodeListItem, podcast: Podcast) async
     func markPlayed(podcastID: Int64, guid: String) async
     func markUnplayed(podcastID: Int64, guid: String) async
+    func markAllPlayed(podcastID: Int64) async
     /// No-op when phase 21-6 downloads are not built.
     func download(podcastID: Int64, guid: String) async
     func removeDownload(podcastID: Int64, guid: String) async

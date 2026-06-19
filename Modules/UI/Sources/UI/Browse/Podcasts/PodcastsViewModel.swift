@@ -149,11 +149,34 @@ public final class PodcastsViewModel: ObservableObject {
         await self.actions?.refreshAll()
     }
 
+    public func refreshCurrentShow() async {
+        guard let id = currentShow?.id else { return }
+        do {
+            try await self.actions?.refresh(podcastID: id)
+        } catch {
+            self.log.error("podcasts.refreshShow.failed", ["id": id, "error": String(reflecting: error)])
+        }
+    }
+
     public func unsubscribe(_ id: Int64) async {
         do {
             try await self.actions?.unsubscribe(podcastID: id)
         } catch {
             self.log.error("podcasts.unsubscribe.failed", ["id": id, "error": String(reflecting: error)])
+        }
+    }
+
+    public func markAllPlayed() async {
+        guard let id = currentShow?.id else { return }
+        await self.actions?.markAllPlayed(podcastID: id)
+    }
+
+    public func toggleAutoDownload(_ on: Bool) async {
+        guard let id = currentShow?.id else { return }
+        do {
+            try await self.actions?.setAutoDownload(on, podcastID: id)
+        } catch {
+            self.log.error("podcasts.setAutoDownload.failed", ["id": id, "error": String(reflecting: error)])
         }
     }
 }

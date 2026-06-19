@@ -86,6 +86,10 @@ struct AppPodcastActions: PodcastActions {
         await self.service.markUnplayed(podcastID: podcastID, guid: guid)
     }
 
+    func markAllPlayed(podcastID: Int64) async {
+        await self.service.markAllPlayed(podcastID: podcastID)
+    }
+
     func download(podcastID: Int64, guid: String) async {
         await self.downloads?.download(podcastID: podcastID, guid: guid)
     }
