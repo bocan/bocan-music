@@ -416,6 +416,39 @@ public actor PodcastService {
         }
     }
 
+    /// Marks the episode fully played by podcast database ID.
+    ///
+    /// Used by the UI `PodcastActions` seam, which fires by `podcastID` rather
+    /// than feedURL (no URL cache lookup needed here).
+    public func markPlayed(podcastID: Int64, guid: String) async {
+        do {
+            try await self.stateRepo.markPlayed(
+                podcastID: podcastID,
+                guid: guid,
+                now: self.now().timeIntervalSince1970
+            )
+        } catch {
+            self.log.warning(
+                "podcast.markPlayed.byID.failed",
+                ["error": String(reflecting: error)]
+            )
+        }
+    }
+
+    /// Resets the episode to unplayed with position 0 by podcast database ID.
+    ///
+    /// Used by the UI `PodcastActions` seam; bypasses the feedURL cache.
+    public func markUnplayed(podcastID: Int64, guid: String) async {
+        do {
+            try await self.stateRepo.markUnplayed(podcastID: podcastID, guid: guid)
+        } catch {
+            self.log.warning(
+                "podcast.markUnplayed.byID.failed",
+                ["error": String(reflecting: error)]
+            )
+        }
+    }
+
     // MARK: - Private
 
     /// Resolves a feed URL to a `podcast_id`, using the in-actor cache.
