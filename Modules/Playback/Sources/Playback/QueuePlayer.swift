@@ -706,7 +706,17 @@ public actor QueuePlayer: Transport {
         // the two resume mechanisms never fight.
         await self.applyPodcastResumeIfNeeded(for: item)
 
-        if let track {
+        if case .podcast = item.playableSource {
+            // A podcast has no local `tracks` row; drive Now Playing from the
+            // QueueItem snapshot (episode title, show name) in podcast mode.
+            let capturedEngine = self.engine
+            await self.nowPlayingCentre?.updatePodcast(
+                title: item.title ?? "",
+                showName: item.artistName ?? "",
+                duration: item.duration,
+                positionProvider: { await capturedEngine.currentTime }
+            )
+        } else if let track {
             let capturedEngine = self.engine
             await self.nowPlayingCentre?.update(
                 track: track,
@@ -1186,7 +1196,15 @@ public actor QueuePlayer: Transport {
         await self.markPlayedIfPodcast(outgoing)
 
         // Update metadata for the new track.
-        if let track = try? await trackRepo.fetch(id: item.trackID) {
+        if case .podcast = item.playableSource {
+            let capturedEngine = self.engine
+            await self.nowPlayingCentre?.updatePodcast(
+                title: item.title ?? "",
+                showName: item.artistName ?? "",
+                duration: item.duration,
+                positionProvider: { await capturedEngine.currentTime }
+            )
+        } else if let track = try? await trackRepo.fetch(id: item.trackID) {
             self.emitCurrentTrack(track)
             let capturedEngine = self.engine
             await self.nowPlayingCentre?.update(
