@@ -264,7 +264,8 @@ struct VoiceOverTests {
 
     @Test("NowPlayingStrip transport toggles apply activeToggleIndicator")
     func nowPlayingStripTogglesUseActiveIndicator() throws {
-        let source = try self.sourceContents(at: "AppRoot/NowPlayingStrip.swift")
+        // Transport controls were extracted to MusicTransportControls.swift in phase 21-10.
+        let source = try self.sourceContents(at: "Transport/MusicTransportControls.swift")
         #expect(
             source.contains("activeToggleIndicator"),
             "Shuffle/repeat/stop-after toggles must apply .activeToggleIndicator so on/off isn't colour-only"

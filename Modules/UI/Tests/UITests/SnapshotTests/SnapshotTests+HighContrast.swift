@@ -39,9 +39,11 @@ extension UISnapshotTests {
         @Test("NowPlayingStrip high contrast light mode")
         func stripHighContrastLight() async throws {
             let vm = try await makeNowPlayingVM()
+            let libraryVM = try await makeLibraryVM()
             let vizVM = VisualizerViewModel(engine: AudioEngine())
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environmentObject(libraryVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .environment(\.bocanHighContrast, true)
                 .frame(width: Self.stripSize.width, height: Self.stripSize.height)
@@ -55,9 +57,11 @@ extension UISnapshotTests {
         @Test("NowPlayingStrip high contrast dark mode")
         func stripHighContrastDark() async throws {
             let vm = try await makeNowPlayingVM()
+            let libraryVM = try await makeLibraryVM()
             let vizVM = VisualizerViewModel(engine: AudioEngine())
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environmentObject(libraryVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .environment(\.bocanHighContrast, true)
                 .colorScheme(.dark)

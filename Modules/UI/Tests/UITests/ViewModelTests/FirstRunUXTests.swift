@@ -40,7 +40,8 @@ struct FirstRunUXTests {
 
     @Test("NowPlayingStrip de-emphasizes and disables Prev/Next when idle (#310)")
     func idleTransportDisabled() throws {
-        let strip = try self.source("AppRoot/NowPlayingStrip.swift")
+        // Transport controls were extracted to MusicTransportControls.swift in phase 21-10.
+        let strip = try self.source("Transport/MusicTransportControls.swift")
         // Prev/Next dim to the tertiary colour and disable when nothing is loaded.
         #expect(
             strip.contains(".foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)"),

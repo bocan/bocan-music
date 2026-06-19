@@ -88,6 +88,12 @@ struct UISnapshotTests {
             return NowPlayingViewModel(engine: engine, database: db)
         }
 
+        private func makeLibraryVM() async throws -> LibraryViewModel {
+            let db = try await Database(location: .inMemory)
+            let engine = MockTransport()
+            return LibraryViewModel(database: db, engine: engine)
+        }
+
         private func makeVisualizerVM() -> VisualizerViewModel {
             VisualizerViewModel(engine: AudioEngine())
         }
@@ -95,10 +101,12 @@ struct UISnapshotTests {
         @Test("Strip idle light mode")
         func stripIdleLight() async throws {
             let vm = try await makeNowPlayingVM()
+            let libraryVM = try await makeLibraryVM()
             let vizVM = self.makeVisualizerVM()
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environmentObject(libraryVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
             assertSnapshot(of: host(view, size: size), as: .image(precision: 0.98, perceptualPrecision: 0.98), named: "strip-idle-light")
@@ -107,10 +115,12 @@ struct UISnapshotTests {
         @Test("Strip idle dark mode")
         func stripIdleDark() async throws {
             let vm = try await makeNowPlayingVM()
+            let libraryVM = try await makeLibraryVM()
             let vizVM = self.makeVisualizerVM()
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environmentObject(libraryVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
                 .colorScheme(.dark)
@@ -122,6 +132,7 @@ struct UISnapshotTests {
             let db = try await Database(location: .inMemory)
             let engine = MockTransport()
             let vm = NowPlayingViewModel(engine: engine, database: db)
+            let libraryVM = LibraryViewModel(database: db, engine: engine)
             let vizVM = self.makeVisualizerVM()
             let now = Int64(Date().timeIntervalSince1970)
             let track = Track(
@@ -138,6 +149,7 @@ struct UISnapshotTests {
             let size = CGSize(width: 900, height: Theme.nowPlayingStripHeight)
             let view = NowPlayingStrip(vm: vm)
                 .environmentObject(vizVM)
+                .environmentObject(libraryVM)
                 .environment(DSPViewModel(engine: AudioEngine()))
                 .frame(width: size.width, height: size.height)
             assertSnapshot(
