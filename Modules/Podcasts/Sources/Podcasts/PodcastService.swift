@@ -5,17 +5,11 @@ import Persistence
 /// The single public facade for all podcast data operations.
 ///
 /// Owns subscribe/refresh/unsubscribe, playback-state read/write, and observation
-/// streams. The App layer wires the UI data-source seam (phase 21-7) and the
-/// `PodcastEpisodeResolving` seam (phase 21-5) by forwarding directly to these methods.
+/// streams. The App layer wires the UI data-source and `PodcastEpisodeResolving` seams.
 ///
 /// **Design invariant**: refresh never writes to `podcast_episode_state`. State rows
 /// are written exclusively by the playback bridge (`saveProgress`, `markPlayed`,
 /// `markUnplayed`). The headline test in `PodcastServiceTests` guards this.
-///
-/// **Unsubscribe** performs a hard delete (MVP). State cascades away on deletion.
-/// A future soft-delete can be added by setting `subscribed = false` instead;
-/// call out the trade-off in the UI: "Unsubscribe removes playback history for
-/// this show."
 public actor PodcastService {
     private let podcastRepo: PodcastRepository
     private let episodeRepo: EpisodeRepository
@@ -420,10 +414,7 @@ public actor PodcastService {
         }
     }
 
-    /// Marks the episode fully played by podcast database ID.
-    ///
-    /// Used by the UI `PodcastActions` seam, which fires by `podcastID` rather
-    /// than feedURL (no URL cache lookup needed here).
+    /// Marks the episode fully played by podcast database ID (UI seam, bypasses feedURL cache).
     public func markPlayed(podcastID: Int64, guid: String) async {
         do {
             try await self.stateRepo.markPlayed(
@@ -439,17 +430,21 @@ public actor PodcastService {
         }
     }
 
-    /// Resets the episode to unplayed with position 0 by podcast database ID.
-    ///
-    /// Used by the UI `PodcastActions` seam; bypasses the feedURL cache.
+    /// Resets the episode to unplayed with position 0 by podcast database ID (UI seam).
     public func markUnplayed(podcastID: Int64, guid: String) async {
         do {
             try await self.stateRepo.markUnplayed(podcastID: podcastID, guid: guid)
         } catch {
-            self.log.warning(
-                "podcast.markUnplayed.byID.failed",
-                ["error": String(reflecting: error)]
-            )
+            self.log.warning("podcast.markUnplayed.byID.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Marks all episodes for a podcast as played (UI seam).
+    public func markAllPlayed(podcastID: Int64) async {
+        do {
+            try await self.stateRepo.markAllPlayed(podcastID: podcastID, now: self.now().timeIntervalSince1970)
+        } catch {
+            self.log.warning("podcast.markAllPlayed.failed", ["error": String(reflecting: error)])
         }
     }
 

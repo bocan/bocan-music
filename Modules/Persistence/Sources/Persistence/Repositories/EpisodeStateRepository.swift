@@ -123,6 +123,36 @@ public struct EpisodeStateRepository: Sendable {
         self.log.debug("episode.markUnplayed", ["podcastID": podcastID, "guid": guid])
     }
 
+    /// Marks every episode for a podcast as played in a single transaction.
+    public func markAllPlayed(podcastID: Int64, now: Double) async throws {
+        let guids = try await self.database.read { db in
+            try String.fetchAll(
+                db,
+                sql: "SELECT guid FROM podcast_episodes WHERE podcast_id = ?",
+                arguments: [podcastID]
+            )
+        }
+        guard !guids.isEmpty else { return }
+        try await self.database.write { db in
+            for guid in guids {
+                try db.execute(
+                    sql: """
+                    INSERT INTO podcast_episode_state
+                        (podcast_id, guid, play_position, play_state, last_played_at, completed_at)
+                    VALUES (?, ?, 0.0, 'played', ?, ?)
+                    ON CONFLICT(podcast_id, guid) DO UPDATE SET
+                        play_position  = 0.0,
+                        play_state     = 'played',
+                        last_played_at = excluded.last_played_at,
+                        completed_at   = excluded.completed_at
+                    """,
+                    arguments: [podcastID, guid, now, now]
+                )
+            }
+        }
+        self.log.debug("episode.markAllPlayed", ["podcastID": podcastID, "count": guids.count])
+    }
+
     /// Updates the download state, path, and byte count.
     public func setDownloadState(
         podcastID: Int64,
