@@ -638,6 +638,17 @@ extension BocanApp {
             player: qp,
             downloads: podcastDownloads
         )
+        // Phase 21-8: Podcast Index search defaults to empty credentials (iTunes-only).
+        // A future settings screen can surface Podcast Index API key entry.
+        let podcastSearch = AppPodcastSearch(
+            searchService: PodcastSearchService(
+                podcastIndex: nil,
+                itunes: ITunesSearchClient()
+            ),
+            fetcher: FeedFetcher(),
+            parser: FeedParser(),
+            podcastRepo: PodcastRepository(database: db)
+        )
         let lvm = LibraryViewModel(
             database: db,
             engine: qp,
@@ -652,7 +663,8 @@ extension BocanApp {
             subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
             subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor),
             podcastLibrary: podcastService,
-            podcastActions: podcastActions
+            podcastActions: podcastActions,
+            podcastSearch: podcastSearch
         )
         // Start the background feed refresh loop. Phase 21-7 spec: called once
         // at launch; the scheduler is idempotent so wake-notifications can also

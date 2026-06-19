@@ -2114,6 +2114,16 @@
         }
       }
     },
+    "Add this feed" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áđđ ţĥíš ƒééđ one"
+          }
+        }
+      }
+    },
     "Add to Playlist" : {
       "localizations" : {
         "en-XA" : {
@@ -7008,6 +7018,16 @@
         }
       }
     },
+    "Failed to load podcast details." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒáíĺéđ ţó ĺóáđ ƥóđçášţ đéţáíĺš. one two three"
+          }
+        }
+      }
+    },
     "Fetch Lyrics from LRClib" : {
       "localizations" : {
         "en" : {
@@ -7496,12 +7516,72 @@
         }
       }
     },
+    "Found on Apple Podcasts" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒóúñđ óñ Áƥƥĺé Ƥóđçášţš one two"
+          }
+        }
+      }
+    },
+    "Found on Podcast Index" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒóúñđ óñ Ƥóđçášţ Íñđéx one two"
+          }
+        }
+      }
+    },
+    "Found on Podcast Index and Apple Podcasts" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒóúñđ óñ Ƥóđçášţ Íñđéx áñđ Áƥƥĺé Ƥóđçášţš one two three"
+          }
+        }
+      }
+    },
     "Frame Rate" : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƒŕáḿé Ŕáţé one"
+          }
+        }
+      }
+    },
+    "From Apple Podcasts" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒŕóḿ Áƥƥĺé Ƥóđçášţš one two"
+          }
+        }
+      }
+    },
+    "From Podcast Index" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒŕóḿ Ƥóđçášţ Íñđéx one two"
+          }
+        }
+      }
+    },
+    "From Podcast Index and Apple Podcasts" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒŕóḿ Ƥóđçášţ Íñđéx áñđ Áƥƥĺé Ƥóđçášţš one two three"
           }
         }
       }
@@ -10178,6 +10258,16 @@
         }
       }
     },
+    "No Podcasts Found" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñó Ƥóđçášţš Ƒóúñđ one two"
+          }
+        }
+      }
+    },
     "No Presets" : {
       "localizations" : {
         "en" : {
@@ -10486,6 +10576,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ñó ƥĺáýĺíšţš ýéţ one two"
+          }
+        }
+      }
+    },
+    "No podcasts found." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñó ƥóđçášţš ƒóúñđ. one two"
           }
         }
       }
@@ -11985,6 +12085,26 @@
         }
       }
     },
+    "Podcast Details" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥóđçášţ Đéţáíĺš one two"
+          }
+        }
+      }
+    },
+    "Podcast search unavailable." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥóđçášţ šéáŕçĥ úñáváíĺáƀĺé. one two three"
+          }
+        }
+      }
+    },
     "Podcasts" : {
       "localizations" : {
         "en-XA" : {
@@ -12441,6 +12561,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŕéƀúíĺđ Ƒúĺĺ-Ţéxţ Šéáŕçĥ Íñđéx one two three"
+          }
+        }
+      }
+    },
+    "Recent Episodes" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéçéñţ Éƥíšóđéš one two"
           }
         }
       }
@@ -15841,12 +15971,32 @@
         }
       }
     },
+    "Subscribe" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šúƀšçŕíƀé one"
+          }
+        }
+      }
+    },
     "Subscribe to a podcast to get started." : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šúƀšçŕíƀé ţó á ƥóđçášţ ţó ĝéţ šţáŕţéđ. one two three"
+          }
+        }
+      }
+    },
+    "Subscribed" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šúƀšçŕíƀéđ one"
           }
         }
       }
