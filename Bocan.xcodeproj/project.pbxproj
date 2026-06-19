@@ -25,7 +25,7 @@
 		1F1499B169550B0AA312A408 /* LibrarySidebarExpansionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FD02C5D416F4CB4CF501D1 /* LibrarySidebarExpansionTests.swift */; };
 		235DCEA8287BFE60BDFC1313 /* SmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5BAA30AA4420B9BDC03C81 /* SmokeTests.swift */; };
 		2442A15E49DA0BC61C7B38E5 /* libdav1d.7.dylib in Resources */ = {isa = PBXBuildFile; fileRef = A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */; };
-		251364DE7069EC1D663C49E1 /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
+		251364DE7069EC1D663C49E1 /* Podcasts in Frameworks */ = {isa = PBXBuildFile; productRef = D39F44552C427260901E72AF /* Podcasts */; };
 		252FE242AD6A2240FCC61959 /* FirstRunUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755D5AD500E590F89922716C /* FirstRunUXTests.swift */; };
 		26915B734070F50653BB0FB0 /* NoticesWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A48BC953E0F409019C6F855F /* NoticesWindowView.swift */; };
 		2951251A22331F41815417C1 /* dmg-background.png in Resources */ = {isa = PBXBuildFile; fileRef = 5176B1403032D73D9D52B246 /* dmg-background.png */; };
@@ -66,7 +66,7 @@
 		7A3494AA7B3FEA6EDBCFDD1B /* libvpx.12.dylib in Resources */ = {isa = PBXBuildFile; fileRef = DF5ADAFD0499127461E0702F /* libvpx.12.dylib */; };
 		7BC373783953DCFDB5666EAC /* SubsonicSourcesDiscoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2EA275000509650FFC93292 /* SubsonicSourcesDiscoveryTests.swift */; };
 		7D8AD74E3C50474CA24958DC /* SingleInstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4262BE7B022BB4DC4BDA75C /* SingleInstance.swift */; };
-		7F67B098FEA98614EA0DEBD4 /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
+		7F67B098FEA98614EA0DEBD4 /* Subsonic in Frameworks */ = {isa = PBXBuildFile; productRef = A785EA980EBAF6FB63114FE6 /* Subsonic */; };
 		7FA36AE37C84A3C2924AFBB2 /* Playback in Frameworks */ = {isa = PBXBuildFile; productRef = 725067C07C4341529B60581F /* Playback */; };
 		83D1988AE70AF6C6F97FC1A3 /* DebugAudioView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86C2B2FF5D1DDE98868F4E4 /* DebugAudioView.swift */; };
 		84BAE5C2FAF57BE28E445749 /* ReduceTransparencyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2281C47BF7969849A1BCBFA6 /* ReduceTransparencyTests.swift */; };
@@ -79,7 +79,7 @@
 		905B83A145C60C115F496A91 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EFCF37422883F3C0CF718D56 /* Persistence */; };
 		96A36682C5C69445F0658AA8 /* RecentScrobblesConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C24DAA87753A2DF30A24F5C3 /* RecentScrobblesConventionTests.swift */; };
 		9A49EEFAA444AFE7F9201F7C /* LogLevelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2FB29B52531A4B47891F584 /* LogLevelTests.swift */; };
-		9B60DEC59F8E4D4A133B1CAF /* Subsonic in Frameworks */ = {isa = PBXBuildFile; productRef = A785EA980EBAF6FB63114FE6 /* Subsonic */; };
+		9B60DEC59F8E4D4A133B1CAF /* Scrobble in Frameworks */ = {isa = PBXBuildFile; productRef = 7958F5C62AD395861A62A40B /* Scrobble */; };
 		9C385BADF495477668F1AA60 /* AudioEngine in Frameworks */ = {isa = PBXBuildFile; productRef = EE0BAD633E96C7812391D0FE /* AudioEngine */; };
 		9E946B00D5A9E08CDC933340 /* SidebarAddFolderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7239B94475BB9DFDD91C52FA /* SidebarAddFolderTests.swift */; };
 		A1569BAE625F7393B7C52666 /* SubsonicScrobbleDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = E13AA0034D3321486DB8390B /* SubsonicScrobbleDelivery.swift */; };
@@ -107,6 +107,7 @@
 		CF662F890AEBEE98A2B06936 /* AppLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B64EE7F110DC23AF67E1AFA /* AppLoggerTests.swift */; };
 		D20B1E269BB4296EB8EB7191 /* LogEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E307E6CD3D5FD3BA864778 /* LogEntryTests.swift */; };
 		D376AD0CF2E8518F2B7AEC32 /* SingleInstanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D1CAA6A918DE471019AB205 /* SingleInstanceTests.swift */; };
+		D4370EDB9ACA992B6E0B2E7B /* UI in Frameworks */ = {isa = PBXBuildFile; productRef = D1ABAB928B628AE14B24A3B8 /* UI */; };
 		D4FF663D31850CABBFD89C5A /* AlbumsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82F9CA039EA2E967BAA21F51 /* AlbumsViewModelTests.swift */; };
 		D53EDE6FD10273FA288C97C5 /* NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 8DE7AE70CABE9E93BDBE5955 /* NOTICES.md */; };
 		D5ADCD49724769425BB35B1A /* SubsonicSidebarConnectionStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E8A95FEB9C77F01D11F1773 /* SubsonicSidebarConnectionStateTests.swift */; };
@@ -166,6 +167,7 @@
 		4A7D0056F94537B0919CE3D4 /* InitialScanOverlayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InitialScanOverlayTests.swift; sourceTree = "<group>"; };
 		5176B1403032D73D9D52B246 /* dmg-background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "dmg-background.png"; sourceTree = "<group>"; };
 		531C8B2E4746B8942918520D /* Subsonic */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Subsonic; path = Modules/Subsonic; sourceTree = SOURCE_ROOT; };
+		53E595DDA2F51C36CA1A31AE /* Podcasts */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Podcasts; path = Modules/Podcasts; sourceTree = SOURCE_ROOT; };
 		5E81F40F4AF9574582DC83F3 /* UIStateV2Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIStateV2Tests.swift; sourceTree = "<group>"; };
 		5ED57792C57E833ECFCE6DC3 /* SettingsMenuTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMenuTests.swift; sourceTree = "<group>"; };
 		5F9290FC0C85BA0735CCF7F2 /* HelpWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpWindowView.swift; sourceTree = "<group>"; };
@@ -244,7 +246,7 @@
 		F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_EF3C7F22-85C2-48FA-8FC1-5F69333EA060" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_1B66566B-A307-4DCC-8850-3F75DCF099DE" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -259,9 +261,10 @@
 				2F10190EBC449B79B6806730 /* Playback in Frameworks */,
 				0930C3F6FA5F345B5A26F234 /* Library in Frameworks */,
 				AE7DBDB3DD4836389E11BAC5 /* Acoustics in Frameworks */,
-				251364DE7069EC1D663C49E1 /* Scrobble in Frameworks */,
-				9B60DEC59F8E4D4A133B1CAF /* Subsonic in Frameworks */,
-				7F67B098FEA98614EA0DEBD4 /* UI in Frameworks */,
+				251364DE7069EC1D663C49E1 /* Podcasts in Frameworks */,
+				9B60DEC59F8E4D4A133B1CAF /* Scrobble in Frameworks */,
+				7F67B098FEA98614EA0DEBD4 /* Subsonic in Frameworks */,
+				D4370EDB9ACA992B6E0B2E7B /* UI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -418,6 +421,7 @@
 				8C85F460580B049360716FE5 /* Observability */,
 				6E014B4987A60B08F6DE299A /* Persistence */,
 				8312FA03D246CA845C348E77 /* Playback */,
+				53E595DDA2F51C36CA1A31AE /* Podcasts */,
 				EA774AB72CC95F420281D172 /* Scrobble */,
 				531C8B2E4746B8942918520D /* Subsonic */,
 				D9B5B3110CE7BC30E8122BE8 /* UI */,
@@ -537,10 +541,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_57154E5D-7033-403D-87F8-A060E4DEF474" /* bocan-music */ = {
+		"TEMP_D8FAA2E4-F32B-4A1D-AF54-94EF18600F4B" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_EF3C7F22-85C2-48FA-8FC1-5F69333EA060" /* Secrets.xcconfig */,
+				"TEMP_1B66566B-A307-4DCC-8850-3F75DCF099DE" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -570,6 +574,7 @@
 				E05BB587A6FC66933F79D585 /* Playback */,
 				D12DF4C04E3DB095C79E72AA /* Library */,
 				66DA699183F712D5B228B317 /* Acoustics */,
+				D39F44552C427260901E72AF /* Podcasts */,
 				7958F5C62AD395861A62A40B /* Scrobble */,
 				A785EA980EBAF6FB63114FE6 /* Subsonic */,
 				D1ABAB928B628AE14B24A3B8 /* UI */,
@@ -659,6 +664,7 @@
 				DC0F5EA22CB5FAA327417C6B /* XCLocalSwiftPackageReference "Modules/Observability" */,
 				73929B74C971FA1861E7E569 /* XCLocalSwiftPackageReference "Modules/Persistence" */,
 				166FA01824FE15FCD4D4D28B /* XCLocalSwiftPackageReference "Modules/Playback" */,
+				E9A576D858110977195D7E3F /* XCLocalSwiftPackageReference "Modules/Podcasts" */,
 				3B5F2EF875A6F6FFF55F7ACB /* XCLocalSwiftPackageReference "Modules/Scrobble" */,
 				83DC56AE955B2425894EBA99 /* XCLocalSwiftPackageReference "Modules/Subsonic" */,
 				FE6D5E7CC473CB3FE993F62B /* XCLocalSwiftPackageReference "Modules/UI" */,
@@ -871,7 +877,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_EF3C7F22-85C2-48FA-8FC1-5F69333EA060" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_1B66566B-A307-4DCC-8850-3F75DCF099DE" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1007,7 +1013,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_EF3C7F22-85C2-48FA-8FC1-5F69333EA060" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_1B66566B-A307-4DCC-8850-3F75DCF099DE" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1172,6 +1178,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Observability;
 		};
+		E9A576D858110977195D7E3F /* XCLocalSwiftPackageReference "Modules/Podcasts" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/Podcasts;
+		};
 		FE6D5E7CC473CB3FE993F62B /* XCLocalSwiftPackageReference "Modules/UI" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/UI;
@@ -1238,6 +1248,10 @@
 		D1ABAB928B628AE14B24A3B8 /* UI */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = UI;
+		};
+		D39F44552C427260901E72AF /* Podcasts */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Podcasts;
 		};
 		E05BB587A6FC66933F79D585 /* Playback */ = {
 			isa = XCSwiftPackageProductDependency;

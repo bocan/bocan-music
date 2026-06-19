@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-observability uitest lint format pseudolocale format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-observability uitest lint format pseudolocale format-check install-hooks clean
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -197,6 +197,13 @@ test-subsonic:
 	@echo "= Executing Subsonic Test"
 	@echo "=============================="
 	cd Modules/Subsonic && swift test --enable-code-coverage
+
+## test-podcasts: Run Podcasts SPM package tests
+test-podcasts:
+	@echo "=============================="
+	@echo "= Executing Podcasts Test"
+	@echo "=============================="
+	cd Modules/Podcasts && swift test --enable-code-coverage
 
 ## test-observability: Run Observability SPM package tests
 test-observability:
