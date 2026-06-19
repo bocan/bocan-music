@@ -11,6 +11,7 @@ public final class PodcastsViewModel: ObservableObject {
     // MARK: - Published state
 
     @Published public private(set) var subscribed: [Podcast] = []
+    @Published public private(set) var podcastEpisodeCounts: [Int64: Int] = [:]
     @Published public private(set) var isLoading = false
     @Published public private(set) var currentShow: Podcast?
     /// Episodes for the currently open show. Populated by `loadShow(_:)`.
@@ -73,6 +74,7 @@ public final class PodcastsViewModel: ObservableObject {
         self.isLoading = true
         do {
             self.subscribed = try await library.subscribedPodcasts()
+            self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
         } catch {
             self.log.error("podcasts.loadSubscribed.failed", ["error": String(reflecting: error)])
         }
@@ -89,6 +91,7 @@ public final class PodcastsViewModel: ObservableObject {
                     guard let self else { return }
                     try Task.checkCancellation()
                     self.subscribed = podcasts
+                    self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
                 }
             } catch is CancellationError {
                 // Expected when the task is cancelled on navigation.

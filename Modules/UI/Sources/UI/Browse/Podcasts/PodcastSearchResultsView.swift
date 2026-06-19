@@ -135,6 +135,12 @@ private struct PodcastSearchResultRow: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
+                    if let count = self.result.episodeCount {
+                        Text(L10n.string("\(count) episodes"))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
                 }
 
                 Spacer()
