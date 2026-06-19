@@ -169,6 +169,7 @@ public protocol PodcastLibraryDataSource: Sendable {
     func episodes(podcastID: Int64) async throws -> [EpisodeListItem]
     func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error>
     func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error>
+    func episodeCounts() async throws -> [Int64: Int]
 }
 
 // MARK: - PodcastActions

@@ -284,6 +284,10 @@ public actor PodcastService {
         await self.episodeRepo.observeListItems(podcastID: podcastID)
     }
 
+    public func episodeCounts() async throws -> [Int64: Int] {
+        try await self.episodeRepo.fetchAllPodcastCounts()
+    }
+
     // MARK: - Playback-state bridge
 
     /// Returns the enclosure URL for an episode (or a local file URL when downloaded).
