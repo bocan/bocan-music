@@ -17,6 +17,8 @@ private struct TestBed {
     let feedMock: MockHTTPClient
     let artMock: MockHTTPClient
     let artTempDir: URL
+    let downloadStore: DownloadStore
+    let downloadRoot: URL
 }
 
 private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
@@ -26,12 +28,16 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
     let artTemp = FileManager.default.temporaryDirectory
         .appendingPathComponent("PodcastArtworkCacheTests-\(UUID().uuidString)", isDirectory: true)
     let artCache = PodcastArtworkCache(http: artMock, root: artTemp)
+    let downloadRoot = FileManager.default.temporaryDirectory
+        .appendingPathComponent("PodcastDownloadsTests-\(UUID().uuidString)", isDirectory: true)
+    let downloadStore = DownloadStore(root: downloadRoot)
     let service = PodcastService(
         podcastRepo: PodcastRepository(database: db),
         episodeRepo: EpisodeRepository(database: db),
         stateRepo: EpisodeStateRepository(database: db),
         fetcher: FeedFetcher(http: feedMock),
         artwork: artCache,
+        downloadStore: downloadStore,
         now: { nowDate }
     )
     return TestBed(
@@ -40,7 +46,9 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
         artCache: artCache,
         feedMock: feedMock,
         artMock: artMock,
-        artTempDir: artTemp
+        artTempDir: artTemp,
+        downloadStore: downloadStore,
+        downloadRoot: downloadRoot
     )
 }
 
@@ -409,6 +417,34 @@ struct PodcastServiceTests {
         #expect(url.path == tmpFile.path)
     }
 
+    @Test("audioURL resets state and streams when the downloaded file is missing")
+    func audioURLResetsWhenFileMissing() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // State claims downloaded, but the path does not exist (cleared out of band).
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        try await stateRepo.setDownloadState(
+            podcastID: podcastID,
+            guid: ep1GUID,
+            state: .downloaded,
+            path: "/tmp/does-not-exist-\(UUID().uuidString).mp3",
+            bytes: 1234
+        )
+
+        let url = try await bed.service.audioURL(feedURL: testFeedURL, episodeGUID: ep1GUID)
+        #expect(!url.isFileURL, "falls back to the streaming enclosure URL")
+        #expect(url.absoluteString == "https://example.com/ep1.mp3")
+
+        // The stale download state must be reset to none.
+        let state = try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)
+        #expect(state?.downloadState == EpisodeDownloadState.none)
+    }
+
     // MARK: unsubscribe
 
     @Test("unsubscribe removes the podcast row and evicts the artwork directory")
@@ -438,6 +474,16 @@ struct PodcastServiceTests {
         let artDir = bed.artTempDir.appendingPathComponent("\(podcastID)")
         #expect(FileManager.default.fileExists(atPath: artDir.path))
 
+        // Write a downloaded episode file so unsubscribe must delete its directory.
+        let dlTemp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("dl-\(UUID().uuidString).tmp")
+        try Data("audio".utf8).write(to: dlTemp)
+        _ = try bed.downloadStore.moveIntoPlace(
+            from: dlTemp, podcastID: podcastID, guid: ep1GUID, mime: "audio/mpeg"
+        )
+        let dlDir = bed.downloadRoot.appendingPathComponent("\(podcastID)")
+        #expect(FileManager.default.fileExists(atPath: dlDir.path))
+
         try await bed.service.unsubscribe(podcastID: podcastID)
 
         // Row must be gone.
@@ -448,8 +494,9 @@ struct PodcastServiceTests {
             // Expected: notFound.
         }
 
-        // Artwork directory must be evicted.
+        // Artwork directory and download directory must both be evicted.
         #expect(!FileManager.default.fileExists(atPath: artDir.path))
+        #expect(!FileManager.default.fileExists(atPath: dlDir.path), "unsubscribe deletes the show's downloads")
     }
 
     // MARK: artwork cache

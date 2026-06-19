@@ -155,6 +155,29 @@ private func makeTempFile(bytes: Int) throws -> URL {
     return url
 }
 
+/// Inserts an episode, writes a real downloaded file into the store, and records
+/// `.downloaded` state (optionally marking it played at `completedAt`). Returns
+/// the on-disk file path.
+@discardableResult
+private func makeDownloaded(
+    _ bed: DownloadBed,
+    guid: String,
+    bytes: Int,
+    played: Bool,
+    completedAt: Double?
+) async throws -> String {
+    try await insertEpisode(bed, guid: guid)
+    let temp = try makeTempFile(bytes: bytes)
+    let dest = try bed.store.moveIntoPlace(from: temp, podcastID: bed.podcastID, guid: guid, mime: "audio/mpeg")
+    try await bed.stateRepo.setDownloadState(
+        podcastID: bed.podcastID, guid: guid, state: .downloaded, path: dest.path, bytes: Int64(bytes)
+    )
+    if played {
+        try await bed.stateRepo.markPlayed(podcastID: bed.podcastID, guid: guid, now: completedAt ?? 1_700_000_000)
+    }
+    return dest.path
+}
+
 /// Yields cooperatively until `condition` holds (the manager processes transfer
 /// callbacks on hopped Tasks) or the yield budget is exhausted. Deterministic:
 /// no wall-clock waits.
@@ -376,5 +399,86 @@ struct EpisodeDownloadManagerTests {
         await bed.manager.download(podcastID: bed.podcastID, guid: "g1")
 
         #expect(bed.fake.controls.isEmpty, "no new transfer is started for an already-downloaded episode")
+    }
+
+    // MARK: Storage management
+
+    @Test("totalBytesOnDisk sums downloaded episode sizes")
+    func totalBytes() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        try await makeDownloaded(bed, guid: "a", bytes: 1000, played: false, completedAt: nil)
+        try await makeDownloaded(bed, guid: "b", bytes: 2500, played: true, completedAt: 100)
+        #expect(await bed.manager.totalBytesOnDisk() == 3500)
+    }
+
+    @Test("enforceStorageBudget evicts played downloads oldest-first, never unplayed")
+    func enforceBudget() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        let pathA = try await makeDownloaded(bed, guid: "a", bytes: 1000, played: true, completedAt: 100)
+        let pathB = try await makeDownloaded(bed, guid: "b", bytes: 1000, played: true, completedAt: 200)
+        let pathC = try await makeDownloaded(bed, guid: "c", bytes: 1000, played: true, completedAt: 300)
+        let pathU = try await makeDownloaded(bed, guid: "u", bytes: 1000, played: false, completedAt: nil)
+        #expect(await bed.manager.totalBytesOnDisk() == 4000)
+
+        await bed.manager.enforceStorageBudget(maxBytes: 2500)
+
+        // Need to shed 1500: evict a (oldest) then b; c and the unplayed download stay.
+        #expect(!FileManager.default.fileExists(atPath: pathA), "oldest played evicted")
+        #expect(!FileManager.default.fileExists(atPath: pathB), "next-oldest played evicted")
+        #expect(FileManager.default.fileExists(atPath: pathC), "newest played kept (now under budget)")
+        #expect(FileManager.default.fileExists(atPath: pathU), "unplayed download is never auto-evicted")
+        #expect(await self.state(bed, "a")?.downloadState == EpisodeDownloadState.none)
+        #expect(await self.state(bed, "a")?.playState == .played, "eviction preserves play history")
+        #expect(await self.state(bed, "u")?.downloadState == .downloaded)
+        #expect(await bed.manager.totalBytesOnDisk() == 2000)
+    }
+
+    @Test("enforceStorageBudget is a no-op when already under budget")
+    func enforceBudgetUnderBudget() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        let path = try await makeDownloaded(bed, guid: "a", bytes: 1000, played: true, completedAt: 100)
+        await bed.manager.enforceStorageBudget(maxBytes: 5000)
+        #expect(FileManager.default.fileExists(atPath: path))
+        #expect(await self.state(bed, "a")?.downloadState == .downloaded)
+    }
+
+    @Test("deletePlayedDownloads removes played downloads older than N days only")
+    func deletePlayedOld() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let oldPlayed = try await makeDownloaded(
+            bed, guid: "old", bytes: 10, played: true, completedAt: 1_000_000 - 10 * 86400
+        )
+        let recentPlayed = try await makeDownloaded(
+            bed, guid: "recent", bytes: 10, played: true, completedAt: 1_000_000 - 1 * 86400
+        )
+        let unplayedOld = try await makeDownloaded(bed, guid: "unp", bytes: 10, played: false, completedAt: nil)
+
+        await bed.manager.deletePlayedDownloads(olderThanDays: 7, now: now)
+
+        #expect(!FileManager.default.fileExists(atPath: oldPlayed), "played + older than 7 days is deleted")
+        #expect(FileManager.default.fileExists(atPath: recentPlayed), "played but recent is kept")
+        #expect(FileManager.default.fileExists(atPath: unplayedOld), "unplayed is never auto-deleted")
+        #expect(await self.state(bed, "old")?.downloadState == EpisodeDownloadState.none)
+    }
+
+    @Test("clearAll deletes every download and resets state")
+    func clearAllRemovesEverything() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        let pathA = try await makeDownloaded(bed, guid: "a", bytes: 10, played: false, completedAt: nil)
+        let pathB = try await makeDownloaded(bed, guid: "b", bytes: 20, played: true, completedAt: 100)
+
+        await bed.manager.clearAll()
+
+        #expect(!FileManager.default.fileExists(atPath: pathA))
+        #expect(!FileManager.default.fileExists(atPath: pathB))
+        #expect(await self.state(bed, "a")?.downloadState == EpisodeDownloadState.none)
+        #expect(await self.state(bed, "b")?.downloadState == EpisodeDownloadState.none)
+        #expect(await bed.manager.totalBytesOnDisk() == 0)
     }
 }
