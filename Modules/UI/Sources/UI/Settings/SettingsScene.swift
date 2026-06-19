@@ -127,6 +127,9 @@ public struct SettingsScene: View {
 
         case .diagnostics:
             DiagnosticsSettingsView()
+
+        case .podcasts:
+            PodcastSettingsView()
         }
     }
 }
@@ -152,7 +155,7 @@ struct SettingsSection: Identifiable {
         advanced.append(contentsOf: [.advanced, .diagnostics])
         return [
             Self(title: nil, pages: [.general, .appearance]),
-            Self(title: L10n.string("Library"), pages: [.library, .sources, .smartPlaylists]),
+            Self(title: L10n.string("Library"), pages: [.library, .sources, .smartPlaylists, .podcasts]),
             Self(title: L10n.string("Playback"), pages: [.playback, .equaliser, .effects, .replayGain]),
             Self(title: L10n.string("Now Playing"), pages: [.lyrics, .visualizer]),
             Self(title: L10n.string("Advanced"), pages: advanced),
@@ -206,6 +209,9 @@ extension SettingsPage {
 
         case .diagnostics:
             L10n.string("Diagnostics")
+
+        case .podcasts:
+            L10n.string("Podcasts")
         }
     }
 
@@ -252,6 +258,9 @@ extension SettingsPage {
 
         case .diagnostics:
             "stethoscope"
+
+        case .podcasts:
+            "dot.radiowaves.left.and.right.and.dot"
         }
     }
 }
