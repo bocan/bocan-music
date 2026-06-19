@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Mixed Media Podcast</title>
+    <link>https://mixed.example.com</link>
+    <description>A feed with both audio and video enclosures.</description>
+    <item>
+      <title>Video Episode</title>
+      <guid>guid-video</guid>
+      <pubDate>Mon, 01 Jan 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://mixed.example.com/ep1.mp4" type="video/mp4" length="99000000"/>
+    </item>
+    <item>
+      <title>Audio Episode</title>
+      <guid>guid-audio</guid>
+      <pubDate>Tue, 02 Jan 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://mixed.example.com/ep2.mp3" type="audio/mpeg" length="11000000"/>
+    </item>
+  </channel>
+</rss>

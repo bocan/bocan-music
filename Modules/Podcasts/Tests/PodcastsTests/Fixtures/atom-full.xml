@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Atom Podcast</title>
+  <subtitle>An Atom-format podcast feed.</subtitle>
+  <logo>https://atom.example.com/logo.png</logo>
+  <rights>2024 Atom Publishing Inc.</rights>
+  <link rel="alternate" href="https://atom.example.com/"/>
+  <author>
+    <name>Atom Author</name>
+    <email>author@atom.example.com</email>
+  </author>
+  <entry>
+    <id>https://atom.example.com/entry/1</id>
+    <title>Atom Episode One</title>
+    <published>2024-06-10T10:00:00Z</published>
+    <updated>2024-06-10T10:00:00Z</updated>
+    <summary>Episode summary here.</summary>
+    <content type="html">&lt;p&gt;Full HTML content.&lt;/p&gt;</content>
+    <link rel="enclosure" href="https://atom.example.com/ep1.mp3" type="audio/mpeg" length="8000000"/>
+    <link rel="alternate" href="https://atom.example.com/ep1"/>
+  </entry>
+  <entry>
+    <id>https://atom.example.com/entry/2</id>
+    <title>Atom Episode Two</title>
+    <published>2024-06-17T10:00:00Z</published>
+    <updated>2024-06-17T10:00:00Z</updated>
+    <summary>Second episode.</summary>
+    <link rel="enclosure" href="https://atom.example.com/ep2.mp3" type="audio/mpeg" length="7000000"/>
+  </entry>
+</feed>
