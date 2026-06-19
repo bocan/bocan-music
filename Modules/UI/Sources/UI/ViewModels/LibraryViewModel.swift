@@ -247,6 +247,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     public let podcastLibrary: (any PodcastLibraryDataSource)?
     public let podcastActions: (any PodcastActions)?
+    /// Phase 21-8: dual-index search + detail provider. Nil until wired in App.
+    public let podcastSearch: (any PodcastSearchProviding)?
 
     // MARK: - Dependencies
 
@@ -347,7 +349,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)? = nil,
         subsonicConnectionObserver: (any SubsonicConnectionObserving)? = nil,
         podcastLibrary: (any PodcastLibraryDataSource)? = nil,
-        podcastActions: (any PodcastActions)? = nil
+        podcastActions: (any PodcastActions)? = nil,
+        podcastSearch: (any PodcastSearchProviding)? = nil
     ) {
         self.database = database
         self.engine = engine
@@ -399,7 +402,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
         self.podcastLibrary = podcastLibrary
         self.podcastActions = podcastActions
-        self.podcasts = PodcastsViewModel(library: podcastLibrary, actions: podcastActions)
+        self.podcastSearch = podcastSearch
+        self.podcasts = PodcastsViewModel(
+            library: podcastLibrary,
+            actions: podcastActions,
+            searchProvider: podcastSearch
+        )
 
         self.searchQueryCancellable = self.makeSearchQuerySubscription()
 

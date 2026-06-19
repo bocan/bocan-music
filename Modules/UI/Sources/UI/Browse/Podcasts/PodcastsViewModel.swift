@@ -19,11 +19,23 @@ public final class PodcastsViewModel: ObservableObject {
     /// Set by `openShow(_:)` and observed by `PodcastsGridView` to trigger navigation.
     @Published public var selectedShowID: Int64?
 
+    // MARK: - Phase 21-8: search + detail state
+
+    @Published public internal(set) var searchResults: [UIPodcastSearchResult] = []
+    @Published public internal(set) var searchState: PodcastSearchState = .idle
+    @Published public internal(set) var addByURLCandidate: URL?
+    /// Controls the detail sheet. Publicly settable so SwiftUI's sheet binding can dismiss it.
+    @Published public var showingDetail = false
+    @Published public internal(set) var currentDetail: PodcastDetail?
+    @Published public internal(set) var isLoadingDetail = false
+    @Published public internal(set) var detailError: String?
+
     // MARK: - Dependencies
 
     private let library: (any PodcastLibraryDataSource)?
-    private let actions: (any PodcastActions)?
-    private let log = AppLogger.make(.ui)
+    let actions: (any PodcastActions)?
+    let searchProvider: (any PodcastSearchProviding)?
+    let log = AppLogger.make(.ui)
 
     // MARK: - Observation tasks
 
@@ -32,17 +44,24 @@ public final class PodcastsViewModel: ObservableObject {
     // is rejected on mutable stored properties). Leave nonisolated(unsafe) as-is -- see UI CLAUDE.md.
     private nonisolated(unsafe) var subscribedTask: Task<Void, Never>?
     private nonisolated(unsafe) var episodesTask: Task<Void, Never>?
+    nonisolated(unsafe) var detailTask: Task<Void, Never>?
 
     // MARK: - Init
 
-    public init(library: (any PodcastLibraryDataSource)?, actions: (any PodcastActions)?) {
+    public init(
+        library: (any PodcastLibraryDataSource)?,
+        actions: (any PodcastActions)?,
+        searchProvider: (any PodcastSearchProviding)? = nil
+    ) {
         self.library = library
         self.actions = actions
+        self.searchProvider = searchProvider
     }
 
     deinit {
         subscribedTask?.cancel()
         episodesTask?.cancel()
+        detailTask?.cancel()
     }
 
     // MARK: - Home
