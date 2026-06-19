@@ -62,8 +62,11 @@ struct PodcastDetailView: View {
                 PodcastSourceBadge(sources: self.detail.sources)
                     .padding(.top, 2)
 
-                self.subscribeButton
-                    .padding(.top, 4)
+                HStack(spacing: 10) {
+                    self.subscribeButton
+                    self.linkButtons
+                }
+                .padding(.top, 4)
             }
         }
     }
@@ -112,6 +115,25 @@ struct PodcastDetailView: View {
             .buttonStyle(.borderedProminent)
             .accessibilityLabel(L10n.string("Subscribe"))
         }
+    }
+
+    // MARK: - Website + Feed links
+
+    @ViewBuilder
+    private var linkButtons: some View {
+        Divider().frame(height: 20)
+        if let website = self.detail.link {
+            Link(destination: website) {
+                Label(L10n.string("Website"), systemImage: "globe")
+                    .font(.callout)
+            }
+            .help(website.absoluteString)
+        }
+        Link(destination: self.detail.feedURL) {
+            Label(L10n.string("RSS Feed"), systemImage: "dot.radiowaves.up.forward")
+                .font(.callout)
+        }
+        .help(self.detail.feedURL.absoluteString)
     }
 
     // MARK: - Category chips
