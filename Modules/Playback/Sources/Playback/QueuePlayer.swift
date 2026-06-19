@@ -23,6 +23,7 @@ public actor QueuePlayer: Transport {
     private let engine: AudioEngine
     private let database: Database
     private let subsonicResolver: (any SubsonicStreamResolving)?
+    private let podcastResolver: (any PodcastEpisodeResolving)?
 
     // MARK: - Sub-systems
 
@@ -128,11 +129,13 @@ public actor QueuePlayer: Transport {
         engine: AudioEngine,
         database: Database,
         scrobbleSink: (any ScrobbleSink)? = nil,
-        subsonicResolver: (any SubsonicStreamResolving)? = nil
+        subsonicResolver: (any SubsonicStreamResolving)? = nil,
+        podcastResolver: (any PodcastEpisodeResolving)? = nil
     ) {
         self.engine = engine
         self.database = database
         self.subsonicResolver = subsonicResolver
+        self.podcastResolver = podcastResolver
         self.queue = PlaybackQueue()
         self.historyRecorder = PlayHistoryRecorder(database: database, scrobbleSink: scrobbleSink)
         self.persistence = QueuePersistence(database: database)
@@ -246,11 +249,15 @@ public actor QueuePlayer: Transport {
     }
 
     public func pause() async {
+        // Persist a podcast position once before suspending, so a resume point
+        // exists even between the 5 s ticks.
+        await self.persistPodcastPositionIfNeeded()
         await self.engine.pause()
         await self.nowPlayingCentre?.setPlaying(false)
     }
 
     public func stop() async {
+        await self.persistPodcastPositionIfNeeded()
         await self.engine.stop()
         await self.gaplessScheduler.stop()
         await self.nowPlayingCentre?.setPlaying(false)
@@ -275,6 +282,12 @@ public actor QueuePlayer: Transport {
     /// Call this from `applicationWillTerminate` (or the equivalent notification).
     /// Safe to call when nothing is playing — it is a no-op when position is zero.
     public func savePositionForSuspend() async {
+        // A podcast item persists its per-episode position through the resolver,
+        // independent of the global last-position key (which podcast items
+        // ignore on restore). Do this first so it is not gated by the global
+        // `position > 0` guard below.
+        await self.persistPodcastPositionIfNeeded()
+
         let position = await self.engine.currentTime
         guard position > 0 else { return }
         UserDefaults.standard.set(position, forKey: "playback.resumePosition")
@@ -572,6 +585,24 @@ public actor QueuePlayer: Transport {
             // the stream directly.
             self.log.debug("queueplayer.internetRadio.start", ["url": streamURL.absoluteString])
             url = streamURL
+        } else if case let .podcast(feedURL, guid) = item.playableSource {
+            // Podcast episode: the resolver returns a remote https:// enclosure
+            // (DecoderFactory routes http(s) to FFmpegDecoder) or a local
+            // file:// download. No bookmark, no Subsonic cache.
+            guard let resolver = self.podcastResolver else {
+                self.log.error("queueplayer.podcast.no_resolver", ["guid": guid])
+                throw PlaybackError.incompatibleFormat(reason: "No podcast resolver configured")
+            }
+            self.log.debug("queueplayer.podcast.resolve.start", ["guid": guid])
+            do {
+                url = try await resolver.audioURL(feedURL: feedURL, episodeGUID: guid)
+            } catch {
+                self.log.error(
+                    "queueplayer.podcast.resolve.failed",
+                    ["guid": guid, "error": String(reflecting: error)]
+                )
+                throw PlaybackError.bookmarkResolutionFailed(trackID: item.trackID, underlying: error)
+            }
         } else if case let .subsonic(serverID, songID) = item.playableSource {
             guard let resolver = self.subsonicResolver else {
                 self.log.error("queueplayer.subsonic.no_resolver", ["songID": songID])
@@ -669,6 +700,12 @@ public actor QueuePlayer: Transport {
             ])
         }
 
+        // Per-episode podcast resume: seek to the saved position for this
+        // episode before playback begins. This is authoritative for a podcast
+        // item; the global last-position restore path skips podcast items so
+        // the two resume mechanisms never fight.
+        await self.applyPodcastResumeIfNeeded(for: item)
+
         if let track {
             let capturedEngine = self.engine
             await self.nowPlayingCentre?.update(
@@ -706,6 +743,9 @@ public actor QueuePlayer: Transport {
         // Internet radio is a live stream — no track row, no scrobble.
         // Skip the history recorder entirely.
         if case .internetRadio = item.playableSource { return }
+        // Podcasts are not music tracks and never scrobble to Last.fm /
+        // ListenBrainz. Skip the recorder so no scrobble is ever enqueued.
+        if case .podcast = item.playableSource { return }
         if case let .subsonic(serverID, songID) = item.playableSource {
             let context = SubsonicPlayContext(
                 serverID: serverID,
@@ -754,6 +794,10 @@ public actor QueuePlayer: Transport {
                 guard let self, !Task.isCancelled else { break }
                 let elapsed = await self.engine.currentTime
                 await self.historyRecorder.update(elapsed: elapsed)
+                // Reuse this 5 s tick for podcast position write-back; do not
+                // add a second timer (writing on every sub-second engine
+                // callback would be position spam).
+                await self.persistPodcastPositionIfNeeded()
             }
         }
     }
@@ -761,6 +805,62 @@ public actor QueuePlayer: Transport {
     private func stopScrobbleUpdateLoop() {
         self.scrobbleUpdateTask?.cancel()
         self.scrobbleUpdateTask = nil
+    }
+
+    /// Writes the current engine position back through the podcast resolver
+    /// when the current item is a `.podcast`. A no-op for every other source.
+    ///
+    /// Invoked from the 5 s history tick and from `pause()` / `stop()` /
+    /// `savePositionForSuspend()` so a resume point survives between ticks.
+    /// Visible to tests, which drive it directly rather than waiting on the timer.
+    func persistPodcastPositionIfNeeded() async {
+        guard let resolver = self.podcastResolver,
+              let item = await self.queue.currentItem,
+              case let .podcast(feedURL, guid) = item.playableSource else { return }
+        let position = await self.engine.currentTime
+        let duration = await self.engine.duration
+        await resolver.persistPosition(
+            feedURL: feedURL,
+            episodeGUID: guid,
+            position: position,
+            duration: duration
+        )
+    }
+
+    /// Applies the per-episode podcast resume for `item`, returning the position
+    /// it sought to, or `nil` when the item is not a podcast, has no resolver,
+    /// or the saved position is <= 1 second (so a seek would be pointless).
+    ///
+    /// Called from `loadAndPlay` after the engine has loaded the item and before
+    /// playback starts. Visible to tests, which drive it directly to assert the
+    /// resolver is consulted and the seek gate is honoured.
+    @discardableResult
+    func applyPodcastResumeIfNeeded(for item: QueueItem) async -> TimeInterval? {
+        guard case let .podcast(feedURL, guid) = item.playableSource,
+              let resolver = self.podcastResolver else { return nil }
+        let resume = await resolver.resumePosition(feedURL: feedURL, episodeGUID: guid)
+        guard resume > 1 else { return nil }
+        do {
+            try await self.engine.seek(to: resume)
+            self.log.debug("queueplayer.podcast.resume", ["position": resume])
+        } catch {
+            self.log.warning(
+                "queueplayer.podcast.resume.seekFailed",
+                ["position": resume, "error": String(reflecting: error)]
+            )
+        }
+        return resume
+    }
+
+    /// Marks `item` played through the podcast resolver when it is a `.podcast`.
+    /// A no-op for every other source (and for `nil`). Idempotent, so calling it
+    /// from both the natural-end and gapless-handoff paths is harmless.
+    private func markPlayedIfPodcast(_ item: QueueItem?) async {
+        guard let resolver = self.podcastResolver,
+              let item,
+              case let .podcast(feedURL, guid) = item.playableSource else { return }
+        await resolver.markPlayed(feedURL: feedURL, episodeGUID: guid)
+        self.log.debug("queueplayer.podcast.markPlayed", ["guid": guid])
     }
 
     /// Visible to tests so they can drive the end-of-track flow without needing a
@@ -786,6 +886,12 @@ public actor QueuePlayer: Transport {
             self.log.debug("queueplayer.ended.swallowed.afterGapless", ["age": Date().timeIntervalSince(t)])
             return
         }
+
+        // Mark a finished podcast episode played. The current item is still the
+        // one that just ended (advance happens below). Placed after the gapless
+        // swallow so a spurious post-handoff `.ended` does not mark the freshly
+        // started item. Idempotent with the near-end position write in 21-4.
+        await self.markPlayedIfPodcast(self.queue.currentItem)
 
         // Stop-after-current wins over repeat modes. Reset the flag then stop.
         if await self.queue.stopAfterCurrent {
@@ -1066,7 +1172,10 @@ public actor QueuePlayer: Transport {
             self.log.debug("queueplayer.gapless.deferredToPlay", [:])
             return
         }
-        // The engine has seamlessly transitioned to `item`. Advance queue state.
+        // The engine has seamlessly transitioned to `item`. Capture the
+        // outgoing item before advancing so a finished podcast episode can be
+        // marked played on the handoff (not only on `handleTrackEnded`).
+        let outgoing = await self.queue.currentItem
         _ = await self.queue.advance()
         self.lastGaplessTransitionAt = Date()
 
@@ -1074,6 +1183,7 @@ public actor QueuePlayer: Transport {
         // The handoff only fires when the previous track reached its natural end,
         // so it counts as a full play for scrobble purposes.
         await self.historyRecorder.trackDidEndNaturally()
+        await self.markPlayedIfPodcast(outgoing)
 
         // Update metadata for the new track.
         if let track = try? await trackRepo.fetch(id: item.trackID) {
@@ -1144,10 +1254,26 @@ public actor QueuePlayer: Transport {
         let savedPosition = UserDefaults.standard.double(forKey: "playback.resumePosition")
         guard savedPosition > 0 else { return }
         UserDefaults.standard.removeObject(forKey: "playback.resumePosition")
+
+        // A podcast item carries its own per-episode resume position, applied
+        // inside `loadAndPlay`. The global last-position must not double-seek it
+        // (gotcha: the two resume paths must not fight). Pre-load so the
+        // per-episode seek runs, but skip the global seek for a podcast item.
+        let currentIsPodcast = if let current = await self.queue.currentItem,
+                                  case .podcast = current.playableSource {
+            true
+        } else {
+            false
+        }
+
         do {
             try await self.loadCurrentItem()
-            try await self.engine.seek(to: savedPosition)
-            self.log.debug("queueplayer.position.restored", ["position": savedPosition])
+            if currentIsPodcast {
+                self.log.debug("queueplayer.position.restore.podcastPerEpisode", [:])
+            } else {
+                try await self.engine.seek(to: savedPosition)
+                self.log.debug("queueplayer.position.restored", ["position": savedPosition])
+            }
         } catch {
             self.log.warning("queueplayer.position.restore.failed", ["error": String(reflecting: error)])
         }
