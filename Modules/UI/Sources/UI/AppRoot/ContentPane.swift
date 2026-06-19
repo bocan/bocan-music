@@ -326,6 +326,12 @@ public struct ContentPane: View {
             } else {
                 self.subsonicUnavailable
             }
+
+        case .podcasts:
+            PodcastsHomeView(vm: self.vm.podcasts, library: self.vm)
+
+        case let .podcastShow(id):
+            PodcastShowView(vm: self.vm.podcasts, library: self.vm, podcastID: id)
         }
     }
 
