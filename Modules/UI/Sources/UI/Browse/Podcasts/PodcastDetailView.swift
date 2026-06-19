@@ -37,7 +37,7 @@ struct PodcastDetailView: View {
                 }
             }
         }
-        .frame(minWidth: 520, minHeight: 480)
+        .frame(minWidth: 780, minHeight: 480)
     }
 
     // MARK: - Header
@@ -221,6 +221,6 @@ struct PodcastDetailLoadingView: View {
                 }
             }
         }
-        .frame(minWidth: 520, minHeight: 480)
+        .frame(minWidth: 780, minHeight: 480)
     }
 }
