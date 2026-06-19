@@ -95,6 +95,18 @@ Never commit these to the repo.
 | `APPLE_TEAM_ID` | 10-character Team ID |
 | `APP_SPECIFIC_PASSWORD` | App-specific password for notarytool |
 
+## Local developer API keys
+
+Some optional features require API keys in `Secrets.xcconfig` (copy from
+`Secrets.xcconfig.template`, never commit). The app degrades gracefully when
+any of these are absent.
+
+| xcconfig key | Info.plist key | Feature | Where to get one |
+|---|---|---|---|
+| `ACOUSTID_API_KEY` | `AcoustIDAPIKey` | Track fingerprinting / AcoustID lookup | https://acoustid.org/my-applications |
+| `BOCAN_LASTFM_API_KEY` / `BOCAN_LASTFM_SHARED_SECRET` | `BocanLastFmApiKey` / `BocanLastFmSharedSecret` | Last.fm scrobbling | https://www.last.fm/api/account/create |
+| `PODCAST_INDEX_API_KEY` / `PODCAST_INDEX_API_SECRET` | `BocanPodcastIndexApiKey` / `BocanPodcastIndexApiSecret` | Podcast search via Podcast Index (phase 21-3). Without these, search falls back to iTunes-only -- still fully functional, just half the index coverage. | https://api.podcastindex.org |
+
 ## Platform support
 
 | Dimension | Decision | Rationale |
