@@ -189,6 +189,35 @@ struct EpisodeStateRepositoryTests {
         #expect(guids == ["ep-1", "ep-2"])
     }
 
+    // MARK: - fetchByDownloadState
+
+    @Test("fetchByDownloadState returns matching rows across podcasts")
+    func fetchByDownloadStateAcrossPodcasts() async throws {
+        let db = try await makeDB()
+        let repo = EpisodeStateRepository(database: db)
+        let podcastRepo = PodcastRepository(database: db)
+        let showA = try await podcastRepo.insert(Podcast(
+            feedURL: "https://example.test/a.rss", title: "A", addedAt: 1_700_000_000
+        ))
+        let showB = try await podcastRepo.insert(Podcast(
+            feedURL: "https://example.test/b.rss", title: "B", addedAt: 1_700_000_000
+        ))
+
+        try await repo.setDownloadState(podcastID: showA, guid: "a1", state: .downloaded, path: "/tmp/a1", bytes: 10)
+        try await repo.setDownloadState(podcastID: showA, guid: "a2", state: .downloading, path: nil, bytes: nil)
+        try await repo.setDownloadState(podcastID: showB, guid: "b1", state: .downloaded, path: "/tmp/b1", bytes: 20)
+        try await repo.setDownloadState(podcastID: showB, guid: "b2", state: .queued, path: nil, bytes: nil)
+
+        let downloaded = try await repo.fetchByDownloadState([.downloaded])
+        #expect(Set(downloaded.map(\.guid)) == ["a1", "b1"])
+
+        let interrupted = try await repo.fetchByDownloadState([.downloading, .queued])
+        #expect(Set(interrupted.map(\.guid)) == ["a2", "b2"])
+
+        let empty = try await repo.fetchByDownloadState([])
+        #expect(empty.isEmpty)
+    }
+
     // MARK: - observe
 
     @Test("observe emits initial value then again on change")
