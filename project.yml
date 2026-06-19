@@ -102,6 +102,7 @@ targets:
       - package: Playback
       - package: Library
       - package: Acoustics
+      - package: Podcasts
       - package: Scrobble
       - package: Subsonic
       - package: UI
@@ -179,6 +180,8 @@ packages:
     path: Modules/Library
   Scrobble:
     path: Modules/Scrobble
+  Podcasts:
+    path: Modules/Podcasts
   Subsonic:
     path: Modules/Subsonic
   UI:
