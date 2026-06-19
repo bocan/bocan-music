@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Full Feature Podcast</title>
+    <link>https://example.com/podcast</link>
+    <description>A podcast with every field populated.</description>
+    <language>en-us</language>
+    <copyright>2024 Example Inc.</copyright>
+    <itunes:author>Jane Smith</itunes:author>
+    <itunes:explicit>yes</itunes:explicit>
+    <itunes:image href="https://example.com/artwork.jpg"/>
+    <item>
+      <title>Episode 3: The Threequel</title>
+      <guid isPermaLink="false">unique-guid-ep3</guid>
+      <pubDate>Mon, 24 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/ep3.mp3" type="audio/mpeg" length="8888888"/>
+      <itunes:duration>1800</itunes:duration>
+      <itunes:episode>3</itunes:episode>
+      <itunes:season>1</itunes:season>
+      <itunes:episodeType>full</itunes:episodeType>
+    </item>
+    <item>
+      <title>Episode 1: The Pilot (Revised)</title>
+      <link>https://example.com/ep1</link>
+      <description>First episode description.</description>
+      <content:encoded>&lt;p&gt;Rich HTML description.&lt;/p&gt;</content:encoded>
+      <guid isPermaLink="true">https://example.com/episodes/1</guid>
+      <pubDate>Mon, 10 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/ep1.mp3" type="audio/mpeg" length="12345678"/>
+      <itunes:duration>3723</itunes:duration>
+      <itunes:subtitle>Intro episode</itunes:subtitle>
+      <itunes:episode>1</itunes:episode>
+      <itunes:season>1</itunes:season>
+      <itunes:episodeType>full</itunes:episodeType>
+    </item>
+    <item>
+      <title>Episode 2: The Sequel</title>
+      <guid isPermaLink="false">unique-guid-ep2</guid>
+      <pubDate>Mon, 17 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/ep2.mp3" type="audio/mpeg" length="9999999"/>
+      <itunes:duration>2400</itunes:duration>
+      <itunes:episode>2</itunes:episode>
+      <itunes:season>1</itunes:season>
+      <itunes:episodeType>full</itunes:episodeType>
+    </item>
+  </channel>
+</rss>

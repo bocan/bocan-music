@@ -1,0 +1,504 @@
+import Foundation
+import Persistence
+import Testing
+@testable import Podcasts
+
+// MARK: - Helpers
+
+private let fixedNow = Date(timeIntervalSince1970: 1_700_000_000)
+
+/// Builds an in-memory `Database` + a `PodcastService` wired to it.
+/// The `feedMock` and `artMock` are separate so artwork requests can be
+/// distinguished from feed-fetch requests in tests that need the distinction.
+private struct TestBed {
+    let db: Database
+    let service: PodcastService
+    let artCache: PodcastArtworkCache
+    let feedMock: MockHTTPClient
+    let artMock: MockHTTPClient
+    let artTempDir: URL
+}
+
+private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
+    let db = try await Database(location: .inMemory)
+    let feedMock = MockHTTPClient()
+    let artMock = MockHTTPClient()
+    let artTemp = FileManager.default.temporaryDirectory
+        .appendingPathComponent("PodcastArtworkCacheTests-\(UUID().uuidString)", isDirectory: true)
+    let artCache = PodcastArtworkCache(http: artMock, root: artTemp)
+    let service = PodcastService(
+        podcastRepo: PodcastRepository(database: db),
+        episodeRepo: EpisodeRepository(database: db),
+        stateRepo: EpisodeStateRepository(database: db),
+        fetcher: FeedFetcher(http: feedMock),
+        artwork: artCache,
+        now: { nowDate }
+    )
+    return TestBed(
+        db: db,
+        service: service,
+        artCache: artCache,
+        feedMock: feedMock,
+        artMock: artMock,
+        artTempDir: artTemp
+    )
+}
+
+private func fixtureData(named name: String) throws -> Data {
+    guard let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures"),
+          let data = try? Data(contentsOf: url) else {
+        throw PodcastsError.parseFailed(
+            url: URL(string: "test://\(name)")!,
+            reason: "Fixture not found: \(name)"
+        )
+    }
+    return data
+}
+
+private let testFeedURL = URL(string: "https://example.com/feed.rss")!
+private let ep1GUID = "https://example.com/episodes/1"
+private let ep2GUID = "unique-guid-ep2"
+
+// MARK: - Tests
+
+@Suite("PodcastService", .serialized)
+struct PodcastServiceTests {
+    // MARK: Headline: refresh must never touch state rows
+
+    @Test("Headline: refresh updates episode title but leaves play_position unchanged")
+    func refreshPreservesState() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        let refreshData = try fixtureData(named: "rss-refresh-extra.xml")
+
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        // Subscribe with original feed.
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // Save a play position for episode 1.
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        try await stateRepo.savePosition(
+            podcastID: podcastID,
+            guid: ep1GUID,
+            position: 300,
+            now: fixedNow.timeIntervalSince1970
+        )
+
+        let stateBefore = try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)
+        #expect(stateBefore?.playPosition == 300)
+
+        // Refresh with updated feed (episode 1 title changed; episode 3 added).
+        bed.feedMock.handler = { _ in
+            (refreshData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        _ = try await bed.service.refresh(podcastID: podcastID)
+
+        // State row must be untouched.
+        let stateAfter = try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)
+        #expect(stateAfter?.playPosition == 300)
+        #expect(stateAfter?.playState == .inProgress)
+
+        // Episode title must reflect the refreshed feed.
+        let episodeRepo = EpisodeRepository(database: bed.db)
+        let ep1 = try await episodeRepo.fetchByGUID(podcastID: podcastID, guid: ep1GUID)
+        #expect(ep1?.title == "Episode 1: The Pilot (Revised)")
+    }
+
+    // MARK: subscribe
+
+    @Test("subscribe writes one podcasts row and N episode rows")
+    func subscribeWritesRows() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+        #expect(podcastID > 0)
+
+        let repo = PodcastRepository(database: bed.db)
+        let podcast = try await repo.fetch(id: podcastID)
+        #expect(podcast.title == "Full Feature Podcast")
+        #expect(podcast.subscribed == true)
+
+        let epRepo = EpisodeRepository(database: bed.db)
+        let episodes = try await epRepo.fetchForPodcast(podcastID: podcastID)
+        #expect(episodes.count == 2)
+    }
+
+    @Test("re-subscribing the same feed upserts and does not duplicate rows")
+    func reSubscribeIsIdempotent() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let id1 = try await bed.service.subscribe(feedURL: testFeedURL)
+        let id2 = try await bed.service.subscribe(feedURL: testFeedURL)
+        #expect(id1 == id2)
+
+        let repo = PodcastRepository(database: bed.db)
+        let all = try await repo.fetchAllSubscribed()
+        #expect(all.count == 1)
+
+        let epRepo = EpisodeRepository(database: bed.db)
+        let episodes = try await epRepo.fetchForPodcast(podcastID: id1)
+        #expect(episodes.count == 2)
+    }
+
+    @Test("index hints land in itunes_collection_id and podcast_index_id")
+    func indexHintsStored() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let hints = PodcastSearchResult(
+            canonicalFeedKey: "example.com/feed.rss",
+            feedURL: testFeedURL,
+            title: "Full Feature Podcast",
+            sources: [.itunes, .podcastIndex],
+            podcastIndexID: 42,
+            itunesCollectionID: 9999
+        )
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL, indexHints: hints)
+
+        let repo = PodcastRepository(database: bed.db)
+        let podcast = try await repo.fetch(id: podcastID)
+        #expect(podcast.podcastIndexID == 42)
+        #expect(podcast.itunesCollectionID == 9999)
+    }
+
+    @Test("subscribe rejects non-http URL with invalidFeedURL")
+    func subscribeRejectsInvalidURL() async throws {
+        let bed = try await makeBed()
+        let badURL = try #require(URL(string: "ftp://example.com/feed"))
+        await #expect(throws: PodcastsError.self) {
+            _ = try await bed.service.subscribe(feedURL: badURL)
+        }
+    }
+
+    // MARK: refresh - 304
+
+    @Test("refresh on 304 stamps last_refreshed_at and leaves episodes untouched")
+    func refresh304() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // Second call returns 304.
+        let refETag = "\"abc123\""
+        bed.feedMock.handler = { _ in
+            (Data(), HTTPURLResponse(
+                url: testFeedURL,
+                statusCode: 304,
+                httpVersion: nil,
+                headerFields: ["ETag": refETag]
+            )!)
+        }
+
+        let t1 = fixedNow.addingTimeInterval(60)
+        var t1Bed = bed
+        _ = t1Bed // silence unused warning
+        // Use a fresh service with a later `now` to detect the timestamp update.
+        let lateBed = try await makeBed(nowDate: fixedNow.addingTimeInterval(60))
+        let rssData2 = try fixtureData(named: "rss-full.xml")
+        lateBed.feedMock.handler = { _ in
+            (rssData2, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let lateID = try await lateBed.service.subscribe(feedURL: testFeedURL)
+
+        lateBed.feedMock.handler = { _ in
+            (Data(), HTTPURLResponse(url: testFeedURL, statusCode: 304, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let outcome = try await lateBed.service.refresh(podcastID: lateID)
+        #expect(outcome.notModified == true)
+
+        let repo = PodcastRepository(database: lateBed.db)
+        let podcast = try await repo.fetch(id: lateID)
+        #expect(podcast.lastRefreshedAt == t1.timeIntervalSince1970)
+
+        let epRepo = EpisodeRepository(database: lateBed.db)
+        let episodes = try await epRepo.fetchForPodcast(podcastID: lateID)
+        #expect(episodes.count == 2)
+    }
+
+    // MARK: refresh - new episode
+
+    @Test("refresh with extra episode produces newEpisodeCount == 1")
+    func refreshNewEpisode() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        let extraData = try fixtureData(named: "rss-refresh-extra.xml")
+
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        bed.feedMock.handler = { _ in
+            (extraData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let outcome = try await bed.service.refresh(podcastID: podcastID)
+
+        #expect(outcome.notModified == false)
+        #expect(outcome.newEpisodeCount == 1)
+        #expect(outcome.totalEpisodeCount == 3)
+    }
+
+    // MARK: resumePosition
+
+    @Test("resumePosition returns saved position when inProgress")
+    func resumePositionInProgress() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        try await stateRepo.savePosition(
+            podcastID: podcastID,
+            guid: ep1GUID,
+            position: 120,
+            now: fixedNow.timeIntervalSince1970
+        )
+
+        let pos = await bed.service.resumePosition(feedURL: testFeedURL, episodeGUID: ep1GUID)
+        #expect(pos == 120)
+    }
+
+    @Test("resumePosition returns 0 when play_state is played")
+    func resumePositionPlayed() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        try await stateRepo.markPlayed(
+            podcastID: podcastID,
+            guid: ep1GUID,
+            now: fixedNow.timeIntervalSince1970
+        )
+
+        let pos = await bed.service.resumePosition(feedURL: testFeedURL, episodeGUID: ep1GUID)
+        #expect(pos == 0)
+    }
+
+    @Test("resumePosition returns 0 when within completionTailSeconds of duration")
+    func resumePositionNearEnd() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // Episode 1 has duration 3723s. Position 3710 is 13s from the end (< 15s tail).
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        try await stateRepo.savePosition(
+            podcastID: podcastID,
+            guid: ep1GUID,
+            position: 3710,
+            now: fixedNow.timeIntervalSince1970
+        )
+
+        let pos = await bed.service.resumePosition(feedURL: testFeedURL, episodeGUID: ep1GUID)
+        #expect(pos == 0)
+    }
+
+    // MARK: saveProgress
+
+    @Test("saveProgress near the end auto-marks the episode played")
+    func saveProgressNearEndMarksPlayed() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // Episode 1 duration = 3723s; position 3710 triggers auto-play.
+        await bed.service.saveProgress(
+            feedURL: testFeedURL,
+            episodeGUID: ep1GUID,
+            position: 3710,
+            duration: 3723
+        )
+
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        let state = try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)
+        #expect(state?.playState == .played)
+    }
+
+    @Test("saveProgress with position <= 0 is a no-op")
+    func saveProgressZeroIsNoOp() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        await bed.service.saveProgress(
+            feedURL: testFeedURL,
+            episodeGUID: ep1GUID,
+            position: 0,
+            duration: 3723
+        )
+
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        let state = try await stateRepo.fetch(podcastID: podcastID, guid: ep1GUID)
+        #expect(state == nil)
+    }
+
+    // MARK: audioURL
+
+    @Test("audioURL returns the enclosure URL when no download exists")
+    func audioURLReturnsEnclosure() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        _ = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        let url = try await bed.service.audioURL(feedURL: testFeedURL, episodeGUID: ep1GUID)
+        #expect(url.absoluteString == "https://example.com/ep1.mp3")
+    }
+
+    @Test("audioURL returns a local file URL when a downloaded state row has an existing file")
+    func audioURLReturnsLocalFile() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // Write a temporary file to act as the downloaded episode.
+        let tmpFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ep1-\(UUID().uuidString).mp3")
+        try Data("fake audio".utf8).write(to: tmpFile)
+        defer { try? FileManager.default.removeItem(at: tmpFile) }
+
+        let stateRepo = EpisodeStateRepository(database: bed.db)
+        try await stateRepo.setDownloadState(
+            podcastID: podcastID,
+            guid: ep1GUID,
+            state: .downloaded,
+            path: tmpFile.path,
+            bytes: nil
+        )
+
+        let url = try await bed.service.audioURL(feedURL: testFeedURL, episodeGUID: ep1GUID)
+        #expect(url.isFileURL)
+        #expect(url.path == tmpFile.path)
+    }
+
+    // MARK: unsubscribe
+
+    @Test("unsubscribe removes the podcast row and evicts the artwork directory")
+    func unsubscribeRemovesRowAndEvicts() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        // Artwork mock returns minimal image bytes.
+        let artBytes = Data([0xFF, 0xD8, 0xFF, 0xE0])
+        bed.artMock.handler = { _ in
+            (artBytes, HTTPURLResponse(
+                url: URL(string: "https://example.com/artwork.jpg")!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!)
+        }
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        // Manually cache artwork so we have a directory to evict.
+        let artURL = try #require(URL(string: "https://example.com/artwork.jpg"))
+        let repo = PodcastRepository(database: bed.db)
+        _ = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
+        let artDir = bed.artTempDir.appendingPathComponent("\(podcastID)")
+        #expect(FileManager.default.fileExists(atPath: artDir.path))
+
+        try await bed.service.unsubscribe(podcastID: podcastID)
+
+        // Row must be gone.
+        do {
+            _ = try await repo.fetch(id: podcastID)
+            Issue.record("Expected podcast row to be deleted after unsubscribe")
+        } catch {
+            // Expected: notFound.
+        }
+
+        // Artwork directory must be evicted.
+        #expect(!FileManager.default.fileExists(atPath: artDir.path))
+    }
+
+    // MARK: artwork cache
+
+    @Test("artwork cache writes a file; second call does not re-download")
+    func artworkCacheDeduplicatesDownloads() async throws {
+        let bed = try await makeBed()
+
+        // Set up an in-memory database with one podcast row.
+        let db = bed.db
+        let repo = PodcastRepository(database: db)
+        let testPodcast = Podcast(
+            feedURL: "https://example.com/feed.rss",
+            title: "Test",
+            explicit: false,
+            subscribed: true,
+            addedAt: fixedNow.timeIntervalSince1970
+        )
+        let podcastID = try await repo.insert(testPodcast)
+
+        let artBytes = Data([0x89, 0x50, 0x4E, 0x47])
+        var downloadCount = 0
+        bed.artMock.handler = { _ in
+            downloadCount += 1
+            return (artBytes, HTTPURLResponse(
+                url: URL(string: "https://cdn.example.com/art.png")!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!)
+        }
+
+        let artURL = try #require(URL(string: "https://cdn.example.com/art.png"))
+
+        // First call should download and write.
+        let path1 = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
+        #expect(path1 != nil)
+        #expect(try FileManager.default.fileExists(atPath: #require(path1)))
+
+        // Second call should skip the download.
+        let path2 = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
+        #expect(path2 == path1)
+        #expect(downloadCount == 1)
+
+        // Path must be written into the podcasts row.
+        let fetched = try await repo.fetch(id: podcastID)
+        #expect(fetched.artworkPath == path1)
+
+        // Cleanup.
+        try? FileManager.default.removeItem(at: bed.artTempDir)
+    }
+}
