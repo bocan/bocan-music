@@ -8,7 +8,7 @@ import SwiftUI
 /// Raw values are stable so a selection can round-trip (persistence, tests).
 public enum SettingsPage: String, CaseIterable, Sendable, Hashable {
     case general, library, sources, playback, equaliser, effects, replayGain
-    case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics
+    case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics, podcasts
 }
 
 // MARK: - SettingsRouter
