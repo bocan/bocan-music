@@ -9,7 +9,7 @@ import UI
 /// Empty conformance: the four required methods have the same signatures
 /// in both the protocol and `PodcastService`, so no implementation body is
 /// needed.
-extension PodcastService: PodcastLibraryDataSource {}
+extension PodcastService: @retroactive PodcastLibraryDataSource {}
 
 // MARK: - AppPodcastActions
 
