@@ -52,6 +52,8 @@ run_stage "acoustics"      make -s test-acoustics
 run_stage "ui"             make -s test-ui
 run_stage "playback"       make -s test-playback
 run_stage "scrobble"       make -s test-scrobble
+run_stage "subsonic"       make -s test-subsonic
+run_stage "observability"  make -s test-observability
 
 printf "\n${BOLD}%d passed, %d failed${RESET}\n" "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
