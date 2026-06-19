@@ -9,7 +9,7 @@ import Testing
 struct PlayableSourceTests {
     // MARK: - Equality + helpers
 
-    @Test("isRemote is true for remote sources (.subsonic and .internetRadio)")
+    @Test("isRemote is true for remote sources (.subsonic, .internetRadio, .podcast)")
     func isRemoteDiscrimination() throws {
         #expect(PlayableSource.localBookmark(Data()).isRemote == false)
         #expect(PlayableSource.localBookmark(Data([0x01, 0x02])).isRemote == false)
@@ -17,15 +17,37 @@ struct PlayableSourceTests {
         // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         #expect(PlayableSource.internetRadio(streamURL: url).isRemote)
+        // swiftlint:disable:next force_unwrapping
+        let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
+        #expect(PlayableSource.podcast(feedURL: feed, episodeGUID: "guid-1").isRemote)
     }
 
-    @Test("isLiveStream flags only .internetRadio")
+    @Test("isLiveStream flags only .internetRadio (podcasts are finite/seekable)")
     func isLiveStreamDiscrimination() throws {
         #expect(PlayableSource.localBookmark(Data()).isLiveStream == false)
         #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").isLiveStream == false)
         // swiftlint:disable:next force_unwrapping
+        let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
+        #expect(PlayableSource.podcast(feedURL: feed, episodeGUID: "guid-1").isLiveStream == false)
+        // swiftlint:disable:next force_unwrapping
         let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
         #expect(PlayableSource.internetRadio(streamURL: url).isLiveStream)
+    }
+
+    @Test("podcastEpisode surfaces only on .podcast")
+    func podcastEpisodeAccessor() throws {
+        // swiftlint:disable:next force_unwrapping
+        let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
+        let episode = PlayableSource.podcast(feedURL: feed, episodeGUID: "ep-42")
+        let pair = try #require(episode.podcastEpisode)
+        #expect(pair.feedURL == feed)
+        #expect(pair.guid == "ep-42")
+        // Non-podcast sources return nil.
+        #expect(PlayableSource.localBookmark(Data()).podcastEpisode == nil)
+        #expect(PlayableSource.subsonic(serverID: UUID(), songID: "tr-1").podcastEpisode == nil)
+        // swiftlint:disable:next force_unwrapping
+        let url = try #require(URL(string: "https://example.invalid/stream.mp3"))
+        #expect(PlayableSource.internetRadio(streamURL: url).podcastEpisode == nil)
     }
 
     @Test("subsonicServerID/SongID surface only on .subsonic")
@@ -89,6 +111,28 @@ struct PlayableSourceTests {
         let data = try JSONEncoder().encode(value)
         let decoded = try JSONDecoder().decode(PlayableSource.self, from: data)
         #expect(decoded == value)
+    }
+
+    @Test("Codable round-trip preserves .podcast feed URL and episode GUID")
+    func codableRoundTripPodcast() throws {
+        // swiftlint:disable:next force_unwrapping
+        let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
+        let value = PlayableSource.podcast(feedURL: feed, episodeGUID: "ep-99")
+        let data = try JSONEncoder().encode(value)
+        let decoded = try JSONDecoder().decode(PlayableSource.self, from: data)
+        #expect(decoded == value)
+    }
+
+    @Test("Codable decodes a hand-written .podcast blob with the discriminator keys")
+    func codableDecodesPodcastBlob() throws {
+        let json = """
+        {"kind":"podcast","feedURL":"https:\\/\\/example.invalid\\/feed.xml","episodeGUID":"ep-7"}
+        """.data(using: .utf8)
+        // swiftlint:disable:next force_unwrapping
+        let decoded = try JSONDecoder().decode(PlayableSource.self, from: #require(json))
+        // swiftlint:disable:next force_unwrapping
+        let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
+        #expect(decoded == .podcast(feedURL: feed, episodeGUID: "ep-7"))
     }
 }
 
@@ -191,6 +235,35 @@ struct QueuePersistenceMigrationTests {
         #expect(restoredItems[2].playableSource == .subsonic(serverID: serverID, songID: "beta"))
         #expect(restored?.currentIndex == 1)
         #expect(restored?.repeatMode == .all)
+    }
+
+    @Test("v2 round-trip preserves a .podcast source (no schema bump)")
+    func roundTripV2Podcast() async throws {
+        let db = try await Database(location: .inMemory)
+        let persistence = QueuePersistence(database: db, debounce: .milliseconds(1))
+
+        // swiftlint:disable:next force_unwrapping
+        let feed = try #require(URL(string: "https://example.invalid/feed.xml"))
+        let items: [QueueItem] = [
+            self.makeItem(trackID: 1),
+            self.makeItem(
+                trackID: -1,
+                source: .podcast(feedURL: feed, episodeGUID: "ep-abc")
+            ),
+        ]
+
+        await persistence.scheduleSave(
+            items: items, currentIndex: 1,
+            repeatMode: .off, shuffleState: .off
+        )
+        await persistence._awaitPendingSaveForTesting()
+
+        let restored = await persistence.restore()
+        let restoredItems = try #require(restored?.items)
+        #expect(restoredItems.count == 2)
+        #expect(restoredItems[0].playableSource == .localBookmark(Data()))
+        #expect(restoredItems[1].playableSource == .podcast(feedURL: feed, episodeGUID: "ep-abc"))
+        #expect(restored?.currentIndex == 1)
     }
 
     @Test("legacy v1 blob migrates to v2 and clears v1 key")
