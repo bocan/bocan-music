@@ -359,9 +359,9 @@ struct EpisodeDownloadManagerTests {
         let controlA = try #require(bed.fake.control(forGUIDFragment: "a"))
         try controlA.onFinished(.success(makeTempFile(bytes: 100)))
 
-        let started = await eventually { bed.fake.controls.count == 3 }
+        let started = await eventually { await self.state(bed, "c")?.downloadState == .downloading }
         #expect(started, "third download starts once a slot frees")
-        #expect(await self.state(bed, "c")?.downloadState == .downloading)
+        #expect(bed.fake.controls.count == 3)
     }
 
     // MARK: Resume interrupted
