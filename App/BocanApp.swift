@@ -606,15 +606,23 @@ extension BocanApp {
 
         // Phase 21-5: build a PodcastService and adapt it to the player's
         // PodcastEpisodeResolving seam so .podcast queue items can play,
-        // resume, write back position, and mark played. Phase 21-7 promotes
-        // this service into the graph for the Podcasts UI.
+        // resume, write back position, and mark played.
+        // Phase 21-7: promotes this service into the graph for the Podcasts UI
+        // and wires the FeedRefreshScheduler background task.
+        let episodeRepo = EpisodeRepository(database: db)
+        let stateRepo = EpisodeStateRepository(database: db)
         let podcastService = PodcastService(
             podcastRepo: PodcastRepository(database: db),
-            episodeRepo: EpisodeRepository(database: db),
-            stateRepo: EpisodeStateRepository(database: db),
+            episodeRepo: episodeRepo,
+            stateRepo: stateRepo,
             artwork: PodcastArtworkCache()
         )
         let podcastResolver = AppPodcastResolver(service: podcastService)
+        let podcastDownloads = EpisodeDownloadManager(
+            stateRepo: stateRepo,
+            episodeRepo: episodeRepo
+        )
+        let feedRefreshScheduler = FeedRefreshScheduler(service: podcastService)
 
         let qp = QueuePlayer(
             engine: eng,
@@ -625,6 +633,11 @@ extension BocanApp {
         )
         let scanner = LibraryScanner(database: db)
 
+        let podcastActions = AppPodcastActions(
+            service: podcastService,
+            player: qp,
+            downloads: podcastDownloads
+        )
         let lvm = LibraryViewModel(
             database: db,
             engine: qp,
@@ -637,8 +650,14 @@ extension BocanApp {
             subsonicMetadataCache: SubsonicRepositoryMetadataCache(repository: subsonicRepo),
             subsonicAnnotationDelivery: subsonicAnnotations,
             subsonicCapabilityObserver: SubsonicCapabilityObserver(service: subsonicService),
-            subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor)
+            subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor),
+            podcastLibrary: podcastService,
+            podcastActions: podcastActions
         )
+        // Start the background feed refresh loop. Phase 21-7 spec: called once
+        // at launch; the scheduler is idempotent so wake-notifications can also
+        // call start() without duplicating the loop.
+        Task.detached(priority: .background) { await feedRefreshScheduler.start() }
         // Wire the Subsonic bootstrap so RootView.task can pre-load clients
         // before restoring navigation state, eliminating the startup race that
         // caused "Couldn't load songs / No server with id …" when the last
