@@ -75,6 +75,14 @@ public final class NowPlayingViewModel {
     public private(set) var pendingScrobbleCount = 0
     /// `true` when the currently-playing (or paused) track is marked as loved.
     public private(set) var nowPlayingIsLoved = false
+    /// `true` when the current item is a podcast episode.
+    public private(set) var isPodcast = false
+    /// The `podcasts.id` of the current show when `isPodcast` is `true`. `nil` otherwise.
+    public private(set) var podcastID: Int64?
+    /// The feed URL of the current podcast show.
+    public private(set) var podcastFeedURL: URL?
+    /// The episode GUID of the currently playing episode.
+    public private(set) var podcastGUID: String?
 
     // MARK: - Callbacks
 
@@ -162,6 +170,24 @@ public final class NowPlayingViewModel {
     /// Set by the TracksView/AlbumsView when a track is selected and played.
     public func setCurrentTrack(_ track: Track) {
         self.log.info("playback.track", ["id": track.id ?? -1, "title": track.title ?? "?"])
+        if self.isPodcast {
+            // Switching from podcast to local track -- restore music rate and reset remote commands.
+            if let qp = self.engine as? QueuePlayer {
+                Task {
+                    await qp.configureRemoteCommandsForMusic()
+                    let musicRate = UserDefaults.standard.double(forKey: "playback.rate")
+                    if musicRate > 0 {
+                        let r = Float(max(0.5, min(2.0, musicRate)))
+                        await qp.setRate(r)
+                        self.playbackRate = r
+                    }
+                }
+            }
+        }
+        self.isPodcast = false
+        self.podcastID = nil
+        self.podcastFeedURL = nil
+        self.podcastGUID = nil
         self.currentTrack = track
         self.nowPlayingTrackID = track.id
         self.nowPlayingAlbumID = track.albumID
@@ -315,12 +341,17 @@ public final class NowPlayingViewModel {
         self.stopAfterCurrent = new
     }
 
-    /// Set playback rate (0.5×–2.0×) with pitch correction.
+    /// Set playback rate (0.5x-2.0x) with pitch correction.
+    /// Saves to `podcast.playback.rate` when a podcast is playing, `playback.rate` otherwise.
     public func setRate(_ rate: Float) async {
         guard let qp = engine as? QueuePlayer else { return }
         await qp.setRate(rate)
         self.playbackRate = max(0.5, min(2.0, rate))
-        UserDefaults.standard.set(Double(self.playbackRate), forKey: "playback.rate")
+        if self.isPodcast {
+            UserDefaults.standard.set(Double(self.playbackRate), forKey: "podcast.playback.rate")
+        } else {
+            UserDefaults.standard.set(Double(self.playbackRate), forKey: "playback.rate")
+        }
     }
 
     /// Steps up to the next quick rate above the current rate.
@@ -335,7 +366,7 @@ public final class NowPlayingViewModel {
         await self.setRate(prev ?? 0.75)
     }
 
-    /// Resets playback speed to 1.0×.
+    /// Resets playback speed to 1.0x.
     public func resetSpeed() async {
         await self.setRate(1.0)
     }
@@ -364,7 +395,7 @@ public final class NowPlayingViewModel {
     }
 
     /// Populates the now-playing display from a queue item that has no local
-    /// `Track` row (e.g. a Subsonic stream), using the item's snapshot metadata.
+    /// `Track` row (e.g. a Subsonic stream or podcast), using the item's snapshot metadata.
     private func applyStreamItem(_ item: QueueItem) async {
         self.nowPlayingTrackID = nil
         self.nowPlayingAlbumID = nil
@@ -374,11 +405,22 @@ public final class NowPlayingViewModel {
         self.album = item.albumName ?? ""
         self.duration = item.duration
         self.artwork = nil
-        if case let .subsonic(serverID, songID) = item.playableSource {
+
+        if case let .podcast(feedURL, episodeGUID) = item.playableSource {
+            await self.applyPodcastItem(feedURL: feedURL, episodeGUID: episodeGUID)
+        } else if case let .subsonic(serverID, songID) = item.playableSource {
+            self.isPodcast = false
+            self.podcastID = nil
+            self.podcastFeedURL = nil
+            self.podcastGUID = nil
             self.nowPlayingSubsonicServerID = serverID
             self.nowPlayingSubsonicSongID = songID
             await self.loadSubsonicArtwork(serverID: serverID, songID: songID)
         } else {
+            self.isPodcast = false
+            self.podcastID = nil
+            self.podcastFeedURL = nil
+            self.podcastGUID = nil
             self.nowPlayingSubsonicServerID = nil
             self.nowPlayingSubsonicSongID = nil
         }
@@ -391,6 +433,10 @@ public final class NowPlayingViewModel {
         self.nowPlayingArtistID = nil
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
+        self.isPodcast = false
+        self.podcastID = nil
+        self.podcastFeedURL = nil
+        self.podcastGUID = nil
         self.title = ""
         self.artist = ""
         self.album = ""
@@ -516,9 +562,55 @@ public final class NowPlayingViewModel {
     }
 }
 
+// MARK: - NowPlayingViewModel podcast transport
+
+/// Podcast skip-interval transport actions.
+public extension NowPlayingViewModel {
+    /// Skip backward by the configured podcast skip-back interval (default 15 s).
+    func skipBack() async {
+        let interval = UserDefaults.standard.double(forKey: "podcasts.skipBackInterval")
+        let secs = interval > 0 ? interval : 15
+        await self.scrub(to: max(0, self.position - secs))
+    }
+
+    /// Skip forward by the configured podcast skip-forward interval (default 30 s).
+    func skipForward() async {
+        let interval = UserDefaults.standard.double(forKey: "podcasts.skipForwardInterval")
+        let secs = interval > 0 ? interval : 30
+        await self.scrub(to: min(self.duration, self.position + secs))
+    }
+}
+
 // MARK: - NowPlayingViewModel private helpers
 
 private extension NowPlayingViewModel {
+    /// Fills podcast-specific now-playing state when the current queue item is a podcast episode.
+    func applyPodcastItem(feedURL: URL, episodeGUID: String) async {
+        self.isPodcast = true
+        self.podcastFeedURL = feedURL
+        self.podcastGUID = episodeGUID
+        self.nowPlayingSubsonicServerID = nil
+        self.nowPlayingSubsonicSongID = nil
+        let repo = PodcastRepository(database: self.database)
+        let podcast = try? await repo.fetchByFeedURL(feedURL.absoluteString)
+        self.podcastID = podcast?.id
+        if let path = podcast?.artworkPath {
+            self.artwork = await ArtworkLoader.shared.image(at: path)
+        }
+        if let qp = self.engine as? QueuePlayer {
+            let back = UserDefaults.standard.double(forKey: "podcasts.skipBackInterval")
+            let fwd = UserDefaults.standard.double(forKey: "podcasts.skipForwardInterval")
+            await qp.configureRemoteCommandsForPodcast(
+                backInterval: back > 0 ? back : 15,
+                forwardInterval: fwd > 0 ? fwd : 30
+            )
+            let savedRate = UserDefaults.standard.double(forKey: "podcast.playback.rate")
+            let r = savedRate > 0 ? Float(max(0.5, min(2.0, savedRate))) : 1.0
+            await qp.setRate(r)
+            self.playbackRate = r
+        }
+    }
+
     func loadSubsonicArtwork(serverID: UUID, songID: String) async {
         guard let provider = self.subsonicCoverArtProvider else { return }
         do {
