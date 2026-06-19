@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Minimal Podcast</title>
+    <link>https://minimal.example.com</link>
+    <description>Bare-minimum valid RSS.</description>
+    <item>
+      <title>Only Episode</title>
+      <enclosure url="https://minimal.example.com/ep.mp3" type="audio/mpeg" length="1000000"/>
+      <pubDate>Fri, 01 Mar 2024 12:00:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>
