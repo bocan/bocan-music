@@ -5,6 +5,7 @@ import Library
 import Observability
 import Persistence
 import Playback
+import Podcasts
 import Scrobble
 import Subsonic
 import SwiftUI
@@ -461,7 +462,9 @@ struct BocanApp: App {
     ) -> ScrobbleParts {
         let credentials = Credentials()
         let adapter = CredentialsAdapter(store: credentials)
-        let http: any HTTPClient = URLSession.shared
+        // Module-qualified: both Scrobble and Podcasts export an `HTTPClient`
+        // protocol, so the bare name is ambiguous now that App imports Podcasts.
+        let http: any Scrobble.HTTPClient = URLSession.shared
         var providers: [any ScrobbleProvider] = []
         if let cfg = LastFmConfig.fromBundle() {
             providers.append(LastFmProvider(config: cfg, http: http, credentials: adapter))
@@ -601,11 +604,24 @@ extension BocanApp {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }
 
+        // Phase 21-5: build a PodcastService and adapt it to the player's
+        // PodcastEpisodeResolving seam so .podcast queue items can play,
+        // resume, write back position, and mark played. Phase 21-7 promotes
+        // this service into the graph for the Podcasts UI.
+        let podcastService = PodcastService(
+            podcastRepo: PodcastRepository(database: db),
+            episodeRepo: EpisodeRepository(database: db),
+            stateRepo: EpisodeStateRepository(database: db),
+            artwork: PodcastArtworkCache()
+        )
+        let podcastResolver = AppPodcastResolver(service: podcastService)
+
         let qp = QueuePlayer(
             engine: eng,
             database: db,
             scrobbleSink: scrobbleParts.service,
-            subsonicResolver: subsonicStreamResolver
+            subsonicResolver: subsonicStreamResolver,
+            podcastResolver: podcastResolver
         )
         let scanner = LibraryScanner(database: db)
 
