@@ -7,7 +7,7 @@
 >
 > Provides: a playable `.podcast` source, per-episode resume on load, position
 > write-back on a timer + pause/stop/quit, mark-played on completion, scrobble
-> skip, and podcast Now-Playing media type. This is the slice that delivers the
+> skip, and podcast Now-Playing metadata. This is the slice that delivers the
 > user's non-negotiable resume-position requirement at the engine level.
 
 ## Goal
@@ -216,12 +216,20 @@ matches (the Playback exploration enumerated them).
    if case .podcast = item.playableSource { return }
    ```
 
-8. **MPNowPlaying media type**: when the current item is a podcast, set
-   `MPNowPlayingInfoPropertyMediaType = .podcast` (in `NowPlayingCentre`) and map
-   the metadata: `MPMediaItemPropertyTitle` = episode title (the QueueItem's
-   `title`), `MPMediaItemPropertyArtist` / `MPMediaItemPropertyPodcastTitle` =
-   show name (the QueueItem's `artistName`). The lock-screen / Control Center
-   then shows podcast-appropriate transport.
+8. **MPNowPlaying podcast metadata**: when the current item is a podcast, update
+   `NowPlayingCentre` in podcast mode and map the metadata:
+   `MPMediaItemPropertyTitle` = episode title (the QueueItem's `title`),
+   `MPMediaItemPropertyArtist` / `MPMediaItemPropertyPodcastTitle` = show name
+   (the QueueItem's `artistName`). The lock-screen / Control Center then shows
+   the podcast title.
+
+   > Correction (verified against the SDK during implementation):
+   > `MPNowPlayingInfoMediaType` has only `.none` / `.audio` / `.video`. There is
+   > **no** `.podcast` media-type member, so do not set
+   > `MPNowPlayingInfoPropertyMediaType = .podcast`. Set it to `.audio` and convey
+   > the podcast nature through `MPMediaItemPropertyPodcastTitle` (the real podcast
+   > Now Playing property). Any later code that needs "is this a podcast" must read
+   > `PlayableSource.podcast`, not the Now Playing media type.
 
 ## Building a podcast QueueItem
 
@@ -286,9 +294,10 @@ Pass an instance as `podcastResolver:` when constructing `QueuePlayer`.
 
 ## Context7 lookups
 
-- Apple `MediaPlayer`: `MPNowPlayingInfoPropertyMediaType` / `.podcast`,
+- Apple `MediaPlayer`: `MPNowPlayingInfoPropertyMediaType` (note: only
+  `.none` / `.audio` / `.video` exist; there is no `.podcast` member),
   `MPMediaItemPropertyPodcastTitle`, and which remote commands suit podcasts
-  (skip-forward / skip-backward intervals) for the lock screen.
+  (skip-forward 10 seconds / skip-backward 10 seconds) for the lock screen.
 - FFmpeg `http` protocol seekability / range requests (confirm seek works on a
   finite remote enclosure) - reference only; no code change.
 
@@ -332,7 +341,9 @@ and a canned resume position):
 - [ ] Position is written back on the periodic tick and on pause / stop / quit;
       the per-episode position, not the global one, governs a podcast item.
 - [ ] A finished episode is marked played; podcasts never scrobble.
-- [ ] Now Playing media type is `.podcast`; title = episode, artist-slot = show.
+- [ ] Now Playing shows the episode in podcast mode: title = episode,
+      artist-slot = show, `MPMediaItemPropertyPodcastTitle` = show (media type
+      stays `.audio`; there is no `.podcast` media-type member).
 - [ ] App wires `AppPodcastResolver` over `PodcastService`.
 - [ ] `make test-playback` green; coverage at or above floor; no lint/format
       warnings.

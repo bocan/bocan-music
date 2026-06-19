@@ -1,7 +1,9 @@
 # Phase 21-10: Podcasts - Now Playing podcast mode, transport, settings, docs
 
 > Depends on: `phase21-0-overview.md`, `phase21-5-playback.md` (the `.podcast`
-> source + media type), `phase21-7-ui-podcasts-home.md` (seams + view model),
+> source + podcast Now Playing metadata; note there is no `.podcast` media type,
+> so detect podcasts via `PlayableSource.podcast`),
+> `phase21-7-ui-podcasts-home.md` (seams + view model),
 > `phase21-9-ui-episodes.md` (the play surface). Phase 21-6 informs the settings
 > (downloads) but is not required. Touches **UI** and **App**.
 >
@@ -83,8 +85,9 @@ Replace (or augment) prev/next with **skip-back** and **skip-forward** when
 - Wire these to the `MPRemoteCommandCenter` skip commands too
   (`skipBackwardCommand` / `skipForwardCommand` with `preferredIntervals`), so
   lock-screen / AirPods / media keys do podcast-appropriate skips while a podcast
-  plays, and revert to prev/next for music. (Phase 21-5 set the media type;
-  swap the remote command behaviour alongside it.)
+  plays, and revert to prev/next for music. (Drive this off `isPodcast` /
+  `PlayableSource.podcast`, the same signal phase 21-5 uses; there is no
+  `.podcast` Now Playing media type to switch on.)
 - Intervals are settings (below); default 15 / 30.
 
 ### Playback speed
@@ -176,8 +179,9 @@ Per the root CLAUDE.md ("Document new features in README.md and in the repo's
 ## Context7 lookups
 
 - Apple `MediaPlayer`: `MPRemoteCommandCenter.skipForwardCommand` /
-  `skipBackwardCommand`, `preferredIntervals`, and switching command behaviour by
-  media type.
+  `skipBackwardCommand`, `preferredIntervals`. Switch command behaviour by the
+  `isPodcast` / `PlayableSource.podcast` signal, not by Now Playing media type
+  (there is no `.podcast` media-type member).
 - AVFoundation: `AVAudioUnitTimePitch` / player-node rate with pitch correction
   for the speed control (verify the existing engine rate path).
 
@@ -227,10 +231,11 @@ Per the root CLAUDE.md ("Document new features in README.md and in the repo's
 - **Podcast speed must not leak into music.** Reset rate to the music default when
   switching from a podcast item to a track, and vice versa apply the saved podcast
   speed. Drive this off the `isPodcast` transition.
-- **Remote-command behaviour switches with media type.** When a podcast plays,
-  prev/next on the lock screen should skip intervals; when music plays, they
-  should change tracks. Toggle the command center config alongside the phase 21-5
-  media-type set, and restore it cleanly.
+- **Remote-command behaviour switches with the podcast source.** When a podcast
+  plays, prev/next on the lock screen should skip intervals; when music plays,
+  they should change tracks. Toggle the command center config off the `isPodcast`
+  / `PlayableSource.podcast` transition (not a Now Playing media type, which has
+  no `.podcast` member), and restore it cleanly.
 - **`NowPlayingStrip` is at the 500-line `file_length` cap** (per the UI
   CLAUDE.md). Add the podcast branch by extracting a small subview, not by
   swelling the file; do not add a `swiftlint:disable`.
