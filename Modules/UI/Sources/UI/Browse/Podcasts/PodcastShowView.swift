@@ -70,6 +70,7 @@ public struct PodcastShowView: View {
                 )
             )
             .toggleStyle(.checkbox)
+            .fixedSize()
             .help(L10n.string("Auto-Download"))
         }
     }
