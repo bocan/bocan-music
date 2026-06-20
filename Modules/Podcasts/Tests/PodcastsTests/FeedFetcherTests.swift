@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 import Testing
 @testable import Podcasts
 
@@ -98,6 +99,26 @@ struct FeedFetcherTests {
             capturedRequest?.value(forHTTPHeaderField: "If-Modified-Since")
                 == "Mon, 01 Jan 2024 00:00:00 GMT"
         )
+    }
+
+    @Test("User-Agent header is the shared canonical agent, not the legacy string")
+    func userAgentSent() async throws {
+        let mock = MockHTTPClient()
+        var capturedRequest: URLRequest?
+        mock.handler = { req in
+            capturedRequest = req
+            return (Data(), makeHTTPResponse(status: 200))
+        }
+        let fetcher = FeedFetcher(http: mock)
+        _ = try? await fetcher.fetch(
+            try #require(URL(string: "https://example.com/feed")),
+            etag: nil,
+            lastModified: nil
+        )
+        let ua = capturedRequest?.value(forHTTPHeaderField: "User-Agent")
+        #expect(ua == UserAgent.string)
+        #expect(ua?.contains("cloudcauldron") == false)
+        #expect(ua?.contains("Podcast-Reader") == false)
     }
 
     @Test("404 response throws httpStatus error")

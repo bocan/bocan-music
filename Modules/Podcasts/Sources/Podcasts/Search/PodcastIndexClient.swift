@@ -51,7 +51,7 @@ public actor PodcastIndexClient {
     private func fetch<T: Decodable>(url: URL) async throws -> T {
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
         let authHeaders = PodcastIndexAuth.headers(credentials: self.credentials, now: self.now())
         for (key, value) in authHeaders {
             request.setValue(value, forHTTPHeaderField: key)
@@ -94,11 +94,6 @@ public actor PodcastIndexClient {
             throw PodcastsError.parseFailed(url: url, reason: error.localizedDescription)
         }
     }
-
-    private static let userAgent: String = {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
-        return "Bocan/\(version) Podcast-Reader (+https://cloudcauldron.io/bocan)"
-    }()
 
     // MARK: - Mapping
 
