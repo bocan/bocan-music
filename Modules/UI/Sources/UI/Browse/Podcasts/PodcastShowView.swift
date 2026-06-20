@@ -11,6 +11,7 @@ public struct PodcastShowView: View {
     public var podcastID: Int64
 
     @State private var showingUnsubscribeConfirm = false
+    @State private var pendingFunding: FundingLink?
 
     public init(vm: PodcastsViewModel, library: LibraryViewModel, podcastID: Int64) {
         self.vm = vm
@@ -24,6 +25,7 @@ public struct PodcastShowView: View {
             .navigationTitle(self.vm.currentShow?.title ?? L10n.string("Podcast"))
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
+                    self.fundingButton
                     self.autoDownloadToggle
                     self.moreMenu
                 }
@@ -40,6 +42,20 @@ public struct PodcastShowView: View {
                     }
                 }
                 Button(L10n.string("Cancel"), role: .cancel) {}
+            }
+            .confirmationDialog(
+                L10n.string("Open this funding link?"),
+                isPresented: Binding(
+                    get: { self.pendingFunding != nil },
+                    set: { if !$0 { self.pendingFunding = nil } }
+                ),
+                titleVisibility: .visible,
+                presenting: self.pendingFunding
+            ) { link in
+                Button(L10n.string("Open in Browser")) { link.open() }
+                Button(L10n.string("Cancel"), role: .cancel) { self.pendingFunding = nil }
+            } message: { link in
+                Text(L10n.string("This opens \(link.host) in your default browser."))
             }
     }
 
@@ -58,6 +74,27 @@ public struct PodcastShowView: View {
         }
     }
 
+    private var fundingLink: FundingLink? {
+        FundingLink(rawURL: self.vm.currentShow?.fundingURL, label: self.vm.currentShow?.fundingText)
+    }
+
+    @ViewBuilder
+    private var fundingButton: some View {
+        if let link = self.fundingLink {
+            Button {
+                self.pendingFunding = link
+            } label: {
+                if let label = link.label {
+                    Label { Text(verbatim: label) } icon: { Image(systemName: "heart.circle") }
+                } else {
+                    Label(L10n.string("Support This Show"), systemImage: "heart.circle")
+                }
+            }
+            .help(L10n.string("Support this show in your browser"))
+            .accessibilityLabel(L10n.string("Support this show in your browser"))
+        }
+    }
+
     private var moreMenu: some View {
         Menu {
             Button(L10n.string("Mark All as Played")) {
@@ -70,6 +107,11 @@ public struct PodcastShowView: View {
             if let show = vm.currentShow, let link = show.link, let url = URL(string: link) {
                 Button(L10n.string("Go to Website")) {
                     NSWorkspace.shared.open(url)
+                }
+            }
+            if let link = self.fundingLink {
+                Button(L10n.string("Support This Show")) {
+                    self.pendingFunding = link
                 }
             }
             Divider()
