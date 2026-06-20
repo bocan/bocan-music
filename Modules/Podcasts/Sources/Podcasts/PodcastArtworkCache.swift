@@ -5,11 +5,12 @@ import Persistence
 
 /// Downloads and caches podcast cover art to the local filesystem.
 ///
-/// Cache root: `~/Library/Caches/io.cloudcauldron.bocan/Podcasts/Artwork/<podcastID>/`.
-/// File names are a truncated SHA-256 hex of the remote URL so the same URL
-/// always maps to the same local path (stable across app launches). Caching is
-/// best-effort: failures are logged and return `nil` so the UI falls back to a
-/// gradient placeholder.
+/// Cache root: `~/Library/Application Support/io.cloudcauldron.bocan/Podcasts/Artwork/<podcastID>/`.
+/// Application Support is used (not Caches) so macOS never purges artwork while
+/// the user has active subscriptions. File names are a truncated SHA-256 hex of
+/// the remote URL so the same URL always maps to the same local path (stable
+/// across app launches). Caching is best-effort: failures are logged and return
+/// `nil` so the UI falls back to a gradient placeholder.
 ///
 /// A 5 MB cap and a 10 s timeout defend against hostile image URLs. The
 /// existing `Artwork(artPath:)` loader in the UI module renders the cached file
@@ -28,8 +29,8 @@ public actor PodcastArtworkCache {
     }
 
     private static let defaultRoot: URL = {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        return caches
+        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        return appSupport
             .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
             .appendingPathComponent("Podcasts", isDirectory: true)
             .appendingPathComponent("Artwork", isDirectory: true)
