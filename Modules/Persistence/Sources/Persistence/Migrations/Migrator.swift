@@ -52,6 +52,7 @@ public struct Migrator {
         M022ScrobbleIgnoredRollup.register(in: &dm)
         M023Podcasts.register(in: &dm)
         M024PodcastGUID.register(in: &dm)
+        M025PodcastFundingText.register(in: &dm)
         return Self(inner: dm)
     }
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <title>Namespace Podcast</title>
+    <link>https://example.com/ns</link>
+    <description>Feed exercising podcast:funding and podcast:chapters.</description>
+    <podcast:funding url="https://example.com/support">Support the show</podcast:funding>
+    <item>
+      <title>Episode One</title>
+      <guid isPermaLink="false">guid-ep1</guid>
+      <pubDate>Mon, 10 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/ep1.mp3" type="audio/mpeg" length="111"/>
+      <podcast:chapters url="https://example.com/ep1-chapters.json" type="application/json+chapters"/>
+    </item>
+    <item>
+      <title>Episode Two</title>
+      <podcast:chapters url="https://example.com/ep2-chapters.json" type="application/json+chapters"/>
+      <pubDate>Mon, 17 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/ep2.mp3" type="audio/mpeg" length="222"/>
+      <guid isPermaLink="false">guid-ep2</guid>
+    </item>
+    <item>
+      <title>Episode Three</title>
+      <pubDate>Mon, 24 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/ep3.mp3" type="audio/mpeg" length="333"/>
+      <podcast:chapters url="https://example.com/ep3-chapters.json" type="application/json+chapters"/>
+    </item>
+  </channel>
+</rss>

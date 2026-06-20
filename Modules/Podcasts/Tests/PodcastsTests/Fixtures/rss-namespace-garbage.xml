@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0">
+  <channel>
+    <title>Garbage Namespace Podcast</title>
+    <link>https://example.com/garbage</link>
+    <description>Well-formed RSS, but the podcast: tags are unusable.</description>
+    <podcast:funding url="ftp://example.com/nope"></podcast:funding>
+    <item>
+      <title>Only Episode</title>
+      <guid isPermaLink="false">garbage-ep1</guid>
+      <pubDate>Mon, 10 Jun 2024 10:00:00 +0000</pubDate>
+      <enclosure url="https://example.com/garbage1.mp3" type="audio/mpeg" length="100"/>
+      <podcast:chapters url="javascript:alert(1)" type="application/json+chapters"/>
+    </item>
+  </channel>
+</rss>

@@ -180,3 +180,43 @@ struct FeedParserInvalidTests {
         }
     }
 }
+
+@Suite("FeedParser - podcast namespace supplement")
+struct FeedParserPodcastNamespaceTests {
+    @Test("podcast:funding url and label populate the feed")
+    func fundingPopulated() throws {
+        let data = try fixture(named: "rss-podcast-namespace.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        #expect(feed.fundingURL == URL(string: "https://example.com/support"))
+        #expect(feed.fundingText == "Support the show")
+    }
+
+    @Test("podcast:chapters populate each episode by guid, regardless of tag order")
+    func chaptersByGuid() throws {
+        let data = try fixture(named: "rss-podcast-namespace.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        let ep1 = try #require(feed.episodes.first(where: { $0.guid == "guid-ep1" }))
+        let ep2 = try #require(feed.episodes.first(where: { $0.guid == "guid-ep2" }))
+        #expect(ep1.chaptersURL == URL(string: "https://example.com/ep1-chapters.json"))
+        #expect(ep2.chaptersURL == URL(string: "https://example.com/ep2-chapters.json"))
+    }
+
+    @Test("chapters fall back to the enclosure-URL key when the item has no guid")
+    func chaptersGuidFallback() throws {
+        let data = try fixture(named: "rss-podcast-namespace.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        let ep3 = try #require(feed.episodes.first(where: { $0.guid == "https://example.com/ep3.mp3" }))
+        #expect(ep3.chaptersURL == URL(string: "https://example.com/ep3-chapters.json"))
+    }
+
+    @Test("Unusable podcast tags leave funding and chapters nil without failing the parse")
+    func garbageTagsAreNonFatal() throws {
+        let data = try fixture(named: "rss-namespace-garbage.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        #expect(feed.title == "Garbage Namespace Podcast")
+        #expect(feed.fundingURL == nil)
+        #expect(feed.fundingText == nil)
+        let noChapters = feed.episodes.allSatisfy { $0.chaptersURL == nil }
+        #expect(noChapters)
+    }
+}

@@ -33,6 +33,7 @@ extension ParsedFeed {
             ownerEmail: self.ownerEmail,
             copyright: self.copyright,
             fundingURL: self.fundingURL?.absoluteString,
+            fundingText: self.fundingText,
             itunesCollectionID: hints?.itunesCollectionID.map { Int64($0) },
             podcastIndexID: hints?.podcastIndexID.map { Int64($0) },
             podcastGUID: self.podcastGUID,

@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 24)
+        #expect(version == 25)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,20 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twenty-four migrations")
+    @Test("Migrator reports twenty-five migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 24)
+        #expect(migrator.migrations.count == 25)
+    }
+
+    @Test("podcasts table has funding_text after M025")
+    func podcastFundingTextColumn() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(podcasts)")
+                .compactMap { $0["name"] as String? }
+        }
+        #expect(columns.contains("funding_text"))
     }
 
     @Test("M022 rolls up queue rows stranded by ignored submissions")

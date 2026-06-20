@@ -34,14 +34,33 @@ public struct FeedParser: Sendable {
             throw PodcastsError.parseFailed(url: sourceURL, reason: String(describing: error))
         }
 
+        var parsed: ParsedFeed
         switch feed {
         case let .rss(rss):
-            return try Self.parseRSS(rss, sourceURL: sourceURL)
+            parsed = try Self.parseRSS(rss, sourceURL: sourceURL)
         case let .atom(atom):
-            return try Self.parseAtom(atom, sourceURL: sourceURL)
+            parsed = try Self.parseAtom(atom, sourceURL: sourceURL)
         case .json:
             throw PodcastsError.notAFeed(url: sourceURL)
         }
+
+        // --- podcast: namespace supplement: fill the Podcasting 2.0 tags FeedKit
+        //     10.4.0 does not model (podcast:funding, podcast:chapters). Non-fatal,
+        //     and the single source of these values. Remove this block if FeedKit
+        //     gains official support and read the fields in parseRSS instead. ---
+        let extra = PodcastNamespaceSupplement().extract(from: data)
+        if parsed.fundingURL == nil { parsed.fundingURL = extra.fundingURL }
+        if parsed.fundingText == nil { parsed.fundingText = extra.fundingText }
+        if !extra.chaptersByGUID.isEmpty {
+            parsed.episodes = parsed.episodes.map { episode in
+                guard episode.chaptersURL == nil,
+                      let url = extra.chaptersByGUID[episode.guid] else { return episode }
+                var updated = episode
+                updated.chaptersURL = url
+                return updated
+            }
+        }
+        return parsed
     }
 
     // MARK: - RSS

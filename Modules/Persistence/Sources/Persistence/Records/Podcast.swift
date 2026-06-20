@@ -29,6 +29,8 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var ownerEmail: String?
     public var copyright: String?
     public var fundingURL: String?
+    /// Podcasting 2.0 `podcast:funding` display label (feed content, rendered verbatim).
+    public var fundingText: String?
     public var itunesCollectionID: Int64?
     public var podcastIndexID: Int64?
     /// Podcasting 2.0 `podcast:guid`: a stable, cross-platform show identity.
@@ -62,6 +64,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         ownerEmail: String? = nil,
         copyright: String? = nil,
         fundingURL: String? = nil,
+        fundingText: String? = nil,
         itunesCollectionID: Int64? = nil,
         podcastIndexID: Int64? = nil,
         podcastGUID: String? = nil,
@@ -89,6 +92,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.ownerEmail = ownerEmail
         self.copyright = copyright
         self.fundingURL = fundingURL
+        self.fundingText = fundingText
         self.itunesCollectionID = itunesCollectionID
         self.podcastIndexID = podcastIndexID
         self.podcastGUID = podcastGUID
@@ -128,6 +132,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case ownerEmail = "owner_email"
         case copyright
         case fundingURL = "funding_url"
+        case fundingText = "funding_text"
         case itunesCollectionID = "itunes_collection_id"
         case podcastIndexID = "podcast_index_id"
         case podcastGUID = "podcast_guid"
