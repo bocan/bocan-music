@@ -145,7 +145,7 @@ public actor PodcastArtworkCache {
 
     private func download(url: URL) async -> Data? {
         var request = URLRequest(url: url, timeoutInterval: Self.timeoutSeconds)
-        request.setValue("Bocan Podcast-Reader", forHTTPHeaderField: "User-Agent")
+        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
         self.log.debug("artwork.download.start", ["url": url.absoluteString])
 
         let data: Data

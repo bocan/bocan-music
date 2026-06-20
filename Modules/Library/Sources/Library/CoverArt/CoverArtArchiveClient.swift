@@ -70,7 +70,7 @@ public actor CoverArtArchiveClient {
 
     private func fetchIndex(url: URL) async throws -> CAAIndex? {
         var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 15)
-        request.setValue("Bocan/1.0 ( mailto:chris@funderburg.me )", forHTTPHeaderField: "User-Agent")
+        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
 
         self.log.debug("caa.index", ["url": url.path])
 

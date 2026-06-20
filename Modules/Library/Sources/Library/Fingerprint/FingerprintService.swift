@@ -43,7 +43,7 @@ public actor FingerprintService {
         database: Database,
         fpcalcURL: URL,
         acoustIDAPIKey: String,
-        userAgent: String = "Bòcan/1.0 ( https://github.com/bocan/bocan-music )"
+        userAgent: String = UserAgent.string
     ) {
         // Single shared rate-limiter instances — one per service.
         let acoustIDLimiter = Acoustics.RateLimiter(maxRequests: 3, per: 1.0)

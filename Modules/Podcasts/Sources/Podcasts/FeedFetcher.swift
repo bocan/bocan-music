@@ -24,11 +24,6 @@ public actor FeedFetcher {
     private let maxBytes: Int
     private let log = AppLogger.make(.podcasts)
 
-    private static let userAgent: String = {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
-        return "Bocan/\(version) Podcast-Reader (+https://cloudcauldron.io/bocan)"
-    }()
-
     public init(http: any HTTPClient = URLSession.shared, maxBytes: Int = 15 * 1024 * 1024) {
         self.http = http
         self.maxBytes = maxBytes
@@ -46,7 +41,7 @@ public actor FeedFetcher {
         try Task.checkCancellation()
 
         var request = URLRequest(url: url, timeoutInterval: 20)
-        request.setValue(Self.userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
         request.setValue(
             "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
             forHTTPHeaderField: "Accept"

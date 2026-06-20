@@ -47,6 +47,7 @@ public actor ITunesSearchClient {
     private func fetch<T: Decodable>(url: URL) async throws -> T {
         var request = URLRequest(url: url, timeoutInterval: 15)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
 
         self.log.debug("itunes.request.start", ["url": url.absoluteString])
 
