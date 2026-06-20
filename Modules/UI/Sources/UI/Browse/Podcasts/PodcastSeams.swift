@@ -167,8 +167,12 @@ public protocol PodcastSearchProviding: Sendable {
 public protocol PodcastLibraryDataSource: Sendable {
     func subscribedPodcasts() async throws -> [Podcast]
     func episodes(podcastID: Int64) async throws -> [EpisodeListItem]
+    /// Episode list in a specific sort order (the VM resolves it from the show).
+    func episodes(podcastID: Int64, order: EpisodeSortOrder) async throws -> [EpisodeListItem]
     func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error>
     func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error>
+    /// Live episode list in a specific sort order.
+    func observeEpisodes(podcastID: Int64, order: EpisodeSortOrder) async -> AsyncThrowingStream<[EpisodeListItem], Error>
     func episodeCounts() async throws -> [Int64: Int]
     /// Unread counts keyed by podcast ID (no state row or not yet played); zero-count shows absent.
     func unplayedCounts() async throws -> [Int64: Int]
@@ -194,6 +198,12 @@ public protocol PodcastActions: Sendable {
     func refreshAll() async
     func reorder(podcastIDs: [Int64]) async throws
     func setAutoDownload(_ on: Bool, podcastID: Int64) async throws
+    /// Per-show playback-speed override (nil = use the app default).
+    func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws
+    /// Per-show episode-sort override ("newest" | "oldest" | nil = derive from show type).
+    func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws
+    /// Per-show retention limit (keep newest N; nil = keep all).
+    func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws
     /// Builds and enqueues a podcast `QueueItem`, then begins playback.
     func play(episode: EpisodeListItem, podcast: Podcast) async
     func markPlayed(podcastID: Int64, guid: String) async

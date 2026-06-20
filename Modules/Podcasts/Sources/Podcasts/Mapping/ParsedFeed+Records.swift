@@ -42,6 +42,7 @@ extension ParsedFeed {
             lastRefreshedAt: ts,
             lastRefreshError: nil,
             subscribed: true,
+            showType: self.showType,
             addedAt: ts
         )
     }

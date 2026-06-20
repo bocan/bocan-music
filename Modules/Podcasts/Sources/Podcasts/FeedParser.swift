@@ -94,6 +94,9 @@ public struct FeedParser: Sendable {
         // podcast:guid is the canonical, cross-platform show identity.
         let podcastGUID = channel.podcast?.guid
 
+        // itunes:type drives the default episode sort (serial -> oldest-first).
+        let showType = Self.normalizeShowType(channel.iTunes?.type)
+
         let episodes: [ParsedEpisode] = (channel.items ?? []).compactMap { item in
             Self.parseRSSItem(item)
         }
@@ -114,8 +117,16 @@ public struct FeedParser: Sendable {
             copyright: channel.copyright,
             fundingURL: fundingURL,
             podcastGUID: podcastGUID,
+            showType: showType,
             episodes: sorted
         )
+    }
+
+    /// Normalizes `itunes:type`: trims, lowercases, and accepts only the two
+    /// canonical values; anything else (including nil) becomes nil.
+    private static func normalizeShowType(_ raw: String?) -> String? {
+        guard let value = raw?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else { return nil }
+        return (value == "episodic" || value == "serial") ? value : nil
     }
 
     private static func parseRSSItem(_ item: RSSFeedItem) -> ParsedEpisode? {

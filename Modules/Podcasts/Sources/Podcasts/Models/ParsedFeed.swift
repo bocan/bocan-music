@@ -22,6 +22,9 @@ public struct ParsedFeed: Sendable {
     public var fundingText: String?
     /// Podcasting 2.0 `podcast:guid`: a stable, cross-platform show identity.
     public var podcastGUID: String?
+    /// `itunes:type`: "episodic" | "serial" (normalized). Nil when absent/unrecognized
+    /// or for Atom feeds. Drives the default episode sort.
+    public var showType: String?
     public var episodes: [ParsedEpisode]
 
     public init(
@@ -39,6 +42,7 @@ public struct ParsedFeed: Sendable {
         fundingURL: URL? = nil,
         fundingText: String? = nil,
         podcastGUID: String? = nil,
+        showType: String? = nil,
         episodes: [ParsedEpisode] = []
     ) {
         self.title = title
@@ -55,6 +59,7 @@ public struct ParsedFeed: Sendable {
         self.fundingURL = fundingURL
         self.fundingText = fundingText
         self.podcastGUID = podcastGUID
+        self.showType = showType
         self.episodes = episodes
     }
 }

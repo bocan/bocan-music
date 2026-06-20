@@ -51,6 +51,18 @@ struct AppPodcastActions: PodcastActions {
         try await self.service.setAutoDownload(on, podcastID: podcastID)
     }
 
+    func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {
+        try await self.service.setPlaybackSpeed(speed, podcastID: podcastID)
+    }
+
+    func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {
+        try await self.service.setEpisodeSort(sort, podcastID: podcastID)
+    }
+
+    func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {
+        try await self.service.setRetentionLimit(limit, podcastID: podcastID)
+    }
+
     /// Builds a podcast `QueueItem` and hands it to `QueuePlayer.play(items:)`.
     ///
     /// Source format fields are intentionally generic: the real format is

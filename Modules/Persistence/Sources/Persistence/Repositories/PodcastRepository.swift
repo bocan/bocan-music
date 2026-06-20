@@ -5,8 +5,9 @@ import Observability
 /// Read/write access to the `podcasts` table.
 ///
 /// `upsertByFeedURL` is the canonical write path during subscribe/refresh: it preserves
-/// user-owned fields (`id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`) while
-/// updating all feed-derived content columns.
+/// user-owned fields (`id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`,
+/// `playbackSpeed`, `episodeSort`, `retentionLimit`) while updating all feed-derived
+/// content columns (including the feed-derived `showType`).
 public struct PodcastRepository: Sendable {
     // MARK: - Properties
 
@@ -46,8 +47,9 @@ public struct PodcastRepository: Sendable {
     ///
     /// When the feed already exists the following fields are preserved from the existing
     /// row and are NOT replaced with the incoming values:
-    /// `id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`.
-    /// All other columns (title, author, artwork, etag, etc.) are updated from the feed.
+    /// `id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`, `playbackSpeed`,
+    /// `episodeSort`, `retentionLimit`.
+    /// All other columns (title, author, artwork, etag, `show_type`, etc.) are updated from the feed.
     ///
     /// Returns the rowid of the inserted or updated row.
     @discardableResult
@@ -61,6 +63,11 @@ public struct PodcastRepository: Sendable {
                 updated.subscribed = existing.subscribed
                 updated.autoDownload = existing.autoDownload
                 updated.sortIndex = existing.sortIndex
+                // Per-show overrides are user-owned; preserve them. `showType` is
+                // feed-derived and intentionally NOT preserved (refreshes from the parse).
+                updated.playbackSpeed = existing.playbackSpeed
+                updated.episodeSort = existing.episodeSort
+                updated.retentionLimit = existing.retentionLimit
                 try updated.update(db)
                 return existing.id ?? 0
             } else {
@@ -87,6 +94,60 @@ public struct PodcastRepository: Sendable {
             try db.execute(
                 sql: "UPDATE podcasts SET sort_index = ? WHERE id = ?",
                 arguments: [sortIndex, id]
+            )
+        }
+    }
+
+    /// Sets the per-show playback-speed override (nil = use the app default).
+    public func setPlaybackSpeed(_ speed: Double?, id: Int64) async throws {
+        try await self.database.write { db in
+            try db.execute(sql: "UPDATE podcasts SET playback_speed = ? WHERE id = ?", arguments: [speed, id])
+        }
+    }
+
+    /// Sets the per-show episode-sort override ("newest" | "oldest" | nil = derive).
+    public func setEpisodeSort(_ sort: String?, id: Int64) async throws {
+        try await self.database.write { db in
+            try db.execute(sql: "UPDATE podcasts SET episode_sort = ? WHERE id = ?", arguments: [sort, id])
+        }
+    }
+
+    /// Sets the per-show retention limit (keep newest N; nil = keep all).
+    public func setRetentionLimit(_ limit: Int?, id: Int64) async throws {
+        try await self.database.write { db in
+            try db.execute(sql: "UPDATE podcasts SET retention_limit = ? WHERE id = ?", arguments: [limit, id])
+        }
+    }
+
+    /// Prunes cold content rows beyond the newest `keepNewest` by `published_at`
+    /// (id tiebreaker). Episodes whose state is in-progress / played / downloaded
+    /// are exempt and kept even outside the newest N. Nil `keepNewest` is a no-op.
+    ///
+    /// This deletes only `podcast_episodes` content rows; it never deletes a
+    /// `podcast_episode_state` row or a downloaded file on disk. A re-appearing
+    /// GUID re-binds to its preserved state on the next upsert.
+    public func pruneEpisodes(podcastID: Int64, keepNewest: Int?) async throws {
+        guard let keep = keepNewest, keep >= 0 else { return }
+        try await self.database.write { db in
+            try db.execute(
+                sql: """
+                DELETE FROM podcast_episodes
+                WHERE podcast_id = ?
+                  AND id NOT IN (
+                      SELECT id FROM podcast_episodes
+                      WHERE podcast_id = ?
+                      ORDER BY published_at DESC, id DESC
+                      LIMIT ?
+                  )
+                  AND id NOT IN (
+                      SELECT e.id FROM podcast_episodes e
+                      JOIN podcast_episode_state s
+                          ON s.podcast_id = e.podcast_id AND s.guid = e.guid
+                      WHERE e.podcast_id = ?
+                        AND (s.play_state IN ('inProgress', 'played') OR s.download_state = 'downloaded')
+                  )
+                """,
+                arguments: [podcastID, podcastID, keep, podcastID]
             )
         }
     }

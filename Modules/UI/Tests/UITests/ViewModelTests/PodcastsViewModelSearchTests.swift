@@ -260,6 +260,10 @@ struct PodcastsViewModelSearchTests {
             func exportOPML() async throws -> Data {
                 Data()
             }
+
+            func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {}
+            func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {}
+            func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {}
         }
 
         let vm = PodcastsViewModel(library: nil, actions: StubActions(), searchProvider: stub)

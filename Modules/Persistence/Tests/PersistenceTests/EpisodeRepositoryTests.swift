@@ -273,4 +273,24 @@ struct EpisodeRepositoryTests {
         let updated = try await iterator.next()
         #expect(updated?.first?.state?.playPosition == 120, "observation must re-fire on state table change")
     }
+
+    // MARK: - Sort order
+
+    @Test("fetchListItems(order:) sorts ascending for .oldest, descending for .newest")
+    func fetchListItemsHonorsOrder() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeRepository(database: db)
+        try await repo.upsertAll([
+            PodcastEpisode(podcastID: podcastID, guid: "a", title: "A", audioURL: "https://x/a.mp3", publishedAt: 300, addedAt: 0),
+            PodcastEpisode(podcastID: podcastID, guid: "b", title: "B", audioURL: "https://x/b.mp3", publishedAt: 100, addedAt: 0),
+            PodcastEpisode(podcastID: podcastID, guid: "c", title: "C", audioURL: "https://x/c.mp3", publishedAt: 200, addedAt: 0),
+        ])
+
+        let oldest = try await repo.fetchListItems(podcastID: podcastID, order: .oldest).map(\.episode.guid)
+        #expect(oldest == ["b", "c", "a"])
+
+        let newest = try await repo.fetchListItems(podcastID: podcastID, order: .newest).map(\.episode.guid)
+        #expect(newest == ["a", "c", "b"])
+    }
 }

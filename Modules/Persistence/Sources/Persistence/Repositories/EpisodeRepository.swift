@@ -112,22 +112,29 @@ public struct EpisodeRepository: Sendable {
 
     // MARK: - Joined read model
 
-    /// Fetches `EpisodeListItem` rows for a podcast, newest first.
+    /// Fetches `EpisodeListItem` rows for a podcast in the requested `order`.
     ///
     /// Each item joins the episode content with its optional state row
     /// (LEFT JOIN). `item.state == nil` means unplayed, position 0.
-    public func fetchListItems(podcastID: Int64) async throws -> [EpisodeListItem] {
+    public func fetchListItems(
+        podcastID: Int64,
+        order: EpisodeSortOrder = .newest
+    ) async throws -> [EpisodeListItem] {
         try await self.database.read { db in
-            try Self.listItemRequest(podcastID: podcastID).fetchAll(db).map(\.item)
+            try Self.listItemRequest(podcastID: podcastID, order: order).fetchAll(db).map(\.item)
         }
     }
 
-    /// A live stream of `EpisodeListItem` rows, emitting immediately and again
-    /// whenever either `podcast_episodes` or `podcast_episode_state` changes for
-    /// this podcast. The observation tracks both tables via a single joined SQL query.
-    public func observeListItems(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+    /// A live stream of `EpisodeListItem` rows in the requested `order`, emitting
+    /// immediately and again whenever either `podcast_episodes` or
+    /// `podcast_episode_state` changes for this podcast. The observation tracks
+    /// both tables via a single joined SQL query.
+    public func observeListItems(
+        podcastID: Int64,
+        order: EpisodeSortOrder = .newest
+    ) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
         await self.database.observe { db in
-            try Self.listItemRequest(podcastID: podcastID).fetchAll(db).map(\.item)
+            try Self.listItemRequest(podcastID: podcastID, order: order).fetchAll(db).map(\.item)
         }
     }
 
@@ -191,24 +198,52 @@ public struct EpisodeRepository: Sendable {
         return id ?? 0
     }
 
-    private static let joinedSQL = """
-    SELECT e.*,
-           s.play_position  AS st_play_position,
-           s.play_state     AS st_play_state,
-           s.last_played_at AS st_last_played_at,
-           s.completed_at   AS st_completed_at,
-           s.download_state AS st_download_state,
-           s.download_path  AS st_download_path,
-           s.download_bytes AS st_download_bytes
-    FROM podcast_episodes e
-    LEFT JOIN podcast_episode_state s
-        ON s.podcast_id = e.podcast_id AND s.guid = e.guid
-    WHERE e.podcast_id = ?
-    ORDER BY e.published_at DESC
-    """
+    /// Builds the joined episode + state query. `direction` is a fixed keyword
+    /// derived from the `EpisodeSortOrder` enum (never a user string), so there is
+    /// no injection surface; the `id` tiebreaker keeps equal/NULL `published_at`
+    /// rows deterministic.
+    private static func joinedSQL(order: EpisodeSortOrder) -> String {
+        let direction = order == .oldest ? "ASC" : "DESC"
+        return """
+        SELECT e.*,
+               s.play_position  AS st_play_position,
+               s.play_state     AS st_play_state,
+               s.last_played_at AS st_last_played_at,
+               s.completed_at   AS st_completed_at,
+               s.download_state AS st_download_state,
+               s.download_path  AS st_download_path,
+               s.download_bytes AS st_download_bytes
+        FROM podcast_episodes e
+        LEFT JOIN podcast_episode_state s
+            ON s.podcast_id = e.podcast_id AND s.guid = e.guid
+        WHERE e.podcast_id = ?
+        ORDER BY e.published_at \(direction), e.id \(direction)
+        """
+    }
 
-    private static func listItemRequest(podcastID: Int64) -> SQLRequest<EpisodeListRow> {
-        SQLRequest<EpisodeListRow>(sql: self.joinedSQL, arguments: [podcastID])
+    private static func listItemRequest(podcastID: Int64, order: EpisodeSortOrder) -> SQLRequest<EpisodeListRow> {
+        SQLRequest<EpisodeListRow>(sql: self.joinedSQL(order: order), arguments: [podcastID])
+    }
+}
+
+// MARK: - EpisodeSortOrder
+
+/// Episode list ordering by publish date. The raw value matches the persisted
+/// `episode_sort` override.
+public enum EpisodeSortOrder: String, Sendable, CaseIterable {
+    case newest
+    case oldest
+}
+
+/// Episode-sort resolution for a show.
+public extension Podcast {
+    /// Effective episode order: an explicit `episodeSort` override wins, else it
+    /// is derived from `showType` (serial -> oldest, otherwise newest).
+    var resolvedEpisodeSort: EpisodeSortOrder {
+        if let raw = episodeSort, let explicit = EpisodeSortOrder(rawValue: raw) {
+            return explicit
+        }
+        return showType == "serial" ? .oldest : .newest
     }
 }
 

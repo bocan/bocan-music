@@ -583,6 +583,17 @@ public extension NowPlayingViewModel {
 
 // MARK: - NowPlayingViewModel private helpers
 
+extension NowPlayingViewModel {
+    /// Resolves the starting podcast rate when an episode begins: a per-show
+    /// override wins, else the global `podcast.playback.rate` default, else 1.0;
+    /// clamped to [0.5, 2.0]. A manual `SpeedPickerView` change overrides live and
+    /// is not written back to the per-show value.
+    nonisolated static func resolvePodcastRate(showSpeed: Double?, globalRate: Double) -> Float {
+        let effective = showSpeed ?? (globalRate > 0 ? globalRate : 1.0)
+        return Float(max(0.5, min(2.0, effective)))
+    }
+}
+
 private extension NowPlayingViewModel {
     /// Fills podcast-specific now-playing state when the current queue item is a podcast episode.
     func applyPodcastItem(feedURL: URL, episodeGUID: String) async {
@@ -605,7 +616,7 @@ private extension NowPlayingViewModel {
                 forwardInterval: fwd > 0 ? fwd : 30
             )
             let savedRate = UserDefaults.standard.double(forKey: "podcast.playback.rate")
-            let r = savedRate > 0 ? Float(max(0.5, min(2.0, savedRate))) : 1.0
+            let r = Self.resolvePodcastRate(showSpeed: podcast?.playbackSpeed, globalRate: savedRate)
             await qp.setRate(r)
             self.playbackRate = r
         }

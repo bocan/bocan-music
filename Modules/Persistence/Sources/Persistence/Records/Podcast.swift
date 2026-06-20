@@ -4,9 +4,10 @@ import GRDB
 /// A subscribed podcast show, stored in the `podcasts` table.
 ///
 /// Content fields (title, author, artwork, etc.) come from the feed and may be updated
-/// on every refresh. Identity fields (`id`, `addedAt`, `subscribed`, `autoDownload`,
-/// `sortIndex`) are owned by the user and are preserved across refreshes by
-/// `PodcastRepository.upsertByFeedURL`.
+/// on every refresh. Identity / user-owned fields (`id`, `addedAt`, `subscribed`,
+/// `autoDownload`, `sortIndex`, `playbackSpeed`, `episodeSort`, `retentionLimit`) are
+/// preserved across refreshes by `PodcastRepository.upsertByFeedURL`. `showType` is
+/// feed-derived and refreshes from the parse like the other content fields.
 public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePersistableRecord, Sendable {
     // MARK: - Table
 
@@ -43,6 +44,14 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var subscribed: Bool
     public var autoDownload: Bool
     public var sortIndex: Int
+    /// Per-show playback rate override (user-owned); nil = use the app default.
+    public var playbackSpeed: Double?
+    /// Per-show episode sort override (user-owned): "newest" | "oldest"; nil = derive from `showType`.
+    public var episodeSort: String?
+    /// Per-show retention: keep newest N content rows (user-owned); nil = keep all.
+    public var retentionLimit: Int?
+    /// Feed-derived `itunes:type`: "episodic" | "serial". Refreshes from the parse.
+    public var showType: String?
     public var addedAt: Double
 
     // MARK: - Init
@@ -75,6 +84,10 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         subscribed: Bool = true,
         autoDownload: Bool = false,
         sortIndex: Int = 0,
+        playbackSpeed: Double? = nil,
+        episodeSort: String? = nil,
+        retentionLimit: Int? = nil,
+        showType: String? = nil,
         addedAt: Double
     ) {
         self.id = id
@@ -103,6 +116,10 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.subscribed = subscribed
         self.autoDownload = autoDownload
         self.sortIndex = sortIndex
+        self.playbackSpeed = playbackSpeed
+        self.episodeSort = episodeSort
+        self.retentionLimit = retentionLimit
+        self.showType = showType
         self.addedAt = addedAt
     }
 
@@ -143,6 +160,10 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case subscribed
         case autoDownload = "auto_download"
         case sortIndex = "sort_index"
+        case playbackSpeed = "playback_speed"
+        case episodeSort = "episode_sort"
+        case retentionLimit = "retention_limit"
+        case showType = "show_type"
         case addedAt = "added_at"
     }
 }

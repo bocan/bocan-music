@@ -13,6 +13,16 @@ struct PodcastsGridView: View {
 
     @ScaledMetric(relativeTo: .body) private var scaledMinWidth = Theme.albumGridMinWidth
 
+    /// Identifiable wrapper so the settings sheet is driven by `.sheet(item:)`.
+    private struct SettingsTarget: Identifiable {
+        let podcast: Podcast
+        var id: Int64 {
+            self.podcast.id ?? -1
+        }
+    }
+
+    @State private var settingsTarget: SettingsTarget?
+
     private var columns: [GridItem] {
         [GridItem(.adaptive(minimum: self.scaledMinWidth), spacing: Theme.albumGridSpacing)]
     }
@@ -41,6 +51,9 @@ struct PodcastsGridView: View {
                 Task { await self.library.selectDestination(.podcastShow(id)) }
             }
         }
+        .sheet(item: self.$settingsTarget) { target in
+            PodcastShowSettingsView(podcast: target.podcast, vm: self.vm)
+        }
     }
 
     @ViewBuilder
@@ -66,6 +79,9 @@ struct PodcastsGridView: View {
             // 30-day transcript cleanup clock (phase 21-12-b) for each episode.
             Button(L10n.string("Mark All as Played")) {
                 Task { await self.library.podcastActions?.markAllPlayed(podcastID: id) }
+            }
+            Button(L10n.string("Show Settings…")) {
+                self.settingsTarget = SettingsTarget(podcast: podcast)
             }
             Divider()
             Button(L10n.string("Unsubscribe"), role: .destructive) {
