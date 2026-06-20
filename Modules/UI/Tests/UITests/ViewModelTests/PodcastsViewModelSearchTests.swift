@@ -249,6 +249,9 @@ struct PodcastsViewModelSearchTests {
             func markAllPlayed(podcastID: Int64) async {}
             func download(podcastID: Int64, guid: String) async {}
             func removeDownload(podcastID: Int64, guid: String) async {}
+            func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
+                []
+            }
         }
 
         let vm = PodcastsViewModel(library: nil, actions: StubActions(), searchProvider: stub)

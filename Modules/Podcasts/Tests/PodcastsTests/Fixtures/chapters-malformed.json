@@ -1,0 +1,9 @@
+{
+  "version": "1.2.0",
+  "extraneous": "ignored",
+  "chapters": [
+    { "title": "No start time here" },
+    { "startTime": 10.0, "title": "Valid one", "bogus": true },
+    { "startTime": 20.0 }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "version": "1.2.0",
+  "chapters": [
+    { "startTime": 0, "title": "Intro" },
+    { "startTime": 65.0, "title": "Main Topic", "img": "https://example.com/ch2.jpg", "url": "https://example.com/ch2" },
+    { "startTime": 30.0, "title": "Sponsor" }
+  ]
+}

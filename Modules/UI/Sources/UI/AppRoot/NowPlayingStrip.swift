@@ -164,6 +164,13 @@ public struct NowPlayingStrip: View {
                     : L10n.string("Go to artist \(self.vm.artist)"))
                 .accessibilityIdentifier(A11y.NowPlaying.subtitleButton)
             }
+
+            if let chapter = self.currentChapter {
+                Text(verbatim: chapter.title)
+                    .font(.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .lineLimit(1)
+            }
         }
         .frame(minWidth: 120, maxWidth: 300, alignment: .leading)
         .onChange(of: self.vm.nowPlayingTrackID) { _, trackID in
@@ -189,12 +196,28 @@ public struct NowPlayingStrip: View {
         return parts.isEmpty ? nil : parts.joined(separator: " - ")
     }
 
+    private var currentChapter: UIChapter? {
+        guard self.vm.isPodcast else { return nil }
+        return self.library.podcasts.nowPlayingChapters.current(at: self.vm.position)
+    }
+
     @ViewBuilder
     private var transport: some View {
         if self.vm.isPodcast {
-            PodcastTransportControls(vm: self.vm) {
-                guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else { return nil }
-                return await self.library.podcasts.loadTranscript(podcastID: podcastID, guid: guid)
+            PodcastTransportControls(
+                vm: self.vm,
+                loadTranscript: {
+                    guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else { return nil }
+                    return await self.library.podcasts.loadTranscript(podcastID: podcastID, guid: guid)
+                },
+                chapters: self.library.podcasts.nowPlayingChapters
+            )
+            .task(id: self.vm.podcastGUID) {
+                guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else {
+                    self.library.podcasts.clearNowPlayingChapters()
+                    return
+                }
+                await self.library.podcasts.loadChapters(podcastID: podcastID, guid: guid)
             }
         } else {
             MusicTransportControls(vm: self.vm, library: self.library)
