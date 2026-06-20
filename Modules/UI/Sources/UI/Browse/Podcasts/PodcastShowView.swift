@@ -12,6 +12,7 @@ public struct PodcastShowView: View {
 
     @State private var showingUnsubscribeConfirm = false
     @State private var pendingFunding: FundingLink?
+    @State private var showingSettings = false
 
     public init(vm: PodcastsViewModel, library: LibraryViewModel, podcastID: Int64) {
         self.vm = vm
@@ -56,6 +57,11 @@ public struct PodcastShowView: View {
                 Button(L10n.string("Cancel"), role: .cancel) { self.pendingFunding = nil }
             } message: { link in
                 Text(L10n.string("This opens \(link.host) in your default browser."))
+            }
+            .sheet(isPresented: self.$showingSettings) {
+                if let show = self.vm.currentShow {
+                    PodcastShowSettingsView(podcast: show, vm: self.vm)
+                }
             }
     }
 
@@ -104,6 +110,9 @@ public struct PodcastShowView: View {
             Divider()
             Button(L10n.string("Refresh")) {
                 Task { await self.vm.refreshCurrentShow() }
+            }
+            Button(L10n.string("Show Settings…")) {
+                self.showingSettings = true
             }
             if let show = vm.currentShow, let link = show.link, let url = URL(string: link) {
                 Button(L10n.string("Go to Website")) {

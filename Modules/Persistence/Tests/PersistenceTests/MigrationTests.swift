@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 26)
+        #expect(version == 27)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twenty-six migrations")
+    @Test("Migrator reports twenty-seven migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 26)
+        #expect(migrator.migrations.count == 27)
     }
 
     @Test("podcasts table has funding_text after M025")
@@ -90,6 +90,18 @@ struct MigrationTests {
                 .compactMap { $0["name"] as String? }
         }
         for name in ["podcast_id", "guid", "content", "format", "language", "source_url", "fetched_at"] {
+            #expect(columns.contains(name), "Expected column '\(name)' not found")
+        }
+    }
+
+    @Test("podcasts table has the per-show settings columns after M027")
+    func podcastPerShowSettingsColumns() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(podcasts)")
+                .compactMap { $0["name"] as String? }
+        }
+        for name in ["playback_speed", "episode_sort", "retention_limit", "show_type"] {
             #expect(columns.contains(name), "Expected column '\(name)' not found")
         }
     }

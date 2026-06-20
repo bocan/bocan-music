@@ -98,6 +98,10 @@ public actor PodcastService {
         let episodes = parsed.episodes.map { $0.toEpisode(podcastID: podcastID, now: self.now()) }
         try await self.episodeRepo.upsertAll(episodes)
 
+        // Apply any retention limit preserved from a prior subscription (no-op on a fresh subscribe).
+        let retention = await (try? self.podcastRepo.fetch(id: podcastID))?.retentionLimit
+        await self.applyRetention(podcastID: podcastID, keepNewest: retention)
+
         // Fire artwork download as a non-blocking detached task; subscribe returns immediately.
         let art = self.artwork
         let artURL = parsed.artworkURL
@@ -131,6 +135,21 @@ public actor PodcastService {
         var podcast = try await podcastRepo.fetch(id: podcastID)
         podcast.autoDownload = on
         try await self.podcastRepo.update(podcast)
+    }
+
+    /// Sets the per-show playback-speed override (nil = use the app default).
+    public func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {
+        try await self.podcastRepo.setPlaybackSpeed(speed, id: podcastID)
+    }
+
+    /// Sets the per-show episode-sort override ("newest" | "oldest" | nil = derive).
+    public func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {
+        try await self.podcastRepo.setEpisodeSort(sort, id: podcastID)
+    }
+
+    /// Sets the per-show retention limit (keep newest N; nil = keep all).
+    public func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {
+        try await self.podcastRepo.setRetentionLimit(limit, id: podcastID)
     }
 
     /// Persists a user-defined sort order by writing `sort_index = position`.
@@ -218,6 +237,9 @@ public actor PodcastService {
         let episodes = parsed.episodes.map { $0.toEpisode(podcastID: podcastID, now: self.now()) }
         try await self.episodeRepo.upsertAll(episodes)
 
+        // Apply the show's retention limit after the upsert (best-effort).
+        await self.applyRetention(podcastID: podcastID, keepNewest: podcast.retentionLimit)
+
         // Cache artwork if the URL changed.
         if podcast.artworkURL != parsed.artworkURL?.absoluteString {
             let art = self.artwork
@@ -272,6 +294,17 @@ public actor PodcastService {
         }
     }
 
+    /// Applies a show's retention limit, best-effort: never throws so it cannot
+    /// fail a subscribe/refresh. Nil limit is a no-op (keep all).
+    private func applyRetention(podcastID: Int64, keepNewest: Int?) async {
+        guard keepNewest != nil else { return }
+        do {
+            try await self.podcastRepo.pruneEpisodes(podcastID: podcastID, keepNewest: keepNewest)
+        } catch {
+            self.log.debug("podcast.prune.failed", ["id": podcastID, "error": String(reflecting: error)])
+        }
+    }
+
     // MARK: - Reads
 
     public func subscribedPodcasts() async throws -> [Podcast] {
@@ -282,12 +315,25 @@ public actor PodcastService {
         try await self.episodeRepo.fetchListItems(podcastID: podcastID)
     }
 
+    /// Episode list in the requested sort order (per-show setting resolution lives in the UI).
+    public func episodes(podcastID: Int64, order: EpisodeSortOrder) async throws -> [EpisodeListItem] {
+        try await self.episodeRepo.fetchListItems(podcastID: podcastID, order: order)
+    }
+
     public func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error> {
         await self.podcastRepo.observeSubscribed()
     }
 
     public func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
         await self.episodeRepo.observeListItems(podcastID: podcastID)
+    }
+
+    /// Live episode list in the requested sort order.
+    public func observeEpisodes(
+        podcastID: Int64,
+        order: EpisodeSortOrder
+    ) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+        await self.episodeRepo.observeListItems(podcastID: podcastID, order: order)
     }
 
     public func episodeCounts() async throws -> [Int64: Int] {

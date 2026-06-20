@@ -226,18 +226,24 @@ public final class PodcastsViewModel: ObservableObject {
         do {
             let podcasts = try await library.subscribedPodcasts()
             self.currentShow = podcasts.first { $0.id == id }
-            self.episodes = try await library.episodes(podcastID: id)
+            let order = self.currentShow?.resolvedEpisodeSort ?? .newest
+            self.episodes = try await library.episodes(podcastID: id, order: order)
         } catch {
             self.log.error("podcasts.loadShow.failed", ["id": id, "error": String(reflecting: error)])
         }
         self.isLoading = false
-        self.startObserveEpisodes(podcastID: id, library: library)
+        let order = self.currentShow?.resolvedEpisodeSort ?? .newest
+        self.startObserveEpisodes(podcastID: id, order: order, library: library)
     }
 
-    private func startObserveEpisodes(podcastID: Int64, library: any PodcastLibraryDataSource) {
+    private func startObserveEpisodes(
+        podcastID: Int64,
+        order: EpisodeSortOrder,
+        library: any PodcastLibraryDataSource
+    ) {
         self.episodesTask?.cancel()
         self.episodesTask = Task { [weak self] in
-            let stream = await library.observeEpisodes(podcastID: podcastID)
+            let stream = await library.observeEpisodes(podcastID: podcastID, order: order)
             do {
                 for try await items in stream {
                     guard let self else { return }
@@ -286,6 +292,56 @@ public final class PodcastsViewModel: ObservableObject {
             try await self.actions?.setAutoDownload(on, podcastID: id)
         } catch {
             self.log.error("podcasts.setAutoDownload.failed", ["id": id, "error": String(reflecting: error)])
+        }
+    }
+
+    // MARK: - Per-show settings
+
+    /// Persists the per-show playback-speed override (nil = app default). Keeps
+    /// `currentShow` in sync so the open show reflects the change immediately.
+    public func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async {
+        do {
+            try await self.actions?.setPlaybackSpeed(speed, podcastID: podcastID)
+            if self.currentShow?.id == podcastID { self.currentShow?.playbackSpeed = speed }
+        } catch {
+            self.log.error("podcasts.setPlaybackSpeed.failed", ["id": podcastID, "error": String(reflecting: error)])
+        }
+    }
+
+    /// Persists the per-show episode-sort override and, if it is the open show,
+    /// re-resolves the order and restarts the live episode observation.
+    public func setEpisodeSort(_ sort: String?, podcastID: Int64) async {
+        do {
+            try await self.actions?.setEpisodeSort(sort, podcastID: podcastID)
+        } catch {
+            self.log.error("podcasts.setEpisodeSort.failed", ["id": podcastID, "error": String(reflecting: error)])
+            return
+        }
+        guard self.currentShow?.id == podcastID, let library else { return }
+        self.currentShow?.episodeSort = sort
+        let order = self.currentShow?.resolvedEpisodeSort ?? .newest
+        self.episodes = await (try? library.episodes(podcastID: podcastID, order: order)) ?? self.episodes
+        self.startObserveEpisodes(podcastID: podcastID, order: order, library: library)
+    }
+
+    /// Persists the per-show retention limit (nil = keep all).
+    public func setRetentionLimit(_ limit: Int?, podcastID: Int64) async {
+        do {
+            try await self.actions?.setRetentionLimit(limit, podcastID: podcastID)
+            if self.currentShow?.id == podcastID { self.currentShow?.retentionLimit = limit }
+        } catch {
+            self.log.error("podcasts.setRetentionLimit.failed", ["id": podcastID, "error": String(reflecting: error)])
+        }
+    }
+
+    /// Sets auto-download for a specific show (used by the per-show settings sheet,
+    /// which may be opened from the grid where there is no `currentShow`).
+    public func setAutoDownload(_ on: Bool, podcastID: Int64) async {
+        do {
+            try await self.actions?.setAutoDownload(on, podcastID: podcastID)
+            if self.currentShow?.id == podcastID { self.currentShow?.autoDownload = on }
+        } catch {
+            self.log.error("podcasts.setAutoDownload.failed", ["id": podcastID, "error": String(reflecting: error)])
         }
     }
 }

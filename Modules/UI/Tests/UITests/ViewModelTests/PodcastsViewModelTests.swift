@@ -24,11 +24,23 @@ private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sen
         return self.episodeItems
     }
 
+    func episodes(podcastID: Int64, order: EpisodeSortOrder) async throws -> [EpisodeListItem] {
+        self.episodesCalled = true
+        return self.episodeItems
+    }
+
     func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error> {
         AsyncThrowingStream { _ in }
     }
 
     func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+        AsyncThrowingStream { _ in }
+    }
+
+    func observeEpisodes(
+        podcastID: Int64,
+        order: EpisodeSortOrder
+    ) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
         AsyncThrowingStream { _ in }
     }
 
@@ -77,6 +89,10 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     func exportOPML() async throws -> Data {
         Data()
     }
+
+    func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {}
+    func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {}
+    func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {}
 }
 
 // MARK: - Helpers
@@ -151,11 +167,22 @@ struct PodcastsViewModelTests {
                 []
             }
 
+            func episodes(podcastID: Int64, order: EpisodeSortOrder) async throws -> [EpisodeListItem] {
+                []
+            }
+
             func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error> {
                 AsyncThrowingStream { _ in }
             }
 
             func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
+                AsyncThrowingStream { _ in }
+            }
+
+            func observeEpisodes(
+                podcastID: Int64,
+                order: EpisodeSortOrder
+            ) async -> AsyncThrowingStream<[EpisodeListItem], Error> {
                 AsyncThrowingStream { _ in }
             }
 
@@ -245,6 +272,10 @@ struct PodcastsViewModelTests {
             func exportOPML() async throws -> Data {
                 Data("opml".utf8)
             }
+
+            func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {}
+            func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {}
+            func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {}
         }
         let vm = PodcastsViewModel(library: nil, actions: OPMLStub())
         let summary = try await vm.importOPML(data: Data()) { _, _ in }
@@ -258,6 +289,28 @@ struct PodcastsViewModelTests {
         let vm = PodcastsViewModel(library: nil, actions: nil)
         let summary = try await vm.importOPML(data: Data()) { _, _ in }
         #expect(summary.totalAttempted == 0)
+    }
+
+    // MARK: - Per-show settings
+
+    @Test("setPlaybackSpeed updates currentShow when it is the open show")
+    func setPlaybackSpeedUpdatesCurrentShow() async {
+        let lib = StubPodcastLibrary()
+        lib.podcasts = [makePodcast(id: 7, title: "S")]
+        let vm = PodcastsViewModel(library: lib, actions: StubPodcastActions())
+        await vm.loadShow(7)
+        await vm.setPlaybackSpeed(1.5, podcastID: 7)
+        #expect(vm.currentShow?.playbackSpeed == 1.5)
+    }
+
+    @Test("setEpisodeSort updates currentShow's sort when it is the open show")
+    func setEpisodeSortUpdatesCurrentShow() async {
+        let lib = StubPodcastLibrary()
+        lib.podcasts = [makePodcast(id: 7, title: "S")]
+        let vm = PodcastsViewModel(library: lib, actions: StubPodcastActions())
+        await vm.loadShow(7)
+        await vm.setEpisodeSort("oldest", podcastID: 7)
+        #expect(vm.currentShow?.episodeSort == "oldest")
     }
 
     // MARK: - addBarText
