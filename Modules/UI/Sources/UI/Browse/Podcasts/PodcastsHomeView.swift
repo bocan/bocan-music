@@ -13,8 +13,19 @@ public struct PodcastsHomeView: View {
     @ObservedObject public var vm: PodcastsViewModel
     public var library: LibraryViewModel
 
-    @State private var importFileURL: URL?
-    @State private var showingImportSheet = false
+    /// Identifiable wrapper so the import sheet is driven by `.sheet(item:)`: the
+    /// content is built with the URL present from the first frame, so the sheet
+    /// sizes correctly (a `.sheet(isPresented:)` + `if let` renders an empty,
+    /// collapsed box on the first pass before the URL is observed).
+    private struct OPMLImportFile: Identifiable {
+        var id: String {
+            self.url.absoluteString
+        }
+
+        let url: URL
+    }
+
+    @State private var importFile: OPMLImportFile?
 
     public init(vm: PodcastsViewModel, library: LibraryViewModel) {
         self.vm = vm
@@ -61,15 +72,8 @@ public struct PodcastsHomeView: View {
                 }
             }
         )
-        .sheet(isPresented: self.$showingImportSheet) {
-            if let url = self.importFileURL {
-                PodcastOPMLImportSheet(
-                    isPresented: self.$showingImportSheet,
-                    fileURL: url,
-                    vm: self.vm,
-                    library: self.library
-                )
-            }
+        .sheet(item: self.$importFile) { file in
+            PodcastOPMLImportSheet(fileURL: file.url, vm: self.vm, library: self.library)
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -100,8 +104,7 @@ public struct PodcastsHomeView: View {
                 panel.begin { cont.resume(returning: $0) }
             }
             guard result == .OK, let url = panel.url else { return }
-            self.importFileURL = url
-            self.showingImportSheet = true
+            self.importFile = OPMLImportFile(url: url)
         }
     }
 
