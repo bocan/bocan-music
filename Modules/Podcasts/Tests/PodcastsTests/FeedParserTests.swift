@@ -222,6 +222,39 @@ struct FeedParserPodcastNamespaceTests {
     }
 }
 
+// MARK: - xml-stylesheet prolog recovery
+
+@Suite("FeedParser - xml-stylesheet prolog")
+struct FeedParserStylesheetPrologTests {
+    @Test("RSS with a long xml-stylesheet PI before the root still parses")
+    func parsesPastStylesheetPI() throws {
+        // The stylesheet PI pushes <rss past FeedKit's 128-byte sniff window, so the
+        // first Feed(data:) fails and the prolog-strip fallback must recover it.
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <?xml-stylesheet type="text/xsl" media="screen" href="/~files/feed-premium-very-long-stylesheet-path-to-push-the-root-well-past-128-bytes.xsl"?>
+        <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+          <channel>
+            <title>Stylesheet Feed</title>
+            <item>
+              <title>Ep1</title>
+              <enclosure url="https://example.com/a.mp3" type="audio/mpeg" length="1"/>
+              <guid>g1</guid>
+            </item>
+          </channel>
+        </rss>
+        """
+        let data = Data(xml.utf8)
+        // Guard: the root really is beyond FeedKit's 128-byte window for this fixture.
+        let rootOffset = data.range(of: Data("<rss".utf8))?.lowerBound ?? 0
+        #expect(rootOffset > 128, "fixture must reproduce the sniff-window failure")
+
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        #expect(feed.title == "Stylesheet Feed")
+        #expect(feed.episodes.count == 1)
+    }
+}
+
 // MARK: - itunes:type (show_type)
 
 @Suite("FeedParser - itunes:type")

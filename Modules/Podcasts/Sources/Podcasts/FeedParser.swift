@@ -27,11 +27,20 @@ public struct FeedParser: Sendable {
             // would bypass FeedFetcher's conditional GET, size cap, and User-Agent.
             feed = try Feed(data: data)
         } catch {
-            self.log.error("feed.parse.failed", [
-                "url": sourceURL.absoluteString,
-                "error": String(reflecting: error),
-            ])
-            throw PodcastsError.parseFailed(url: sourceURL, reason: String(describing: error))
+            // FeedKit's format sniffer inspects only the first 128 bytes. Feeds that
+            // carry an `<?xml-stylesheet?>` PI (so browsers render them) push the
+            // `<rss>`/`<feed>` root past that window, yielding `unknownFeedFormat`.
+            // Retry once with the XML prolog stripped so the root leads the data.
+            if let stripped = Self.feedDataWithStrippedProlog(data), let retried = try? Feed(data: stripped) {
+                self.log.debug("feed.parse.recoveredViaPrologStrip", ["url": sourceURL.absoluteString])
+                feed = retried
+            } else {
+                self.log.error("feed.parse.failed", [
+                    "url": sourceURL.absoluteString,
+                    "error": String(reflecting: error),
+                ])
+                throw PodcastsError.parseFailed(url: sourceURL, reason: String(describing: error))
+            }
         }
 
         var parsed: ParsedFeed
@@ -61,6 +70,24 @@ public struct FeedParser: Sendable {
             }
         }
         return parsed
+    }
+
+    /// Returns the feed bytes with the XML prolog (declaration, `<?xml-stylesheet?>`
+    /// PIs, comments, whitespace) replaced by a clean declaration so the `<rss>` /
+    /// `<feed>` root leads the data and FeedKit's 128-byte sniffer can detect it.
+    /// Returns nil when no feed root is found in the first 64 KB.
+    private static func feedDataWithStrippedProlog(_ data: Data) -> Data? {
+        let window = data.prefix(64 * 1024)
+        var rootOffset: Int?
+        for marker in ["<rss", "<feed"] {
+            guard let needle = marker.data(using: .utf8), let range = window.range(of: needle) else { continue }
+            if rootOffset == nil || range.lowerBound < rootOffset! {
+                rootOffset = range.lowerBound
+            }
+        }
+        guard let start = rootOffset, start > 0 else { return nil }
+        let declaration = Data(#"<?xml version="1.0" encoding="UTF-8"?>"#.utf8) + Data("\n".utf8)
+        return declaration + data[start...]
     }
 
     // MARK: - RSS
