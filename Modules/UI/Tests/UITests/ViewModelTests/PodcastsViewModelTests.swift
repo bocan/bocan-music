@@ -10,6 +10,7 @@ import Testing
 private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sendable {
     var podcasts: [Podcast] = []
     var episodeItems: [EpisodeListItem] = []
+    var unplayedCountsValue: [Int64: Int] = [:]
     var subscribedCalled = false
     var episodesCalled = false
 
@@ -33,6 +34,14 @@ private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sen
 
     func episodeCounts() async throws -> [Int64: Int] {
         [:]
+    }
+
+    func unplayedCounts() async throws -> [Int64: Int] {
+        self.unplayedCountsValue
+    }
+
+    func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error> {
+        AsyncThrowingStream { _ in }
     }
 }
 
@@ -105,6 +114,16 @@ struct PodcastsViewModelTests {
         #expect(lib.subscribedCalled)
     }
 
+    @Test("loadSubscribed populates podcastUnplayedCounts from the library seam")
+    func loadSubscribedPopulatesUnplayed() async {
+        let lib = StubPodcastLibrary()
+        lib.podcasts = [makePodcast(id: 1, title: "Show A")]
+        lib.unplayedCountsValue = [1: 3]
+        let vm = PodcastsViewModel(library: lib, actions: nil)
+        await vm.loadSubscribed()
+        #expect(vm.podcastUnplayedCounts[1] == 3)
+    }
+
     @Test("loadSubscribed when library is nil leaves subscribed empty")
     func loadSubscribedNoLibrary() async {
         let vm = PodcastsViewModel(library: nil, actions: nil)
@@ -134,6 +153,14 @@ struct PodcastsViewModelTests {
 
             func episodeCounts() async throws -> [Int64: Int] {
                 [:]
+            }
+
+            func unplayedCounts() async throws -> [Int64: Int] {
+                [:]
+            }
+
+            func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error> {
+                AsyncThrowingStream { _ in }
             }
         }
         let vm = PodcastsViewModel(library: ThrowingLibrary(), actions: nil)
