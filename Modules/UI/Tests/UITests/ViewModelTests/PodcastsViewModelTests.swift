@@ -57,6 +57,9 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     func markAllPlayed(podcastID: Int64) async {}
     func download(podcastID: Int64, guid: String) async {}
     func removeDownload(podcastID: Int64, guid: String) async {}
+    func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
+        []
+    }
 }
 
 // MARK: - Helpers

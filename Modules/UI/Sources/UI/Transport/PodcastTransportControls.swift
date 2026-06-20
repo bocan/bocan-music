@@ -10,7 +10,10 @@ struct PodcastTransportControls: View {
     /// Loads the transcript for the current episode, supplied by the parent (which
     /// has the podcast view model). Keeps NowPlayingViewModel free of this concern.
     var loadTranscript: () async -> TranscriptContent?
+    /// Chapters for the current episode, supplied by the parent. Empty hides the button.
+    var chapters: [UIChapter] = []
     @State private var showingTranscript = false
+    @State private var showingChapters = false
 
     var body: some View {
         HStack(spacing: 20) {
@@ -69,6 +72,28 @@ struct PodcastTransportControls: View {
                 .disabled(self.vm.title.isEmpty)
                 .help(L10n.string("Transcript"))
                 .accessibilityLabel(L10n.string("Transcript"))
+            }
+
+            if !self.chapters.isEmpty {
+                Button {
+                    self.showingChapters = true
+                } label: {
+                    Image(systemName: "list.bullet")
+                        .scaledSystemFont(size: 18, weight: .semibold)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Color.textPrimary)
+                .help(L10n.string("Show chapters"))
+                .accessibilityLabel(L10n.string("Show chapters"))
+                .popover(isPresented: self.$showingChapters) {
+                    ChapterListView(
+                        chapters: self.chapters,
+                        currentID: self.chapters.current(at: self.vm.position)?.id
+                    ) { time in
+                        await self.vm.scrub(to: time)
+                    }
+                }
             }
         }
         .focusSection()
