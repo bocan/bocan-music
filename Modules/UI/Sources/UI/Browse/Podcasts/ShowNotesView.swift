@@ -8,7 +8,13 @@ import SwiftUI
 actor HTMLLoader {
     static let shared = HTMLLoader()
 
+    // Bump this version when the rendering CSS changes to invalidate cached entries.
+    private static let cacheVersion = 2
     private var cache: [String: AttributedString] = [:]
+
+    func clearCache() {
+        self.cache.removeAll()
+    }
 
     func attributedString(for item: EpisodeListItem) async -> AttributedString? {
         let guid = item.episode.guid
@@ -19,7 +25,22 @@ actor HTMLLoader {
             with: "",
             options: .regularExpression
         )
-        guard let data = stripped.data(using: .utf8) else { return nil }
+        // Inject CSS so WebKit renders at a legible system-font size instead of
+        // its 12pt Times default. !important overrides any inline styles in the feed.
+        let css = """
+        <style>
+        body, p, div, span, li, td {
+            font-family: -apple-system, sans-serif !important;
+            font-size: 14px !important;
+            line-height: 1.6 !important;
+        }
+        h1 { font-size: 17px !important; }
+        h2 { font-size: 15px !important; }
+        h3 { font-size: 14px !important; }
+        a { color: -apple-system-blue; }
+        </style>
+        """
+        guard let data = (css + stripped).data(using: .utf8) else { return nil }
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
             .documentType: NSAttributedString.DocumentType.html,
             .characterEncoding: String.Encoding.utf8.rawValue,
