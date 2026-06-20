@@ -35,6 +35,17 @@ struct PodcastRepositoryTests {
         #expect(fetched.id == id)
     }
 
+    @Test("podcastGUID round-trips through insert and fetch (M024 column)")
+    func podcastGUIDRoundTrips() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        var show = self.sample()
+        show.podcastGUID = "ead4c236-bf58-58c6-a2c6-a6b28d128cb6"
+        let id = try await repo.insert(show)
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.podcastGUID == "ead4c236-bf58-58c6-a2c6-a6b28d128cb6")
+    }
+
     @Test("fetch throws notFound for missing id")
     func fetchMissing() async throws {
         let db = try await makeDB()
