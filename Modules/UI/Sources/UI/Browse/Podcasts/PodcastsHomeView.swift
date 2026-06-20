@@ -1,4 +1,6 @@
+import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - PodcastsHomeView
 
@@ -10,6 +12,9 @@ import SwiftUI
 public struct PodcastsHomeView: View {
     @ObservedObject public var vm: PodcastsViewModel
     public var library: LibraryViewModel
+
+    @State private var importFileURL: URL?
+    @State private var showingImportSheet = false
 
     public init(vm: PodcastsViewModel, library: LibraryViewModel) {
         self.vm = vm
@@ -56,6 +61,69 @@ public struct PodcastsHomeView: View {
                 }
             }
         )
+        .sheet(isPresented: self.$showingImportSheet) {
+            if let url = self.importFileURL {
+                PodcastOPMLImportSheet(
+                    isPresented: self.$showingImportSheet,
+                    fileURL: url,
+                    vm: self.vm,
+                    library: self.library
+                )
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button(L10n.string("Import Subscriptions…")) { self.importSubscriptions() }
+                    Button(L10n.string("Export Subscriptions…")) { Task { await self.exportSubscriptions() } }
+                } label: {
+                    Label(L10n.string("Subscriptions"), systemImage: "square.and.arrow.up.on.square")
+                }
+                .help(L10n.string("Import or export your podcast subscriptions as OPML"))
+            }
+        }
+    }
+
+    // MARK: - OPML import / export
+
+    private func importSubscriptions() {
+        // Non-blocking begin{} panel, matching the PlaylistIO file-picker idiom.
+        Task { @MainActor in
+            let panel = NSOpenPanel()
+            panel.allowsMultipleSelection = false
+            panel.canChooseDirectories = false
+            panel.canChooseFiles = true
+            var types: [UTType] = [.xml]
+            if let opml = UTType(filenameExtension: "opml") { types.insert(opml, at: 0) }
+            panel.allowedContentTypes = types
+            let result = await withCheckedContinuation { cont in
+                panel.begin { cont.resume(returning: $0) }
+            }
+            guard result == .OK, let url = panel.url else { return }
+            self.importFileURL = url
+            self.showingImportSheet = true
+        }
+    }
+
+    private func exportSubscriptions() async {
+        guard !self.vm.subscribed.isEmpty else {
+            self.library.showToast(ToastMessage(text: L10n.string("No subscriptions to export"), kind: .info))
+            return
+        }
+        do {
+            let data = try await self.vm.exportOPML()
+            let save = NSSavePanel()
+            save.nameFieldStringValue = L10n.string("Podcast Subscriptions") + ".opml"
+            if let opml = UTType(filenameExtension: "opml") { save.allowedContentTypes = [opml] }
+            let result = await withCheckedContinuation { cont in
+                save.begin { cont.resume(returning: $0) }
+            }
+            guard result == .OK, let dest = save.url else { return }
+            try data.write(to: dest, options: .atomic)
+            self.library.showToast(ToastMessage(text: L10n.string("Exported subscriptions"), kind: .success))
+        } catch {
+            self.library.showToast(ToastMessage(text: L10n.string("Could not export subscriptions"), kind: .info))
+        }
     }
 }
 

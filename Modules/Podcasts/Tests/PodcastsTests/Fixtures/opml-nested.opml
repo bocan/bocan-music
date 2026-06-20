@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Grouped Subscriptions</title>
+  </head>
+  <body>
+    <outline text="Technology">
+      <outline type="rss" text="Tech A" xmlUrl="https://tech.example.com/a"/>
+      <outline text="Subfolder">
+        <outline type="rss" text="Tech B" xmlUrl="https://tech.example.com/b"/>
+      </outline>
+    </outline>
+    <outline type="rss" text="Standalone" xmlUrl="https://standalone.example.com/feed"/>
+  </body>
+</opml>

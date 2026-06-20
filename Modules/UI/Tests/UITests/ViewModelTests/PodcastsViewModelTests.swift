@@ -69,6 +69,14 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
         []
     }
+
+    func importOPML(data: Data, progress: @escaping @Sendable (Int, Int) -> Void) async throws -> UIOPMLImportSummary {
+        UIOPMLImportSummary()
+    }
+
+    func exportOPML() async throws -> Data {
+        Data()
+    }
 }
 
 // MARK: - Helpers
@@ -199,6 +207,57 @@ struct PodcastsViewModelTests {
         #expect(vm.selectedShowID == nil)
         vm.openShow(7)
         #expect(vm.selectedShowID == 7)
+    }
+
+    // MARK: - OPML
+
+    @Test("importOPML / exportOPML delegate to the actions seam")
+    func opmlDelegatesToActions() async throws {
+        struct OPMLStub: PodcastActions, @unchecked Sendable {
+            @discardableResult func subscribe(feedURL: URL) async throws -> Int64 {
+                1
+            }
+
+            func unsubscribe(podcastID: Int64) async throws {}
+            func refresh(podcastID: Int64) async throws {}
+            func refreshAll() async {}
+            func reorder(podcastIDs: [Int64]) async throws {}
+            func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
+            func play(episode: EpisodeListItem, podcast: Podcast) async {}
+            func markPlayed(podcastID: Int64, guid: String) async {}
+            func markUnplayed(podcastID: Int64, guid: String) async {}
+            func markAllPlayed(podcastID: Int64) async {}
+            func download(podcastID: Int64, guid: String) async {}
+            func removeDownload(podcastID: Int64, guid: String) async {}
+            func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
+                []
+            }
+
+            func importOPML(
+                data: Data,
+                progress: @escaping @Sendable (Int, Int) -> Void
+            ) async throws -> UIOPMLImportSummary {
+                progress(1, 1)
+                let url = URL(string: "https://a.example.com/feed") ?? URL(filePath: "/")
+                return UIOPMLImportSummary(succeeded: [UIOPMLImportItem(title: "A", feedURL: url, reason: "Subscribed")])
+            }
+
+            func exportOPML() async throws -> Data {
+                Data("opml".utf8)
+            }
+        }
+        let vm = PodcastsViewModel(library: nil, actions: OPMLStub())
+        let summary = try await vm.importOPML(data: Data()) { _, _ in }
+        #expect(summary.succeeded.count == 1)
+        let data = try await vm.exportOPML()
+        #expect(!data.isEmpty)
+    }
+
+    @Test("importOPML with no actions seam returns an empty summary")
+    func opmlNoActionsEmpty() async throws {
+        let vm = PodcastsViewModel(library: nil, actions: nil)
+        let summary = try await vm.importOPML(data: Data()) { _, _ in }
+        #expect(summary.totalAttempted == 0)
     }
 
     // MARK: - addBarText

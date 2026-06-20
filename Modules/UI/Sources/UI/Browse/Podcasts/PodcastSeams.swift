@@ -204,6 +204,53 @@ public protocol PodcastActions: Sendable {
     func removeDownload(podcastID: Int64, guid: String) async
     /// Returns [] when the episode has no chapters URL or the fetch fails.
     func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter]
+    /// Imports an OPML subscription list, subscribing reachable feeds and returning
+    /// a partitioned summary. `progress` is called `(completed, total)` per attempt.
+    func importOPML(data: Data, progress: @escaping @Sendable (Int, Int) -> Void) async throws -> UIOPMLImportSummary
+    /// Serializes current subscriptions to OPML 2.0 UTF-8 data.
+    func exportOPML() async throws -> Data
+}
+
+// MARK: - OPML import seam types
+
+/// Mirror of `Podcasts.OPMLImportItem` declared in UI. Title and reason are
+/// content/diagnostic strings rendered verbatim, never localized.
+public struct UIOPMLImportItem: Sendable, Hashable, Identifiable {
+    public var id: String {
+        self.feedURL.absoluteString
+    }
+
+    public var title: String
+    public var feedURL: URL
+    public var reason: String
+
+    public init(title: String, feedURL: URL, reason: String) {
+        self.title = title
+        self.feedURL = feedURL
+        self.reason = reason
+    }
+}
+
+/// Mirror of `Podcasts.OPMLImportSummary` declared in UI.
+public struct UIOPMLImportSummary: Sendable, Hashable {
+    public var succeeded: [UIOPMLImportItem]
+    public var alreadySubscribed: [UIOPMLImportItem]
+    public var failed: [UIOPMLImportItem]
+
+    public init(
+        succeeded: [UIOPMLImportItem] = [],
+        alreadySubscribed: [UIOPMLImportItem] = [],
+        failed: [UIOPMLImportItem] = []
+    ) {
+        self.succeeded = succeeded
+        self.alreadySubscribed = alreadySubscribed
+        self.failed = failed
+    }
+
+    /// Feeds actually attempted (succeeded + failed); excludes skipped duplicates.
+    public var totalAttempted: Int {
+        self.succeeded.count + self.failed.count
+    }
 }
 
 // MARK: - Chapters

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head>
+    <title>Edge Cases</title>
+  </head>
+  <body>
+    <outline text="No Feed Here"/>
+    <outline type="rss" text="Valid" xmlUrl="https://valid.example.com/feed"/>
+    <outline type="link" text="Just A Link" xmlUrl="file:///local/path.xml"/>
+    <outline type="rss" text="FTP feed" xmlUrl="ftp://old.example.com/feed"/>
+    <outline type="rss" text="Valid Dupe" xmlUrl="https://www.valid.example.com/feed/"/>
+  </body>
+</opml>

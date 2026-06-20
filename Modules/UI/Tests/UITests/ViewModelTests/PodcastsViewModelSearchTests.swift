@@ -252,6 +252,14 @@ struct PodcastsViewModelSearchTests {
             func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
                 []
             }
+
+            func importOPML(data: Data, progress: @escaping @Sendable (Int, Int) -> Void) async throws -> UIOPMLImportSummary {
+                UIOPMLImportSummary()
+            }
+
+            func exportOPML() async throws -> Data {
+                Data()
+            }
         }
 
         let vm = PodcastsViewModel(library: nil, actions: StubActions(), searchProvider: stub)

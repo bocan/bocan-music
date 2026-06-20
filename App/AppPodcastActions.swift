@@ -110,4 +110,20 @@ struct AppPodcastActions: PodcastActions {
             UIChapter(id: $0.id, startTime: $0.startTime, title: $0.title, imageURL: $0.imageURL, url: $0.url)
         }
     }
+
+    func importOPML(data: Data, progress: @escaping @Sendable (Int, Int) -> Void) async throws -> UIOPMLImportSummary {
+        let summary = try await self.service.importOPML(data: data, progress: progress)
+        func map(_ items: [OPMLImportItem]) -> [UIOPMLImportItem] {
+            items.map { UIOPMLImportItem(title: $0.title, feedURL: $0.feedURL, reason: $0.reason) }
+        }
+        return UIOPMLImportSummary(
+            succeeded: map(summary.succeeded),
+            alreadySubscribed: map(summary.alreadySubscribed),
+            failed: map(summary.failed)
+        )
+    }
+
+    func exportOPML() async throws -> Data {
+        try await self.service.exportOPML()
+    }
 }
