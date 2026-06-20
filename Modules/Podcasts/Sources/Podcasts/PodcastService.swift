@@ -17,6 +17,7 @@ public actor PodcastService {
     private let transcriptRepo: TranscriptRepository
     private let fetcher: FeedFetcher
     private let transcriptFetcher: TranscriptFetcher
+    private let chaptersFetcher: ChaptersFetcher
     private let parser: FeedParser
     private let artwork: PodcastArtworkCache
     private let downloadStore: DownloadStore
@@ -42,6 +43,7 @@ public actor PodcastService {
         downloadStore: DownloadStore = DownloadStore(),
         search: PodcastSearchService? = nil,
         transcriptHTTP: any HTTPClient = URLSession.shared,
+        chaptersFetcher: ChaptersFetcher = ChaptersFetcher(),
         now: @escaping @Sendable () -> Date = { Date() },
         log: AppLogger = .make(.podcasts)
     ) {
@@ -51,6 +53,7 @@ public actor PodcastService {
         self.transcriptRepo = transcriptRepo
         self.fetcher = fetcher
         self.transcriptFetcher = TranscriptFetcher(http: transcriptHTTP, repo: transcriptRepo, now: now)
+        self.chaptersFetcher = chaptersFetcher
         self.parser = parser
         self.artwork = artwork
         self.downloadStore = downloadStore
@@ -493,6 +496,20 @@ public actor PodcastService {
         } catch {
             self.log.warning("transcript.sweep.failed", ["error": String(reflecting: error)])
         }
+    }
+
+    // MARK: - Chapters
+
+    /// Fetches the chapter list for an episode from its `chapters_url`. Returns
+    /// `[]` when the episode has no chapters URL. The fetch may throw (network /
+    /// HTTP / size); callers map a throw to "no chapters".
+    public func chapters(podcastID: Int64, guid: String) async throws -> [Chapter] {
+        guard let episode = try await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid),
+              let urlString = episode.chaptersURL,
+              let url = URL(string: urlString) else {
+            return []
+        }
+        return try await self.chaptersFetcher.chapters(for: url)
     }
 
     // MARK: - Private

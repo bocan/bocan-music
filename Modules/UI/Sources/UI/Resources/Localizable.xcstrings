@@ -3653,6 +3653,26 @@
         }
       }
     },
+    "Chapter: %@ at %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çĥáƥţéŕ: %@ áţ %@ one two"
+          }
+        }
+      }
+    },
+    "Chapters" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çĥáƥţéŕš one"
+          }
+        }
+      }
+    },
     "Check for Updates…" : {
       "localizations" : {
         "en-XA" : {
@@ -10847,6 +10867,16 @@
         }
       }
     },
+    "No chapters" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñó çĥáƥţéŕš one"
+          }
+        }
+      }
+    },
     "No composer tags found in your library." : {
       "localizations" : {
         "en" : {
@@ -15458,6 +15488,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šĥóŵ áĺƀúḿ áŕţ áš Đóçķ íçóñ ŵĥíĺé ƥĺáýíñĝ one two three"
+          }
+        }
+      }
+    },
+    "Show chapters" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŵ çĥáƥţéŕš one"
           }
         }
       }

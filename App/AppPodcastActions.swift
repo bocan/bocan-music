@@ -103,4 +103,11 @@ struct AppPodcastActions: PodcastActions {
     func removeDownload(podcastID: Int64, guid: String) async {
         await self.downloads?.removeDownload(podcastID: podcastID, guid: guid)
     }
+
+    func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
+        let chapters = try await self.service.chapters(podcastID: podcastID, guid: guid)
+        return chapters.map {
+            UIChapter(id: $0.id, startTime: $0.startTime, title: $0.title, imageURL: $0.imageURL, url: $0.url)
+        }
+    }
 }

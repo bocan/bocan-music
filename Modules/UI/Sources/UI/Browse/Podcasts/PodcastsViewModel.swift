@@ -30,6 +30,8 @@ public final class PodcastsViewModel: ObservableObject {
     @Published public internal(set) var currentDetail: PodcastDetail?
     @Published public internal(set) var isLoadingDetail = false
     @Published public internal(set) var detailError: String?
+    /// Chapters for the currently-playing episode, loaded by the Now Playing strip.
+    @Published public internal(set) var nowPlayingChapters: [UIChapter] = []
 
     // MARK: - Dependencies
 
@@ -84,6 +86,26 @@ public final class PodcastsViewModel: ObservableObject {
             self.log.debug("podcasts.loadTranscript.failed", ["error": String(reflecting: error)])
             return nil
         }
+    }
+
+    /// Loads chapters for the currently-playing episode into `nowPlayingChapters`.
+    /// Best-effort: any failure leaves the list empty so the UI hides the affordance.
+    func loadChapters(podcastID: Int64, guid: String) async {
+        guard let actions else {
+            self.nowPlayingChapters = []
+            return
+        }
+        do {
+            self.nowPlayingChapters = try await actions.chapters(podcastID: podcastID, guid: guid)
+        } catch {
+            self.log.debug("podcasts.loadChapters.failed", ["error": String(reflecting: error)])
+            self.nowPlayingChapters = []
+        }
+    }
+
+    /// Clears chapters when the playing item is not a podcast (or stops).
+    func clearNowPlayingChapters() {
+        self.nowPlayingChapters = []
     }
 
     // MARK: - Home
