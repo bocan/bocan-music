@@ -51,6 +51,11 @@ final class URLSessionDownloader: NSObject, EpisodeDownloading, URLSessionDownlo
         super.init()
         let config = base.configuration
         config.timeoutIntervalForRequest = 60
+        // Download tasks build their own URLRequest internally, so the User-Agent
+        // is set on the session config to keep podcast traffic consistent.
+        var headers = config.httpAdditionalHeaders ?? [:]
+        headers["User-Agent"] = UserAgent.string
+        config.httpAdditionalHeaders = headers
         let queue = OperationQueue()
         queue.maxConcurrentOperationCount = 1
         self.session = URLSession(configuration: config, delegate: self, delegateQueue: queue)
