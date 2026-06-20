@@ -24,7 +24,7 @@ public actor FeedFetcher {
     private let maxBytes: Int
     private let log = AppLogger.make(.podcasts)
 
-    public init(http: any HTTPClient = URLSession.shared, maxBytes: Int = 15 * 1024 * 1024) {
+    public init(http: any HTTPClient = URLSession.shared, maxBytes: Int = 50 * 1024 * 1024) {
         self.http = http
         self.maxBytes = maxBytes
     }
