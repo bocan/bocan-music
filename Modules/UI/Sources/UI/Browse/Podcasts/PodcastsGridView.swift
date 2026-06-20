@@ -45,6 +45,12 @@ struct PodcastsGridView: View {
     @ViewBuilder
     private func contextMenu(for podcast: Podcast) -> some View {
         if let id = podcast.id {
+            Button(L10n.string("Get Info")) {
+                if let url = URL(string: podcast.feedURL) {
+                    Task { await self.vm.openDetailForURL(url) }
+                }
+            }
+            Divider()
             Button(L10n.string("Refresh")) {
                 Task {
                     do {
