@@ -23,7 +23,8 @@ struct PodcastsGridView: View {
                 ForEach(self.vm.subscribed, id: \.feedURL) { podcast in
                     PodcastCell(
                         podcast: podcast,
-                        episodeCount: podcast.id.flatMap { self.vm.podcastEpisodeCounts[$0] }
+                        episodeCount: podcast.id.flatMap { self.vm.podcastEpisodeCounts[$0] },
+                        unreadCount: podcast.id.flatMap { self.vm.podcastUnplayedCounts[$0] }
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -60,6 +61,12 @@ struct PodcastsGridView: View {
                     }
                 }
             }
+            // Marks every episode played, clearing the unread badge via the
+            // state observation. This stamps completed_at, which starts the
+            // 30-day transcript cleanup clock (phase 21-12-b) for each episode.
+            Button(L10n.string("Mark All as Played")) {
+                Task { await self.library.podcastActions?.markAllPlayed(podcastID: id) }
+            }
             Divider()
             Button(L10n.string("Unsubscribe"), role: .destructive) {
                 Task { await self.vm.unsubscribe(id) }
@@ -74,6 +81,7 @@ struct PodcastsGridView: View {
 private struct PodcastCell: View {
     let podcast: Podcast
     let episodeCount: Int?
+    let unreadCount: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -102,6 +110,13 @@ private struct PodcastCell: View {
                 }
             }
             .frame(maxWidth: .infinity)
+            .overlay(alignment: .topTrailing) {
+                if let count = self.unreadCount, count > 0 {
+                    UnreadBadge(count: count)
+                        .padding(6)
+                        .accessibilityLabel(L10n.string("\(count) unplayed episodes"))
+                }
+            }
 
             // Feed content -- not localized.
             Text(self.podcast.title)
