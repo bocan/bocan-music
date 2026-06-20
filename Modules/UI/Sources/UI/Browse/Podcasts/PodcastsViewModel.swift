@@ -36,6 +36,7 @@ public final class PodcastsViewModel: ObservableObject {
     private let library: (any PodcastLibraryDataSource)?
     let actions: (any PodcastActions)?
     let searchProvider: (any PodcastSearchProviding)?
+    let transcriptProvider: (any PodcastTranscriptProviding)?
     let log = AppLogger.make(.ui)
 
     // MARK: - Observation tasks
@@ -52,17 +53,37 @@ public final class PodcastsViewModel: ObservableObject {
     public init(
         library: (any PodcastLibraryDataSource)?,
         actions: (any PodcastActions)?,
-        searchProvider: (any PodcastSearchProviding)? = nil
+        searchProvider: (any PodcastSearchProviding)? = nil,
+        transcriptProvider: (any PodcastTranscriptProviding)? = nil
     ) {
         self.library = library
         self.actions = actions
         self.searchProvider = searchProvider
+        self.transcriptProvider = transcriptProvider
     }
 
     deinit {
         subscribedTask?.cancel()
         episodesTask?.cancel()
         detailTask?.cancel()
+    }
+
+    // MARK: - Transcripts
+
+    /// Fetches (cache-first) and parses an episode transcript, off the main actor.
+    /// Returns nil when there is no provider, no transcript, or the fetch fails;
+    /// the viewer renders that as its empty state.
+    func loadTranscript(podcastID: Int64, guid: String) async -> TranscriptContent? {
+        guard let transcriptProvider else { return nil }
+        do {
+            let record = try await transcriptProvider.transcript(podcastID: podcastID, guid: guid)
+            let content = record.content
+            let format = record.format
+            return await Task.detached { TranscriptParser.parse(content, format: format) }.value
+        } catch {
+            self.log.debug("podcasts.loadTranscript.failed", ["error": String(reflecting: error)])
+            return nil
+        }
     }
 
     // MARK: - Home

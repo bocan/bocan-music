@@ -7,6 +7,10 @@ import SwiftUI
 /// buttons and omits shuffle, repeat, and stop-after-current.
 struct PodcastTransportControls: View {
     var vm: NowPlayingViewModel
+    /// Loads the transcript for the current episode, supplied by the parent (which
+    /// has the podcast view model). Keeps NowPlayingViewModel free of this concern.
+    var loadTranscript: () async -> TranscriptContent?
+    @State private var showingTranscript = false
 
     var body: some View {
         HStack(spacing: 20) {
@@ -51,7 +55,28 @@ struct PodcastTransportControls: View {
             .help(L10n.string("Skip forward 30 seconds"))
             .accessibilityLabel(L10n.string("Skip forward 30 seconds"))
             .accessibilityIdentifier(A11y.NowPlaying.skipForward)
+
+            if self.vm.podcastID != nil, self.vm.podcastGUID != nil {
+                Button {
+                    self.showingTranscript = true
+                } label: {
+                    Image(systemName: "captions.bubble")
+                        .scaledSystemFont(size: 18, weight: .semibold)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
+                .disabled(self.vm.title.isEmpty)
+                .help(L10n.string("Transcript"))
+                .accessibilityLabel(L10n.string("Transcript"))
+            }
         }
         .focusSection()
+        .sheet(isPresented: self.$showingTranscript) {
+            TranscriptView(title: self.vm.title) {
+                await self.loadTranscript()
+            }
+            .frame(minWidth: 500, minHeight: 300)
+        }
     }
 }

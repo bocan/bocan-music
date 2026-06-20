@@ -16,6 +16,7 @@ private struct TestBed {
     let artCache: PodcastArtworkCache
     let feedMock: MockHTTPClient
     let artMock: MockHTTPClient
+    let transcriptMock: MockHTTPClient
     let artTempDir: URL
     let downloadStore: DownloadStore
     let downloadRoot: URL
@@ -25,6 +26,7 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
     let db = try await Database(location: .inMemory)
     let feedMock = MockHTTPClient()
     let artMock = MockHTTPClient()
+    let transcriptMock = MockHTTPClient()
     let artTemp = FileManager.default.temporaryDirectory
         .appendingPathComponent("PodcastArtworkCacheTests-\(UUID().uuidString)", isDirectory: true)
     let artCache = PodcastArtworkCache(http: artMock, root: artTemp)
@@ -35,9 +37,11 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
         podcastRepo: PodcastRepository(database: db),
         episodeRepo: EpisodeRepository(database: db),
         stateRepo: EpisodeStateRepository(database: db),
+        transcriptRepo: TranscriptRepository(database: db),
         fetcher: FeedFetcher(http: feedMock),
         artwork: artCache,
         downloadStore: downloadStore,
+        transcriptHTTP: transcriptMock,
         now: { nowDate }
     )
     return TestBed(
@@ -46,6 +50,7 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
         artCache: artCache,
         feedMock: feedMock,
         artMock: artMock,
+        transcriptMock: transcriptMock,
         artTempDir: artTemp,
         downloadStore: downloadStore,
         downloadRoot: downloadRoot
@@ -116,6 +121,37 @@ struct PodcastServiceTests {
     }
 
     // MARK: subscribe
+
+    @Test("transcript fetches once on a miss, then serves from the cache")
+    func transcriptCacheFirst() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        var requestCount = 0
+        let body = "WEBVTT\n\n00:00.000 --> 00:01.000\nHello"
+        bed.transcriptMock.handler = { _ in
+            requestCount += 1
+            return (Data(body.utf8), HTTPURLResponse(
+                url: URL(string: "https://example.com/ep1-transcript.vtt")!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: ["Content-Type": "text/vtt"]
+            )!)
+        }
+
+        // Episode 1 in rss-full.xml carries a podcast:transcript URL (parsed in 21-11).
+        let guid = "https://example.com/episodes/1"
+        let first = try await bed.service.transcript(podcastID: podcastID, guid: guid)
+        let second = try await bed.service.transcript(podcastID: podcastID, guid: guid)
+        #expect(first.content == body)
+        #expect(first.format == .vtt)
+        #expect(second.content == body)
+        #expect(requestCount == 1, "second call must hit the cache, not re-fetch")
+    }
 
     @Test("subscribe writes one podcasts row and N episode rows")
     func subscribeWritesRows() async throws {

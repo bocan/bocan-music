@@ -10,6 +10,7 @@ struct EpisodeList: View {
     @State private var selection = Set<EpisodeListItem.ID>()
     @State private var filterText = ""
     @State private var showingNotes = false
+    @State private var showingTranscript = false
 
     private var filtered: [EpisodeListItem] {
         guard !self.filterText.isEmpty else { return self.vm.episodes }
@@ -74,6 +75,17 @@ struct EpisodeList: View {
             ShowNotesView(episode: self.selectedItem)
                 .frame(minWidth: 500, minHeight: 300)
         }
+        .sheet(isPresented: self.$showingTranscript) {
+            if let item = self.selectedItem {
+                TranscriptView(title: item.episode.title) {
+                    await self.vm.loadTranscript(
+                        podcastID: item.episode.podcastID,
+                        guid: item.episode.guid
+                    )
+                }
+                .frame(minWidth: 500, minHeight: 300)
+            }
+        }
     }
 
     @ViewBuilder
@@ -120,9 +132,20 @@ struct EpisodeList: View {
                 NSPasteboard.general.setString(item.episode.audioURL, forType: .string)
             }
             Divider()
-            Button(L10n.string("Show Notes")) {
+            self.notesButtons(item: item, ids: ids)
+        }
+    }
+
+    @ViewBuilder
+    private func notesButtons(item: EpisodeListItem, ids: Set<EpisodeListItem.ID>) -> some View {
+        Button(L10n.string("Show Notes")) {
+            self.selection = ids
+            self.showingNotes = true
+        }
+        if item.episode.transcriptURL != nil {
+            Button(L10n.string("Transcript")) {
                 self.selection = ids
-                self.showingNotes = true
+                self.showingTranscript = true
             }
         }
     }

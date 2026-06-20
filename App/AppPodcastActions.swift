@@ -11,6 +11,12 @@ import UI
 /// needed.
 extension PodcastService: @retroactive PodcastLibraryDataSource {}
 
+// MARK: - PodcastService: PodcastTranscriptProviding
+
+/// Empty conformance: `PodcastService.transcript(podcastID:guid:)` matches the
+/// seam signature exactly, so no implementation body is needed.
+extension PodcastService: @retroactive PodcastTranscriptProviding {}
+
 // MARK: - AppPodcastActions
 
 /// Concrete `PodcastActions` adapter that bridges the UI seam to the real

@@ -27,8 +27,10 @@ public actor FeedRefreshScheduler {
         let svc = self.service
         let ivl = self.interval
         self.task = Task.detached(priority: .background) { [svc, ivl] in
+            await svc.sweepTranscripts()
             while !Task.isCancelled {
                 await svc.refreshAllStale()
+                await svc.sweepTranscripts()
                 do {
                     try await Task.sleep(for: .seconds(ivl))
                 } catch {
@@ -50,5 +52,6 @@ public actor FeedRefreshScheduler {
     public func refreshNow() async {
         self.log.debug("podcast.scheduler.refreshNow")
         await self.service.refreshAllStale(olderThan: 0)
+        await self.service.sweepTranscripts()
     }
 }

@@ -14,7 +14,9 @@ public actor PodcastService {
     private let podcastRepo: PodcastRepository
     private let episodeRepo: EpisodeRepository
     private let stateRepo: EpisodeStateRepository
+    private let transcriptRepo: TranscriptRepository
     private let fetcher: FeedFetcher
+    private let transcriptFetcher: TranscriptFetcher
     private let parser: FeedParser
     private let artwork: PodcastArtworkCache
     private let downloadStore: DownloadStore
@@ -26,22 +28,29 @@ public actor PodcastService {
     /// Prevents a DB hit on every ~5-second position write.
     private var idCache: [String: Int64] = [:]
 
+    /// Cached transcripts are deleted 30 days after their episode is played.
+    private static let transcriptRetentionSeconds: TimeInterval = 30 * 24 * 60 * 60
+
     public init(
         podcastRepo: PodcastRepository,
         episodeRepo: EpisodeRepository,
         stateRepo: EpisodeStateRepository,
+        transcriptRepo: TranscriptRepository,
         fetcher: FeedFetcher = FeedFetcher(),
         parser: FeedParser = FeedParser(),
         artwork: PodcastArtworkCache,
         downloadStore: DownloadStore = DownloadStore(),
         search: PodcastSearchService? = nil,
+        transcriptHTTP: any HTTPClient = URLSession.shared,
         now: @escaping @Sendable () -> Date = { Date() },
         log: AppLogger = .make(.podcasts)
     ) {
         self.podcastRepo = podcastRepo
         self.episodeRepo = episodeRepo
         self.stateRepo = stateRepo
+        self.transcriptRepo = transcriptRepo
         self.fetcher = fetcher
+        self.transcriptFetcher = TranscriptFetcher(http: transcriptHTTP, repo: transcriptRepo, now: now)
         self.parser = parser
         self.artwork = artwork
         self.downloadStore = downloadStore
@@ -445,6 +454,44 @@ public actor PodcastService {
             try await self.stateRepo.markAllPlayed(podcastID: podcastID, now: self.now().timeIntervalSince1970)
         } catch {
             self.log.warning("podcast.markAllPlayed.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    // MARK: - Transcripts
+
+    /// Returns the cached transcript if present, else fetches it from the episode's
+    /// `transcript_url`, stores it, and returns it. Throws `PodcastsError.notFound`
+    /// when the episode has no transcript URL, or a network error on fetch.
+    public func transcript(podcastID: Int64, guid: String) async throws -> PodcastTranscript {
+        if let cached = try await transcriptRepo.fetch(podcastID: podcastID, guid: guid) {
+            return cached
+        }
+        guard let episode = try await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid),
+              let urlString = episode.transcriptURL,
+              let url = URL(string: urlString) else {
+            let feedURL = await (try? self.podcastRepo.fetch(id: podcastID)).flatMap { URL(string: $0.feedURL) }
+            throw PodcastsError.notFound(
+                feedURL: feedURL ?? URL(fileURLWithPath: "/podcast/\(podcastID)/\(guid)")
+            )
+        }
+        return try await self.transcriptFetcher.fetchAndStore(
+            podcastID: podcastID, guid: guid, transcriptURL: url, language: nil
+        )
+    }
+
+    /// Deletes cached transcripts whose episode has been played for more than 30
+    /// days. Best-effort: logs and continues on failure. Called by the scheduler at
+    /// launch and after each refresh fan-out (the clock is also started by sub-phase
+    /// f's "Mark all as played", which stamps `completed_at` on every episode).
+    public func sweepTranscripts() async {
+        let cutoff = self.now().timeIntervalSince1970 - Self.transcriptRetentionSeconds
+        do {
+            let deleted = try await self.transcriptRepo.deletePlayedOlderThan(cutoff: cutoff)
+            if deleted > 0 {
+                self.log.debug("transcript.sweep", ["deleted": deleted])
+            }
+        } catch {
+            self.log.warning("transcript.sweep.failed", ["error": String(reflecting: error)])
         }
     }
 
