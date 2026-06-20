@@ -153,6 +153,43 @@ public struct EpisodeStateRepository: Sendable {
         self.log.debug("episode.markAllPlayed", ["podcastID": podcastID, "count": guids.count])
     }
 
+    // MARK: - Unread counts
+
+    /// SQL for the per-show unread count: an episode is unread when it has no
+    /// state row OR its `play_state` is not `played` (so `unplayed` and
+    /// `inProgress` both count). Shows with zero unread episodes are absent from
+    /// the result, not reported as a zero entry.
+    private static let unplayedCountsSQL = """
+    SELECT e.podcast_id AS podcast_id, COUNT(*) AS cnt
+    FROM podcast_episodes e
+    LEFT JOIN podcast_episode_state s
+        ON s.podcast_id = e.podcast_id AND s.guid = e.guid
+    WHERE s.play_state IS NULL OR s.play_state != 'played'
+    GROUP BY e.podcast_id
+    """
+
+    private static func decodeUnplayedCounts(_ db: GRDB.Database) throws -> [Int64: Int] {
+        let rows = try Row.fetchAll(db, sql: Self.unplayedCountsSQL)
+        return Dictionary(uniqueKeysWithValues: rows.compactMap { row -> (Int64, Int)? in
+            guard let id: Int64 = row["podcast_id"], let cnt: Int = row["cnt"] else { return nil }
+            return (id, cnt)
+        })
+    }
+
+    /// Unread counts keyed by podcast ID. Unread = no state row or
+    /// `play_state != 'played'`. Shows with zero unread are absent.
+    public func unplayedCounts() async throws -> [Int64: Int] {
+        try await self.database.read { db in try Self.decodeUnplayedCounts(db) }
+    }
+
+    /// Streams unread counts, emitting immediately and again on any change to
+    /// `podcast_episodes` or `podcast_episode_state` (both tables are read by the
+    /// query, so the observation tracks both). A mark-played write clears a show's
+    /// entry automatically.
+    public func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error> {
+        await self.database.observe { db in try Self.decodeUnplayedCounts(db) }
+    }
+
     /// Updates the download state, path, and byte count.
     public func setDownloadState(
         podcastID: Int64,

@@ -257,4 +257,93 @@ struct EpisodeStateRepositoryTests {
         let afterDelete = try await stateRepo.fetch(podcastID: podcastID, guid: "ep-1")
         #expect(afterDelete == nil, "state must cascade-delete with the parent podcast")
     }
+
+    // MARK: - unplayedCounts
+
+    private func insertEpisode(in db: Database, podcastID: Int64, guid: String) async throws {
+        let repo = EpisodeRepository(database: db)
+        try await repo.upsertAll([
+            PodcastEpisode(
+                podcastID: podcastID,
+                guid: guid,
+                title: "Episode \(guid)",
+                audioURL: "https://example.test/\(guid).mp3",
+                addedAt: 1_700_000_000
+            ),
+        ])
+    }
+
+    @Test("unplayedCounts counts an episode with no state row as unread")
+    func unplayedCountsNoStateRow() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        try await insertEpisode(in: db, podcastID: podcastID, guid: "ep-1")
+        try await insertEpisode(in: db, podcastID: podcastID, guid: "ep-2")
+        let repo = EpisodeStateRepository(database: db)
+
+        let counts = try await repo.unplayedCounts()
+        #expect(counts[podcastID] == 2)
+    }
+
+    @Test("unplayedCounts counts unplayed and inProgress, excludes played")
+    func unplayedCountsByState() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        for guid in ["ep-1", "ep-2", "ep-3"] {
+            try await self.insertEpisode(in: db, podcastID: podcastID, guid: guid)
+        }
+        let repo = EpisodeStateRepository(database: db)
+        try await repo.savePosition(podcastID: podcastID, guid: "ep-1", position: 30, now: 1_700_001_000)
+        try await repo.markUnplayed(podcastID: podcastID, guid: "ep-2")
+        try await repo.markPlayed(podcastID: podcastID, guid: "ep-3", now: 1_700_001_000)
+
+        let counts = try await repo.unplayedCounts()
+        #expect(counts[podcastID] == 2, "inProgress + unplayed count; played excluded")
+    }
+
+    @Test("a fully-played show is absent from unplayedCounts, not a zero entry")
+    func unplayedCountsFullyPlayedAbsent() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        try await insertEpisode(in: db, podcastID: podcastID, guid: "ep-1")
+        let repo = EpisodeStateRepository(database: db)
+        try await repo.markPlayed(podcastID: podcastID, guid: "ep-1", now: 1_700_001_000)
+
+        let counts = try await repo.unplayedCounts()
+        #expect(counts[podcastID] == nil, "zero-unread show must be absent, not a 0 entry")
+    }
+
+    @Test("markAllPlayed then unplayedCounts reports the show cleared")
+    func unplayedCountsAfterMarkAll() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        for guid in ["ep-1", "ep-2"] {
+            try await self.insertEpisode(in: db, podcastID: podcastID, guid: guid)
+        }
+        let repo = EpisodeStateRepository(database: db)
+        let before = try await repo.unplayedCounts()
+        #expect(before[podcastID] == 2)
+
+        try await repo.markAllPlayed(podcastID: podcastID, now: 1_700_001_000)
+        let after = try await repo.unplayedCounts()
+        #expect(after[podcastID] == nil)
+    }
+
+    @Test("observeUnplayedCounts emits initially and re-emits after a mark-played write")
+    func observeUnplayedCountsReemits() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        try await insertEpisode(in: db, podcastID: podcastID, guid: "ep-1")
+        let repo = EpisodeStateRepository(database: db)
+        let stream = await repo.observeUnplayedCounts()
+        var iterator = stream.makeAsyncIterator()
+
+        let initial = try await iterator.next()
+        #expect(initial?[podcastID] == 1)
+
+        try await repo.markPlayed(podcastID: podcastID, guid: "ep-1", now: 1_700_001_000)
+
+        let updated = try await iterator.next()
+        #expect(updated?[podcastID] == nil, "marking the only episode played clears the entry")
+    }
 }

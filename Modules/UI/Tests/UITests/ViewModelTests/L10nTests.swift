@@ -73,6 +73,13 @@ struct L10nTests {
         #expect(remove.one == "Remove Album from Library")
     }
 
+    @Test("'%lld unplayed episodes' pluralizes for the unread-badge a11y label")
+    func unplayedEpisodesPlural() throws {
+        let variation = try #require(self.plural("%lld unplayed episodes", in: self.catalog()))
+        #expect(variation.one == "%lld unplayed episode")
+        #expect(variation.other == "%lld unplayed episodes")
+    }
+
     /// Module root (`Modules/UI/`) derived from this test file's path.
     private var moduleRoot: URL {
         URL(filePath: #filePath)

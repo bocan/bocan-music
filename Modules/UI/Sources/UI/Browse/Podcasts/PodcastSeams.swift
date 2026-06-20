@@ -170,6 +170,10 @@ public protocol PodcastLibraryDataSource: Sendable {
     func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error>
     func observeEpisodes(podcastID: Int64) async -> AsyncThrowingStream<[EpisodeListItem], Error>
     func episodeCounts() async throws -> [Int64: Int]
+    /// Unread counts keyed by podcast ID (no state row or not yet played); zero-count shows absent.
+    func unplayedCounts() async throws -> [Int64: Int]
+    /// Live unread counts; re-emits after any play-state write so badges self-clear.
+    func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error>
 }
 
 // MARK: - PodcastActions

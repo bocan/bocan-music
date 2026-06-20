@@ -294,6 +294,17 @@ public actor PodcastService {
         try await self.episodeRepo.fetchAllPodcastCounts()
     }
 
+    /// Unread counts keyed by podcast ID (no state row or not yet played).
+    /// Shows with zero unread are absent.
+    public func unplayedCounts() async throws -> [Int64: Int] {
+        try await self.stateRepo.unplayedCounts()
+    }
+
+    /// Live stream of unread counts; re-emits after any play-state write.
+    public func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error> {
+        await self.stateRepo.observeUnplayedCounts()
+    }
+
     // MARK: - Playback-state bridge
 
     /// Returns the enclosure URL for an episode (or a local file URL when downloaded).

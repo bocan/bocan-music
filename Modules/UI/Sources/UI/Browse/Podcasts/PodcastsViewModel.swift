@@ -12,6 +12,9 @@ public final class PodcastsViewModel: ObservableObject {
 
     @Published public private(set) var subscribed: [Podcast] = []
     @Published public private(set) var podcastEpisodeCounts: [Int64: Int] = [:]
+    /// Unread (not-yet-played) counts keyed by podcast ID; absent/zero means no badge.
+    /// Kept live by `unplayedCountsTask` so a mark-played write clears the badge.
+    @Published public private(set) var podcastUnplayedCounts: [Int64: Int] = [:]
     @Published public private(set) var isLoading = false
     @Published public private(set) var currentShow: Podcast?
     /// Episodes for the currently open show. Populated by `loadShow(_:)`.
@@ -48,6 +51,7 @@ public final class PodcastsViewModel: ObservableObject {
     // is rejected on mutable stored properties). Leave nonisolated(unsafe) as-is -- see UI CLAUDE.md.
     private nonisolated(unsafe) var subscribedTask: Task<Void, Never>?
     private nonisolated(unsafe) var episodesTask: Task<Void, Never>?
+    private nonisolated(unsafe) var unplayedCountsTask: Task<Void, Never>?
     nonisolated(unsafe) var detailTask: Task<Void, Never>?
 
     // MARK: - Init
@@ -67,6 +71,7 @@ public final class PodcastsViewModel: ObservableObject {
     deinit {
         subscribedTask?.cancel()
         episodesTask?.cancel()
+        unplayedCountsTask?.cancel()
         detailTask?.cancel()
     }
 
@@ -118,12 +123,34 @@ public final class PodcastsViewModel: ObservableObject {
         do {
             self.subscribed = try await library.subscribedPodcasts()
             self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
+            self.podcastUnplayedCounts = await (try? library.unplayedCounts()) ?? [:]
         } catch {
             self.log.error("podcasts.loadSubscribed.failed", ["error": String(reflecting: error)])
         }
         self.isLoading = false
         self.startObserveSubscribed(library: library)
+        self.startObserveUnplayedCounts(library: library)
         self.healMissingArtwork()
+    }
+
+    /// Keeps `podcastUnplayedCounts` live off the state-table observation, so a
+    /// mark-played (or mark-all) write clears the badge with no manual refresh.
+    private func startObserveUnplayedCounts(library: any PodcastLibraryDataSource) {
+        self.unplayedCountsTask?.cancel()
+        self.unplayedCountsTask = Task { [weak self] in
+            let stream = await library.observeUnplayedCounts()
+            do {
+                for try await counts in stream {
+                    guard let self else { return }
+                    try Task.checkCancellation()
+                    self.podcastUnplayedCounts = counts
+                }
+            } catch is CancellationError {
+                // Expected when the task is cancelled on navigation.
+            } catch {
+                self?.log.warning("podcasts.observeUnplayed.failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 
     /// Fires background refreshes for any subscribed shows whose artwork file has

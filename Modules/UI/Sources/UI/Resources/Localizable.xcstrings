@@ -1320,6 +1320,46 @@
         }
       }
     },
+    "%lld unplayed episodes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld unplayed episode"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld unplayed episodes"
+                }
+              }
+            }
+          }
+        },
+        "en-XA" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld úñƥĺáýéđ éƥíšóđé one two"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld úñƥĺáýéđ éƥíšóđéš one two"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld%%" : {
       "localizations" : {
         "en-XA" : {
