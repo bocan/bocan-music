@@ -80,6 +80,27 @@ public final class PodcastsViewModel: ObservableObject {
         }
         self.isLoading = false
         self.startObserveSubscribed(library: library)
+        self.healMissingArtwork()
+    }
+
+    /// Fires background refreshes for any subscribed shows whose artwork file has
+    /// gone missing (e.g. macOS purged the old Caches location after an update).
+    /// Staggered by 0.5 s so it doesn't hammer the network on launch.
+    private func healMissingArtwork() {
+        let stale = self.subscribed.filter { podcast in
+            guard let path = podcast.artworkPath else { return false }
+            return !FileManager.default.fileExists(atPath: path)
+        }
+        guard !stale.isEmpty else { return }
+        self.log.debug("podcasts.artwork.stale", ["count": stale.count])
+        let actions = self.actions
+        Task.detached(priority: .background) {
+            for podcast in stale {
+                guard let id = podcast.id else { continue }
+                try? await actions?.refresh(podcastID: id)
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+        }
     }
 
     private func startObserveSubscribed(library: any PodcastLibraryDataSource) {
