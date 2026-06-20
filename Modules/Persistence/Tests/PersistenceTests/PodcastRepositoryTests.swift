@@ -223,4 +223,155 @@ struct PodcastRepositoryTests {
         let updated = try await iterator.next()
         #expect(updated?.count == 1)
     }
+
+    // MARK: - Per-show settings (M027)
+
+    @Test("per-show settings round-trip through insert and fetch")
+    func perShowSettingsRoundTrip() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        var podcast = self.sample()
+        podcast.playbackSpeed = 1.5
+        podcast.episodeSort = "oldest"
+        podcast.retentionLimit = 25
+        podcast.showType = "serial"
+        let id = try await repo.insert(podcast)
+
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.playbackSpeed == 1.5)
+        #expect(fetched.episodeSort == "oldest")
+        #expect(fetched.retentionLimit == 25)
+        #expect(fetched.showType == "serial")
+    }
+
+    @Test("per-show settings default to nil")
+    func perShowSettingsDefaultNil() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        let id = try await repo.insert(self.sample())
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.playbackSpeed == nil)
+        #expect(fetched.episodeSort == nil)
+        #expect(fetched.retentionLimit == nil)
+        #expect(fetched.showType == nil)
+    }
+
+    @Test("each per-show setter updates only its own column")
+    func settersUpdateSingleColumn() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        let id = try await repo.insert(self.sample())
+
+        try await repo.setPlaybackSpeed(2.0, id: id)
+        try await repo.setEpisodeSort("newest", id: id)
+        try await repo.setRetentionLimit(50, id: id)
+        var fetched = try await repo.fetch(id: id)
+        #expect(fetched.playbackSpeed == 2.0)
+        #expect(fetched.episodeSort == "newest")
+        #expect(fetched.retentionLimit == 50)
+
+        try await repo.setPlaybackSpeed(nil, id: id)
+        fetched = try await repo.fetch(id: id)
+        #expect(fetched.playbackSpeed == nil)
+        #expect(fetched.episodeSort == "newest", "other columns untouched")
+        #expect(fetched.retentionLimit == 50)
+    }
+
+    @Test("upsertByFeedURL preserves overrides and refreshes show_type")
+    func upsertPreservesOverridesRefreshesShowType() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        var first = self.sample()
+        first.showType = "episodic"
+        let id = try await repo.insert(first)
+        try await repo.setPlaybackSpeed(1.25, id: id)
+        try await repo.setEpisodeSort("oldest", id: id)
+        try await repo.setRetentionLimit(10, id: id)
+
+        var refreshed = self.sample(title: "Renamed Show")
+        refreshed.showType = "serial"
+        try await repo.upsertByFeedURL(refreshed)
+
+        let fetched = try await repo.fetchByFeedURL(first.feedURL)
+        #expect(fetched?.title == "Renamed Show")
+        #expect(fetched?.showType == "serial", "feed-derived show_type refreshes")
+        #expect(fetched?.playbackSpeed == 1.25, "override preserved")
+        #expect(fetched?.episodeSort == "oldest", "override preserved")
+        #expect(fetched?.retentionLimit == 10, "override preserved")
+    }
+
+    @Test("resolvedEpisodeSort: explicit override wins, else derived from show type")
+    func resolvedEpisodeSortDerivation() {
+        var podcast = self.sample()
+        #expect(podcast.resolvedEpisodeSort == .newest, "no override, no type -> newest")
+
+        podcast.showType = "serial"
+        #expect(podcast.resolvedEpisodeSort == .oldest, "serial -> oldest")
+
+        podcast.showType = "episodic"
+        #expect(podcast.resolvedEpisodeSort == .newest, "episodic -> newest")
+
+        podcast.episodeSort = "oldest"
+        #expect(podcast.resolvedEpisodeSort == .oldest, "explicit override wins over episodic")
+
+        podcast.episodeSort = "garbage"
+        #expect(podcast.resolvedEpisodeSort == .newest, "invalid override falls back to derived")
+    }
+
+    // MARK: - Retention
+
+    @Test("pruneEpisodes keeps newest N plus exemptions and leaves state rows intact")
+    func pruneKeepsNewestAndExemptions() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        let episodeRepo = EpisodeRepository(database: db)
+        let stateRepo = EpisodeStateRepository(database: db)
+        let id = try await repo.insert(self.sample())
+
+        try await episodeRepo.upsertAll((1 ... 5).map { index in
+            PodcastEpisode(
+                podcastID: id,
+                guid: "ep-\(index)",
+                title: "E\(index)",
+                audioURL: "https://x/\(index).mp3",
+                publishedAt: Double(index * 100),
+                addedAt: 0
+            )
+        })
+        // Exempt the two oldest: ep-1 played, ep-2 downloaded.
+        try await stateRepo.markPlayed(podcastID: id, guid: "ep-1", now: 1)
+        try await stateRepo.setDownloadState(podcastID: id, guid: "ep-2", state: .downloaded, path: "/tmp/x", bytes: 1)
+
+        // Keep newest 1 (ep-5); ep-3/ep-4 are cold and deleted; ep-1/ep-2 exempt.
+        try await repo.pruneEpisodes(podcastID: id, keepNewest: 1)
+
+        let remaining = try await Set(episodeRepo.fetchForPodcast(podcastID: id).map(\.guid))
+        #expect(remaining == ["ep-1", "ep-2", "ep-5"])
+
+        let state1 = try await stateRepo.fetch(podcastID: id, guid: "ep-1")
+        let state2 = try await stateRepo.fetch(podcastID: id, guid: "ep-2")
+        #expect(state1 != nil, "state rows are never deleted by prune")
+        #expect(state2 != nil)
+    }
+
+    @Test("pruneEpisodes with a nil limit is a no-op")
+    func pruneNilNoOp() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        let episodeRepo = EpisodeRepository(database: db)
+        let id = try await repo.insert(self.sample())
+        try await episodeRepo.upsertAll((1 ... 3).map { index in
+            PodcastEpisode(
+                podcastID: id,
+                guid: "ep-\(index)",
+                title: "E\(index)",
+                audioURL: "https://x/\(index).mp3",
+                publishedAt: Double(index),
+                addedAt: 0
+            )
+        })
+        try await repo.pruneEpisodes(podcastID: id, keepNewest: nil)
+        let count = try await episodeRepo.fetchForPodcast(podcastID: id).count
+        #expect(count == 3)
+    }
 }
