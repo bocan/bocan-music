@@ -199,3 +199,13 @@ public protocol PodcastActions: Sendable {
     func download(podcastID: Int64, guid: String) async
     func removeDownload(podcastID: Int64, guid: String) async
 }
+
+// MARK: - PodcastTranscriptProviding
+
+/// Cached-or-fetched transcript for an episode, declared in UI so UI never imports
+/// `Podcasts`. The seam type `PodcastTranscript` comes from `Persistence`. The App
+/// layer implements this over `PodcastService.transcript(...)`. The viewer maps a
+/// throw to its empty/disabled state (no transcript, or the fetch failed).
+public protocol PodcastTranscriptProviding: Sendable {
+    func transcript(podcastID: Int64, guid: String) async throws -> PodcastTranscript
+}
