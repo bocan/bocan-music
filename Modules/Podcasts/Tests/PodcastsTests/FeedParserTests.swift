@@ -75,6 +75,30 @@ struct FeedParserRSSFullTests {
         #expect(ep.explicit == false)
         #expect(ep.artworkURL == URL(string: "https://example.com/ep1-art.jpg"))
     }
+
+    @Test("RSS full fixture: podcast:guid is parsed into podcastGUID")
+    func rssFullPodcastGUID() throws {
+        let data = try fixture(named: "rss-full.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        #expect(feed.podcastGUID == "ead4c236-bf58-58c6-a2c6-a6b28d128cb6")
+    }
+
+    @Test("RSS full fixture: episode transcript prefers VTT over plain text")
+    func rssFullEpisodeTranscript() throws {
+        let data = try fixture(named: "rss-full.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        let ep1 = feed.episodes[1]
+        #expect(ep1.transcriptURL == URL(string: "https://example.com/ep1-transcript.vtt"))
+    }
+
+    @Test("RSS full fixture: episode artwork falls back to a Media RSS thumbnail")
+    func rssFullEpisodeMediaThumbnailFallback() throws {
+        let data = try fixture(named: "rss-full.xml")
+        let feed = try parser.parse(data, sourceURL: sourceURL)
+        // Episode 2 has no itunes:image, only a media:thumbnail.
+        let ep2 = feed.episodes[0]
+        #expect(ep2.artworkURL == URL(string: "https://example.com/ep2-media.jpg"))
+    }
 }
 
 @Suite("FeedParser - RSS minimal fixture")

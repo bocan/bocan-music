@@ -31,6 +31,9 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var fundingURL: String?
     public var itunesCollectionID: Int64?
     public var podcastIndexID: Int64?
+    /// Podcasting 2.0 `podcast:guid`: a stable, cross-platform show identity.
+    /// Nil until a feed exposes the tag; not enforced unique (feeds may share or omit it).
+    public var podcastGUID: String?
     public var httpETag: String?
     public var httpLastModified: String?
     public var lastRefreshedAt: Double?
@@ -61,6 +64,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         fundingURL: String? = nil,
         itunesCollectionID: Int64? = nil,
         podcastIndexID: Int64? = nil,
+        podcastGUID: String? = nil,
         httpETag: String? = nil,
         httpLastModified: String? = nil,
         lastRefreshedAt: Double? = nil,
@@ -87,6 +91,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.fundingURL = fundingURL
         self.itunesCollectionID = itunesCollectionID
         self.podcastIndexID = podcastIndexID
+        self.podcastGUID = podcastGUID
         self.httpETag = httpETag
         self.httpLastModified = httpLastModified
         self.lastRefreshedAt = lastRefreshedAt
@@ -125,6 +130,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case fundingURL = "funding_url"
         case itunesCollectionID = "itunes_collection_id"
         case podcastIndexID = "podcast_index_id"
+        case podcastGUID = "podcast_guid"
         case httpETag = "http_etag"
         case httpLastModified = "http_last_modified"
         case lastRefreshedAt = "last_refreshed_at"

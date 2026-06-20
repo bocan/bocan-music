@@ -35,6 +35,7 @@ extension ParsedFeed {
             fundingURL: self.fundingURL?.absoluteString,
             itunesCollectionID: hints?.itunesCollectionID.map { Int64($0) },
             podcastIndexID: hints?.podcastIndexID.map { Int64($0) },
+            podcastGUID: self.podcastGUID,
             httpETag: etag,
             httpLastModified: lastModified,
             lastRefreshedAt: ts,

@@ -1,5 +1,10 @@
 # Phase 21 Notes
 
+> Status: the FeedKit upgrade path described below has been scoped into
+> `phase21-11-feedkit-upgrade.md` (the 9.1.2 to 10.4.0 upgrade) and
+> `phase21-12-podcast-features.md` (new podcast functionality the upgrade
+> unlocks). This file remains as the original problem statement.
+
 ## FeedKit version debt
 
 Phase 21-2 locked in FeedKit **9.1.2**, which is approximately six years old and predates Swift 6 concurrency. The library's types (`RSSFeed`, `AtomFeed`, etc.) are plain classes with no `Sendable` conformances, which is why `FeedParser.swift` carries a `@preconcurrency import FeedKit` workaround and a comment explaining that all FeedKit types must be created and consumed synchronously without crossing an actor boundary.

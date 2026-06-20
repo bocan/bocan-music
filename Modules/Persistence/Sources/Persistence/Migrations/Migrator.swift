@@ -51,6 +51,7 @@ public struct Migrator {
         M021SubsonicScrobble.register(in: &dm)
         M022ScrobbleIgnoredRollup.register(in: &dm)
         M023Podcasts.register(in: &dm)
+        M024PodcastGUID.register(in: &dm)
         return Self(inner: dm)
     }
 

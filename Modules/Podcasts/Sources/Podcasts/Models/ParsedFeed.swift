@@ -17,6 +17,8 @@ public struct ParsedFeed: Sendable {
     public var ownerEmail: String?
     public var copyright: String?
     public var fundingURL: URL?
+    /// Podcasting 2.0 `podcast:guid`: a stable, cross-platform show identity.
+    public var podcastGUID: String?
     public var episodes: [ParsedEpisode]
 
     public init(
@@ -32,6 +34,7 @@ public struct ParsedFeed: Sendable {
         ownerEmail: String? = nil,
         copyright: String? = nil,
         fundingURL: URL? = nil,
+        podcastGUID: String? = nil,
         episodes: [ParsedEpisode] = []
     ) {
         self.title = title
@@ -46,6 +49,7 @@ public struct ParsedFeed: Sendable {
         self.ownerEmail = ownerEmail
         self.copyright = copyright
         self.fundingURL = fundingURL
+        self.podcastGUID = podcastGUID
         self.episodes = episodes
     }
 }

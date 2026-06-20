@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "Podcasts", targets: ["Podcasts"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/nmdias/FeedKit.git", from: "9.1.2"),
+        .package(url: "https://github.com/nmdias/FeedKit.git", from: "10.4.0"),
         .package(path: "../Observability"),
         .package(path: "../Persistence"),
     ],

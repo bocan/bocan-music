@@ -1,15 +1,12 @@
+import FeedKit
 import Foundation
-
-// third-party boundary: FeedKit 9.x classes are not Sendable; all FeedKit
-// types are created and consumed synchronously within parse(_:sourceURL:) and
-// never cross an actor boundary.
-@preconcurrency import FeedKit
 import Observability
 
 /// Wraps FeedKit to parse RSS 2.0 and Atom feeds into the module's
 /// `ParsedFeed` / `ParsedEpisode` value types.
 ///
-/// No FeedKit type escapes this struct's API surface.
+/// FeedKit 10.x models are `Sendable` (and `Codable`), so no `@preconcurrency`
+/// boundary is required. No FeedKit type escapes this struct's API surface.
 public struct FeedParser: Sendable {
     private let log = AppLogger.make(.podcasts)
 
@@ -23,60 +20,66 @@ public struct FeedParser: Sendable {
     /// - Returns: A `ParsedFeed` with episodes sorted newest-first.
     /// - Throws: `PodcastsError.parseFailed` or `.notAFeed`.
     public func parse(_ data: Data, sourceURL: URL) throws -> ParsedFeed {
-        let kitParser = FeedKit.FeedParser(data: data)
-        let result = kitParser.parse()
+        let feed: Feed
+        do {
+            // Synchronous, throwing core initializer; auto-detects RSS/Atom/JSON.
+            // We never use the async urlString:/url: initializers because they
+            // would bypass FeedFetcher's conditional GET, size cap, and User-Agent.
+            feed = try Feed(data: data)
+        } catch {
+            self.log.error("feed.parse.failed", [
+                "url": sourceURL.absoluteString,
+                "error": String(reflecting: error),
+            ])
+            throw PodcastsError.parseFailed(url: sourceURL, reason: String(describing: error))
+        }
 
-        switch result {
-        case let .failure(err):
-            throw PodcastsError.parseFailed(url: sourceURL, reason: err.localizedDescription)
-        case let .success(feed):
-            switch feed {
-            case let .rss(rss):
-                return try Self.parseRSS(rss, sourceURL: sourceURL)
-            case let .atom(atom):
-                return try Self.parseAtom(atom, sourceURL: sourceURL)
-            case .json:
-                throw PodcastsError.notAFeed(url: sourceURL)
-            }
+        switch feed {
+        case let .rss(rss):
+            return try Self.parseRSS(rss, sourceURL: sourceURL)
+        case let .atom(atom):
+            return try Self.parseAtom(atom, sourceURL: sourceURL)
+        case .json:
+            throw PodcastsError.notAFeed(url: sourceURL)
         }
     }
 
     // MARK: - RSS
 
     private static func parseRSS(_ rss: RSSFeed, sourceURL: URL) throws -> ParsedFeed {
-        guard let title = rss.title, !title.isEmpty else {
+        guard let channel = rss.channel,
+              let title = channel.title, !title.isEmpty else {
             throw PodcastsError.notAFeed(url: sourceURL)
         }
 
-        let author = rss.iTunes?.iTunesAuthor
-            ?? rss.managingEditor
-            ?? rss.dublinCore?.dcCreator
+        let author = channel.iTunes?.author
+            ?? channel.managingEditor
+            ?? channel.dublinCore?.creator
 
-        let description = rss.iTunes?.iTunesSummary ?? rss.description
+        let description = channel.iTunes?.summary ?? channel.description
 
-        let artworkURLString = rss.iTunes?.iTunesImage?.attributes?.href
-            ?? rss.image?.url
+        let artworkURLString = channel.iTunes?.image?.attributes?.href
+            ?? channel.image?.url
         let artworkURL = artworkURLString.flatMap { URL(string: $0) }
 
-        let link = rss.link.flatMap { URL(string: $0) }
+        let link = channel.link.flatMap { URL(string: $0) }
 
-        let explicit = Self.parseExplicit(rss.iTunes?.iTunesExplicit)
+        let explicit = Self.parseExplicit(channel.iTunes?.explicit)
 
-        let categories = Self.parseITunesCategories(rss.iTunes?.iTunesCategories)
+        let categories = Self.parseITunesCategories(channel.iTunes?.categories)
 
+        // FeedKit 10.x does not parse podcast:funding; it stays nil until a
+        // supplementary parser is added (see phase21-12-podcast-features.md).
         let fundingURL: URL? = nil
 
-        let episodes: [ParsedEpisode] = (rss.items ?? []).compactMap { item in
+        // podcast:guid is the canonical, cross-platform show identity.
+        let podcastGUID = channel.podcast?.guid
+
+        let episodes: [ParsedEpisode] = (channel.items ?? []).compactMap { item in
             Self.parseRSSItem(item)
         }
 
-        let sorted = episodes.sorted { lhs, rhs in
-            switch (lhs.publishedAt, rhs.publishedAt) {
-            case let (a?, b?): a > b
-            case (nil, _): false
-            case (_, nil): true
-            }
-        }
+        let sorted = Self.sortedNewestFirst(episodes)
 
         return ParsedFeed(
             title: title,
@@ -84,13 +87,14 @@ public struct FeedParser: Sendable {
             description: description,
             artworkURL: artworkURL,
             link: link,
-            language: rss.language,
+            language: channel.language,
             explicit: explicit,
             categories: categories,
-            ownerName: rss.iTunes?.iTunesOwner?.name,
-            ownerEmail: rss.iTunes?.iTunesOwner?.email,
-            copyright: rss.copyright,
+            ownerName: channel.iTunes?.owner?.name,
+            ownerEmail: channel.iTunes?.owner?.email,
+            copyright: channel.copyright,
             fundingURL: fundingURL,
+            podcastGUID: podcastGUID,
             episodes: sorted
         )
     }
@@ -115,53 +119,60 @@ public struct FeedParser: Sendable {
         }
 
         // GUID falls back to enclosure URL when absent.
-        let guid = item.guid?.value ?? urlString
+        let guid = item.guid?.text ?? urlString
+
+        // itunes:episode is a String in 10.x; convert for the Int column.
+        let episodeNumber = item.iTunes?.episode.flatMap { Int($0) }
 
         // Title falls back to episode number / pubDate when absent.
         let title = item.title
-            ?? item.iTunes?.iTunesTitle
-            ?? Self.fallbackTitle(episode: item.iTunes?.iTunesEpisode, pubDate: item.pubDate)
+            ?? item.iTunes?.title
+            ?? Self.fallbackTitle(episode: episodeNumber, pubDate: item.pubDate)
 
-        let descriptionHTML = item.content?.contentEncoded
-            ?? item.iTunes?.iTunesSummary
+        let descriptionHTML = item.content?.encoded
+            ?? item.iTunes?.summary
             ?? item.description
 
-        let artworkURLString = item.iTunes?.iTunesImage?.attributes?.href
+        // Episode artwork: itunes:image, else a Media RSS thumbnail.
+        let artworkURLString = item.iTunes?.image?.attributes?.href
+            ?? item.media?.thumbnails?.first?.attributes?.url
         let artworkURL = artworkURLString.flatMap { URL(string: $0) }
 
-        let episodeNumber = item.iTunes?.iTunesEpisode
+        // podcast:transcript -> the single transcript_url column (best pick).
+        let transcriptURL = Self.preferredTranscript(item.podcast?.transcripts)
 
         return ParsedEpisode(
             guid: guid,
             title: title,
-            subtitle: item.iTunes?.iTunesSubtitle,
+            subtitle: item.iTunes?.subtitle,
             descriptionHTML: descriptionHTML,
             audioURL: audioURL,
             audioMIME: mimeType.isEmpty ? nil : mimeType,
             audioByteLength: enclosure.length,
-            duration: item.iTunes?.iTunesDuration,
+            duration: item.iTunes?.duration,
             publishedAt: item.pubDate,
-            season: item.iTunes?.iTunesSeason,
+            season: item.iTunes?.season,
             episodeNumber: episodeNumber,
-            episodeType: item.iTunes?.iTunesEpisodeType,
+            episodeType: item.iTunes?.episodeType,
             artworkURL: artworkURL,
+            // FeedKit 10.x does not parse podcast:chapters (see phase21-12).
             chaptersURL: nil,
-            transcriptURL: nil,
+            transcriptURL: transcriptURL,
             link: item.link.flatMap { URL(string: $0) },
-            explicit: Self.parseExplicit(item.iTunes?.iTunesExplicit)
+            explicit: Self.parseExplicit(item.iTunes?.explicit)
         )
     }
 
     // MARK: - Atom
 
     private static func parseAtom(_ atom: AtomFeed, sourceURL: URL) throws -> ParsedFeed {
-        guard let title = atom.title, !title.isEmpty else {
+        guard let title = atom.title?.text, !title.isEmpty else {
             throw PodcastsError.notAFeed(url: sourceURL)
         }
 
         let author = atom.authors?.first?.name
 
-        let description = atom.subtitle?.value
+        let description = atom.subtitle?.text
 
         let artworkURL: URL? = atom.logo.flatMap { URL(string: $0) }
 
@@ -174,13 +185,7 @@ public struct FeedParser: Sendable {
             Self.parseAtomEntry(entry)
         }
 
-        let sorted = episodes.sorted { lhs, rhs in
-            switch (lhs.publishedAt, rhs.publishedAt) {
-            case let (a?, b?): a > b
-            case (nil, _): false
-            case (_, nil): true
-            }
-        }
+        let sorted = Self.sortedNewestFirst(episodes)
 
         return ParsedFeed(
             title: title,
@@ -195,6 +200,7 @@ public struct FeedParser: Sendable {
             ownerEmail: atom.authors?.first?.email,
             copyright: atom.rights,
             fundingURL: nil,
+            podcastGUID: nil,
             episodes: sorted
         )
     }
@@ -218,7 +224,7 @@ public struct FeedParser: Sendable {
 
         let guid = entry.id ?? hrefString
         let title = entry.title ?? Self.fallbackTitle(episode: nil, pubDate: entry.published)
-        let descriptionHTML = entry.content?.value ?? entry.summary?.value
+        let descriptionHTML = entry.content?.text ?? entry.summary?.text
 
         return ParsedEpisode(
             guid: guid,
@@ -246,12 +252,22 @@ public struct FeedParser: Sendable {
 
     // MARK: - Helpers
 
+    private static func sortedNewestFirst(_ episodes: [ParsedEpisode]) -> [ParsedEpisode] {
+        episodes.sorted { lhs, rhs in
+            switch (lhs.publishedAt, rhs.publishedAt) {
+            case let (a?, b?): a > b
+            case (nil, _): false
+            case (_, nil): true
+            }
+        }
+    }
+
     private static func parseExplicit(_ value: String?) -> Bool {
         guard let v = value?.lowercased().trimmingCharacters(in: .whitespaces) else { return false }
         return v == "yes" || v == "true" || v == "explicit"
     }
 
-    private static func parseITunesCategories(_ cats: [ITunesCategory]?) -> [String] {
+    private static func parseITunesCategories(_ cats: [iTunesCategory]?) -> [String] {
         guard let cats else { return [] }
         var result: [String] = []
         for cat in cats {
@@ -263,6 +279,33 @@ public struct FeedParser: Sendable {
             }
         }
         return Array(Set(result)).sorted()
+    }
+
+    /// Pick a single transcript URL for the `transcript_url` column, preferring
+    /// common readable / timed formats. The full multi-format list is a future
+    /// enhancement (see phase21-12-podcast-features.md).
+    private static func preferredTranscript(_ transcripts: [PodcastTranscript]?) -> URL? {
+        guard let transcripts, !transcripts.isEmpty else { return nil }
+        let ranked = transcripts.sorted { lhs, rhs in
+            Self.transcriptRank(lhs.attributes?.type) < Self.transcriptRank(rhs.attributes?.type)
+        }
+        for transcript in ranked {
+            if let urlString = transcript.attributes?.url, let url = URL(string: urlString) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    private static func transcriptRank(_ type: String?) -> Int {
+        switch type?.lowercased() {
+        case "text/vtt": 0
+        case "application/x-subrip", "application/srt", "text/srt": 1
+        case "text/html": 2
+        case "text/plain": 3
+        case "application/json": 4
+        default: 5
+        }
     }
 
     private static func fallbackTitle(episode: Int?, pubDate: Date?) -> String {
