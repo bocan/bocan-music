@@ -228,13 +228,15 @@ SOFTWARE.
 
 ---
 
-## FeedKit 9.1.2
+## FeedKit 10.4.0
 
 <https://github.com/nmdias/FeedKit>
 
+Includes the XMLKit library, distributed as part of the FeedKit package under the same MIT license.
+
 MIT License
 
-Copyright (c) 2016 - 2018 Nuno Manuel Dias
+Copyright (c) 2016 - 2025 Nuno Dias
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

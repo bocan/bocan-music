@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"
      xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
-     xmlns:content="http://purl.org/rss/1.0/modules/content/">
+     xmlns:content="http://purl.org/rss/1.0/modules/content/"
+     xmlns:podcast="https://podcastindex.org/namespace/1.0"
+     xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>Full Feature Podcast</title>
     <link>https://example.com/podcast</link>
@@ -9,6 +11,7 @@
     <language>en-us</language>
     <copyright>2024 Example Inc.</copyright>
     <managingEditor>editor@example.com</managingEditor>
+    <podcast:guid>ead4c236-bf58-58c6-a2c6-a6b28d128cb6</podcast:guid>
     <itunes:author>Jane Smith</itunes:author>
     <itunes:summary>A podcast with every field populated.</itunes:summary>
     <itunes:explicit>yes</itunes:explicit>
@@ -36,6 +39,8 @@
       <itunes:episodeType>full</itunes:episodeType>
       <itunes:explicit>no</itunes:explicit>
       <itunes:image href="https://example.com/ep1-art.jpg"/>
+      <podcast:transcript url="https://example.com/ep1-transcript.txt" type="text/plain" language="en"/>
+      <podcast:transcript url="https://example.com/ep1-transcript.vtt" type="text/vtt" language="en" rel="captions"/>
     </item>
     <item>
       <title>Episode 2: The Sequel</title>
@@ -46,6 +51,7 @@
       <itunes:episode>2</itunes:episode>
       <itunes:season>1</itunes:season>
       <itunes:episodeType>full</itunes:episodeType>
+      <media:thumbnail url="https://example.com/ep2-media.jpg"/>
     </item>
   </channel>
 </rss>
