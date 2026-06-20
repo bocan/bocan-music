@@ -22,10 +22,11 @@ final class OPMLImportProgress: ObservableObject {
 /// determinate progress, and shows an added / skipped / failed summary with the
 /// failed feeds (and reasons) listed. A non-empty success toasts via the library.
 struct PodcastOPMLImportSheet: View {
-    @Binding var isPresented: Bool
     let fileURL: URL
     @ObservedObject var vm: PodcastsViewModel
     let library: LibraryViewModel
+
+    @Environment(\.dismiss) private var dismiss
 
     @StateObject private var progress = OPMLImportProgress()
     @State private var phase: Phase = .importing
@@ -48,10 +49,10 @@ struct PodcastOPMLImportSheet: View {
             HStack {
                 Spacer()
                 if self.phase == .done {
-                    Button(L10n.string("Done")) { self.isPresented = false }
+                    Button(L10n.string("Done")) { self.dismiss() }
                         .keyboardShortcut(.defaultAction)
                 } else {
-                    Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
+                    Button(L10n.string("Cancel"), role: .cancel) { self.dismiss() }
                         .keyboardShortcut(.cancelAction)
                 }
             }
