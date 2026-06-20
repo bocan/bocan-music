@@ -113,6 +113,24 @@ public final class PodcastsViewModel: ObservableObject {
         self.nowPlayingChapters = []
     }
 
+    // MARK: - OPML import / export
+
+    /// Imports an OPML subscription list via the actions seam, returning a
+    /// partitioned summary. `progress` is called `(completed, total)` per attempt.
+    func importOPML(
+        data: Data,
+        progress: @escaping @Sendable (Int, Int) -> Void
+    ) async throws -> UIOPMLImportSummary {
+        guard let actions else { return UIOPMLImportSummary() }
+        return try await actions.importOPML(data: data, progress: progress)
+    }
+
+    /// Serializes the current subscriptions to OPML 2.0 data via the actions seam.
+    func exportOPML() async throws -> Data {
+        guard let actions else { return Data() }
+        return try await actions.exportOPML()
+    }
+
     // MARK: - Home
 
     /// Fetches the subscribed-show list once, then starts a live observation so
