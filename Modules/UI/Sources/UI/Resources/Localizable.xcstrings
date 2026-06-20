@@ -11662,6 +11662,16 @@
         }
       }
     },
+    "Open in Browser" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñ íñ Ɓŕóŵšéŕ one two"
+          }
+        }
+      }
+    },
     "Open last.fm" : {
       "localizations" : {
         "en-XA" : {
@@ -11712,6 +11722,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Óƥéñ ţĥé ŕúĺé ƀúíĺđéŕ ţó éđíţ ţĥíš šḿáŕţ ƥĺáýĺíšţ one two three four"
+          }
+        }
+      }
+    },
+    "Open this funding link?" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñ ţĥíš ƒúñđíñĝ ĺíñķ? one two"
           }
         }
       }
@@ -16668,6 +16688,26 @@
         }
       }
     },
+    "Support This Show" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šúƥƥóŕţ Ţĥíš Šĥóŵ one two"
+          }
+        }
+      }
+    },
+    "Support this show in your browser" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šúƥƥóŕţ ţĥíš šĥóŵ íñ ýóúŕ ƀŕóŵšéŕ one two three"
+          }
+        }
+      }
+    },
     "Switched to Spectrum Bars for performance." : {
       "localizations" : {
         "en" : {
@@ -17134,6 +17174,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţĥíš ƒóĺđéŕ ḿáý ĥávé ƀééñ đéĺéţéđ. one two three"
+          }
+        }
+      }
+    },
+    "This opens %@ in your default browser." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţĥíš óƥéñš %@ íñ ýóúŕ đéƒáúĺţ ƀŕóŵšéŕ. one two three"
           }
         }
       }
