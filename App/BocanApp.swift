@@ -615,6 +615,7 @@ extension BocanApp {
             podcastRepo: PodcastRepository(database: db),
             episodeRepo: episodeRepo,
             stateRepo: stateRepo,
+            transcriptRepo: TranscriptRepository(database: db),
             artwork: PodcastArtworkCache()
         )
         let podcastResolver = AppPodcastResolver(service: podcastService)
@@ -666,7 +667,8 @@ extension BocanApp {
             subsonicConnectionObserver: SubsonicMonitorConnectionObserver(monitor: subsonicMonitor),
             podcastLibrary: podcastService,
             podcastActions: podcastActions,
-            podcastSearch: podcastSearch
+            podcastSearch: podcastSearch,
+            podcastTranscript: podcastService
         )
         // Start the background feed refresh loop. Phase 21-7 spec: called once
         // at launch; the scheduler is idempotent so wake-notifications can also

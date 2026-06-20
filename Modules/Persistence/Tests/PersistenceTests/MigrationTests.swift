@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 25)
+        #expect(version == 26)
     }
 
     @Test("Integrity check passes after migration")
@@ -31,7 +31,7 @@ struct MigrationTests {
             "albums", "app_metadata", "artists", "cover_art",
             "grdb_migrations", "lyrics", "play_history",
             "playlist_tracks", "playlists", "podcast_episode_state",
-            "podcast_episodes", "podcasts",
+            "podcast_episode_transcript", "podcast_episodes", "podcasts",
             "scrobble_queue", "settings", "tracks",
         ]
         for name in expected {
@@ -66,10 +66,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twenty-five migrations")
+    @Test("Migrator reports twenty-six migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 25)
+        #expect(migrator.migrations.count == 26)
     }
 
     @Test("podcasts table has funding_text after M025")
@@ -80,6 +80,18 @@ struct MigrationTests {
                 .compactMap { $0["name"] as String? }
         }
         #expect(columns.contains("funding_text"))
+    }
+
+    @Test("podcast_episode_transcript table has the expected columns after M026")
+    func podcastTranscriptTable() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(podcast_episode_transcript)")
+                .compactMap { $0["name"] as String? }
+        }
+        for name in ["podcast_id", "guid", "content", "format", "language", "source_url", "fetched_at"] {
+            #expect(columns.contains(name), "Expected column '\(name)' not found")
+        }
     }
 
     @Test("M022 rolls up queue rows stranded by ignored submissions")

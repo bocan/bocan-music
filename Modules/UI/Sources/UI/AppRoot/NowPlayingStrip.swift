@@ -192,7 +192,10 @@ public struct NowPlayingStrip: View {
     @ViewBuilder
     private var transport: some View {
         if self.vm.isPodcast {
-            PodcastTransportControls(vm: self.vm)
+            PodcastTransportControls(vm: self.vm) {
+                guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else { return nil }
+                return await self.library.podcasts.loadTranscript(podcastID: podcastID, guid: guid)
+            }
         } else {
             MusicTransportControls(vm: self.vm, library: self.library)
         }
