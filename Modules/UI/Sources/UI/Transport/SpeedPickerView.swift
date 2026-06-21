@@ -74,6 +74,18 @@ public struct SpeedPickerView: View {
             }
             .frame(width: 200)
             .accessibilityLabel(L10n.string("Speed slider"))
+            .accessibilityValue(self.rateLabel)
+            // The drag binding only commits the rate on release (onEditingChanged),
+            // which VoiceOver increments never fire; set the rate directly so the
+            // slider is actually adjustable with assistive tech.
+            .accessibilityAdjustableAction { direction in
+                guard direction == .increment || direction == .decrement else { return }
+                let step: Float = 0.05
+                let new = direction == .increment
+                    ? min(self.vm.playbackRate + step, 2.0)
+                    : max(self.vm.playbackRate - step, 0.5)
+                Task { await self.vm.setRate(new) }
+            }
 
             HStack(spacing: 8) {
                 ForEach(Self.quickRates, id: \.self) { rate in
