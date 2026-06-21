@@ -43,6 +43,7 @@ extension ParsedFeed {
             lastRefreshError: nil,
             subscribed: true,
             showType: self.showType,
+            personsJSON: PodcastPerson.encodeList(self.persons),
             addedAt: ts
         )
     }
@@ -70,6 +71,7 @@ extension ParsedEpisode {
             transcriptURL: self.transcriptURL?.absoluteString,
             link: self.link?.absoluteString,
             explicit: self.explicit,
+            personsJSON: PodcastPerson.encodeList(self.persons),
             addedAt: now.timeIntervalSince1970
         )
     }

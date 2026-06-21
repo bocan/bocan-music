@@ -59,6 +59,28 @@ struct PodcastRepositoryTests {
         #expect(fetched.fundingText == "Support the show")
     }
 
+    @Test("podcast:person credits round-trip through the persons_json column (M028)")
+    func personsRoundTrip() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        var show = self.sample()
+        show.persons = [
+            PodcastPerson(name: "Host A", role: "host", imageURL: "https://x.test/a.jpg", href: "https://x.test/a"),
+            PodcastPerson(name: "Guest B", role: "guest"),
+        ]
+        let id = try await repo.insert(show)
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.persons.count == 2)
+        #expect(fetched.persons.first?.name == "Host A")
+        #expect(fetched.persons.first?.imageURL == "https://x.test/a.jpg")
+        #expect(fetched.persons.last?.role == "guest")
+        // Empty list stays NULL rather than an empty-array blob.
+        var bare = self.sample(feedURL: "https://noppl.test/feed")
+        bare.persons = []
+        let id2 = try await repo.insert(bare)
+        #expect(try await repo.fetch(id: id2).personsJSON == nil)
+    }
+
     @Test("fetch throws notFound for missing id")
     func fetchMissing() async throws {
         let db = try await makeDB()

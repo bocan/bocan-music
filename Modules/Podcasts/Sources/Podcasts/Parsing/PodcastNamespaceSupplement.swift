@@ -1,8 +1,10 @@
 import Foundation
 import Observability
+import Persistence
 
-/// Best-effort extraction of the two Podcasting 2.0 tags FeedKit 10.4.0 does not
-/// model: channel-level `podcast:funding` and per-item `podcast:chapters`.
+/// Best-effort extraction of the Podcasting 2.0 tags FeedKit 10.4.0 does not model:
+/// channel-level `podcast:funding`, per-item `podcast:chapters`, and `podcast:person`
+/// credits at both the channel (show) and item (episode) level.
 ///
 /// It re-reads the same bytes `FeedFetcher` returned, after FeedKit, and the
 /// result is merged into `ParsedFeed` in `FeedParser.parse`. It is intentionally
@@ -12,13 +14,17 @@ import Observability
 /// It never throws. Any parse failure logs at debug and yields whatever partial
 /// result was accumulated, so the main FeedKit parse is never affected.
 struct PodcastNamespaceSupplement {
-    /// The two extracted values, keyed for merge.
+    /// The extracted values, keyed for merge.
     struct Result {
         var fundingURL: URL?
         var fundingText: String?
         /// Item `guid` (else enclosure URL, matching `FeedParser.parseRSSItem`)
         /// mapped to its `podcast:chapters` URL.
         var chaptersByGUID: [String: URL] = [:]
+        /// Channel-level `podcast:person` credits (show hosts / regulars).
+        var channelPersons: [PodcastPerson] = []
+        /// Item `guid` (else enclosure URL) mapped to its `podcast:person` credits.
+        var personsByGUID: [String: [PodcastPerson]] = [:]
     }
 
     /// Canonical Podcasting 2.0 namespace URI. We match on the namespace, not the
@@ -50,6 +56,13 @@ struct PodcastNamespaceSupplement {
         }
         return url
     }
+
+    /// Trims a string attribute, returning `nil` when empty.
+    static func cleanAttr(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
 }
 
 // MARK: - Driver
@@ -72,8 +85,18 @@ private final class Driver: NSObject, XMLParserDelegate {
     private var currentItemGUID: String?
     private var currentItemEnclosureURL: String?
     private var currentItemChaptersURL: URL?
+    private var currentItemPersons: [PodcastPerson] = []
     private var capturingGUID = false
     private var guidBuffer = ""
+
+    // Person capture (podcast:person, channel- or item-level). Attributes are read at
+    // the start element and combined with the trimmed text at the end element.
+    private var capturingPersonText = false
+    private var personTextBuffer = ""
+    private var pendingPersonRole: String?
+    private var pendingPersonGroup: String?
+    private var pendingPersonImageURL: String?
+    private var pendingPersonHref: String?
 
     func parser(
         _ parser: XMLParser,
@@ -90,6 +113,13 @@ private final class Driver: NSObject, XMLParserDelegate {
                 self.fundingTextBuffer = ""
             case "chapters" where self.inItem && self.currentItemChaptersURL == nil:
                 self.currentItemChaptersURL = PodcastNamespaceSupplement.webURL(attributeDict["url"])
+            case "person" where self.inChannel || self.inItem:
+                self.capturingPersonText = true
+                self.personTextBuffer = ""
+                self.pendingPersonRole = PodcastNamespaceSupplement.cleanAttr(attributeDict["role"])
+                self.pendingPersonGroup = PodcastNamespaceSupplement.cleanAttr(attributeDict["group"])
+                self.pendingPersonImageURL = PodcastNamespaceSupplement.webURL(attributeDict["img"])?.absoluteString
+                self.pendingPersonHref = PodcastNamespaceSupplement.webURL(attributeDict["href"])?.absoluteString
             default:
                 break
             }
@@ -105,6 +135,7 @@ private final class Driver: NSObject, XMLParserDelegate {
             self.currentItemGUID = nil
             self.currentItemEnclosureURL = nil
             self.currentItemChaptersURL = nil
+            self.currentItemPersons = []
         case "guid" where self.inItem:
             self.capturingGUID = true
             self.guidBuffer = ""
@@ -122,6 +153,9 @@ private final class Driver: NSObject, XMLParserDelegate {
         if self.capturingGUID {
             self.guidBuffer += string
         }
+        if self.capturingPersonText {
+            self.personTextBuffer += string
+        }
     }
 
     func parser(
@@ -137,6 +171,8 @@ private final class Driver: NSObject, XMLParserDelegate {
                 self.capturingFundingText = false
                 self.fundingTextBuffer = ""
                 self.capturedFunding = true
+            } else if elementName == "person", self.capturingPersonText {
+                self.commitPerson()
             }
             return
         }
@@ -160,16 +196,44 @@ private final class Driver: NSObject, XMLParserDelegate {
     /// Commit the buffered chapters URL under the same key `FeedParser` uses:
     /// the item `guid` when present, else the enclosure URL.
     private func commitItem() {
-        if let chapters = self.currentItemChaptersURL,
-           let key = self.currentItemGUID ?? self.currentItemEnclosureURL,
-           self.result.chaptersByGUID[key] == nil {
+        let key = self.currentItemGUID ?? self.currentItemEnclosureURL
+        if let chapters = self.currentItemChaptersURL, let key, self.result.chaptersByGUID[key] == nil {
             self.result.chaptersByGUID[key] = chapters
+        }
+        if !self.currentItemPersons.isEmpty, let key, self.result.personsByGUID[key] == nil {
+            self.result.personsByGUID[key] = self.currentItemPersons
         }
         self.inItem = false
         self.currentItemGUID = nil
         self.currentItemEnclosureURL = nil
         self.currentItemChaptersURL = nil
+        self.currentItemPersons = []
         self.capturingGUID = false
         self.guidBuffer = ""
+    }
+
+    /// Build a `PodcastPerson` from the buffered name + pending attributes and append
+    /// it to the item (when inside one) or the channel. Resets the person buffers.
+    private func commitPerson() {
+        let name = self.personTextBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+        let person = PodcastPerson(
+            name: name,
+            role: self.pendingPersonRole,
+            group: self.pendingPersonGroup,
+            imageURL: self.pendingPersonImageURL,
+            href: self.pendingPersonHref
+        )
+        self.capturingPersonText = false
+        self.personTextBuffer = ""
+        self.pendingPersonRole = nil
+        self.pendingPersonGroup = nil
+        self.pendingPersonImageURL = nil
+        self.pendingPersonHref = nil
+        guard !name.isEmpty else { return }
+        if self.inItem {
+            self.currentItemPersons.append(person)
+        } else if self.inChannel {
+            self.result.channelPersons.append(person)
+        }
     }
 }

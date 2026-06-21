@@ -1,4 +1,5 @@
 import Foundation
+import Persistence
 
 /// Normalized output of feed parsing, source-agnostic across RSS and Atom.
 ///
@@ -25,6 +26,8 @@ public struct ParsedFeed: Sendable {
     /// `itunes:type`: "episodic" | "serial" (normalized). Nil when absent/unrecognized
     /// or for Atom feeds. Drives the default episode sort.
     public var showType: String?
+    /// Show-level Podcasting 2.0 `podcast:person` credits (hosts/regulars).
+    public var persons: [PodcastPerson]
     public var episodes: [ParsedEpisode]
 
     public init(
@@ -43,6 +46,7 @@ public struct ParsedFeed: Sendable {
         fundingText: String? = nil,
         podcastGUID: String? = nil,
         showType: String? = nil,
+        persons: [PodcastPerson] = [],
         episodes: [ParsedEpisode] = []
     ) {
         self.title = title
@@ -60,6 +64,7 @@ public struct ParsedFeed: Sendable {
         self.fundingText = fundingText
         self.podcastGUID = podcastGUID
         self.showType = showType
+        self.persons = persons
         self.episodes = episodes
     }
 }
