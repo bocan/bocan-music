@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.11.0](https://github.com/bocan/bocan-music/compare/v1.10.0...v1.11.0) (2026-06-21)
 
+Added podcast support to Bòcan, including subscriptions, episode downloads, transcripts, show notes, and playback. The Podcasts sidebar shows subscribed shows with unread counts and artwork, and the search sheet lets you find new shows via iTunes Search and Podcast Index. Each show has a detail sheet with a list of episodes, and you can download episodes for offline listening or stream them directly. The Now Playing view now supports podcasts with chapter markers and skip intervals.
 
 ### ### Added
 
