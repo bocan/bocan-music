@@ -26,6 +26,7 @@ public struct PodcastsHomeView: View {
     }
 
     @State private var importFile: OPMLImportFile?
+    @State private var showingMarkAllConfirm = false
 
     public init(vm: PodcastsViewModel, library: LibraryViewModel) {
         self.vm = vm
@@ -85,6 +86,27 @@ public struct PodcastsHomeView: View {
                 }
                 .help(L10n.string("Import or export your podcast subscriptions as OPML"))
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    self.showingMarkAllConfirm = true
+                } label: {
+                    Label(L10n.string("Mark All as Played"), systemImage: "checkmark.circle")
+                }
+                .help(L10n.string("Mark every episode of every subscribed show as played"))
+                .disabled(self.vm.subscribed.isEmpty)
+            }
+        }
+        .confirmationDialog(
+            L10n.string("Mark all episodes as played?"),
+            isPresented: self.$showingMarkAllConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string("Mark All as Played")) {
+                Task { await self.vm.markAllSubscribedPlayed() }
+            }
+            Button(L10n.string("Cancel"), role: .cancel) {}
+        } message: {
+            Text(localized: "This marks every episode of all your subscribed shows as played. It cannot be undone in bulk.")
         }
     }
 
