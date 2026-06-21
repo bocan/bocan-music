@@ -57,4 +57,13 @@ struct EpisodeDownloadMenuConventionTests {
         #expect(settings.contains("$autoDownloadCount"))
         #expect(settings.contains("newest episode"))
     }
+
+    @Test("Podcasts home offers Mark All as Played behind a confirmation")
+    func markAllPlayedToolbar() throws {
+        let home = try self.source("Browse/Podcasts/PodcastsHomeView.swift")
+        #expect(home.contains("Mark All as Played"))
+        #expect(home.contains("markAllSubscribedPlayed"))
+        #expect(home.contains("confirmationDialog"))
+        #expect(home.contains("Mark all episodes as played?"))
+    }
 }
