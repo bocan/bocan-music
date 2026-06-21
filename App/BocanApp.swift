@@ -670,10 +670,35 @@ extension BocanApp {
             podcastSearch: podcastSearch,
             podcastTranscript: podcastService
         )
-        // Start the background feed refresh loop. Phase 21-7 spec: called once
-        // at launch; the scheduler is idempotent so wake-notifications can also
-        // call start() without duplicating the loop.
-        Task.detached(priority: .background) { await feedRefreshScheduler.start() }
+        // Wire auto-download, then start the background feed refresh loop. Every
+        // successful refresh that finds new episodes calls the observer, which
+        // enqueues the newest N (podcasts.autoDownloadCount, default 3) for shows
+        // that have auto-download enabled. Setting the observer before the
+        // scheduler starts means the very first background refresh already honours
+        // it. Phase 21-7 spec: start() is called once at launch and is idempotent
+        // so wake-notifications can also call it without duplicating the loop.
+        Task.detached(priority: .background) { [episodeRepo, stateRepo, podcastDownloads, db] in
+            await podcastService.setNewEpisodesObserver { podcastID, newGUIDs in
+                let newestN = UserDefaults.standard.object(forKey: "podcasts.autoDownloadCount") as? Int ?? 3
+                let coordinator = AutoDownloadCoordinator(
+                    podcastRepo: PodcastRepository(database: db),
+                    episodeRepo: episodeRepo,
+                    stateRepo: stateRepo,
+                    manager: podcastDownloads,
+                    newestN: newestN
+                )
+                await coordinator.handleRefresh(
+                    podcastID: podcastID,
+                    outcome: RefreshOutcome(
+                        notModified: false,
+                        newEpisodeCount: newGUIDs.count,
+                        totalEpisodeCount: 0,
+                        newEpisodeGUIDs: newGUIDs
+                    )
+                )
+            }
+            await feedRefreshScheduler.start()
+        }
         // Wire the Subsonic bootstrap so RootView.task can pre-load clients
         // before restoring navigation state, eliminating the startup race that
         // caused "Couldn't load songs / No server with id …" when the last

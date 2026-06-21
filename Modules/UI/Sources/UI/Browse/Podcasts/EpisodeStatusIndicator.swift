@@ -82,6 +82,12 @@ struct EpisodeStatusIndicator: View {
     let item: EpisodeListItem
 
     var body: some View {
+        self.playIndicator
+            .overlay(alignment: .bottomTrailing) { self.downloadBadge }
+    }
+
+    @ViewBuilder
+    private var playIndicator: some View {
         switch status(self.item) {
         case .unplayed:
             Circle()
@@ -96,6 +102,30 @@ struct EpisodeStatusIndicator: View {
             Image(systemName: "checkmark")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Small corner badge: filled when the episode is downloaded for offline play,
+    /// hollow while a download is queued or running.
+    @ViewBuilder
+    private var downloadBadge: some View {
+        switch self.item.state?.downloadState ?? .none {
+        case .downloaded:
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 8))
+                .foregroundStyle(Color.accentColor)
+                .background(Circle().fill(Color(nsColor: .controlBackgroundColor)))
+                .offset(x: 3, y: 3)
+
+        case .queued, .downloading:
+            Image(systemName: "arrow.down.circle")
+                .font(.system(size: 8))
+                .foregroundStyle(.tertiary)
+                .background(Circle().fill(Color(nsColor: .controlBackgroundColor)))
+                .offset(x: 3, y: 3)
+
+        case .none, .failed:
+            EmptyView()
         }
     }
 }
