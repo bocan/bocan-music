@@ -5,6 +5,88 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0](https://github.com/bocan/bocan-music/compare/v1.10.0...v1.11.0) (2026-06-21)
+
+
+### ### Added
+
+* **app:** wire AppPodcastActions, PodcastService conformance, FeedRefreshScheduler ([d676046](https://github.com/bocan/bocan-music/commit/d676046e2ea4dfe77063bbe18ef6bb811f79cdd0))
+* **app:** wire AppPodcastResolver into QueuePlayer ([4c5b3a8](https://github.com/bocan/bocan-music/commit/4c5b3a8d3b65d31af1b34904cca875f31f31c1f7))
+* **app:** wire Podcast Index credentials from Secrets.xcconfig ([2ad8ea1](https://github.com/bocan/bocan-music/commit/2ad8ea18f53e50af8c47a936f0fdb7ab26bf8d94))
+* **persistence:** add podcast persistence layer (M023) ([157ee92](https://github.com/bocan/bocan-music/commit/157ee9252b59532b81a767a0595df4271e7aca7a))
+* **persistence:** query episode state by download state ([5c54bf1](https://github.com/bocan/bocan-music/commit/5c54bf1e85e737689d21a5a3fe330ec4cd2ca69c))
+* **playback:** add PlayableSource.podcast case ([2753fe7](https://github.com/bocan/bocan-music/commit/2753fe7ce8bf1899bc6c45640b56e5511c4d622d))
+* **playback:** add podcast skip-interval remote commands ([4014714](https://github.com/bocan/bocan-music/commit/40147142f6108f9ab865707e8dc2646d43aa18bf))
+* **playback:** play podcast episodes via PodcastEpisodeResolving ([90310e3](https://github.com/bocan/bocan-music/commit/90310e3d57e4b14434d2e82331b47fb8aa80edc6))
+* **playback:** podcast Now Playing media type ([d105008](https://github.com/bocan/bocan-music/commit/d105008e4138778cfca5d4ab5747521731a8d077))
+* **podcasts:** "Support this show" funding link with confirmation ([b592e01](https://github.com/bocan/bocan-music/commit/b592e01b04957c1bea43f7dc234336f24abd52a8))
+* **podcasts:** add manual and bulk episode downloads, wire auto-download ([4f781c4](https://github.com/bocan/bocan-music/commit/4f781c4e8572a301fbee7ae536b835418fb1f892))
+* **podcasts:** add Mark All as Played to the podcasts toolbar ([b8c8d40](https://github.com/bocan/bocan-music/commit/b8c8d4065ce1b613eae48144568c5f5938c0dfd6))
+* **podcasts:** add markPlayed/markUnplayed by podcastID to PodcastService ([86c27b3](https://github.com/bocan/bocan-music/commit/86c27b3b8f6e532bf9b7f3dcfbfe9b1ee838ee8a))
+* **podcasts:** add PodcastIndexAuth SHA-1 request signer ([f862735](https://github.com/bocan/bocan-music/commit/f8627357e57345c29ddd5dda235718120c6fc907))
+* **podcasts:** add PodcastIndexClient and ITunesSearchClient actors ([c68af4d](https://github.com/bocan/bocan-music/commit/c68af4ddca246f6e3b3dd94aa6e24f43d580e112))
+* **podcasts:** add PodcastSearchResult, PodcastSearchSource, PodcastIndexCredentials types ([7f4b7cf](https://github.com/bocan/bocan-music/commit/7f4b7cff600ef587f78d30a93f9a02673bd15d9e))
+* **podcasts:** add PodcastSearchService with dual-index fan-out and merge ([569b304](https://github.com/bocan/bocan-music/commit/569b3049ef1e9872c8ac76255bdd9d10033d3de4))
+* **podcasts:** auto-download newest episodes on refresh ([df53aeb](https://github.com/bocan/bocan-music/commit/df53aeb6abe40a42188f185af0c48f48b277d29b))
+* **podcasts:** chapters list and live current-chapter in Now Playing ([938b4ae](https://github.com/bocan/bocan-music/commit/938b4aec496c8b347d6c2d25f882d378ace10959))
+* **podcasts:** download storage management and stale-file handling ([470ef43](https://github.com/bocan/bocan-music/commit/470ef4378db3b12daa75edb6a2b609d000052acf))
+* **podcasts:** DownloadStore on-disk layout for episode downloads ([e158785](https://github.com/bocan/bocan-music/commit/e15878516d163f967f0dcd7b29b3366c2d0d90af))
+* **podcasts:** episode transcripts (fetch, cache, view, self-clean) ([23674fa](https://github.com/bocan/bocan-music/commit/23674fac4a9953af730cb9bcb7e39abd9683e3f2))
+* **podcasts:** EpisodeDownloadManager with queue, progress, pause/resume ([3b84cf2](https://github.com/bocan/bocan-music/commit/3b84cf245c13936eacc97213a5a90dd285b44644))
+* **podcasts:** make chapters discoverable in the list and show notes ([3d14703](https://github.com/bocan/bocan-music/commit/3d14703a4608710f303fc12ca6673523b50f6958))
+* **podcasts:** OPML subscription import and export ([c2d5a9e](https://github.com/bocan/bocan-music/commit/c2d5a9e037e0e1158a38f273f0c1d40557d6dc11))
+* **podcasts:** parse and store podcast:person credits (data layer) ([2f90828](https://github.com/bocan/bocan-music/commit/2f90828e6a9d754b8d7defb287ca68a5f35a0c36))
+* **podcasts:** parse podcast:funding and podcast:chapters via a namespace supplement ([bcdad5b](https://github.com/bocan/bocan-music/commit/bcdad5bf3c3a361e7a92a16fc7751aaaa185d159))
+* **podcasts:** per-show speed, sort, retention, and show type ([264f09e](https://github.com/bocan/bocan-music/commit/264f09e94a1d10d716cded0aa185c900f046ba98))
+* **podcasts:** phase 21-2 feed fetch and RSS/Atom parsing ([6484b64](https://github.com/bocan/bocan-music/commit/6484b64cb929d2a881a8a893fcad2b7acc6b7a4b))
+* **podcasts:** phase 21-4 -- PodcastService facade, artwork cache, refresh scheduler ([5fcf70e](https://github.com/bocan/bocan-music/commit/5fcf70e1856c8450ca0367013d6bfc2420b423af))
+* **podcasts:** show episode count in search results and subscribed grid ([80bffd6](https://github.com/bocan/bocan-music/commit/80bffd68d1363f6e64afc25f25c0c36932fb0584))
+* **podcasts:** surface podcast:person credits on shows and episodes ([bc63549](https://github.com/bocan/bocan-music/commit/bc63549fe9d373cb5fd9600349650faf0ddbca6e))
+* **podcasts:** unread count badges and grid Mark all as played ([b00ad68](https://github.com/bocan/bocan-music/commit/b00ad68b0fa4f42440172d3b5ae46309687b7f97))
+* **podcasts:** upgrade FeedKit 9.1.2 to 10.4.0 ([fead155](https://github.com/bocan/bocan-music/commit/fead155481cdd63c1bdf2a25fd0e933b39aaf980))
+* **podcasts:** wire Podcast Index API credentials via Secrets.xcconfig ([369a4cd](https://github.com/bocan/bocan-music/commit/369a4cdc941788d89688711de090a197db231a45))
+* **ui:** add EpisodeList table with filter, context menu, and show notes ([6158f46](https://github.com/bocan/bocan-music/commit/6158f46dabc26846f2ab302e5c3e698d68e912b5))
+* **ui:** add EpisodeStatusIndicator with status derivation and ProgressRing ([7e8e5aa](https://github.com/bocan/bocan-music/commit/7e8e5aa219f0162fa9c9854e8c0abaaf2b069130))
+* **ui:** add isPodcast mode and skip methods to NowPlayingViewModel ([91e29e8](https://github.com/bocan/bocan-music/commit/91e29e80ed6e069f300b626941e4f7eadb7d542b))
+* **ui:** add Podcasts settings pane ([68dffc6](https://github.com/bocan/bocan-music/commit/68dffc6c9e99eeda584b6fed5029ae452c836f44))
+* **ui:** add ShowNotesView with HTML rendering and per-guid cache ([e90943a](https://github.com/bocan/bocan-music/commit/e90943a1d99024e747ec5eafefe1e2a60b3dec79))
+* **ui:** add Website and RSS Feed links to podcast detail header ([06171fd](https://github.com/bocan/bocan-music/commit/06171fd88390eb1c8760afd996c94543ad54efb0))
+* **ui:** extract music transport and add podcast transport controls to NowPlayingStrip ([e9df427](https://github.com/bocan/bocan-music/commit/e9df427f509fb4bdfa2884bb262a35a34330b55f))
+* **ui:** L10n keys and pseudolocale for podcast controls ([a7419c0](https://github.com/bocan/bocan-music/commit/a7419c0d417c0dd83cabe1177f85cb7603e60295))
+* **ui:** phase 21-7 Podcasts sidebar, seam protocols, VM, and views ([ddb53ee](https://github.com/bocan/bocan-music/commit/ddb53ee3a69e42cba43f04571df5a139eae98a42))
+* **ui:** phase 21-8 podcast search results, source badges, and detail sheet ([7c76410](https://github.com/bocan/bocan-music/commit/7c76410694e5d8737fb8c498cf57b1231cfe355f))
+* **ui:** replace PodcastShowView stub with header and episode list ([e6f4901](https://github.com/bocan/bocan-music/commit/e6f49015ef4e5c6846ad83c14fa05a750d66bff6))
+
+
+### ### Fixed
+
+* **app:** suppress retroactive conformance warning with [@retroactive](https://github.com/retroactive) ([6ea05e0](https://github.com/bocan/bocan-music/commit/6ea05e0699def60a4943c40ab6c43e533d813aa5))
+* **audio:** send our User-Agent when FFmpeg opens HTTP streams ([444d074](https://github.com/bocan/bocan-music/commit/444d07414172cd53be673e2c02e10c361257c3af))
+* **audio:** stop progress drifting ahead after repeated pause/resume ([adce682](https://github.com/bocan/bocan-music/commit/adce682bb59ef68a44b3165ce28a902ca5e8017e))
+* ensure all tests a run with make tests ([4a9ecff](https://github.com/bocan/bocan-music/commit/4a9ecffe4c2614cafbca3047e6a3bafe9484f424))
+* **podcasts:** add a visible Done button to transcript and show-notes sheets ([8c9f400](https://github.com/bocan/bocan-music/commit/8c9f400cff66bfa2f9b0ea09c3ab756f1e0eaf5a))
+* **podcasts:** make the auto-download toggle work and clarify its control ([740d914](https://github.com/bocan/bocan-music/commit/740d914b3d6b70230a8e1ef47e0295d6bc2f3e68))
+* **podcasts:** move artwork to Application Support and add Get Info to grid context menu ([4aecd7a](https://github.com/bocan/bocan-music/commit/4aecd7a4e29a7b525f9b9c7be03e124d0974294d))
+* **podcasts:** OPML import sheet renders empty and collapsed ([df9c341](https://github.com/bocan/bocan-music/commit/df9c341468657b06ec99dfad39629cf485037c5f))
+* **podcasts:** parse feeds with an xml-stylesheet PI before the root ([a288f12](https://github.com/bocan/bocan-music/commit/a288f1270b903ce2ae25da0da769693eeda5213b))
+* **podcasts:** raise cover-art download cap from 5 MB to 15 MB ([3ce0e0a](https://github.com/bocan/bocan-music/commit/3ce0e0a9e005f7fd3e028ea37de16e23ebc0d6da))
+* **podcasts:** raise feed size cap from 15 MB to 50 MB ([536cc04](https://github.com/bocan/bocan-music/commit/536cc04253046a006d4952ddf4294e65bcd36e7b))
+* **podcasts:** stop refreshes from wiping cached cover art ([e4af2ed](https://github.com/bocan/bocan-music/commit/e4af2ed5b94e3b622bfedd07aaf5b0c3c826f87e))
+* **podcasts:** widen transcript window and roomier episode list columns ([973eaa4](https://github.com/bocan/bocan-music/commit/973eaa4d1c1375529518afcde0403581b804f958))
+* **ui:** add VoiceOver names to the three unlabeled icon-only controls ([bb2f56c](https://github.com/bocan/bocan-music/commit/bb2f56c5bd0dccc22eae3cb909fbf177c636ac19))
+* **ui:** center the now-playing scrubber between transport and divider ([86721d4](https://github.com/bocan/bocan-music/commit/86721d4d37dbad04fe9a3abc6ca954bb4b7db318))
+* **ui:** give the speed and lyrics-offset slider popovers proper VoiceOver values ([d6eb094](https://github.com/bocan/bocan-music/commit/d6eb094112f76ed7d00f369e8d271e779554220d))
+* **ui:** inject CSS into show notes HTML for legible system-font rendering ([de0174a](https://github.com/bocan/bocan-music/commit/de0174a9911cc1b792c102c6f91f643eb5e4a301))
+* **ui:** stop the podcast Auto-Download checkbox label truncating ([509a5a2](https://github.com/bocan/bocan-music/commit/509a5a2109fab93a98081cf6f7164333e764f204))
+* **ui:** widen podcast detail sheet to 780pt min-width ([15f1332](https://github.com/bocan/bocan-music/commit/15f1332f36121957b454762f3cc6c967bba7dfa8))
+* **ui:** widen show notes sheet to 500pt min-width to reduce line wrapping ([abc3710](https://github.com/bocan/bocan-music/commit/abc371082e2615407b5bb3080d2131edc40d973b))
+
+
+### ### Changed
+
+* **observability:** unify HTTP User-Agent across modules ([86036b5](https://github.com/bocan/bocan-music/commit/86036b55a2eb3a840511ad974c51944c316b1ebb))
+* **ui:** make mini-player transport podcast-aware ([3ec2395](https://github.com/bocan/bocan-music/commit/3ec239595182daa1fa6d1af59d9fb21b6aa2cddd))
+
 ## [1.10.0](https://github.com/bocan/bocan-music/compare/v1.9.0...v1.10.0) (2026-06-14)
 
 Bòcan 1.10 moves the entire visualizer engine onto Metal, so every frame is drawn on the GPU and stays buttery smooth even on the busiest passages. Six visualizers now ship in the box: classic Spectrum Bars and Oscilloscope alongside four new ones, the scrolling Cascade spectrogram, the beat-rippling Halo, a frequency-warped Starfield, and the slow-burn Nebula. Cycle modes and color palettes right inside the visualizer, and let the music paint the window.
