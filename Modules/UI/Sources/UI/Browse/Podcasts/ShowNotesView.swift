@@ -63,9 +63,18 @@ actor HTMLLoader {
 
 struct ShowNotesView: View {
     let episode: EpisodeListItem?
+    /// The show's people, used as the fallback when the episode declares none.
+    var showPersons: [PodcastPerson] = []
 
     @Environment(\.dismiss) private var dismiss
     @State private var attributedContent: AttributedString?
+
+    /// The credits to show for this episode: its own people replace the show's when
+    /// present, otherwise the show's hosts (Podcasting 2.0 `podcast:person` semantics).
+    private var effectivePersons: [PodcastPerson] {
+        guard let episode else { return [] }
+        return PodcastPerson.effective(episode: episode.episode.persons, show: self.showPersons)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -80,6 +89,12 @@ struct ShowNotesView: View {
             }
             .padding([.horizontal, .top])
             Divider().padding(.top, 8)
+            if !self.effectivePersons.isEmpty {
+                PodcastPersonsView(title: L10n.string("In This Episode"), persons: self.effectivePersons)
+                    .padding([.horizontal, .top])
+                    .padding(.bottom, 4)
+                Divider()
+            }
             self.contentView
         }
         .task(id: self.episode?.episode.guid) { await self.load() }

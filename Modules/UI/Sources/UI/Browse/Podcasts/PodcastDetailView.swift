@@ -24,6 +24,9 @@ struct PodcastDetailView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(8)
                     }
+                    if !self.detail.persons.isEmpty {
+                        PodcastPersonsView(title: L10n.string("Hosts"), persons: self.detail.persons)
+                    }
                     if !self.detail.episodePreview.isEmpty {
                         self.episodeSection
                     }
