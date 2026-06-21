@@ -64,13 +64,21 @@ actor HTMLLoader {
 struct ShowNotesView: View {
     let episode: EpisodeListItem?
 
+    @Environment(\.dismiss) private var dismiss
     @State private var attributedContent: AttributedString?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(localized: "Show Notes")
-                .font(.headline)
-                .padding([.horizontal, .top])
+            HStack {
+                Text(localized: "Show Notes")
+                    .font(.headline)
+                Spacer()
+                // Visible Done button (macOS convention for a read-only sheet);
+                // `.cancelAction` keeps Escape working and makes it discoverable.
+                Button(L10n.string("Done")) { self.dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding([.horizontal, .top])
             Divider().padding(.top, 8)
             self.contentView
         }

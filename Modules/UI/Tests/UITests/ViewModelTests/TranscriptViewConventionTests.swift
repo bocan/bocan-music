@@ -31,6 +31,16 @@ struct TranscriptViewConventionTests {
         #expect(view.contains("captions.bubble"))
     }
 
+    @Test("TranscriptView and ShowNotesView have a visible Done button mapped to Escape")
+    func readOnlySheetsHaveDoneButton() throws {
+        for path in ["Browse/Podcasts/TranscriptView.swift", "Browse/Podcasts/ShowNotesView.swift"] {
+            let view = try self.source(path)
+            #expect(view.contains("L10n.string(\"Done\")"), "\(path) needs a visible Done button")
+            #expect(view.contains("self.dismiss()"), "\(path) Done button must dismiss")
+            #expect(view.contains(".keyboardShortcut(.cancelAction)"), "\(path) Done must map to Escape")
+        }
+    }
+
     @Test("EpisodeList gates the Transcript menu item on transcript_url")
     func episodeListEntryPoint() throws {
         let list = try self.source("Browse/Podcasts/EpisodeList.swift")
