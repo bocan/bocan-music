@@ -48,8 +48,11 @@ public struct PodcastRepository: Sendable {
     /// When the feed already exists the following fields are preserved from the existing
     /// row and are NOT replaced with the incoming values:
     /// `id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`, `playbackSpeed`,
-    /// `episodeSort`, `retentionLimit`.
-    /// All other columns (title, author, artwork, etag, `show_type`, etc.) are updated from the feed.
+    /// `episodeSort`, `retentionLimit`, `artworkPath`.
+    /// `artworkPath` is the locally cached cover-art file path (not feed content); the
+    /// parsed record never carries it, so preserving it stops a refresh from wiping the
+    /// cached image. The feed-derived `artworkURL` is still refreshed.
+    /// All other columns (title, author, `artworkURL`, etag, `show_type`, etc.) are updated from the feed.
     ///
     /// Returns the rowid of the inserted or updated row.
     @discardableResult
@@ -68,6 +71,9 @@ public struct PodcastRepository: Sendable {
                 updated.playbackSpeed = existing.playbackSpeed
                 updated.episodeSort = existing.episodeSort
                 updated.retentionLimit = existing.retentionLimit
+                // Locally cached art path: the parse never carries it, so keep the
+                // existing one or a content refresh wipes the cover image.
+                updated.artworkPath = existing.artworkPath
                 try updated.update(db)
                 return existing.id ?? 0
             } else {

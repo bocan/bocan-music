@@ -144,6 +144,27 @@ struct PodcastRepositoryTests {
         #expect(fetched.addedAt == 1_700_000_000)
     }
 
+    @Test("upsertByFeedURL preserves the cached artwork_path but refreshes artwork_url")
+    func upsertPreservesArtworkPath() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+
+        var original = self.sample()
+        original.artworkURL = "https://cdn.test/art-v1.jpg"
+        original.artworkPath = "/Library/Application Support/Bocan/Podcasts/Artwork/1/abc.jpg"
+        let id = try await repo.upsertByFeedURL(original)
+
+        // A refresh parse carries the (possibly new) URL but never a local path.
+        var refreshed = self.sample()
+        refreshed.artworkURL = "https://cdn.test/art-v2.jpg"
+        refreshed.artworkPath = nil
+        try await repo.upsertByFeedURL(refreshed)
+
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.artworkPath == original.artworkPath, "local cache path must survive a refresh")
+        #expect(fetched.artworkURL == "https://cdn.test/art-v2.jpg", "feed-derived URL must refresh")
+    }
+
     // MARK: - fetchAllSubscribed
 
     @Test("fetchAllSubscribed orders by sort_index then title")
