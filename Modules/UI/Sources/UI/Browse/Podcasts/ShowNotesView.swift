@@ -65,9 +65,13 @@ struct ShowNotesView: View {
     let episode: EpisodeListItem?
     /// The show's people, used as the fallback when the episode declares none.
     var showPersons: [PodcastPerson] = []
+    /// Fetches this episode's chapters on demand. Returns `[]` on failure or when the
+    /// episode declares none; `nil` when chapters are not wired in this context.
+    var loadChapters: (() async -> [UIChapter])?
 
     @Environment(\.dismiss) private var dismiss
     @State private var attributedContent: AttributedString?
+    @State private var chapters: [UIChapter] = []
 
     /// The credits to show for this episode: its own people replace the show's when
     /// present, otherwise the show's hosts (Podcasting 2.0 `podcast:person` semantics).
@@ -89,30 +93,59 @@ struct ShowNotesView: View {
             }
             .padding([.horizontal, .top])
             Divider().padding(.top, 8)
-            if !self.effectivePersons.isEmpty {
-                PodcastPersonsView(title: L10n.string("In This Episode"), persons: self.effectivePersons)
-                    .padding([.horizontal, .top])
-                    .padding(.bottom, 4)
-                Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if !self.effectivePersons.isEmpty {
+                        PodcastPersonsView(title: L10n.string("In This Episode"), persons: self.effectivePersons)
+                    }
+                    if !self.chapters.isEmpty {
+                        self.chaptersSection
+                    }
+                    self.notesContent
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            self.contentView
         }
-        .task(id: self.episode?.episode.guid) { await self.load() }
+        .task(id: self.episode?.episode.guid) {
+            await self.load()
+            await self.loadChaptersIfPresent()
+        }
+    }
+
+    private var chaptersSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(localized: "Chapters")
+                .font(.headline)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(self.chapters) { chapter in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(verbatim: TranscriptView.timestamp(chapter.startTime))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(Color.textSecondary)
+                        .frame(width: 56, alignment: .leading)
+                    Text(verbatim: chapter.title)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 
     @ViewBuilder
-    private var contentView: some View {
+    private var notesContent: some View {
         if let episode {
             if let content = attributedContent {
-                ScrollView {
-                    Text(content)
-                        .textSelection(.enabled)
-                        .padding()
-                }
+                Text(content)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else if episode.episode.descriptionHTML?.isEmpty == false {
                 ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical)
+            } else if self.chapters.isEmpty {
                 ContentUnavailableView(
                     L10n.string("No show notes available."),
                     systemImage: "doc.text"
@@ -130,5 +163,11 @@ struct ShowNotesView: View {
         self.attributedContent = nil
         guard let episode else { return }
         self.attributedContent = await HTMLLoader.shared.attributedString(for: episode)
+    }
+
+    private func loadChaptersIfPresent() async {
+        self.chapters = []
+        guard self.episode?.episode.chaptersURL != nil, let loadChapters else { return }
+        self.chapters = await loadChapters()
     }
 }
