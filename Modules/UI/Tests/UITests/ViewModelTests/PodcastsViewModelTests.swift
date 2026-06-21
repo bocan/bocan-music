@@ -95,6 +95,48 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {}
 }
 
+/// Records `markAllPlayed` podcast ids so bulk actions can be asserted.
+private final class RecordingPodcastActions: PodcastActions, @unchecked Sendable {
+    private(set) var markAllPlayedIDs: [Int64] = []
+
+    func markAllPlayed(podcastID: Int64) async {
+        self.markAllPlayedIDs.append(podcastID)
+    }
+
+    @discardableResult
+    func subscribe(feedURL: URL) async throws -> Int64 {
+        0
+    }
+
+    func unsubscribe(podcastID: Int64) async throws {}
+    func refresh(podcastID: Int64) async throws {}
+    func refreshAll() async {}
+    func reorder(podcastIDs: [Int64]) async throws {}
+    func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
+    func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {}
+    func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {}
+    func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {}
+    func play(episode: EpisodeListItem, podcast: Podcast) async {}
+    func markPlayed(podcastID: Int64, guid: String) async {}
+    func markUnplayed(podcastID: Int64, guid: String) async {}
+    func download(podcastID: Int64, guid: String) async {}
+    func removeDownload(podcastID: Int64, guid: String) async {}
+    func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
+        []
+    }
+
+    func importOPML(
+        data: Data,
+        progress: @escaping @Sendable (Int, Int) -> Void
+    ) async throws -> UIOPMLImportSummary {
+        UIOPMLImportSummary()
+    }
+
+    func exportOPML() async throws -> Data {
+        Data()
+    }
+}
+
 // MARK: - Helpers
 
 private func makePodcast(id: Int64 = 1, title: String = "Test Show") -> Podcast {
@@ -136,6 +178,27 @@ struct PodcastsViewModelTests {
         #expect(vm.subscribed.count == 2)
         #expect(!vm.isLoading)
         #expect(lib.subscribedCalled)
+    }
+
+    @Test("markAllSubscribedPlayed marks every subscribed show as played")
+    func markAllSubscribedPlayedMarksEveryShow() async {
+        let lib = StubPodcastLibrary()
+        lib.podcasts = [makePodcast(id: 1), makePodcast(id: 2), makePodcast(id: 3)]
+        let actions = RecordingPodcastActions()
+        let vm = PodcastsViewModel(library: lib, actions: actions)
+        await vm.loadSubscribed()
+        await vm.markAllSubscribedPlayed()
+        #expect(Set(actions.markAllPlayedIDs) == [1, 2, 3])
+    }
+
+    @Test("markAllSubscribedPlayed is a no-op with no subscriptions")
+    func markAllSubscribedPlayedNoSubscriptions() async {
+        let lib = StubPodcastLibrary()
+        let actions = RecordingPodcastActions()
+        let vm = PodcastsViewModel(library: lib, actions: actions)
+        await vm.loadSubscribed()
+        await vm.markAllSubscribedPlayed()
+        #expect(actions.markAllPlayedIDs.isEmpty)
     }
 
     @Test("loadSubscribed populates podcastUnplayedCounts from the library seam")

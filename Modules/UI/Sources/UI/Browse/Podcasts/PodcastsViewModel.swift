@@ -286,6 +286,15 @@ public final class PodcastsViewModel: ObservableObject {
         await self.actions?.markAllPlayed(podcastID: id)
     }
 
+    /// Marks every episode of every subscribed show as played. Backs the
+    /// "Mark All as Played" toolbar action on the Podcasts home view.
+    public func markAllSubscribedPlayed() async {
+        guard let actions else { return }
+        for id in self.subscribed.compactMap(\.id) {
+            await actions.markAllPlayed(podcastID: id)
+        }
+    }
+
     public func toggleAutoDownload(_ on: Bool) async {
         guard let id = currentShow?.id else { return }
         await self.setAutoDownload(on, podcastID: id)
