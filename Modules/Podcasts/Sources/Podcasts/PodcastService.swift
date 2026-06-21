@@ -220,6 +220,13 @@ public actor PodcastService {
             stamped.lastRefreshedAt = self.now().timeIntervalSince1970
             stamped.lastRefreshError = nil
             try await self.podcastRepo.update(stamped)
+            // Self-heal a missing cover image even when the feed is unchanged.
+            self.ensureArtworkCached(
+                podcastID: podcastID,
+                url: podcast.artworkURL.flatMap { URL(string: $0) },
+                existingPath: podcast.artworkPath,
+                urlChanged: false
+            )
             self.log.debug("podcast.refresh.notModified", ["id": podcastID])
             return RefreshOutcome(notModified: true, newEpisodeCount: 0, totalEpisodeCount: 0)
         }
@@ -252,15 +259,15 @@ public actor PodcastService {
         // Apply the show's retention limit after the upsert (best-effort).
         await self.applyRetention(podcastID: podcastID, keepNewest: podcast.retentionLimit)
 
-        // Cache artwork if the URL changed.
-        if podcast.artworkURL != parsed.artworkURL?.absoluteString {
-            let art = self.artwork
-            let artURL = parsed.artworkURL
-            let repo = self.podcastRepo
-            Task.detached(priority: .background) { [art, repo] in
-                await art.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
-            }
-        }
+        // Re-cache artwork when the remote URL changed or the cached file is gone.
+        // `artwork_path` is preserved across refreshes (see `upsertByFeedURL`), so a
+        // stable cached image needs no re-download; this also self-heals a wiped file.
+        self.ensureArtworkCached(
+            podcastID: podcastID,
+            url: parsed.artworkURL,
+            existingPath: podcast.artworkPath,
+            urlChanged: podcast.artworkURL != parsed.artworkURL?.absoluteString
+        )
 
         self.log.debug(
             "podcast.refresh.end",
@@ -279,6 +286,20 @@ public actor PodcastService {
             totalEpisodeCount: episodes.count,
             newEpisodeGUIDs: Array(newGUIDs)
         )
+    }
+
+    /// Re-downloads cover art (detached, best-effort) when the remote URL changed
+    /// or the locally cached file is missing. A no-op once a stable file exists, so
+    /// it is cheap to call on every refresh. `cachePodcastArt` itself short-circuits
+    /// when the target file is already present.
+    private func ensureArtworkCached(podcastID: Int64, url: URL?, existingPath: String?, urlChanged: Bool) {
+        let fileMissing = existingPath.map { !FileManager.default.fileExists(atPath: $0) } ?? true
+        guard urlChanged || fileMissing, let url else { return }
+        let art = self.artwork
+        let repo = self.podcastRepo
+        Task.detached(priority: .background) { [art, repo] in
+            await art.cachePodcastArt(podcastID: podcastID, url: url, repo: repo)
+        }
     }
 
     /// Best-effort batch refresh. Feeds that fail are logged per-feed and do not
