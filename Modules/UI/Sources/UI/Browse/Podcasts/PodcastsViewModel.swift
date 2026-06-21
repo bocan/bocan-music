@@ -288,11 +288,7 @@ public final class PodcastsViewModel: ObservableObject {
 
     public func toggleAutoDownload(_ on: Bool) async {
         guard let id = currentShow?.id else { return }
-        do {
-            try await self.actions?.setAutoDownload(on, podcastID: id)
-        } catch {
-            self.log.error("podcasts.setAutoDownload.failed", ["id": id, "error": String(reflecting: error)])
-        }
+        await self.setAutoDownload(on, podcastID: id)
     }
 
     // MARK: - Per-show settings
