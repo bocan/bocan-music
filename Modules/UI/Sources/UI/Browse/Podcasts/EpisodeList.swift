@@ -39,8 +39,17 @@ struct EpisodeList: View {
                 .width(28)
 
                 TableColumn(L10n.string("Episode")) { (item: EpisodeListItem) in
-                    Text(verbatim: item.episode.title)
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(verbatim: item.episode.title)
+                            .lineLimit(1)
+                        if item.episode.chaptersURL != nil {
+                            Image(systemName: "list.bullet")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .help(L10n.string("Has chapters"))
+                                .accessibilityLabel(L10n.string("Has chapters"))
+                        }
+                    }
                 }
 
                 TableColumn(L10n.string("Published")) { (item: EpisodeListItem) in
@@ -72,8 +81,14 @@ struct EpisodeList: View {
             )
         }
         .sheet(isPresented: self.$showingNotes) {
-            ShowNotesView(episode: self.selectedItem, showPersons: self.vm.currentShow?.persons ?? [])
-                .frame(minWidth: 500, minHeight: 300)
+            ShowNotesView(
+                episode: self.selectedItem,
+                showPersons: self.vm.currentShow?.persons ?? []
+            ) {
+                guard let item = self.selectedItem, let actions = self.vm.actions else { return [] }
+                return await (try? actions.chapters(podcastID: item.episode.podcastID, guid: item.episode.guid)) ?? []
+            }
+            .frame(minWidth: 500, minHeight: 300)
         }
         .sheet(isPresented: self.$showingTranscript) {
             if let item = self.selectedItem {

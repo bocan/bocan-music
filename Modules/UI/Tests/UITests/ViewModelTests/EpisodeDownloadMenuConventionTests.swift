@@ -81,4 +81,17 @@ struct EpisodeDownloadMenuConventionTests {
         #expect(notes.contains("In This Episode"))
         #expect(notes.contains("PodcastPerson.effective(episode:"))
     }
+
+    @Test("Chapters are discoverable: an episode-list badge and a Show Notes section")
+    func chaptersDiscoverability() throws {
+        let list = try self.source("Browse/Podcasts/EpisodeList.swift")
+        #expect(list.contains("item.episode.chaptersURL != nil"))
+        #expect(list.contains("Has chapters"))
+        #expect(list.contains("actions.chapters(podcastID:"))
+
+        let notes = try self.source("Browse/Podcasts/ShowNotesView.swift")
+        #expect(notes.contains("chaptersSection"))
+        #expect(notes.contains("loadChaptersIfPresent"))
+        #expect(notes.contains("chaptersURL != nil"))
+    }
 }
