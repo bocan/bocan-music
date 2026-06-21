@@ -269,16 +269,13 @@ public struct LyricsPane: View {
                 Text(localized: "Offset")
             }
             .accessibilityIdentifier(A11y.Lyrics.offsetSlider)
+            .accessibilityValue(self.offsetValueLabel)
             .frame(width: 220)
 
             HStack {
-                Text(
-                    self.vm.userOffsetMS == 0
-                        ? "0 ms"
-                        : "\(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms"
-                )
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                Text(verbatim: self.offsetValueLabel)
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
 
                 Spacer()
 
@@ -296,6 +293,14 @@ public struct LyricsPane: View {
         }
         .padding(16)
         .frame(width: 260)
+    }
+
+    /// Signed millisecond readout shown under the offset slider and announced as the
+    /// slider's accessibility value (so VoiceOver reads "+250 ms", not a percentage).
+    private var offsetValueLabel: String {
+        self.vm.userOffsetMS == 0
+            ? "0 ms"
+            : "\(self.vm.userOffsetMS > 0 ? "+" : "")\(self.vm.userOffsetMS) ms"
     }
 
     /// A compact header button that force-fetches lyrics from LRClib, replacing
