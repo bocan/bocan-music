@@ -1,4 +1,5 @@
 import Foundation
+import Persistence
 
 /// One episode entry from a parsed feed, normalized across RSS and Atom.
 public struct ParsedEpisode: Sendable {
@@ -19,6 +20,9 @@ public struct ParsedEpisode: Sendable {
     public var transcriptURL: URL?
     public var link: URL?
     public var explicit: Bool
+    /// Episode-level Podcasting 2.0 `podcast:person` credits (replace the show's
+    /// people for this episode when present).
+    public var persons: [PodcastPerson]
 
     public init(
         guid: String,
@@ -37,7 +41,8 @@ public struct ParsedEpisode: Sendable {
         chaptersURL: URL? = nil,
         transcriptURL: URL? = nil,
         link: URL? = nil,
-        explicit: Bool = false
+        explicit: Bool = false,
+        persons: [PodcastPerson] = []
     ) {
         self.guid = guid
         self.title = title
@@ -56,5 +61,6 @@ public struct ParsedEpisode: Sendable {
         self.transcriptURL = transcriptURL
         self.link = link
         self.explicit = explicit
+        self.persons = persons
     }
 }

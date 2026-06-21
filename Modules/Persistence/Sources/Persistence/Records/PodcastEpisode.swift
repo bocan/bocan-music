@@ -1,3 +1,4 @@
+import Foundation
 import GRDB
 
 /// One episode in the `podcast_episodes` table.
@@ -32,7 +33,16 @@ public struct PodcastEpisode: Codable, Equatable, Hashable, FetchableRecord, Mut
     public var transcriptURL: String?
     public var link: String?
     public var explicit: Bool
+    /// Episode-level Podcasting 2.0 `podcast:person` credits, JSON-encoded. Feed content.
+    public var personsJSON: Data?
     public var addedAt: Double
+
+    /// Episode-level `podcast:person` credits, decoded from / encoded to `personsJSON`.
+    /// Per the spec these replace the show's people for this episode when present.
+    public var persons: [PodcastPerson] {
+        get { PodcastPerson.decodeList(self.personsJSON) }
+        set { self.personsJSON = PodcastPerson.encodeList(newValue) }
+    }
 
     // MARK: - Init
 
@@ -58,6 +68,7 @@ public struct PodcastEpisode: Codable, Equatable, Hashable, FetchableRecord, Mut
         transcriptURL: String? = nil,
         link: String? = nil,
         explicit: Bool = false,
+        personsJSON: Data? = nil,
         addedAt: Double
     ) {
         self.id = id
@@ -80,6 +91,7 @@ public struct PodcastEpisode: Codable, Equatable, Hashable, FetchableRecord, Mut
         self.transcriptURL = transcriptURL
         self.link = link
         self.explicit = explicit
+        self.personsJSON = personsJSON
         self.addedAt = addedAt
     }
 
@@ -114,6 +126,7 @@ public struct PodcastEpisode: Codable, Equatable, Hashable, FetchableRecord, Mut
         case transcriptURL = "transcript_url"
         case link
         case explicit
+        case personsJSON = "persons_json"
         case addedAt = "added_at"
     }
 }

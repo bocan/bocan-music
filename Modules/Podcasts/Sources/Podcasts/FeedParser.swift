@@ -69,6 +69,16 @@ public struct FeedParser: Sendable {
                 return updated
             }
         }
+        if parsed.persons.isEmpty { parsed.persons = extra.channelPersons }
+        if !extra.personsByGUID.isEmpty {
+            parsed.episodes = parsed.episodes.map { episode in
+                guard episode.persons.isEmpty,
+                      let people = extra.personsByGUID[episode.guid] else { return episode }
+                var updated = episode
+                updated.persons = people
+                return updated
+            }
+        }
         return parsed
     }
 

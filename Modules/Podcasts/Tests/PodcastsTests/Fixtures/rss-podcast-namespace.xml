@@ -7,12 +7,15 @@
     <link>https://example.com/ns</link>
     <description>Feed exercising podcast:funding and podcast:chapters.</description>
     <podcast:funding url="https://example.com/support">Support the show</podcast:funding>
+    <podcast:person role="host" href="https://example.com/john" img="https://example.com/john.jpg">John Smith</podcast:person>
+    <podcast:person role="Producer" group="production">Jane Doe</podcast:person>
     <item>
       <title>Episode One</title>
       <guid isPermaLink="false">guid-ep1</guid>
       <pubDate>Mon, 10 Jun 2024 10:00:00 +0000</pubDate>
       <enclosure url="https://example.com/ep1.mp3" type="audio/mpeg" length="111"/>
       <podcast:chapters url="https://example.com/ep1-chapters.json" type="application/json+chapters"/>
+      <podcast:person role="guest" img="https://example.com/alice.jpg">Alice Brown</podcast:person>
     </item>
     <item>
       <title>Episode Two</title>
