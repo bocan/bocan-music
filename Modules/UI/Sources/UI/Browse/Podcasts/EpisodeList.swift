@@ -118,6 +118,8 @@ struct EpisodeList: View {
                 }
             }
             Divider()
+            self.downloadButton(item: item)
+            Divider()
             if let link = item.episode.link, let url = URL(string: link) {
                 Button(L10n.string("Copy Episode Link")) {
                     NSPasteboard.general.clearContents()
@@ -133,6 +135,57 @@ struct EpisodeList: View {
             }
             Divider()
             self.notesButtons(item: item, ids: ids)
+        } else if ids.count > 1 {
+            self.bulkMenuItems(ids: ids)
+        }
+    }
+
+    /// Download / remove for a single episode, labelled by its current state.
+    /// `removeDownload` doubles as cancel for queued or in-flight downloads.
+    @ViewBuilder
+    private func downloadButton(item: EpisodeListItem) -> some View {
+        switch item.state?.downloadState ?? .none {
+        case .downloaded:
+            Button(L10n.string("Remove Download")) {
+                Task { await self.vm.actions?.removeDownload(podcastID: item.episode.podcastID, guid: item.episode.guid) }
+            }
+
+        case .queued, .downloading:
+            Button(L10n.string("Cancel Download")) {
+                Task { await self.vm.actions?.removeDownload(podcastID: item.episode.podcastID, guid: item.episode.guid) }
+            }
+
+        case .none, .failed:
+            Button(L10n.string("Download")) {
+                Task { await self.vm.actions?.download(podcastID: item.episode.podcastID, guid: item.episode.guid) }
+            }
+        }
+    }
+
+    /// Bulk actions over a multi-row selection: download every episode that is not
+    /// already downloaded, or remove every one that is.
+    @ViewBuilder
+    private func bulkMenuItems(ids: Set<EpisodeListItem.ID>) -> some View {
+        let items = self.vm.episodes.filter { ids.contains($0.id) }
+        let pending = items.filter { ($0.state?.downloadState ?? .none) != .downloaded }
+        let downloaded = items.filter { ($0.state?.downloadState ?? .none) == .downloaded }
+        if !pending.isEmpty {
+            Button(L10n.string("Download Selected")) {
+                Task {
+                    for item in pending {
+                        await self.vm.actions?.download(podcastID: item.episode.podcastID, guid: item.episode.guid)
+                    }
+                }
+            }
+        }
+        if !downloaded.isEmpty {
+            Button(L10n.string("Remove Downloads")) {
+                Task {
+                    for item in downloaded {
+                        await self.vm.actions?.removeDownload(podcastID: item.episode.podcastID, guid: item.episode.guid)
+                    }
+                }
+            }
         }
     }
 

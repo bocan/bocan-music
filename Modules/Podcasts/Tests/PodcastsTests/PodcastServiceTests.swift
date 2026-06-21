@@ -72,6 +72,14 @@ private let testFeedURL = URL(string: "https://example.com/feed.rss")!
 private let ep1GUID = "https://example.com/episodes/1"
 private let ep2GUID = "unique-guid-ep2"
 
+/// Thread-safe sink for the new-episodes observer callback.
+private actor ObserverCollector {
+    private(set) var calls: [(id: Int64, guids: [String])] = []
+    func record(id: Int64, guids: [String]) {
+        self.calls.append((id, guids))
+    }
+}
+
 // MARK: - Tests
 
 @Suite("PodcastService", .serialized)
@@ -299,6 +307,54 @@ struct PodcastServiceTests {
         #expect(outcome.notModified == false)
         #expect(outcome.newEpisodeCount == 1)
         #expect(outcome.totalEpisodeCount == 3)
+    }
+
+    @Test("refresh fires the new-episodes observer with the new GUIDs")
+    func refreshFiresObserver() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        let extraData = try fixtureData(named: "rss-refresh-extra.xml")
+
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        let collector = ObserverCollector()
+        await bed.service.setNewEpisodesObserver { id, guids in
+            await collector.record(id: id, guids: guids)
+        }
+
+        bed.feedMock.handler = { _ in
+            (extraData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        _ = try await bed.service.refresh(podcastID: podcastID)
+
+        let calls = await collector.calls
+        #expect(calls.count == 1)
+        #expect(calls.first?.id == podcastID)
+        #expect(calls.first?.guids.count == 1)
+    }
+
+    @Test("refresh does not fire the observer when no new episodes appear")
+    func refreshNoNewEpisodesSkipsObserver() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        let collector = ObserverCollector()
+        await bed.service.setNewEpisodesObserver { id, guids in
+            await collector.record(id: id, guids: guids)
+        }
+
+        // Re-refresh the identical feed: every GUID already exists, so no new ones.
+        _ = try await bed.service.refresh(podcastID: podcastID)
+
+        let calls = await collector.calls
+        #expect(calls.isEmpty)
     }
 
     // MARK: resumePosition

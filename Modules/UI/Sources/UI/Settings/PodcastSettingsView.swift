@@ -27,6 +27,16 @@ public struct PodcastSettingsView: View {
                 }
                 Toggle(L10n.string("Refresh on launch"), isOn: self.$refreshOnLaunch)
             }
+            Section {
+                Picker(L10n.string("Auto-download"), selection: self.$autoDownloadCount) {
+                    Text(localized: "1 newest episode").tag(1)
+                    Text(localized: "3 newest episodes").tag(3)
+                    Text(localized: "5 newest episodes").tag(5)
+                    Text(localized: "10 newest episodes").tag(10)
+                }
+            } footer: {
+                Text(localized: "How many new episodes to download for shows with auto-download enabled.")
+            }
             Section(L10n.string("Playback")) {
                 Picker(L10n.string("Skip back"), selection: self.$skipBackInterval) {
                     Text(localized: "10 seconds").tag(10.0)

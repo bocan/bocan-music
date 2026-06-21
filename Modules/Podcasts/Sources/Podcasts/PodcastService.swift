@@ -29,6 +29,12 @@ public actor PodcastService {
     /// Prevents a DB hit on every ~5-second position write.
     private var idCache: [String: Int64] = [:]
 
+    /// Invoked after any successful refresh that discovered new episodes, with the
+    /// podcast id and the new episode GUIDs. The App layer hangs auto-download off
+    /// this so every refresh path (manual, `refreshAllStale`, the background
+    /// scheduler) feeds the same policy. `nil` until the App wires it.
+    private var onRefreshNewEpisodes: (@Sendable (Int64, [String]) async -> Void)?
+
     /// Cached transcripts are deleted 30 days after their episode is played.
     private static let transcriptRetentionSeconds: TimeInterval = 30 * 24 * 60 * 60
 
@@ -60,6 +66,12 @@ public actor PodcastService {
         self.search = search
         self.now = now
         self.log = log
+    }
+
+    /// Registers the post-refresh new-episodes observer (see `onRefreshNewEpisodes`).
+    /// Wired once by the App layer at launch.
+    public func setNewEpisodesObserver(_ observer: @escaping @Sendable (Int64, [String]) async -> Void) {
+        self.onRefreshNewEpisodes = observer
     }
 
     // MARK: - Subscriptions
@@ -254,6 +266,13 @@ public actor PodcastService {
             "podcast.refresh.end",
             ["id": podcastID, "new": newGUIDs.count, "total": episodes.count]
         )
+
+        // Notify the auto-download policy (if wired) about freshly discovered
+        // episodes. Runs after the content upsert so the observer can read them.
+        if !newGUIDs.isEmpty {
+            await self.onRefreshNewEpisodes?(podcastID, Array(newGUIDs))
+        }
+
         return RefreshOutcome(
             notModified: false,
             newEpisodeCount: newGUIDs.count,
