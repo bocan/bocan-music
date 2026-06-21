@@ -77,7 +77,9 @@ public struct PodcastShowView: View {
             )
             .toggleStyle(.checkbox)
             .fixedSize()
-            .help(L10n.string("Auto-Download"))
+            .padding(.horizontal, 8)
+            .help(L10n.string("Automatically download new episodes of this show as they are published"))
+            .accessibilityLabel(L10n.string("Auto-download new episodes of this show"))
         }
     }
 
