@@ -100,6 +100,17 @@ struct FFmpegDecoderTests {
         }
     }
 
+    @Test("HTTP open options send our User-Agent and the restricted protocol whitelist")
+    func httpOpenOptionsSendUserAgent() {
+        let http = FFmpegDecoder.openOptions(isHTTP: true)
+        // FFmpeg's default "Lavf/<ver>" UA is 403'd by some podcast CDNs (Podtrac);
+        // we must send a real UA so the audio stream loads.
+        #expect(http["user_agent"]?.hasPrefix("Bocan/") == true)
+        #expect(http["protocol_whitelist"] == "http,https,tls,tcp,crypto")
+        // Local inputs get no options (default protocol set, incl. file).
+        #expect(FFmpegDecoder.openOptions(isHTTP: false).isEmpty)
+    }
+
     @Test("Corrupt input throws cleanly and leaves the decoder usable afterwards (#295)")
     func corruptInputPartialAllocCleanup() throws {
         // corrupt.mp3 opens far enough to allocate FFmpeg state but then fails
