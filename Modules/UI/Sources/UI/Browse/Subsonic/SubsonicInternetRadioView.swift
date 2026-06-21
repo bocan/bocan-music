@@ -170,6 +170,10 @@ private struct SubsonicInternetRadioRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(self.station.name)
         .accessibilityHint(L10n.string("Double-tap to play"))
+        // The Play / Info buttons only appear on hover and the row combines its
+        // children, so VoiceOver cannot reach them; expose both as rotor actions.
+        .accessibilityAction(named: L10n.string("Play this station")) { self.onPlay() }
+        .accessibilityAction(named: L10n.string("Show station details")) { self.onInfo() }
     }
 }
 

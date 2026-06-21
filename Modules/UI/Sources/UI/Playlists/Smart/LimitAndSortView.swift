@@ -33,6 +33,8 @@ struct LimitAndSortView: View {
                 }
                 .toggleStyle(.button)
                 .help(self.limitSort.ascending ? L10n.string("Ascending") : L10n.string("Descending"))
+                .accessibilityLabel(L10n.string("Sort order"))
+                .accessibilityValue(self.limitSort.ascending ? L10n.string("Ascending") : L10n.string("Descending"))
             }
 
             // Limit row
