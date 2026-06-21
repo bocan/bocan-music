@@ -188,6 +188,24 @@ extension FFmpegDecoder {
     static func allowedRemoteProtocols(isRemote: Bool) -> String? {
         isRemote ? "http,https,tls,tcp,crypto" : nil
     }
+
+    /// `avformat_open_input` options. For remote (HTTP/HTTPS) inputs:
+    /// - `protocol_whitelist`: restricts FFmpeg to network protocols so a
+    ///   server-supplied URL cannot read local files (see #280).
+    /// - `user_agent`: our real UA. FFmpeg defaults to "Lavf/<ver>", which some
+    ///   podcast/tracking CDNs (e.g. Podtrac in front of Buzzsprout) reject with a
+    ///   403; any normal UA is accepted. Matches the URLSession feed/chapters UA.
+    ///
+    /// Local inputs get no options so FFmpeg's default protocol set (incl. `file`)
+    /// still works.
+    static func openOptions(isHTTP: Bool) -> [String: String] {
+        guard isHTTP else { return [:] }
+        var options = ["user_agent": UserAgent.string]
+        if let allowed = allowedRemoteProtocols(isRemote: true) {
+            options["protocol_whitelist"] = allowed
+        }
+        return options
+    }
 }
 
 private extension FFmpegDecoder {
@@ -209,8 +227,8 @@ private extension FFmpegDecoder {
         // `file` protocol still works. See #280.
         var opts: OpaquePointer? // AVDictionary*
         defer { av_dict_free(&opts) }
-        if let allowed = allowedRemoteProtocols(isRemote: isHTTP) {
-            av_dict_set(&opts, "protocol_whitelist", allowed, 0)
+        for (key, value) in self.openOptions(isHTTP: isHTTP) {
+            av_dict_set(&opts, key, value, 0)
         }
 
         // avformat_open_input writes straight into ctx.formatCtx. On failure it
