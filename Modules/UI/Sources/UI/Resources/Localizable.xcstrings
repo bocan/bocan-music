@@ -8843,6 +8843,16 @@
         }
       }
     },
+    "Hosts" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĥóšţš one"
+          }
+        }
+      }
+    },
     "How many local backup files to retain. Older ones are deleted automatically." : {
       "localizations" : {
         "en-XA" : {
@@ -9143,6 +9153,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Íñ Ƥĺáýĺíšţ one"
+          }
+        }
+      }
+    },
+    "In This Episode" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Íñ Ţĥíš Éƥíšóđé one two"
           }
         }
       }
@@ -12304,6 +12324,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Óƥéñš çŕíţéŕíá, ĺíḿíţ, áñđ šóŕţ çóñţŕóĺš one two three"
+          }
+        }
+      }
+    },
+    "Opens profile in browser" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ƥŕóƒíĺé íñ ƀŕóŵšéŕ one two"
           }
         }
       }

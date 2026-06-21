@@ -72,7 +72,7 @@ struct EpisodeList: View {
             )
         }
         .sheet(isPresented: self.$showingNotes) {
-            ShowNotesView(episode: self.selectedItem)
+            ShowNotesView(episode: self.selectedItem, showPersons: self.vm.currentShow?.persons ?? [])
                 .frame(minWidth: 500, minHeight: 300)
         }
         .sheet(isPresented: self.$showingTranscript) {

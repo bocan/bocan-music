@@ -21,48 +21,56 @@ public struct PodcastShowView: View {
     }
 
     public var body: some View {
-        EpisodeList(vm: self.vm)
-            .task { await self.vm.loadShow(self.podcastID) }
-            .navigationTitle(self.vm.currentShow?.title ?? L10n.string("Podcast"))
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    self.fundingButton
-                    self.autoDownloadToggle
-                    self.moreMenu
+        VStack(spacing: 0) {
+            if let show = vm.currentShow, !show.persons.isEmpty {
+                PodcastPersonsView(title: L10n.string("Hosts"), persons: show.persons)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                Divider()
+            }
+            EpisodeList(vm: self.vm)
+        }
+        .task { await self.vm.loadShow(self.podcastID) }
+        .navigationTitle(self.vm.currentShow?.title ?? L10n.string("Podcast"))
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                self.fundingButton
+                self.autoDownloadToggle
+                self.moreMenu
+            }
+        }
+        .confirmationDialog(
+            L10n.string("Unsubscribe from this podcast?"),
+            isPresented: self.$showingUnsubscribeConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string("Unsubscribe"), role: .destructive) {
+                Task {
+                    await self.vm.unsubscribe(self.podcastID)
+                    await self.library.selectDestination(.podcasts)
                 }
             }
-            .confirmationDialog(
-                L10n.string("Unsubscribe from this podcast?"),
-                isPresented: self.$showingUnsubscribeConfirm,
-                titleVisibility: .visible
-            ) {
-                Button(L10n.string("Unsubscribe"), role: .destructive) {
-                    Task {
-                        await self.vm.unsubscribe(self.podcastID)
-                        await self.library.selectDestination(.podcasts)
-                    }
-                }
-                Button(L10n.string("Cancel"), role: .cancel) {}
+            Button(L10n.string("Cancel"), role: .cancel) {}
+        }
+        .confirmationDialog(
+            L10n.string("Open this funding link?"),
+            isPresented: Binding(
+                get: { self.pendingFunding != nil },
+                set: { if !$0 { self.pendingFunding = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: self.pendingFunding
+        ) { link in
+            Button(L10n.string("Open in Browser")) { link.open() }
+            Button(L10n.string("Cancel"), role: .cancel) { self.pendingFunding = nil }
+        } message: { link in
+            Text(L10n.string("This opens \(link.host) in your default browser."))
+        }
+        .sheet(isPresented: self.$showingSettings) {
+            if let show = self.vm.currentShow {
+                PodcastShowSettingsView(podcast: show, vm: self.vm)
             }
-            .confirmationDialog(
-                L10n.string("Open this funding link?"),
-                isPresented: Binding(
-                    get: { self.pendingFunding != nil },
-                    set: { if !$0 { self.pendingFunding = nil } }
-                ),
-                titleVisibility: .visible,
-                presenting: self.pendingFunding
-            ) { link in
-                Button(L10n.string("Open in Browser")) { link.open() }
-                Button(L10n.string("Cancel"), role: .cancel) { self.pendingFunding = nil }
-            } message: { link in
-                Text(L10n.string("This opens \(link.host) in your default browser."))
-            }
-            .sheet(isPresented: self.$showingSettings) {
-                if let show = self.vm.currentShow {
-                    PodcastShowSettingsView(podcast: show, vm: self.vm)
-                }
-            }
+        }
     }
 
     @ViewBuilder

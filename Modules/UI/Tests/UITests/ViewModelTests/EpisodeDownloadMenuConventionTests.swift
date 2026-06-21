@@ -66,4 +66,19 @@ struct EpisodeDownloadMenuConventionTests {
         #expect(home.contains("confirmationDialog"))
         #expect(home.contains("Mark all episodes as played?"))
     }
+
+    @Test("podcast:person credits are surfaced on the show page, detail, and episode notes")
+    func personsSurfaces() throws {
+        let show = try self.source("Browse/Podcasts/PodcastShowView.swift")
+        #expect(show.contains("PodcastPersonsView(title: L10n.string(\"Hosts\")"))
+        #expect(show.contains("show.persons"))
+
+        let detail = try self.source("Browse/Podcasts/PodcastDetailView.swift")
+        #expect(detail.contains("PodcastPersonsView(title: L10n.string(\"Hosts\")"))
+        #expect(detail.contains("self.detail.persons"))
+
+        let notes = try self.source("Browse/Podcasts/ShowNotesView.swift")
+        #expect(notes.contains("In This Episode"))
+        #expect(notes.contains("PodcastPerson.effective(episode:"))
+    }
 }

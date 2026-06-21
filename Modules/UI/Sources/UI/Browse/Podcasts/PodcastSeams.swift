@@ -88,6 +88,8 @@ public struct PodcastDetail: Sendable, Hashable {
     public var alreadySubscribed: Bool
     /// Set when `alreadySubscribed` is true; used for future "Go to Show" navigation.
     public var podcastID: Int64?
+    /// Show-level Podcasting 2.0 `podcast:person` credits parsed from the feed.
+    public var persons: [PodcastPerson]
 
     public init(
         feedURL: URL,
@@ -100,7 +102,8 @@ public struct PodcastDetail: Sendable, Hashable {
         sources: Set<UIPodcastSearchSource> = [],
         episodePreview: [PodcastDetailEpisode] = [],
         alreadySubscribed: Bool = false,
-        podcastID: Int64? = nil
+        podcastID: Int64? = nil,
+        persons: [PodcastPerson] = []
     ) {
         self.feedURL = feedURL
         self.title = title
@@ -113,6 +116,7 @@ public struct PodcastDetail: Sendable, Hashable {
         self.episodePreview = episodePreview
         self.alreadySubscribed = alreadySubscribed
         self.podcastID = podcastID
+        self.persons = persons
     }
 }
 

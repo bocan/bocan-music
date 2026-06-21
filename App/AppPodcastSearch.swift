@@ -56,7 +56,6 @@ struct AppPodcastSearch: PodcastSearchProviding {
         let author = enriched?.author ?? parsed.author
         let description = enriched?.description ?? parsed.description
         let artworkURL = enriched?.artworkURL ?? parsed.artworkURL
-        let link = parsed.link
         let categories = Self.resolveCategories(enriched: enriched, parsed: parsed)
         let sources = Self.mergeSources(enriched: enriched)
 
@@ -76,12 +75,13 @@ struct AppPodcastSearch: PodcastSearchProviding {
             author: author,
             description: description,
             artworkURL: artworkURL,
-            link: link,
+            link: parsed.link,
             categories: categories,
             sources: sources,
             episodePreview: episodes,
             alreadySubscribed: existing != nil,
-            podcastID: existing.flatMap(\.id)
+            podcastID: existing.flatMap(\.id),
+            persons: parsed.persons
         )
     }
 
