@@ -51,14 +51,14 @@ struct EpisodeList: View {
                         Text(verbatim: "")
                     }
                 }
-                .width(min: 80, ideal: 100, max: 160)
+                .width(min: 95, ideal: 115, max: 170)
 
                 TableColumn(L10n.string("Length")) { (item: EpisodeListItem) in
                     Text(verbatim: durationLabel(item))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
                 }
-                .width(min: 60, ideal: 80, max: 96)
+                .width(min: 90, ideal: 115, max: 150)
             }
             .contextMenu(
                 forSelectionType: EpisodeListItem.ID.self,
@@ -83,7 +83,7 @@ struct EpisodeList: View {
                         guid: item.episode.guid
                     )
                 }
-                .frame(minWidth: 500, minHeight: 300)
+                .frame(minWidth: 625, minHeight: 300)
             }
         }
     }
