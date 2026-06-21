@@ -52,7 +52,15 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var retentionLimit: Int?
     /// Feed-derived `itunes:type`: "episodic" | "serial". Refreshes from the parse.
     public var showType: String?
+    /// Show-level Podcasting 2.0 `podcast:person` credits, JSON-encoded. Feed content.
+    public var personsJSON: Data?
     public var addedAt: Double
+
+    /// Show-level `podcast:person` credits, decoded from / encoded to `personsJSON`.
+    public var persons: [PodcastPerson] {
+        get { PodcastPerson.decodeList(self.personsJSON) }
+        set { self.personsJSON = PodcastPerson.encodeList(newValue) }
+    }
 
     // MARK: - Init
 
@@ -88,6 +96,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         episodeSort: String? = nil,
         retentionLimit: Int? = nil,
         showType: String? = nil,
+        personsJSON: Data? = nil,
         addedAt: Double
     ) {
         self.id = id
@@ -120,6 +129,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.episodeSort = episodeSort
         self.retentionLimit = retentionLimit
         self.showType = showType
+        self.personsJSON = personsJSON
         self.addedAt = addedAt
     }
 
@@ -164,6 +174,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case episodeSort = "episode_sort"
         case retentionLimit = "retention_limit"
         case showType = "show_type"
+        case personsJSON = "persons_json"
         case addedAt = "added_at"
     }
 }

@@ -26,6 +26,48 @@ struct PodcastNamespaceSupplementTests {
         )
     }
 
+    @Test("Extracts channel-level and item-level podcast:person credits")
+    func extractsPersons() throws {
+        let data = try loadFixture("rss-podcast-namespace.xml")
+        let result = PodcastNamespaceSupplement().extract(from: data)
+
+        #expect(result.channelPersons.count == 2)
+        let john = result.channelPersons.first
+        #expect(john?.name == "John Smith")
+        #expect(john?.role == "host")
+        #expect(john?.imageURL == "https://example.com/john.jpg")
+        #expect(john?.href == "https://example.com/john")
+        let jane = result.channelPersons.last
+        #expect(jane?.name == "Jane Doe")
+        #expect(jane?.role == "Producer") // preserved verbatim (spec is case-insensitive)
+        #expect(jane?.group == "production")
+
+        // Item-level person keyed by guid, not leaking into the channel list.
+        let alice = result.personsByGUID["guid-ep1"]?.first
+        #expect(alice?.name == "Alice Brown")
+        #expect(alice?.role == "guest")
+        #expect(result.personsByGUID["guid-ep2"] == nil)
+    }
+
+    @Test("Drops nameless persons and rejects non-web img/href")
+    func personEdgeCases() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0" xmlns:podcast="https://podcastindex.org/namespace/1.0">
+          <channel>
+            <title>Edge</title>
+            <podcast:person img="ftp://example.com/x.jpg" href="javascript:alert(1)">Real Name</podcast:person>
+            <podcast:person>   </podcast:person>
+          </channel>
+        </rss>
+        """
+        let result = PodcastNamespaceSupplement().extract(from: Data(xml.utf8))
+        #expect(result.channelPersons.count == 1) // blank-name person dropped
+        #expect(result.channelPersons.first?.name == "Real Name")
+        #expect(result.channelPersons.first?.imageURL == nil) // ftp rejected
+        #expect(result.channelPersons.first?.href == nil) // javascript rejected
+    }
+
     @Test("Junk bytes yield an empty result and never throw")
     func junkBytesAreNonFatal() {
         let junk = Data([0x00, 0x01, 0xFF, 0xFE])
