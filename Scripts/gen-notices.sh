@@ -53,6 +53,7 @@ CUSTOM_DUMP_VERSION=$(extract_spm_version "custom-dump" "${REPO_ROOT}/Modules/UI
 XCTEST_VERSION=$(extract_spm_version "xctest-dynamic-overlay" "${REPO_ROOT}/Modules/UI")
 SPARKLE_VERSION=$(extract_spm_version "sparkle" "${REPO_ROOT}")
 SWIFTSONIC_VERSION=$(extract_spm_version "swiftsonic" "${REPO_ROOT}/Modules/Subsonic")
+FEEDKIT_VERSION=$(extract_spm_version "feedkit" "${REPO_ROOT}/Modules/Podcasts")
 
 # Fallback to known versions if extraction failed
 GRDB_VERSION=${GRDB_VERSION:-7.10.0}
@@ -61,6 +62,7 @@ CUSTOM_DUMP_VERSION=${CUSTOM_DUMP_VERSION:-1.5.0}
 XCTEST_VERSION=${XCTEST_VERSION:-1.9.0}
 SPARKLE_VERSION=${SPARKLE_VERSION:-2.9.1}
 SWIFTSONIC_VERSION=${SWIFTSONIC_VERSION:-0.8.2}
+FEEDKIT_VERSION=${FEEDKIT_VERSION:-10.4.0}
 
 echo "  - GRDB: ${GRDB_VERSION}"
 echo "  - swift-snapshot-testing: ${SNAPSHOT_VERSION}"
@@ -68,6 +70,7 @@ echo "  - swift-custom-dump: ${CUSTOM_DUMP_VERSION}"
 echo "  - xctest-dynamic-overlay: ${XCTEST_VERSION}"
 echo "  - Sparkle: ${SPARKLE_VERSION}"
 echo "  - SwiftSonic: ${SWIFTSONIC_VERSION}"
+echo "  - FeedKit: ${FEEDKIT_VERSION}"
 
 # Build the file by replacing version placeholders in the existing template sections
 cat > "${NOTICES_PATH}" << EOF
@@ -298,6 +301,48 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## FeedKit ${FEEDKIT_VERSION}
+
+<https://github.com/nmdias/FeedKit>
+
+Includes the XMLKit library, distributed as part of the FeedKit package under the same MIT license.
+
+MIT License
+
+Copyright (c) 2016 - 2025 Nuno Dias
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Podcast Index API
+
+This product uses the Podcast Index API (<https://podcastindex.org>). Use of the Podcast Index API is subject to the Podcast Index API Terms of Service.
+
+---
+
+## Apple iTunes Search API
+
+This product uses the Apple iTunes Search API. Use of the Apple iTunes Search API is subject to Apple's usage guidelines.
 
 ---
 
