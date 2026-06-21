@@ -38,12 +38,10 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     // swiftlint:disable identifier_name
     var _currentTime: TimeInterval = 0
     var _duration: TimeInterval = 0
-    /// Sample-time offset recorded at each gapless transition.
-    ///
-    /// `AVAudioPlayerNode.playerTime(forNodeTime:).sampleTime` is cumulative from
-    /// the moment the node first started playing — it never resets during a gapless
-    /// transition.  Subtracting this offset gives a 0-based position for each new
-    /// track. Reset to 0 whenever the node is stopped (load / stop / seek).
+    /// Sample-time baseline for converting the node's cumulative `sampleTime` into a
+    /// 0-based position. The node's `sampleTime` never resets across a gapless
+    /// transition or a pause, so this is rebaselined at each gapless transition and on
+    /// resume-from-pause, and reset to 0 on stop / seek / load.
     var _playerTimeOffset: AVAudioFramePosition = 0
     var _state: PlaybackState = .idle
     // swiftlint:enable identifier_name
@@ -61,10 +59,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     var pendingNextDecoder: (any Decoder)?
     /// Caller-supplied callback fired when the engine seamlessly transitions to the next track.
     var pendingNextTransition: (@Sendable () -> Void)?
-    /// Timestamp of the most recent gapless transition.  Used to suppress a
-    /// spurious second `.ended` that can fire when the just-swapped-in pump
-    /// reports EOF before its first buffer has rendered (e.g. a race where the
-    /// pump's decoder sees an empty read at activation time).
+    /// Timestamp of the most recent gapless transition. Suppresses a spurious second
+    /// `.ended` when the just-swapped-in pump reports EOF before its first render.
     var lastGaplessTransitionAt: Date?
     /// Crossfade volume ramp task. Cancelled in `load()` and `stop()`.
     var crossfadeTask: Task<Void, Never>?
@@ -301,15 +297,22 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             throw ae
         }
 
-        // Resuming from pause WITH a live pump: just restart the node (its FIFO is
-        // intact). Recreating the pump here would deadlock (pump.stop() awaits
-        // dataPlayedBack callbacks that never fire on a paused node). The
-        // `pump != nil` guard matters because a paused CUE seek nils the pump; that
-        // case falls through to a fresh start (the nil pump's stop() is a no-op).
+        // Resuming from pause WITH a live pump: restart the node (its FIFO is intact).
+        // Recreating the pump would deadlock (pump.stop() awaits dataPlayedBack
+        // callbacks that never fire on a paused node). The `pump != nil` guard skips a
+        // paused CUE seek (which nils the pump); that falls through to a fresh start.
         if self._state == .paused, self.pump != nil {
-            // Fade in from the muted state we entered on pause.
-            self.graph.playerNode.volume = 0
-            self.graph.playerNode.play()
+            let playerNode = self.graph.playerNode
+            playerNode.volume = 0 // fade in from the muted state we entered on pause
+            playerNode.play()
+            // pause() banked the elapsed position into `_currentTime` but did NOT stop
+            // the node, so its `sampleTime` keeps climbing across the pause. Rebaseline
+            // the offset to the resume point or the live term re-counts everything
+            // played before the pause and the position races ahead each cycle.
+            if let renderTime = playerNode.lastRenderTime,
+               let playerTime = playerNode.playerTime(forNodeTime: renderTime) {
+                self._playerTimeOffset = playerTime.sampleTime
+            }
             await self.fadePlayerNode(to: 1)
             self.emit(.playing)
             self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
@@ -322,8 +325,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             throw AudioEngineError.outputDeviceUnavailable
         }
 
-        // Fresh start: stop any existing pump before creating a replacement
-        // so it can't race the new one on the shared decoder.
+        // Fresh start: stop any existing pump so it can't race the new one on the decoder.
         await self.pump?.stop()
         self.pump = nil
         let playerNode = self.graph.playerNode
@@ -344,10 +346,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             Task { await self?.handleEnded(firedBy: pumpID) }
         }
 
-        // Cold start: ramp player-node volume from 0 → 1 over ~10 ms to mask
-        // the audible click that occurs when AVAudioEngine connects a fresh
-        // graph at the hardware sample rate. Has no audible effect on warm
-        // restarts because volume is already 1.
+        // Cold start: ramp player-node volume 0..1 over ~10 ms to mask the click when
+        // AVAudioEngine connects a fresh graph. No-op on warm restarts (volume is 1).
         self.graph.playerNode.volume = 0
         playerNode.play()
         await self.fadePlayerNode(to: 1)
