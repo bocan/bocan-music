@@ -113,6 +113,7 @@
 		C13058434C014C64CF041E04 /* VisualizerViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F911DF68929D5E17148259 /* VisualizerViewModelTests.swift */; };
 		C1CEE1D27BE17A019665AD9D /* SubsonicRepositoryMetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFAFC444ACE5CDE2792AAA35 /* SubsonicRepositoryMetadataCache.swift */; };
 		C60B8E502240CEA18C5EC019 /* libavutil.60.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 195A48BE28C07366C7A280FC /* libavutil.60.dylib */; };
+		C64E7858F2551791178924CD /* MiniPlayerTransportConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78DEA247EFFC3B760FC0CCF /* MiniPlayerTransportConventionTests.swift */; };
 		C7A80E3167450AFA86AB6A2B /* QuitGuardStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86609285677EA66C846D3FDC /* QuitGuardStateTests.swift */; };
 		CBD0BE1B05F022914A7025B6 /* libavcodec.62.dylib in Resources */ = {isa = PBXBuildFile; fileRef = EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */; };
 		CCA52E05E1A09E45F6450688 /* Lifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6A9FE99C1399ECBBA9D4681 /* Lifecycle.swift */; };
@@ -281,10 +282,11 @@
 		EF6CEBB0A8EA190CE746448B /* libavcodec.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavcodec.62.dylib; sourceTree = "<group>"; };
 		EFAFC444ACE5CDE2792AAA35 /* SubsonicRepositoryMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicRepositoryMetadataCache.swift; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
+		F78DEA247EFFC3B760FC0CCF /* MiniPlayerTransportConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerTransportConventionTests.swift; sourceTree = "<group>"; };
 		F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_E2CCADFB-D658-4A6A-A334-E0F7BD12B022" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_51DB6336-3BEF-4464-823A-B7A90A07E793" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -408,6 +410,7 @@
 				9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */,
 				8B88C97416C780CDDE602287 /* LogConsoleViewConventionTests.swift */,
 				F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */,
+				F78DEA247EFFC3B760FC0CCF /* MiniPlayerTransportConventionTests.swift */,
 				64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */,
 				482751F61B55D58658657609 /* OPMLConventionTests.swift */,
 				24FEF0F7E262A623A7D0B435 /* PerShowSettingsConventionTests.swift */,
@@ -598,10 +601,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_B315607A-A684-4613-AA07-F76466EF8838" /* bocan-music */ = {
+		"TEMP_42A44982-AA2F-4920-8F73-E12E6174F734" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_E2CCADFB-D658-4A6A-A334-E0F7BD12B022" /* Secrets.xcconfig */,
+				"TEMP_51DB6336-3BEF-4464-823A-B7A90A07E793" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -824,6 +827,7 @@
 				9A49EEFAA444AFE7F9201F7C /* LogLevelTests.swift in Sources */,
 				B7F948611BAB487887798C81 /* LogStoreTests.swift in Sources */,
 				FC6DA6C23E318DB31AA2E2E2 /* MenuAnimationTests.swift in Sources */,
+				C64E7858F2551791178924CD /* MiniPlayerTransportConventionTests.swift in Sources */,
 				77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */,
 				7484DA661EE860EF74F807A4 /* OPMLConventionTests.swift in Sources */,
 				0172BC6D397A8EF3686EE095 /* PerShowSettingsConventionTests.swift in Sources */,
@@ -953,7 +957,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_E2CCADFB-D658-4A6A-A334-E0F7BD12B022" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_51DB6336-3BEF-4464-823A-B7A90A07E793" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1089,7 +1093,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_E2CCADFB-D658-4A6A-A334-E0F7BD12B022" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_51DB6336-3BEF-4464-823A-B7A90A07E793" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
