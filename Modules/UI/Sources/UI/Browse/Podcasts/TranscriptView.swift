@@ -9,14 +9,23 @@ struct TranscriptView: View {
     let title: String
     let load: () async -> TranscriptContent?
 
+    @Environment(\.dismiss) private var dismiss
     @State private var content: TranscriptContent?
     @State private var didLoad = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(localized: "Transcript")
-                .font(.headline)
-                .padding([.horizontal, .top])
+            HStack {
+                Text(localized: "Transcript")
+                    .font(.headline)
+                Spacer()
+                // A visible Done button is the macOS convention for dismissing a
+                // read-only sheet; `.cancelAction` maps it to Escape so the existing
+                // shortcut is also discoverable (and announced by VoiceOver).
+                Button(L10n.string("Done")) { self.dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding([.horizontal, .top])
             if !self.title.isEmpty {
                 Text(verbatim: self.title)
                     .font(.subheadline)
