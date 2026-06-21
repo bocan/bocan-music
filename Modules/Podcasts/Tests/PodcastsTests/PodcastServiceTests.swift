@@ -693,4 +693,35 @@ struct PodcastServiceTests {
 
         try? FileManager.default.removeItem(at: bed.artTempDir)
     }
+
+    @Test("artwork cache rejects art larger than its byte cap, accepts within it")
+    func artworkCacheHonoursByteCap() async throws {
+        let tempRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("artcap-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let mock = MockHTTPClient()
+        let cache = PodcastArtworkCache(http: mock, root: tempRoot, maxBytes: 8)
+        let url = try #require(URL(string: "https://cdn.example.com/big.png"))
+
+        let db = try await Database(location: .inMemory)
+        let podcastRepo = PodcastRepository(database: db)
+
+        // 9 bytes > cap of 8: rejected, no file written.
+        mock.handler = { _ in
+            (Data(count: 9), HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let id = try await podcastRepo.insert(Podcast(
+            feedURL: "https://example.com/feed.rss", title: "T", addedAt: 0
+        ))
+        let tooBig = await cache.cachePodcastArt(podcastID: id, url: url, repo: podcastRepo)
+        #expect(tooBig == nil, "art over the cap must be rejected")
+
+        // 8 bytes == cap: accepted and written.
+        mock.handler = { _ in
+            (Data(count: 8), HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let okPath = await cache.cachePodcastArt(podcastID: id, url: url, repo: podcastRepo)
+        #expect(okPath != nil, "art within the cap must be accepted")
+    }
 }

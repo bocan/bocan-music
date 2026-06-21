@@ -12,20 +12,25 @@ import Persistence
 /// across app launches). Caching is best-effort: failures are logged and return
 /// `nil` so the UI falls back to a gradient placeholder.
 ///
-/// A 5 MB cap and a 10 s timeout defend against hostile image URLs. The
+/// A size cap (default 15 MB) and a 10 s timeout defend against hostile image URLs. The
 /// existing `Artwork(artPath:)` loader in the UI module renders the cached file
 /// directly with no additional work here.
 public actor PodcastArtworkCache {
     private let http: any HTTPClient
     private let root: URL
+    private let maxBytes: Int
     private let log = AppLogger.make(.podcasts)
 
-    private static let maxBytes = 5 * 1024 * 1024
     private static let timeoutSeconds: TimeInterval = 10
 
-    public init(http: any HTTPClient = URLSession.shared, root: URL? = nil) {
+    /// Cover art is commonly 3000x3000 (Apple's spec ceiling), which as a PNG can run
+    /// past 5 MB, so the cap is generous; it still bounds a hostile or runaway URL.
+    public static let defaultMaxBytes = 15 * 1024 * 1024
+
+    public init(http: any HTTPClient = URLSession.shared, root: URL? = nil, maxBytes: Int = defaultMaxBytes) {
         self.http = http
         self.root = root ?? Self.defaultRoot
+        self.maxBytes = maxBytes
     }
 
     private static let defaultRoot: URL = {
@@ -168,7 +173,7 @@ public actor PodcastArtworkCache {
             return nil
         }
 
-        if data.count > Self.maxBytes {
+        if data.count > self.maxBytes {
             self.log.warning(
                 "artwork.download.tooLarge",
                 ["url": url.absoluteString, "bytes": data.count]
