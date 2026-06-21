@@ -49,6 +49,7 @@ public struct NowPlayingStrip: View {
             self.transport
             Spacer(minLength: 16)
             self.volumeAndScrubber
+            Spacer(minLength: 16)
             Divider()
                 .frame(height: 32)
                 .padding(.horizontal, 4)
