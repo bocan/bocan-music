@@ -166,6 +166,38 @@ struct EngineTransportTests {
         #expect(t == 0.0, "currentTime should reset to 0 after stop")
     }
 
+    /// Regression: repeated pause/resume must not let the reported position drift
+    /// ahead of real playback. pause() banks the elapsed time into `_currentTime`;
+    /// resume() must re-baseline `_playerTimeOffset` to the resume point, otherwise
+    /// the live term re-counts everything played before the pause and the position
+    /// races ahead (compounding each cycle until it falsely reads "ended").
+    @Test(
+        "resume does not jump the position ahead of where it paused",
+        .enabled(if: audioOutputAvailable())
+    )
+    func resumeDoesNotDriftPosition() async throws {
+        let engine = AudioEngine()
+        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        try await engine.load(url)
+
+        try await engine.play()
+        try await Task.sleep(for: .milliseconds(200))
+        await engine.pause()
+        let tPause = await engine.currentTime // banked position while paused
+
+        try await engine.play() // resume: must rebaseline the offset
+        let tResume = await engine.currentTime // live position right after resume
+        await engine.stop()
+
+        #expect(tResume >= tPause - 0.05, "position must not jump backwards on resume (tPause=\(tPause) tResume=\(tResume))")
+        // The bug doubled the position on resume (tResume ~= 2 * tPause). A correct
+        // rebase leaves only the few ms of playback between resume and the read.
+        #expect(
+            tResume < tPause + 0.1,
+            "position jumped ahead on resume: tPause=\(tPause) tResume=\(tResume)"
+        )
+    }
+
     // MARK: - Reentrancy: concurrent transport calls
 
     /// A burst of overlapping `play()`/`seek()` calls (the double-invocation that
