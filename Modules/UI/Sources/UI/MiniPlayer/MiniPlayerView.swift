@@ -131,58 +131,15 @@ public struct MiniPlayerView: View {
 
             Spacer()
 
-            Button {
-                Task { await self.vm.nowPlaying.playPause() }
-            } label: {
-                Image(systemName: self.vm.nowPlaying.isPlaying ? "pause.fill" : "play.fill")
-                    .scaledSystemFont(size: 14, weight: .bold)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.textPrimary)
-            .help(self.vm.nowPlaying.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
-            .accessibilityLabel(self.vm.nowPlaying.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
-
-            Button {
-                Task { await self.vm.nowPlaying.toggleShuffle() }
-            } label: {
-                Image(systemName: "shuffle")
-                    .scaledSystemFont(size: 12, weight: .medium)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlaying.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
-            .help(self.vm.nowPlaying.shuffleOn
-                ? L10n.string("Shuffle: On — click to disable")
-                : L10n.string("Shuffle: Off — click to enable"))
-            .accessibilityLabel(self.vm.nowPlaying.shuffleOn ? L10n.string("Shuffle On") : L10n.string("Shuffle Off"))
-            .accessibilityAddTraits(.isToggle)
-
-            Button {
-                Task { await self.vm.nowPlaying.cycleRepeat() }
-            } label: {
-                Image(systemName: self.vm.nowPlaying.repeatMode == .one ? "repeat.1" : "repeat")
-                    .scaledSystemFont(size: 12, weight: .medium)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlaying.repeatMode == .off ? Color.textTertiary : AccentPalette.color(for: self.accentColorKey))
-            .help(L10n.string("Repeat: \(self.repeatModeLabel) — click to cycle"))
-            .accessibilityLabel(L10n.string("Repeat \(self.repeatModeLabel)"))
-            .accessibilityAddTraits(.isToggle)
-
-            Button {
-                Task { await self.vm.nowPlaying.toggleStopAfterCurrent() }
-            } label: {
-                Image(systemName: "stop.circle\(self.vm.nowPlaying.stopAfterCurrent ? ".fill" : "")")
-                    .scaledSystemFont(size: 12, weight: .medium)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlaying.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : Color.textTertiary)
-            .help(self.vm.nowPlaying.stopAfterCurrent
-                ? L10n.string("Stop after current track: On")
-                : L10n.string("Stop after current track: Off"))
-            .accessibilityLabel(self.vm.nowPlaying.stopAfterCurrent
-                ? L10n.string("Stop After Current: On")
-                : L10n.string("Stop After Current: Off"))
-            .accessibilityAddTraits(.isToggle)
+            MiniPlayerTransport(
+                np: self.vm.nowPlaying,
+                musicLayout: .strip,
+                palette: .standard,
+                spacing: 10,
+                secondarySize: 14,
+                primarySize: 14,
+                accentSize: 12
+            )
 
             Divider().frame(height: 14)
 
@@ -339,19 +296,6 @@ public struct MiniPlayerView: View {
 
         default:
             nil
-        }
-    }
-
-    private var repeatModeLabel: String {
-        switch self.vm.nowPlaying.repeatMode {
-        case .off:
-            L10n.string("Off")
-
-        case .all:
-            L10n.string("All")
-
-        case .one:
-            L10n.string("One")
         }
     }
 }

@@ -8,25 +8,10 @@ struct MiniPlayerSquare: View {
     @ObservedObject var vm: MiniPlayerViewModel
     @EnvironmentObject private var library: LibraryViewModel
     @Environment(\.openWindow) private var openWindow
-    @AppStorage("appearance.accentColor") private var accentColorKey = "system"
     @State private var dragPosition: Double?
 
     private var np: NowPlayingViewModel {
         self.vm.nowPlaying
-    }
-
-    /// Localized label for the current repeat mode ("Off" / "All" / "One").
-    private var repeatModeLabel: String {
-        switch self.np.repeatMode {
-        case .off:
-            L10n.string("Off")
-
-        case .all:
-            L10n.string("All")
-
-        case .one:
-            L10n.string("One")
-        }
     }
 
     private var trackSubtitle: String? {
@@ -116,92 +101,16 @@ struct MiniPlayerSquare: View {
             .accessibilityLabel(L10n.string("Playback position"))
 
             // Transport
-            HStack(spacing: 16) {
-                Button {
-                    self.openWindow(id: "track-info")
-                } label: {
-                    Image(systemName: "info.circle")
-                        .scaledSystemFont(size: 13, weight: .medium)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.np.nowPlayingTrackID != nil ? .white.opacity(0.85) : .white.opacity(0.35))
-                .disabled(self.np.nowPlayingTrackID == nil)
-                .help(L10n.string("Get info for current track"))
-                .accessibilityLabel(L10n.string("Track Info"))
-
-                Button {
-                    Task { await self.np.previous() }
-                } label: {
-                    Image(systemName: "backward.fill")
-                        .scaledSystemFont(size: 16, weight: .semibold)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .help(L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
-                .accessibilityLabel(L10n.string("Previous or restart"))
-
-                Button {
-                    Task { await self.np.playPause() }
-                } label: {
-                    Image(systemName: self.np.isPlaying ? "pause.fill" : "play.fill")
-                        .scaledSystemFont(size: 22, weight: .bold)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .help(self.np.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
-                .accessibilityLabel(self.np.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
-
-                Button {
-                    Task { await self.np.next() }
-                } label: {
-                    Image(systemName: "forward.fill")
-                        .scaledSystemFont(size: 16, weight: .semibold)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .help(L10n.string("Next track"))
-                .accessibilityLabel(L10n.string("Next"))
-
-                Button {
-                    Task { await self.np.toggleShuffle() }
-                } label: {
-                    Image(systemName: "shuffle")
-                        .scaledSystemFont(size: 13, weight: .medium)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.np.shuffleOn ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
-                .help(self.np.shuffleOn ? L10n.string("Shuffle: On — click to disable") : L10n.string("Shuffle: Off — click to enable"))
-                .accessibilityLabel(self.np.shuffleOn ? L10n.string("Shuffle On") : L10n.string("Shuffle Off"))
-                .accessibilityAddTraits(.isToggle)
-
-                Button {
-                    Task { await self.np.cycleRepeat() }
-                } label: {
-                    Image(systemName: self.np.repeatMode == .one ? "repeat.1" : "repeat")
-                        .scaledSystemFont(size: 13, weight: .medium)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.np.repeatMode == .off ? .white.opacity(0.6) : AccentPalette.color(for: self.accentColorKey))
-                .help(L10n.string("Repeat: \(self.repeatModeLabel) — click to cycle"))
-                .accessibilityLabel(L10n.string("Repeat \(self.repeatModeLabel)"))
-                .accessibilityAddTraits(.isToggle)
-
-                Button {
-                    Task { await self.np.toggleStopAfterCurrent() }
-                } label: {
-                    Image(systemName: "stop.circle\(self.np.stopAfterCurrent ? ".fill" : "")")
-                        .scaledSystemFont(size: 13, weight: .medium)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.np.stopAfterCurrent ? AccentPalette.color(for: self.accentColorKey) : .white.opacity(0.6))
-                .help(self.np.stopAfterCurrent
-                    ? L10n.string("Stop after current track: On")
-                    : L10n.string("Stop after current track: Off"))
-                .accessibilityLabel(self.np.stopAfterCurrent
-                    ? L10n.string("Stop After Current: On")
-                    : L10n.string("Stop After Current: Off"))
-                .accessibilityAddTraits(.isToggle)
-            }
+            MiniPlayerTransport(
+                np: self.np,
+                musicLayout: .full,
+                palette: .onVisualizer,
+                openInfoWindow: { self.openWindow(id: "track-info") },
+                spacing: 16,
+                secondarySize: 16,
+                primarySize: 22,
+                accentSize: 13
+            )
         }
     }
 }
