@@ -6,6 +6,8 @@ import SwiftUI
 
 struct EpisodeList: View {
     @ObservedObject var vm: PodcastsViewModel
+    /// Used to open podroll recommendations from the show notes sheet.
+    var library: LibraryViewModel
 
     @State private var selection = Set<EpisodeListItem.ID>()
     @State private var filterText = ""
@@ -83,7 +85,12 @@ struct EpisodeList: View {
         .sheet(isPresented: self.$showingNotes) {
             ShowNotesView(
                 episode: self.selectedItem,
-                showPersons: self.vm.currentShow?.persons ?? []
+                showPersons: self.vm.currentShow?.persons ?? [],
+                podrollContext: PodrollContext(
+                    items: self.vm.currentShow?.podroll ?? [],
+                    resolve: { await self.vm.resolvePodroll($0) },
+                    onSelect: { self.library.openPodcastRecommendation($0) }
+                )
             ) {
                 guard let item = self.selectedItem, let actions = self.vm.actions else { return [] }
                 return await (try? actions.chapters(podcastID: item.episode.podcastID, guid: item.episode.guid)) ?? []

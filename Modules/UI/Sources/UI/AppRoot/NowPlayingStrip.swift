@@ -213,7 +213,12 @@ public struct NowPlayingStrip: View {
                 },
                 chapters: self.library.podcasts.nowPlayingChapters,
                 episode: self.library.podcasts.nowPlayingEpisode,
-                showPersons: self.library.podcasts.nowPlayingShowPersons
+                showPersons: self.library.podcasts.nowPlayingShowPersons,
+                podrollContext: PodrollContext(
+                    items: self.library.podcasts.nowPlayingPodroll,
+                    resolve: { await self.library.podcasts.resolvePodroll($0) },
+                    onSelect: { self.library.openPodcastRecommendation($0) }
+                )
             )
             .task(id: self.vm.podcastGUID) {
                 guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else {
