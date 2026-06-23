@@ -220,7 +220,11 @@ public struct NowPlayingStrip: View {
                     onSelect: { self.library.openPodcastRecommendation($0) }
                 )
             )
-            .task(id: self.vm.podcastGUID) {
+            // Key on podcastID *and* GUID: applyPodcastItem sets the GUID first and
+            // resolves podcastID a beat later, so keying on the GUID alone can fire
+            // while podcastID is still nil, bail, and never re-run -- leaving the
+            // Show Notes button greyed even though chapters/notes are loadable.
+            .task(id: "\(self.vm.podcastID ?? -1)|\(self.vm.podcastGUID ?? "")") {
                 guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else {
                     self.library.podcasts.clearNowPlayingChapters()
                     return

@@ -45,5 +45,8 @@ struct PodcastShowNotesButtonTests {
         #expect(source.contains("episode: self.library.podcasts.nowPlayingEpisode"))
         #expect(source.contains("showPersons: self.library.podcasts.nowPlayingShowPersons"))
         #expect(source.contains("loadNowPlayingShowNotes(podcastID:"))
+        // The load task must re-run when podcastID resolves (not just on GUID), or
+        // the Show Notes button stays greyed when podcastID lags the GUID.
+        #expect(source.contains(#".task(id: "\(self.vm.podcastID ?? -1)|\(self.vm.podcastGUID ?? "")")"#))
     }
 }
