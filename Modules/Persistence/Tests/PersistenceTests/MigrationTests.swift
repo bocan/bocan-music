@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 29)
+        #expect(version == 30)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,35 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports twenty-nine migrations")
+    @Test("Migrator reports thirty migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 29)
+        #expect(migrator.migrations.count == 30)
+    }
+
+    @Test("M030 clears HTTP validators so the next refresh re-parses every feed")
+    func m030ForcesReparse() throws {
+        let queue = try DatabaseQueue()
+        var migrator = Migrator.make()
+        try migrator.migrate(queue, upTo: "029_podcast_podroll")
+
+        // Seed a subscription that already carries HTTP validators (the state that
+        // makes a stable feed answer 304 and skip the parse forever).
+        try queue.write { db in
+            try db.execute(sql: """
+            INSERT INTO podcasts (feed_url, title, http_etag, http_last_modified, subscribed, added_at)
+            VALUES ('https://example.com/feed.xml', 'Example', '"abc123"', 'Mon, 01 Jan 2026 00:00:00 GMT', 1, 0)
+            """)
+        }
+
+        try migrator.migrate(queue)
+
+        let (etag, lastModified) = try queue.read { db in
+            let row = try Row.fetchOne(db, sql: "SELECT http_etag, http_last_modified FROM podcasts")
+            return (row?["http_etag"] as String?, row?["http_last_modified"] as String?)
+        }
+        #expect(etag == nil, "M030 must clear http_etag so the next GET is unconditional")
+        #expect(lastModified == nil, "M030 must clear http_last_modified so the next GET is unconditional")
     }
 
     @Test("podcasts table has podroll_json after M029")
