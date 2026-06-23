@@ -5,6 +5,13 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1](https://github.com/bocan/bocan-music/compare/v1.12.0...v1.12.1) (2026-06-23)
+
+
+### ### Fixed
+
+* **persistence:** force one re-parse of podcast feeds to backfill podroll and persons ([7c00087](https://github.com/bocan/bocan-music/commit/7c0008753510ca8198b6c53f098c8139545c37b2))
+
 ## [1.12.0](https://github.com/bocan/bocan-music/compare/v1.11.0...v1.12.0) (2026-06-23)
 
 Fixing a few podcast bugs, and importantly added a new Podcasting 2.0 feature `podcast:podroll` which shows a list of recommended podcasts at the top of a show's show notes. This is a new namespace in the podcasting spec, and Bòcan now parses and persists these recommendations.
