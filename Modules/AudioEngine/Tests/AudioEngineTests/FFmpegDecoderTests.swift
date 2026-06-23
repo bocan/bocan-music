@@ -107,6 +107,13 @@ struct FFmpegDecoderTests {
         // we must send a real UA so the audio stream loads.
         #expect(http["user_agent"]?.hasPrefix("Bocan/") == true)
         #expect(http["protocol_whitelist"] == "http,https,tls,tcp,crypto")
+        // Long-lived streams must auto-reconnect on a transient drop rather than
+        // dying on the first I/O error; bounded so a dead URL eventually gives up.
+        #expect(http["reconnect"] == "1")
+        #expect(http["reconnect_streamed"] == "1")
+        #expect(http["reconnect_on_network_error"] == "1")
+        #expect(http["reconnect_delay_max"] == "5")
+        #expect(http["reconnect_max_retries"] == "3")
         // Local inputs get no options (default protocol set, incl. file).
         #expect(FFmpegDecoder.openOptions(isHTTP: false).isEmpty)
     }

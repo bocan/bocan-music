@@ -56,6 +56,11 @@ actor BufferPump {
 
     private var task: Task<Void, Error>?
     private var onEnded: (@Sendable () -> Void)?
+    /// Fired when the feed loop aborts on a genuine decode/read failure (not
+    /// cancellation). Lets the engine recover (reconnect a stream) or surface a
+    /// terminal `.failed` state, instead of the pump dying silently while the
+    /// node clock keeps advancing — the "no sound but still 'playing'" symptom.
+    private var onError: (@Sendable (Error) -> Void)?
 
     /// Semaphore-style counter for buffer slots.
     private var availableSlots: Int
@@ -106,8 +111,17 @@ actor BufferPump {
     // MARK: - Lifecycle
 
     /// Begin pumping buffers. Returns immediately; pumping happens in the background.
-    func start(onEnded: @Sendable @escaping () -> Void) {
+    ///
+    /// `onEnded` fires on clean end-of-stream; `onError` fires when the feed loop
+    /// aborts on a real decode/read failure (cancellation is never reported as an
+    /// error). Exactly one of them fires per feed-loop lifetime, or neither if the
+    /// pump is cancelled.
+    func start(
+        onEnded: @Sendable @escaping () -> Void,
+        onError: (@Sendable (Error) -> Void)? = nil
+    ) {
         self.onEnded = onEnded
+        self.onError = onError
         self.availableSlots = BufferPump.windowSize
         self.log.debug("pump.start", ["id": self.id])
         self.task = Task { [weak self] in
@@ -190,11 +204,18 @@ actor BufferPump {
             let framesRead: AVAudioFrameCount
             do {
                 framesRead = try await self.decoder.read(into: buffer)
+            } catch is CancellationError {
+                // Normal teardown (load / seek / stop cancels the feed task). Not a
+                // failure: stay quiet and let the cancellation propagate.
+                throw CancellationError()
             } catch {
                 self.log.error("pump.read.failed", [
                     "id": self.id, "afterScheduled": self.scheduledCount,
                     "error": String(reflecting: error),
                 ])
+                // Hand the failure to the engine BEFORE the task unwinds, so it can
+                // reconnect or surface `.failed` rather than the loop dying unseen.
+                self.onError?(error)
                 throw error
             }
 
