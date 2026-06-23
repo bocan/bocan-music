@@ -5,6 +5,23 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0](https://github.com/bocan/bocan-music/compare/v1.11.0...v1.12.0) (2026-06-23)
+
+
+### ### Added
+
+* **podcasts:** parse and persist podcast:podroll recommendations ([3f97a3c](https://github.com/bocan/bocan-music/commit/3f97a3cb0b8db294796c3c483ad291f53b041d97))
+* **ui:** add a Show Notes button to the podcast player bar ([b5771e3](https://github.com/bocan/bocan-music/commit/b5771e38e999023853d24a7e2c4769a8050b5c33))
+* **ui:** show a podroll recommendation shelf atop podcast show notes ([669b15e](https://github.com/bocan/bocan-music/commit/669b15e70c955fa1020e8f795724d6e2e9ac7787))
+
+
+### ### Fixed
+
+* **podcasts:** accept legacy GitHub-docs podcast namespace URI ([33f8792](https://github.com/bocan/bocan-music/commit/33f87927d744e7bef9362f312da90f07973d5d26))
+* **ui:** move podcast Show Notes button to the left of the transport row ([818e69e](https://github.com/bocan/bocan-music/commit/818e69ef2a496aee8bf450cf4bba434f68ae013e))
+* **ui:** re-resolve now-playing episode when podcastID lags the GUID ([a3f6bd5](https://github.com/bocan/bocan-music/commit/a3f6bd5c58a84c9e8698a152c9a0ade5807f61b8))
+* **ui:** render podcast show notes with a safe in-house HTML parser ([1e58e6b](https://github.com/bocan/bocan-music/commit/1e58e6bb0484b2d0c7e484ce2f38d5fca0b4bafb))
+
 ## [1.11.0](https://github.com/bocan/bocan-music/compare/v1.10.0...v1.11.0) (2026-06-21)
 
 Added podcast support to Bòcan, including subscriptions, episode downloads, transcripts, show notes, and playback. The Podcasts sidebar shows subscribed shows with unread counts and artwork, and the search sheet lets you find new shows via iTunes Search and Podcast Index. Each show has a detail sheet with a list of episodes, and you can download episodes for offline listening or stream them directly. The Now Playing view now supports podcasts with chapter markers and skip intervals.
