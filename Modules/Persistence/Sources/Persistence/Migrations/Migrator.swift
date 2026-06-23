@@ -56,6 +56,7 @@ public struct Migrator {
         M026PodcastTranscript.register(in: &dm)
         M027PodcastPerShowSettings.register(in: &dm)
         M028PodcastPersons.register(in: &dm)
+        M029PodcastPodroll.register(in: &dm)
         return Self(inner: dm)
     }
 

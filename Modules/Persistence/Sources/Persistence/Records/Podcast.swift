@@ -54,12 +54,20 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var showType: String?
     /// Show-level Podcasting 2.0 `podcast:person` credits, JSON-encoded. Feed content.
     public var personsJSON: Data?
+    /// Channel-level Podcasting 2.0 `podcast:podroll` recommendations, JSON-encoded. Feed content.
+    public var podrollJSON: Data?
     public var addedAt: Double
 
     /// Show-level `podcast:person` credits, decoded from / encoded to `personsJSON`.
     public var persons: [PodcastPerson] {
         get { PodcastPerson.decodeList(self.personsJSON) }
         set { self.personsJSON = PodcastPerson.encodeList(newValue) }
+    }
+
+    /// Recommended shows (`podcast:podroll`), decoded from / encoded to `podrollJSON`.
+    public var podroll: [PodcastPodrollItem] {
+        get { PodcastPodrollItem.decodeList(self.podrollJSON) }
+        set { self.podrollJSON = PodcastPodrollItem.encodeList(newValue) }
     }
 
     // MARK: - Init
@@ -97,6 +105,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         retentionLimit: Int? = nil,
         showType: String? = nil,
         personsJSON: Data? = nil,
+        podrollJSON: Data? = nil,
         addedAt: Double
     ) {
         self.id = id
@@ -130,6 +139,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.retentionLimit = retentionLimit
         self.showType = showType
         self.personsJSON = personsJSON
+        self.podrollJSON = podrollJSON
         self.addedAt = addedAt
     }
 
@@ -175,6 +185,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case retentionLimit = "retention_limit"
         case showType = "show_type"
         case personsJSON = "persons_json"
+        case podrollJSON = "podroll_json"
         case addedAt = "added_at"
     }
 }

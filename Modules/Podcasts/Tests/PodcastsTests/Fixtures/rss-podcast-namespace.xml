@@ -9,6 +9,11 @@
     <podcast:funding url="https://example.com/support">Support the show</podcast:funding>
     <podcast:person role="host" href="https://example.com/john" img="https://example.com/john.jpg">John Smith</podcast:person>
     <podcast:person role="Producer" group="production">Jane Doe</podcast:person>
+    <podcast:podroll>
+      <podcast:remoteItem feedGuid="guid-a" feedUrl="https://example.com/recommended-a.xml"/>
+      <podcast:remoteItem feedUrl="https://example.com/recommended-b.xml" title="Recommended B"/>
+      <podcast:remoteItem feedUrl="ftp://example.com/bad.xml"/>
+    </podcast:podroll>
     <item>
       <title>Episode One</title>
       <guid isPermaLink="false">guid-ep1</guid>

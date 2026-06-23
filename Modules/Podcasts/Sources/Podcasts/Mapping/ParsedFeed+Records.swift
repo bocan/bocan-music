@@ -44,6 +44,7 @@ extension ParsedFeed {
             subscribed: true,
             showType: self.showType,
             personsJSON: PodcastPerson.encodeList(self.persons),
+            podrollJSON: PodcastPodrollItem.encodeList(self.podroll),
             addedAt: ts
         )
     }

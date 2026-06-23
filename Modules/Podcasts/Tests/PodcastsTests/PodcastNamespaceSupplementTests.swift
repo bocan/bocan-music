@@ -49,6 +49,39 @@ struct PodcastNamespaceSupplementTests {
         #expect(result.personsByGUID["guid-ep2"] == nil)
     }
 
+    @Test("Extracts channel-level podcast:podroll recommendations, rejecting bad URLs")
+    func extractsPodroll() throws {
+        let data = try loadFixture("rss-podcast-namespace.xml")
+        let result = PodcastNamespaceSupplement().extract(from: data)
+
+        // The ftp remoteItem is dropped; the two web feeds remain in order.
+        #expect(result.podroll.count == 2)
+        #expect(result.podroll.first?.feedURL == "https://example.com/recommended-a.xml")
+        #expect(result.podroll.first?.feedGUID == "guid-a")
+        #expect(result.podroll.first?.title == nil)
+        #expect(result.podroll.last?.feedURL == "https://example.com/recommended-b.xml")
+        #expect(result.podroll.last?.title == "Recommended B")
+    }
+
+    @Test("Ignores remoteItem outside a podroll (e.g. valueTimeSplit)")
+    func ignoresRemoteItemOutsidePodroll() {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0" xmlns:podcast="https://podcastindex.org/namespace/1.0">
+          <channel>
+            <title>VTS</title>
+            <podcast:value type="lightning" method="keysend">
+              <podcast:valueTimeSplit startTime="60" duration="30">
+                <podcast:remoteItem feedUrl="https://example.com/not-a-recommendation.xml"/>
+              </podcast:valueTimeSplit>
+            </podcast:value>
+          </channel>
+        </rss>
+        """
+        let result = PodcastNamespaceSupplement().extract(from: Data(xml.utf8))
+        #expect(result.podroll.isEmpty)
+    }
+
     @Test("Drops nameless persons and rejects non-web img/href")
     func personEdgeCases() {
         let xml = """

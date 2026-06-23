@@ -28,6 +28,8 @@ public struct ParsedFeed: Sendable {
     public var showType: String?
     /// Show-level Podcasting 2.0 `podcast:person` credits (hosts/regulars).
     public var persons: [PodcastPerson]
+    /// Channel-level Podcasting 2.0 `podcast:podroll` recommendations (other shows).
+    public var podroll: [PodcastPodrollItem]
     public var episodes: [ParsedEpisode]
 
     public init(
@@ -47,6 +49,7 @@ public struct ParsedFeed: Sendable {
         podcastGUID: String? = nil,
         showType: String? = nil,
         persons: [PodcastPerson] = [],
+        podroll: [PodcastPodrollItem] = [],
         episodes: [ParsedEpisode] = []
     ) {
         self.title = title
@@ -65,6 +68,7 @@ public struct ParsedFeed: Sendable {
         self.podcastGUID = podcastGUID
         self.showType = showType
         self.persons = persons
+        self.podroll = podroll
         self.episodes = episodes
     }
 }
