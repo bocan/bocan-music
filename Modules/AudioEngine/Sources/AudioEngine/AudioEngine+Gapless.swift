@@ -69,6 +69,8 @@ extension AudioEngine {
         Task {
             await next.start { [weak self] in
                 Task { await self?.handleEnded(firedBy: newPumpID) }
+            } onError: { [weak self] error in
+                Task { await self?.handlePumpError(error, firedBy: newPumpID) }
             }
         }
 
