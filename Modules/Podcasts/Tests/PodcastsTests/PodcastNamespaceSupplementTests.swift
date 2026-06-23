@@ -68,6 +68,31 @@ struct PodcastNamespaceSupplementTests {
         #expect(result.channelPersons.first?.href == nil) // javascript rejected
     }
 
+    @Test("Accepts the legacy GitHub-docs namespace URI bound to the prefix")
+    func acceptsGitHubNamespaceURI() {
+        // Podcast Index's own canonical pc20.xml binds the prefix to this older URL,
+        // not the spec's podcastindex.org/namespace/1.0. Both must be honoured.
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0" xmlns:podcast="https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/1.0.md">
+          <channel>
+            <title>Legacy NS</title>
+            <podcast:funding url="https://example.com/support">Value 4 Value</podcast:funding>
+            <podcast:person href="https://example.com/host" role="host">Host Person</podcast:person>
+            <item>
+              <guid>guid-ep1</guid>
+              <podcast:person role="guest">Guest Person</podcast:person>
+            </item>
+          </channel>
+        </rss>
+        """
+        let result = PodcastNamespaceSupplement().extract(from: Data(xml.utf8))
+        #expect(result.fundingURL == URL(string: "https://example.com/support"))
+        #expect(result.fundingText == "Value 4 Value")
+        #expect(result.channelPersons.first?.name == "Host Person")
+        #expect(result.personsByGUID["guid-ep1"]?.first?.name == "Guest Person")
+    }
+
     @Test("Junk bytes yield an empty result and never throw")
     func junkBytesAreNonFatal() {
         let junk = Data([0x00, 0x01, 0xFF, 0xFE])

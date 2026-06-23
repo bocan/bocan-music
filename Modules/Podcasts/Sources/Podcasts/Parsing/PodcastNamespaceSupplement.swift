@@ -27,9 +27,23 @@ struct PodcastNamespaceSupplement {
         var personsByGUID: [String: [PodcastPerson]] = [:]
     }
 
-    /// Canonical Podcasting 2.0 namespace URI. We match on the namespace, not the
+    /// Accepted Podcasting 2.0 namespace URIs. We match on the namespace, not the
     /// `podcast:` prefix, because a feed may bind the namespace to any prefix.
-    static let namespaceURI = "https://podcastindex.org/namespace/1.0"
+    ///
+    /// The spec's canonical URI is `https://podcastindex.org/namespace/1.0`, but a
+    /// large number of feeds in the wild (including Podcast Index's own canonical
+    /// `pc20.xml`) still bind the prefix to the older GitHub docs URL. Both identify
+    /// the same Podcasting 2.0 namespace, so we accept either.
+    static let namespaceURIs: Set = [
+        "https://podcastindex.org/namespace/1.0",
+        "https://github.com/Podcastindex-org/podcast-namespace/blob/main/docs/1.0.md",
+    ]
+
+    /// True when `uri` is one of the accepted Podcasting 2.0 namespace URIs.
+    static func isPodcastNamespace(_ uri: String?) -> Bool {
+        guard let uri else { return false }
+        return self.namespaceURIs.contains(uri)
+    }
 
     private let log = AppLogger.make(.podcasts)
 
@@ -105,7 +119,7 @@ private final class Driver: NSObject, XMLParserDelegate {
         qualifiedName qName: String?,
         attributes attributeDict: [String: String]
     ) {
-        if namespaceURI == PodcastNamespaceSupplement.namespaceURI {
+        if PodcastNamespaceSupplement.isPodcastNamespace(namespaceURI) {
             switch elementName {
             case "funding" where self.inChannel && !self.inItem && !self.capturedFunding:
                 self.result.fundingURL = PodcastNamespaceSupplement.webURL(attributeDict["url"])
@@ -164,7 +178,7 @@ private final class Driver: NSObject, XMLParserDelegate {
         namespaceURI: String?,
         qualifiedName qName: String?
     ) {
-        if namespaceURI == PodcastNamespaceSupplement.namespaceURI {
+        if PodcastNamespaceSupplement.isPodcastNamespace(namespaceURI) {
             if elementName == "funding", self.capturingFundingText {
                 let text = self.fundingTextBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
                 self.result.fundingText = text.isEmpty ? nil : text
