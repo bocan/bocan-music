@@ -54,9 +54,10 @@ public struct FeedParser: Sendable {
         }
 
         // --- podcast: namespace supplement: fill the Podcasting 2.0 tags FeedKit
-        //     10.4.0 does not model (podcast:funding, podcast:chapters). Non-fatal,
-        //     and the single source of these values. Remove this block if FeedKit
-        //     gains official support and read the fields in parseRSS instead. ---
+        //     10.4.0 does not model (podcast:funding, podcast:chapters,
+        //     podcast:person, podcast:podroll). Non-fatal, and the single source of
+        //     these values. Remove this block if FeedKit gains official support and
+        //     read the fields in parseRSS instead. ---
         let extra = PodcastNamespaceSupplement().extract(from: data)
         if parsed.fundingURL == nil { parsed.fundingURL = extra.fundingURL }
         if parsed.fundingText == nil { parsed.fundingText = extra.fundingText }
@@ -70,6 +71,7 @@ public struct FeedParser: Sendable {
             }
         }
         if parsed.persons.isEmpty { parsed.persons = extra.channelPersons }
+        if parsed.podroll.isEmpty { parsed.podroll = extra.podroll }
         if !extra.personsByGUID.isEmpty {
             parsed.episodes = parsed.episodes.map { episode in
                 guard episode.persons.isEmpty,

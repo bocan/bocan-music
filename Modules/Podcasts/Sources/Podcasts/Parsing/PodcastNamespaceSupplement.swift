@@ -25,6 +25,8 @@ struct PodcastNamespaceSupplement {
         var channelPersons: [PodcastPerson] = []
         /// Item `guid` (else enclosure URL) mapped to its `podcast:person` credits.
         var personsByGUID: [String: [PodcastPerson]] = [:]
+        /// Channel-level `podcast:podroll` recommendations (other shows).
+        var podroll: [PodcastPodrollItem] = []
     }
 
     /// Accepted Podcasting 2.0 namespace URIs. We match on the namespace, not the
@@ -89,6 +91,8 @@ private final class Driver: NSObject, XMLParserDelegate {
     // Scope tracking.
     private var inChannel = false
     private var inItem = false
+    /// Inside a channel-level `<podcast:podroll>`; `remoteItem` children are captured.
+    private var inPodroll = false
 
     // Channel funding (keep the first occurrence only).
     private var capturedFunding = false
@@ -134,6 +138,10 @@ private final class Driver: NSObject, XMLParserDelegate {
                 self.pendingPersonGroup = PodcastNamespaceSupplement.cleanAttr(attributeDict["group"])
                 self.pendingPersonImageURL = PodcastNamespaceSupplement.webURL(attributeDict["img"])?.absoluteString
                 self.pendingPersonHref = PodcastNamespaceSupplement.webURL(attributeDict["href"])?.absoluteString
+            case "podroll" where self.inChannel && !self.inItem:
+                self.inPodroll = true
+            case "remoteItem" where self.inPodroll:
+                self.captureRemoteItem(attributeDict)
             default:
                 break
             }
@@ -187,6 +195,8 @@ private final class Driver: NSObject, XMLParserDelegate {
                 self.capturedFunding = true
             } else if elementName == "person", self.capturingPersonText {
                 self.commitPerson()
+            } else if elementName == "podroll" {
+                self.inPodroll = false
             }
             return
         }
@@ -249,5 +259,16 @@ private final class Driver: NSObject, XMLParserDelegate {
         } else if self.inChannel {
             self.result.channelPersons.append(person)
         }
+    }
+
+    /// Append a podroll `remoteItem` to the result. Requires a valid web `feedUrl`;
+    /// `feedGuid` and `title` are optional.
+    private func captureRemoteItem(_ attributeDict: [String: String]) {
+        guard let feedURL = PodcastNamespaceSupplement.webURL(attributeDict["feedUrl"]) else { return }
+        self.result.podroll.append(PodcastPodrollItem(
+            feedURL: feedURL.absoluteString,
+            feedGUID: PodcastNamespaceSupplement.cleanAttr(attributeDict["feedGuid"]),
+            title: PodcastNamespaceSupplement.cleanAttr(attributeDict["title"])
+        ))
     }
 }
