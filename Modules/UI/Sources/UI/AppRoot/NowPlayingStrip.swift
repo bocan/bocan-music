@@ -211,7 +211,9 @@ public struct NowPlayingStrip: View {
                     guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else { return nil }
                     return await self.library.podcasts.loadTranscript(podcastID: podcastID, guid: guid)
                 },
-                chapters: self.library.podcasts.nowPlayingChapters
+                chapters: self.library.podcasts.nowPlayingChapters,
+                episode: self.library.podcasts.nowPlayingEpisode,
+                showPersons: self.library.podcasts.nowPlayingShowPersons
             )
             .task(id: self.vm.podcastGUID) {
                 guard let podcastID = self.vm.podcastID, let guid = self.vm.podcastGUID else {
@@ -219,6 +221,7 @@ public struct NowPlayingStrip: View {
                     return
                 }
                 await self.library.podcasts.loadChapters(podcastID: podcastID, guid: guid)
+                await self.library.podcasts.loadNowPlayingShowNotes(podcastID: podcastID, guid: guid)
             }
         } else {
             MusicTransportControls(vm: self.vm, library: self.library)
