@@ -33,6 +33,8 @@ struct ShowNotesView: View {
     let episode: EpisodeListItem?
     /// The show's people, used as the fallback when the episode declares none.
     var showPersons: [PodcastPerson] = []
+    /// The show's `podcast:podroll` recommendations + actions. Nil hides the shelf.
+    var podrollContext: PodrollContext?
     /// Fetches this episode's chapters on demand. Returns `[]` on failure or when the
     /// episode declares none; `nil` when chapters are not wired in this context.
     var loadChapters: (() async -> [UIChapter])?
@@ -63,6 +65,9 @@ struct ShowNotesView: View {
             Divider().padding(.top, 8)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    if let podrollContext {
+                        PodrollShelf(context: podrollContext)
+                    }
                     if !self.effectivePersons.isEmpty {
                         PodcastPersonsView(title: L10n.string("In This Episode"), persons: self.effectivePersons)
                     }

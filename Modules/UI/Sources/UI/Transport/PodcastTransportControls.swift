@@ -18,6 +18,8 @@ struct PodcastTransportControls: View {
     var episode: EpisodeListItem?
     /// The playing show's hosts, used as the Show Notes credits fallback.
     var showPersons: [PodcastPerson] = []
+    /// The playing show's podroll recommendations + actions for the Show Notes shelf.
+    var podrollContext: PodrollContext?
     @State private var showingTranscript = false
     @State private var showingChapters = false
     @State private var showingShowNotes = false
@@ -126,7 +128,11 @@ struct PodcastTransportControls: View {
             .frame(minWidth: 500, minHeight: 300)
         }
         .sheet(isPresented: self.$showingShowNotes) {
-            ShowNotesView(episode: self.episode, showPersons: self.showPersons) {
+            ShowNotesView(
+                episode: self.episode,
+                showPersons: self.showPersons,
+                podrollContext: self.podrollContext
+            ) {
                 self.chapters
             }
             .frame(minWidth: 500, minHeight: 360)

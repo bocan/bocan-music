@@ -40,6 +40,8 @@ public final class PodcastsViewModel: ObservableObject {
     /// The playing show's `podcast:person` credits, used as the Show Notes fallback
     /// when the episode declares none.
     @Published public internal(set) var nowPlayingShowPersons: [PodcastPerson] = []
+    /// The playing show's `podcast:podroll` recommendations, shown atop Show Notes.
+    @Published public internal(set) var nowPlayingPodroll: [PodcastPodrollItem] = []
 
     // MARK: - Dependencies
 
@@ -126,11 +128,28 @@ public final class PodcastsViewModel: ObservableObject {
             async let episodes = library.episodes(podcastID: podcastID)
             async let shows = library.subscribedPodcasts()
             self.nowPlayingEpisode = try await episodes.first { $0.episode.guid == guid }
-            self.nowPlayingShowPersons = try await shows.first { $0.id == podcastID }?.persons ?? []
+            let show = try await shows.first { $0.id == podcastID }
+            self.nowPlayingShowPersons = show?.persons ?? []
+            self.nowPlayingPodroll = show?.podroll ?? []
         } catch {
             self.log.debug("podcasts.loadNowPlayingShowNotes.failed", ["error": String(reflecting: error)])
             self.nowPlayingEpisode = nil
             self.nowPlayingShowPersons = []
+            self.nowPlayingPodroll = []
+        }
+    }
+
+    /// Resolves a podroll recommendation's title and artwork by fetching its feed
+    /// detail. Best-effort: returns nil when there is no search provider or the
+    /// fetch fails, so the card falls back to the feed's host name.
+    func resolvePodroll(_ url: URL) async -> PodrollPreview? {
+        guard let searchProvider else { return nil }
+        do {
+            let detail = try await searchProvider.detail(feedURL: url, hint: nil)
+            return PodrollPreview(title: detail.title, artworkURL: detail.artworkURL)
+        } catch {
+            self.log.debug("podcasts.resolvePodroll.failed", ["error": String(reflecting: error)])
+            return nil
         }
     }
 
@@ -140,6 +159,7 @@ public final class PodcastsViewModel: ObservableObject {
         self.nowPlayingChapters = []
         self.nowPlayingEpisode = nil
         self.nowPlayingShowPersons = []
+        self.nowPlayingPodroll = []
     }
 
     // MARK: - OPML import / export
