@@ -89,6 +89,11 @@ public final class NowPlayingViewModel {
     /// Called when play is pressed but the queue is empty; set by `LibraryViewModel`.
     public var onPlayFromEmptyQueue: (@MainActor () -> Void)?
 
+    /// Called when playback fails terminally — e.g. a streamed source dropped and
+    /// the engine exhausted its reconnect attempts. Set by `LibraryViewModel` to
+    /// surface a toast. The transport has already stopped by the time this fires.
+    public var onPlaybackError: (@MainActor () -> Void)?
+
     // MARK: - Internal
 
     private let engine: any Transport
@@ -519,7 +524,9 @@ public final class NowPlayingViewModel {
                     self.isPaused = true
                     self.stopPollingPosition()
 
-                case .stopped, .idle, .ended:
+                // `.failed` shares the not-playing teardown; the engine has already
+                // stopped and frozen the position, so we only add the user-facing alert.
+                case .stopped, .idle, .ended, .failed:
                     self.log.info("transport.state", ["state": String(describing: state)])
                     self.isPlaying = false
                     self.isPaused = false
@@ -529,11 +536,12 @@ public final class NowPlayingViewModel {
                         // Queue played through to its end (#330).
                         Haptics.stateChange()
                     }
+                    if case .failed = state { self.onPlaybackError?() }
 
                 case .ready:
                     self.isPlaying = false
 
-                case .loading, .failed:
+                case .loading:
                     break
                 }
             }
