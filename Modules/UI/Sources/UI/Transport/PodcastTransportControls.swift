@@ -26,6 +26,21 @@ struct PodcastTransportControls: View {
 
     var body: some View {
         HStack(spacing: 20) {
+            if self.vm.podcastID != nil {
+                Button {
+                    self.showingShowNotes = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .scaledSystemFont(size: 18, weight: .semibold)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.episode != nil ? Color.textPrimary : Color.textTertiary)
+                .disabled(self.episode == nil)
+                .help(L10n.string("Show Notes"))
+                .accessibilityLabel(L10n.string("Show Notes"))
+            }
+
             Button {
                 Task { await self.vm.skipBack() }
             } label: {
@@ -103,21 +118,6 @@ struct PodcastTransportControls: View {
                         await self.vm.scrub(to: time)
                     }
                 }
-            }
-
-            if self.vm.podcastID != nil {
-                Button {
-                    self.showingShowNotes = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .scaledSystemFont(size: 18, weight: .semibold)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(self.episode != nil ? Color.textPrimary : Color.textTertiary)
-                .disabled(self.episode == nil)
-                .help(L10n.string("Show Notes"))
-                .accessibilityLabel(L10n.string("Show Notes"))
             }
         }
         .focusSection()
