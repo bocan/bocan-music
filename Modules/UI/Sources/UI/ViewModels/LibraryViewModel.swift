@@ -686,6 +686,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             Task { await self.playCurrentLibrary() }
         }
 
+        // Surface a terminal playback failure (e.g. a streamed source dropped and
+        // could not be recovered) as a toast; the engine has already stopped.
+        self.nowPlaying.onPlaybackError = { [weak self] in
+            self?.showToast(ToastMessage(text: L10n.string("Playback stopped: the audio stream could not be reached.")))
+        }
+
         self.playlistSidebar.onDidDelete = { [weak self] deletedIDs in
             guard let self else { return }
             switch self.selectedDestination {

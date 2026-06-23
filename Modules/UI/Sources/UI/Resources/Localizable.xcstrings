@@ -13045,6 +13045,16 @@
         }
       }
     },
+    "Playback stopped: the audio stream could not be reached." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥĺáýƀáçķ šţóƥƥéđ: ţĥé áúđíó šţŕéáḿ çóúĺđ ñóţ ƀé ŕéáçĥéđ. one two three four"
+          }
+        }
+      }
+    },
     "Played" : {
       "extractionState" : "stale",
       "localizations" : {
