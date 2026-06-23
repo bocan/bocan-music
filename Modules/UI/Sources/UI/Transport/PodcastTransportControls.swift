@@ -1,3 +1,4 @@
+import Persistence
 import SwiftUI
 
 // MARK: - PodcastTransportControls
@@ -12,8 +13,14 @@ struct PodcastTransportControls: View {
     var loadTranscript: () async -> TranscriptContent?
     /// Chapters for the current episode, supplied by the parent. Empty hides the button.
     var chapters: [UIChapter] = []
+    /// The currently-playing episode, supplied by the parent. Nil disables the
+    /// Show Notes button.
+    var episode: EpisodeListItem?
+    /// The playing show's hosts, used as the Show Notes credits fallback.
+    var showPersons: [PodcastPerson] = []
     @State private var showingTranscript = false
     @State private var showingChapters = false
+    @State private var showingShowNotes = false
 
     var body: some View {
         HStack(spacing: 20) {
@@ -95,6 +102,21 @@ struct PodcastTransportControls: View {
                     }
                 }
             }
+
+            if self.vm.podcastID != nil {
+                Button {
+                    self.showingShowNotes = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .scaledSystemFont(size: 18, weight: .semibold)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(self.episode != nil ? Color.textPrimary : Color.textTertiary)
+                .disabled(self.episode == nil)
+                .help(L10n.string("Show Notes"))
+                .accessibilityLabel(L10n.string("Show Notes"))
+            }
         }
         .focusSection()
         .sheet(isPresented: self.$showingTranscript) {
@@ -102,6 +124,12 @@ struct PodcastTransportControls: View {
                 await self.loadTranscript()
             }
             .frame(minWidth: 500, minHeight: 300)
+        }
+        .sheet(isPresented: self.$showingShowNotes) {
+            ShowNotesView(episode: self.episode, showPersons: self.showPersons) {
+                self.chapters
+            }
+            .frame(minWidth: 500, minHeight: 360)
         }
     }
 }

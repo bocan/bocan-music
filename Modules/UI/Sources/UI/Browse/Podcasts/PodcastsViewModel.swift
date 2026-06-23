@@ -35,6 +35,11 @@ public final class PodcastsViewModel: ObservableObject {
     @Published public internal(set) var detailError: String?
     /// Chapters for the currently-playing episode, loaded by the Now Playing strip.
     @Published public internal(set) var nowPlayingChapters: [UIChapter] = []
+    /// The currently-playing episode, resolved for the player-bar Show Notes sheet.
+    @Published public internal(set) var nowPlayingEpisode: EpisodeListItem?
+    /// The playing show's `podcast:person` credits, used as the Show Notes fallback
+    /// when the episode declares none.
+    @Published public internal(set) var nowPlayingShowPersons: [PodcastPerson] = []
 
     // MARK: - Dependencies
 
@@ -108,9 +113,33 @@ public final class PodcastsViewModel: ObservableObject {
         }
     }
 
-    /// Clears chapters when the playing item is not a podcast (or stops).
+    /// Resolves the playing episode and its show's hosts for the player-bar Show
+    /// Notes sheet. Best-effort: any failure leaves the fields nil/empty so the
+    /// sheet shows its own empty state.
+    func loadNowPlayingShowNotes(podcastID: Int64, guid: String) async {
+        guard let library else {
+            self.nowPlayingEpisode = nil
+            self.nowPlayingShowPersons = []
+            return
+        }
+        do {
+            async let episodes = library.episodes(podcastID: podcastID)
+            async let shows = library.subscribedPodcasts()
+            self.nowPlayingEpisode = try await episodes.first { $0.episode.guid == guid }
+            self.nowPlayingShowPersons = try await shows.first { $0.id == podcastID }?.persons ?? []
+        } catch {
+            self.log.debug("podcasts.loadNowPlayingShowNotes.failed", ["error": String(reflecting: error)])
+            self.nowPlayingEpisode = nil
+            self.nowPlayingShowPersons = []
+        }
+    }
+
+    /// Clears the now-playing podcast context (chapters, Show Notes episode, and
+    /// show hosts) when the playing item is not a podcast (or stops).
     func clearNowPlayingChapters() {
         self.nowPlayingChapters = []
+        self.nowPlayingEpisode = nil
+        self.nowPlayingShowPersons = []
     }
 
     // MARK: - OPML import / export
