@@ -49,6 +49,15 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     private var stateContinuation: AsyncStream<PlaybackState>.Continuation?
     let log = AppLogger.make(.audio)
 
+    // MARK: - Stream reconnect state (logic in AudioEngine+Reconnect)
+
+    /// Source URL of the loaded track, retained to rebuild a dropped stream.
+    var currentURL: URL?
+    /// Consecutive reconnect attempts since the last sustained playback.
+    var reconnectAttempts = 0
+    /// Restores the retry budget once a reconnected stream stays healthy.
+    var reconnectStabilizeTask: Task<Void, Never>?
+
     // MARK: - Gapless state
 
     /// The pre-loaded pump for the next track. Non-nil while a gapless preload is in progress.
@@ -66,11 +75,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     var crossfadeTask: Task<Void, Never>?
 
     /// Start offset in the source file for the current CUE segment (seconds).
-    /// Zero for ordinary non-CUE tracks.
-    private var segmentStart: TimeInterval = 0
+    /// Zero for ordinary non-CUE tracks. Internal so `setSegment` (in the CUE
+    /// extension) can configure it.
+    var segmentStart: TimeInterval = 0
     /// End offset in the source file for the current CUE segment (seconds).
     /// `nil` means play to decoder EOF (last CUE track or ordinary tracks).
-    private var segmentEndTime: TimeInterval?
+    var segmentEndTime: TimeInterval?
 
     // MARK: - Transport: state stream
 
@@ -214,6 +224,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.log.debug("engine.load.start", ["url": url.lastPathComponent])
         self.emit(.loading)
 
+        // Fresh source: retain its URL for stream rebuilds and clear any reconnect
+        // bookkeeping carried over from the previous track.
+        self.currentURL = url
+        self.reconnectAttempts = 0
+        self.cancelReconnectStabilize()
+
         // Fresh load — any gapless-settle cooldown from a prior transition is moot.
         self.lastGaplessTransitionAt = nil
 
@@ -344,6 +360,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         // handle, so a nil self correctly no-ops.
         await newPump.start { [weak self] in
             Task { await self?.handleEnded(firedBy: pumpID) }
+        } onError: { [weak self] error in
+            Task { await self?.handlePumpError(error, firedBy: pumpID) }
         }
 
         // Cold start: ramp player-node volume 0..1 over ~10 ms to mask the click when
@@ -389,6 +407,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     func performStop() async {
         self.log.debug("engine.stop")
+        self.cancelReconnectStabilize()
         await self.cancelGaplessNext()
         // 10 ms fade keeps stop() from popping mid-cycle.
         self.cancelCrossfade()
@@ -462,31 +481,6 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             self.graph.playerNode.play()
             await self.fadePlayerNode(to: 1)
         }
-    }
-
-    // MARK: - CUE segment support
-
-    /// Configure the engine to play a specific segment [start, end) of the
-    /// already-loaded audio file.
-    ///
-    /// Call this after `load(_:)` and before `play()`. The method seeks the decoder
-    /// to `start`, resets `currentTime` to zero (NowPlaying shows 0-based progress
-    /// within the segment), and clamps `duration` to the segment length.
-    ///
-    /// Passing `end: nil` means play to the decoder's natural EOF (last CUE track).
-    public func setSegment(start: TimeInterval, end: TimeInterval?) async throws {
-        guard let dec = self.decoder else { return }
-        let fileDuration = dec.duration
-        try await dec.seek(to: start)
-        self.segmentStart = start
-        self.segmentEndTime = end
-        self._currentTime = 0
-        self._duration = (end ?? fileDuration) - start
-        self.log.debug("engine.setSegment", [
-            "start": start,
-            "end": end as Any,
-            "virtualDuration": self._duration,
-        ])
     }
 
     // MARK: - Private helpers
