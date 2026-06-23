@@ -28,7 +28,7 @@ public struct PodcastShowView: View {
                     .padding(.vertical, 8)
                 Divider()
             }
-            EpisodeList(vm: self.vm)
+            EpisodeList(vm: self.vm, library: self.library)
         }
         .task { await self.vm.loadShow(self.podcastID) }
         .navigationTitle(self.vm.currentShow?.title ?? L10n.string("Podcast"))

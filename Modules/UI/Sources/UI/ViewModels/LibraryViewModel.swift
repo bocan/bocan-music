@@ -838,6 +838,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         await self.loadDestination(destination)
     }
 
+    /// Opens a podroll recommendation: navigates to the Podcasts home (where the
+    /// pre-subscribe detail sheet is hosted) and resolves the feed URL into it, so
+    /// the user can preview and subscribe.
+    public func openPodcastRecommendation(_ url: URL) {
+        Task {
+            await self.selectDestination(.podcasts)
+            await self.podcasts.openDetailForURL(url)
+        }
+    }
+
     /// Navigates to the previous destination in history.
     public func goBack() async {
         guard let previous = self.backStack.popLast() else { return }
