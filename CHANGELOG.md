@@ -5,6 +5,14 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.2](https://github.com/bocan/bocan-music/compare/v1.12.1...v1.12.2) (2026-06-24)
+
+
+### ### Fixed
+
+* **audio:** recover from or surface a dropped stream instead of silent fake-playback ([0efb073](https://github.com/bocan/bocan-music/commit/0efb0738f1df34a98b48659ba32cc28f901d0663))
+* **ui:** surface a terminal playback failure instead of pretending to play ([2f61db4](https://github.com/bocan/bocan-music/commit/2f61db4999979b5a5d7a9eed3e98036803de8fe1))
+
 ## [1.12.1](https://github.com/bocan/bocan-music/compare/v1.12.0...v1.12.1) (2026-06-23)
 
 
