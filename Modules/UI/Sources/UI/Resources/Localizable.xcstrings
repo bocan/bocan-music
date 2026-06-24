@@ -6730,6 +6730,36 @@
         }
       }
     },
+    "Download queued" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóŵñĺóáđ qúéúéđ one two"
+          }
+        }
+      }
+    },
+    "Downloaded" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóŵñĺóáđéđ one"
+          }
+        }
+      }
+    },
+    "Downloading" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóŵñĺóáđíñĝ one"
+          }
+        }
+      }
+    },
     "Drag playlists here or use \"New Playlist in Folder\" from the sidebar." : {
       "localizations" : {
         "en" : {
