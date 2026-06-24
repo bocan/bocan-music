@@ -58,6 +58,43 @@ func durationLabel(_ item: EpisodeListItem) -> String {
     }
 }
 
+// MARK: - Status label
+
+/// Combined human-readable status (play state, plus download state when present)
+/// for the hover tooltip and the VoiceOver label. The icons carry no text on
+/// their own, so this is the only place their meaning is spelled out.
+func statusLabel(_ item: EpisodeListItem) -> String {
+    let play: String
+    switch status(item) {
+    case .unplayed:
+        play = L10n.string("Unplayed")
+
+    case .inProgress:
+        let remaining = durationLabel(item) // "Xm left", already localized
+        play = remaining.isEmpty ? L10n.string("In progress") : remaining
+
+    case .played:
+        play = L10n.string("Played")
+    }
+
+    let download: String? = switch item.state?.downloadState ?? .none {
+    case .downloaded:
+        L10n.string("Downloaded")
+
+    case .downloading:
+        L10n.string("Downloading")
+
+    case .queued:
+        L10n.string("Download queued")
+
+    case .none, .failed:
+        nil
+    }
+
+    guard let download else { return play }
+    return L10n.string("\(play) · \(download)")
+}
+
 // MARK: - ProgressRing
 
 struct ProgressRing: View {
@@ -84,6 +121,8 @@ struct EpisodeStatusIndicator: View {
     var body: some View {
         self.playIndicator
             .overlay(alignment: .bottomTrailing) { self.downloadBadge }
+            .help(statusLabel(self.item))
+            .accessibilityLabel(statusLabel(self.item))
     }
 
     @ViewBuilder
