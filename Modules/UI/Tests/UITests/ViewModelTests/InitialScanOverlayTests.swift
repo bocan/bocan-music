@@ -41,3 +41,52 @@ struct InitialScanOverlayTests {
         )
     }
 }
+
+// MARK: - PostScanReloadGateTests
+
+/// The post-scan data reload (Albums/Artists/active destination) must be gated on
+/// the scan having actually changed something. The routine quick rescan fired on
+/// every launch reports an all-zero summary on a stable library; reloading anyway
+/// tore the already-populated Songs list down to a spinner and rebuilt it with
+/// identical rows -- a visible "vanish then reappear" flash on every startup.
+@Suite("Post-scan reload gate")
+struct PostScanReloadGateTests {
+    private func scanningSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/ViewModels/LibraryViewModel+Scanning.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("The post-scan reload only runs when the scan changed something")
+    func reloadIsGatedOnSummaryChanges() throws {
+        let source = try self.scanningSource()
+        // The gate must be derived from the finished summary's counts.
+        #expect(
+            source.contains("summary.inserted > 0")
+                && source.contains("summary.updated > 0")
+                && source.contains("summary.removed > 0"),
+            "the post-scan reload must be gated on the summary's inserted/updated/removed counts"
+        )
+        // The post-scan reload must sit inside the change-gated branch. Scope the
+        // search to the source after the gate (loadCurrentDestination() is also
+        // called by other paths earlier in the file).
+        guard let gateRange = source.range(of: "let changed = summary.inserted") else {
+            Issue.record("the `changed` gate must exist")
+            return
+        }
+        let afterGate = source[gateRange.upperBound...]
+        let branchIndex = afterGate.range(of: "if changed {")
+        let reloadIndex = afterGate.range(of: "await self.loadCurrentDestination()")
+        #expect(branchIndex != nil, "the post-scan reload must live in an `if changed {` branch")
+        if let branchIndex, let reloadIndex {
+            #expect(
+                branchIndex.lowerBound < reloadIndex.lowerBound,
+                "loadCurrentDestination() must run inside the `if changed {` branch"
+            )
+        }
+    }
+}
