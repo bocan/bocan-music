@@ -598,6 +598,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// that any persisted Subsonic destination can load immediately without
     /// racing against the background hydration task in `BocanApp`.
     public func bootstrapSubsonic() async {
+        let end = Telemetry.timer("ui.bootstrapSubsonic")
+        defer { end() }
         await self.subsonicBootstrap?()
     }
 
@@ -878,6 +880,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     ///
     /// Called by TracksView / AlbumDetailView on double-click or Return key.
     public func play(track: Track) async {
+        let endPlay = Telemetry.timer("playback.play")
+        defer { endPlay() }
         self.stopPlaylistSync()
         // Ensure the track list is populated.
         if self.tracks.tracks.isEmpty {
@@ -1229,6 +1233,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Restores UI state from settings.
     public func restoreUIState() async {
+        let end = Telemetry.timer("ui.restoreUIState")
+        defer { end() }
         do {
             guard let state = try await settingsRepo.get(UIStateV2.self, for: "ui.state.v2") else { return }
             self.selectedDestination = state.selectedDestination

@@ -538,6 +538,8 @@ final class AppModel {
     func bootstrap(appDelegate: AppDelegate) async {
         guard !self.started else { return }
         self.started = true
+        let endBootstrap = Telemetry.timer("app.bootstrap")
+        defer { endBootstrap() }
 
         let start = Date()
         do {
@@ -563,6 +565,8 @@ extension BocanApp {
     @MainActor
     static func buildGraph(database db: Database, appDelegate: AppDelegate) -> AppGraph {
         let log = AppLogger.make(.app)
+        let endBuildGraph = Telemetry.timer("app.buildGraph")
+        defer { endBuildGraph() }
         let presetStore = PresetStore()
         let eng = AudioEngine(presets: presetStore)
 

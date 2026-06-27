@@ -12,6 +12,8 @@ public extension LibraryViewModel {
 
     /// Loads the list of library root folders from the scanner.
     func refreshRoots() async {
+        let end = Telemetry.timer("ui.refreshRoots")
+        defer { end() }
         guard let scanner else { return }
         self.libraryRoots = await (try? scanner.roots()) ?? []
     }
@@ -258,6 +260,8 @@ public extension LibraryViewModel {
         self.startScanFlush()
         self.scanTask = Task { [weak self] in
             guard let self else { return }
+            let endScan = Telemetry.timer("library.scan")
+            defer { endScan() }
             // Show the full-screen progress overlay only for a genuine first-run
             // (empty-library) scan. Keying this off the Songs view's row count
             // wrongly fired on relaunches into a playlist/album/folder view,
@@ -314,6 +318,8 @@ public extension LibraryViewModel {
             self.scanCurrentPath = ""
             Task { [weak self] in
                 guard let self else { return }
+                let endReload = Telemetry.timer("library.postScanReload")
+                defer { endReload() }
                 // Only reload the cached data models when the scan actually
                 // changed something. The routine quick rescan fired on every
                 // launch (RootView startup task) finds nothing new on a stable
