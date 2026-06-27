@@ -7,9 +7,13 @@ import os
 public enum Telemetry {
     // MARK: - Signposter
 
+    /// Emit to the Points of Interest log. A custom signpost category is not
+    /// enabled by the default os_signpost recording configuration, so
+    /// beginInterval/emitEvent would silently no-op; the Points of Interest log
+    /// is always enabled while Instruments (or `xctrace --instrument
+    /// 'Points of Interest'`) is recording, so our spans reliably appear.
     private static let signposter = OSSignposter(
-        subsystem: "io.cloudcauldron.bocan",
-        category: "Telemetry"
+        logHandle: OSLog(subsystem: "io.cloudcauldron.bocan", category: .pointsOfInterest)
     )
 
     // MARK: - Counter

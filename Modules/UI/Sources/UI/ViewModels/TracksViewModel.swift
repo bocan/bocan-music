@@ -193,6 +193,8 @@ public final class TracksViewModel {
 
     /// (Re)loads all tracks from the database and applies current sort/filter.
     public func load() async {
+        let endTimer = Telemetry.timer("tracks.load")
+        defer { endTimer() }
         self.isLoading = true
         self.log.debug("tracks.load.start", [:])
         do {

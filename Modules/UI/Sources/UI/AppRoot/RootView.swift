@@ -192,7 +192,8 @@ public struct BocanRootView: View {
             self.windowMode.dismissWindow = { id in dw(id: id) }
             // Load the playlist sidebar BEFORE restoring UI state so that a
             // saved .folder destination doesn't briefly show "Folder Not Found"
-            // while playlistSidebar.nodes is still empty.
+            // while playlistSidebar.nodes is still empty. Per-phase timing comes
+            // from Telemetry.timer signposts inside the called methods.
             await self.vm.playlistSidebar.reload()
             // Bootstrap Subsonic clients before restoring navigation state.
             // This ensures that any persisted Subsonic destination (e.g.

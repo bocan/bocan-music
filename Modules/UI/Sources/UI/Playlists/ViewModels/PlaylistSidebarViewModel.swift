@@ -6,8 +6,7 @@ import Persistence
 
 // MARK: - PlaylistSidebarViewModel
 
-/// Drives the playlist section of the sidebar.  Owns a snapshot of the
-/// folder tree and publishes changes as mutations complete.
+/// Drives the playlist section of the sidebar. Owns a snapshot of the folder tree, publishing as mutations complete.
 @MainActor
 public final class PlaylistSidebarViewModel: ObservableObject {
     @MainActor private weak static var activeInstance: PlaylistSidebarViewModel?
@@ -45,13 +44,12 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     public let service: PlaylistService
     private let log = AppLogger.make(.ui)
 
-    /// Called after one or more playlists/folders are successfully deleted.
-    /// The set contains all deleted IDs (the target plus any recursive descendants).
-    /// Wire this up externally (e.g. in `LibraryViewModel`) to deselect the content pane.
+    /// Called after playlists/folders are deleted; the set contains all deleted
+    /// IDs (target plus recursive descendants). Wire externally to deselect.
     public var onDidDelete: ((Set<Int64>) -> Void)?
 
-    /// Invoked when the user picks "Export…" from a manual playlist's
-    /// context menu. Wire this in `LibraryViewModel` to drive the export sheet.
+    /// Invoked when the user picks "Export…" from a manual playlist's context
+    /// menu. Wire this in `LibraryViewModel` to drive the export sheet.
     public var onRequestExport: ((Int64, String) -> Void)?
 
     // MARK: - Init
@@ -65,6 +63,8 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     /// Reloads the sidebar tree.
     public func reload() async {
+        let end = Telemetry.timer("ui.playlistSidebar.reload")
+        defer { end() }
         do {
             self.nodes = try await self.service.list()
             self.isLoaded = true
