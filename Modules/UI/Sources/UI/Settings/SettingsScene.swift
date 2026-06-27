@@ -260,7 +260,7 @@ extension SettingsPage {
             "stethoscope"
 
         case .podcasts:
-            "dot.radiowaves.left.and.right.and.dot"
+            "antenna.radiowaves.left.and.right"
         }
     }
 }
