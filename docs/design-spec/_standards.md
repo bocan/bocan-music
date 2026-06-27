@@ -138,7 +138,7 @@ Add `use context7` to every prompt that touches evolving APIs. Explicit lookups 
 A phase is done when:
 
 1. Every acceptance-criteria box in the phase file is ticked.
-2. `make format && make lint && make build && make test-{whatever you changed}` is green.
+2. `make format && make lint && make build && make test-{whatever module you changed}` is green.
 3. CI is green on the PR.
 4. The phase's "Handoff" contract is honoured (the next phase's prerequisites hold).
 5. Nothing marked `TODO(phase-NN)` remains.
