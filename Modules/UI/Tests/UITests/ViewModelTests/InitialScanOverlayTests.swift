@@ -90,3 +90,46 @@ struct PostScanReloadGateTests {
         }
     }
 }
+
+// MARK: - SingleTrackRefreshTests
+
+/// Single-track mutations (re-scan a file, toggle exclude-from-shuffle) must
+/// update the affected row in place via `refreshTracks`, not a full
+/// `tracks.load()`. A full reload flips `isLoading`, which tears the Songs
+/// NSTableView out for a spinner and rebuilds it (resetting scroll) and re-sorts,
+/// so the list jumps away from where the user was -- the bug in issue #343.
+@Suite("Single-track refresh preserves scroll position")
+struct SingleTrackRefreshTests {
+    private func scanningSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/ViewModels/LibraryViewModel+Scanning.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("rescanTrack and setTrackExcludedFromShuffle refresh in place, not via full tracks.load()")
+    func singleTrackUpdatesUseRefreshTracks() throws {
+        let source = try self.scanningSource()
+        for fn in ["func rescanTrack", "func setTrackExcludedFromShuffle"] {
+            guard let start = source.range(of: fn) else {
+                Issue.record("\(fn) must exist")
+                continue
+            }
+            // Scope to this function's body: from its declaration to the next one.
+            let after = source[start.upperBound...]
+            let end = after.range(of: "\n    func ")?.lowerBound ?? after.endIndex
+            let body = after[..<end]
+            #expect(
+                body.contains("refreshTracks(ids:"),
+                "\(fn) must update via refreshTracks (issue #343)"
+            )
+            #expect(
+                !body.contains("self.tracks.load()"),
+                "\(fn) must not full-reload the table (scroll jump, issue #343)"
+            )
+        }
+    }
+}
