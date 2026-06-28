@@ -83,8 +83,12 @@ public struct PodcastSettingsView: View {
         .formStyle(.grouped)
         .navigationTitle(L10n.string("Podcasts"))
         .onAppear {
+            // Must match the Info.plist key the app actually reads (Resources/Info.plist
+            // maps $(PODCAST_INDEX_API_KEY) to "BocanPodcastIndexApiKey", which is what
+            // BocanApp builds the PodcastIndex credentials from). Reading the raw
+            // xcconfig name here left this always false even when search worked.
             self.podcastIndexConfigured =
-                !(Bundle.main.infoDictionary?["PODCAST_INDEX_API_KEY"] as? String ?? "").isEmpty
+                !(Bundle.main.infoDictionary?["BocanPodcastIndexApiKey"] as? String ?? "").isEmpty
         }
     }
 }
