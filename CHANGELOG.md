@@ -5,6 +5,29 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0](https://github.com/bocan/bocan-music/compare/v1.12.1...v1.13.0) (2026-06-28)
+
+
+### ### Added
+
+* **ui:** add hover tooltips and VoiceOver labels to podcast episode status icons ([b18ad30](https://github.com/bocan/bocan-music/commit/b18ad30d9173dbd1596d009d32f7af29a3e62a96))
+
+
+### ### Fixed
+
+* **audio:** recover from or surface a dropped stream instead of silent fake-playback ([0efb073](https://github.com/bocan/bocan-music/commit/0efb0738f1df34a98b48659ba32cc28f901d0663))
+* **ui:** give the Podcasts settings pane a visible sidebar icon ([2db73a9](https://github.com/bocan/bocan-music/commit/2db73a9da4e203cf3d4c4c55510d9f4cd4006fda))
+* **ui:** surface a terminal playback failure instead of pretending to play ([2f61db4](https://github.com/bocan/bocan-music/commit/2f61db4999979b5a5d7a9eed3e98036803de8fe1))
+
+
+### ### Changed
+
+* **library:** skip redundant post-scan reload when nothing changed ([214e3da](https://github.com/bocan/bocan-music/commit/214e3da1668b2449f3869543bd08f0bc67db6d4d))
+* **ui:** coalesce playlist-sidebar reloads at startup ([18dd40e](https://github.com/bocan/bocan-music/commit/18dd40ec1ae761a867720b26a385e8435b73354c))
+* **ui:** dedupe shuffle toggle to satisfy the body-length gate ([6cf55d0](https://github.com/bocan/bocan-music/commit/6cf55d0038c7998e87fef5d9f53eeb04b5cf7de9))
+* **ui:** drop the redundant startup load from the initial search emission ([c813119](https://github.com/bocan/bocan-music/commit/c8131193d42df777265cc593976bba4dcf147180))
+* **ui:** extract playlist cover-art file helpers to satisfy file-length gate ([3ab426e](https://github.com/bocan/bocan-music/commit/3ab426ee1fab71ce95fce1cc1d84a5e6e6762335))
+
 ## [1.12.1](https://github.com/bocan/bocan-music/compare/v1.12.0...v1.12.1) (2026-06-23)
 
 
