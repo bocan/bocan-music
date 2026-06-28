@@ -5,7 +5,10 @@ import Testing
 
 // MARK: - AlbumsViewModelTests
 
-@Suite("AlbumsViewModel Tests")
+// `.serialized`: setSortOrder writes a shared UserDefaults key, so running the
+// sort/persistence cases in parallel could let one test's write leak into
+// another's view-model init.
+@Suite("AlbumsViewModel Tests", .serialized)
 @MainActor
 struct AlbumsViewModelTests {
     private func makeDatabase() async throws -> Database {
@@ -72,6 +75,71 @@ struct AlbumsViewModelTests {
         await vm.load(albumArtistID: artist1ID)
         #expect(vm.albums.count == 1)
         #expect(vm.albums.first?.title == "Album A")
+    }
+
+    // MARK: - Sort order (issue #349)
+
+    @Test("albumArtist sort orders by album-artist name, then album title")
+    func sortByAlbumArtist() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let (beatles, abba): (Int64, Int64) = try await db.write { db in
+            var beatlesArtist = Artist(name: "Beatles")
+            var abbaArtist = Artist(name: "ABBA")
+            try beatlesArtist.insert(db)
+            try abbaArtist.insert(db)
+            return try (#require(beatlesArtist.id), #require(abbaArtist.id))
+        }
+        try await db.write { db in
+            var revolver = Album(title: "Revolver", albumArtistID: beatles)
+            var abbeyRoad = Album(title: "Abbey Road", albumArtistID: beatles)
+            var arrival = Album(title: "Arrival", albumArtistID: abba)
+            try revolver.insert(db)
+            try abbeyRoad.insert(db)
+            try arrival.insert(db)
+        }
+        let vm = AlbumsViewModel(repository: repo)
+        await vm.load()
+        vm.setSortOrder(.albumArtist)
+        // ABBA before Beatles; within Beatles, Abbey Road before Revolver.
+        #expect(vm.albums.map(\.title) == ["Arrival", "Abbey Road", "Revolver"])
+    }
+
+    @Test("yearNewest sort orders by descending year")
+    func sortByYearNewest() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        try await db.write { db in
+            var old = Album(title: "Revolver", year: 1966)
+            var mid = Album(title: "Abbey Road", year: 1969)
+            var new = Album(title: "Arrival", year: 1977)
+            try old.insert(db)
+            try mid.insert(db)
+            try new.insert(db)
+        }
+        let vm = AlbumsViewModel(repository: repo)
+        await vm.load()
+        vm.setSortOrder(.yearNewest)
+        #expect(vm.albums.map(\.year) == [1977, 1969, 1966])
+    }
+
+    @Test("sort order is persisted and restored by a fresh view model")
+    func sortOrderPersists() async throws {
+        let key = AlbumsViewModel.sortOrderKey
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: key)
+        defer { defaults.removeObject(forKey: key) }
+
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+
+        let first = AlbumsViewModel(repository: repo)
+        #expect(first.sortOrder == .albumName) // default with a clean key
+        first.setSortOrder(.yearNewest)
+
+        // A new instance (next launch) reads the persisted preference.
+        let second = AlbumsViewModel(repository: repo)
+        #expect(second.sortOrder == .yearNewest)
     }
 
     // MARK: - Keyboard focus (Accessibility Phase 5)
