@@ -112,16 +112,13 @@ enum MetalSupport {
 enum MetalVisualizerFactory {
     private static let log = AppLogger.make(.ui)
 
-    /// True when `mode` has a Metal renderer. Foundations phase: false for every
-    /// mode. Each conversion phase (12.7 onward) flips its own arm.
+    /// True when `mode` has a Metal renderer. Every mode is now Metal-backed; the
+    /// switch is exhaustive on purpose, so adding a `VisualizerMode` forces a
+    /// decision here rather than silently falling through to Canvas.
     static func supports(_ mode: VisualizerMode) -> Bool {
         switch mode {
         case .oscilloscope, .cascade, .spectrumBars, .halo, .starfield, .nebula:
             true
-
-        // Conversion phases add `case .<mode>: true` here.
-        default:
-            false
         }
     }
 
@@ -166,9 +163,6 @@ enum MetalVisualizerFactory {
             self.instantiate(mode: mode) {
                 try MetalNebula(device: device, pixelFormat: pixelFormat, config: config)
             }
-
-        default:
-            nil
         }
     }
 
