@@ -391,7 +391,12 @@ public extension LibraryViewModel {
                 return
             }
             _ = try await scanner.scanSingleFile(url: url)
-            await self.tracks.load()
+            // Update this row in place rather than a full tracks.load(): a full
+            // reload flips isLoading (tearing the table out for a spinner and
+            // back, resetting scroll) and re-sorts, so the list jumps away from
+            // where the user was. Matches the tag-edit / rating / identify paths
+            // (issue #343).
+            await self.refreshTracks(ids: [id])
             self.log.debug("library.rescanTrack", ["id": id])
             let title = track.title ?? url.lastPathComponent
             self.showToast(ToastMessage(text: L10n.string("Re-scanned “\(title)”"), kind: .success))
@@ -434,7 +439,9 @@ public extension LibraryViewModel {
         let trackRepo = TrackRepository(database: self.database)
         do {
             try await trackRepo.setExcludedFromShuffle(trackID: trackID, excluded: excluded)
-            await self.tracks.load()
+            // Update the single row in place; a full tracks.load() would flip
+            // isLoading and bounce the list's scroll position (issue #343).
+            await self.refreshTracks(ids: [trackID])
             self.log.debug("library.setTrackExcludedFromShuffle", ["trackID": trackID, "excluded": excluded])
         } catch {
             self.log.error("library.setTrackExcludedFromShuffle.failed", ["trackID": trackID, "error": String(reflecting: error)])
