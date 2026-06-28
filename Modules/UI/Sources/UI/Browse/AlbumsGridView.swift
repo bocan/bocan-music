@@ -190,6 +190,34 @@ public struct AlbumsGridView: View {
             }
         }
         .navigationTitle(L10n.string("Albums"))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                self.sortMenu
+            }
+        }
+    }
+
+    /// Dropdown that chooses the grid sort order (issue #349). Bound straight to
+    /// the view model, which owns and persists the preference.
+    private var sortMenu: some View {
+        Menu {
+            Picker(L10n.string("Sort By"), selection: self.sortBinding) {
+                ForEach(AlbumSortOrder.allCases, id: \.rawValue) { order in
+                    Text(order.displayName).tag(order)
+                }
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label(L10n.string("Sort"), systemImage: "arrow.up.arrow.down")
+        }
+        .help(L10n.string("Choose how albums are sorted"))
+    }
+
+    private var sortBinding: Binding<AlbumSortOrder> {
+        Binding(
+            get: { self.vm.sortOrder },
+            set: { self.vm.setSortOrder($0) }
+        )
     }
 
     // MARK: - Grid

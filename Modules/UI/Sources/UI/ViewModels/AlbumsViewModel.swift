@@ -19,7 +19,17 @@ public final class AlbumsViewModel: ObservableObject {
     /// Maps album ID → non-disabled track count, loaded alongside albums.
     @Published public private(set) var trackCounts: [Int64: Int] = [:]
 
+    /// Current grid sort order. Owned here (not via `@AppStorage` in the view)
+    /// because album loading is navigation-driven on the view model, so the
+    /// persisted preference must be known at load time to sort the first result
+    /// without a flash. Persisted in UserDefaults under ``sortOrderKey``.
+    @Published public private(set) var sortOrder: AlbumSortOrder
+
     // MARK: - Internal
+
+    /// UserDefaults key backing ``sortOrder`` (read at init, written by
+    /// ``setSortOrder(_:)``).
+    public static let sortOrderKey = "albums.sortOrder"
 
     private let repository: AlbumRepository
     private let log = AppLogger.make(.ui)
@@ -28,6 +38,8 @@ public final class AlbumsViewModel: ObservableObject {
 
     public init(repository: AlbumRepository) {
         self.repository = repository
+        let raw = UserDefaults.standard.string(forKey: Self.sortOrderKey)
+        self.sortOrder = raw.flatMap(AlbumSortOrder.init(rawValue:)) ?? .albumName
     }
 
     // MARK: - Public API
@@ -47,9 +59,10 @@ public final class AlbumsViewModel: ObservableObject {
             let albums = try await albumsTask
             let artistNames = await (try? artistNamesTask) ?? [:]
             let trackCounts = await (try? trackCountsTask) ?? [:]
-            self.albums = albums
+            // artistNames first: sortedAlbums(.albumArtist) reads it.
             self.artistNames = artistNames
             self.trackCounts = trackCounts
+            self.albums = self.sortedAlbums(albums)
             self.log.debug("albums.load.end", ["count": self.albums.count])
         } catch {
             self.log.error("albums.load.failed", ["error": String(reflecting: error)])
@@ -78,7 +91,7 @@ public final class AlbumsViewModel: ObservableObject {
 
     /// Replaces the album list with a pre-fetched result (search results).
     public func setAlbums(_ items: [Album]) {
-        self.albums = items
+        self.albums = self.sortedAlbums(items)
     }
 
     /// Applies a mutation to a single album in the in-memory list without reloading
@@ -92,10 +105,71 @@ public final class AlbumsViewModel: ObservableObject {
     public func search(query: String) async {
         self.isLoading = true
         do {
-            self.albums = try await self.repository.search(query: query)
+            self.albums = try await self.sortedAlbums(self.repository.search(query: query))
         } catch {
             self.log.error("albums.search.failed", ["error": String(reflecting: error)])
         }
         self.isLoading = false
+    }
+
+    /// Changes the grid sort order, persists it, and re-sorts in place (no refetch).
+    public func setSortOrder(_ order: AlbumSortOrder) {
+        guard order != self.sortOrder else { return }
+        self.sortOrder = order
+        UserDefaults.standard.set(order.rawValue, forKey: Self.sortOrderKey)
+        self.albums = self.sortedAlbums(self.albums)
+    }
+
+    /// Sorts `items` by the current ``sortOrder``, resolving album-artist names
+    /// from ``artistNames``. Uses `localizedStandardCompare` so numbers and
+    /// diacritics order naturally.
+    private func sortedAlbums(_ items: [Album]) -> [Album] {
+        switch self.sortOrder {
+        case .albumName:
+            items.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+
+        case .albumArtist:
+            items.sorted { lhs, rhs in
+                let lname = lhs.albumArtistID.flatMap { self.artistNames[$0] } ?? ""
+                let rname = rhs.albumArtistID.flatMap { self.artistNames[$0] } ?? ""
+                let cmp = lname.localizedStandardCompare(rname)
+                if cmp != .orderedSame { return cmp == .orderedAscending }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
+
+        case .yearNewest:
+            items.sorted { lhs, rhs in
+                let lyear = lhs.year ?? Int.min
+                let ryear = rhs.year ?? Int.min
+                if lyear != ryear { return lyear > ryear }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
+        }
+    }
+}
+
+// MARK: - AlbumSortOrder
+
+/// Sort order for the main Albums grid (issue #349).
+public enum AlbumSortOrder: String, CaseIterable, Sendable {
+    /// Album title, A->Z (the historical default).
+    case albumName
+    /// Album artist A->Z, then album title within each artist.
+    case albumArtist
+    /// Release year, newest first, then title.
+    case yearNewest
+
+    /// Localized label shown in the grid's sort menu.
+    public var displayName: String {
+        switch self {
+        case .albumName:
+            L10n.string("Album Name")
+
+        case .albumArtist:
+            L10n.string("Album Artist")
+
+        case .yearNewest:
+            L10n.string("Year (Newest First)")
+        }
     }
 }
