@@ -1046,14 +1046,40 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     // Plays all tracks from the album of `track`.
 
     public func playAlbum(track: Track, shuffle: Bool = false) async {
+        guard let albumID = track.albumID else { return }
+        await self.playAlbum(albumID: albumID, shuffle: shuffle)
+    }
+
+    /// Plays the album with `albumID` in track order, replacing the queue, without
+    /// changing the visible destination (issue #349: "Play Album" plays in place).
+    public func playAlbum(albumID: Int64, shuffle: Bool = false) async {
         self.stopPlaylistSync()
-        guard let qp = engine as? QueuePlayer, let albumID = track.albumID else { return }
+        guard let qp = engine as? QueuePlayer else { return }
         do {
             try await qp.playAlbum(albumID, shuffle: shuffle)
         } catch {
             self.log.error("library.playAlbum.failed", ["error": String(reflecting: error)])
             self.playbackErrorMessage = L10n.string("Could not play album.")
         }
+    }
+
+    /// Plays every track of the given albums (album then track order), replacing
+    /// the queue. Used by the multi-select "Play N Albums" grid action.
+    public func playAlbums(albumIDs: [Int64]) async {
+        guard !albumIDs.isEmpty else { return }
+        if albumIDs.count == 1, let only = albumIDs.first {
+            await self.playAlbum(albumID: only)
+            return
+        }
+        let repo = TrackRepository(database: self.database)
+        var collected: [Track] = []
+        for id in albumIDs {
+            if let tracks = try? await repo.fetchAll(albumID: id) {
+                collected.append(contentsOf: tracks)
+            }
+        }
+        guard !collected.isEmpty else { return }
+        await self.play(tracks: collected)
     }
 
     /// Plays all tracks by the artist of `track`.

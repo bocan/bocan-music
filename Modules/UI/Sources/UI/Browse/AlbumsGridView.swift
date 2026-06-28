@@ -321,14 +321,23 @@ public struct AlbumsGridView: View {
         let ids = self.targetIDs(for: album)
         let multi = ids.count > 1
 
-        Button(L10n.string("Play \(ids.count) Albums")) {
-            Task {
-                for id in ids {
-                    await self.library.selectDestination(.album(id))
-                }
+        if multi {
+            // Replace the queue with every selected album's tracks, in place.
+            Button(L10n.string("Play \(ids.count) Albums")) {
+                Task { await self.library.playAlbums(albumIDs: ids) }
+            }
+            .disabled(ids.isEmpty)
+        } else {
+            // "Play Album" plays in place (no navigation); "View Album" opens the
+            // album detail, which is what the old single "Play" action did (#349).
+            Button(L10n.string("Play Album")) {
+                guard let id = album.id else { return }
+                Task { await self.library.playAlbum(albumID: id) }
+            }
+            Button(L10n.string("View Album")) {
+                self.vm.selectedAlbumID = album.id
             }
         }
-        .disabled(ids.isEmpty)
 
         if !multi {
             Divider()
