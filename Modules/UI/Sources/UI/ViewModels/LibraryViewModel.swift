@@ -621,6 +621,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     private func makeSearchQuerySubscription() -> AnyCancellable {
         self.$searchQuery
+            // Skip the value @Published emits on subscribe. The startup spine
+            // performs the first load (after restoreUIState picks the saved
+            // destination); without dropFirst the initial empty query debounced
+            // through and fired a redundant full loadCurrentDestination() ~250ms
+            // into launch, loading the default destination before the restore.
+            // Only real query changes should drive a reload.
+            .dropFirst()
             .debounce(for: .milliseconds(250), scheduler: RunLoop.main)
             .removeDuplicates()
             .sink { [weak self] query in
