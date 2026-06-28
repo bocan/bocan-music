@@ -58,6 +58,8 @@ jobs:
           ACOUSTID_API_KEY: ${{ secrets.ACOUSTID_API_KEY }}
           BOCAN_LASTFM_API_KEY: ${{ secrets.BOCAN_LASTFM_API_KEY }}
           BOCAN_LASTFM_SHARED_SECRET: ${{ secrets.BOCAN_LASTFM_SHARED_SECRET }}
+          PODCAST_INDEX_API_KEY: ${{ secrets.PODCAST_INDEX_API_KEY }}
+          PODCAST_INDEX_API_SECRET: ${{ secrets.PODCAST_INDEX_API_SECRET }}
         run: |
           if [ ! -f Secrets.xcconfig ]; then
             cp Secrets.xcconfig.template Secrets.xcconfig
@@ -72,6 +74,12 @@ jobs:
           fi
           if [ -n "$BOCAN_LASTFM_SHARED_SECRET" ]; then
             sed -i '' "s|^BOCAN_LASTFM_SHARED_SECRET = .*|BOCAN_LASTFM_SHARED_SECRET = $BOCAN_LASTFM_SHARED_SECRET|" Secrets.xcconfig
+          fi
+          if [ -n "$PODCAST_INDEX_API_KEY" ]; then
+            sed -i '' "s|^PODCAST_INDEX_API_KEY = .*|PODCAST_INDEX_API_KEY = $PODCAST_INDEX_API_KEY|" Secrets.xcconfig
+          fi
+          if [ -n "$PODCAST_INDEX_API_SECRET" ]; then
+            sed -i '' "s|^PODCAST_INDEX_API_SECRET = .*|PODCAST_INDEX_API_SECRET = $PODCAST_INDEX_API_SECRET|" Secrets.xcconfig
           fi
 
       - name: Generate Xcode project
