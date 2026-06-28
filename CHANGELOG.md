@@ -5,6 +5,18 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1](https://github.com/bocan/bocan-music/compare/v1.14.0...v1.14.1) (2026-06-28)
+
+
+### ### Fixed
+
+* **ui:** read the correct Info.plist key for PodcastIndex configured-state ([6bb8769](https://github.com/bocan/bocan-music/commit/6bb87694d9be09efcc12855e376617f8c5cf28f2))
+
+
+### ### Changed
+
+* **ui:** drop dead default arms in MetalVisualizerFactory switches ([a920402](https://github.com/bocan/bocan-music/commit/a9204021dd36512c3b14e46413e526f673bf23f4))
+
 ## [1.14.0](https://github.com/bocan/bocan-music/compare/v1.13.0...v1.14.0) (2026-06-28)
 
 Many thanks to @go1968 and @rjp for their contributions to this release, which stops us loosing the existing song list, adds a sort-order chooser to the Albums grid, restores the album-grid scroll position on return from an album, and splits Play Album / View Album in the album grid.
