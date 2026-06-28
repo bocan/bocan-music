@@ -57,6 +57,7 @@ public struct SettingsScene: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 720, minHeight: 460)
+        .background(WindowSignpostBracket(name: "ui.settingsSession"))
         .onAppear { self.consumePendingNavigation() }
         .onChange(of: self.router.pendingPage) { _, _ in self.consumePendingNavigation() }
     }
