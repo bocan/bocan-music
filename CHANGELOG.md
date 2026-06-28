@@ -5,6 +5,20 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0](https://github.com/bocan/bocan-music/compare/v1.13.0...v1.14.0) (2026-06-28)
+
+
+### ### Added
+
+* **ui:** add a sort-order chooser to the Albums grid ([#349](https://github.com/bocan/bocan-music/issues/349)) ([476bee7](https://github.com/bocan/bocan-music/commit/476bee745b2f1342b6f7ff3ed9fb66759be24cc4))
+* **ui:** restore album-grid scroll position on return from an album ([#349](https://github.com/bocan/bocan-music/issues/349)) ([9bc3b0b](https://github.com/bocan/bocan-music/commit/9bc3b0b12a6ece0dfaa257182057a1fbdac7e1ab))
+* **ui:** split Play Album / View Album in the album grid ([#349](https://github.com/bocan/bocan-music/issues/349)) ([f9f1639](https://github.com/bocan/bocan-music/commit/f9f16395c559d2156783340e6a0dcf681ac3af5c))
+
+
+### ### Fixed
+
+* **ui:** keep the song list in place after re-scan / shuffle-toggle ([#343](https://github.com/bocan/bocan-music/issues/343)) ([f1c5272](https://github.com/bocan/bocan-music/commit/f1c5272d7952d3327810770f69b76e9fcf06ae62))
+
 ## [1.13.0](https://github.com/bocan/bocan-music/compare/v1.12.1...v1.13.0) (2026-06-28)
 
 
