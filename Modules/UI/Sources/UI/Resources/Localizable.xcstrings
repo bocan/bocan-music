@@ -19017,6 +19017,16 @@
         }
       }
     },
+    "View Album" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Víéŵ Áĺƀúḿ one"
+          }
+        }
+      }
+    },
     "View report %@" : {
       "localizations" : {
         "en-XA" : {
