@@ -150,6 +150,12 @@ public struct AlbumsGridView: View {
     @FocusState private var focusedAlbumID: Int64?
     /// Tracks the number of columns in the adaptive grid for arrow-key navigation.
     @State private var gridColumnCount = 3
+    /// Programmatic scroll position, used to restore the grid offset on return
+    /// from an album (#349).
+    @State private var scrollPosition = ScrollPosition(edge: .top)
+    /// Live vertical scroll offset, updated continuously; snapshotted into the
+    /// view model when navigating into an album so it survives the grid rebuild.
+    @State private var liveScrollOffset: CGFloat = 0
     /// Scales the minimum album cell width proportionally to the user's text size setting.
     @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
@@ -262,6 +268,10 @@ public struct AlbumsGridView: View {
                 }
                 .padding(Theme.albumGridSpacing)
             }
+            .scrollPosition(self.$scrollPosition)
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newY in
+                self.liveScrollOffset = newY
+            }
             .onGeometryChange(
                 for: Int.self,
                 of: {
@@ -285,10 +295,24 @@ public struct AlbumsGridView: View {
             .onChange(of: self.vm.selectedAlbumID) { _, newID in
                 if let id = newID {
                     self.vm.selectedAlbumID = nil
+                    // Snapshot the current scroll offset so the grid returns to it
+                    // when it's rebuilt on the way back (#349).
+                    self.vm.gridScrollOffset = Double(self.liveScrollOffset)
                     Task { await self.library.selectDestination(.album(id)) }
                 }
             }
+            // Restore the saved offset when the grid (re)appears. .scrollPosition
+            // applies it once the content has laid out, so it survives the reload
+            // on the way back; also re-apply when the list reloads.
+            .onAppear { self.restoreScrollOffset() }
+            .onChange(of: self.vm.albums.map(\.id)) { _, _ in self.restoreScrollOffset() }
         }
+    }
+
+    /// Restores the album grid to its saved scroll offset (#349).
+    private func restoreScrollOffset() {
+        guard self.vm.gridScrollOffset > 0 else { return }
+        self.scrollPosition.scrollTo(y: CGFloat(self.vm.gridScrollOffset))
     }
 
     /// Moves keyboard focus by `delta` positions in the album list.
