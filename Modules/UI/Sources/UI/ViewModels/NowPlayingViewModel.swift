@@ -310,10 +310,7 @@ public final class NowPlayingViewModel {
 
     /// Toggles shuffle on the queue player.
     public func toggleShuffle() async {
-        guard let qp = engine as? QueuePlayer else { return }
-        let new = !self.shuffleOn
-        await qp.setShuffle(new)
-        self.shuffleOn = new
+        await self.setShuffle(!self.shuffleOn)
     }
 
     /// Sets shuffle to an explicit value on the queue player.
