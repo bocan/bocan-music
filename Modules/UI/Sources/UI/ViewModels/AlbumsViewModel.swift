@@ -13,6 +13,11 @@ public final class AlbumsViewModel: ObservableObject {
     @Published public private(set) var isLoading = false
     @Published public var selectedAlbumID: Int64?
 
+    /// Album-grid vertical scroll offset, snapshotted when navigating into an
+    /// album so the grid can restore it when it's rebuilt on return (#349). Plain
+    /// `var`, not `@Published`: it must not trigger a re-render.
+    public var gridScrollOffset: Double = 0
+
     /// Maps artist ID → artist name, loaded alongside albums.
     @Published public private(set) var artistNames: [Int64: String] = [:]
 
