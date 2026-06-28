@@ -61,8 +61,37 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     // MARK: - Public API
 
-    /// Reloads the sidebar tree.
+    /// In-flight reload, so a burst of concurrent `reload()` calls shares one
+    /// fetch instead of issuing N. At launch three independent triggers fire it
+    /// (LibraryViewModel setup, the RootView startup spine, and the sidebar
+    /// section's own `.task`); without coalescing each ran its own `service.list()`.
+    private var reloadTask: Task<Void, Never>?
+    /// A reload requested while one was running schedules exactly one trailing
+    /// fetch afterwards, so a caller that mutated the store mid-flight (e.g. a
+    /// rapid second move/create) still observes fresh data.
+    private var reloadPending = false
+
+    /// Reloads the sidebar tree, coalescing overlapping calls.
     public func reload() async {
+        if let task = self.reloadTask {
+            self.reloadPending = true
+            await task.value
+            return
+        }
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await self.performReload()
+        }
+        self.reloadTask = task
+        await task.value
+        self.reloadTask = nil
+        if self.reloadPending {
+            self.reloadPending = false
+            await self.reload()
+        }
+    }
+
+    private func performReload() async {
         let end = Telemetry.timer("ui.playlistSidebar.reload")
         defer { end() }
         do {
