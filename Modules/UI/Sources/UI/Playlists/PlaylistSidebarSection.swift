@@ -70,7 +70,10 @@ public struct PlaylistSidebarSection: View {
                 .accessibilityIdentifier(A11y.PlaylistSidebar.addButton)
             }
         }
-        .task { await self.vm.reload() }
+        // Load only if a startup trigger (LibraryViewModel setup / RootView spine)
+        // has not already populated the tree; reload() also coalesces, so an
+        // overlapping call here joins the in-flight fetch rather than duplicating it.
+        .task { if !self.vm.isLoaded { await self.vm.reload() } }
         // NOTE: Sheet / confirmationDialog presentation modifiers MUST be
         // attached to the enclosing `List` (not this `Section`) — see
         // `View.playlistSidebarPresentations` below. SwiftUI replicates

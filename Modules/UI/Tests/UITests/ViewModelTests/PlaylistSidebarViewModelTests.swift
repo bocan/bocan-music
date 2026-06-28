@@ -22,6 +22,20 @@ struct PlaylistSidebarViewModelTests {
         #expect(vm.nodes.isEmpty)
     }
 
+    @Test("concurrent reloads coalesce without corrupting state")
+    func concurrentReloadsCoalesce() async throws {
+        let (vm, service) = try await self.makeVM()
+        _ = try await service.create(name: "A", parentID: nil)
+        // Three overlapping reloads (as at launch) must leave a correct, fully
+        // loaded tree -- the coalescer must not deadlock or drop the result.
+        async let r1: Void = vm.reload()
+        async let r2: Void = vm.reload()
+        async let r3: Void = vm.reload()
+        _ = await (r1, r2, r3)
+        #expect(vm.isLoaded)
+        #expect(vm.nodes.contains { $0.name == "A" })
+    }
+
     @Test("createPlaylist adds a node")
     func createPlaylist() async throws {
         let (vm, _) = try await self.makeVM()
