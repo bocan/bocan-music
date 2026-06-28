@@ -185,16 +185,31 @@ struct EngineTransportTests {
         await engine.pause()
         let tPause = await engine.currentTime // banked position while paused
 
+        // Measure the wall-clock that actually elapses across resume + read: the
+        // engine keeps playing in real time, so on a loaded CI runner an arbitrary
+        // (but bounded) amount of audio plays before we sample currentTime.
+        let clock = ContinuousClock()
+        let resumeStart = clock.now
         try await engine.play() // resume: must rebaseline the offset
         let tResume = await engine.currentTime // live position right after resume
+        let wall = clock.now - resumeStart
+        let elapsed = Double(wall.components.seconds) +
+            Double(wall.components.attoseconds) / 1e18
         await engine.stop()
 
-        #expect(tResume >= tPause - 0.05, "position must not jump backwards on resume (tPause=\(tPause) tResume=\(tResume))")
-        // The bug doubled the position on resume (tResume ~= 2 * tPause). A correct
-        // rebase leaves only the few ms of playback between resume and the read.
         #expect(
-            tResume < tPause + 0.1,
-            "position jumped ahead on resume: tPause=\(tPause) tResume=\(tResume)"
+            tResume >= tPause - 0.05,
+            "position must not jump backwards on resume (tPause=\(tPause) tResume=\(tResume))"
+        )
+        // The original bug re-counted everything played before the pause, so the
+        // position roughly doubled (tResume ~= 2 * tPause) no matter how little real
+        // time had passed. A correct rebase only advances by the wall-clock actually
+        // elapsed since resume. Bound against that measured elapsed time (plus a small
+        // scheduling margin) instead of a fixed tolerance -- the old `tPause + 0.1`
+        // flaked whenever runner jitter let more than 100ms play before the read.
+        #expect(
+            tResume <= tPause + elapsed + 0.05,
+            "position jumped ahead beyond real elapsed time: tPause=\(tPause) tResume=\(tResume) elapsed=\(elapsed)"
         )
     }
 
