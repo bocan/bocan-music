@@ -75,7 +75,10 @@ public final class VisualizerViewModel: ObservableObject {
     /// 0→1 and 1→0 transitions so the task body is identical to before.
     private var startCount = 0
     private var isRunning = false
-    private var performanceToastTask: Task<Void, Never>?
+    /// The auto-dismiss timer for `performanceToast`. `private(set)` so tests can
+    /// `await` its completion deterministically instead of racing a wall-clock
+    /// sleep against main-actor scheduling.
+    private(set) var performanceToastTask: Task<Void, Never>?
     private let toastDismissalDuration: Duration
 
     // MARK: - Init
