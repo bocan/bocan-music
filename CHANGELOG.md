@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.14.0](https://github.com/bocan/bocan-music/compare/v1.13.0...v1.14.0) (2026-06-28)
 
+Many thanks to @go1968 and @rjp for their contributions to this release, which stops us loosing the existing song list, adds a sort-order chooser to the Albums grid, restores the album-grid scroll position on return from an album, and splits Play Album / View Album in the album grid.
 
 ### ### Added
 
