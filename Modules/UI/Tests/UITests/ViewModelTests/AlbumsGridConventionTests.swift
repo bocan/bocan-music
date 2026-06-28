@@ -41,4 +41,23 @@ struct AlbumsGridConventionTests {
             "multi-select must play via playAlbums(albumIDs:)"
         )
     }
+
+    @Test("The grid saves and restores its scroll offset across album visits (#349)")
+    func gridRestoresScrollOffset() throws {
+        let source = try self.gridSource()
+        // Capture live offset, snapshot it into the VM when navigating, and
+        // restore via ScrollPosition when the grid reappears.
+        #expect(
+            source.contains(".onScrollGeometryChange(for: CGFloat.self)"),
+            "the grid must observe scroll geometry to capture the live offset"
+        )
+        #expect(
+            source.contains("self.vm.gridScrollOffset = Double(self.liveScrollOffset)"),
+            "navigating into an album must snapshot the offset into the view model"
+        )
+        #expect(
+            source.contains("self.scrollPosition.scrollTo(y: CGFloat(self.vm.gridScrollOffset))"),
+            "the grid must restore the saved offset via ScrollPosition"
+        )
+    }
 }
