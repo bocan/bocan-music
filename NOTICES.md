@@ -270,5 +270,5 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 1.11.0. Dependency versions are pinned in
+*This file was generated for Bòcan 1.14.1. Dependency versions are pinned in
 each module's `Package.resolved`.*
