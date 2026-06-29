@@ -164,4 +164,5 @@ Much love to the giants whose shoulders I stand on:
 - [JP Simard](https://github.com/jpsim), creator of [SwiftLint](https://github.com/realm/SwiftLint), the linter that enforces my `.swiftlint.yml` on every commit.
 - [Mathieu Dubart](https://github.com/MathieuDubart), builder of [SwiftSonic](https://github.com/MathieuDubart/SwiftSonic) and [Cassette](https://github.com/MathieuDubart/Cassette). Bòcan's entire Subsonic / Navidrome / Airsonic stack rides on SwiftSonic; without it, talking to OpenSubsonic servers would be a hand-rolled mess.
 - [Tsiry Sandratraina](https://github.com/tsirysndr), builder of [Rocksky](https://github.com/tsirysndr/rocksky). The third leg of Bòcan's scrobbling stool, alongside Last.fm and ListenBrainz.
+- [Nuno Dias](https://github.com/nmdias), creator of [FeedKit](https://github.com/nmdias/FeedKit). Bòcan's entire podcast layer parses RSS, Atom, and the Podcasting 2.0 namespace through FeedKit; without it I'd be hand-rolling feed XML and weeping into my `podcast:person` tags.
 
