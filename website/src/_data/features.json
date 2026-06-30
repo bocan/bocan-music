@@ -54,5 +54,9 @@
   {
     "title": "Feels like it belongs on a Mac.",
     "body": "A tiny trackpad tick when you love a track, set a rating, land a seek, or release the volume slider. The Mini Player cross-fades with the main window instead of blinking. Honours Reduce Motion and your trackpad's haptic settings."
+  },
+  {
+    "title": "Browse the way you think.",
+    "body": "Sort Albums, Artists, Genres, Composers, and Podcasts by name or by the count that matters: songs, albums, year, unplayed episodes. Your choice sticks across launches. And every list remembers its place, so scroll halfway down, open an album or a show, hit back, and you land exactly where you left off instead of back at the top."
   }
 ]

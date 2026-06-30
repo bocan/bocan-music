@@ -11,6 +11,7 @@ private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sen
     var podcasts: [Podcast] = []
     var episodeItems: [EpisodeListItem] = []
     var unplayedCountsValue: [Int64: Int] = [:]
+    var episodeCountsValue: [Int64: Int] = [:]
     var subscribedCalled = false
     var episodesCalled = false
 
@@ -45,7 +46,7 @@ private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sen
     }
 
     func episodeCounts() async throws -> [Int64: Int] {
-        [:]
+        self.episodeCountsValue
     }
 
     func unplayedCounts() async throws -> [Int64: Int] {
@@ -383,5 +384,70 @@ struct PodcastsViewModelTests {
         let vm = PodcastsViewModel(library: nil, actions: nil)
         vm.addBarText = "hello"
         #expect(vm.addBarText == "hello")
+    }
+}
+
+// MARK: - PodcastsViewModelSortTests
+
+// `.serialized`: setSortOrder writes a shared UserDefaults key, so running the
+// sort/persistence cases in parallel could let one test's write leak into
+// another's view-model init.
+@Suite("PodcastsViewModel Sort Tests", .serialized)
+@MainActor
+struct PodcastsViewModelSortTests {
+    /// Seeds three shows with distinct unplayed and total-episode counts:
+    ///   Alpha: 1 unplayed, 1 total
+    ///   Mu:    3 unplayed, 2 total
+    ///   Zeta:  2 unplayed, 5 total
+    private func loadedViewModel() async -> PodcastsViewModel {
+        let lib = StubPodcastLibrary()
+        lib.podcasts = [
+            makePodcast(id: 1, title: "Alpha"),
+            makePodcast(id: 2, title: "Mu"),
+            makePodcast(id: 3, title: "Zeta"),
+        ]
+        lib.unplayedCountsValue = [1: 1, 2: 3, 3: 2]
+        lib.episodeCountsValue = [1: 1, 2: 2, 3: 5]
+        let vm = PodcastsViewModel(library: lib, actions: nil)
+        await vm.loadSubscribed()
+        return vm
+    }
+
+    @Test("podcastName sort orders alphabetically by title")
+    func sortByPodcastName() async {
+        let vm = await self.loadedViewModel()
+        vm.setSortOrder(.podcastName)
+        #expect(vm.subscribed.map(\.title) == ["Alpha", "Mu", "Zeta"])
+    }
+
+    @Test("unplayedCount sort orders by unplayed count, most first")
+    func sortByUnplayedCount() async {
+        let vm = await self.loadedViewModel()
+        vm.setSortOrder(.unplayedCount)
+        // Mu (3), Zeta (2), Alpha (1).
+        #expect(vm.subscribed.map(\.title) == ["Mu", "Zeta", "Alpha"])
+    }
+
+    @Test("totalEpisodes sort orders by total episode count, most first")
+    func sortByTotalEpisodes() async {
+        let vm = await self.loadedViewModel()
+        vm.setSortOrder(.totalEpisodes)
+        // Zeta (5), Mu (2), Alpha (1).
+        #expect(vm.subscribed.map(\.title) == ["Zeta", "Mu", "Alpha"])
+    }
+
+    @Test("sort order is persisted and restored by a fresh view model")
+    func sortOrderPersists() {
+        let key = PodcastsViewModel.sortOrderKey
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: key)
+        defer { defaults.removeObject(forKey: key) }
+
+        let first = PodcastsViewModel(library: nil, actions: nil)
+        #expect(first.sortOrder == .podcastName) // default with a clean key
+        first.setSortOrder(.totalEpisodes)
+
+        let second = PodcastsViewModel(library: nil, actions: nil)
+        #expect(second.sortOrder == .totalEpisodes)
     }
 }

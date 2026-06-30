@@ -11,6 +11,12 @@ public struct ArtistDetailView: View {
     @State private var artist: Artist?
     @State private var albums: [Album] = []
     @State private var albumTrackCounts: [Int64: Int] = [:]
+    /// Programmatic scroll position for the album strip, used to restore its
+    /// offset on return from one of the artist's albums (#349).
+    @State private var albumScrollPosition = ScrollPosition(edge: .top)
+    /// Live vertical offset of the album strip, snapshotted into the library
+    /// view model when opening an album so it survives this view's rebuild.
+    @State private var liveAlbumScrollOffset: CGFloat = 0
     /// Scales the minimum album cell width proportionally to the user's text size setting.
     @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
@@ -53,6 +59,10 @@ public struct ArtistDetailView: View {
                     }
                     .padding(Theme.albumGridSpacing)
                 }
+                .scrollPosition(self.$albumScrollPosition)
+                .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newY in
+                    self.liveAlbumScrollOffset = newY
+                }
                 .frame(maxHeight: 260)
                 Divider()
             }
@@ -64,6 +74,11 @@ public struct ArtistDetailView: View {
         .task {
             await self.load()
         }
+        // Restore the album strip's saved offset when the albums load on a
+        // rebuild. This lives on the always-present root so it fires on the
+        // empty -> populated transition; the strip's own ScrollView is gated
+        // behind `if !albums.isEmpty`, so an onChange there would never fire (#349).
+        .onChange(of: self.albums.map(\.id)) { _, _ in self.restoreAlbumScrollOffset() }
     }
 
     // MARK: - Sub-views
@@ -155,7 +170,7 @@ public struct ArtistDetailView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if let id = album.id {
-                Task { await self.library.selectDestination(.album(id)) }
+                self.openAlbum(id)
             }
         }
         .contextMenu {
@@ -174,7 +189,7 @@ public struct ArtistDetailView: View {
     private func albumContextMenu(album: Album) -> some View {
         Button(L10n.string("Play Album")) {
             if let id = album.id {
-                Task { await self.library.selectDestination(.album(id)) }
+                self.openAlbum(id)
             }
         }
         .disabled(album.id == nil)
@@ -216,6 +231,20 @@ public struct ArtistDetailView: View {
             }
         }
         .disabled(album.id == nil)
+    }
+
+    /// Navigates to an album, snapshotting the album strip's current scroll
+    /// offset first so it can be restored when this view is rebuilt on the way
+    /// back (#349).
+    private func openAlbum(_ id: Int64) {
+        self.library.artistAlbumScrollOffsets[self.artistID] = Double(self.liveAlbumScrollOffset)
+        Task { await self.library.selectDestination(.album(id)) }
+    }
+
+    /// Restores the album strip to the offset saved for this artist.
+    private func restoreAlbumScrollOffset() {
+        guard let offset = self.library.artistAlbumScrollOffsets[self.artistID], offset > 0 else { return }
+        self.albumScrollPosition.scrollTo(y: CGFloat(offset))
     }
 
     private func openInspector(forAlbumID id: Int64) async {
@@ -287,9 +316,41 @@ public struct ArtistsView: View {
             }
         }
         .navigationTitle(L10n.string("Artists"))
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                SortMenu(selection: self.sortBinding, help: L10n.string("Choose how artists are sorted"))
+            }
+        }
+    }
+
+    /// Bridges the sort menu to the view model, which owns and persists the
+    /// preference and re-sorts in place on change.
+    private var sortBinding: Binding<ArtistSortOrder> {
+        Binding(
+            get: { self.vm.sortOrder },
+            set: { self.vm.setSortOrder($0) }
+        )
     }
 
     private var artistList: some View {
+        ScrollViewReader { proxy in
+            self.artistListContent
+                // Re-center the last-visited artist when the list (re)appears or
+                // reloads, so returning from an artist lands where the user left
+                // off rather than back at the top.
+                .onAppear { self.restoreScrollPosition(proxy) }
+                .onChange(of: self.vm.artists.map(\.id)) { _, _ in self.restoreScrollPosition(proxy) }
+        }
+    }
+
+    /// Restores the artist list to the last-visited artist, centered, so a round
+    /// trip into an artist detail view returns to roughly where the user was.
+    private func restoreScrollPosition(_ proxy: ScrollViewProxy) {
+        guard self.vm.lastVisitedArtistID != nil else { return }
+        proxy.scrollTo(self.vm.lastVisitedArtistID, anchor: .center)
+    }
+
+    private var artistListContent: some View {
         List(self.vm.artists, id: \.id, selection: self.$vm.selectedArtistID) { artist in
             HStack(spacing: 10) {
                 // Avatar circle
@@ -347,6 +408,9 @@ public struct ArtistsView: View {
         .onChange(of: self.vm.selectedArtistID) { _, id in
             if let id {
                 self.vm.selectedArtistID = nil
+                // Snapshot the visited artist so the list scrolls it back into
+                // view when it's rebuilt on the way back (#349-style restore).
+                self.vm.lastVisitedArtistID = id
                 Task { await self.library.selectDestination(.artist(id)) }
             }
         }

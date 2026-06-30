@@ -117,6 +117,25 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var forwardStack: [SidebarDestination] = []
     private static let historyLimit = 50
 
+    // MARK: - Scroll restoration
+
+    /// Vertical scroll offset of an artist's album strip, keyed by artist id,
+    /// snapshotted when opening one of that artist's albums so `ArtistDetailView`
+    /// can restore the strip when it's rebuilt on return (mirrors the album-grid
+    /// scroll restore, #349). Plain `var`, not `@Published`: it must not trigger
+    /// a re-render.
+    public var artistAlbumScrollOffsets: [Int64: Double] = [:]
+
+    /// The genre last navigated into, snapshotted so `GenresView` can scroll it
+    /// back into view when the list is rebuilt on return (#349). Plain `var`,
+    /// not `@Published`: it must not trigger a re-render.
+    public var lastVisitedGenre: String?
+
+    /// The composer last navigated into, snapshotted so `ComposersView` can
+    /// scroll it back into view when the list is rebuilt on return (#349). Plain
+    /// `var`, not `@Published`: it must not trigger a re-render.
+    public var lastVisitedComposer: String?
+
     // MARK: - Tag editor state
 
     /// Non-nil when the tag editor sheet should be presented.
