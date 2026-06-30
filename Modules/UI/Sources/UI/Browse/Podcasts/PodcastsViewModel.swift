@@ -23,6 +23,17 @@ public final class PodcastsViewModel: ObservableObject {
     /// Set by `openShow(_:)` and observed by `PodcastsGridView` to trigger navigation.
     @Published public var selectedShowID: Int64?
 
+    /// Podcasts-grid vertical scroll offset, snapshotted when opening a show so
+    /// the grid can restore it when it's rebuilt on return (mirrors the
+    /// album-grid scroll restore, #349). Plain `var`, not `@Published`: it must
+    /// not trigger a re-render.
+    public var gridScrollOffset: Double = 0
+
+    /// Current grid sort order. Owned here (not via `@AppStorage` in the view)
+    /// so the persisted preference is known before `subscribed` is first sorted.
+    /// Persisted in UserDefaults under ``sortOrderKey``.
+    @Published public private(set) var sortOrder: PodcastSortOrder
+
     // MARK: - Phase 21-8: search + detail state
 
     @Published public internal(set) var searchResults: [UIPodcastSearchResult] = []
@@ -63,6 +74,10 @@ public final class PodcastsViewModel: ObservableObject {
 
     // MARK: - Init
 
+    /// UserDefaults key backing ``sortOrder`` (read at init, written by
+    /// ``setSortOrder(_:)``).
+    public static let sortOrderKey = "podcasts.sortOrder"
+
     public init(
         library: (any PodcastLibraryDataSource)?,
         actions: (any PodcastActions)?,
@@ -73,6 +88,8 @@ public final class PodcastsViewModel: ObservableObject {
         self.actions = actions
         self.searchProvider = searchProvider
         self.transcriptProvider = transcriptProvider
+        let raw = UserDefaults.standard.string(forKey: Self.sortOrderKey)
+        self.sortOrder = raw.flatMap(PodcastSortOrder.init(rawValue:)) ?? .podcastName
     }
 
     deinit {
@@ -188,9 +205,11 @@ public final class PodcastsViewModel: ObservableObject {
         guard let library else { return }
         self.isLoading = true
         do {
-            self.subscribed = try await library.subscribedPodcasts()
+            let fetched = try await library.subscribedPodcasts()
+            // Counts first: the count-based sorts read them.
             self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
             self.podcastUnplayedCounts = await (try? library.unplayedCounts()) ?? [:]
+            self.subscribed = self.sortedPodcasts(fetched)
         } catch {
             self.log.error("podcasts.loadSubscribed.failed", ["error": String(reflecting: error)])
         }
@@ -211,6 +230,11 @@ public final class PodcastsViewModel: ObservableObject {
                     guard let self else { return }
                     try Task.checkCancellation()
                     self.podcastUnplayedCounts = counts
+                    // Re-sort only when the order depends on this count, to avoid
+                    // republishing `subscribed` on every playback-state change.
+                    if self.sortOrder == .unplayedCount {
+                        self.subscribed = self.sortedPodcasts(self.subscribed)
+                    }
                 }
             } catch is CancellationError {
                 // Expected when the task is cancelled on navigation.
@@ -248,8 +272,9 @@ public final class PodcastsViewModel: ObservableObject {
                 for try await podcasts in stream {
                     guard let self else { return }
                     try Task.checkCancellation()
-                    self.subscribed = podcasts
+                    // Episode counts first: the count-based sorts read them.
                     self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
+                    self.subscribed = self.sortedPodcasts(podcasts)
                 }
             } catch is CancellationError {
                 // Expected when the task is cancelled on navigation.
@@ -263,6 +288,40 @@ public final class PodcastsViewModel: ObservableObject {
     /// `selectedShowID` and calls `library.selectDestination(.podcastShow(id))`.
     public func openShow(_ id: Int64) {
         self.selectedShowID = id
+    }
+
+    /// Changes the grid sort order, persists it, and re-sorts in place (no refetch).
+    public func setSortOrder(_ order: PodcastSortOrder) {
+        guard order != self.sortOrder else { return }
+        self.sortOrder = order
+        UserDefaults.standard.set(order.rawValue, forKey: Self.sortOrderKey)
+        self.subscribed = self.sortedPodcasts(self.subscribed)
+    }
+
+    /// Sorts `items` by the current ``sortOrder``. The count-based orders fall
+    /// back to podcast title as a secondary key. Uses `localizedStandardCompare`
+    /// so numbers and diacritics order naturally.
+    private func sortedPodcasts(_ items: [Podcast]) -> [Podcast] {
+        switch self.sortOrder {
+        case .podcastName:
+            items.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+
+        case .unplayedCount:
+            items.sorted { lhs, rhs in
+                let lcount = lhs.id.flatMap { self.podcastUnplayedCounts[$0] } ?? 0
+                let rcount = rhs.id.flatMap { self.podcastUnplayedCounts[$0] } ?? 0
+                if lcount != rcount { return lcount > rcount }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
+
+        case .totalEpisodes:
+            items.sorted { lhs, rhs in
+                let lcount = lhs.id.flatMap { self.podcastEpisodeCounts[$0] } ?? 0
+                let rcount = rhs.id.flatMap { self.podcastEpisodeCounts[$0] } ?? 0
+                if lcount != rcount { return lcount > rcount }
+                return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
+            }
+        }
     }
 
     // MARK: - Show

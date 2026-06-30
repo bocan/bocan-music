@@ -22,6 +22,12 @@ struct PodcastsGridView: View {
     }
 
     @State private var settingsTarget: SettingsTarget?
+    /// Programmatic scroll position, used to restore the grid offset on return
+    /// from a show (#349).
+    @State private var scrollPosition = ScrollPosition(edge: .top)
+    /// Live vertical scroll offset, snapshotted into the view model when opening
+    /// a show so it survives the grid rebuild.
+    @State private var liveScrollOffset: CGFloat = 0
 
     private var columns: [GridItem] {
         [GridItem(.adaptive(minimum: self.scaledMinWidth), spacing: Theme.albumGridSpacing)]
@@ -45,15 +51,46 @@ struct PodcastsGridView: View {
             }
             .padding(Theme.albumGridSpacing)
         }
+        .scrollPosition(self.$scrollPosition)
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, newY in
+            self.liveScrollOffset = newY
+        }
         .onChange(of: self.vm.selectedShowID) { _, newID in
             if let id = newID {
                 self.vm.selectedShowID = nil
+                // Snapshot the current scroll offset so the grid returns to it
+                // when it's rebuilt on the way back (#349).
+                self.vm.gridScrollOffset = Double(self.liveScrollOffset)
                 Task { await self.library.selectDestination(.podcastShow(id)) }
             }
         }
+        // Restore the saved offset when the grid (re)appears or the list reloads,
+        // so returning from a show lands where the user left off (#349).
+        .onAppear { self.restoreScrollOffset() }
+        .onChange(of: self.vm.subscribed.map(\.feedURL)) { _, _ in self.restoreScrollOffset() }
         .sheet(item: self.$settingsTarget) { target in
             PodcastShowSettingsView(podcast: target.podcast, vm: self.vm)
         }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                SortMenu(selection: self.sortBinding, help: L10n.string("Choose how podcasts are sorted"))
+            }
+        }
+    }
+
+    /// Bridges the sort menu to the view model, which owns and persists the
+    /// preference and re-sorts in place on change.
+    private var sortBinding: Binding<PodcastSortOrder> {
+        Binding(
+            get: { self.vm.sortOrder },
+            set: { self.vm.setSortOrder($0) }
+        )
+    }
+
+    /// Restores the podcasts grid to its saved scroll offset (#349).
+    private func restoreScrollOffset() {
+        guard self.vm.gridScrollOffset > 0 else { return }
+        self.scrollPosition.scrollTo(y: CGFloat(self.vm.gridScrollOffset))
     }
 
     @ViewBuilder
