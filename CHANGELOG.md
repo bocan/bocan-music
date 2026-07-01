@@ -5,6 +5,18 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0](https://github.com/bocan/bocan-music/compare/v1.14.1...v1.15.0) (2026-07-01)
+
+
+### ### Added
+
+* **ui:** scroll-position restore and sort choosers across browse lists ([69a37ea](https://github.com/bocan/bocan-music/commit/69a37eafeb4fbe37ea376642ea91a5a566fb8fa8))
+
+
+### ### Fixed
+
+* **ui:** distinguish the visualizer toggle icon from Identify Track ([12f0a8f](https://github.com/bocan/bocan-music/commit/12f0a8fc50b65a80b2a1a20b8e01547caaf928de))
+
 ## [1.14.1](https://github.com/bocan/bocan-music/compare/v1.14.0...v1.14.1) (2026-06-28)
 
 
