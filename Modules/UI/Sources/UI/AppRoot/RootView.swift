@@ -133,7 +133,9 @@ public struct BocanRootView: View {
 
                         Button(
                             self.visualizerVM.paneVisible ? L10n.string("Hide Visualizer") : L10n.string("Show Visualizer"),
-                            systemImage: "waveform"
+                            // Spectrum-bars glyph, distinct from the waveform +
+                            // magnifier used by Identify Track right beside it.
+                            systemImage: "chart.bar.xaxis"
                         ) {
                             if self.reduceMotion {
                                 self.visualizerVM.paneVisible.toggle()
