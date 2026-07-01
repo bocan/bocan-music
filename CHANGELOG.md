@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.0](https://github.com/bocan/bocan-music/compare/v1.14.1...v1.15.0) (2026-07-01)
 
+I've gone through the entire UI and made sure that all the browse lists (Albums, Artists, Genres, Composers, and Podcasts) now restore their scroll position when you return to them.  You can even go into Artist view, then into an Album, and when you go back to the Artist view, it will restore your scroll position in the album list. This latter one was mostly a problem for Artists with eleventy thousand albums. I'm looking at you - The Beatles.
+
+I've also added sort choosers to all grids and lists, so you can sort by name, date added, or other criteria. Finally, I've fixed a small UI issue where the visualizer toggle icon was too similar to the Identify Track icon.
 
 ### ### Added
 
