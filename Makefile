@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-observability uitest lint format pseudolocale format-check install-hooks clean
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-observability uitest lint format pseudolocale format-check install-hooks clean downloads
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -249,3 +249,7 @@ install-hooks:
 clean:
 	rm -rf build/ DerivedData/
 	xcodebuild clean -project Bocan.xcodeproj -scheme Bocan 2>/dev/null || true
+
+## downloads: Print GitHub Release DMG download counts (server-side, no client telemetry)
+downloads:
+	@Scripts/release-downloads.sh
