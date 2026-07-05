@@ -19,6 +19,9 @@ public struct LyricsEditorSheet: View {
     // MARK: - State
 
     @State private var text = ""
+    /// The last value written into `text` programmatically, used to tell an
+    /// in-progress user edit apart from a not-yet-loaded document.
+    @State private var lastLoaded = ""
     @FocusState private var editorFocused: Bool
     @State private var showSaveConfirmation = false
     @State private var showDeleteConfirm = false
@@ -52,6 +55,12 @@ public struct LyricsEditorSheet: View {
         }
         .frame(minWidth: 480, minHeight: 360)
         .onAppear { self.loadInitialText() }
+        .onChange(of: self.vm.document) { _, _ in
+            // The document can resolve after the sheet is already on screen when the
+            // editor is opened for a track that was not yet being observed. Pull the
+            // resolved lyrics in so the editor no longer shows stale-empty text.
+            self.applyDocumentText()
+        }
         .onKeyPress(.init("t"), phases: .down) { event in
             guard event.modifiers == .command else { return .ignored }
             self.insertTimestamp()
@@ -123,17 +132,29 @@ public struct LyricsEditorSheet: View {
     // MARK: - Helpers
 
     private func loadInitialText() {
-        switch self.vm.document {
+        self.applyDocumentText()
+        self.editorFocused = true
+    }
+
+    /// Writes the view model's resolved document into the editor text.
+    ///
+    /// Skips the update once the user has diverged from the last value we loaded, so
+    /// a late-arriving observation can populate a freshly opened editor without
+    /// clobbering edits already in progress.
+    private func applyDocumentText() {
+        guard self.text == self.lastLoaded else { return }
+        let resolved: String = switch self.vm.document {
         case let .unsynced(t):
-            self.text = t
+            t
 
         case .synced:
-            self.text = self.vm.document?.toLRC() ?? ""
+            self.vm.document?.toLRC() ?? ""
 
         case .none:
-            self.text = ""
+            ""
         }
-        self.editorFocused = true
+        self.text = resolved
+        self.lastLoaded = resolved
     }
 
     private func insertTimestamp() {

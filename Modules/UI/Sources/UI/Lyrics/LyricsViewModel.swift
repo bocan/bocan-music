@@ -159,7 +159,8 @@ public final class LyricsViewModel: ObservableObject {
         Task {
             defer { self.isFetching = false }
             do {
-                _ = try await self.service.forceFetch(for: trackID)
+                let doc = try await self.service.forceFetch(for: trackID)
+                self.reflectFetched(doc, for: trackID)
             } catch {
                 self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
             }
@@ -174,11 +175,22 @@ public final class LyricsViewModel: ObservableObject {
         Task {
             defer { self.isFetching = false }
             do {
-                _ = try await self.service.forceFetch(for: trackID)
+                let doc = try await self.service.forceFetch(for: trackID)
+                self.reflectFetched(doc, for: trackID)
             } catch {
                 self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
             }
         }
+    }
+
+    /// Surfaces a just-fetched document immediately when it belongs to the track
+    /// currently on display, so the pane and editor do not have to wait for the DB
+    /// observation to round-trip. Fetches for any other track are left to persist
+    /// silently so they never hijack what the now-playing pane is showing.
+    private func reflectFetched(_ doc: LyricsDocument?, for trackID: Int64) {
+        guard let doc, self.currentTrackID == trackID else { return }
+        self.document = doc
+        self.documentSource = "lrclib"
     }
 
     /// Opens the lyrics pane (if not already visible) and presents the editor sheet
@@ -205,7 +217,16 @@ public final class LyricsViewModel: ObservableObject {
         self.observeTask?.cancel()
         self.startObserving(trackID: trackID)
         self.paneVisible = true
-        self.isEditorPresented = true
+        // Resolve any stored lyrics up front so the sheet opens with data already
+        // in hand, rather than racing the async observation on first appearance.
+        Task {
+            if let resolved = try? await self.service.lyricsWithSource(for: trackID),
+               self.currentTrackID == trackID {
+                self.document = resolved.0
+                self.documentSource = resolved.1
+            }
+            self.isEditorPresented = true
+        }
     }
 
     /// Deletes stored lyrics for any given track ID.
