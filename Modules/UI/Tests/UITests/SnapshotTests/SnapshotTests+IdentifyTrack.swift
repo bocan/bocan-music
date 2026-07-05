@@ -37,6 +37,48 @@ extension UISnapshotTests {
             return vm
         }
 
+        private static let sampleReleases = [
+            ReleaseOption(
+                id: "9e53c190-5621-3848-8ae4-39ad9f7d9ace",
+                title: "Abbey Road",
+                date: "1969-09-26",
+                year: 1969,
+                country: "GB",
+                status: "Official",
+                albumArtist: "The Beatles",
+                albumArtistMBID: "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                releaseGroupID: "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+                trackNumber: 1,
+                discNumber: 1,
+                trackTotal: 17,
+                mediaFormat: "12\" Vinyl"
+            ),
+            ReleaseOption(
+                id: "d5f9f7a2-0000-0000-0000-000000000001",
+                title: "Abbey Road (2009 Remaster)",
+                date: "2009-09-09",
+                year: 2009,
+                country: "XW",
+                status: "Official",
+                trackNumber: 1,
+                discNumber: 1,
+                trackTotal: 17,
+                mediaFormat: "CD"
+            ),
+            ReleaseOption(
+                id: "d5f9f7a2-0000-0000-0000-000000000002",
+                title: "1967-1970",
+                date: "1973-04-02",
+                year: 1973,
+                country: "US",
+                status: "Promotion",
+                trackNumber: 3,
+                discNumber: 2,
+                trackTotal: 14,
+                mediaFormat: "12\" Vinyl"
+            ),
+        ]
+
         private static let sampleCandidate = IdentificationCandidate(
             id: "2dd41a10-3b4c-4bcd-87dc-c49dda6b5660",
             score: 0.947,
@@ -45,7 +87,9 @@ extension UISnapshotTests {
             artist: "The Beatles",
             album: "Abbey Road",
             year: 1969,
-            label: "Apple Records"
+            label: "Apple Records",
+            isrcs: ["GBAYE0601696"],
+            releases: sampleReleases
         )
 
         // MARK: - Fingerprinting state
@@ -126,6 +170,71 @@ extension UISnapshotTests {
                 of: host(view, size: Self.sheetSize),
                 as: .image(precision: 0.98, perceptualPrecision: 0.98),
                 named: "identify-results-dark"
+            )
+        }
+
+        // MARK: - Expanded picker states (hosted directly; expansion is view state)
+
+        private static let sampleCurrentValues = CurrentTagValues(
+            title: "Come Togther",
+            artist: "Beatles",
+            year: 1969
+        )
+
+        private func expandedPicker(showAdvanced: Bool) -> some View {
+            CandidatePickerView(
+                candidates: [Self.sampleCandidate],
+                currentValues: Self.sampleCurrentValues,
+                onApply: { _, _, _ in },
+                onSkip: {},
+                initiallyExpanded: Self.sampleCandidate.id,
+                initiallyShowAdvanced: showAdvanced
+            )
+        }
+
+        @Test("Candidate picker expanded with release picker light")
+        func pickerExpandedLight() {
+            let view = self.expandedPicker(showAdvanced: false)
+                .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
+            assertSnapshot(
+                of: host(view, size: Self.sheetSize),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "identify-picker-expanded-light"
+            )
+        }
+
+        @Test("Candidate picker expanded with release picker dark")
+        func pickerExpandedDark() {
+            let view = self.expandedPicker(showAdvanced: false)
+                .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: Self.sheetSize),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "identify-picker-expanded-dark"
+            )
+        }
+
+        @Test("Candidate picker with advanced fields shown light")
+        func pickerAdvancedLight() {
+            let view = self.expandedPicker(showAdvanced: true)
+                .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
+            assertSnapshot(
+                of: host(view, size: Self.sheetSize),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "identify-picker-advanced-light"
+            )
+        }
+
+        @Test("Candidate picker with advanced fields shown dark")
+        func pickerAdvancedDark() {
+            let view = self.expandedPicker(showAdvanced: true)
+                .frame(width: Self.sheetSize.width, height: Self.sheetSize.height)
+                .colorScheme(.dark)
+            assertSnapshot(
+                of: host(view, size: Self.sheetSize),
+                as: .image(precision: 0.98, perceptualPrecision: 0.98),
+                named: "identify-picker-advanced-dark"
             )
         }
 

@@ -5,19 +5,41 @@ import SwiftUI
 
 /// Displays the ranked list of identification candidates for the user to pick from.
 ///
-/// Each row is expandable into a per-field selector: the user ticks the
-/// individual fields they want to accept ("Apply selected") rather than
-/// having every tag overwritten in one go.
+/// Each row is expandable into a per-field selector: the user picks which
+/// release to tag against (original pressing, remaster, compilation…), then
+/// ticks the individual fields they want to accept ("Apply selected") rather
+/// than having every tag overwritten in one go.
 struct CandidatePickerView: View {
     let candidates: [IdentificationCandidate]
     let currentValues: CurrentTagValues
-    let onApply: (IdentificationCandidate, Set<IdentifyTagField>) async -> Void
+    let onApply: (IdentificationCandidate, Set<IdentifyTagField>, ReleaseOption?) async -> Void
     let onSkip: () -> Void
 
     @State private var expandedID: String?
     @State private var applying: String?
     @State private var applied: String?
     @State private var fieldSelection: [String: Set<IdentifyTagField>] = [:]
+    /// Per-candidate release choice (candidate id → release id). Falls back to
+    /// the best-ranked release when the user hasn't picked one.
+    @State private var selectedReleaseID: [String: String] = [:]
+
+    private let initiallyShowAdvanced: Bool
+
+    init(
+        candidates: [IdentificationCandidate],
+        currentValues: CurrentTagValues,
+        onApply: @escaping (IdentificationCandidate, Set<IdentifyTagField>, ReleaseOption?) async -> Void,
+        onSkip: @escaping () -> Void,
+        initiallyExpanded: String? = nil,
+        initiallyShowAdvanced: Bool = false
+    ) {
+        self.candidates = candidates
+        self.currentValues = currentValues
+        self.onApply = onApply
+        self.onSkip = onSkip
+        self._expandedID = State(initialValue: initiallyExpanded)
+        self.initiallyShowAdvanced = initiallyShowAdvanced
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,11 +78,13 @@ struct CandidatePickerView: View {
             List(self.candidates) { candidate in
                 CandidateRow(
                     candidate: candidate,
+                    release: self.resolvedRelease(for: candidate),
                     currentValues: self.currentValues,
                     selection: self.binding(for: candidate),
                     isExpanded: self.expandedID == candidate.id,
                     isApplying: self.applying == candidate.id,
                     isApplied: self.applied == candidate.id,
+                    initiallyShowAdvanced: self.initiallyShowAdvanced,
                     onToggle: {
                         withAnimation(.easeInOut) {
                             if self.expandedID == candidate.id {
@@ -68,22 +92,29 @@ struct CandidatePickerView: View {
                             } else {
                                 self.expandedID = candidate.id
                                 if self.fieldSelection[candidate.id] == nil {
-                                    self.fieldSelection[candidate.id] = Self.defaultSelection(
-                                        candidate: candidate,
-                                        current: self.currentValues
-                                    )
+                                    self.fieldSelection[candidate.id] = self.resolver(for: candidate)
+                                        .defaultSelection()
                                 }
                             }
                         }
                     },
-                    onApply: {
-                        let fields = self.fieldSelection[candidate.id] ?? Self.defaultSelection(
+                    onSelectRelease: { release in
+                        self.selectedReleaseID[candidate.id] = release.id
+                        // A different release changes the proposed values, so the
+                        // tick defaults are stale — recompute them for the new release.
+                        self.fieldSelection[candidate.id] = IdentifyFieldResolver(
                             candidate: candidate,
-                            current: self.currentValues
-                        )
+                            release: release,
+                            currentValues: self.currentValues
+                        ).defaultSelection()
+                    },
+                    onApply: {
+                        let fields = self.fieldSelection[candidate.id] ?? self.resolver(for: candidate)
+                            .defaultSelection()
+                        let release = self.resolvedRelease(for: candidate)
                         self.applying = candidate.id
                         Task {
-                            await self.onApply(candidate, fields)
+                            await self.onApply(candidate, fields, release)
                             self.applied = candidate.id
                             self.applying = nil
                         }
@@ -104,41 +135,31 @@ struct CandidatePickerView: View {
         }
     }
 
-    private func binding(for candidate: IdentificationCandidate) -> Binding<Set<IdentifyTagField>> {
-        Binding(
-            get: {
-                self.fieldSelection[candidate.id] ?? Self.defaultSelection(
-                    candidate: candidate,
-                    current: self.currentValues
-                )
-            },
-            set: { self.fieldSelection[candidate.id] = $0 }
+    // MARK: - Helpers
+
+    private func resolvedRelease(for candidate: IdentificationCandidate) -> ReleaseOption? {
+        if let selectedID = self.selectedReleaseID[candidate.id],
+           let selected = candidate.releases.first(where: { $0.id == selectedID }) {
+            return selected
+        }
+        return candidate.releases.first
+    }
+
+    private func resolver(for candidate: IdentificationCandidate) -> IdentifyFieldResolver {
+        IdentifyFieldResolver(
+            candidate: candidate,
+            release: self.resolvedRelease(for: candidate),
+            currentValues: self.currentValues
         )
     }
 
-    /// Default to selecting fields where the candidate offers a value that
-    /// differs from the current track value (and ignoring fields the
-    /// candidate doesn't carry).
-    private static func defaultSelection(
-        candidate: IdentificationCandidate,
-        current: CurrentTagValues
-    ) -> Set<IdentifyTagField> {
-        var fields: Set<IdentifyTagField> = []
-        if candidate.title != (current.title ?? "") { fields.insert(.title) }
-        if candidate.artist != (current.artist ?? "") { fields.insert(.artist) }
-        if let albumArtist = candidate.albumArtist, albumArtist != (current.albumArtist ?? "") {
-            fields.insert(.albumArtist)
-        }
-        if let album = candidate.album, album != (current.album ?? "") { fields.insert(.album) }
-        if let genre = candidate.genre, genre != (current.genre ?? "") { fields.insert(.genre) }
-        if let trackNumber = candidate.trackNumber, trackNumber != (current.trackNumber ?? -1) {
-            fields.insert(.trackNumber)
-        }
-        if let discNumber = candidate.discNumber, discNumber != (current.discNumber ?? -1) {
-            fields.insert(.discNumber)
-        }
-        if let year = candidate.year, year != (current.year ?? -1) { fields.insert(.year) }
-        return fields
+    private func binding(for candidate: IdentificationCandidate) -> Binding<Set<IdentifyTagField>> {
+        Binding(
+            get: {
+                self.fieldSelection[candidate.id] ?? self.resolver(for: candidate).defaultSelection()
+            },
+            set: { self.fieldSelection[candidate.id] = $0 }
+        )
     }
 }
 
@@ -146,15 +167,26 @@ struct CandidatePickerView: View {
 
 private struct CandidateRow: View {
     let candidate: IdentificationCandidate
+    let release: ReleaseOption?
     let currentValues: CurrentTagValues
     @Binding var selection: Set<IdentifyTagField>
     let isExpanded: Bool
     let isApplying: Bool
     let isApplied: Bool
+    let initiallyShowAdvanced: Bool
     let onToggle: () -> Void
+    let onSelectRelease: (ReleaseOption) -> Void
     let onApply: () -> Void
 
     @State private var isHovering = false
+
+    private var resolver: IdentifyFieldResolver {
+        IdentifyFieldResolver(
+            candidate: self.candidate,
+            release: self.release,
+            currentValues: self.currentValues
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -208,205 +240,65 @@ private struct CandidateRow: View {
             .accessibilityHint(L10n.string("Expands to choose which fields to apply"))
 
             if self.isExpanded {
-                FieldSelectionGrid(
-                    candidate: self.candidate,
-                    currentValues: self.currentValues,
-                    selection: self.$selection
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
-
-                if let mbid = self.candidate.mbRecordingID {
-                    HStack(spacing: 6) {
-                        Text(verbatim: "MBID")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                        Text(mbid)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .textSelection(.enabled)
-                        Spacer()
-                    }
-                    .padding(.top, 2)
-                }
-
-                HStack {
-                    Button(L10n.string("Select All")) { self.selectAll() }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .help(L10n.string("Select all available tag fields"))
-                    Button(L10n.string("Select None")) { self.selection.removeAll() }
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .help(L10n.string("Deselect all tag fields"))
-                    Spacer()
-                    if self.isApplied {
-                        Label(L10n.string("Applied"), systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                            .font(.subheadline)
-                    } else {
-                        Button(L10n.string("Apply Selected")) { self.onApply() }
-                            .buttonStyle(.borderedProminent)
-                            .keyboardShortcut(.defaultAction)
-                            .disabled(self.selection.isEmpty || self.isApplying)
-                            .help(L10n.string("Write selected fields to the track's tags (Return)"))
-                            .overlay {
-                                if self.isApplying {
-                                    ProgressView().scaleEffect(0.7)
-                                }
-                            }
-                    }
-                }
-                .padding(.top, 4)
+                self.expandedContent
             }
         }
         .padding(.vertical, 6)
     }
 
-    private func selectAll() {
-        self.selection = Set(IdentifyTagField.allCases.filter { Self.candidateHasValue($0, candidate: self.candidate) })
-    }
-
-    private static func candidateHasValue(
-        _ field: IdentifyTagField,
-        candidate: IdentificationCandidate
-    ) -> Bool {
-        switch field {
-        case .title, .artist:
-            true
-
-        case .albumArtist:
-            candidate.albumArtist != nil
-
-        case .album:
-            candidate.album != nil
-
-        case .genre:
-            candidate.genre != nil
-
-        case .trackNumber:
-            candidate.trackNumber != nil
-
-        case .discNumber:
-            candidate.discNumber != nil
-
-        case .year:
-            candidate.year != nil
+    @ViewBuilder private var expandedContent: some View {
+        if !self.candidate.releases.isEmpty, let release = self.release {
+            ReleasePickerControl(
+                releases: self.candidate.releases,
+                selected: release,
+                onSelect: self.onSelectRelease
+            )
+            .padding(.leading, 4)
+            .transition(.opacity.combined(with: .move(edge: .top)))
         }
-    }
-}
 
-// MARK: - FieldSelectionGrid
-
-private struct FieldSelectionGrid: View {
-    let candidate: IdentificationCandidate
-    let currentValues: CurrentTagValues
-    @Binding var selection: Set<IdentifyTagField>
-
-    var body: some View {
-        VStack(spacing: 4) {
-            ForEach(IdentifyTagField.allCases, id: \.self) { field in
-                if let proposed = self.proposed(for: field) {
-                    self.row(field: field, current: self.current(for: field), proposed: proposed)
-                }
-            }
-        }
-        .padding(.leading, 4)
-    }
-
-    private func row(field: IdentifyTagField, current: String, proposed: String) -> some View {
-        let isOn = Binding<Bool>(
-            get: { self.selection.contains(field) },
-            set: { newValue in
-                if newValue { self.selection.insert(field) } else { self.selection.remove(field) }
-            }
+        FieldSelectionGrid(
+            resolver: self.resolver,
+            selection: self.$selection,
+            initiallyShowAdvanced: self.initiallyShowAdvanced
         )
-        let unchanged = current == proposed && !current.isEmpty
-        let currentSpoken = current.isEmpty ? L10n.string("empty") : current
-        return HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Toggle("", isOn: isOn)
-                .toggleStyle(.checkbox)
-                .labelsHidden()
-                .accessibilityLabel(
-                    L10n.string("Accept \(field.displayName), currently \(currentSpoken), proposed \(proposed)")
-                )
-                .disabled(unchanged)
-            Text(field.displayName)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(width: 100, alignment: .leading)
-            Text(current.isEmpty ? "—" : current)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "arrow.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .accessibilityHidden(true)
-            Text(proposed)
-                .font(.callout)
-                .foregroundStyle(unchanged ? .secondary : .primary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+
+        HStack {
+            Button(L10n.string("Select All")) { self.selectAll() }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .help(L10n.string("Select all available tag fields"))
+            Button(L10n.string("Select None")) { self.selection.removeAll() }
+                .buttonStyle(.borderless)
+                .controlSize(.small)
+                .help(L10n.string("Deselect all tag fields"))
+            Spacer()
+            if self.isApplied {
+                Label(L10n.string("Applied"), systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                    .font(.subheadline)
+            } else {
+                Button(L10n.string("Apply Selected")) { self.onApply() }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(self.selection.isEmpty || self.isApplying)
+                    .help(L10n.string("Write selected fields to the track's tags (Return)"))
+                    .overlay {
+                        if self.isApplying {
+                            ProgressView().scaleEffect(0.7)
+                        }
+                    }
+            }
         }
+        .padding(.top, 4)
     }
 
-    private func proposed(for field: IdentifyTagField) -> String? {
-        switch field {
-        case .title:
-            self.candidate.title
-
-        case .artist:
-            self.candidate.artist
-
-        case .albumArtist:
-            self.candidate.albumArtist
-
-        case .album:
-            self.candidate.album
-
-        case .genre:
-            self.candidate.genre
-
-        case .trackNumber:
-            self.candidate.trackNumber.map(String.init)
-
-        case .discNumber:
-            self.candidate.discNumber.map(String.init)
-
-        case .year:
-            self.candidate.year.map(String.init)
-        }
-    }
-
-    private func current(for field: IdentifyTagField) -> String {
-        switch field {
-        case .title:
-            self.currentValues.title ?? ""
-
-        case .artist:
-            self.currentValues.artist ?? ""
-
-        case .albumArtist:
-            self.currentValues.albumArtist ?? ""
-
-        case .album:
-            self.currentValues.album ?? ""
-
-        case .genre:
-            self.currentValues.genre ?? ""
-
-        case .trackNumber:
-            self.currentValues.trackNumber.map(String.init) ?? ""
-
-        case .discNumber:
-            self.currentValues.discNumber.map(String.init) ?? ""
-
-        case .year:
-            self.currentValues.year.map(String.init) ?? ""
-        }
+    private func selectAll() {
+        self.selection = Set(
+            self.resolver.availableFields(tier: .primary)
+                + self.resolver.availableFields(tier: .advanced)
+        )
     }
 }
 
