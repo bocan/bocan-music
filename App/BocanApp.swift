@@ -726,7 +726,14 @@ extension BocanApp {
         let windowMode = WindowModeController()
         let dockTile = DockTileController()
 
-        let lsvc = LyricsService(database: db, fetcher: LRClibClient())
+        // The edit service routes "Embed in file" writes through the full edit
+        // pipeline (scoping, atomic write, backup ring, mtime stamping) instead
+        // of the legacy direct TagWriter path.
+        let lsvc = LyricsService(
+            database: db,
+            fetcher: LRClibClient(),
+            editService: lvm.metadataEditService
+        )
         let lyricsViewModel = LyricsViewModel(service: lsvc)
         let visualizerViewModel = VisualizerViewModel(engine: eng)
 

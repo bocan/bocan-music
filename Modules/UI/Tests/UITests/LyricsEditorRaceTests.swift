@@ -54,4 +54,13 @@ struct LyricsEditorRaceTests {
         #expect(source.contains("reflectFetched"))
         #expect(source.contains("guard let doc, self.currentTrackID == trackID else { return }"))
     }
+
+    @Test("Explicit fetches forward the Embed-in-file setting")
+    func forceFetchForwardsEmbedToggle() throws {
+        // An explicit fetch is a deliberate action, so it honours the embed
+        // toggle; the playback auto-fetch must NOT (no file rewrites mid-play).
+        let source = try self.viewModelSource()
+        #expect(source.ranges(of: "embedInFile: self.embedOnSave").count == 2)
+        #expect(!source.contains("autoFetchIfMissing(for: trackID, embed"))
+    }
 }
