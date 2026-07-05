@@ -102,6 +102,75 @@ struct MetadataEditServiceTests {
         #expect(track.userEdited == true)
     }
 
+    // MARK: - Cover art → album link
+
+    /// Inserts an artist + album and a track belonging to them.
+    private func insertAlbumTrack(
+        in db: Persistence.Database,
+        fileURL: String
+    ) async throws -> (trackID: Int64, albumID: Int64) {
+        let artist = try await ArtistRepository(database: db).findOrCreate(name: "The Beatles")
+        let album = try await AlbumRepository(database: db).findOrCreate(
+            title: "Abbey Road",
+            albumArtistID: artist.id
+        )
+        let albumID = try #require(album.id)
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(fileURL: fileURL, title: "Track", addedAt: now, updatedAt: now)
+        track.albumID = albumID
+        let trackID = try await TrackRepository(database: db).insert(track)
+        return (trackID, albumID)
+    }
+
+    @Test func savedArtworkLinksToAlbumMissingArt() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let (trackID, albumID) = try await insertAlbumTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        var patch = TrackTagPatch()
+        patch.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
+        try await svc.edit(trackID: trackID, patch: patch)
+
+        // The track row carries the hash…
+        let track = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(track.coverArtHash != nil)
+
+        // …and the album — which the track list actually renders — is linked too.
+        let album = try await AlbumRepository(database: db).fetch(id: albumID)
+        #expect(album.coverArtHash == track.coverArtHash)
+        #expect(album.coverArtPath != nil)
+    }
+
+    @Test func savedArtworkNeverClobbersExistingAlbumArt() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let (trackID, albumID) = try await insertAlbumTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        // First edit fills the missing album art (art A)…
+        var first = TrackTagPatch()
+        first.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
+        try await svc.edit(trackID: trackID, patch: first)
+        let established = try await AlbumRepository(database: db).fetch(id: albumID).coverArtHash
+        #expect(established != nil)
+
+        // …a later per-track edit (art B) must not replace album-level art.
+        var second = TrackTagPatch()
+        second.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x99, count: 64))
+        try await svc.edit(trackID: trackID, patch: second)
+
+        let album = try await AlbumRepository(database: db).fetch(id: albumID)
+        #expect(album.coverArtHash == established)
+        // The track itself carries the new art.
+        let track = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(track.coverArtHash != established)
+    }
+
     // MARK: - Stored lyrics (Get Info merge)
 
     @Test func storedLyricsTextReturnsDBRows() async throws {
