@@ -37,7 +37,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 
 - **Folder-based, non-destructive.** Point it at your music directory and it indexes without touching a single file.
 - **Live FSEvents watcher** picks up new or changed files automatically; **mtime + fingerprint deduplication** keeps your library clean.
-- **AcoustID fingerprinting** against MusicBrainz. Identify any track, preview every proposed tag change side-by-side with what you have now, tick the fields you want to update, and apply.
+- **AcoustID fingerprinting** against MusicBrainz. Identify any track, preview every proposed tag change side-by-side with what you have now, tick the fields you want to update, and apply. Pick the exact release you own (original pressing, reissue, territory variant) from everything MusicBrainz knows, and optionally write the deep identifiers too: ISRC, track totals, and Picard-compatible MusicBrainz IDs.
 - **In-app tag editor** with multi-track batch editing, embedded cover-art drag-and-drop, and undo.
 
 ### 🎨 It's a pleasure to use

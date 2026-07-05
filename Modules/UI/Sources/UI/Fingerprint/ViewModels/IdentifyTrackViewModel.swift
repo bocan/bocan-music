@@ -10,7 +10,7 @@ import SwiftUI
 ///
 /// Used to drive per-field opt-in selection in `CandidatePickerView`: the
 /// confirmation sheet shows one row per field and the user ticks only the
-/// values they want to accept.
+/// values they want to accept. `allCases` order is the grid's display order.
 public enum IdentifyTagField: String, CaseIterable, Hashable, Sendable {
     case title
     case artist
@@ -20,6 +20,43 @@ public enum IdentifyTagField: String, CaseIterable, Hashable, Sendable {
     case trackNumber
     case discNumber
     case year
+    case trackTotal
+    case discTotal
+    case isrc
+    case mbRecordingID
+    case mbReleaseID
+    case mbReleaseGroupID
+    case mbAlbumArtistID
+
+    /// Which grid tier the field renders in: `.primary` is always visible,
+    /// `.advanced` sits behind the "Show advanced fields" disclosure.
+    public enum Tier: Sendable {
+        case primary
+        case advanced
+    }
+
+    public var tier: Tier {
+        switch self {
+        case .title, .artist, .albumArtist, .album, .genre, .trackNumber, .discNumber, .year:
+            .primary
+
+        case .trackTotal, .discTotal, .isrc, .mbRecordingID, .mbReleaseID,
+             .mbReleaseGroupID, .mbAlbumArtistID:
+            .advanced
+        }
+    }
+
+    /// `true` for identifier-shaped values (UUIDs, ISRCs) that render in a
+    /// monospaced middle-truncating style so their distinguishing tails survive.
+    public var isIdentifierValue: Bool {
+        switch self {
+        case .isrc, .mbRecordingID, .mbReleaseID, .mbReleaseGroupID, .mbAlbumArtistID:
+            true
+
+        default:
+            false
+        }
+    }
 
     public var displayName: String {
         switch self {
@@ -46,6 +83,27 @@ public enum IdentifyTagField: String, CaseIterable, Hashable, Sendable {
 
         case .year:
             L10n.string("Year")
+
+        case .trackTotal:
+            L10n.string("Track Total")
+
+        case .discTotal:
+            L10n.string("Disc Total")
+
+        case .isrc:
+            L10n.string("ISRC")
+
+        case .mbRecordingID:
+            L10n.string("Recording MBID")
+
+        case .mbReleaseID:
+            L10n.string("Release MBID")
+
+        case .mbReleaseGroupID:
+            L10n.string("Group MBID")
+
+        case .mbAlbumArtistID:
+            L10n.string("Artist MBID")
         }
     }
 }
@@ -63,6 +121,13 @@ public struct CurrentTagValues: Sendable, Equatable {
     public var trackNumber: Int?
     public var discNumber: Int?
     public var year: Int?
+    public var trackTotal: Int?
+    public var discTotal: Int?
+    public var isrc: String?
+    public var mbRecordingID: String?
+    public var mbReleaseID: String?
+    public var mbReleaseGroupID: String?
+    public var mbAlbumArtistID: String?
 
     public init(
         title: String? = nil,
@@ -72,7 +137,14 @@ public struct CurrentTagValues: Sendable, Equatable {
         genre: String? = nil,
         trackNumber: Int? = nil,
         discNumber: Int? = nil,
-        year: Int? = nil
+        year: Int? = nil,
+        trackTotal: Int? = nil,
+        discTotal: Int? = nil,
+        isrc: String? = nil,
+        mbRecordingID: String? = nil,
+        mbReleaseID: String? = nil,
+        mbReleaseGroupID: String? = nil,
+        mbAlbumArtistID: String? = nil
     ) {
         self.title = title
         self.artist = artist
@@ -82,6 +154,13 @@ public struct CurrentTagValues: Sendable, Equatable {
         self.trackNumber = trackNumber
         self.discNumber = discNumber
         self.year = year
+        self.trackTotal = trackTotal
+        self.discTotal = discTotal
+        self.isrc = isrc
+        self.mbRecordingID = mbRecordingID
+        self.mbReleaseID = mbReleaseID
+        self.mbReleaseGroupID = mbReleaseGroupID
+        self.mbAlbumArtistID = mbAlbumArtistID
     }
 }
 
@@ -193,10 +272,19 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
     /// Applies the user-selected `fields` of `candidate` to the track's file
     /// via `MetadataEditService`. Fields not present in `fields` are left
     /// untouched on disk and in the database.
-    public func apply(_ candidate: IdentificationCandidate, fields: Set<IdentifyTagField>) async {
+    ///
+    /// Release-scoped values (album, year, track/disc numbers, totals, release
+    /// and release-group MBIDs) come from `release` — the option chosen in the
+    /// picker — falling back to the candidate's top-level fields (which mirror
+    /// the best-ranked release) when `release` is nil.
+    public func apply(
+        _ candidate: IdentificationCandidate,
+        fields: Set<IdentifyTagField>,
+        release: ReleaseOption? = nil
+    ) async {
         guard !fields.isEmpty else { return }
 
-        let patch = Self.buildPatch(candidate: candidate, fields: fields)
+        let patch = Self.buildPatch(candidate: candidate, release: release, fields: fields)
         guard !patch.isEmpty, let trackID = self.track.id else { return }
         do {
             try await self.editService.edit(trackID: trackID, patch: patch)
@@ -211,26 +299,74 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
         }
     }
 
-    private static func buildPatch(
+    static func buildPatch(
         candidate: IdentificationCandidate,
+        release: ReleaseOption?,
         fields: Set<IdentifyTagField>
     ) -> TrackTagPatch {
         var patch = TrackTagPatch()
+        Self.applyPrimaryFields(&patch, candidate: candidate, release: release, fields: fields)
+        Self.applyIdentifierFields(&patch, candidate: candidate, release: release, fields: fields)
+        return patch
+    }
+
+    private static func applyPrimaryFields(
+        _ patch: inout TrackTagPatch,
+        candidate: IdentificationCandidate,
+        release: ReleaseOption?,
+        fields: Set<IdentifyTagField>
+    ) {
+        // Fall back to the candidate's top-level fields when no release is
+        // chosen; when one is, every release-scoped value follows it.
+        let album = release?.title ?? candidate.album
+        let albumArtist = release?.albumArtist ?? candidate.albumArtist
+        let trackNumber = release == nil ? candidate.trackNumber : release?.trackNumber
+        let discNumber = release == nil ? candidate.discNumber : release?.discNumber
+        let year = release == nil ? candidate.year : release?.year
+
         if fields.contains(.title) { patch.title = .some(candidate.title) }
         if fields.contains(.artist) { patch.artist = .some(candidate.artist) }
-        if fields.contains(.albumArtist), let value = candidate.albumArtist {
+        if fields.contains(.albumArtist), let value = albumArtist {
             patch.albumArtist = .some(value)
         }
-        if fields.contains(.album), let value = candidate.album { patch.album = .some(value) }
+        if fields.contains(.album), let value = album { patch.album = .some(value) }
         if fields.contains(.genre), let value = candidate.genre { patch.genre = .some(value) }
-        if fields.contains(.trackNumber), let value = candidate.trackNumber {
+        if fields.contains(.trackNumber), let value = trackNumber {
             patch.trackNumber = .some(value)
         }
-        if fields.contains(.discNumber), let value = candidate.discNumber {
+        if fields.contains(.discNumber), let value = discNumber {
             patch.discNumber = .some(value)
         }
-        if fields.contains(.year), let value = candidate.year { patch.year = .some(value) }
-        return patch
+        if fields.contains(.year), let value = year { patch.year = .some(value) }
+    }
+
+    private static func applyIdentifierFields(
+        _ patch: inout TrackTagPatch,
+        candidate: IdentificationCandidate,
+        release: ReleaseOption?,
+        fields: Set<IdentifyTagField>
+    ) {
+        if fields.contains(.trackTotal), let value = release?.trackTotal {
+            patch.trackTotal = .some(value)
+        }
+        if fields.contains(.discTotal), let value = release?.discTotal {
+            patch.discTotal = .some(value)
+        }
+        if fields.contains(.isrc), let value = candidate.isrcs.first {
+            patch.isrc = .some(value)
+        }
+        if fields.contains(.mbRecordingID), let value = candidate.mbRecordingID {
+            patch.musicbrainzRecordingID = .some(value)
+        }
+        if fields.contains(.mbReleaseID), let value = release?.id {
+            patch.musicbrainzReleaseID = .some(value)
+        }
+        if fields.contains(.mbReleaseGroupID), let value = release?.releaseGroupID {
+            patch.musicbrainzReleaseGroupID = .some(value)
+        }
+        if fields.contains(.mbAlbumArtistID), let value = release?.albumArtistMBID {
+            patch.musicbrainzAlbumArtistID = .some(value)
+        }
     }
 
     /// Retries the identification pipeline from the beginning.
@@ -247,7 +383,14 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
             genre: self.track.genre,
             trackNumber: self.track.trackNumber,
             discNumber: self.track.discNumber,
-            year: self.track.year
+            year: self.track.year,
+            trackTotal: self.track.trackTotal,
+            discTotal: self.track.discTotal,
+            isrc: self.track.isrc,
+            mbRecordingID: self.track.musicbrainzRecordingID,
+            mbReleaseID: self.track.musicbrainzReleaseID,
+            mbReleaseGroupID: self.track.musicbrainzReleaseGroupID,
+            mbAlbumArtistID: self.track.musicbrainzAlbumArtistID
         )
 
         if let artistRepo = self.artistRepo {
