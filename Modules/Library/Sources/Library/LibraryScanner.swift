@@ -329,6 +329,7 @@ public actor LibraryScanner {
                 // A whole directory was moved/created — enumerate it recursively.
                 let audioFiles = self.audioFiles(under: url)
                 for fileURL in audioFiles {
+                    guard await self.contentChanged(url: fileURL, trackRepo: trackRepo) else { continue }
                     do {
                         _ = try await self.scanSingleFile(url: fileURL)
                         self.log.debug("fsevents.file_rescanned", ["path": fileURL.lastPathComponent])
@@ -339,6 +340,7 @@ public actor LibraryScanner {
                 }
             } else {
                 guard TagReader.isSupported(url) else { continue }
+                guard await self.contentChanged(url: url, trackRepo: trackRepo) else { continue }
                 do {
                     _ = try await self.scanSingleFile(url: url)
                     self.log.debug("fsevents.file_rescanned", ["path": url.lastPathComponent])
@@ -351,6 +353,28 @@ public actor LibraryScanner {
         if didChange, let callback = self.onFileImported {
             await callback()
         }
+    }
+
+    /// Returns `true` when `url` needs a rescan: it is unknown to the DB,
+    /// disabled, or its size/mtime differ from the stored row.
+    ///
+    /// FSEvents also fires for metadata-only changes (xattr, ownership,
+    /// quarantine updates) that don't alter file content. Rescanning those is
+    /// wasted work at best; at worst it loops — a write-intent open during the
+    /// rescan makes macOS touch the quarantine metadata again, which emits the
+    /// next FSEvents event. Size+mtime comparison is the same signal the quick
+    /// scan's ChangeDetector uses.
+    private func contentChanged(url: URL, trackRepo: TrackRepository) async -> Bool {
+        guard let track = try? await trackRepo.fetchOne(fileURL: url.absoluteString),
+              !track.disabled,
+              let values = try? url.resourceValues(forKeys: [.fileSizeKey, .contentModificationDateKey]) else { return true }
+        let size = Int64(values.fileSize ?? 0)
+        let mtime = Int64(values.contentModificationDate?.timeIntervalSince1970 ?? 0)
+        if size == track.fileSize, mtime == track.fileMtime {
+            self.log.debug("fsevents.skip_unchanged", ["path": url.lastPathComponent])
+            return false
+        }
+        return true
     }
 
     /// Returns all supported audio files found recursively under `directory`.
