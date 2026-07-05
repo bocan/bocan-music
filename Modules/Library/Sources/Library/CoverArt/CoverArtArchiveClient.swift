@@ -85,7 +85,15 @@ public actor CoverArtArchiveClient {
         if http.statusCode == 404 { return nil }
         guard (200 ..< 300).contains(http.statusCode) else { return nil }
 
-        return try? JSONDecoder().decode(CAAIndex.self, from: data)
+        do {
+            return try JSONDecoder().decode(CAAIndex.self, from: data)
+        } catch {
+            // A silent `try?` here hid a numeric-vs-string `id` type mismatch
+            // for years, making every search return zero candidates. Decode
+            // failures must be loud.
+            self.log.error("caa.index.decode_failed", ["url": url.path, "error": String(reflecting: error)])
+            return nil
+        }
     }
 }
 
@@ -101,11 +109,28 @@ public struct CAAImage: Decodable, Sendable {
     public let thumbnails: CAAThumbnails
     public let front: Bool
     public let back: Bool
+    /// CAA serialises image ids as JSON *numbers* (e.g. `39706767821`).
+    /// Decoding this as `String?` with the synthesised decoder threw a type
+    /// mismatch that failed the whole index decode — the reason cover-art
+    /// search never returned a single candidate. Accept both shapes.
     public let id: String?
 
     enum CodingKeys: String, CodingKey {
         case image, thumbnails, front, back
         case id
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.image = try c.decode(String.self, forKey: .image)
+        self.thumbnails = try c.decode(CAAThumbnails.self, forKey: .thumbnails)
+        self.front = try c.decode(Bool.self, forKey: .front)
+        self.back = try c.decode(Bool.self, forKey: .back)
+        if let numeric = try? c.decode(Int64.self, forKey: .id) {
+            self.id = String(numeric)
+        } else {
+            self.id = try? c.decode(String.self, forKey: .id)
+        }
     }
 
     public var imageURL: URL? {
@@ -120,6 +145,8 @@ public struct CAAImage: Decodable, Sendable {
 public struct CAAThumbnails: Decodable, Sendable {
     public let small: URL?
     public let large: URL?
+    public let px500: URL?
+    public let px250: URL?
 
     enum CodingKeys: String, CodingKey {
         case small, large
@@ -127,15 +154,16 @@ public struct CAAThumbnails: Decodable, Sendable {
         case two50 = "250"
     }
 
-    /// 500-px URL preferred; falls back to large or small.
+    /// 500-px URL preferred; falls back to large, 250-px, then small.
     var url500: URL? {
-        // CAA embeds 250/500 as numeric string keys; read via coding keys.
-        self.large ?? self.small
+        self.px500 ?? self.large ?? self.px250 ?? self.small
     }
 
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.small = try? c.decode(URL.self, forKey: .small)
         self.large = try? c.decode(URL.self, forKey: .large)
+        self.px500 = try? c.decode(URL.self, forKey: .five)
+        self.px250 = try? c.decode(URL.self, forKey: .two50)
     }
 }

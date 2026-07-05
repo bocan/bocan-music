@@ -57,8 +57,13 @@ public struct ArtworkEditor: View {
                 Button(L10n.string("Paste")) { self.pasteFromClipboard() }
                     .disabled(!NSPasteboard.general.canReadObject(forClasses: [NSImage.self], options: nil))
                     .help(L10n.string("Paste an image from the clipboard"))
-                Button(L10n.string("Fetch…")) { self.isPresentingFetchSheet = true }
-                    .help(L10n.string("Search MusicBrainz for cover art online"))
+                Button(L10n.string("Fetch…")) {
+                    // Seed the search from the loaded tags before presenting,
+                    // so the sheet opens pre-filled and searching.
+                    self.vm.prepareCoverArtSearch()
+                    self.isPresentingFetchSheet = true
+                }
+                .help(L10n.string("Search MusicBrainz for cover art online"))
                 if self.vm.pendingArtData != nil || self.vm.existingArtData != nil {
                     Button(L10n.string("Remove")) { self.vm.clearArtwork() }
                         .foregroundStyle(.red)
