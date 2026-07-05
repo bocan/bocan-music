@@ -239,10 +239,24 @@ actor EditTransaction {
         if let artPatch = patch.coverArt {
             if let artData = artPatch {
                 let extracted = CoverArtExtractor.extract(from: [
-                    RawCoverArt(data: artData, mimeType: "image/jpeg", pictureType: 3),
+                    RawCoverArt(data: artData, mimeType: Self.mimeType(for: artData), pictureType: 3),
                 ])
                 if let persisted = try await self.coverArtCache.persist(extracted) {
                     coverArtHash = persisted.hash
+                    // The track list's leading thumbnail renders the ALBUM's
+                    // art, not the track's — without this link, art saved via
+                    // Get Info showed on the play bar (which reads the file)
+                    // but never in the list. Mirror the importer's heal rule:
+                    // fill a missing album link, never clobber existing art.
+                    if let albumID = track.albumID,
+                       let album = try? await self.albumRepo.fetch(id: albumID),
+                       album.coverArtPath == nil || album.coverArtHash == nil {
+                        try? await self.albumRepo.setCoverArt(
+                            albumID: albumID,
+                            hash: persisted.hash,
+                            path: persisted.path
+                        )
+                    }
                 }
             } else {
                 coverArtHash = nil // cleared
