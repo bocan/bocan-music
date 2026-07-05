@@ -208,6 +208,108 @@ struct LyricsServiceTests {
     }
 }
 
+// MARK: - Embed + sidecar (Phase 11 fileURL bugfix)
+
+extension LyricsServiceTests {
+    /// Copies a real MP3 from the sample-library fixture to a temp path and
+    /// returns its URL. Caller owns cleanup.
+    private func tempMP3() throws -> URL {
+        guard let libraryURL = Bundle.module.url(
+            forResource: "sample-library",
+            withExtension: nil,
+            subdirectory: "Fixtures"
+        ) else {
+            throw LibraryError.invalidFileURL("fixture sample-library missing")
+        }
+        let enumerator = FileManager.default.enumerator(at: libraryURL, includingPropertiesForKeys: nil)
+        while let candidate = enumerator?.nextObject() as? URL {
+            guard candidate.pathExtension == "mp3",
+                  !candidate.lastPathComponent.lowercased().contains("corrupt") else { continue }
+            let tmp = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(UUID().uuidString).mp3")
+            try FileManager.default.copyItem(at: candidate, to: tmp)
+            return tmp
+        }
+        throw LibraryError.invalidFileURL("no mp3 in sample-library")
+    }
+
+    @Test("persistToFile embeds through the edit pipeline and keeps the canonical source")
+    func embedViaEditPipeline() async throws {
+        let db = try await makeDB()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        // Production rows store URL strings, not paths.
+        let trackID = try await seedTrack(db: db, fileURL: tmp.absoluteString)
+        let editService = try MetadataEditService(database: db)
+        let svc = LyricsService(database: db, fetcher: nil, editService: editService)
+
+        try await svc.setLyrics(
+            .unsynced("Here come old flat-top"),
+            for: trackID,
+            source: "lrclib",
+            persistToFile: true
+        )
+
+        // File bytes carry the lyrics…
+        let tags = try TagReader().read(from: tmp)
+        #expect(tags.lyrics == "Here come old flat-top")
+
+        // …and the DB row keeps its lrclib source (the edit pipeline's own
+        // "user"-source row write must not be the last word).
+        let row = try await LyricsRepository(database: db).fetch(trackID: trackID)
+        #expect(row?.source == "lrclib")
+    }
+
+    @Test("forceFetch embeds only when embedInFile is set")
+    func forceFetchHonoursEmbedFlag() async throws {
+        let db = try await makeDB()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let trackID = try await seedTrack(db: db, fileURL: tmp.absoluteString)
+        let editService = try MetadataEditService(database: db)
+        let fetcher = SpyFetcher(returnDoc: .unsynced("Fetched words"))
+        let svc = LyricsService(database: db, fetcher: fetcher, editService: editService)
+
+        // Without the flag: DB only, file untouched.
+        _ = try await svc.forceFetch(for: trackID)
+        let before = try TagReader().read(from: tmp)
+        #expect(before.lyrics == nil)
+
+        // With the flag: embedded.
+        _ = try await svc.forceFetch(for: trackID, embedInFile: true)
+        let after = try TagReader().read(from: tmp)
+        #expect(after.lyrics == "Fetched words")
+    }
+
+    @Test("sidecar .lrc resolves for URL-string file paths")
+    func sidecarResolvesURLStringPaths() async throws {
+        let db = try await makeDB()
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let audioURL = dir.appendingPathComponent("song.flac")
+        let lrcURL = dir.appendingPathComponent("song.lrc")
+        try "[00:01.00]Sidecar line".write(to: lrcURL, atomically: true, encoding: .utf8)
+
+        // The production shape: a URL string. URL(fileURLWithPath:) mangled
+        // these into garbage relative paths, so sidecars never loaded.
+        let trackID = try await seedTrack(db: db, fileURL: audioURL.absoluteString)
+        let svc = self.makeService(db: db)
+
+        let (doc, source) = try await svc.lyricsWithSource(for: trackID)
+        #expect(source == "sidecar")
+        guard case let .synced(lines, _) = doc else {
+            Issue.record("expected synced sidecar document")
+            return
+        }
+        #expect(lines.first?.text == "Sidecar line")
+    }
+}
+
 // MARK: - Spy fetcher
 
 /// Test double that records calls and returns a fixed document.

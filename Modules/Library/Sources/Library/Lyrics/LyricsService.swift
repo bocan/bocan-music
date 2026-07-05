@@ -17,7 +17,9 @@ public actor LyricsService {
     private let trackRepo: TrackRepository
     private let artistRepo: ArtistRepository
     private let albumRepo: AlbumRepository
+    private let rootRepo: LibraryRootRepository
     private let fetcher: (any LRClibClientProtocol)?
+    private let editService: MetadataEditService?
     private let log = AppLogger.make(.library)
 
     // MARK: - Init
@@ -25,13 +27,22 @@ public actor LyricsService {
     /// - Parameters:
     ///   - database: The shared application database.
     ///   - fetcher: Optional LRClib client; pass `nil` when opt-in fetch is disabled.
-    public init(database: Database, fetcher: (any LRClibClientProtocol)?) {
+    ///   - editService: When present, embedding lyrics into the audio file goes
+    ///     through the full edit pipeline (security scoping, atomic write, backup
+    ///     ring, mtime stamping). The legacy direct write is only a fallback.
+    public init(
+        database: Database,
+        fetcher: (any LRClibClientProtocol)?,
+        editService: MetadataEditService? = nil
+    ) {
         self.database = database
         self.lyricsRepo = LyricsRepository(database: database)
         self.trackRepo = TrackRepository(database: database)
         self.artistRepo = ArtistRepository(database: database)
         self.albumRepo = AlbumRepository(database: database)
+        self.rootRepo = LibraryRootRepository(database: database)
         self.fetcher = fetcher
+        self.editService = editService
     }
 
     // MARK: - Public API
@@ -119,6 +130,10 @@ public actor LyricsService {
 
         if persistToFile {
             try await self.writeToFile(doc: doc, trackID: trackID)
+            // The edit pipeline writes its own lyrics DB row (source "user",
+            // no offset); re-save the canonical record so source and offset
+            // survive the embed.
+            try await self.lyricsRepo.save(record)
         }
     }
 
@@ -128,10 +143,13 @@ public actor LyricsService {
     ///
     /// The `lyrics.lrclibEnabled` preference is intentionally **not** checked here;
     /// it is the caller's responsibility to gate the action on that preference.
+    /// Likewise `embedInFile` mirrors the caller's "Embed in file" setting: an
+    /// explicit fetch is a deliberate user action, so unlike the playback
+    /// auto-fetch it may write the file. Defaults to `false`.
     ///
     /// Returns the fetched document, or `nil` when the fetcher is absent or no
     /// match is found on LRClib.
-    public func forceFetch(for trackID: Int64) async throws -> LyricsDocument? {
+    public func forceFetch(for trackID: Int64, embedInFile: Bool = false) async throws -> LyricsDocument? {
         guard let fetcher else { return nil }
         guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
 
@@ -157,8 +175,8 @@ public actor LyricsService {
         )
 
         if let doc {
-            try await self.setLyrics(doc, for: trackID, source: "lrclib")
-            self.log.debug("lrclib.forceFetch.saved", ["track": trackID])
+            try await self.setLyrics(doc, for: trackID, source: "lrclib", persistToFile: embedInFile)
+            self.log.debug("lrclib.forceFetch.saved", ["track": trackID, "embedded": embedInFile])
         } else {
             self.log.debug("lrclib.forceFetch.notFound", ["track": trackID])
         }
@@ -274,13 +292,44 @@ public actor LyricsService {
     }
 
     private func writeToFile(doc: LyricsDocument, trackID: Int64) async throws {
-        guard let track = try? await trackRepo.fetch(id: trackID) else { return }
-        let url = URL(fileURLWithPath: track.fileURL)
         let lyricsText: String = switch doc {
         case let .unsynced(text):
             text
         case .synced:
             doc.toLRC()
+        }
+
+        // Preferred path: the full edit pipeline. It handles root-folder and
+        // per-file security scopes, writes atomically with a backup, verifies
+        // by re-reading, and stamps the DB row's mtime so the next scan does
+        // not raise a false "file changed on disk" conflict.
+        if let editService {
+            var patch = TrackTagPatch()
+            switch doc {
+            case .unsynced:
+                patch.lyrics = .some(lyricsText)
+            case .synced:
+                patch.syncedLyrics = .some(lyricsText)
+                patch.lyrics = .some(nil) // documented pairing: clear the plain field
+            }
+            do {
+                try await editService.edit(trackID: trackID, patch: patch)
+                self.log.debug("lyrics.fileWrite.done", ["track": trackID, "via": "editService"])
+            } catch {
+                self.log.error("lyrics.fileWrite.failed", ["track": trackID, "error": String(reflecting: error)])
+                throw error
+            }
+            return
+        }
+
+        // Fallback (tests / no edit service wired): direct write via the
+        // track's own bookmark. Note `track.fileURL` is a URL *string*, not a
+        // path — `URL(fileURLWithPath:)` here silently produced a garbage
+        // path for years, which is why embeds never worked on this branch.
+        guard let track = try? await trackRepo.fetch(id: trackID) else { return }
+        guard let url = Self.fileURL(from: track.fileURL) else {
+            self.log.error("lyrics.fileWrite.failed", ["track": trackID, "error": "invalid fileURL"])
+            throw LibraryError.invalidFileURL(track.fileURL)
         }
 
         do {
@@ -306,10 +355,27 @@ public actor LyricsService {
         }
     }
 
+    /// `tracks.file_url` holds a URL *string* ("file:///…"); passing it to
+    /// `URL(fileURLWithPath:)` mangles it into a relative garbage path — the bug
+    /// that silently broke sidecar loading and no-bookmark embeds since Phase 11.
+    /// Plain absolute paths (legacy rows, tests) are still accepted.
+    private static func fileURL(from string: String) -> URL? {
+        if let url = URL(string: string), url.isFileURL { return url }
+        if string.hasPrefix("/") { return URL(fileURLWithPath: string) }
+        return nil
+    }
+
     private func loadSidecar(for trackID: Int64) async throws -> LyricsDocument? {
         guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
-        let fileURL = URL(fileURLWithPath: track.fileURL)
+        guard let fileURL = Self.fileURL(from: track.fileURL) else { return nil }
         let lrcURL = fileURL.deletingPathExtension().appendingPathExtension("lrc")
+
+        // The sibling .lrc is outside the track's own security scope; the
+        // (read-only) library-root bookmark covers the directory. No matching
+        // root (e.g. "Add Files…" tracks) still tries the raw read, which
+        // works outside the sandbox and in tests.
+        let scope = await self.acquireRootScope(for: lrcURL.path)
+        defer { _ = scope } // keep the scope alive until the read completes
 
         guard FileManager.default.fileExists(atPath: lrcURL.path) else { return nil }
 
@@ -321,5 +387,24 @@ public actor LyricsService {
             self.log.error("lyrics.sidecar.failed", ["track": trackID, "error": String(reflecting: error)])
             return nil
         }
+    }
+
+    /// Resolves and starts the security scope of the library root containing
+    /// `path`, returning an RAII handle (nil when no root matches or the
+    /// bookmark cannot be resolved — callers then attempt the raw read).
+    private func acquireRootScope(for path: String) async -> RootScopeHandle? {
+        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        guard let root = roots.first(where: {
+            let prefix = $0.path == "/" ? "/" : $0.path + "/"
+            return path.hasPrefix(prefix)
+        }) else { return nil }
+        var isStale = false
+        guard let rootURL = try? URL(
+            resolvingBookmarkData: root.bookmark,
+            options: .withSecurityScope,
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) else { return nil }
+        return RootScopeHandle(url: rootURL)
     }
 }

@@ -159,7 +159,7 @@ public final class LyricsViewModel: ObservableObject {
         Task {
             defer { self.isFetching = false }
             do {
-                let doc = try await self.service.forceFetch(for: trackID)
+                let doc = try await self.service.forceFetch(for: trackID, embedInFile: self.embedOnSave)
                 self.reflectFetched(doc, for: trackID)
             } catch {
                 self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
@@ -175,7 +175,7 @@ public final class LyricsViewModel: ObservableObject {
         Task {
             defer { self.isFetching = false }
             do {
-                let doc = try await self.service.forceFetch(for: trackID)
+                let doc = try await self.service.forceFetch(for: trackID, embedInFile: self.embedOnSave)
                 self.reflectFetched(doc, for: trackID)
             } catch {
                 self.log.error("lyrics.forceFetch.failed", ["error": String(reflecting: error)])
