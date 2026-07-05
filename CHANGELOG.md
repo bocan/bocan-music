@@ -5,6 +5,26 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0](https://github.com/bocan/bocan-music/compare/v1.15.0...v1.16.0) (2026-07-05)
+
+
+### ### Added
+
+* **acoustics:** fetch and rank all MusicBrainz releases with ISRCs ([1e5b9b0](https://github.com/bocan/bocan-music/commit/1e5b9b05bd50bc84044c523de0693894f5056496))
+* **library:** thread MusicBrainz IDs through the tag-edit pipeline ([c77d6b2](https://github.com/bocan/bocan-music/commit/c77d6b23c5b271fcff1ced87fe98f5fa7ecad1e2))
+* **ui:** release picker and advanced identifier fields in Identify Track ([f93f863](https://github.com/bocan/bocan-music/commit/f93f863b83f1f7e207a1eca0c581fd83301ed1cb))
+
+
+### ### Fixed
+
+* **library:** decode Cover Art Archive image ids so art search works ([b21a7f3](https://github.com/bocan/bocan-music/commit/b21a7f38bbc8bf96f1225707a212cb763312e950))
+* **library:** link saved cover art to the album so the track list shows it ([f8c67cd](https://github.com/bocan/bocan-music/commit/f8c67cd6219c8365893f8d7ae3814c9242f77174))
+* **library:** make Embed in file actually write lyrics to disk ([1e5d930](https://github.com/bocan/bocan-music/commit/1e5d9303813805ff8108ac7520f781471ef888ef))
+* **ui:** make cover-art Apply responsive and album edits replace album art ([f3367fb](https://github.com/bocan/bocan-music/commit/f3367fb9add6a0e1d3c8361fba6664aaa174b89f))
+* **ui:** make identify-track rows fully clickable and legible ([ba2845a](https://github.com/bocan/bocan-music/commit/ba2845a396d164a5c8460dcda6016ccc8e6d2ed2))
+* **ui:** show stored lyrics in editor for non-playing tracks ([89dadf6](https://github.com/bocan/bocan-music/commit/89dadf6c15542e6a70b4bacf7cd1425aef4a94e8))
+* **ui:** show stored lyrics in the Get Info lyrics tab ([b85a8de](https://github.com/bocan/bocan-music/commit/b85a8de553fe17bdb9b9d4dd1b331f1a35da7b11))
+
 ## [1.15.0](https://github.com/bocan/bocan-music/compare/v1.14.1...v1.15.0) (2026-07-01)
 
 I've gone through the entire UI and made sure that all the browse lists (Albums, Artists, Genres, Composers, and Podcasts) now restore their scroll position when you return to them.  You can even go into Artist view, then into an Album, and when you go back to the Artist view, it will restore your scroll position in the album list. This latter one was mostly a problem for Artists with eleventy thousand albums. I'm looking at you - The Beatles.
