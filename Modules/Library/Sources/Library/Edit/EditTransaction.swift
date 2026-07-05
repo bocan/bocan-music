@@ -141,10 +141,53 @@ actor EditTransaction {
                 }
             }
             self.log.debug("edit.committed", ["count": successfulUpdates.count])
+
+            // Link patched cover art to the affected albums. The track list's
+            // leading thumbnail renders the ALBUM's art, not the track's —
+            // without this, saved art shows on the play bar (which reads the
+            // track) but never in the list or the albums grid.
+            if case let .some(.some(artData)) = patch.coverArt {
+                await self.linkAlbumArt(artData: artData, updates: updates.map(\.track))
+            }
         }
 
         if !errors.isEmpty {
             throw EditError.partial(errors)
+        }
+    }
+
+    /// Album-art semantics for a batch edit:
+    /// - The batch covers **every** track of an album (e.g. Get Info on the
+    ///   album itself) → the user is editing the album's art: **replace** it.
+    /// - Partial coverage (fixing one track of many) → fill a **missing**
+    ///   album link only; never hijack deliberate album-level art.
+    private func linkAlbumArt(artData: Data, updates: [Track]) async {
+        let extracted = CoverArtExtractor.extract(from: [
+            RawCoverArt(data: artData, mimeType: Self.mimeType(for: artData), pictureType: 3),
+        ])
+        // persist() is idempotent (content-hash keyed); reuse from step 7 is free.
+        guard let persisted = try? await self.coverArtCache.persist(extracted) else { return }
+
+        var touchedByAlbum: [Int64: Int] = [:]
+        for track in updates {
+            if let albumID = track.albumID { touchedByAlbum[albumID, default: 0] += 1 }
+        }
+
+        for (albumID, touched) in touchedByAlbum {
+            guard let album = try? await self.albumRepo.fetch(id: albumID) else { continue }
+            let total = await (try? self.trackRepo.count(albumID: albumID)) ?? Int.max
+            let coversWholeAlbum = touched >= total
+            let albumHasNoArt = album.coverArtPath == nil || album.coverArtHash == nil
+            guard coversWholeAlbum || albumHasNoArt else { continue }
+            do {
+                try await self.albumRepo.setCoverArt(
+                    albumID: albumID,
+                    hash: persisted.hash,
+                    path: persisted.path
+                )
+            } catch {
+                self.log.error("edit.albumArt.link_failed", ["album": albumID, "error": String(reflecting: error)])
+            }
         }
     }
 
@@ -243,20 +286,6 @@ actor EditTransaction {
                 ])
                 if let persisted = try await self.coverArtCache.persist(extracted) {
                     coverArtHash = persisted.hash
-                    // The track list's leading thumbnail renders the ALBUM's
-                    // art, not the track's — without this link, art saved via
-                    // Get Info showed on the play bar (which reads the file)
-                    // but never in the list. Mirror the importer's heal rule:
-                    // fill a missing album link, never clobber existing art.
-                    if let albumID = track.albumID,
-                       let album = try? await self.albumRepo.fetch(id: albumID),
-                       album.coverArtPath == nil || album.coverArtHash == nil {
-                        try? await self.albumRepo.setCoverArt(
-                            albumID: albumID,
-                            hash: persisted.hash,
-                            path: persisted.path
-                        )
-                    }
                 }
             } else {
                 coverArtHash = nil // cleared

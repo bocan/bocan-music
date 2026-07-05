@@ -144,31 +144,67 @@ struct MetadataEditServiceTests {
         #expect(album.coverArtPath != nil)
     }
 
-    @Test func savedArtworkNeverClobbersExistingAlbumArt() async throws {
+    @Test func partialAlbumEditNeverClobbersExistingAlbumArt() async throws {
+        let db = try await makeDatabase()
+        let tmpA = try tempMP3()
+        let tmpB = try tempMP3()
+        defer {
+            try? FileManager.default.removeItem(at: tmpA)
+            try? FileManager.default.removeItem(at: tmpB)
+        }
+
+        // Two-track album: editing one track is PARTIAL coverage.
+        let (trackA, albumID) = try await insertAlbumTrack(in: db, fileURL: tmpA.absoluteString)
+        let now = Int64(Date().timeIntervalSince1970)
+        var trackB = Track(fileURL: tmpB.absoluteString, title: "B", addedAt: now, updatedAt: now)
+        trackB.albumID = albumID
+        _ = try await TrackRepository(database: db).insert(trackB)
+
+        let svc = try MetadataEditService(database: db)
+
+        // Establish album art via track A…
+        var first = TrackTagPatch()
+        first.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
+        try await svc.edit(trackID: trackA, patch: first)
+        let established = try await AlbumRepository(database: db).fetch(id: albumID).coverArtHash
+        #expect(established != nil)
+
+        // …then re-edit only track A with different art. One of two tracks is
+        // partial coverage, so deliberate album-level art must survive.
+        var second = TrackTagPatch()
+        second.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x99, count: 64))
+        try await svc.edit(trackID: trackA, patch: second)
+
+        let album = try await AlbumRepository(database: db).fetch(id: albumID)
+        #expect(album.coverArtHash == established)
+        // The track itself carries the new art.
+        let track = try await TrackRepository(database: db).fetch(id: trackA)
+        #expect(track.coverArtHash != established)
+    }
+
+    @Test func fullAlbumEditReplacesAlbumArt() async throws {
         let db = try await makeDatabase()
         let tmp = try tempMP3()
         defer { try? FileManager.default.removeItem(at: tmp) }
 
+        // Single-track album: editing that track covers the WHOLE album, e.g.
+        // Get Info on the album itself — the user is changing the album's art.
         let (trackID, albumID) = try await insertAlbumTrack(in: db, fileURL: tmp.absoluteString)
         let svc = try MetadataEditService(database: db)
 
-        // First edit fills the missing album art (art A)…
         var first = TrackTagPatch()
         first.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
         try await svc.edit(trackID: trackID, patch: first)
         let established = try await AlbumRepository(database: db).fetch(id: albumID).coverArtHash
-        #expect(established != nil)
 
-        // …a later per-track edit (art B) must not replace album-level art.
         var second = TrackTagPatch()
         second.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x99, count: 64))
         try await svc.edit(trackID: trackID, patch: second)
 
         let album = try await AlbumRepository(database: db).fetch(id: albumID)
-        #expect(album.coverArtHash == established)
-        // The track itself carries the new art.
+        #expect(album.coverArtHash != established)
         let track = try await TrackRepository(database: db).fetch(id: trackID)
-        #expect(track.coverArtHash != established)
+        #expect(album.coverArtHash == track.coverArtHash)
     }
 
     // MARK: - Stored lyrics (Get Info merge)

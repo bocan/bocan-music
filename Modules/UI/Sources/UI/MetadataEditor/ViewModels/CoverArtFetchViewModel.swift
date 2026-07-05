@@ -16,6 +16,8 @@ public final class CoverArtFetchViewModel: ObservableObject {
     @Published public private(set) var candidates: [CoverArtCandidate] = []
     @Published public private(set) var thumbnails: [String: Data] = [:]
     @Published public private(set) var isSearching = false
+    /// `true` while the full-resolution image for Apply is downloading.
+    @Published public private(set) var isApplying = false
     @Published public var searchArtist = ""
     @Published public var searchAlbum = ""
     @Published public var selectedCandidateID: String?
@@ -86,5 +88,23 @@ public final class CoverArtFetchViewModel: ObservableObject {
             throw URLError(.fileDoesNotExist)
         }
         return try await self.fetcher.image(for: candidate, size: .full)
+    }
+
+    /// Downloads the selected candidate's full-resolution image, driving
+    /// `isApplying` for the button's busy state. Full CAA images route through
+    /// archive.org redirects and take seconds — a bare `try?` here made the
+    /// Apply button look dead. Failures surface via `lastError`.
+    public func applySelected() async -> Data? {
+        guard let id = self.selectedCandidateID, !self.isApplying else { return nil }
+        self.isApplying = true
+        self.lastError = nil
+        defer { self.isApplying = false }
+        do {
+            return try await self.fullImage(for: id)
+        } catch {
+            self.lastError = L10n.string("Could not download the image: \(error.localizedDescription)")
+            self.log.error("coverart.apply.failed", ["error": String(reflecting: error)])
+            return nil
+        }
     }
 }
