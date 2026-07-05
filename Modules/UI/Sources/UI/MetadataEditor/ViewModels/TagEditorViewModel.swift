@@ -183,6 +183,10 @@ public final class TagEditorViewModel: ObservableObject {
         guard !allTags.isEmpty else { return }
         self.loadedTagsByID = tagsByID
         self.populate(from: allTags)
+        // Stored (DB-table) lyrics win over the file tag — see the LyricsMode
+        // extension for why the file tag alone under-reports.
+        let storedLyrics = await self.service.storedLyricsText(ids: self.trackIDs)
+        self.mergeStoredLyrics(storedLyrics, tagsByID: tagsByID)
         // Populate DB-only fields (rating, loved, excludedFromShuffle) which are
         // not stored in audio file tags and therefore absent from TrackTags.
         let tracks = await (try? self.service.readTracks(ids: self.trackIDs)) ?? []
@@ -416,7 +420,9 @@ public final class TagEditorViewModel: ObservableObject {
         self.excludedFromShuffle = Self.fieldState(tracks.map(\.excludedFromShuffle))
     }
 
-    private static func fieldState<T: Equatable>(_ values: [T?]) -> FieldState<T> {
+    /// Internal (not private): the LyricsMode extension's stored-lyrics merge
+    /// rebuilds the lyrics field state from another file.
+    static func fieldState<T: Equatable>(_ values: [T?]) -> FieldState<T> {
         guard !values.isEmpty else { return .shared(nil) }
         let first = values[0]
         let allSame = values.dropFirst().allSatisfy { $0 == first }
