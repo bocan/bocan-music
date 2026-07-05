@@ -1,0 +1,5296 @@
+{
+  "artist-credit": [
+    {
+      "artist": {
+        "country": "GB",
+        "disambiguation": "UK rock band, “The Fab Four”",
+        "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+        "name": "The Beatles",
+        "sort-name": "Beatles, The",
+        "tags": [
+          {
+            "count": 6,
+            "name": "60s"
+          },
+          {
+            "count": 1,
+            "name": "beat"
+          },
+          {
+            "count": 22,
+            "name": "british"
+          },
+          {
+            "count": 9,
+            "name": "british invasion"
+          },
+          {
+            "count": 1,
+            "name": "britpop"
+          },
+          {
+            "count": 2,
+            "name": "classic rock"
+          },
+          {
+            "count": 1,
+            "name": "europe"
+          },
+          {
+            "count": 1,
+            "name": "film soundtrack"
+          },
+          {
+            "count": 1,
+            "name": "liverpool"
+          },
+          {
+            "count": 1,
+            "name": "mainstream rock"
+          },
+          {
+            "count": 15,
+            "name": "merseybeat"
+          },
+          {
+            "count": 28,
+            "name": "pop"
+          },
+          {
+            "count": 23,
+            "name": "pop rock"
+          },
+          {
+            "count": 1,
+            "name": "popular music"
+          },
+          {
+            "count": 1,
+            "name": "psychedelia"
+          },
+          {
+            "count": 16,
+            "name": "psychedelic pop"
+          },
+          {
+            "count": 7,
+            "name": "psychedelic rock"
+          },
+          {
+            "count": 47,
+            "name": "rock"
+          },
+          {
+            "count": 2,
+            "name": "rock and roll"
+          },
+          {
+            "count": 1,
+            "name": "rock groups"
+          },
+          {
+            "count": 1,
+            "name": "rock music"
+          },
+          {
+            "count": 1,
+            "name": "vyrzukhisuc-artiest"
+          }
+        ],
+        "type": "Group",
+        "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+      },
+      "joinphrase": "",
+      "name": "The Beatles"
+    }
+  ],
+  "disambiguation": "original studio mix",
+  "first-release-date": "1969-09-26",
+  "id": "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf",
+  "isrcs": [
+    "GBAYE0000944",
+    "GBAYE0601690"
+  ],
+  "length": 259360,
+  "releases": [
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1969-09-26",
+      "disambiguation": "",
+      "id": "d6010be3-98f8-422c-a6c9-787e2e491e58",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "d641676e-f292-3320-b3be-f9f1d7b19528",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "af19bbfd-fb14-3d15-a6aa-8072cf06775a",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-09-26"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [
+        {
+          "count": 1,
+          "name": "rock"
+        }
+      ],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": null,
+      "country": "GB",
+      "date": "1969-09-26",
+      "disambiguation": "First press variation. Apple logo is misaligned with the rest of the text on the back sleeve.",
+      "id": "05e77dbd-1c4f-4e5e-8461-caac6e5fbae7",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "a0a7eecb-3901-324a-80c2-00c91ba962df",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "825e408d-f698-48a2-b5a8-02efe897d4ab",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": null,
+      "packaging-id": null,
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-09-26"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "US",
+      "date": "1969-10-01",
+      "disambiguation": "",
+      "id": "ffd6ebf5-10c1-3cca-915e-04c0aba926f3",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "5e47c039-c890-337f-ab91-c4e584f96994",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "24244f30-c3cf-307f-ab56-f03a59a848b1",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "iso-3166-1-codes": [
+              "US"
+            ],
+            "name": "United States",
+            "sort-name": "United States",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-10-01"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [
+        {
+          "count": 1,
+          "name": "added/2017/01/13"
+        },
+        {
+          "count": 1,
+          "name": "media/phonograph/by-speed/33rpm"
+        },
+        {
+          "count": 1,
+          "name": "private/d0e5fd04-7935-4b01-ad57-7e0c005765d0"
+        }
+      ],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "US",
+      "date": "1969-10-06",
+      "disambiguation": "",
+      "id": "90ff5e08-f53e-355f-add3-3a642de6027d",
+      "media": [
+        {
+          "format": "7\" Vinyl",
+          "format-id": "1d5a48e4-e94a-36dc-84e2-0c5f9f880aa7",
+          "id": "60f43c20-a711-34a5-ba74-8e747c23f0d3",
+          "position": 1,
+          "title": "",
+          "track-count": 2,
+          "track-offset": 1,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "7ea95da4-7a60-3c55-a83d-3c7ec8c0bca7",
+              "length": 257000,
+              "number": "2",
+              "position": 2,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "iso-3166-1-codes": [
+              "US"
+            ],
+            "name": "United States",
+            "sort-name": "United States",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-10-06"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-10-06",
+        "id": "03d81329-9df0-3fe9-97d4-48f69f9d8bf9",
+        "primary-type": "Single",
+        "primary-type-id": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Something / Come Together"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Something / Come Together"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "AU",
+      "date": "1969-10-16",
+      "disambiguation": "",
+      "id": "418daa8a-aedb-3a24-aac8-2051a2ed9d73",
+      "media": [
+        {
+          "format": null,
+          "format-id": null,
+          "id": "021358df-d116-3803-8c33-e4c82ba95b56",
+          "position": 1,
+          "title": "",
+          "track-count": 2,
+          "track-offset": 1,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "48b87b26-2963-39b3-a59c-6377422ce800",
+              "length": 257000,
+              "number": "2",
+              "position": 2,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "106e0bec-b638-3b37-b731-f53d507dc00e",
+            "iso-3166-1-codes": [
+              "AU"
+            ],
+            "name": "Australia",
+            "sort-name": "Australia",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-10-16"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-10-06",
+        "id": "03d81329-9df0-3fe9-97d4-48f69f9d8bf9",
+        "primary-type": "Single",
+        "primary-type-id": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Something / Come Together"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Something / Come Together"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1969-10-31",
+      "disambiguation": "",
+      "id": "dd7eab14-10e7-48aa-ad75-583ba56f4e90",
+      "media": [
+        {
+          "format": "7\" Vinyl",
+          "format-id": "1d5a48e4-e94a-36dc-84e2-0c5f9f880aa7",
+          "id": "5ead4bb6-8977-338d-ad4b-c1c788e18376",
+          "position": 1,
+          "title": "",
+          "track-count": 2,
+          "track-offset": 1,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "cc80f8ae-daf8-3b72-94d1-04d429af6057",
+              "length": 257000,
+              "number": "B",
+              "position": 2,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-10-31"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-10-06",
+        "id": "03d81329-9df0-3fe9-97d4-48f69f9d8bf9",
+        "primary-type": "Single",
+        "primary-type-id": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Something / Come Together"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Something / Come Together"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": null,
+      "country": "FR",
+      "date": "1969-10",
+      "disambiguation": "",
+      "id": "7986018a-c166-49db-8e99-e23ef05d9050",
+      "media": [
+        {
+          "format": "7\" Vinyl",
+          "format-id": "1d5a48e4-e94a-36dc-84e2-0c5f9f880aa7",
+          "id": "25c1b0ab-eed6-4796-a8be-39c69b8820b4",
+          "position": 1,
+          "title": "",
+          "track-count": 2,
+          "track-offset": 1,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "bea8d3b3-5c5d-43d6-8f83-6240cc2149c0",
+              "length": 257000,
+              "number": "B",
+              "position": 2,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": null,
+      "packaging-id": null,
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "08310658-51eb-3801-80de-5a0739207115",
+            "iso-3166-1-codes": [
+              "FR"
+            ],
+            "name": "France",
+            "sort-name": "France",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-10"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-10-06",
+        "id": "03d81329-9df0-3fe9-97d4-48f69f9d8bf9",
+        "primary-type": "Single",
+        "primary-type-id": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Something / Come Together"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Something / Come Together"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "DE",
+      "date": "1969-11-09",
+      "disambiguation": "",
+      "id": "eca8996a-a637-3259-ba07-d2573c601a1b",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "41a57977-2fec-3f34-ae12-ea3fa3fe883b",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "f6335873-dd78-3508-b843-3af38187a3fb",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "85752fda-13c4-31a3-bee5-0e5cb1f51dad",
+            "iso-3166-1-codes": [
+              "DE"
+            ],
+            "name": "Germany",
+            "sort-name": "Germany",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969-11-09"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "ES",
+      "date": "1969",
+      "disambiguation": "",
+      "id": "03437e02-835f-3a0a-a37c-48a36c2e852a",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "004fc59c-37bd-3c2f-87a5-63b3074fecdb",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "6b27b60a-81a1-3cf6-a26e-5db1dfcb5108",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "471c46a7-afc5-31c4-923c-d0444f5053a4",
+            "iso-3166-1-codes": [
+              "ES"
+            ],
+            "name": "Spain",
+            "sort-name": "Spain",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1969"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1970",
+      "disambiguation": "3rd Pressing",
+      "id": "ed787f95-6668-4767-889c-0e4a720c739f",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "5cc99b1d-b74d-38f2-80e8-1d41d2e9ae39",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "3cc9ddcf-ccc8-4efc-8ff4-da5383627a01",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1970"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "US",
+      "date": "1973-04-02",
+      "disambiguation": "",
+      "id": "5fa351f2-8792-495b-bdc8-76e917039d4e",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "78d98017-2008-3260-a9dd-381e0d057dba",
+          "position": 2,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "2c448529-9e18-338b-891b-cb562feadf4e",
+              "length": 259000,
+              "number": "D2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "iso-3166-1-codes": [
+              "US"
+            ],
+            "name": "United States",
+            "sort-name": "United States",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1973-04-02"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "1967–1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "DE",
+      "date": "1973-04-02",
+      "disambiguation": "",
+      "id": "5d3fe744-2b74-46be-848d-56dacb6cdc27",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "c1ad7c20-90bf-35f7-92e7-306da6960b28",
+          "position": 2,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "8b2c03a6-e1ce-4856-a08e-a9c31ba220d9",
+              "length": 259000,
+              "number": "D2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Gatefold Cover",
+      "packaging-id": "e724a489-a7e8-30a1-a17c-30dfd6831202",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "85752fda-13c4-31a3-bee5-0e5cb1f51dad",
+            "iso-3166-1-codes": [
+              "DE"
+            ],
+            "name": "Germany",
+            "sort-name": "Germany",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1973-04-02"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "1967–1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1973-04-19",
+      "disambiguation": "",
+      "id": "b8b43a4f-52c2-3f99-b262-fd67c70b4023",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "a60fd9e8-b28f-3ee4-be27-b1b09e8c1e4a",
+          "position": 2,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "4b925202-e0b1-3cb5-bdfc-0d86a9e13916",
+              "length": 259000,
+              "number": "D2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1973-04-19"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "1967–1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "NL",
+      "date": "1973",
+      "disambiguation": "",
+      "id": "c7238799-d817-4931-b188-77bcd1ae6ca7",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "6b2e76b8-e4d7-3fd3-9494-6bbe852f354d",
+          "position": 2,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "5d80a33c-0987-485a-9a29-4258c01d0056",
+              "length": 259000,
+              "number": "D2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Gatefold Cover",
+      "packaging-id": "e724a489-a7e8-30a1-a17c-30dfd6831202",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "ef1b7cc0-cd26-36f4-8ea0-04d9623786c7",
+            "iso-3166-1-codes": [
+              "NL"
+            ],
+            "name": "Netherlands",
+            "sort-name": "Netherlands",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1973"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "1967–1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "JP",
+      "date": "1973",
+      "disambiguation": "",
+      "id": "53f352b2-983c-4af2-b19d-577dec0f9f4a",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "56291fe3-1d7c-361d-a4c2-50d69a635c25",
+          "position": 1,
+          "title": "",
+          "track-count": 16,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "abfbae16-00d2-4772-a4dc-a4b0dfb4a918",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "2db42837-c832-3c27-b4a3-08198f75693c",
+            "iso-3166-1-codes": [
+              "JP"
+            ],
+            "name": "Japan",
+            "sort-name": "Japan",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1973"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "IT",
+      "date": "1975",
+      "disambiguation": "",
+      "id": "d1254122-ef4c-487d-b70f-ae0264420b9e",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "7528f1a0-9c66-32e1-8219-203c0e598549",
+          "position": 2,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "b9e00732-8e89-4685-a96a-18f0bd4fe872",
+              "length": 259000,
+              "number": "D2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "c6500277-9a3d-349b-bf30-41afdbf42add",
+            "iso-3166-1-codes": [
+              "IT"
+            ],
+            "name": "Italy",
+            "sort-name": "Italy",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1975"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": null
+      },
+      "title": "1967-1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": null,
+      "country": "IT",
+      "date": "1975",
+      "disambiguation": "",
+      "id": "46264b17-694c-468a-8233-6b79bbb1b8b5",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "4862579e-1727-4513-b59f-75c97a028d90",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "958dc697-b2f3-4151-b7ca-d1b2f132fc5e",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": null,
+      "packaging-id": null,
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "c6500277-9a3d-349b-bf30-41afdbf42add",
+            "iso-3166-1-codes": [
+              "IT"
+            ],
+            "name": "Italy",
+            "sort-name": "Italy",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1975"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1976-03-06",
+      "disambiguation": "",
+      "id": "4370a52c-0da3-4727-80c9-26c2e288d272",
+      "media": [
+        {
+          "format": "7\" Vinyl",
+          "format-id": "1d5a48e4-e94a-36dc-84e2-0c5f9f880aa7",
+          "id": "4d840557-7ad4-35a9-8c52-bddd22290371",
+          "position": 21,
+          "title": "Something",
+          "track-count": 2,
+          "track-offset": 1,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "ab33a4c2-43d5-4816-9271-c116a2d8f690",
+              "length": null,
+              "number": "2",
+              "position": 2,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Other",
+      "packaging-id": "815b7785-8284-3926-8f04-e48bc6c4d102",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1976-03-06"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1976-03-06",
+        "id": "e2f46724-6e28-4fa9-ba5f-f58ac7bc236e",
+        "primary-type": "Single",
+        "primary-type-id": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "The Beatles Singles Collection"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "The Singles Collection 1962–1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "CA",
+      "date": "1976",
+      "disambiguation": "",
+      "id": "d5f3d527-edb8-4534-a1c6-1e433262e5c1",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "458ffd6c-a1c2-3170-b21e-d99474d1582f",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "facdc787-2d53-4571-af90-dc24413824b1",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "71bbafaa-e825-3e15-8ca9-017dcad1748b",
+            "iso-3166-1-codes": [
+              "CA"
+            ],
+            "name": "Canada",
+            "sort-name": "Canada",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1976"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "US",
+      "date": "1976",
+      "disambiguation": "",
+      "id": "c15a59e7-194c-437d-b8b0-c2eaebd806c2",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "6cd0a619-a2b7-34ee-b906-ce762293f96e",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "497ac71a-4dcb-4f17-897f-0373446118d9",
+              "length": 261000,
+              "number": "A1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cardboard/Paper Sleeve",
+      "packaging-id": "f7101ce3-0384-39ce-9fde-fbbd0044d35f",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "iso-3166-1-codes": [
+              "US"
+            ],
+            "name": "United States",
+            "sort-name": "United States",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1976"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1977",
+      "disambiguation": "",
+      "id": "628c7243-ad75-4799-acc3-1d4b0b32d366",
+      "media": [
+        {
+          "format": "7\" Vinyl",
+          "format-id": "1d5a48e4-e94a-36dc-84e2-0c5f9f880aa7",
+          "id": "34dccd24-e5af-3499-b62d-32c3ac767fe5",
+          "position": 21,
+          "title": "Something",
+          "track-count": 2,
+          "track-offset": 1,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "15530264-3648-42a0-95c7-1ce4b73c0ac5",
+              "length": null,
+              "number": "2",
+              "position": 2,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Other",
+      "packaging-id": "815b7785-8284-3926-8f04-e48bc6c4d102",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1977"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1976-03-06",
+        "id": "e2f46724-6e28-4fa9-ba5f-f58ac7bc236e",
+        "primary-type": "Single",
+        "primary-type-id": "d6038452-8ee0-3f68-affc-2de9a1ede0b9",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "The Beatles Singles Collection"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "The Beatles Collection"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "JP",
+      "date": "1978-06-05",
+      "disambiguation": "",
+      "id": "964e8152-d86d-4b88-9b79-2f561db6c124",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "df4575b6-3007-3125-a223-375f1d9c3e89",
+          "position": 1,
+          "title": "",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "8a16e714-b7e1-4359-a558-839802ad3a84",
+              "length": 261000,
+              "number": "1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Slidepack",
+      "packaging-id": "2aee93e9-8acb-476c-807e-6a4a3974e1cb",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "2db42837-c832-3c27-b4a3-08198f75693c",
+            "iso-3166-1-codes": [
+              "JP"
+            ],
+            "name": "Japan",
+            "sort-name": "Japan",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1978-06-05"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1969-09-26",
+        "id": "9162580e-5df4-32de-80cc-f45a8d8a9b1d",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [],
+        "secondary-types": [],
+        "tags": [],
+        "title": "Abbey Road"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "Abbey Road"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "US",
+      "date": "1978-08-21",
+      "disambiguation": "",
+      "id": "e35636a6-77b9-4e30-9459-b81aa34aa316",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "f9624948-653d-3a26-99f8-93135141ee66",
+          "position": 2,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "732ac065-20a1-45fd-bffa-78976f7dd78b",
+              "length": 256000,
+              "number": "D2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Gatefold Cover",
+      "packaging-id": "e724a489-a7e8-30a1-a17c-30dfd6831202",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "489ce91b-6658-3307-9877-795b68554c98",
+            "iso-3166-1-codes": [
+              "US"
+            ],
+            "name": "United States",
+            "sort-name": "United States",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1978-08-21"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "1967–1970"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "GB",
+      "date": "1978-11",
+      "disambiguation": "",
+      "id": "859f2566-4b4e-428d-907a-ecbd78922d54",
+      "media": [
+        {
+          "format": "12\" Vinyl",
+          "format-id": "3e9080b0-5e6c-34ab-bd15-f526b6306a64",
+          "id": "f317c359-1e5f-3877-abf8-00e0e445009c",
+          "position": 12,
+          "title": "Abbey Road",
+          "track-count": 17,
+          "track-offset": 0,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "aa8e3819-af1c-48cb-a7be-651400a380e4",
+              "length": null,
+              "number": "1",
+              "position": 1,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Other",
+      "packaging-id": "815b7785-8284-3926-8f04-e48bc6c4d102",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+            "iso-3166-1-codes": [
+              "GB"
+            ],
+            "name": "United Kingdom",
+            "sort-name": "United Kingdom",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1978-11"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "",
+        "first-release-date": "1978-11",
+        "id": "3fe20166-34f6-429f-968b-c2ff9fcfcc00",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "The Beatles Collection"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "The Beatles Collection"
+    },
+    {
+      "artist-credit": [
+        {
+          "artist": {
+            "country": "GB",
+            "disambiguation": "UK rock band, “The Fab Four”",
+            "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+            "name": "The Beatles",
+            "sort-name": "Beatles, The",
+            "tags": [
+              {
+                "count": 6,
+                "name": "60s"
+              },
+              {
+                "count": 1,
+                "name": "beat"
+              },
+              {
+                "count": 22,
+                "name": "british"
+              },
+              {
+                "count": 9,
+                "name": "british invasion"
+              },
+              {
+                "count": 1,
+                "name": "britpop"
+              },
+              {
+                "count": 2,
+                "name": "classic rock"
+              },
+              {
+                "count": 1,
+                "name": "europe"
+              },
+              {
+                "count": 1,
+                "name": "film soundtrack"
+              },
+              {
+                "count": 1,
+                "name": "liverpool"
+              },
+              {
+                "count": 1,
+                "name": "mainstream rock"
+              },
+              {
+                "count": 15,
+                "name": "merseybeat"
+              },
+              {
+                "count": 28,
+                "name": "pop"
+              },
+              {
+                "count": 23,
+                "name": "pop rock"
+              },
+              {
+                "count": 1,
+                "name": "popular music"
+              },
+              {
+                "count": 1,
+                "name": "psychedelia"
+              },
+              {
+                "count": 16,
+                "name": "psychedelic pop"
+              },
+              {
+                "count": 7,
+                "name": "psychedelic rock"
+              },
+              {
+                "count": 47,
+                "name": "rock"
+              },
+              {
+                "count": 2,
+                "name": "rock and roll"
+              },
+              {
+                "count": 1,
+                "name": "rock groups"
+              },
+              {
+                "count": 1,
+                "name": "rock music"
+              },
+              {
+                "count": 1,
+                "name": "vyrzukhisuc-artiest"
+              }
+            ],
+            "type": "Group",
+            "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+          },
+          "joinphrase": "",
+          "name": "The Beatles"
+        }
+      ],
+      "barcode": "",
+      "country": "FR",
+      "date": "1978",
+      "disambiguation": "",
+      "id": "a56d01a3-a55b-4a81-8fc1-aa118d93fad6",
+      "media": [
+        {
+          "format": "Cassette",
+          "format-id": "f5e6e254-8f39-331c-936b-9c69d686dc47",
+          "id": "83ed482b-0245-35f8-bb83-0797a2fb9512",
+          "position": 1,
+          "title": "",
+          "track-count": 14,
+          "track-offset": 8,
+          "tracks": [
+            {
+              "artist-credit": [
+                {
+                  "artist": {
+                    "country": "GB",
+                    "disambiguation": "UK rock band, “The Fab Four”",
+                    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+                    "name": "The Beatles",
+                    "sort-name": "Beatles, The",
+                    "type": "Group",
+                    "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+                  },
+                  "joinphrase": "",
+                  "name": "The Beatles"
+                }
+              ],
+              "id": "64625a61-f602-3699-b7b4-246363245f41",
+              "length": null,
+              "number": "B2",
+              "position": 9,
+              "title": "Come Together"
+            }
+          ]
+        }
+      ],
+      "packaging": "Cassette Case",
+      "packaging-id": "c70b737a-0114-39a9-88f7-82843e54f906",
+      "quality": "normal",
+      "release-events": [
+        {
+          "area": {
+            "disambiguation": "",
+            "id": "08310658-51eb-3801-80de-5a0739207115",
+            "iso-3166-1-codes": [
+              "FR"
+            ],
+            "name": "France",
+            "sort-name": "France",
+            "type": null,
+            "type-id": null
+          },
+          "date": "1978"
+        }
+      ],
+      "release-group": {
+        "artist-credit": [
+          {
+            "artist": {
+              "country": "GB",
+              "disambiguation": "UK rock band, “The Fab Four”",
+              "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+              "name": "The Beatles",
+              "sort-name": "Beatles, The",
+              "type": "Group",
+              "type-id": "e431f5f6-b5d2-343d-8b36-72607fffb74b"
+            },
+            "joinphrase": "",
+            "name": "The Beatles"
+          }
+        ],
+        "disambiguation": "“The Blue Album”",
+        "first-release-date": "1973-04-02",
+        "id": "f2e0599e-222b-37a5-8544-2f68ce65fd66",
+        "primary-type": "Album",
+        "primary-type-id": "f529b476-6e62-324f-b0aa-1f3e33d313fc",
+        "releases": [],
+        "secondary-type-ids": [
+          "dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"
+        ],
+        "secondary-types": [
+          "Compilation"
+        ],
+        "tags": [],
+        "title": "1967–1970"
+      },
+      "status": "Official",
+      "status-id": "4e304316-386d-3409-af2e-78857eec5cfe",
+      "tags": [],
+      "text-representation": {
+        "language": "eng",
+        "script": "Latn"
+      },
+      "title": "1967-1970, Volume 2"
+    }
+  ],
+  "tags": [
+    {
+      "count": 5,
+      "name": "album rock"
+    },
+    {
+      "count": 1,
+      "name": "art pop"
+    },
+    {
+      "count": 2,
+      "name": "beat"
+    },
+    {
+      "count": 1,
+      "name": "beat music"
+    },
+    {
+      "count": 3,
+      "name": "blues rock"
+    },
+    {
+      "count": 1,
+      "name": "british invasion"
+    },
+    {
+      "count": 1,
+      "name": "british psychedelia"
+    },
+    {
+      "count": 5,
+      "name": "classic rock"
+    },
+    {
+      "count": 1,
+      "name": "cool"
+    },
+    {
+      "count": 1,
+      "name": "groovy"
+    },
+    {
+      "count": 1,
+      "name": "hanging out"
+    },
+    {
+      "count": 1,
+      "name": "happy"
+    },
+    {
+      "count": 1,
+      "name": "hard rock"
+    },
+    {
+      "count": 1,
+      "name": "late night"
+    },
+    {
+      "count": 1,
+      "name": "mellow"
+    },
+    {
+      "count": 3,
+      "name": "pop"
+    },
+    {
+      "count": 11,
+      "name": "pop rock"
+    },
+    {
+      "count": 4,
+      "name": "psychedelic rock"
+    },
+    {
+      "count": 15,
+      "name": "rock"
+    },
+    {
+      "count": 1,
+      "name": "rock & roll"
+    },
+    {
+      "count": 2,
+      "name": "rock and roll"
+    },
+    {
+      "count": 1,
+      "name": "sunshine pop"
+    },
+    {
+      "count": 1,
+      "name": "vibin'"
+    }
+  ],
+  "title": "Come Together",
+  "video": false
+}

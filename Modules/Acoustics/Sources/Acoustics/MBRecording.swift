@@ -1,4 +1,8 @@
-/// MusicBrainz recording response from `GET /ws/2/recording/<mbid>?inc=releases+artists+tags&fmt=json`.
+/// MusicBrainz recording response from
+/// `GET /ws/2/recording/<mbid>?inc=releases+release-groups+artists+tags+isrcs+media&fmt=json`.
+///
+/// Every field beyond `id`/`title` is optional: MusicBrainz omits keys freely, and a
+/// niche release must never fail the whole decode.
 public struct MBRecording: Decodable, Sendable {
     public let id: String
     public let title: String
@@ -7,9 +11,11 @@ public struct MBRecording: Decodable, Sendable {
     public let artistCredit: [MBArtistCredit]?
     public let releases: [MBRelease]?
     public let tags: [MBTag]?
+    /// ISRCs registered for this recording (usually 0 or 1; remasters can carry several).
+    public let isrcs: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, length, releases, tags
+        case id, title, length, releases, tags, isrcs
         case artistCredit = "artist-credit"
     }
 
@@ -43,14 +49,21 @@ public struct MBRelease: Decodable, Sendable {
     /// ISO 8601 partial date string, e.g. "1969-09-26" or "1969".
     public let date: String?
     public let status: String?
+    /// ISO 3166 country code, e.g. "GB".
+    public let country: String?
     public let artistCredit: [MBArtistCredit]?
+    /// Only populated by *release* endpoint lookups (`inc=labels`). The recording
+    /// endpoint rejects `labels` as an inc parameter, so identification candidates
+    /// never carry label data today; the field is kept for a future per-release fetch.
     public let labelInfo: [MBLabelInfo]?
     public let media: [MBMedium]?
+    public let releaseGroup: MBReleaseGroup?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, date, status, media
+        case id, title, date, status, country, media
         case artistCredit = "artist-credit"
         case labelInfo = "label-info"
+        case releaseGroup = "release-group"
     }
 
     public var year: Int? {
@@ -84,12 +97,31 @@ public struct MBLabel: Decodable, Sendable {
 
 public struct MBMedium: Decodable, Sendable {
     public let position: Int?
+    /// Full track count of the medium. In recording lookups `tracks` is only the
+    /// subset containing the looked-up recording, but this count stays complete.
     public let trackCount: Int?
+    /// "CD", "12\" Vinyl", "Cassette", "Digital Media", …
+    public let format: String?
     public let tracks: [MBTrack]?
 
     enum CodingKeys: String, CodingKey {
-        case position, tracks
+        case position, format, tracks
         case trackCount = "track-count"
+    }
+}
+
+/// Release-group summary attached to each release (`inc=release-groups`).
+public struct MBReleaseGroup: Decodable, Sendable {
+    public let id: String
+    /// "Album", "Single", "EP", …
+    public let primaryType: String?
+    /// e.g. ["Compilation"], ["Live"], ["Soundtrack"] — empty/absent for straight albums.
+    public let secondaryTypes: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case primaryType = "primary-type"
+        case secondaryTypes = "secondary-types"
     }
 }
 

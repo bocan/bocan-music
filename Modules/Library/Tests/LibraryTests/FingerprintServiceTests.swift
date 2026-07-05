@@ -85,6 +85,66 @@ struct FingerprintServiceTests {
         #expect(!first.artist.isEmpty)
     }
 
+    // MARK: - Release ranking
+
+    @Test("identify ranks releases Official-first, earliest date, album over compilation")
+    func releaseRanking() async throws {
+        let db = try await makeDB()
+        let (_, track) = try await insertTrack(in: db)
+
+        let acoustid = self.makeAcoustID(json: acoustidSingleJSON)
+        let mb = self.makeMB(json: mbMultiReleaseJSON)
+        let service = self.makeService(
+            fingerprinter: StubFingerprinter(fingerprint: "AQAAZ0mk", duration: 259),
+            acoustid: acoustid,
+            mb: mb,
+            db: db
+        )
+
+        let candidate = try #require(try await service.identify(track: track).first)
+
+        // Expected order: same-date album beats compilation, both beat the later
+        // remaster; the promo sorts last despite having the earliest date.
+        #expect(candidate.releases.map(\.id) == ["r-album", "r-comp", "r-remaster", "r-promo"])
+
+        // Top-level fields must be derived from the best-ranked release.
+        #expect(candidate.album == "The Album")
+        #expect(candidate.year == 1969)
+        #expect(candidate.trackNumber == 9)
+        #expect(candidate.discNumber == 1)
+
+        // Recording-level extras carried through.
+        #expect(candidate.isrcs == ["GBAYE0000944"])
+        let best = try #require(candidate.releases.first)
+        #expect(best.country == "GB")
+        #expect(best.status == "Official")
+        #expect(best.trackTotal == 17)
+        #expect(best.mediaFormat == "CD")
+        #expect(best.releaseGroupID == "rg-album")
+        #expect(best.albumArtistMBID == "artist-1")
+        // Not derivable from recording lookups; must stay nil rather than lie.
+        #expect(best.discTotal == nil)
+    }
+
+    @Test("low-confidence fallback candidates carry no releases")
+    func fallbackHasNoReleases() async throws {
+        let db = try await makeDB()
+        let (_, track) = try await insertTrack(in: db)
+
+        let acoustid = self.makeAcoustID(json: acoustidLowConfidenceJSON)
+        let mb = self.makeMB(json: mbMultiReleaseJSON)
+        let service = self.makeService(
+            fingerprinter: StubFingerprinter(fingerprint: "AQAAZ0mk", duration: 120),
+            acoustid: acoustid,
+            mb: mb,
+            db: db
+        )
+
+        let candidate = try #require(try await service.identify(track: track).first)
+        #expect(candidate.releases.isEmpty)
+        #expect(candidate.isrcs.isEmpty)
+    }
+
     // MARK: - DB persistence
 
     @Test("fingerprint and acoustid_id are always written to DB even when no candidates returned")
@@ -331,6 +391,69 @@ private let acoustidNoResultsJSON = """
 {
   "status": "ok",
   "results": []
+}
+"""
+
+/// Multi-release MusicBrainz response exercising the ranking rules: a promo with the
+/// earliest date, a same-date compilation and album, and a later remaster.
+private let mbMultiReleaseJSON = """
+{
+  "id": "rec-1",
+  "title": "Come Together",
+  "isrcs": ["GBAYE0000944"],
+  "artist-credit": [
+    {
+      "name": "The Beatles",
+      "joinphrase": "",
+      "artist": { "id": "artist-1", "name": "The Beatles" }
+    }
+  ],
+  "releases": [
+    {
+      "id": "r-promo",
+      "title": "Radio Promo",
+      "date": "1969-01-01",
+      "status": "Promotion",
+      "country": "US",
+      "release-group": { "id": "rg-promo", "primary-type": "Single" },
+      "media": [{ "position": 1, "track-count": 2, "format": "7\\" Vinyl", "tracks": [{ "position": 1 }] }]
+    },
+    {
+      "id": "r-comp",
+      "title": "Greatest Hits",
+      "date": "1969-09-26",
+      "status": "Official",
+      "country": "US",
+      "release-group": { "id": "rg-comp", "primary-type": "Album", "secondary-types": ["Compilation"] },
+      "media": [{ "position": 1, "track-count": 24, "format": "CD", "tracks": [{ "position": 3 }] }]
+    },
+    {
+      "id": "r-remaster",
+      "title": "The Album (Remastered)",
+      "date": "2009-09-09",
+      "status": "Official",
+      "country": "GB",
+      "release-group": { "id": "rg-album", "primary-type": "Album" },
+      "media": [{ "position": 1, "track-count": 17, "format": "CD", "tracks": [{ "position": 9 }] }]
+    },
+    {
+      "id": "r-album",
+      "title": "The Album",
+      "date": "1969-09-26",
+      "status": "Official",
+      "country": "GB",
+      "artist-credit": [
+        {
+          "name": "The Beatles",
+          "joinphrase": "",
+          "artist": { "id": "artist-1", "name": "The Beatles" }
+        }
+      ],
+      "release-group": { "id": "rg-album", "primary-type": "Album" },
+      "media": [{ "position": 1, "track-count": 17, "format": "CD", "tracks": [{ "position": 9, "number": "9" }] }]
+    }
+  ],
+  "tags": [{ "name": "rock", "count": 10 }]
 }
 """
 

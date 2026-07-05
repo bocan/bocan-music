@@ -43,7 +43,13 @@ public actor MusicBrainzClient {
 
     /// Fetches a full recording by MusicBrainz recording MBID.
     ///
-    /// Includes releases, artists, and tags (`?inc=releases+artists+tags`).
+    /// Includes releases (with their release-groups and media), artists, tags, and
+    /// ISRCs. One request, bigger response — never page or fan out per release; the
+    /// 1 req/s budget is shared with every other MusicBrainz call site.
+    ///
+    /// Note: `labels` is NOT a valid inc parameter on the recording resource (the
+    /// API rejects the whole request), which is why candidates carry no label data.
+    /// Label/catalog-number would need a per-release lookup (`/release/<id>?inc=labels`).
     public func fetchRecording(mbid: String) async throws -> MBRecording {
         try await self.rateLimiter.wait()
         // The slot may have been granted after this job was cancelled (or the
@@ -51,7 +57,7 @@ public actor MusicBrainzClient {
         // firing the request so a cancelled fetch never hits the network. See #273.
         try Task.checkCancellation()
 
-        let urlString = Self.baseURL + mbid + "?inc=releases+artists+tags&fmt=json"
+        let urlString = Self.baseURL + mbid + "?inc=releases+release-groups+artists+tags+isrcs+media&fmt=json"
         guard let url = URL(string: urlString) else {
             throw AcousticsError.invalidResponse(reason: "Invalid MBID: \(mbid)")
         }
