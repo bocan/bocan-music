@@ -5225,6 +5225,16 @@
         }
       }
     },
+    "Could not download the image: %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđ ñóţ đóŵñĺóáđ ţĥé íḿáĝé: %@ one two three"
+          }
+        }
+      }
+    },
     "Could not export subscriptions" : {
       "localizations" : {
         "en-XA" : {
@@ -6906,6 +6916,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đóŵñĺóáđíñĝ one"
+          }
+        }
+      }
+    },
+    "Downloading…" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóŵñĺóáđíñĝ… one"
           }
         }
       }

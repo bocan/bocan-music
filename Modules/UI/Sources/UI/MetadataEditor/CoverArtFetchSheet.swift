@@ -33,8 +33,9 @@ public struct CoverArtFetchSheet: View {
                     TextField(L10n.string("Album"), text: self.$vm.searchAlbum)
                         .textFieldStyle(.roundedBorder)
                 }
+                // No Return shortcut: Apply below is the default action, and
+                // two buttons claiming Return made the key's behaviour random.
                 Button(L10n.string("Search")) { self.vm.search() }
-                    .keyboardShortcut(.return)
                     .disabled(self.vm.searchArtist.isEmpty && self.vm.searchAlbum.isEmpty)
             }
             .padding()
@@ -81,17 +82,25 @@ public struct CoverArtFetchSheet: View {
                 Spacer()
                 Button(L10n.string("Cancel")) { self.isPresented = false }
                     .keyboardShortcut(.escape)
-                Button(L10n.string("Apply")) {
-                    guard let id = self.vm.selectedCandidateID else { return }
+                Button {
                     Task {
-                        if let data = try? await self.vm.fullImage(for: id) {
+                        if let data = await self.vm.applySelected() {
                             self.onSelect(data)
                             self.isPresented = false
                         }
                     }
+                } label: {
+                    if self.vm.isApplying {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text(localized: "Downloading…")
+                        }
+                    } else {
+                        Text(localized: "Apply")
+                    }
                 }
-                .disabled(self.vm.selectedCandidateID == nil)
-                .keyboardShortcut(.return)
+                .disabled(self.vm.selectedCandidateID == nil || self.vm.isApplying)
+                .keyboardShortcut(.defaultAction)
             }
             .padding()
         }
