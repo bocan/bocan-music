@@ -321,6 +321,11 @@ actor EditTransaction {
         if let v = patch.bpm { tags.bpm = v }
         if let v = patch.key { tags.key = v }
         if let v = patch.isrc { tags.isrc = v }
+        if let v = patch.musicbrainzTrackID { tags.musicbrainzTrackID = v }
+        if let v = patch.musicbrainzRecordingID { tags.musicbrainzRecordingID = v }
+        if let v = patch.musicbrainzReleaseID { tags.musicbrainzReleaseID = v }
+        if let v = patch.musicbrainzReleaseGroupID { tags.musicbrainzReleaseGroupID = v }
+        if let v = patch.musicbrainzAlbumArtistID { tags.musicbrainzAlbumArtistID = v }
         if let v = patch.lyrics { tags.lyrics = v }
         // syncedLyrics writes to the same audio-file tag as plain lyrics;
         // the isSynced distinction is maintained in the lyrics DB table only.

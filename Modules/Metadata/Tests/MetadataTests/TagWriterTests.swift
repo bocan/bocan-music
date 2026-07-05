@@ -111,6 +111,76 @@ struct TagWriterTests {
         #expect(reread.bpm == 128)
     }
 
+    // MARK: - MusicBrainz IDs + ISRC round-trip (Phase 8.6)
+
+    private func assertMusicBrainzRoundTrip(fixture: String) throws {
+        let tmp = try tempCopy(of: fixture)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        var tags = try TagReader().read(from: tmp)
+        tags.isrc = "GBAYE0601696"
+        tags.musicbrainzTrackID = "7fe8e13a-7ae0-3ff6-8429-52ddf31e6e1b"
+        tags.musicbrainzRecordingID = "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf"
+        tags.musicbrainzReleaseID = "9e53c190-5621-3848-8ae4-39ad9f7d9ace"
+        tags.musicbrainzReleaseGroupID = "9162580e-5df4-32de-80cc-f45a8d8a9b1d"
+        tags.musicbrainzAlbumArtistID = "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d"
+        try TagWriter().write(tags, to: tmp)
+
+        let reread = try TagReader().read(from: tmp)
+        #expect(reread.isrc == "GBAYE0601696")
+        #expect(reread.musicbrainzTrackID == "7fe8e13a-7ae0-3ff6-8429-52ddf31e6e1b")
+        #expect(reread.musicbrainzRecordingID == "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf")
+        #expect(reread.musicbrainzReleaseID == "9e53c190-5621-3848-8ae4-39ad9f7d9ace")
+        #expect(reread.musicbrainzReleaseGroupID == "9162580e-5df4-32de-80cc-f45a8d8a9b1d")
+        #expect(reread.musicbrainzAlbumArtistID == "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d")
+    }
+
+    @Test func writeAndReadBackMusicBrainzIDs_mp3() throws {
+        try self.assertMusicBrainzRoundTrip(fixture: "sample.mp3")
+    }
+
+    @Test func writeAndReadBackMusicBrainzIDs_flac() throws {
+        try self.assertMusicBrainzRoundTrip(fixture: "sine-1s-44100-24-stereo.flac")
+    }
+
+    @Test func writeAndReadBackMusicBrainzIDs_m4a() throws {
+        try self.assertMusicBrainzRoundTrip(fixture: "sample-aac.m4a")
+    }
+
+    @Test func writeAndReadBackMusicBrainzIDs_ogg() throws {
+        try self.assertMusicBrainzRoundTrip(fixture: "sine-1s-48000-stereo.ogg")
+    }
+
+    /// A symmetric read/write swap would still round-trip, so the Picard key
+    /// convention is pinned against a fixture tagged by an external tool
+    /// (ffmpeg): the historical MUSICBRAINZ_TRACKID key carries the *recording*
+    /// MBID, MUSICBRAINZ_RELEASETRACKID the track MBID.
+    @Test func readsPicardConventionKeys() throws {
+        let url = try fixtureURL(named: "picard-mbids.flac")
+        let tags = try TagReader().read(from: url)
+        #expect(tags.musicbrainzRecordingID == "external-recording-mbid")
+        #expect(tags.musicbrainzTrackID == "external-track-mbid")
+    }
+
+    @Test func clearingFieldRemovesItFromFile() throws {
+        let tmp = try tempCopy(of: "sample.mp3")
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        var tags = try TagReader().read(from: tmp)
+        tags.musicbrainzRecordingID = "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf"
+        tags.isrc = "GBAYE0601696"
+        try TagWriter().write(tags, to: tmp)
+
+        var cleared = try TagReader().read(from: tmp)
+        cleared.musicbrainzRecordingID = nil
+        cleared.isrc = nil
+        try TagWriter().write(cleared, to: tmp)
+
+        let reread = try TagReader().read(from: tmp)
+        #expect(reread.musicbrainzRecordingID == nil)
+        #expect(reread.isrc == nil)
+    }
+
     @Test func writePreservesAudioDuration() throws {
         let tmp = try tempCopy(of: "sample.mp3")
         defer { try? FileManager.default.removeItem(at: tmp) }
