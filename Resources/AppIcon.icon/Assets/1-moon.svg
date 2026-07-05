@@ -1,0 +1,7 @@
+<svg viewBox="0 0 1024 1024" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <g id="moon">
+    <path d="M 512 78
+             A 52 52 0 1 0 564 130
+             A 40 40 0 1 1 512 78 Z" fill="#E8C36A"/>
+  </g>
+</svg>

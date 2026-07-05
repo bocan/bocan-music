@@ -83,6 +83,10 @@ targets:
         PRODUCT_NAME: Bocan
         PRODUCT_MODULE_NAME: Bocan
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # App icon comes from the Icon Composer package Resources/AppIcon.icon
+        # (Liquid Glass on macOS 26; actool derives a flattened AppIcon.icns
+        # for macOS 15's Dock/Finder).
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: "Bòcan"
         INFOPLIST_KEY_LSApplicationCategoryType: "public.app-category.music"
       configs:

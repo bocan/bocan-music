@@ -1,0 +1,24 @@
+<svg viewBox="0 0 1024 1024" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <g id="guitar" transform="rotate(-30 420 745)">
+    <!-- body -->
+    <ellipse cx="420" cy="745" rx="150" ry="125" fill="#463581"/>
+    <!-- neck -->
+    <rect x="440" y="717" width="440" height="56" rx="28" fill="#D9C9A3"/>
+    <!-- headstock -->
+    <rect x="856" y="697" width="112" height="96" rx="28" fill="#463581"/>
+    <!-- strings -->
+    <rect x="380" y="735" width="490" height="20" rx="10" fill="#E8C36A"/>
+    <!-- spiral rosette -->
+    <path d="M 400 780
+             a 12 12 0 0 1 24 0
+             a 24 24 0 0 1 -48 0
+             a 36 36 0 0 1 72 0
+             a 48 48 0 0 1 -96 0
+             a 60 60 0 0 1 120 0"
+          stroke="#E8C36A" stroke-width="14" fill="none" stroke-linecap="round"/>
+    <!-- fretting hand on the neck -->
+    <circle cx="700" cy="745" r="44" fill="#B9EBDD" stroke="#6FC9B4" stroke-width="12"/>
+    <!-- strumming hand over the strings at the body -->
+    <circle cx="480" cy="722" r="46" fill="#B9EBDD" stroke="#6FC9B4" stroke-width="12"/>
+  </g>
+</svg>
