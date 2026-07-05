@@ -167,20 +167,24 @@ public actor FingerprintService {
             // Try to enrich with full MusicBrainz data for confident matches.
             if result.score >= 0.5 {
                 if let mbRecording = try? await self.mbClient.fetchRecording(mbid: recording.id) {
-                    let bestRelease = mbRecording.releases?.first
+                    let ranked = Self.rankReleases(mbRecording.releases ?? [])
+                    let best = ranked.first
+                    let bestOption = best.map(Self.releaseOption(from:))
                     let candidate = IdentificationCandidate(
                         id: result.id,
                         score: result.score,
                         mbRecordingID: recording.id,
                         title: mbRecording.title,
                         artist: mbRecording.artistName,
-                        album: bestRelease?.title,
-                        albumArtist: bestRelease?.albumArtistName,
-                        trackNumber: bestRelease?.media?.first?.tracks?.first?.trackNumber,
-                        discNumber: bestRelease?.media?.first?.position,
-                        year: bestRelease?.year,
+                        album: best?.title,
+                        albumArtist: best?.albumArtistName,
+                        trackNumber: bestOption?.trackNumber,
+                        discNumber: bestOption?.discNumber,
+                        year: best?.year,
                         genre: mbRecording.topGenre,
-                        label: bestRelease?.labelInfo?.first?.label?.name
+                        label: bestOption?.label,
+                        isrcs: mbRecording.isrcs ?? [],
+                        releases: ranked.map(Self.releaseOption(from:))
                     )
                     candidates.append(candidate)
                     continue
@@ -200,5 +204,73 @@ public actor FingerprintService {
         }
 
         return candidates
+    }
+
+    /// Orders a recording's releases so the most likely-intended one comes first:
+    /// Official status, then earliest release date (unknown dates last), then a
+    /// straight album over compilations/live/soundtracks. Ties break on MBID so
+    /// the order is deterministic (`sorted` is not guaranteed stable).
+    private static func rankReleases(_ releases: [Acoustics.MBRelease]) -> [Acoustics.MBRelease] {
+        releases.sorted { a, b in
+            let aOfficial = a.status == "Official"
+            let bOfficial = b.status == "Official"
+            if aOfficial != bOfficial { return aOfficial }
+
+            // Partial-ISO date strings compare correctly lexicographically.
+            switch (a.date, b.date) {
+            case let (x?, y?) where x != y:
+                return x < y
+
+            case (.some, .none):
+                return true
+
+            case (.none, .some):
+                return false
+
+            default:
+                break
+            }
+
+            let aAlbum = Self.isStraightAlbum(a)
+            let bAlbum = Self.isStraightAlbum(b)
+            if aAlbum != bAlbum { return aAlbum }
+
+            return a.id < b.id
+        }
+    }
+
+    /// A release whose group is a plain "Album" with no secondary types
+    /// (Compilation, Live, Soundtrack, …).
+    private static func isStraightAlbum(_ release: Acoustics.MBRelease) -> Bool {
+        guard let group = release.releaseGroup else { return false }
+        return group.primaryType == "Album" && (group.secondaryTypes ?? []).isEmpty
+    }
+
+    /// Maps a MusicBrainz release into the picker-facing `ReleaseOption`.
+    ///
+    /// In recording lookups, `media` is filtered to the medium containing the
+    /// recording and its `tracks` to the matching track, while `track-count`
+    /// remains the medium's full count — hence trackTotal is trustworthy but
+    /// discTotal is unknowable here.
+    private static func releaseOption(from release: Acoustics.MBRelease) -> ReleaseOption {
+        let medium = release.media?.first { !($0.tracks ?? []).isEmpty } ?? release.media?.first
+        return ReleaseOption(
+            id: release.id,
+            title: release.title,
+            date: release.date,
+            year: release.year,
+            country: release.country,
+            status: release.status,
+            label: release.labelInfo?.first?.label?.name,
+            catalogNumber: release.labelInfo?.first?.catalogNumber,
+            albumArtist: release.albumArtistName,
+            albumArtistMBID: release.artistCredit?.first?.artist?.id,
+            releaseGroupID: release.releaseGroup?.id,
+            trackNumber: medium?.tracks?.first?.trackNumber,
+            discNumber: medium?.position,
+            trackTotal: medium?.trackCount,
+            discTotal: nil,
+            mediaFormat: medium?.format
+        )
     }
 }

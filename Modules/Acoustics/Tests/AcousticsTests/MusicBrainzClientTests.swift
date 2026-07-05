@@ -31,6 +31,88 @@ struct MusicBrainzClientTests {
         #expect(recording.topGenre == "Rock")
     }
 
+    // MARK: - Expanded inc= response (recorded from the live API, 2026-07-05)
+
+    @Test("fetchRecording decodes the expanded multi-release fixture")
+    func decodesMultiReleaseFixture() async throws {
+        let mock = MockHTTPClient()
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/mb_recording_response_multi_release.json")
+        let client = self.makeClient(mock: mock)
+        let recording = try await client.fetchRecording(mbid: "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf")
+
+        #expect(recording.title == "Come Together")
+        #expect(recording.isrcs == ["GBAYE0000944", "GBAYE0601690"])
+
+        let releases = try #require(recording.releases)
+        #expect(releases.count == 25)
+
+        // The earliest official release in the recorded data: 1969 Spanish Abbey Road LP.
+        let earliest = try #require(releases.first { $0.id == "03437e02-835f-3a0a-a37c-48a36c2e852a" })
+        #expect(earliest.status == "Official")
+        #expect(earliest.country == "ES")
+        #expect(earliest.date == "1969")
+        #expect(earliest.year == 1969)
+        #expect(earliest.releaseGroup?.id == "9162580e-5df4-32de-80cc-f45a8d8a9b1d")
+        #expect(earliest.releaseGroup?.primaryType == "Album")
+        #expect(earliest.releaseGroup?.secondaryTypes ?? [] == [])
+
+        let medium = try #require(earliest.media?.first { !($0.tracks ?? []).isEmpty })
+        #expect(medium.format == "12\" Vinyl")
+        #expect(medium.trackCount == 17)
+        #expect(medium.tracks?.first?.trackNumber == 1)
+
+        // Compilations are flagged via release-group secondary types.
+        let compilations = releases.filter { !($0.releaseGroup?.secondaryTypes ?? []).isEmpty }
+        #expect(compilations.count == 10)
+
+        // The recording endpoint cannot return label-info (labels is not a valid
+        // inc parameter there) — recorded data must reflect that.
+        #expect(releases.allSatisfy { $0.labelInfo == nil })
+    }
+
+    @Test("MBRecording decodes when every optional key is absent")
+    func decodesMinimalRecording() throws {
+        let json = Data(#"{"id": "abc", "title": "Bare"}"#.utf8)
+        let recording = try JSONDecoder().decode(MBRecording.self, from: json)
+        #expect(recording.id == "abc")
+        #expect(recording.isrcs == nil)
+        #expect(recording.releases == nil)
+        #expect(recording.artistName.isEmpty)
+    }
+
+    @Test("Release decodes when optional keys are absent")
+    func decodesMinimalRelease() throws {
+        let json = Data(#"{"id": "r", "title": "Bare", "releases": [{"id": "x", "title": "Y"}]}"#.utf8)
+        let recording = try JSONDecoder().decode(MBRecording.self, from: json)
+        let release = try #require(recording.releases?.first)
+        #expect(release.country == nil)
+        #expect(release.releaseGroup == nil)
+        #expect(release.media == nil)
+        #expect(release.year == nil)
+    }
+
+    // MARK: - inc= parameter
+
+    @Test("Request asks for release-groups, isrcs, and media — and never labels")
+    func incParameter() async throws {
+        let mock = MockHTTPClient()
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/mb_recording_response.json")
+        let capture = RequestBox()
+        let capturingClient = CapturingHTTPClient(inner: mock) { capture.request = $0 }
+        let client = MusicBrainzClient(
+            userAgent: userAgent,
+            rateLimiter: RateLimiter(maxRequests: 100, per: 1.0),
+            httpClient: capturingClient
+        )
+        _ = try await client.fetchRecording(mbid: "some-mbid")
+        let query = try #require(capture.request?.url?.query())
+        #expect(query.contains("release-groups"))
+        #expect(query.contains("isrcs"))
+        #expect(query.contains("media"))
+        // "labels" is rejected by the recording resource with an HTTP error.
+        #expect(!query.contains("labels"))
+    }
+
     // MARK: - User-Agent header
 
     @Test("User-Agent header is present and correct")
