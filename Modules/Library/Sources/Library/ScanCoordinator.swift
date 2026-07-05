@@ -278,7 +278,13 @@ actor ScanCoordinator {
                 if Self.tagsDiffer(dbTrack: ex, diskTags: tags) {
                     updated.needsConflictReview = true
                 }
-                try? await self.trackRepo.update(updated)
+                // Only write the row when something actually changed. An
+                // unconditional update here re-fires ValueObservation streams
+                // (and the UI reloads behind them) on every FSEvents pass,
+                // even when the pass was a metadata-only no-op.
+                if updated != ex {
+                    try? await self.trackRepo.update(updated)
+                }
                 emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
                 return .conflict(trackID)
             }
