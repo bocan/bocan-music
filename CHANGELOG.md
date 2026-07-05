@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.16.0](https://github.com/bocan/bocan-music/compare/v1.15.0...v1.16.0) (2026-07-05)
 
+This release contains a lot of fixes for the metadata editor, including making sure that the cover art you apply to an album actually replaces the existing art, and that the track list shows the new art.  It also makes sure that lyrics are actually written to disk when you choose "Embed in file", and that stored lyrics are shown in the editor for non-playing tracks and in the Get Info lyrics tab.
 
 ### ### Added
 
