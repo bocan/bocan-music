@@ -1,9 +1,42 @@
 import Foundation
+import Metadata
 
 // MARK: - LyricsMode helpers
 
-/// LRC timestamp detection and effective lyrics-mode resolution.
+/// LRC timestamp detection, effective lyrics-mode resolution, and the
+/// stored-lyrics merge for the Get Info lyrics tab.
 extension TagEditorViewModel {
+    // MARK: - Stored-lyrics merge
+
+    /// Merges lyrics stored in the DB table over the file-tag values.
+    ///
+    /// Lyrics fetched from LRClib or edited in the lyrics panel live in the
+    /// lyrics DB table and are deliberately NOT written into the file unless
+    /// the user opted in to embedding — so the file tag alone leaves the Get
+    /// Info tab empty while the lyrics pane clearly shows lyrics. The stored
+    /// row wins; it is what the app resolves everywhere else.
+    func mergeStoredLyrics(_ stored: [Int64: String], tagsByID: [Int64: TrackTags]) {
+        self.lyrics = Self.fieldState(Self.effectiveLyrics(
+            trackIDs: self.trackIDs,
+            tagsByID: tagsByID,
+            stored: stored
+        ))
+    }
+
+    /// Per-track effective lyrics: the stored DB row when one exists, else the
+    /// file-tag value. Order and membership mirror `populate(from:)` — only
+    /// tracks whose tags actually loaded contribute a slot.
+    static func effectiveLyrics(
+        trackIDs: [Int64],
+        tagsByID: [Int64: TrackTags],
+        stored: [Int64: String]
+    ) -> [String?] {
+        trackIDs.compactMap { id -> String?? in
+            guard let tags = tagsByID[id] else { return nil } // read failed — no slot
+            return .some(stored[id] ?? tags.lyrics)
+        }
+    }
+
     // MARK: - LRC detection
 
     /// `true` when the current lyrics text contains LRC timestamp patterns (`[mm:ss` …).

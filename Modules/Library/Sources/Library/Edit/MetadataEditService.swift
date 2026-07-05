@@ -140,6 +140,23 @@ public actor MetadataEditService {
         return tracks
     }
 
+    /// Returns the lyrics text stored in the `lyrics` DB table for each track
+    /// that has a row (LRClib fetches and lyrics-panel edits live there and are
+    /// deliberately not written into the audio file unless the user opts in).
+    ///
+    /// The tag editor merges this over the file-tag lyrics so "Get Info" shows
+    /// what the rest of the app shows, not just what the file bytes carry.
+    public func storedLyricsText(ids: [Int64]) async -> [Int64: String] {
+        let lyricsRepo = LyricsRepository(database: self.database)
+        var byID: [Int64: String] = [:]
+        for id in ids {
+            if let row = try? await lyricsRepo.fetch(trackID: id) {
+                byID[id] = row.lyricsText
+            }
+        }
+        return byID
+    }
+
     /// Reads the current `TrackTags` from disk for `trackID`.
     public func readTags(trackID: Int64) async throws -> TrackTags {
         let track = try await self.trackRepo.fetch(id: trackID)

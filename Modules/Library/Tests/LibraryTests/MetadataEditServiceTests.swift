@@ -102,6 +102,28 @@ struct MetadataEditServiceTests {
         #expect(track.userEdited == true)
     }
 
+    // MARK: - Stored lyrics (Get Info merge)
+
+    @Test func storedLyricsTextReturnsDBRows() async throws {
+        let db = try await makeDatabase()
+        let withRow = try await insertTrack(in: db, fileURL: "file:///tmp/a.mp3")
+        let withoutRow = try await insertTrack(in: db, fileURL: "file:///tmp/b.mp3")
+
+        let row = Lyrics(
+            trackID: withRow,
+            lyricsText: "Here come old flat-top",
+            isSynced: false,
+            source: "lrclib"
+        )
+        try await LyricsRepository(database: db).save(row)
+
+        let svc = try MetadataEditService(database: db)
+        let stored = await svc.storedLyricsText(ids: [withRow, withoutRow])
+
+        #expect(stored[withRow] == "Here come old flat-top")
+        #expect(stored[withoutRow] == nil)
+    }
+
     // MARK: - MusicBrainz IDs + ISRC (Phase 8.6)
 
     @Test func editWritesMusicBrainzIDsToFileAndDB() async throws {
