@@ -5,6 +5,14 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1](https://github.com/bocan/bocan-music/compare/v1.16.0...v1.16.1) (2026-07-05)
+
+
+### ### Fixed
+
+* **library:** ignore metadata-only FSEvents and skip no-op conflict writes ([3e49b23](https://github.com/bocan/bocan-music/commit/3e49b230e0dc5bf2fa99c7bcc9e86d86fdaa9d17))
+* **metadata:** open files read-only when reading tags ([5a093ca](https://github.com/bocan/bocan-music/commit/5a093ca2b33966d2665b8cb5d8a5e6a08e7edee2))
+
 ## [1.16.0](https://github.com/bocan/bocan-music/compare/v1.15.0...v1.16.0) (2026-07-05)
 
 This release contains a lot of fixes for the metadata editor, including making sure that the cover art you apply to an album actually replaces the existing art, and that the track list shows the new art.  It also makes sure that lyrics are actually written to disk when you choose "Embed in file", and that stored lyrics are shown in the editor for non-playing tracks and in the Get Info lyrics tab.
