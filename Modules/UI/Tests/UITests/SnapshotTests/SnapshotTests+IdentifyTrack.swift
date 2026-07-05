@@ -13,7 +13,7 @@ extension UISnapshotTests {
     @Suite("IdentifyTrackSheet Snapshots")
     @MainActor
     struct IdentifyTrackSheetSnapshotTests {
-        private static let sheetSize = CGSize(width: 560, height: 380)
+        private static let sheetSize = CGSize(width: 680, height: 480)
 
         private func makeVM(phase: IdentifyTrackViewModel.Phase) async throws -> IdentifyTrackViewModel {
             let db = try await Database(location: .inMemory)

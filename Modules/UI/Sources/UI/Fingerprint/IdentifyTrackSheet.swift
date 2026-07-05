@@ -39,9 +39,9 @@ public struct IdentifyTrackSheet: View {
             Divider()
 
             self.phaseContent
-                .frame(minWidth: 480, minHeight: 280)
+                .frame(minWidth: 560, minHeight: 340)
         }
-        .frame(minWidth: 480, idealWidth: 560, minHeight: 320)
+        .frame(minWidth: 560, idealWidth: 680, minHeight: 400, idealHeight: 480)
         .task { self.vm.start() }
     }
 
