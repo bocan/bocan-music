@@ -8,6 +8,7 @@
 #include <tpropertymap.h>
 #include <tvariant.h>
 #include <audioproperties.h>
+#include <tfilestream.h>
 #include <tstring.h>
 #include <tstringlist.h>
 
@@ -122,8 +123,16 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
 + (nullable BOCTags *)readTagsFromPath:(NSString *)path
                                  error:(NSError *__autoreleasing _Nullable *)outError {
     try {
+    // Open read-only. `FileRef(path)` defaults to a read-write stream, and on
+    // quarantined files macOS rewrites the quarantine/provenance metadata on
+    // every write-intent open (even with zero bytes written). That metadata
+    // change emits a fresh FSEvents event, which re-triggers the library
+    // rescan that called this reader: a self-sustaining feedback loop.
+    // Reading must never open with write intent. The stream must outlive
+    // `fileRef`; FileRef does not take ownership.
+    TagLib::FileStream stream([path fileSystemRepresentation], /* openReadOnly */ true);
     TagLib::FileRef fileRef(
-        [path fileSystemRepresentation],
+        &stream,
         /* readAudioProperties */ true,
         TagLib::AudioProperties::Accurate
     );
