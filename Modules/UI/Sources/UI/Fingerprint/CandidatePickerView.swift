@@ -28,7 +28,7 @@ struct CandidatePickerView: View {
                 .padding(.bottom, 4)
 
             Text(localized: "Tick the fields you want to accept — anything unchecked is left as-is.")
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
                 .padding(.bottom, 8)
@@ -38,7 +38,7 @@ struct CandidatePickerView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                     Text(localized: "Low confidence — verify tags before applying.")
-                        .font(.caption)
+                        .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
                 }
@@ -154,10 +154,18 @@ private struct CandidateRow: View {
     let onToggle: () -> Void
     let onApply: () -> Void
 
+    @State private var isHovering = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Button(action: self.onToggle) {
                 HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(self.isExpanded ? 90 : 0))
+                        .padding(.top, 4)
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(self.candidate.title)
                             .font(.body)
@@ -181,11 +189,23 @@ private struct CandidateRow: View {
                         }
                     }
                 }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 6)
+                // The whole row must hit-test, including the transparent gap the
+                // Spacer leaves between title and badge — a plain Button only hits
+                // its opaque label content otherwise.
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(self.isHovering ? Color.primary.opacity(0.06) : Color.clear)
+            )
+            .onHover { self.isHovering = $0 }
             .accessibilityLabel(
                 L10n.string("\(self.candidate.title) by \(self.candidate.artist), confidence \(Int(self.candidate.score * 100))%")
             )
+            .accessibilityHint(L10n.string("Expands to choose which fields to apply"))
 
             if self.isExpanded {
                 FieldSelectionGrid(
@@ -198,10 +218,10 @@ private struct CandidateRow: View {
                 if let mbid = self.candidate.mbRecordingID {
                     HStack(spacing: 6) {
                         Text(verbatim: "MBID")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.tertiary)
                         Text(mbid)
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                             .textSelection(.enabled)
                         Spacer()
@@ -226,8 +246,9 @@ private struct CandidateRow: View {
                     } else {
                         Button(L10n.string("Apply Selected")) { self.onApply() }
                             .buttonStyle(.borderedProminent)
+                            .keyboardShortcut(.defaultAction)
                             .disabled(self.selection.isEmpty || self.isApplying)
-                            .help(L10n.string("Write selected fields to the track's tags"))
+                            .help(L10n.string("Write selected fields to the track's tags (Return)"))
                             .overlay {
                                 if self.isApplying {
                                     ProgressView().scaleEffect(0.7)
@@ -239,7 +260,6 @@ private struct CandidateRow: View {
             }
         }
         .padding(.vertical, 6)
-        .contentShape(Rectangle())
     }
 
     private func selectAll() {
@@ -301,27 +321,31 @@ private struct FieldSelectionGrid: View {
             }
         )
         let unchanged = current == proposed && !current.isEmpty
+        let currentSpoken = current.isEmpty ? L10n.string("empty") : current
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
             Toggle("", isOn: isOn)
                 .toggleStyle(.checkbox)
                 .labelsHidden()
-                .accessibilityLabel(L10n.string("Accept \(field.displayName)"))
+                .accessibilityLabel(
+                    L10n.string("Accept \(field.displayName), currently \(currentSpoken), proposed \(proposed)")
+                )
                 .disabled(unchanged)
             Text(field.displayName)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
-                .frame(width: 90, alignment: .leading)
+                .frame(width: 100, alignment: .leading)
             Text(current.isEmpty ? "—" : current)
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Image(systemName: "arrow.right")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-            Text(proposed)
                 .font(.caption)
+                .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
+            Text(proposed)
+                .font(.callout)
                 .foregroundStyle(unchanged ? .secondary : .primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
