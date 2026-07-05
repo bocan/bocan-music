@@ -96,7 +96,12 @@ public struct CoverArtFetchSheet: View {
             .padding()
         }
         .frame(minWidth: 480, minHeight: 400)
-        .onAppear { self.vm.search() }
+        .onAppear {
+            // Only auto-search when the fields carry something; an empty query
+            // is a guaranteed miss and flashes an error before the user types.
+            guard !(self.vm.searchArtist.isEmpty && self.vm.searchAlbum.isEmpty) else { return }
+            self.vm.search()
+        }
     }
 }
 

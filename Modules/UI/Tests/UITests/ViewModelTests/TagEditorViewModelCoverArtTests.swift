@@ -84,4 +84,49 @@ struct TagEditorViewModelCoverArtTests {
         #expect(vm.coverArtFetchVM.candidates.isEmpty)
         #expect(!vm.coverArtFetchVM.isSearching)
     }
+
+    // MARK: - Search prefill (Fetch… button)
+
+    @Test("prepareCoverArtSearch seeds the fields from loaded tags")
+    func prefillSeedsFromTags() async throws {
+        let db = try await makeDatabase()
+        let svc = try MetadataEditService(database: db)
+        let vm = TagEditorViewModel(service: svc, trackIDs: [])
+        vm.artist = .shared("The Beatles")
+        vm.albumArtist = .shared("The Beatles")
+        vm.album = .shared("Abbey Road")
+
+        vm.prepareCoverArtSearch()
+
+        #expect(vm.coverArtFetchVM.searchArtist == "The Beatles")
+        #expect(vm.coverArtFetchVM.searchAlbum == "Abbey Road")
+    }
+
+    @Test("prepareCoverArtSearch prefers album artist and skips mixed fields")
+    func prefillPrefersAlbumArtist() async throws {
+        let db = try await makeDatabase()
+        let svc = try MetadataEditService(database: db)
+        let vm = TagEditorViewModel(service: svc, trackIDs: [])
+        vm.artist = .shared("Feat. Guest")
+        vm.albumArtist = .shared("Main Act")
+        vm.album = .various // multi-selection with different albums
+
+        vm.prepareCoverArtSearch()
+
+        #expect(vm.coverArtFetchVM.searchArtist == "Main Act")
+        #expect(vm.coverArtFetchVM.searchAlbum.isEmpty)
+    }
+
+    @Test("prepareCoverArtSearch never overwrites what the user typed")
+    func prefillDoesNotOverwrite() async throws {
+        let db = try await makeDatabase()
+        let svc = try MetadataEditService(database: db)
+        let vm = TagEditorViewModel(service: svc, trackIDs: [])
+        vm.artist = .shared("The Beatles")
+        vm.coverArtFetchVM.searchArtist = "Typed By Hand"
+
+        vm.prepareCoverArtSearch()
+
+        #expect(vm.coverArtFetchVM.searchArtist == "Typed By Hand")
+    }
 }
