@@ -144,6 +144,11 @@ public struct TagsSnapshot: Sendable, Codable, Equatable {
     public var bpm: Double?
     public var key: String?
     public var isrc: String?
+    public var musicbrainzTrackID: String?
+    public var musicbrainzRecordingID: String?
+    public var musicbrainzReleaseID: String?
+    public var musicbrainzReleaseGroupID: String?
+    public var musicbrainzAlbumArtistID: String?
     public var replaygainTrackGain: Double?
     public var replaygainTrackPeak: Double?
     public var replaygainAlbumGain: Double?
@@ -170,6 +175,11 @@ public struct TagsSnapshot: Sendable, Codable, Equatable {
         self.bpm = tags.bpm
         self.key = tags.key
         self.isrc = tags.isrc
+        self.musicbrainzTrackID = tags.musicbrainzTrackID
+        self.musicbrainzRecordingID = tags.musicbrainzRecordingID
+        self.musicbrainzReleaseID = tags.musicbrainzReleaseID
+        self.musicbrainzReleaseGroupID = tags.musicbrainzReleaseGroupID
+        self.musicbrainzAlbumArtistID = tags.musicbrainzAlbumArtistID
         self.replaygainTrackGain = tags.replayGain.trackGain
         self.replaygainTrackPeak = tags.replayGain.trackPeak
         self.replaygainAlbumGain = tags.replayGain.albumGain
@@ -198,6 +208,11 @@ public struct TagsSnapshot: Sendable, Codable, Equatable {
         tags.bpm = self.bpm
         tags.key = self.key
         tags.isrc = self.isrc
+        tags.musicbrainzTrackID = self.musicbrainzTrackID
+        tags.musicbrainzRecordingID = self.musicbrainzRecordingID
+        tags.musicbrainzReleaseID = self.musicbrainzReleaseID
+        tags.musicbrainzReleaseGroupID = self.musicbrainzReleaseGroupID
+        tags.musicbrainzAlbumArtistID = self.musicbrainzAlbumArtistID
         tags.replayGain = ReplayGain(
             trackGain: self.replaygainTrackGain,
             trackPeak: self.replaygainTrackPeak,

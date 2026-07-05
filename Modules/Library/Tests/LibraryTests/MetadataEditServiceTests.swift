@@ -102,6 +102,92 @@ struct MetadataEditServiceTests {
         #expect(track.userEdited == true)
     }
 
+    // MARK: - MusicBrainz IDs + ISRC (Phase 8.6)
+
+    @Test func editWritesMusicBrainzIDsToFileAndDB() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        var patch = TrackTagPatch()
+        patch.isrc = "GBAYE0601696"
+        patch.musicbrainzTrackID = "7fe8e13a-7ae0-3ff6-8429-52ddf31e6e1b"
+        patch.musicbrainzRecordingID = "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf"
+        patch.musicbrainzReleaseID = "9e53c190-5621-3848-8ae4-39ad9f7d9ace"
+        patch.musicbrainzReleaseGroupID = "9162580e-5df4-32de-80cc-f45a8d8a9b1d"
+        patch.musicbrainzAlbumArtistID = "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d"
+        #expect(!patch.isEmpty)
+        try await svc.edit(trackID: trackID, patch: patch)
+
+        // File bytes carry the identifiers…
+        let reread = try TagReader().read(from: tmp)
+        #expect(reread.isrc == "GBAYE0601696")
+        #expect(reread.musicbrainzTrackID == "7fe8e13a-7ae0-3ff6-8429-52ddf31e6e1b")
+        #expect(reread.musicbrainzRecordingID == "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf")
+        #expect(reread.musicbrainzReleaseID == "9e53c190-5621-3848-8ae4-39ad9f7d9ace")
+        #expect(reread.musicbrainzReleaseGroupID == "9162580e-5df4-32de-80cc-f45a8d8a9b1d")
+        #expect(reread.musicbrainzAlbumArtistID == "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d")
+
+        // …and so does the DB row, in the same edit.
+        let updated = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(updated.isrc == "GBAYE0601696")
+        #expect(updated.musicbrainzTrackID == "7fe8e13a-7ae0-3ff6-8429-52ddf31e6e1b")
+        #expect(updated.musicbrainzRecordingID == "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf")
+        #expect(updated.musicbrainzReleaseID == "9e53c190-5621-3848-8ae4-39ad9f7d9ace")
+        #expect(updated.musicbrainzReleaseGroupID == "9162580e-5df4-32de-80cc-f45a8d8a9b1d")
+        #expect(updated.musicbrainzAlbumArtistID == "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d")
+    }
+
+    @Test func clearingMusicBrainzIDsRemovesThem() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        var set = TrackTagPatch()
+        set.musicbrainzRecordingID = "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf"
+        try await svc.edit(trackID: trackID, patch: set)
+
+        // `.some(nil)` means "clear this field".
+        var clear = TrackTagPatch()
+        clear.musicbrainzRecordingID = .some(nil)
+        try await svc.edit(trackID: trackID, patch: clear)
+
+        let reread = try TagReader().read(from: tmp)
+        #expect(reread.musicbrainzRecordingID == nil)
+        let updated = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(updated.musicbrainzRecordingID == nil)
+    }
+
+    @Test func undoPreservesPreexistingMusicBrainzIDs() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        // The file already carries an MBID (e.g. tagged by Picard) before the edit.
+        var mbPatch = TrackTagPatch()
+        mbPatch.musicbrainzRecordingID = "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf"
+        try await svc.edit(trackID: trackID, patch: mbPatch)
+
+        // An unrelated edit, then undo — the snapshot must round-trip the MBID
+        // or the restore write erases it from the file.
+        var titlePatch = TrackTagPatch()
+        titlePatch.title = "Retitled"
+        let editID = try await svc.edit(trackID: trackID, patch: titlePatch)
+        try await svc.undo(editID: editID)
+
+        let restored = try TagReader().read(from: tmp)
+        #expect(restored.musicbrainzRecordingID == "485bbe7f-d0f7-4ffe-8adb-0f1093dd2dbf")
+    }
+
     // MARK: - multi-track: only changed fields written
 
     @Test func multiEditOnlyWritesChangedFields() async throws {

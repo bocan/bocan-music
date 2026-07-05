@@ -192,9 +192,12 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     if (!discTotalStr) discTotalStr = firstValue(props, "TOTALDISCS");
     tags.discTotal  = discTotalStr  ? (NSInteger)discTotalStr.integerValue  : 0;
 
-    // MusicBrainz
-    tags.musicbrainzTrackID       = firstValue(props, "MUSICBRAINZ_TRACKID");
-    tags.musicbrainzRecordingID   = firstValue(props, "MUSICBRAINZ_RELEASETRACKID");
+    // MusicBrainz. Key naming follows the Picard convention and is deliberately
+    // counter-intuitive: the historical MUSICBRAINZ_TRACKID tag stores the
+    // *recording* MBID, while MUSICBRAINZ_RELEASETRACKID stores the
+    // track-in-release MBID.
+    tags.musicbrainzRecordingID   = firstValue(props, "MUSICBRAINZ_TRACKID");
+    tags.musicbrainzTrackID       = firstValue(props, "MUSICBRAINZ_RELEASETRACKID");
     tags.musicbrainzAlbumArtistID = firstValue(props, "MUSICBRAINZ_ALBUMARTISTID");
     tags.musicbrainzReleaseID     = firstValue(props, "MUSICBRAINZ_ALBUMID");
     tags.musicbrainzReleaseGroupID = firstValue(props, "MUSICBRAINZ_RELEASEGROUPID");
@@ -352,11 +355,16 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     // -----------------------------------------------------------------------
     TagLib::PropertyMap props = fileRef.properties();
 
-    // Set a property only when value is non-empty.
+    // Set a property when the value is non-empty; erase the key when it is nil.
+    // Every writer does a full read-modify-write (TagReader → mutate → TagWriter),
+    // so a nil field always means "absent or explicitly cleared", never "leave
+    // whatever the file had" — without the erase, clearing a field was a no-op.
     auto setProp = [&](const char *key, NSString *value) {
         if (value.length > 0) {
             props[TagLib::String(key)] = TagLib::StringList(
                 TagLib::String(value.UTF8String, TagLib::String::UTF8));
+        } else {
+            props.erase(TagLib::String(key));
         }
     };
 
@@ -387,9 +395,10 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
             [NSString stringWithFormat:@"%ld", (long)tags.discTotal].UTF8String));
     }
 
-    // MusicBrainz
-    setProp("MUSICBRAINZ_TRACKID",        tags.musicbrainzTrackID);
-    setProp("MUSICBRAINZ_RELEASETRACKID", tags.musicbrainzRecordingID);
+    // MusicBrainz — same Picard-convention key naming as the read side above:
+    // MUSICBRAINZ_TRACKID carries the recording MBID.
+    setProp("MUSICBRAINZ_TRACKID",        tags.musicbrainzRecordingID);
+    setProp("MUSICBRAINZ_RELEASETRACKID", tags.musicbrainzTrackID);
     setProp("MUSICBRAINZ_ALBUMARTISTID",  tags.musicbrainzAlbumArtistID);
     setProp("MUSICBRAINZ_ALBUMID",        tags.musicbrainzReleaseID);
     setProp("MUSICBRAINZ_RELEASEGROUPID", tags.musicbrainzReleaseGroupID);

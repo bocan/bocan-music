@@ -41,6 +41,14 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
     /// `syncedLyrics` to avoid conflicting writes.
     public var syncedLyrics: String??
 
+    // MARK: - MusicBrainz identifiers (Phase 8.6)
+
+    public var musicbrainzTrackID: String??
+    public var musicbrainzRecordingID: String??
+    public var musicbrainzReleaseID: String??
+    public var musicbrainzReleaseGroupID: String??
+    public var musicbrainzAlbumArtistID: String??
+
     // MARK: - Sort tags
 
     public var sortArtist: String??
@@ -85,6 +93,11 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         isrc: String?? = nil,
         lyrics: String?? = nil,
         syncedLyrics: String?? = nil,
+        musicbrainzTrackID: String?? = nil,
+        musicbrainzRecordingID: String?? = nil,
+        musicbrainzReleaseID: String?? = nil,
+        musicbrainzReleaseGroupID: String?? = nil,
+        musicbrainzAlbumArtistID: String?? = nil,
         sortArtist: String?? = nil,
         sortAlbumArtist: String?? = nil,
         sortAlbum: String?? = nil,
@@ -114,6 +127,11 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         self.isrc = isrc
         self.lyrics = lyrics
         self.syncedLyrics = syncedLyrics
+        self.musicbrainzTrackID = musicbrainzTrackID
+        self.musicbrainzRecordingID = musicbrainzRecordingID
+        self.musicbrainzReleaseID = musicbrainzReleaseID
+        self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
+        self.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         self.sortArtist = sortArtist
         self.sortAlbumArtist = sortAlbumArtist
         self.sortAlbum = sortAlbum
@@ -136,6 +154,9 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
             self.trackNumber == nil && self.trackTotal == nil && self.discNumber == nil &&
             self.discTotal == nil && self.year == nil && self.bpm == nil && self.key == nil &&
             self.isrc == nil && self.lyrics == nil && self.syncedLyrics == nil &&
+            self.musicbrainzTrackID == nil && self.musicbrainzRecordingID == nil &&
+            self.musicbrainzReleaseID == nil && self.musicbrainzReleaseGroupID == nil &&
+            self.musicbrainzAlbumArtistID == nil &&
             self.sortArtist == nil &&
             self.sortAlbumArtist == nil && self.sortAlbum == nil && self.coverArt == nil &&
             self.rating == nil && self.loved == nil && self.excludedFromShuffle == nil &&
@@ -166,6 +187,11 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         if let v = bpm { out.bpm = v }
         if let v = key { out.key = v }
         if let v = isrc { out.isrc = v }
+        if let v = musicbrainzTrackID { out.musicbrainzTrackID = v }
+        if let v = musicbrainzRecordingID { out.musicbrainzRecordingID = v }
+        if let v = musicbrainzReleaseID { out.musicbrainzReleaseID = v }
+        if let v = musicbrainzReleaseGroupID { out.musicbrainzReleaseGroupID = v }
+        if let v = musicbrainzAlbumArtistID { out.musicbrainzAlbumArtistID = v }
         if let v = rating { out.rating = v ?? 0 }
         if let v = loved { out.loved = v }
         if let v = excludedFromShuffle { out.excludedFromShuffle = v }
