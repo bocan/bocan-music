@@ -1,0 +1,7 @@
+<svg viewBox="0 0 1024 1024" width="1024" height="1024" xmlns="http://www.w3.org/2000/svg">
+  <g id="face">
+    <path d="M 388 408 Q 432 452 476 408" stroke="#1E1547" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M 548 408 Q 592 452 636 408" stroke="#1E1547" stroke-width="24" stroke-linecap="round" fill="none"/>
+    <path d="M 478 512 Q 512 538 546 512" stroke="#1E1547" stroke-width="18" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
