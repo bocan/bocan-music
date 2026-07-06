@@ -5,6 +5,16 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0](https://github.com/bocan/bocan-music/compare/v1.16.1...v1.17.0) (2026-07-06)
+
+
+### ### Added
+
+* **app:** adopt Icon Composer app icon ([714ac12](https://github.com/bocan/bocan-music/commit/714ac1211a38f2aab62930b9a931bebac06cfa79))
+* **app:** give the app icon distinct light and dark appearances ([e6aa088](https://github.com/bocan/bocan-music/commit/e6aa088d5f630828fe9836ad2ff26abce84b84c0))
+* **website:** light and dark responsive favicon ([ca57321](https://github.com/bocan/bocan-music/commit/ca573214940a2a7b1eeea76dcd9e06068472b6bc))
+* **website:** match favicon and brand mark to the new app icon ([9910499](https://github.com/bocan/bocan-music/commit/9910499138bda3c0f7434e349b77a1aba053ffb9))
+
 ## [1.16.1](https://github.com/bocan/bocan-music/compare/v1.16.0...v1.16.1) (2026-07-05)
 
 
