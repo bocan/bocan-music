@@ -1,23 +1,56 @@
 {
-  "fill" : {
-    "linear-gradient" : [
-      "display-p3:0.10588,0.07843,0.25098,1.00000",
-      "display-p3:0.05490,0.03922,0.14902,1.00000"
-    ],
-    "orientation" : {
-      "start" : {
-        "x" : 0.5,
-        "y" : 0
-      },
-      "stop" : {
-        "x" : 0.5,
-        "y" : 0.7
+  "fill-specializations" : [
+    {
+      "value" : {
+        "linear-gradient" : [
+          "display-p3:0.08702,0.18031,0.23356,1.00000",
+          "display-p3:0.25884,0.51147,0.62229,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.7
+          }
+        }
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "linear-gradient" : [
+          "display-p3:0.05490,0.03922,0.14902,1.00000",
+          "display-p3:0.16177,0.19100,0.50000,1.00000"
+        ],
+        "orientation" : {
+          "start" : {
+            "x" : 0.5,
+            "y" : 0
+          },
+          "stop" : {
+            "x" : 0.5,
+            "y" : 0.7
+          }
+        }
       }
     }
-  },
+  ],
   "groups" : [
     {
+      "blend-mode-specializations" : [
+        {
+          "value" : "normal"
+        },
+        {
+          "appearance" : "tinted",
+          "value" : "hard-light"
+        }
+      ],
       "blur-material" : null,
+      "hidden" : false,
       "layers" : [
         {
           "blend-mode" : "normal",
@@ -49,8 +82,21 @@
         }
       ],
       "lighting" : "individual",
+      "opacity-specializations" : [
+        {
+          "value" : 0.85
+        },
+        {
+          "appearance" : "dark",
+          "value" : 1
+        },
+        {
+          "appearance" : "tinted",
+          "value" : 1
+        }
+      ],
       "shadow" : {
-        "kind" : "neutral",
+        "kind" : "layer-color",
         "opacity" : 0.5
       },
       "specular" : true,
