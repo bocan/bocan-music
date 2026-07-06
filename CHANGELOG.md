@@ -5,6 +5,14 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.1](https://github.com/bocan/bocan-music/compare/v1.17.0...v1.17.1) (2026-07-06)
+
+
+### ### Fixed
+
+* **ci:** retry Pages deployment once on transient failure ([87c7f00](https://github.com/bocan/bocan-music/commit/87c7f00211ece1341fb7cea7bc38591ff7457fdd))
+* **ui:** hand the idle dock tile back to the Dock's native rendering ([341a96a](https://github.com/bocan/bocan-music/commit/341a96a4fa4b5ed5e13936c5594fd62ae457fc5d))
+
 ## [1.17.0](https://github.com/bocan/bocan-music/compare/v1.16.1...v1.17.0) (2026-07-06)
 
 
