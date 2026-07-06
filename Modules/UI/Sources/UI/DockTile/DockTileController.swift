@@ -4,10 +4,14 @@ import SwiftUI
 
 // MARK: - DockTileController
 
-/// Updates `NSApp.dockTile` when the playing track changes.
+/// Updates `NSApp.dockTile` while a track is playing or paused.
 ///
 /// Composites a small app-logo corner onto the current album art and draws a
-/// progress bar at the bottom of the tile using a custom `NSView`.
+/// progress bar at the bottom of the tile using a custom `NSView`. The view is
+/// installed as the tile's `contentView` only for the duration of playback:
+/// while idle the Dock renders the app icon natively, so it follows the
+/// system icon style (dark/clear/tinted appearances) instead of an app-drawn
+/// snapshot resolved against the app's own appearance override.
 ///
 /// Updates are throttled to ≤ 1 Hz during playback to avoid GPU over-use.
 /// Call `start(observing:)` once after the app launches, passing the
@@ -26,6 +30,7 @@ public final class DockTileController: ObservableObject {
     private var observationTask: Task<Void, Never>?
     private var tickTask: Task<Void, Never>?
     private let contentView = DockTileProgressView()
+    private var isTileInstalled = false
 
     // MARK: - Init
 
@@ -39,7 +44,6 @@ public final class DockTileController: ObservableObject {
         self.tickTask?.cancel()
 
         self.vm = vm
-        NSApp.dockTile.contentView = self.contentView
 
         // Observe artwork + track changes.
         //
@@ -80,7 +84,10 @@ public final class DockTileController: ObservableObject {
                 self.contentView.isPlaying = isPlaying
                 self.contentView.isPaused = isPaused
                 self.contentView.showPlaybackBadge = showBadge
-                NSApp.dockTile.display()
+                self.setTileInstalled(isPlaying || isPaused)
+                if self.isTileInstalled {
+                    NSApp.dockTile.display()
+                }
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 s
             }
         }
@@ -91,9 +98,22 @@ public final class DockTileController: ObservableObject {
         self.tickTask?.cancel()
         NSApp.dockTile.contentView = nil
         NSApp.dockTile.badgeLabel = nil
+        self.isTileInstalled = false
     }
 
     // MARK: - Private
+
+    /// Installs or removes the custom tile view. Removing hands the tile back
+    /// to the Dock, which re-renders the app icon natively (and per the
+    /// system icon style) — the explicit `display()` forces that refresh.
+    private func setTileInstalled(_ installed: Bool) {
+        guard installed != self.isTileInstalled else { return }
+        NSApp.dockTile.contentView = installed ? self.contentView : nil
+        self.isTileInstalled = installed
+        if !installed {
+            NSApp.dockTile.display()
+        }
+    }
 
     /// A stable key for the current item across both local and Subsonic sources.
     /// Local tracks expose `nowPlayingTrackID`; Subsonic streams expose only a
