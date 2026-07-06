@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <style>
+    @media (prefers-color-scheme: dark) {
+      #bg-top { stop-color: #0E0A26; }
+      #bg-bot { stop-color: #293180; }
+      #art { opacity: 1; }
+    }
+  </style>
   <defs>
     <linearGradient id="bg" x1="0.5" y1="0" x2="0.5" y2="0.7">
-      <stop offset="0%" stop-color="#1B1440"/>
-      <stop offset="100%" stop-color="#0E0A26"/>
+      <stop id="bg-top" offset="0%" stop-color="#162E3C"/>
+      <stop id="bg-bot" offset="100%" stop-color="#42829F"/>
     </linearGradient>
     <clipPath id="squircle">
       <rect width="1024" height="1024" rx="232"/>
@@ -10,53 +17,55 @@
   </defs>
   <g clip-path="url(#squircle)">
     <rect width="1024" height="1024" fill="url(#bg)"/>
-    <g id="moon">
-      <path d="M 512 78
-               A 52 52 0 1 0 564 130
-               A 40 40 0 1 1 512 78 Z" fill="#E8C36A"/>
-    </g>
-    <g id="spirit">
-      <path d="M 366 348
-               C 322 296 250 220 172 168
-               C 226 178 330 226 452 264
-               C 420 292 392 320 366 348 Z" fill="#B9EBDD"/>
-      <path d="M 658 348
-               C 702 296 774 220 852 168
-               C 798 178 694 226 572 264
-               C 604 292 632 320 658 348 Z" fill="#B9EBDD"/>
-      <path d="M 380 322 C 348 284 300 234 246 194 C 296 212 366 244 442 270 Z" fill="#6FC9B4"/>
-      <path d="M 644 322 C 676 284 724 234 778 194 C 728 212 658 244 582 270 Z" fill="#6FC9B4"/>
-      <path d="M 512 196
-               C 388 196 302 290 302 402
-               C 302 476 322 532 352 572
-               C 332 650 332 736 356 812
-               C 380 878 448 908 512 908
-               C 560 908 606 894 636 866
-               C 662 902 706 922 758 918
-               C 718 894 700 852 710 806
-               C 726 730 716 646 672 574
-               C 702 532 722 476 722 402
-               C 722 290 636 196 512 196 Z" fill="#B9EBDD"/>
-    </g>
-    <g id="face">
-      <path d="M 388 408 Q 432 452 476 408" stroke="#1E1547" stroke-width="24" stroke-linecap="round" fill="none"/>
-      <path d="M 548 408 Q 592 452 636 408" stroke="#1E1547" stroke-width="24" stroke-linecap="round" fill="none"/>
-      <path d="M 478 512 Q 512 538 546 512" stroke="#1E1547" stroke-width="18" stroke-linecap="round" fill="none"/>
-    </g>
-    <g id="guitar" transform="rotate(-30 420 745)">
-      <ellipse cx="420" cy="745" rx="150" ry="125" fill="#463581"/>
-      <rect x="440" y="717" width="440" height="56" rx="28" fill="#D9C9A3"/>
-      <rect x="856" y="697" width="112" height="96" rx="28" fill="#463581"/>
-      <rect x="380" y="735" width="490" height="20" rx="10" fill="#E8C36A"/>
-      <path d="M 400 780
-               a 12 12 0 0 1 24 0
-               a 24 24 0 0 1 -48 0
-               a 36 36 0 0 1 72 0
-               a 48 48 0 0 1 -96 0
-               a 60 60 0 0 1 120 0"
-            stroke="#E8C36A" stroke-width="14" fill="none" stroke-linecap="round"/>
-      <circle cx="700" cy="745" r="44" fill="#B9EBDD" stroke="#6FC9B4" stroke-width="12"/>
-      <circle cx="480" cy="722" r="46" fill="#B9EBDD" stroke="#6FC9B4" stroke-width="12"/>
+    <g id="art" opacity="0.85">
+      <g id="moon">
+        <path d="M 512 78
+                 A 52 52 0 1 0 564 130
+                 A 40 40 0 1 1 512 78 Z" fill="#E8C36A"/>
+      </g>
+      <g id="spirit">
+        <path d="M 366 348
+                 C 322 296 250 220 172 168
+                 C 226 178 330 226 452 264
+                 C 420 292 392 320 366 348 Z" fill="#B9EBDD"/>
+        <path d="M 658 348
+                 C 702 296 774 220 852 168
+                 C 798 178 694 226 572 264
+                 C 604 292 632 320 658 348 Z" fill="#B9EBDD"/>
+        <path d="M 380 322 C 348 284 300 234 246 194 C 296 212 366 244 442 270 Z" fill="#6FC9B4"/>
+        <path d="M 644 322 C 676 284 724 234 778 194 C 728 212 658 244 582 270 Z" fill="#6FC9B4"/>
+        <path d="M 512 196
+                 C 388 196 302 290 302 402
+                 C 302 476 322 532 352 572
+                 C 332 650 332 736 356 812
+                 C 380 878 448 908 512 908
+                 C 560 908 606 894 636 866
+                 C 662 902 706 922 758 918
+                 C 718 894 700 852 710 806
+                 C 726 730 716 646 672 574
+                 C 702 532 722 476 722 402
+                 C 722 290 636 196 512 196 Z" fill="#B9EBDD"/>
+      </g>
+      <g id="face">
+        <path d="M 388 408 Q 432 452 476 408" stroke="#1E1547" stroke-width="24" stroke-linecap="round" fill="none"/>
+        <path d="M 548 408 Q 592 452 636 408" stroke="#1E1547" stroke-width="24" stroke-linecap="round" fill="none"/>
+        <path d="M 478 512 Q 512 538 546 512" stroke="#1E1547" stroke-width="18" stroke-linecap="round" fill="none"/>
+      </g>
+      <g id="guitar" transform="rotate(-30 420 745)">
+        <ellipse cx="420" cy="745" rx="150" ry="125" fill="#463581"/>
+        <rect x="440" y="717" width="440" height="56" rx="28" fill="#D9C9A3"/>
+        <rect x="856" y="697" width="112" height="96" rx="28" fill="#463581"/>
+        <rect x="380" y="735" width="490" height="20" rx="10" fill="#E8C36A"/>
+        <path d="M 400 780
+                 a 12 12 0 0 1 24 0
+                 a 24 24 0 0 1 -48 0
+                 a 36 36 0 0 1 72 0
+                 a 48 48 0 0 1 -96 0
+                 a 60 60 0 0 1 120 0"
+              stroke="#E8C36A" stroke-width="14" fill="none" stroke-linecap="round"/>
+        <circle cx="700" cy="745" r="44" fill="#B9EBDD" stroke="#6FC9B4" stroke-width="12"/>
+        <circle cx="480" cy="722" r="46" fill="#B9EBDD" stroke="#6FC9B4" stroke-width="12"/>
+      </g>
     </g>
   </g>
 </svg>
