@@ -7,7 +7,7 @@
 [![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml)
 [![GitHub release](https://img.shields.io/github/v/release/bocan/bocan-music?color=4BC51D)](https://github.com/bocan/bocan-music/releases)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue)
 ![Xcode 26](https://img.shields.io/badge/Xcode-26-1575F9)
