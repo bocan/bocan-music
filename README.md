@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="website/src/assets/img/favicon.svg" width="160" alt="The Bòcan icon: a wee spirit with a guitar under the moon">
+</p>
+
 # Bòcan Music
 
 [![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
