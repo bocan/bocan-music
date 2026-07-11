@@ -12,14 +12,13 @@ import Podcasts
 /// impossible. Track and episode bodies are streamed (never buffered whole);
 /// artwork and lyrics are small and buffered.
 ///
-/// v1 limitations, driven by the data model (not the wire contract):
-/// - `/v1/chapters` returns 404: chapters are fetched from the network on demand,
-///   with no cached store to serve, and a serving handler must not make outbound
-///   requests. Caching chapters is a Podcasts-module follow-up.
-/// - Episode `If-Match`/`ETag` is not emitted: episodes have no stored content
-///   hash (tracks store `content_hash`). Range resume is supported; change
-///   detection falls back to the manifest generation counter and the client's
-///   final SHA-256 verify. Storing an episode hash at download time is the fix.
+/// Tracks and episodes both support `Range` resume and `If-Match`/`ETag` (via the
+/// stored `content_hash`; episodes gained one in migration M032).
+///
+/// One v1 limitation, driven by the data model (not the wire contract):
+/// `/v1/chapters` returns 404 because chapters are fetched from the network on
+/// demand with no cached store to serve, and a serving handler must not make
+/// outbound requests. Caching chapters is a Podcasts-module follow-up.
 struct FileServing {
     private let trackRepository: TrackRepository
     private let episodeRepository: EpisodeRepository
@@ -142,6 +141,11 @@ struct FileServing {
                 return Self.notFound
             }
 
+            // If-Match against the stored download hash (M032), before file I/O.
+            if let hash = state.contentHash, let ifMatch = request.header("if-match"), ifMatch != hash {
+                return .error(.notFound, message: "Precondition failed", status: 412)
+            }
+
             let fileURL = self.downloadStore.fileURL(podcastID: state.podcastID, guid: state.guid, mime: content.audioMIME)
             let size: Int64
             do {
@@ -151,7 +155,8 @@ struct FileServing {
                 return Self.notFound
             }
 
-            let headers = ["content-type": Self.audioMIME(content.audioMIME ?? ""), "accept-ranges": "bytes"]
+            var headers = ["content-type": Self.audioMIME(content.audioMIME ?? ""), "accept-ranges": "bytes"]
+            if let hash = state.contentHash { headers["etag"] = hash }
             switch Self.resolveRange(request, totalSize: size) {
             case .unsatisfiable:
                 return .error(.notFound, message: "Range not satisfiable", status: 416)
