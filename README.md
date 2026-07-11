@@ -58,6 +58,15 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Podcasts** - subscribe by URL or search across Podcast Index and Apple iTunes; RSS and Atom feeds; per-episode resume; download episodes individually or in bulk, plus optional per-show auto-download of new episodes; show notes (with safe HTML rendering) reachable from the player bar; Podcasting 2.0 chapters (jump-to and read), transcripts, host/guest credits (`podcast:person`), and recommended-show shelves (`podcast:podroll`); variable speed and skip intervals.
 - **In-app Log Console** : open **Help -> Log Console** (`⌘⇧L`) to tail every log line since launch, filtered by level or category, with free-text search, live tailing, pause and resume, copy to clipboard, and export to a `.log` file. Diagnose a problem without ever leaving the app.
 
+### 📱 It syncs to your phone
+
+- **Phone Sync** serves your library, read-only, to a paired Android phone over your local network. One way: the Mac is the source, the phone keeps a copy, and nothing is ever written back to your files or your database.
+- Turn it on in **Settings > Phone Sync**. The Mac advertises itself on your LAN via Bonjour; there is no cloud relay, no account, and nothing leaves your network.
+- **Pairing takes seconds.** The Mac shows a six-digit code, you type it on the phone, and the Mac asks for one final "Pair with this phone?" confirmation. The code verifies the connection; trust is only granted when you confirm on the Mac.
+- **Sync profiles** decide what travels: everything, or just the playlists you choose, with downloaded podcast episodes optional. A live size estimate shows the total before the phone starts pulling.
+- **Locked down by default**: mutual TLS with certificates pinned in both directions. Revoking a phone in Settings blocks it at the TLS layer on its very next connection.
+- The companion app is [Bòcan for Android](https://github.com/bocan/bocan-music-android); both sides implement the same open [sync protocol](https://github.com/bocan/bocan-music-android/blob/main/docs/design-spec/sync-protocol.md).
+
 ### ♿ It's accessible
 
 I've tried hard to ensure Bòcan is fully navigable without a mouse or a screen:
@@ -73,7 +82,7 @@ I've tried hard to ensure Bòcan is fully navigable without a mouse or a screen:
 ### 🏗️ It's engineered properly
 
 - **Swift 6 strict concurrency** : `@MainActor` isolation, `Sendable` everywhere it matters, zero data races by design.
-- **Ten clean SPM modules** with no upward imports and their own test suites.
+- **Twelve clean SPM modules** with no upward imports and their own test suites.
 - **80% line-coverage gate** in CI; the build fails if coverage drops.
 - **GRDB 7** with typed repositories, FTS5 full-text search, and `ValueObservation`-based reactive streams.
 - **XcodeGen** project generation : no hand-edited `.pbxproj` files in the repo.
@@ -143,6 +152,8 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for prerequisites, environment setup, the b
 | `Library` | Folder scanner, FSEvents watcher, conflict resolver, cover-art cache |
 | `Playback` | Queue, history, shuffle strategies, gapless + crossfade scheduler, MPNowPlaying, sleep timer |
 | `Scrobble` | Last.fm / ListenBrainz / Rocksky providers, offline-resilient scrobble queue |
+| `Podcasts` | Feed refresh, episode downloads, Podcast Index / iTunes search, Podcasting 2.0 extras |
+| `SyncServer` | Phone Sync: pairing, trust store, mutual-TLS HTTP server, manifest + file serving |
 | `UI` | SwiftUI views, view models, mini player, settings, theming, snapshot tests |
 
 ## Licence

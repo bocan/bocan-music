@@ -1,0 +1,98 @@
+---
+layout: base.njk
+title: Phone Sync
+description: Serve your Bòcan library to a paired Android phone over your local network. One way, read only, no cloud.
+permalink: /phone-sync/
+---
+
+<div class="container container--narrow">
+  <h1>Phone Sync</h1>
+  <p>
+    Your music lives on your Mac. Phone Sync puts a copy in your pocket
+    without ever handing it to a cloud. Pair an Android phone once, pick
+    what you want with you, and {{ site.title }} serves it over your own
+    Wi-Fi: tracks, artwork, lyrics, playlists, and downloaded podcast
+    episodes.
+  </p>
+
+  <h2 id="what-it-does">What it does</h2>
+  <ul>
+    <li>
+      <strong>One way, read only.</strong> The Mac is the source and the
+      phone keeps a copy. Nothing is ever written back to your files, your
+      tags, or your library database. Serving your entire collection to a
+      phone changes exactly nothing on the Mac.
+    </li>
+    <li>
+      <strong>Local network only.</strong> The Mac announces itself via
+      Bonjour on your LAN. There is no relay server, no account, no port
+      forwarding, and nothing leaves your network.
+    </li>
+    <li>
+      <strong>Resumable.</strong> If the phone wanders out of range halfway
+      through an album, the next sync picks up exactly where it stopped,
+      byte for byte.
+    </li>
+    <li>
+      <strong>Off by default.</strong> Phone Sync does not run until you
+      switch it on in <strong>Settings &gt; Phone Sync</strong>, and
+      switching it off withdraws the server immediately.
+    </li>
+  </ul>
+
+  <h2 id="choosing-what-syncs">Choosing what syncs</h2>
+  <p>
+    A sync profile decides what travels: <strong>everything</strong>, or
+    just the playlists you choose, with downloaded podcast episodes as an
+    optional extra. A live size estimate shows the total before the phone
+    starts pulling, so you know whether it fits before you leave the house.
+  </p>
+
+  <h2 id="pairing">Pairing</h2>
+  <p>Pairing takes about ten seconds and happens exactly once per phone:</p>
+  <ol>
+    <li>On the Mac, open <strong>Settings &gt; Phone Sync</strong> and click
+        <strong>Pair a Phone</strong>. A six-digit code appears.</li>
+    <li>On the phone, pick your Mac from the list and type the code.</li>
+    <li>The Mac asks <em>"Pair with this phone?"</em> Click Pair, and
+        you're done.</li>
+  </ol>
+  <p>
+    Paired phones show up in the same settings pane, and a
+    <strong>Revoke</strong> button sits next to each one. Revoking blocks
+    the phone at the connection layer the very next time it tries to talk
+    to the Mac.
+  </p>
+
+  <h2 id="how-pairing-keeps-you-safe">How pairing keeps you safe</h2>
+  <p>
+    The six-digit code is a <strong>verification code, not a secret</strong>.
+    It is derived from the cryptographic identities of both devices on this
+    exact connection, so it proves the phone in your hand is the phone the
+    Mac is talking to, with nothing in between. Someone who glances at the
+    code learns nothing useful; it is worthless on any other connection and
+    expires with the pairing window.
+  </p>
+  <p>
+    The <strong>final confirm on the Mac is deliberate</strong>. Typing the
+    code is the phone proving itself; clicking Pair is you, at the keyboard,
+    granting trust. No device can ever pair itself to your library without a
+    human clicking that button.
+  </p>
+  <p>
+    After pairing, every connection uses <strong>mutual TLS with pinned
+    certificates in both directions</strong>. The Mac only answers phones it
+    has paired, the phone only trusts the Mac it paired with, and an
+    unknown device is refused before a single byte of your library moves.
+  </p>
+
+  <h2 id="the-android-app">The Android companion</h2>
+  <p>
+    The other half is
+    <a href="https://github.com/bocan/bocan-music-android" rel="external noopener">Bòcan for Android</a>,
+    a native Kotlin app built around the same idea: your files, your
+    network, no cloud. Both sides implement the same open
+    <a href="https://github.com/bocan/bocan-music-android/blob/main/docs/design-spec/sync-protocol.md" rel="external noopener">sync protocol</a>,
+    so the wire format is documented, versioned, and testable.
+  </p>
+</div>
