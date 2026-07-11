@@ -156,19 +156,19 @@ canned size estimate) so snapshots are deterministic. No real server, no network
 
 ## Acceptance criteria
 
-- [ ] A "Phone Sync" pane appears in Settings (registered via `SettingsPage` +
+- [x] A "Phone Sync" pane appears in Settings (registered via `SettingsPage` +
       `SettingsScene`), with enable toggle, profile editor + size estimate, paired
       devices + Revoke, and "Pair a phone".
-- [ ] The pairing sheet shows the six-digit code and requires the final human
+- [x] The pairing sheet shows the six-digit code and requires the final human
       "Pair with '<device>'?" confirmation; declining does not trust the device.
-- [ ] Enabling starts the server; disabling stops it; Revoke removes a device and
+- [x] Enabling starts the server; disabling stops it; Revoke removes a device and
       blocks it on its next connection.
-- [ ] Editing the sync profile persists and bumps `generation`; the size estimate
+- [x] Editing the sync profile persists and bumps `generation`; the size estimate
       reflects the selection.
-- [ ] All new strings localized; `make pseudolocale` green; `no_bare_user_facing_
+- [x] All new strings localized; `make pseudolocale` green; `no_bare_user_facing_
       literal` and `L10nTests` pass; snapshot tests added for every state in light
       and dark.
-- [ ] `make format && make lint && make build && make test-ui` green; coverage
+- [x] `make format && make lint && make build && make test-ui` green; coverage
       floors met.
 
 ## Handoff

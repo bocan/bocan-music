@@ -158,14 +158,14 @@ module first takes a Persistence dependency and the edges become real.
 
 ## Acceptance criteria
 
-- [ ] `PairingCode.code` reproduces all five `expectedCode` values byte-identical.
-- [ ] `PairingCode.proof` reproduces all five `expectedProofBase64` values.
-- [ ] Symmetry, determinism, and mismatch-sensitivity tests pass.
-- [ ] `pairing-vectors.json` is byte-identical to the Android copy and committed
+- [x] `PairingCode.code` reproduces all five `expectedCode` values byte-identical.
+- [x] `PairingCode.proof` reproduces all five `expectedProofBase64` values.
+- [x] Symmetry, determinism, and mismatch-sensitivity tests pass.
+- [x] `pairing-vectors.json` is byte-identical to the Android copy and committed
       in both repos.
-- [ ] `Modules/SyncServer` builds; `make test-sync-server` is green; module
+- [x] `Modules/SyncServer` builds; `make test-sync-server` is green; module
       coverage floor met (this slice alone should be ~100% of `PairingCode`).
-- [ ] `make format && make lint && make build` green.
+- [x] `make format && make lint && make build` green.
 
 ## Handoff
 

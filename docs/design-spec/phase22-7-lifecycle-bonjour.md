@@ -165,17 +165,17 @@ poll until found or a max deadline).
 
 ## Acceptance criteria
 
-- [ ] Enabling Phone Sync starts the listener, binds an ephemeral port, and
+- [x] Enabling Phone Sync starts the listener, binds an ephemeral port, and
       advertises `_bocansync._tcp` with TXT `v/fp/pm`; disabling withdraws it
       within ~1 s.
-- [ ] Off by default: fresh launch advertises nothing until the user opts in.
-- [ ] `pm` is `1` only during an active pairing window and `0` at rest.
-- [ ] The service reappears after sleep/wake (`reAdvertise`).
-- [ ] The server is a separate listener/identity/port from any Phase 18 service;
+- [x] Off by default: fresh launch advertises nothing until the user opts in.
+- [x] `pm` is `1` only during an active pairing window and `0` at rest.
+- [x] The service reappears after sleep/wake (`reAdvertise`).
+- [x] The server is a separate listener/identity/port from any Phase 18 service;
       no shared trust store.
-- [ ] No new entitlement added (`network.server` already present); sandbox +
+- [x] No new entitlement added (`network.server` already present); sandbox +
       hardened runtime intact.
-- [ ] `make format && make lint && make build && make test-sync-server` green;
+- [x] `make format && make lint && make build && make test-sync-server` green;
       `make generate` clean; coverage floor met.
 
 ## Handoff
