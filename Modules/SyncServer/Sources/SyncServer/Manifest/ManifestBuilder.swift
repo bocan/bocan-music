@@ -4,6 +4,7 @@ import Library
 import Metadata
 import Observability
 import Persistence
+import Podcasts
 
 /// Builds the Phone Sync manifest (sync-protocol.md section 7) from the library.
 ///
@@ -27,18 +28,28 @@ public struct ManifestBuilder: Sendable {
     private let artistRepository: ArtistRepository
     private let playlistRepository: PlaylistRepository
     private let rootRepository: LibraryRootRepository
+    private let podcastRepository: PodcastRepository
+    private let episodeRepository: EpisodeRepository
+    private let episodeStateRepository: EpisodeStateRepository
     private let lyricsService: LyricsService
     private let smartService: SmartPlaylistService
+    private let downloadStore: DownloadStore
     private let log = AppLogger.make(.sync)
 
-    public init(database: Database) {
+    /// - Parameter downloadRoot: overrides the podcast Downloads directory (tests
+    ///   only); production uses the default Application Support location.
+    public init(database: Database, downloadRoot: URL? = nil) {
         self.trackRepository = TrackRepository(database: database)
         self.albumRepository = AlbumRepository(database: database)
         self.artistRepository = ArtistRepository(database: database)
         self.playlistRepository = PlaylistRepository(database: database)
         self.rootRepository = LibraryRootRepository(database: database)
+        self.podcastRepository = PodcastRepository(database: database)
+        self.episodeRepository = EpisodeRepository(database: database)
+        self.episodeStateRepository = EpisodeStateRepository(database: database)
         self.lyricsService = LyricsService(database: database, fetcher: nil)
         self.smartService = SmartPlaylistService(database: database)
+        self.downloadStore = DownloadStore(root: downloadRoot)
     }
 
     func build(
@@ -77,6 +88,7 @@ public struct ManifestBuilder: Sendable {
         }
 
         let manifestPlaylists = try await self.buildPlaylists(playlists: playlists, includedTrackIds: includedIds)
+        let podcasts = try await self.buildPodcasts(profile: profile)
 
         return Manifest(
             protocolVersion: 1,
@@ -86,9 +98,87 @@ public struct ManifestBuilder: Sendable {
             generatedAt: Self.iso8601String(generatedAt),
             tracks: manifestTracks,
             playlists: manifestPlaylists,
-            podcasts: [],
-            episodes: []
+            podcasts: podcasts.shows,
+            episodes: podcasts.episodes
         )
+    }
+
+    // MARK: - Podcasts
+
+    private func buildPodcasts(profile: SyncProfile) async throws -> (shows: [ManifestPodcast], episodes: [ManifestEpisode]) {
+        guard profile.includesPodcasts else { return ([], []) }
+
+        let downloaded = try await self.episodeStateRepository.fetchByDownloadState([.downloaded])
+        let statesByPodcast = Dictionary(grouping: downloaded, by: \.podcastID)
+        guard !statesByPodcast.isEmpty else { return ([], []) }
+
+        var shows: [ManifestPodcast] = []
+        var episodes: [ManifestEpisode] = []
+
+        for podcast in try await self.podcastRepository.fetchAllSubscribed() {
+            guard let podcastId = podcast.id, let states = statesByPodcast[podcastId] else { continue }
+            let contentByGUID = try await Dictionary(
+                self.episodeRepository.fetchForPodcast(podcastID: podcastId).map { ($0.guid, $0) },
+                uniquingKeysWith: { first, _ in first }
+            )
+
+            var addedAny = false
+            for state in states {
+                guard let content = contentByGUID[state.guid] else { continue }
+                guard let episode = self.makeEpisode(content: content, state: state, podcastId: podcastId) else { continue }
+                episodes.append(episode)
+                addedAny = true
+            }
+            if addedAny {
+                shows.append(ManifestPodcast(
+                    id: podcastId,
+                    title: podcast.title,
+                    author: podcast.author,
+                    descriptionHtml: podcast.description,
+                    // v1: podcast artwork is a local path, not a content hash.
+                    artworkHash: nil,
+                    playbackSpeed: podcast.playbackSpeed
+                ))
+            }
+        }
+
+        return (shows.sorted { $0.id < $1.id }, episodes.sorted { $0.id < $1.id })
+    }
+
+    private func makeEpisode(content: PodcastEpisode, state: PodcastEpisodeState, podcastId: Int64) -> ManifestEpisode? {
+        let fileURL = self.downloadStore.fileURL(podcastID: podcastId, guid: content.guid, mime: content.audioMIME)
+        guard let sha256 = Self.hashFile(fileURL) else {
+            // The download is gone; without the bytes we cannot serve or hash it.
+            return nil
+        }
+        let idHash = fileURL.deletingPathExtension().lastPathComponent
+        let size = state.downloadBytes ?? Int64((try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        return ManifestEpisode(
+            id: idHash,
+            podcastId: podcastId,
+            guid: content.guid,
+            title: content.title,
+            publishedAt: content.publishedAt.map { Self.iso8601String(Date(timeIntervalSince1970: $0)) },
+            durationMs: content.duration.map { Int(($0 * 1000).rounded()) },
+            descriptionHtml: content.descriptionHTML,
+            relPath: "Podcasts/\(podcastId)/\(fileURL.lastPathComponent)",
+            size: size,
+            sha256: sha256,
+            hasChapters: content.chaptersURL != nil,
+            playPositionMs: Int((state.playPosition * 1000).rounded()),
+            playState: state.playState.rawValue
+        )
+    }
+
+    /// Streams a file through SHA-256 without loading it whole into memory.
+    private static func hashFile(_ url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try? handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }
 
     // MARK: - Tracks

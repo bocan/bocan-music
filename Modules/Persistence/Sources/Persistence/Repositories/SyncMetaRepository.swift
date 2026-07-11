@@ -36,6 +36,20 @@ public struct SyncMetaRepository: Sendable {
         }
     }
 
+    /// Emits once immediately and again whenever a sync-relevant table changes
+    /// (tracks, playlists, membership, podcast episode state, or the sync
+    /// profile). The SyncServer change observer debounces this and bumps the
+    /// generation counter.
+    public func observeLibraryChanges() async -> AsyncThrowingStream<Void, Error> {
+        await self.database.observe(regions: [
+            Table("tracks"),
+            Table("playlists"),
+            Table("playlist_tracks"),
+            Table("podcast_episode_state"),
+            Table("sync_profile"),
+        ]) { _ in }
+    }
+
     /// Creates the singleton row with a fresh server id if it does not exist,
     /// preserving an existing id.
     private static func ensureRow(_ db: GRDB.Database) throws {
