@@ -113,11 +113,18 @@ struct KeychainIdentityStore: IdentityStoring {
                 kSecAttrApplicationTag as String: self.keyTag,
             ],
         ]
-        var error: Unmanaged<CFError>?
-        guard let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
-            throw SyncServerError.identity(reason: "keygen", status: nil)
+        // Writing a permanent key to the login Keychain can transiently fail
+        // under concurrent access; retry a few times before giving up.
+        for attempt in 1 ... 3 {
+            var error: Unmanaged<CFError>?
+            if let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error) {
+                return key
+            }
+            if attempt < 3 {
+                usleep(20000)
+            }
         }
-        return key
+        throw SyncServerError.identity(reason: "keygen", status: nil)
     }
 
     private func exportX963(_ key: SecKey) throws -> Data {
