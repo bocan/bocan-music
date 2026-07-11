@@ -12,12 +12,18 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../Observability"),
+        .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.0.0"),
     ],
     targets: [
         .target(
             name: "SyncServer",
             dependencies: [
                 .product(name: "Observability", package: "Observability"),
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "SwiftASN1", package: "swift-asn1"),
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
@@ -27,6 +33,8 @@ let package = Package(
             name: "SyncServerTests",
             dependencies: [
                 "SyncServer",
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "Crypto", package: "swift-crypto"),
             ],
             resources: [.copy("Fixtures")],
             swiftSettings: [

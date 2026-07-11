@@ -134,7 +134,7 @@ struct LogCategoryTests {
         let names = Set(LogCategory.allCases.map(\.rawValue))
         let expected: Set = [
             "app", "audio", "library", "metadata", "persistence",
-            "ui", "network", "playback", "podcasts", "scrobble", "subsonic",
+            "ui", "network", "playback", "podcasts", "scrobble", "subsonic", "sync",
         ]
         #expect(names == expected)
     }

@@ -7,4 +7,9 @@ public enum SyncServerError: Error, Sendable {
     /// A pairing-ceremony step failed. `reason` is a short, non-sensitive token
     /// describing which invariant was violated (never a code, nonce, or proof).
     case pairing(reason: String)
+
+    /// Creating, loading, or storing the server's TLS identity failed. `reason`
+    /// is a short token; `status` is the underlying `OSStatus` when a Keychain or
+    /// Security call failed, else `nil`.
+    case identity(reason: String, status: Int32?)
 }
