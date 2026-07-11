@@ -109,6 +109,7 @@ targets:
       - package: Podcasts
       - package: Scrobble
       - package: Subsonic
+      - package: SyncServer
       - package: UI
     preBuildScripts:
       - name: Copy and Index Help Book
