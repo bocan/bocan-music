@@ -18,17 +18,20 @@ public struct SettingsScene: View {
     private let scrobbleViewModel: ScrobbleSettingsViewModel?
     private let backupViewModel: BackupSettingsViewModel
     private let subsonicViewModel: SubsonicSettingsViewModel?
+    private let phoneSyncViewModel: PhoneSyncViewModel?
 
     public init(
         router: SettingsRouter,
         backupViewModel: BackupSettingsViewModel,
         scrobbleViewModel: ScrobbleSettingsViewModel? = nil,
-        subsonicViewModel: SubsonicSettingsViewModel? = nil
+        subsonicViewModel: SubsonicSettingsViewModel? = nil,
+        phoneSyncViewModel: PhoneSyncViewModel? = nil
     ) {
         self.router = router
         self.scrobbleViewModel = scrobbleViewModel
         self.backupViewModel = backupViewModel
         self.subsonicViewModel = subsonicViewModel
+        self.phoneSyncViewModel = phoneSyncViewModel
     }
 
     private var sections: [SettingsSection] {
@@ -131,6 +134,22 @@ public struct SettingsScene: View {
 
         case .podcasts:
             PodcastSettingsView()
+
+        case .phoneSync:
+            self.phoneSyncDetail
+        }
+    }
+
+    @ViewBuilder
+    private var phoneSyncDetail: some View {
+        if let phoneSyncViewModel = self.phoneSyncViewModel {
+            PhoneSyncSettingsView(viewModel: phoneSyncViewModel)
+        } else {
+            ContentUnavailableView(
+                L10n.string("Phone Sync Unavailable"),
+                systemImage: "iphone.slash",
+                description: Text(localized: "Phone Sync can't be configured right now.")
+            )
         }
     }
 }
@@ -156,7 +175,7 @@ struct SettingsSection: Identifiable {
         advanced.append(contentsOf: [.advanced, .diagnostics])
         return [
             Self(title: nil, pages: [.general, .appearance]),
-            Self(title: L10n.string("Library"), pages: [.library, .sources, .smartPlaylists, .podcasts]),
+            Self(title: L10n.string("Library"), pages: [.library, .sources, .smartPlaylists, .podcasts, .phoneSync]),
             Self(title: L10n.string("Playback"), pages: [.playback, .equaliser, .effects, .replayGain]),
             Self(title: L10n.string("Now Playing"), pages: [.lyrics, .visualizer]),
             Self(title: L10n.string("Advanced"), pages: advanced),
@@ -213,6 +232,9 @@ extension SettingsPage {
 
         case .podcasts:
             L10n.string("Podcasts")
+
+        case .phoneSync:
+            L10n.string("Phone Sync")
         }
     }
 
@@ -262,6 +284,9 @@ extension SettingsPage {
 
         case .podcasts:
             "antenna.radiowaves.left.and.right"
+
+        case .phoneSync:
+            "iphone.and.arrow.forward"
         }
     }
 }

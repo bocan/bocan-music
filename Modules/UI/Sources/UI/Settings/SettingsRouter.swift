@@ -9,6 +9,7 @@ import SwiftUI
 public enum SettingsPage: String, CaseIterable, Sendable, Hashable {
     case general, library, sources, playback, equaliser, effects, replayGain
     case appearance, advanced, lyrics, visualizer, smartPlaylists, scrobble, diagnostics, podcasts
+    case phoneSync
 }
 
 // MARK: - SettingsRouter

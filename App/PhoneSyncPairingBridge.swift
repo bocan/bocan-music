@@ -1,29 +1,46 @@
 import Foundation
 import Observability
 import SyncServer
+import UI
 
-/// Placeholder pairing UI bridge for Phone Sync.
+/// Forwards the pairing ceremony (`PairingUIBridge`, driven by the
+/// `PairingCoordinator`) to the UI view model (`PhoneSyncPairingReceiver`),
+/// translating `PairingResult` into the UI's `PhoneSyncPairingOutcome`.
 ///
-/// Phase 22-7 wires the `SyncServer` into the app lifecycle; the pairing sheet
-/// that shows the six-digit code and asks the user to confirm a new device is
-/// built in phase 22-8, which replaces this with a real bridge driven by the
-/// Settings scene. Until then this logs the ceremony and **declines** every
-/// trust request, so no device can be paired without the human-confirmation UI.
-/// Phone Sync is off by default, so at rest this is never exercised.
+/// The `receiver` is assigned once at graph-build time, on the main actor,
+/// before the server is ever started (breaking the `SyncServer` <-> view-model
+/// construction cycle). `@unchecked Sendable` covers that one-time assignment.
 final class PhoneSyncPairingBridge: PairingUIBridge, @unchecked Sendable {
-    private let log = AppLogger.make(.sync)
+    weak var receiver: (any PhoneSyncPairingReceiver)?
 
     func showCode(_ code: String) async {
-        self.log.debug("pairing.showCode", ["digits": String(code.count)])
+        await self.receiver?.pairingPresentCode(code)
     }
 
-    func requestConfirmation(deviceName _: String, fingerprintTail _: String) async -> Bool {
-        // No confirmation UI yet (phase 22-8); never auto-trust.
-        self.log.warning("pairing.confirm.declined", ["reason": "no pairing UI until 22-8"])
-        return false
+    func requestConfirmation(deviceName: String, fingerprintTail: String) async -> Bool {
+        await self.receiver?.pairingRequestConfirmation(
+            deviceName: deviceName,
+            fingerprintTail: fingerprintTail
+        ) ?? false
     }
 
     func pairingEnded(result: PairingResult) async {
-        self.log.debug("pairing.ended", ["result": String(reflecting: result)])
+        await self.receiver?.pairingFinished(Self.outcome(from: result))
+    }
+
+    private static func outcome(from result: PairingResult) -> PhoneSyncPairingOutcome {
+        switch result {
+        case let .paired(deviceName):
+            .paired(deviceName: deviceName)
+
+        case .failed:
+            .failed
+
+        case .timedOut:
+            .timedOut
+
+        case .cancelled:
+            .cancelled
+        }
     }
 }

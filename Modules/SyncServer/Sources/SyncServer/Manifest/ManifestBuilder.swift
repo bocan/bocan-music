@@ -400,3 +400,33 @@ public struct ManifestBuilder: Sendable {
         return formatter.string(from: date)
     }
 }
+
+// MARK: - Size estimate
+
+public extension ManifestBuilder {
+    /// The on-disk cost of a sync profile, for the Settings size estimate. Summed
+    /// from the manifest the profile produces so it matches what would actually
+    /// sync (including CUE clips and podcast episodes).
+    struct SizeEstimate: Sendable, Equatable {
+        public let bytes: Int64
+        public let trackCount: Int
+        public let episodeCount: Int
+    }
+
+    func sizeEstimate(for profile: SyncProfile) async throws -> SizeEstimate {
+        let manifest = try await self.build(
+            profile: profile,
+            serverId: "estimate",
+            serverName: "",
+            generation: 0,
+            generatedAt: Date(timeIntervalSince1970: 0)
+        )
+        let trackBytes = manifest.tracks.reduce(Int64(0)) { $0 + $1.size }
+        let episodeBytes = manifest.episodes.reduce(Int64(0)) { $0 + $1.size }
+        return SizeEstimate(
+            bytes: trackBytes + episodeBytes,
+            trackCount: manifest.tracks.count,
+            episodeCount: manifest.episodes.count
+        )
+    }
+}
