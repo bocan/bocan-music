@@ -182,7 +182,7 @@
 		24FEF0F7E262A623A7D0B435 /* PerShowSettingsConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerShowSettingsConventionTests.swift; sourceTree = "<group>"; };
 		2A2583AD98028864A547B9DB /* PlaylistRowDropHighlightTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistRowDropHighlightTests.swift; sourceTree = "<group>"; };
 		2BA58EBDD5E2E1B686608222 /* AppPodcastSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPodcastSearch.swift; sourceTree = "<group>"; };
-		2DB88DBD9C7383F071E14E0A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		2DB88DBD9C7383F071E14E0A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2FC6007E8F4CBAB6F0EB637F /* UserAgentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAgentTests.swift; sourceTree = "<group>"; };
 		30F7FC1DB9D43070D64142C0 /* PlaylistSidebarViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistSidebarViewModelTests.swift; sourceTree = "<group>"; };
 		335B0C06DAF35F96240EF261 /* QueueReorderGripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueReorderGripTests.swift; sourceTree = "<group>"; };
@@ -254,8 +254,9 @@
 		A3964066EC248C5C8FA25D56 /* LibraryDestinationPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDestinationPersistenceTests.swift; sourceTree = "<group>"; };
 		A3ABBFFC5CC427A5F3C2AE6B /* LibraryViewModelClearQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModelClearQueueTests.swift; sourceTree = "<group>"; };
 		A48BC953E0F409019C6F855F /* NoticesWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoticesWindowView.swift; sourceTree = "<group>"; };
+		A53BD4E14EFFC852676A7BC3 /* SyncServer */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SyncServer; path = Modules/SyncServer; sourceTree = SOURCE_ROOT; };
 		A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libdav1d.7.dylib; sourceTree = "<group>"; };
-		A9999948FAD8FF8EE311BC9A /* fpcalc */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = fpcalc; sourceTree = "<group>"; };
+		A9999948FAD8FF8EE311BC9A /* fpcalc */ = {isa = PBXFileReference; path = fpcalc; sourceTree = "<group>"; };
 		B4F9A42729E5EFAA6A91F042 /* BocanApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BocanApp.swift; sourceTree = "<group>"; };
 		B5F151905EDE76E79038D4A9 /* MenuAnimationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuAnimationTests.swift; sourceTree = "<group>"; };
 		B6A9FE99C1399ECBBA9D4681 /* Lifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Lifecycle.swift; sourceTree = "<group>"; };
@@ -304,7 +305,7 @@
 		F92A54888932177D777FBB3C /* LogConsoleViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogConsoleViewModelTests.swift; sourceTree = "<group>"; };
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
-		"TEMP_21781820-FA70-49CD-878D-6B69F5AD23EC" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_482CBF3E-08F6-4CAE-BD04-A98CE2AC0275" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -387,7 +388,6 @@
 				A9C0239AEA134BDEE9F90258 /* UITests */,
 				8DE7AE70CABE9E93BDBE5955 /* NOTICES.md */,
 				13C2660B7453561F1366516C /* Products */,
-				83A4A8242FFB204600A8C5E3 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -487,14 +487,6 @@
 			path = ViewModelTests;
 			sourceTree = "<group>";
 		};
-		83A4A8242FFB204600A8C5E3 /* Recovered References */ = {
-			isa = PBXGroup;
-			children = (
-				"TEMP_21781820-FA70-49CD-878D-6B69F5AD23EC" /* Secrets.xcconfig */,
-			);
-			name = "Recovered References";
-			sourceTree = "<group>";
-		};
 		8A6EBFBDE9871CAA33430EC6 /* Observability */ = {
 			isa = PBXGroup;
 			children = (
@@ -515,6 +507,7 @@
 				53E595DDA2F51C36CA1A31AE /* Podcasts */,
 				EA774AB72CC95F420281D172 /* Scrobble */,
 				531C8B2E4746B8942918520D /* Subsonic */,
+				A53BD4E14EFFC852676A7BC3 /* SyncServer */,
 				D9B5B3110CE7BC30E8122BE8 /* UI */,
 			);
 			name = Packages;
@@ -637,6 +630,14 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
+		"TEMP_B868991A-90FF-4BCD-BD59-57B21DA540A0" /* bocan-music */ = {
+			isa = PBXGroup;
+			children = (
+				"TEMP_482CBF3E-08F6-4CAE-BD04-A98CE2AC0275" /* Secrets.xcconfig */,
+			);
+			path = "bocan-music";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -745,6 +746,7 @@
 				E9A576D858110977195D7E3F /* XCLocalSwiftPackageReference "Modules/Podcasts" */,
 				3B5F2EF875A6F6FFF55F7ACB /* XCLocalSwiftPackageReference "Modules/Scrobble" */,
 				83DC56AE955B2425894EBA99 /* XCLocalSwiftPackageReference "Modules/Subsonic" */,
+				8B93AF4010DB834422D8458F /* XCLocalSwiftPackageReference "Modules/SyncServer" */,
 				FE6D5E7CC473CB3FE993F62B /* XCLocalSwiftPackageReference "Modules/UI" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -984,7 +986,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_21781820-FA70-49CD-878D-6B69F5AD23EC" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_482CBF3E-08F6-4CAE-BD04-A98CE2AC0275" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1040,17 +1042,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = (
-					/opt/homebrew/include,
-					/opt/homebrew/opt/ffmpeg/include,
-					/opt/homebrew/opt/taglib/include/taglib,
-					"$(inherited)",
-				);
+				HEADER_SEARCH_PATHS = "/opt/homebrew/include /opt/homebrew/opt/ffmpeg/include /opt/homebrew/opt/taglib/include/taglib $(inherited)";
 				INFOPLIST_FILE = Resources/Info.plist;
-				LIBRARY_SEARCH_PATHS = (
-					/opt/homebrew/lib,
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/lib $(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -1120,7 +1114,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_MODULE_NAME = Bocan;
 				PRODUCT_NAME = Bocan;
 				SDKROOT = macosx;
@@ -1129,7 +1122,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_21781820-FA70-49CD-878D-6B69F5AD23EC" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_482CBF3E-08F6-4CAE-BD04-A98CE2AC0275" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1180,17 +1173,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = (
-					/opt/homebrew/include,
-					/opt/homebrew/opt/ffmpeg/include,
-					/opt/homebrew/opt/taglib/include/taglib,
-					"$(inherited)",
-				);
+				HEADER_SEARCH_PATHS = "/opt/homebrew/include /opt/homebrew/opt/ffmpeg/include /opt/homebrew/opt/taglib/include/taglib $(inherited)";
 				INFOPLIST_FILE = Resources/Info.plist;
-				LIBRARY_SEARCH_PATHS = (
-					/opt/homebrew/lib,
-					"$(inherited)",
-				);
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/lib $(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -1222,7 +1207,6 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_MODULE_NAME = Bocan;
 				PRODUCT_NAME = Bocan;
 				SDKROOT = macosx;
@@ -1294,6 +1278,10 @@
 		88F22A7297DE63DC36E97CB5 /* XCLocalSwiftPackageReference "Modules/Acoustics" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/Acoustics;
+		};
+		8B93AF4010DB834422D8458F /* XCLocalSwiftPackageReference "Modules/SyncServer" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/SyncServer;
 		};
 		A17D0542DA503F381C619312 /* XCLocalSwiftPackageReference "Modules/AudioEngine" */ = {
 			isa = XCLocalSwiftPackageReference;
