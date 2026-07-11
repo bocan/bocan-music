@@ -518,6 +518,9 @@ struct AppGraph {
     let syncServer: SyncServer
     /// Phase 22-8: the Settings -> Phone Sync view model.
     let phoneSyncSettingsViewModel: PhoneSyncViewModel
+    /// Backfills `tracks.content_hash` (the Phone Sync manifest `sha256`) in
+    /// the background. Retained here because its observation holds it weakly.
+    let contentHashService: ContentHashService
 }
 
 // MARK: - AppModel
@@ -643,6 +646,15 @@ extension BocanApp {
             podcastResolver: podcastResolver
         )
         let scanner = LibraryScanner(database: db)
+        // Fills tracks.content_hash (the Phone Sync manifest sha256 / ETag) for
+        // whatever the scanner imported but never hashed. Its observation's
+        // initial emission drives the launch backfill; a re-import that resets
+        // a hash re-triggers it. Sequential and utility-priority, so a first
+        // pass over a large library stays out of the way.
+        let contentHashService = ContentHashService(tracks: TrackRepository(database: db))
+        Task.detached(priority: .background) {
+            await contentHashService.start()
+        }
 
         let podcastActions = AppPodcastActions(
             service: podcastService,
@@ -853,7 +865,8 @@ extension BocanApp {
             settingsRouter: SettingsRouter(),
             logConsoleViewModel: LogConsoleViewModel(),
             syncServer: syncServer,
-            phoneSyncSettingsViewModel: phoneSyncViewModel
+            phoneSyncSettingsViewModel: phoneSyncViewModel,
+            contentHashService: contentHashService
         )
     }
 

@@ -155,6 +155,20 @@ the same time can make `SecKeyCreateRandomKey` fail transiently. Fixed in
 retry backoff, and logging the underlying `CFError` instead of dropping it.
 Suite is green after the fix.
 
+### Gap found after the sweep: tracks.content_hash was never populated
+
+First real-library use (2026-07-11) showed the Settings size estimate at
+"0 tracks": every track's `content_hash` was NULL, and the 22-5 manifest
+correctly excludes hashless tracks, so the manifest was empty. The column had
+existed since M001 with the phase 02 note "computed lazily, not on scan", but
+the lazy computation was never built; the fixture library ships with hashes,
+which is why every test stayed green. Fixed by `ContentHashService` in the
+Library module: a debounced observation on the missing-hash count backfills
+whole-file SHA-256 digests in the background (launch, post-scan, and after any
+re-import that resets a hash). The manual run below should start from a
+completed backfill (`content_hash.pass.end` in the Log Console, `library`
+category).
+
 ### Manual end-to-end runbook (pending hardware)
 
 Android phases 02 (pairing) and 03 (sync engine) are landed, so the run needs
