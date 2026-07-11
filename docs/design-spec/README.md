@@ -59,6 +59,16 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 21.8 | [phase21-8-ui-search-detail.md](phase21-8-ui-search-detail.md) | Podcasts UI: search results (source badges), detail, Subscribe |
 | 21.9 | [phase21-9-ui-episodes.md](phase21-9-ui-episodes.md) | Podcasts UI: episode list (date/duration/progress), show notes |
 | 21.10 | [phase21-10-nowplaying-polish.md](phase21-10-nowplaying-polish.md) | Podcasts: Now Playing podcast mode, speed/skip, settings, docs |
+| 22.0 | [phase22-0-overview.md](phase22-0-overview.md) | Phone Sync server: contract, module DAG, security model, shared fixtures (read first) |
+| 22.1 | [phase22-1-pairing-code.md](phase22-1-pairing-code.md) | Phone Sync: `PairingCode` + golden vectors (test-first, cross-repo proof) |
+| 22.2 | [phase22-2-identity-trust.md](phase22-2-identity-trust.md) | Phone Sync: `ServerIdentity` (Keychain P-256), `TrustedDevices`, migration M031 |
+| 22.3 | [phase22-3-http-listener.md](phase22-3-http-listener.md) | Phone Sync: HTTP/1.1 parser, `Router`, `NWListener` TLS verify block, `/v1/ping` |
+| 22.4 | [phase22-4-pairing-ceremony.md](phase22-4-pairing-ceremony.md) | Phone Sync: `PairingSession` state machine, `/v1/pair/*`, rate limits, `pm` hygiene |
+| 22.5 | [phase22-5-manifest.md](phase22-5-manifest.md) | Phone Sync: `SyncProfile`, `ManifestBuilder`, generation counter + change observer |
+| 22.6 | [phase22-6-file-serving.md](phase22-6-file-serving.md) | Phone Sync: file/artwork/lyrics/chapters serving, Range + If-Match, `SecurityScope` |
+| 22.7 | [phase22-7-lifecycle-bonjour.md](phase22-7-lifecycle-bonjour.md) | Phone Sync: `SyncServer` actor lifecycle, Bonjour advertising, app wiring, sleep/wake |
+| 22.8 | [phase22-8-settings-ui.md](phase22-8-settings-ui.md) | Phone Sync: Settings pane + pairing sheet, localized, snapshot-tested |
+| 22.9 | [phase22-9-docs-e2e.md](phase22-9-docs-e2e.md) | Phone Sync: README + website, cross-repo end-to-end, acceptance sweep |
 
 ## Conventions used in every phase file
 
