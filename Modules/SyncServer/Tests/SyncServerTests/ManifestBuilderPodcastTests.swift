@@ -49,7 +49,10 @@ struct ManifestBuilderPodcastTests {
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data("podcast-audio".utf8).write(to: fileURL)
 
-        try await states.setDownloadState(podcastID: podcastId, guid: guid, state: .downloaded, path: fileURL.path, bytes: 55_000_000)
+        let episodeHash = String(repeating: "bb01", count: 16)
+        try await states.setDownloadState(
+            podcastID: podcastId, guid: guid, state: .downloaded, path: fileURL.path, bytes: 55_000_000, hash: episodeHash
+        )
         try await states.savePosition(podcastID: podcastId, guid: guid, position: 1200, now: 0)
 
         let builder = ManifestBuilder(database: database, downloadRoot: tempRoot)
@@ -74,7 +77,7 @@ struct ManifestBuilderPodcastTests {
         #expect(episode.guid == guid)
         #expect(episode.relPath == "Podcasts/\(podcastId)/\(fileURL.lastPathComponent)")
         #expect(episode.size == 55_000_000)
-        #expect(episode.sha256.count == 64)
+        #expect(episode.sha256 == episodeHash) // the stored download hash, not re-hashed
         #expect(episode.hasChapters)
         #expect(episode.playState == "inProgress")
         #expect(episode.playPositionMs == 1_200_000)

@@ -147,7 +147,14 @@ public struct ManifestBuilder: Sendable {
 
     private func makeEpisode(content: PodcastEpisode, state: PodcastEpisodeState, podcastId: Int64) -> ManifestEpisode? {
         let fileURL = self.downloadStore.fileURL(podcastID: podcastId, guid: content.guid, mime: content.audioMIME)
-        guard let sha256 = Self.hashFile(fileURL) else {
+        // The hash is stored at download time (M032); fall back to hashing the
+        // file for episodes downloaded before that migration.
+        let sha256: String
+        if let stored = state.contentHash {
+            sha256 = stored
+        } else if let computed = Self.hashFile(fileURL) {
+            sha256 = computed
+        } else {
             // The download is gone; without the bytes we cannot serve or hash it.
             return nil
         }

@@ -138,24 +138,33 @@ struct FileServingTests {
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let bytes = Data((0 ..< 4000).map { UInt8($0 % 251) })
         try bytes.write(to: fileURL)
+        let episodeHash = "ep64hashep64hashep64hashep64hashep64hashep64hashep64hashep64hash"
         try await states.setDownloadState(
             podcastID: podcastId,
             guid: guid,
             state: .downloaded,
             path: fileURL.path,
-            bytes: Int64(bytes.count)
+            bytes: Int64(bytes.count),
+            hash: episodeHash
         )
 
         let episodeId = fileURL.deletingPathExtension().lastPathComponent
         let full = try await server.client.request(port: server.port, path: "/v1/file/episode/\(episodeId)")
         #expect(full.status == 200)
         #expect(full.body == bytes)
+        #expect(self.header(full.headers, "etag") == episodeHash)
 
         let ranged = try await server.client.request(
             port: server.port, path: "/v1/file/episode/\(episodeId)", headers: ["Range": "bytes=1000-1999"]
         )
         #expect(ranged.status == 206)
         #expect(ranged.body == Data(bytes[1000 ... 1999]))
+
+        // If-Match against the stored episode hash: 412 on mismatch.
+        let stale = try await server.client.request(
+            port: server.port, path: "/v1/file/episode/\(episodeId)", headers: ["If-Match": "wrong"]
+        )
+        #expect(stale.status == 412)
 
         // An encoded traversal decodes to extra path segments and never matches.
         let traversal = try await server.client.request(port: server.port, path: "/v1/file/track/..%2f..%2fetc%2fpasswd")
