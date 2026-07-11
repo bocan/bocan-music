@@ -1,7 +1,10 @@
-# SwiftLint's exact version is pinned in `.swiftlint-version`: CI installs that
-# release (shadowing this brew copy) and `make doctor` fails on a mismatch.
-# force_unwrapping/superfluous_disable behaviour shifts between patch releases,
-# so an unpinned local copy silently diverges from CI. Match the pin locally.
+# SwiftLint and SwiftFormat exact versions are pinned in `.swiftlint-version`
+# and `.swiftformat-version`: CI installs those releases (shadowing these brew
+# copies) and `make doctor` fails on a mismatch. Lint/format behaviour shifts
+# between patch releases (SwiftLint force_unwrapping/superfluous_disable;
+# SwiftFormat redundantSendable and conditional-body wrapping), so an unpinned
+# local copy silently diverges from CI and reformats unrelated files. Match the
+# pins locally.
 brew "swiftlint"
 brew "swiftformat"
 brew "xcbeautify"

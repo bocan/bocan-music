@@ -7,6 +7,13 @@
 # `.swiftlint-version` file and CI follows automatically.
 EXPECTED_SWIFTLINT := $(shell cat .swiftlint-version 2>/dev/null)
 
+# Pinned SwiftFormat version. Same rationale as SwiftLint: formatting rules
+# (e.g. redundantSendable, single-line conditional bodies) shift between
+# releases, so an unpinned local copy reformats unrelated files and diverges
+# from CI. CI installs this exact release and `doctor` fails on a mismatch.
+# Single source of truth: bump `.swiftformat-version` and CI follows.
+EXPECTED_SWIFTFORMAT := $(shell cat .swiftformat-version 2>/dev/null)
+
 # Extra xcodebuild settings injected into `build`/`test`/`test-coverage`. Empty by
 # default. CI uses it to strip the keychain-access-groups entitlement on unsigned
 # ad-hoc builds (which otherwise demand a provisioning profile):
@@ -68,6 +75,17 @@ doctor:
 		exit 1; \
 	else \
 		echo "✓ SwiftLint $$actual matches the pin"; \
+	fi
+	@actual="$$(swiftformat --version 2>/dev/null)"; \
+	if [ -z "$(EXPECTED_SWIFTFORMAT)" ]; then \
+		echo "⚠️  WARNING: .swiftformat-version is missing; cannot verify the SwiftFormat pin."; \
+	elif [ "$$actual" != "$(EXPECTED_SWIFTFORMAT)" ]; then \
+		echo "✗ SwiftFormat version mismatch: have '$$actual', expected '$(EXPECTED_SWIFTFORMAT)' (.swiftformat-version)."; \
+		echo "  CI pins this exact release; formatting results diverge across SwiftFormat versions."; \
+		echo "  Install the pinned version, e.g.:  curl -sSL https://github.com/nicklockwood/SwiftFormat/releases/download/$(EXPECTED_SWIFTFORMAT)/swiftformat.zip -o /tmp/sf.zip && unzip -o /tmp/sf.zip swiftformat -d /opt/homebrew/bin"; \
+		exit 1; \
+	else \
+		echo "✓ SwiftFormat $$actual matches the pin"; \
 	fi
 
 ## open: Open the Xcode project

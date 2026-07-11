@@ -9,8 +9,10 @@ import Testing
 /// section 4 provably agree. This is the cross-repo compatibility canary: it must
 /// stay green in both repos.
 struct PairingCodeTests {
-    /// One golden vector from the shared fixture.
-    struct Vector: Decodable, Sendable {
+    /// One golden vector from the shared fixture. A non-public struct of
+    /// immutable `String` fields is implicitly `Sendable`, which the
+    /// parameterized tests rely on for the `arguments:` collection.
+    struct Vector: Decodable {
         let fpMac: String
         let fpPhone: String
         let noncePhoneBase64: String
