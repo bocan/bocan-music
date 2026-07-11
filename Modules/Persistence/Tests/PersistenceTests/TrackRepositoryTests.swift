@@ -171,4 +171,72 @@ struct TrackRepositoryTests {
         let final = try await repo.fetch(id: id)
         #expect(final.albumTrackSortKey == "01.0012")
     }
+
+    @Test("setContentHash writes the hash for one track only")
+    func setContentHashWritesSingleRow() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        var trackA = self.makeTrack(fileURL: "file:///tmp/a.flac")
+        trackA.fileBookmark = Data([1])
+        var trackB = self.makeTrack(fileURL: "file:///tmp/b.flac")
+        trackB.fileBookmark = Data([2])
+        let idA = try await repo.insert(trackA)
+        let idB = try await repo.insert(trackB)
+        try await repo.setContentHash(trackID: idA, hash: "abc123")
+        let fetchedA = try await repo.fetch(id: idA)
+        let fetchedB = try await repo.fetch(id: idB)
+        #expect(fetchedA.contentHash == "abc123")
+        #expect(fetchedB.contentHash == nil)
+    }
+
+    @Test("fetchMissingContentHash returns only hashable candidates, oldest id first")
+    func fetchMissingContentHashFilters() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+
+        var missing = self.makeTrack(fileURL: "file:///tmp/missing.flac")
+        missing.fileBookmark = Data([1])
+        let missingId = try await repo.insert(missing)
+
+        var hashed = self.makeTrack(fileURL: "file:///tmp/hashed.flac")
+        hashed.fileBookmark = Data([2])
+        hashed.contentHash = "deadbeef"
+        _ = try await repo.insert(hashed)
+
+        var disabled = self.makeTrack(fileURL: "file:///tmp/disabled.flac")
+        disabled.fileBookmark = Data([3])
+        disabled.disabled = true
+        _ = try await repo.insert(disabled)
+
+        var clip = self.makeTrack(fileURL: "file:///tmp/rip.cue#1")
+        clip.fileBookmark = Data([4])
+        clip.sourceFileURL = "file:///tmp/rip.flac"
+        _ = try await repo.insert(clip)
+
+        // No bookmark: cannot be read, so not a candidate.
+        _ = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/nobookmark.flac"))
+
+        var second = self.makeTrack(fileURL: "file:///tmp/second.flac")
+        second.fileBookmark = Data([5])
+        let secondId = try await repo.insert(second)
+
+        let candidates = try await repo.fetchMissingContentHash(limit: 10)
+        #expect(candidates.map(\.id) == [missingId, secondId])
+        #expect(try await repo.countMissingContentHash() == 2)
+
+        let limited = try await repo.fetchMissingContentHash(limit: 1)
+        #expect(limited.map(\.id) == [missingId])
+    }
+
+    @Test("countMissingContentHash reaches zero as hashes land")
+    func countMissingContentHashDrains() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        var t = self.makeTrack()
+        t.fileBookmark = Data([1])
+        let id = try await repo.insert(t)
+        #expect(try await repo.countMissingContentHash() == 1)
+        try await repo.setContentHash(trackID: id, hash: "cafe")
+        #expect(try await repo.countMissingContentHash() == 0)
+    }
 }

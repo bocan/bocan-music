@@ -71,6 +71,19 @@ public struct TrackRepository: Sendable {
         self.log.debug("track.excludedFromShuffle", ["id": trackID, "excluded": excluded])
     }
 
+    /// Stores the whole-file SHA-256 for a single track. Phone Sync uses the
+    /// hash as the manifest `sha256`, the download `ETag`, and the `If-Match`
+    /// basis, so it must be the digest of the file bytes as served.
+    public func setContentHash(trackID: Int64, hash: String) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE tracks SET content_hash = ? WHERE id = ?",
+                arguments: [hash, trackID]
+            )
+        }
+        self.log.debug("track.contentHash", ["id": trackID])
+    }
+
     /// Inserts or replaces `track` keyed on `file_url`.
     ///
     /// Returns the `id` of the inserted or updated row (used by Phase 3 scanning).
@@ -192,6 +205,52 @@ public struct TrackRepository: Sendable {
         try await self.database.read { db in
             try Track.fetchCount(db)
         }
+    }
+
+    /// Tracks that still need a whole-file content hash, oldest id first:
+    /// enabled, whole-file (CUE clips share their parent's bytes and hash), with
+    /// a bookmark to read the file through. `afterID` is a cursor so a caller
+    /// can page through candidates without refetching ones it failed to hash;
+    /// `limit` bounds a backfill batch.
+    public func fetchMissingContentHash(limit: Int, afterID: Int64 = 0) async throws -> [Track] {
+        try await self.database.read { db in
+            try Track
+                .filter(Column("content_hash") == nil)
+                .filter(Column("disabled") == false)
+                .filter(Column("source_file_url") == nil)
+                .filter(Column("file_bookmark") != nil)
+                .filter(Column("id") > afterID)
+                .order(Column("id"))
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
+    /// Number of tracks `fetchMissingContentHash` would still return, for
+    /// backfill progress logging.
+    public func countMissingContentHash() async throws -> Int {
+        try await self.database.read { db in
+            try Self.missingContentHashCount(db)
+        }
+    }
+
+    /// Observes the number of hashable tracks still missing a content hash.
+    /// Emits the current value on subscribe and again whenever it changes, so a
+    /// backfill service can both start work at launch and react to re-imports
+    /// (a changed file's re-import resets `content_hash` to NULL).
+    public func observeMissingContentHashCount() async -> AsyncThrowingStream<Int, Error> {
+        await self.database.observe { db in
+            try Self.missingContentHashCount(db)
+        }
+    }
+
+    private static func missingContentHashCount(_ db: GRDB.Database) throws -> Int {
+        try Track
+            .filter(Column("content_hash") == nil)
+            .filter(Column("disabled") == false)
+            .filter(Column("source_file_url") == nil)
+            .filter(Column("file_bookmark") != nil)
+            .fetchCount(db)
     }
 
     // MARK: - Search
