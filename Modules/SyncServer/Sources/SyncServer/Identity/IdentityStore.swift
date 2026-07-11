@@ -104,6 +104,11 @@ struct KeychainIdentityStore: IdentityStoring {
 
     // MARK: - Key helpers
 
+    /// Serialises permanent-key generation: concurrent `SecKeyCreateRandomKey`
+    /// writes into the login Keychain transiently fail when parallel test
+    /// suites each create an identity at the same time.
+    private static let keygenLock = NSLock()
+
     private func generatePermanentKey() throws -> SecKey {
         let attributes: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
@@ -113,17 +118,24 @@ struct KeychainIdentityStore: IdentityStoring {
                 kSecAttrApplicationTag as String: self.keyTag,
             ],
         ]
-        // Writing a permanent key to the login Keychain can transiently fail
-        // under concurrent access; retry a few times before giving up.
-        for attempt in 1 ... 3 {
+        Self.keygenLock.lock()
+        defer { Self.keygenLock.unlock() }
+        // Writing a permanent key to the login Keychain can still transiently
+        // fail under contention from outside the process; retry with a growing
+        // backoff before giving up.
+        var lastError: CFError?
+        let attempts = 5
+        for attempt in 1 ... attempts {
             var error: Unmanaged<CFError>?
             if let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error) {
                 return key
             }
-            if attempt < 3 {
-                usleep(20000)
+            lastError = error?.takeRetainedValue()
+            if attempt < attempts {
+                usleep(useconds_t(20000 * attempt))
             }
         }
+        self.log.error("identity.keygen.failed", ["error": String(describing: lastError)])
         throw SyncServerError.identity(reason: "keygen", status: nil)
     }
 
