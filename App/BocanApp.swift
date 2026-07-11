@@ -516,6 +516,8 @@ struct AppGraph {
     let logConsoleViewModel: LogConsoleViewModel
     /// Phase 22-7: the Phone Sync server (off unless `sync.enabled`).
     let syncServer: SyncServer
+    /// Phase 22-8: the Settings -> Phone Sync view model.
+    let phoneSyncSettingsViewModel: PhoneSyncViewModel
 }
 
 // MARK: - AppModel
@@ -768,12 +770,23 @@ extension BocanApp {
         // closure so SyncServer never imports AppKit. `downloadRoot: nil` matches
         // the EpisodeDownloadManager default the manifest and file serving read.
         let syncServerName: @Sendable () -> String = { Host.current().localizedName ?? "Bòcan" }
+        let phoneSyncBridge = PhoneSyncPairingBridge()
         let syncServer = SyncServer(
             database: db,
             identity: ServerIdentity(),
-            ui: PhoneSyncPairingBridge(),
+            ui: phoneSyncBridge,
             serverName: syncServerName
         )
+        // Phase 22-8: the Settings view model, wired over the server via the
+        // control seam; the relay bridge forwards the pairing ceremony to it.
+        let phoneSyncController = PhoneSyncController(
+            server: syncServer,
+            profileRepository: SyncProfileRepository(database: db),
+            playlistRepository: PlaylistRepository(database: db),
+            manifestBuilder: ManifestBuilder(database: db)
+        )
+        let phoneSyncViewModel = PhoneSyncViewModel(control: phoneSyncController)
+        phoneSyncBridge.receiver = phoneSyncViewModel
         Self.installSyncServerLifecycleObservers(syncServer: syncServer)
         if UserDefaults.standard.bool(forKey: "sync.enabled") {
             Task { [syncServer] in
@@ -839,7 +852,8 @@ extension BocanApp {
             subsonicSettingsViewModel: subsonicSettingsViewModel,
             settingsRouter: SettingsRouter(),
             logConsoleViewModel: LogConsoleViewModel(),
-            syncServer: syncServer
+            syncServer: syncServer,
+            phoneSyncSettingsViewModel: phoneSyncViewModel
         )
     }
 

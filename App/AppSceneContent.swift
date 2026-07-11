@@ -31,7 +31,8 @@ struct SettingsWindowContent: View {
                 router: graph.settingsRouter,
                 backupViewModel: graph.backupSettingsViewModel,
                 scrobbleViewModel: graph.scrobbleSettingsViewModel,
-                subsonicViewModel: graph.subsonicSettingsViewModel
+                subsonicViewModel: graph.subsonicSettingsViewModel,
+                phoneSyncViewModel: graph.phoneSyncSettingsViewModel
             )
             .environment(graph.dspViewModel)
             .environmentObject(graph.libraryViewModel)
