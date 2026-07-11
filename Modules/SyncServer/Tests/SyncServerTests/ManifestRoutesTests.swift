@@ -42,6 +42,31 @@ struct ManifestRoutesTests {
         #expect(!manifest.serverId.isEmpty)
     }
 
+    @Test("the manifest is gzipped when the client sends Accept-Encoding: gzip")
+    func manifestGzip() async throws {
+        let database = try await Database(location: .inMemory)
+        _ = try await LibraryRootRepository(database: database).upsert(LibraryRoot(path: "/Music", bookmark: Data([0x01]), addedAt: 0))
+        _ = try await TrackRepository(database: database).insert(Track(
+            fileURL: URL(fileURLWithPath: "/Music/a.flac").absoluteString,
+            fileFormat: "flac", contentHash: "aa", addedAt: 0, updatedAt: 0
+        ))
+
+        let request = HttpRequest(
+            method: "GET",
+            path: "/v1/manifest",
+            query: [:],
+            headers: ["accept-encoding": "gzip"],
+            body: Data()
+        )
+        let response = await self.makeRouter(database).dispatch(request, context: self.trustedContext())
+
+        #expect(response.status == 200)
+        #expect(response.headers["content-encoding"] == "gzip")
+        let inflated = try #require(TestGunzip.inflate(response.body))
+        let manifest = try JSONDecoder().decode(Manifest.self, from: inflated)
+        #expect(manifest.tracks.count == 1)
+    }
+
     @Test("the manifest route rejects an unpaired connection")
     func manifestRejectsUnpaired() async throws {
         let database = try await Database(location: .inMemory)

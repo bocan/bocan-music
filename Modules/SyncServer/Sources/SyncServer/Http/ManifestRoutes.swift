@@ -22,7 +22,7 @@ enum ManifestRoutes {
                 let json = "{\"protocolVersion\":1,\"serverId\":\"\(escaped)\",\"generation\":\(generation)}"
                 return .json(data: Data(json.utf8))
             },
-            Router.Route("GET", "/v1/manifest", auth: .paired) { _, _ in
+            Router.Route("GET", "/v1/manifest", auth: .paired) { request, _ in
                 do {
                     let profile = await Self.loadProfile(profileRepository)
                     let serverId = try await syncMeta.serverId()
@@ -34,7 +34,17 @@ enum ManifestRoutes {
                         generation: generation,
                         generatedAt: now()
                     )
-                    return try .json(data: JSONEncoder().encode(manifest))
+                    let data = try JSONEncoder().encode(manifest)
+                    // Gzip the manifest when the client asks for it (protocol s7).
+                    if request.header("accept-encoding")?.lowercased().contains("gzip") == true,
+                       let gzipped = Gzip.compress(data) {
+                        return HttpResponse(
+                            status: 200,
+                            headers: ["content-type": "application/json", "content-encoding": "gzip"],
+                            body: gzipped
+                        )
+                    }
+                    return .json(data: data)
                 } catch {
                     return .error(.internal, message: "Manifest unavailable", status: 500)
                 }
