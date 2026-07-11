@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 30)
+        #expect(version == 31)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,51 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports thirty migrations")
+    @Test("Migrator reports thirty-one migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 30)
+        #expect(migrator.migrations.count == 31)
+    }
+
+    @Test("Phone Sync tables exist with the expected columns after M031")
+    func phoneSyncTablesExist() async throws {
+        let db = try await Database(location: .inMemory)
+        let tables = try await db.read { grdb in
+            try String.fetchAll(
+                grdb,
+                sql: "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            )
+        }
+        for name in ["trusted_devices", "sync_meta", "sync_profile"] {
+            #expect(tables.contains(name), "Expected table '\(name)' not found")
+        }
+
+        let trustedColumns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(trusted_devices)")
+                .compactMap { $0["name"] as String? }
+        }
+        for name in ["fingerprint", "cert_der", "device_name", "paired_at"] {
+            #expect(trustedColumns.contains(name), "Expected column '\(name)' not found")
+        }
+    }
+
+    @Test("sync_meta and sync_profile enforce their singleton CHECK (id = 1)")
+    func singletonRowsAreEnforced() async throws {
+        let db = try await Database(location: .inMemory)
+        await #expect(throws: (any Error).self) {
+            try await db.write { grdb in
+                try grdb.execute(
+                    sql: "INSERT INTO sync_meta (id, server_id, generation) VALUES (2, 'x', 0)"
+                )
+            }
+        }
+        await #expect(throws: (any Error).self) {
+            try await db.write { grdb in
+                try grdb.execute(
+                    sql: "INSERT INTO sync_profile (id, profile_json) VALUES (2, x'00')"
+                )
+            }
+        }
     }
 
     @Test("M030 clears HTTP validators so the next refresh re-parses every feed")
