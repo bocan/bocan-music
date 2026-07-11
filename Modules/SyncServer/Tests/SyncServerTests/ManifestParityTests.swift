@@ -73,6 +73,14 @@ struct ManifestParityTests {
             startOffsetMs: 0, endOffsetMs: 60000, sourceFileURL: mp3URL,
             addedAt: 0, updatedAt: 0
         ))
+        // An untagged file: only the id/file core, per the contract's
+        // field-optionality rules. Every metadata key must end up omitted.
+        _ = try await tracks.insert(Track(
+            id: 105, fileURL: URL(fileURLWithPath: "/Music/Unsorted/rip-004.flac").absoluteString,
+            fileSize: 24_000_000, fileFormat: "flac", duration: 201,
+            contentHash: String(repeating: "aa05", count: 16),
+            addedAt: 0, updatedAt: 0
+        ))
 
         let builder = ManifestBuilder(database: database)
         let built = try await builder.build(
