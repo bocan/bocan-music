@@ -15,8 +15,9 @@ final class LoopbackClient: NSObject, URLSessionDelegate, @unchecked Sendable {
         port: UInt16,
         path: String,
         method: String = "GET",
-        body: Data? = nil
-    ) async throws -> (status: Int, body: Data) {
+        body: Data? = nil,
+        headers: [String: String] = [:]
+    ) async throws -> (status: Int, body: Data, headers: [AnyHashable: Any]) {
         let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
 
@@ -27,8 +28,12 @@ final class LoopbackClient: NSObject, URLSessionDelegate, @unchecked Sendable {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
+        for (name, value) in headers {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
         let (data, response) = try await session.data(for: request)
-        return ((response as? HTTPURLResponse)?.statusCode ?? -1, data)
+        let http = response as? HTTPURLResponse
+        return (http?.statusCode ?? -1, data, http?.allHeaderFields ?? [:])
     }
 
     func urlSession(

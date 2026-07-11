@@ -133,10 +133,37 @@ actor HttpConnection {
     }
 
     private func send(_ response: HttpResponse) async {
-        let bytes = response.serialized()
-        await withCheckedContinuation { continuation in
-            self.connection.send(content: bytes, completion: .contentProcessed { _ in
-                continuation.resume()
+        if let stream = response.stream {
+            await self.sendStreamed(response, stream: stream)
+        } else {
+            try? await self.rawSend(response.serialized())
+        }
+    }
+
+    /// Sends the header block, then drives the producer, which writes body chunks
+    /// via `rawSend`. A write error (client gone) throws out of the producer,
+    /// unwinding it so any held security scope is released.
+    private func sendStreamed(_ response: HttpResponse, stream: StreamBody) async {
+        do {
+            try await self.rawSend(response.headerBlock(contentLength: stream.length))
+            try await stream.producer { [weak self] chunk in
+                guard let self else { throw CancellationError() }
+                try await self.rawSend(chunk)
+            }
+        } catch {
+            // The client disconnected or the file read failed; the read loop will
+            // observe the closed connection and tear down.
+        }
+    }
+
+    private func rawSend(_ data: Data) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            self.connection.send(content: data, completion: .contentProcessed { error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
             })
         }
     }
