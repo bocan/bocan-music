@@ -105,4 +105,31 @@ struct HttpParserTests {
         }
         #expect(second.path == "/b")
     }
+
+    @Test("every prefix of a valid request yields a defined outcome, never a crash")
+    func everyPrefixIsSafe() {
+        let valid = "POST /v1/pair/start HTTP/1.1\r\nContent-Length: 8\r\n\r\n{\"a\":123}"
+        let bytes = Array(valid.utf8)
+        for prefixLength in 0 ... bytes.count {
+            var parser = HttpRequestParser()
+            switch parser.feed(Data(bytes[0 ..< prefixLength])) {
+            case .incomplete, .request, .failure:
+                break // any defined outcome is fine; the point is no crash or hang
+            }
+        }
+    }
+
+    @Test("arbitrary garbage never crashes or hangs the parser")
+    func robustAgainstGarbage() {
+        var generator = SystemRandomNumberGenerator()
+        for _ in 0 ..< 200 {
+            var parser = HttpRequestParser()
+            let length = Int.random(in: 0 ... 4096, using: &generator)
+            let chunk = Data((0 ..< length).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
+            switch parser.feed(chunk) {
+            case .incomplete, .request, .failure:
+                break
+            }
+        }
+    }
 }
