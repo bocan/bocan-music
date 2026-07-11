@@ -33,7 +33,7 @@ Per-module SPM tests use `swift test` under the module directory. To run a singl
 Strict module DAG, no upward imports:
 
 ```
-Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scrobble, Subsonic, Acoustics → UI → App
+Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scrobble, Subsonic, Acoustics, SyncServer → UI → App
 ```
 
 | Module | Owns |
@@ -47,6 +47,7 @@ Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scro
 | `Scrobble` | Last.fm / ListenBrainz / Rocksky providers + an offline-resilient `ScrobbleService` queue. |
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID + MusicBrainz lookup. |
+| `SyncServer` | Phone Sync (phase 22): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and, in later slices, the Bonjour-advertised mutual-TLS server that serves a manifest + files read-only to a paired phone. Separate identity/port from any Phase 18 remote control. |
 | `UI` | All SwiftUI views, view models (`LibraryViewModel` is the spine), settings, mini player, snapshot tests. Only module that imports AppKit. |
 
 Cross-cutting standards live in `docs/design-spec/_standards.md` — read this if you're about to add anything substantial. Implementation phases live alongside as `phase-NN-*.md`.
@@ -69,7 +70,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 
 - Swift 6 strict concurrency. Long-lived state is owned by `actor`s, not classes with locks. SwiftUI view state is `@MainActor`. `Task.checkCancellation()` inside any long loop.
 - Each module has a single `*Error: Error, Sendable` enum carrying context (URL, underlying error, reason) — not bare cases.
-- `AppLogger` facade only. Categories: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `scrobble`, `subsonic`. Standard pattern: `log.debug("op.start", […])` / `log.debug("op.end", ["ms": …])` / `log.error("op.failed", ["error": String(reflecting: err)])`. Keys in `Observability.sensitiveKeys` are redacted automatically.
+- `AppLogger` facade only. Categories: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `podcasts`, `scrobble`, `subsonic`, `sync`. Standard pattern: `log.debug("op.start", […])` / `log.debug("op.end", ["ms": …])` / `log.error("op.failed", ["error": String(reflecting: err)])`. Keys in `Observability.sensitiveKeys` are redacted automatically.
 - No `print`, no raw `os_log`, no `try?` without an `else { log.warning }` companion, no `fatalError` outside `#if DEBUG` or truly-unreachable `default:`.
 - **Tests must not hit the network.** Stub via `URLProtocol` or a protocol-based HTTP client mock. Fixtures live in `Tests/Fixtures/` at repo root and are checked-in, not generated at test time.
 
