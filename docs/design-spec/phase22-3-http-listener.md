@@ -158,15 +158,15 @@ helper under `Tests/`.
 
 ## Acceptance criteria
 
-- [ ] Parser enforces every cap in section 5; chunked -> `411`; oversized ->
+- [x] Parser enforces every cap in section 5; chunked -> `411`; oversized ->
       rejected; property test green.
-- [ ] `Router` returns correct `404`/`405`/`403` and dispatches `{id}` paths.
-- [ ] Loopback TLS: ping succeeds in pairing mode; untrusted client refused at
+- [x] `Router` returns correct `404`/`405`/`403` and dispatches `{id}` paths.
+- [x] Loopback TLS: ping succeeds in pairing mode; untrusted client refused at
       TLS when not pairing; trusted client succeeds.
-- [ ] Verify block records peer cert + fingerprint on the connection and gates on
+- [x] Verify block records peer cert + fingerprint on the connection and gates on
       `TrustedDevices` outside pairing mode.
-- [ ] Handlers proven to run off the MainActor.
-- [ ] `make format && make lint && make build && make test-sync-server` green;
+- [x] Handlers proven to run off the MainActor.
+- [x] `make format && make lint && make build && make test-sync-server` green;
       coverage floor met.
 
 ## Handoff

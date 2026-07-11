@@ -209,18 +209,18 @@ ceremony tests here. Keep this the **only** UI seam the ceremony needs.
 
 ## Acceptance criteria
 
-- [ ] Happy-path ceremony completes over loopback TLS; the paired phone is
+- [x] Happy-path ceremony completes over loopback TLS; the paired phone is
       admitted on its next connection; `manifest`/file endpoints become reachable.
-- [ ] Wrong proof x3 -> lockout (`rateLimited`/`badProof`), session discarded,
+- [x] Wrong proof x3 -> lockout (`rateLimited`/`badProof`), session discarded,
       `pm=0`.
-- [ ] 120 s timeout discards the session and reverts `pm=0` (tested with injected
+- [x] 120 s timeout discards the session and reverts `pm=0` (tested with injected
       clock, no real sleep).
-- [ ] The mandatory human confirmation is required; declining does not trust the
+- [x] The mandatory human confirmation is required; declining does not trust the
       device.
-- [ ] `pm` reverts to `0` on every exit path; pairing-mode changes are published
+- [x] `pm` reverts to `0` on every exit path; pairing-mode changes are published
       for the advertiser.
-- [ ] Peer fingerprint is taken from the TLS layer, never the JSON.
-- [ ] No code/nonce/proof/cert bytes in logs; `make ... test-sync-server` green;
+- [x] Peer fingerprint is taken from the TLS layer, never the JSON.
+- [x] No code/nonce/proof/cert bytes in logs; `make ... test-sync-server` green;
       coverage floor met.
 
 ## Handoff

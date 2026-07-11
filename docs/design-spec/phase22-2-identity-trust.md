@@ -214,17 +214,17 @@ therefore to the next handshake, without a server restart. Respect the GRDB 7.9
 
 ## Acceptance criteria
 
-- [ ] `ServerIdentity.load()` creates once, loads thereafter; identical
+- [x] `ServerIdentity.load()` creates once, loads thereafter; identical
       fingerprint + cert across calls; fingerprint is 64-char lowercase hex.
-- [ ] The identity's `SecIdentity` completes a loopback TLS handshake as the
+- [x] The identity's `SecIdentity` completes a loopback TLS handshake as the
       server (verified with the 22-3 harness).
-- [ ] M031 creates `trusted_devices`, `sync_meta`, `sync_profile`; migration
+- [x] M031 creates `trusted_devices`, `sync_meta`, `sync_profile`; migration
       tests green; no change to prior migrations.
-- [ ] `TrustedDevices.isTrusted` is a synchronous snapshot read; insert and
+- [x] `TrustedDevices.isTrusted` is a synchronous snapshot read; insert and
       revoke propagate to the snapshot via `observeAll`.
-- [ ] DAG tables in `_standards.md` / `CLAUDE.md` updated; `sync` log category
+- [x] DAG tables in `_standards.md` / `CLAUDE.md` updated; `sync` log category
       added; `make generate` clean.
-- [ ] `make format && make lint && make build && make test-sync-server &&
+- [x] `make format && make lint && make build && make test-sync-server &&
       make test-persistence` green; coverage floors met.
 
 ## Handoff

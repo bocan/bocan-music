@@ -228,20 +228,20 @@ manifest; honour `Accept-Encoding: gzip` by gzipping the response body (still se
 
 ## Acceptance criteria
 
-- [ ] Manifest is value-identical to `manifest-small.json` for the shared fixture
+- [x] Manifest is value-identical to `manifest-small.json` for the shared fixture
       (structural compare); the Android `SyncApplier` accepts it unmodified
       (verified in 22-9).
-- [ ] Every impedance mismatch above has a passing test (relPath, clip via
+- [x] Every impedance mismatch above has a passing test (relPath, clip via
       source_file_url, null-hash exclusion, computed lyricsHash, name joins,
       ReplayGain nullability).
-- [ ] Profile filtering: selected playlists drop out-of-profile smart members;
+- [x] Profile filtering: selected playlists drop out-of-profile smart members;
       podcasts included only when the profile opts in and only downloaded
       episodes appear.
-- [ ] Generation bumps once per debounced burst and on profile edits; `serverId`
+- [x] Generation bumps once per debounced burst and on profile edits; `serverId`
       stable; `/v1/ping` reflects both.
-- [ ] `GET /v1/manifest` is paired-only, gzips on request, and is built from one
+- [x] `GET /v1/manifest` is paired-only, gzips on request, and is built from one
       consistent read.
-- [ ] `make ... test-sync-server` green; coverage floor met.
+- [x] `make ... test-sync-server` green; coverage floor met.
 
 ## Handoff
 

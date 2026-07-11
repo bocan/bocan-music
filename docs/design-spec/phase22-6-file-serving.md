@@ -179,17 +179,17 @@ and keep `hasChapters` in the manifest honest.
 
 ## Acceptance criteria
 
-- [ ] Track/episode full-body and `Range` resume are byte-exact; `If-Match`
+- [x] Track/episode full-body and `Range` resume are byte-exact; `If-Match`
       mismatch returns `412`.
-- [ ] Every file is resolved by id/hash through the DB; the path-traversal test
+- [x] Every file is resolved by id/hash through the DB; the path-traversal test
       proves no request-supplied path reaches the filesystem.
-- [ ] Bookmark failure returns `404` + `op.failed`, never a 500; security scope is
+- [x] Bookmark failure returns `404` + `op.failed`, never a 500; security scope is
       balanced under early disconnect (tested).
-- [ ] Artwork served by hash via `CoverArtRepository`; lyrics JSON byte-matches
+- [x] Artwork served by hash via `CoverArtRepository`; lyrics JSON byte-matches
       the manifest `lyricsHash` serialization.
-- [ ] Handlers run off the MainActor; a large concurrent download leaves the test
+- [x] Handlers run off the MainActor; a large concurrent download leaves the test
       harness's main actor responsive.
-- [ ] `make ... test-sync-server` green; coverage floor met.
+- [x] `make ... test-sync-server` green; coverage floor met.
 
 ## Handoff
 
