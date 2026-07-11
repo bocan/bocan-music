@@ -84,10 +84,16 @@ public final class PhoneSyncViewModel: ObservableObject, PhoneSyncPairingReceive
     }
 
     public func togglePlaylist(_ id: Int64) async {
-        if self.profile.selectedPlaylistIDs.contains(id) {
-            self.profile.selectedPlaylistIDs.remove(id)
-        } else {
+        await self.setPlaylistSelected(id, !self.isPlaylistSelected(id))
+    }
+
+    /// Idempotent form backing the checkbox binding: setting an already-set
+    /// state persists nothing new but stays correct if SwiftUI re-fires it.
+    public func setPlaylistSelected(_ id: Int64, _ selected: Bool) async {
+        if selected {
             self.profile.selectedPlaylistIDs.insert(id)
+        } else {
+            self.profile.selectedPlaylistIDs.remove(id)
         }
         await self.persistProfile()
     }
