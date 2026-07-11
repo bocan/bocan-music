@@ -323,7 +323,8 @@ public actor EpisodeDownloadManager {
                     mime: episode.audioMIME
                 )
                 let bytes = self.store.bytes(podcastID: key.podcastID, guid: key.guid, mime: episode.audioMIME) ?? 0
-                await self.persist(key, .downloaded, path: dest.path, bytes: bytes)
+                let hash = DownloadStore.contentHash(ofFileAt: dest)
+                await self.persist(key, .downloaded, path: dest.path, bytes: bytes, hash: hash)
                 self.resumeData[key] = nil
                 self.episodes[key] = nil
                 self.emit(key, status: .downloaded, fraction: 1.0, written: bytes, total: bytes)
@@ -371,14 +372,15 @@ public actor EpisodeDownloadManager {
 
     // MARK: - Private: state + progress helpers
 
-    private func persist(_ key: Key, _ status: EpisodeDownloadState, path: String?, bytes: Int64?) async {
+    private func persist(_ key: Key, _ status: EpisodeDownloadState, path: String?, bytes: Int64?, hash: String? = nil) async {
         do {
             try await self.stateRepo.setDownloadState(
                 podcastID: key.podcastID,
                 guid: key.guid,
                 state: status,
                 path: path,
-                bytes: bytes
+                bytes: bytes,
+                hash: hash
             )
         } catch {
             self.log.warning(

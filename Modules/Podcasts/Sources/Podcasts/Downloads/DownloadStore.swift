@@ -121,6 +121,20 @@ public struct DownloadStore: Sendable {
         return String(digest.map { String(format: "%02x", $0) }.joined().prefix(32))
     }
 
+    /// Streams the file at `url` through SHA-256 (without loading it whole into
+    /// memory) and returns the lowercase-hex digest, or `nil` if it cannot be
+    /// read. Computed once at download time and stored so Phone Sync need not
+    /// re-hash the file.
+    public static func contentHash(ofFileAt url: URL) -> String? {
+        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try? handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+            hasher.update(data: chunk)
+        }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
     /// Maps an enclosure MIME type to a file extension. Defaults to `mp3` when the
     /// MIME is missing or unrecognised (per the phase 21-6 contract).
     static func fileExtension(forMIME mime: String?) -> String {
