@@ -117,6 +117,16 @@
       "channelCount": 2,
       "isLossless": false,
       "clip": { "sourceTrackId": 103, "startMs": 0, "endMs": 60000 }
+    },
+    {
+      "id": 105,
+      "relPath": "Unsorted/rip-004.flac",
+      "size": 24000000,
+      "sha256": "aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05aa05",
+      "format": "flac",
+      "durationMs": 201000,
+      "rating": 0,
+      "loved": false
     }
   ],
   "playlists": [
@@ -184,6 +194,18 @@
       "relPath": "Podcasts/4/f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7.mp3",
       "size": 51000000,
       "sha256": "bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02bb02",
+      "hasChapters": false,
+      "playPositionMs": 0,
+      "playState": "unplayed"
+    },
+    {
+      "id": "a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8",
+      "podcastId": 4,
+      "guid": "https://example.test/some-show/undated",
+      "title": "Bonus: Undated Episode",
+      "relPath": "Podcasts/4/a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8.mp3",
+      "size": 12000000,
+      "sha256": "bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03bb03",
       "hasChapters": false,
       "playPositionMs": 0,
       "playState": "unplayed"

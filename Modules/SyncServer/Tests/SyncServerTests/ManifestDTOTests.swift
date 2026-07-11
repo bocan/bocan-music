@@ -17,10 +17,32 @@ struct ManifestDTOTests {
         #expect(manifest.protocolVersion == 1)
         #expect(manifest.serverId == "5f2c9a2e-0b1f-4a5e-9c3d-7e8f6a1b2c3d")
         #expect(manifest.generation == 42)
-        #expect(manifest.tracks.count == 4)
+        #expect(manifest.tracks.count == 5)
         #expect(manifest.playlists.count == 3)
         #expect(manifest.podcasts.count == 1)
-        #expect(manifest.episodes.count == 2)
+        #expect(manifest.episodes.count == 3)
+    }
+
+    @Test("a contract-minimal track and episode decode with optionals nil")
+    func sparseTrackAndEpisode() throws {
+        let manifest = try Self.loadGolden()
+        let untagged = try #require(manifest.tracks.first { $0.id == 105 })
+        #expect(untagged.title == nil)
+        #expect(untagged.artist == nil)
+        #expect(untagged.artistId == nil)
+        #expect(untagged.albumArtist == nil)
+        #expect(untagged.albumArtistId == nil)
+        #expect(untagged.album == nil)
+        #expect(untagged.albumId == nil)
+        #expect(untagged.bpm == nil)
+        #expect(untagged.isLossless == nil)
+        #expect(untagged.rating == 0)
+        #expect(untagged.loved == false)
+
+        let undated = try #require(manifest.episodes.first { $0.id == "a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8" })
+        #expect(undated.publishedAt == nil)
+        #expect(undated.durationMs == nil)
+        #expect(undated.descriptionHtml == nil)
     }
 
     @Test("track fields, including a clip and replay gain, decode correctly")
