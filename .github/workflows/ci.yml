@@ -58,6 +58,17 @@ jobs:
           # Prepend so this shadows the Homebrew-installed swiftlint for every later step.
           echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
 
+      - name: Pin SwiftFormat to .swiftformat-version
+        run: |
+          version="$(cat .swiftformat-version)"
+          echo "Pinning SwiftFormat to ${version}"
+          mkdir -p "$RUNNER_TEMP/swiftformat"
+          curl -fsSL "https://github.com/nicklockwood/SwiftFormat/releases/download/${version}/swiftformat.zip" \
+            -o "$RUNNER_TEMP/swiftformat.zip"
+          unzip -o "$RUNNER_TEMP/swiftformat.zip" swiftformat -d "$RUNNER_TEMP/swiftformat"
+          # Prepend so this shadows the Homebrew-installed swiftformat for every later step.
+          echo "$RUNNER_TEMP/swiftformat" >> "$GITHUB_PATH"
+
       - name: Set pkg-config path for FFmpeg and TagLib
         run: |
           echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> $GITHUB_ENV
