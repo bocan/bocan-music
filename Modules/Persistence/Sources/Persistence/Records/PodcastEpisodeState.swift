@@ -24,6 +24,9 @@ public struct PodcastEpisodeState: Codable, Equatable, Hashable, FetchableRecord
     public var downloadState: EpisodeDownloadState
     public var downloadPath: String?
     public var downloadBytes: Int64?
+    /// SHA-256 of the downloaded file, computed at download time. `nil` until
+    /// downloaded (or for rows downloaded before migration M032).
+    public var contentHash: String?
 
     // MARK: - Init
 
@@ -36,7 +39,8 @@ public struct PodcastEpisodeState: Codable, Equatable, Hashable, FetchableRecord
         completedAt: Double? = nil,
         downloadState: EpisodeDownloadState = .none,
         downloadPath: String? = nil,
-        downloadBytes: Int64? = nil
+        downloadBytes: Int64? = nil,
+        contentHash: String? = nil
     ) {
         self.podcastID = podcastID
         self.guid = guid
@@ -47,6 +51,7 @@ public struct PodcastEpisodeState: Codable, Equatable, Hashable, FetchableRecord
         self.downloadState = downloadState
         self.downloadPath = downloadPath
         self.downloadBytes = downloadBytes
+        self.contentHash = contentHash
     }
 
     // MARK: - CodingKeys
@@ -61,5 +66,6 @@ public struct PodcastEpisodeState: Codable, Equatable, Hashable, FetchableRecord
         case downloadState = "download_state"
         case downloadPath = "download_path"
         case downloadBytes = "download_bytes"
+        case contentHash = "content_hash"
     }
 }

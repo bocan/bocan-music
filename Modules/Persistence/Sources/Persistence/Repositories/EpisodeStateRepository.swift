@@ -196,21 +196,23 @@ public struct EpisodeStateRepository: Sendable {
         guid: String,
         state: EpisodeDownloadState,
         path: String?,
-        bytes: Int64?
+        bytes: Int64?,
+        hash: String? = nil
     ) async throws {
         try await self.database.write { db in
             try db.execute(
                 sql: """
                 INSERT INTO podcast_episode_state
                     (podcast_id, guid, play_position, play_state,
-                     download_state, download_path, download_bytes)
-                VALUES (?, ?, 0.0, 'unplayed', ?, ?, ?)
+                     download_state, download_path, download_bytes, content_hash)
+                VALUES (?, ?, 0.0, 'unplayed', ?, ?, ?, ?)
                 ON CONFLICT(podcast_id, guid) DO UPDATE SET
                     download_state = excluded.download_state,
                     download_path  = excluded.download_path,
-                    download_bytes = excluded.download_bytes
+                    download_bytes = excluded.download_bytes,
+                    content_hash   = excluded.content_hash
                 """,
-                arguments: [podcastID, guid, state.rawValue, path, bytes]
+                arguments: [podcastID, guid, state.rawValue, path, bytes, hash]
             )
         }
     }
