@@ -9,6 +9,7 @@ import Podcasts
 import Scrobble
 import Subsonic
 import SwiftUI
+import SyncServer
 import UI
 import UserNotifications
 
@@ -423,6 +424,7 @@ struct BocanApp: App {
             "general.showPlaybackBadge": true,
             "general.showDockProgress": true,
             "console.captureEnabled": true,
+            "sync.enabled": false,
         ])
     }
 
@@ -512,6 +514,8 @@ struct AppGraph {
     /// Shared deep-link navigation for the Settings scene (#305).
     let settingsRouter: SettingsRouter
     let logConsoleViewModel: LogConsoleViewModel
+    /// Phase 22-7: the Phone Sync server (off unless `sync.enabled`).
+    let syncServer: SyncServer
 }
 
 // MARK: - AppModel
@@ -758,6 +762,29 @@ extension BocanApp {
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp, database: db)
 
+        // Phase 22-7: the Phone Sync server. Constructed unconditionally so the
+        // Settings toggle (22-8) can start/stop it, but only started here when
+        // `sync.enabled` is on (default off). `serverName` is injected as a
+        // closure so SyncServer never imports AppKit. `downloadRoot: nil` matches
+        // the EpisodeDownloadManager default the manifest and file serving read.
+        let syncServerName: @Sendable () -> String = { Host.current().localizedName ?? "Bòcan" }
+        let syncServer = SyncServer(
+            database: db,
+            identity: ServerIdentity(),
+            ui: PhoneSyncPairingBridge(),
+            serverName: syncServerName
+        )
+        Self.installSyncServerLifecycleObservers(syncServer: syncServer)
+        if UserDefaults.standard.bool(forKey: "sync.enabled") {
+            Task { [syncServer] in
+                do {
+                    try await syncServer.start()
+                } catch {
+                    log.error("sync.start.failed", ["error": String(reflecting: error)])
+                }
+            }
+        }
+
         Self.scheduleLaunchBackup(database: db)
 
         // Start scrobble worker once everything is wired up.
@@ -811,8 +838,35 @@ extension BocanApp {
             subsonicService: subsonicService,
             subsonicSettingsViewModel: subsonicSettingsViewModel,
             settingsRouter: SettingsRouter(),
-            logConsoleViewModel: LogConsoleViewModel()
+            logConsoleViewModel: LogConsoleViewModel(),
+            syncServer: syncServer
         )
     }
+
     // swiftlint:enable function_body_length
+
+    /// Phase 22-7: re-advertise Phone Sync after the system wakes (the listener
+    /// may drop its Bonjour service across sleep), and withdraw it cleanly on
+    /// quit. Only fires effect when the server is running; a no-op while off.
+    private static func installSyncServerLifecycleObservers(syncServer: SyncServer) {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            Task { await syncServer.reAdvertise() }
+        }
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            let semaphore = DispatchSemaphore(value: 0)
+            Task.detached {
+                await syncServer.stop()
+                semaphore.signal()
+            }
+            _ = semaphore.wait(timeout: .now() + 1)
+        }
+    }
 }
