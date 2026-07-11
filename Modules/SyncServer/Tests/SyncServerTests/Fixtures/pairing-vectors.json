@@ -1,0 +1,51 @@
+{
+  "comment": "Golden vectors for sync-protocol.md section 4. Shared byte-for-byte with the Mac repo. Regenerate with scripts/gen-pairing-vectors.py; never hand-edit.",
+  "label": "bocan-pair-v1",
+  "vectors": [
+    {
+      "fpMac": "76e0aa4b6ed22c0a297e46c8173d0c41f8d203b74a3ec56043940746364f6515",
+      "fpPhone": "996e247ab6ce772a2db8a6683eabca806c386d6f2e51b6281ddd13994e8cda08",
+      "noncePhoneBase64": "wMyfZARXwcnF+ME5NbngatVT6txszUqDSyykjdekS0Y=",
+      "nonceMacBase64": "UaEZrwkiDitz+4MpyCCa5sZskiw0rvGbl0/fLYUN1Zk=",
+      "expectedCode": "704898",
+      "sessionId": "11111111-1111-4111-8111-111111111111",
+      "expectedProofBase64": "sawRxerSZnFSbfVgfsboE+l4FdMdczDPEww7zVeH4hs="
+    },
+    {
+      "fpMac": "df42e15156038cefa92b4f1ca718659a8f6b207f5b8e3450e9567d98fbd05924",
+      "fpPhone": "6292c5d71996f9de565229a68593bb5cfc4a1a6671daf59b35586c1618f04709",
+      "noncePhoneBase64": "PNn4btg5q3rzg39x5M/UWkg89Gc2gCZoawZPEfCcAB8=",
+      "nonceMacBase64": "aFJa8rOo+Gs20F99fr2qaahidcPXO0OilG3q31CzwuM=",
+      "expectedCode": "660831",
+      "sessionId": "22222222-2222-4222-8222-222222222222",
+      "expectedProofBase64": "rogiSWdP5sMHuhr1oH+aRINmdS++pxqfi+UU9Nvtql4="
+    },
+    {
+      "fpMac": "2785c0bc3bfd8fc2602d1b1603d0db4deaecbc723024ff2d4f824c55c68a39b5",
+      "fpPhone": "b92e5402f4d74402d510fe1c5eaf91a0fb54abab42863dd82da7af381c91b24d",
+      "noncePhoneBase64": "jcLJvotV8hjOwsWvIxOuEBHjc2VHLpJNM7zcIP53T9g=",
+      "nonceMacBase64": "eMNrRdGydZSchHN3aMpTw6Wa2LUW3di2Y4hunbEPzWE=",
+      "expectedCode": "995406",
+      "sessionId": "33333333-3333-4333-8333-333333333333",
+      "expectedProofBase64": "ou1dkAcS9aYpnA1LK8m1QMfYLAlPvvekJ9uqE82CFzs="
+    },
+    {
+      "fpMac": "e394fc454f571424c30d855534728908a7cad739abeb493e5a8723b9decfa5cc",
+      "fpPhone": "5abb88c7d6a6aa980d19c6e9d7744b501128021711ca4e5290975bd53f2d3644",
+      "noncePhoneBase64": "DMFTtpSCAKR5qBOs3ijfMIy5B2GbkyF1CT96bp21fmI=",
+      "nonceMacBase64": "/29mC48FIRml95p1ItvUSa+VX9bHXW2fhzHvaHoTdXk=",
+      "expectedCode": "360898",
+      "sessionId": "44444444-4444-4444-8444-444444444444",
+      "expectedProofBase64": "769MMv4lPRbLy/FMjErZbmpaatc6mfeyHO9wtBqUftw="
+    },
+    {
+      "fpMac": "70623bce0ac5d25ae7b5e1b857b4b20791614f7d84486a882ae36213bceb4888",
+      "fpPhone": "eeee7d877b96a1efbda9a89a5a0edaf3170cc7af5bf94e57fd774d780104854a",
+      "noncePhoneBase64": "7JjyyBqa5nnGOUUkJ0DK6GOq3lHlKzq/M0goPyMTsFk=",
+      "nonceMacBase64": "vdD/fPZ/VwjJQk0EYxU/d8DKjXj9nDYqBQLcn7knLRE=",
+      "expectedCode": "904517",
+      "sessionId": "55555555-5555-4555-8555-555555555555",
+      "expectedProofBase64": "1Bp7ckVE3W2WhWuzk7aDjP/HD3RSfKn2Yr+m4ArXGXw="
+    }
+  ]
+}

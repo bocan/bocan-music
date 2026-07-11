@@ -188,5 +188,7 @@ packages:
     path: Modules/Podcasts
   Subsonic:
     path: Modules/Subsonic
+  SyncServer:
+    path: Modules/SyncServer
   UI:
     path: Modules/UI
