@@ -81,23 +81,14 @@ public struct PhoneSyncSettingsView: View {
             Text(localized: "No playlists yet.")
                 .foregroundStyle(.secondary)
         } else {
+            // Native checkboxes: a trailing tick on a plain row was too easy to
+            // miss, and a checkbox is the macOS idiom for a multi-select list.
             ForEach(self.viewModel.playlists) { playlist in
-                Button {
-                    Task { await self.viewModel.togglePlaylist(playlist.id) }
-                } label: {
-                    HStack {
-                        Text(playlist.name)
-                        Spacer()
-                        if self.viewModel.isPlaylistSelected(playlist.id) {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(.tint)
-                        }
-                    }
-                    .contentShape(Rectangle())
+                Toggle(isOn: self.playlistBinding(playlist.id)) {
+                    Text(playlist.name)
                 }
-                .buttonStyle(.plain)
+                .toggleStyle(.checkbox)
                 .accessibilityLabel(playlist.name)
-                .accessibilityAddTraits(self.viewModel.isPlaylistSelected(playlist.id) ? [.isSelected] : [])
             }
         }
     }
@@ -167,6 +158,13 @@ public struct PhoneSyncSettingsView: View {
         Binding(
             get: { self.viewModel.profile.includePodcasts },
             set: { on in Task { await self.viewModel.setIncludePodcasts(on) } }
+        )
+    }
+
+    private func playlistBinding(_ id: Int64) -> Binding<Bool> {
+        Binding(
+            get: { self.viewModel.isPlaylistSelected(id) },
+            set: { on in Task { await self.viewModel.setPlaylistSelected(id, on) } }
         )
     }
 
