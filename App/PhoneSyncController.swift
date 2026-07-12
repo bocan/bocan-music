@@ -11,6 +11,7 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
     private let server: SyncServer
     private let profileRepository: SyncProfileRepository
     private let playlistRepository: PlaylistRepository
+    private let trackRepository: TrackRepository
     private let manifestBuilder: ManifestBuilder
     private let log = AppLogger.make(.sync)
 
@@ -18,11 +19,13 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
         server: SyncServer,
         profileRepository: SyncProfileRepository,
         playlistRepository: PlaylistRepository,
+        trackRepository: TrackRepository,
         manifestBuilder: ManifestBuilder
     ) {
         self.server = server
         self.profileRepository = profileRepository
         self.playlistRepository = playlistRepository
+        self.trackRepository = trackRepository
         self.manifestBuilder = manifestBuilder
     }
 
@@ -82,6 +85,10 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
 
     func pairedDevices() async -> [TrustedDevice] {
         await (try? self.server.pairedDevices()) ?? []
+    }
+
+    func observeHashingProgress() async -> AsyncThrowingStream<ContentHashProgress, Error> {
+        await self.trackRepository.observeContentHashProgress()
     }
 
     func revoke(fingerprint: String) async {

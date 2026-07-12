@@ -207,18 +207,13 @@ public struct TrackRepository: Sendable {
         }
     }
 
-    /// Tracks that still need a whole-file content hash, oldest id first:
-    /// enabled, whole-file (CUE clips share their parent's bytes and hash), with
-    /// a bookmark to read the file through. `afterID` is a cursor so a caller
-    /// can page through candidates without refetching ones it failed to hash;
-    /// `limit` bounds a backfill batch.
+    /// Hashable tracks still missing a content hash, oldest id first. `afterID`
+    /// is a cursor so a caller can page through candidates without refetching
+    /// ones it failed to hash; `limit` bounds a backfill batch.
     public func fetchMissingContentHash(limit: Int, afterID: Int64 = 0) async throws -> [Track] {
         try await self.database.read { db in
-            try Track
+            try Self.hashableTracks
                 .filter(Column("content_hash") == nil)
-                .filter(Column("disabled") == false)
-                .filter(Column("source_file_url") == nil)
-                .filter(Column("file_bookmark") != nil)
                 .filter(Column("id") > afterID)
                 .order(Column("id"))
                 .limit(limit)
@@ -244,13 +239,34 @@ public struct TrackRepository: Sendable {
         }
     }
 
+    /// Observes content-hash backfill progress (missing vs. total hashable) for
+    /// the Phone Sync readiness row. Emits on subscribe and on every change.
+    public func observeContentHashProgress() async -> AsyncThrowingStream<ContentHashProgress, Error> {
+        await self.database.observe { db in
+            try ContentHashProgress(
+                missing: Self.missingContentHashCount(db),
+                total: Self.hashableTrackCount(db)
+            )
+        }
+    }
+
     private static func missingContentHashCount(_ db: GRDB.Database) throws -> Int {
-        try Track
+        try self.hashableTracks
             .filter(Column("content_hash") == nil)
+            .fetchCount(db)
+    }
+
+    private static func hashableTrackCount(_ db: GRDB.Database) throws -> Int {
+        try self.hashableTracks.fetchCount(db)
+    }
+
+    /// Tracks eligible for content hashing: enabled, whole-file (CUE clips
+    /// share their parent's bytes and hash), with a bookmark to read through.
+    private static var hashableTracks: QueryInterfaceRequest<Track> {
+        Track
             .filter(Column("disabled") == false)
             .filter(Column("source_file_url") == nil)
             .filter(Column("file_bookmark") != nil)
-            .fetchCount(db)
     }
 
     // MARK: - Search
