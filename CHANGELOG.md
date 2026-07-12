@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * release v2.0.0
 
+This isn't really breaking changes, but I'm building a free, open source [Android companion](https://github.com/bocan/bocan-music-android) and its pairing and sync protocol requires all track and episode files to have a content hash stored in the database.  This release adds that content hash to all tracks and episodes, and adds a new `sync_meta` table to store the sync manifest generation state.  If you are upgrading from v1.17.1 or earlier, Bòcan will automatically backfill all of your track and episode hashes in the background, and will also create the new `sync_meta` table.
+
+Bòcan music will let you sync some or all of your music to you phone, let you play it in your car via Android Auto, and let you listen to your podcasts on the go.  The sync protocol is end-to-end encrypted, and uses mutual TLS with a self-signed certificate to authenticate the server to the client.  The Mac side generates a pairing code that you enter into the phone, and the Mac then  generates a permanent key that is stored in the Keychain.  The client can then use this permanent key to authenticate to the server without having to enter the pairing code again.
+
 ### ### Added
 
 * **library:** backfill track content hashes in the background ([76793d2](https://github.com/bocan/bocan-music/commit/76793d27a75db9784377ea9014d45b273f8331da))
