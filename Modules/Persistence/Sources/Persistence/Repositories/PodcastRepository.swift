@@ -48,10 +48,10 @@ public struct PodcastRepository: Sendable {
     /// When the feed already exists the following fields are preserved from the existing
     /// row and are NOT replaced with the incoming values:
     /// `id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`, `playbackSpeed`,
-    /// `episodeSort`, `retentionLimit`, `artworkPath`.
-    /// `artworkPath` is the locally cached cover-art file path (not feed content); the
-    /// parsed record never carries it, so preserving it stops a refresh from wiping the
-    /// cached image. The feed-derived `artworkURL` is still refreshed.
+    /// `episodeSort`, `retentionLimit`, `artworkPath`, `artworkHash`.
+    /// `artworkPath` / `artworkHash` describe the locally cached cover-art file (not feed
+    /// content); the parsed record never carries them, so preserving them stops a refresh
+    /// from wiping the cached image. The feed-derived `artworkURL` is still refreshed.
     /// All other columns (title, author, `artworkURL`, etag, `show_type`, etc.) are updated from the feed.
     ///
     /// Returns the rowid of the inserted or updated row.
@@ -71,9 +71,10 @@ public struct PodcastRepository: Sendable {
                 updated.playbackSpeed = existing.playbackSpeed
                 updated.episodeSort = existing.episodeSort
                 updated.retentionLimit = existing.retentionLimit
-                // Locally cached art path: the parse never carries it, so keep the
-                // existing one or a content refresh wipes the cover image.
+                // Locally cached art path + hash: the parse never carries them, so
+                // keep the existing ones or a content refresh wipes the cover image.
                 updated.artworkPath = existing.artworkPath
+                updated.artworkHash = existing.artworkHash
                 try updated.update(db)
                 return existing.id ?? 0
             } else {
@@ -123,6 +124,18 @@ public struct PodcastRepository: Sendable {
         try await self.database.write { db in
             try db.execute(sql: "UPDATE podcasts SET retention_limit = ? WHERE id = ?", arguments: [limit, id])
         }
+    }
+
+    /// Sets the cached artwork file path and its SHA-256 in one write, so the
+    /// advertised hash can never refer to a different file than the stored path.
+    public func setArtwork(id: Int64, path: String?, hash: String?) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE podcasts SET artwork_path = ?, artwork_hash = ? WHERE id = ?",
+                arguments: [path, hash, id]
+            )
+        }
+        self.log.debug("podcast.setArtwork", ["id": id, "hasHash": hash != nil])
     }
 
     /// Prunes cold content rows beyond the newest `keepNewest` by `published_at`
@@ -175,6 +188,15 @@ public struct PodcastRepository: Sendable {
     public func fetchByFeedURL(_ feedURL: String) async throws -> Podcast? {
         try await self.database.read { db in
             try Podcast.filter(Column("feed_url") == feedURL).fetchOne(db)
+        }
+    }
+
+    /// Resolves a podcast by its cached-artwork SHA-256 (the Phone Sync
+    /// `/v1/artwork/{hash}` fallback). Byte-identical art shared by several
+    /// shows yields the same hash; any match points at the same file bytes.
+    public func fetchByArtworkHash(_ hash: String) async throws -> Podcast? {
+        try await self.database.read { db in
+            try Podcast.filter(Column("artwork_hash") == hash).fetchOne(db)
         }
     }
 
