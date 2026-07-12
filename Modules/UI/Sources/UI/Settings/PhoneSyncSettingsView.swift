@@ -22,7 +22,10 @@ public struct PhoneSyncSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .task { await self.viewModel.load() }
+        .task {
+            await self.viewModel.load()
+            await self.viewModel.watchHashingProgress()
+        }
         .sheet(isPresented: self.pairingPresentedBinding) {
             PhoneSyncPairingSheet(viewModel: self.viewModel)
         }
@@ -72,6 +75,26 @@ public struct PhoneSyncSettingsView: View {
             }
             .accessibilityLabel(L10n.string("Estimated size"))
             .accessibilityValue(self.sizeEstimateText)
+
+            self.readinessRow
+        }
+    }
+
+    /// How much of the library carries the content hash Phone Sync serves by;
+    /// while the launch backfill is still running, this is the answer to "why
+    /// does my phone only see part of my library". Hidden until the
+    /// observation's first emission.
+    @ViewBuilder
+    private var readinessRow: some View {
+        if let progress = self.viewModel.hashingProgress {
+            LabeledContent {
+                Text(self.readinessText(progress))
+                    .foregroundStyle(.secondary)
+            } label: {
+                Text(localized: "Ready to sync")
+            }
+            .accessibilityLabel(L10n.string("Ready to sync"))
+            .accessibilityValue(self.readinessText(progress))
         }
     }
 
@@ -187,6 +210,11 @@ public struct PhoneSyncSettingsView: View {
         guard estimate.episodeCount > 0 else { return "\(size), \(tracks)" }
         let episodes = L10n.string("\(estimate.episodeCount) episodes")
         return "\(size), \(tracks), \(episodes)"
+    }
+
+    private func readinessText(_ progress: ContentHashProgress) -> String {
+        guard !progress.isComplete else { return L10n.string("All tracks") }
+        return L10n.string("\(progress.ready) of \(progress.total) tracks, still preparing")
     }
 
     private func pairedDateText(_ device: TrustedDevice) -> String {

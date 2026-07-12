@@ -108,6 +108,24 @@ extension UISnapshotTests {
             await self.assertPane(self.pane(self.enabledChoose), dark: true, named: "phonesync-pane-choose-dark")
         }
 
+        @Test("pane preparing light") func panePreparingLight() async {
+            let vm = await self.pane(self.enabledEverything)
+            vm.hashingProgress = ContentHashProgress(missing: 897, total: 15102)
+            self.assertPane(vm, dark: false, named: "phonesync-pane-preparing-light")
+        }
+
+        @Test("pane preparing dark") func panePreparingDark() async {
+            let vm = await self.pane(self.enabledEverything)
+            vm.hashingProgress = ContentHashProgress(missing: 897, total: 15102)
+            self.assertPane(vm, dark: true, named: "phonesync-pane-preparing-dark")
+        }
+
+        @Test("pane ready light") func paneReadyLight() async {
+            let vm = await self.pane(self.enabledEverything)
+            vm.hashingProgress = ContentHashProgress(missing: 0, total: 15102)
+            self.assertPane(vm, dark: false, named: "phonesync-pane-ready-light")
+        }
+
         @Test("pane with paired devices light") func paneDevicesLight() async {
             await self.assertPane(self.pane(self.enabledWithDevices), dark: false, named: "phonesync-pane-devices-light")
         }
