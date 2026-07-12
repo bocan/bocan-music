@@ -302,6 +302,14 @@ public actor PodcastService {
         }
     }
 
+    /// One-shot Phone Sync backfill (phase 22-10): hashes cached show art that
+    /// predates the `artwork_hash` column so existing subscriptions advertise
+    /// artwork on the next sync. Call once at startup; cheap when there is
+    /// nothing to do.
+    public func backfillArtworkHashes() async {
+        await self.artwork.backfillArtworkHashes(repo: self.podcastRepo)
+    }
+
     /// Best-effort batch refresh. Feeds that fail are logged per-feed and do not
     /// interrupt the remaining batch.
     public func refreshAllStale(olderThan: TimeInterval = 3600) async {

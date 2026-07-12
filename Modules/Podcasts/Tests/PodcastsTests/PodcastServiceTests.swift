@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Persistence
 import Testing
@@ -692,6 +693,80 @@ struct PodcastServiceTests {
         #expect(healed.artworkPath == cachedPath)
 
         try? FileManager.default.removeItem(at: bed.artTempDir)
+    }
+
+    @Test("cachePodcastArt stores the file's SHA-256 alongside the path (22-10)")
+    func artworkCacheStoresHash() async throws {
+        let bed = try await makeBed()
+        let repo = PodcastRepository(database: bed.db)
+        let podcastID = try await repo.insert(Podcast(
+            feedURL: "https://example.com/feed.rss", title: "T", addedAt: 0
+        ))
+
+        let artBytes = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A])
+        let expectedHash = SHA256.hash(data: artBytes).map { String(format: "%02x", $0) }.joined()
+        bed.artMock.handler = { _ in
+            (artBytes, HTTPURLResponse(
+                url: URL(string: "https://cdn.example.com/art.png")!,
+                statusCode: 200, httpVersion: nil, headerFields: nil
+            )!)
+        }
+
+        let artURL = try #require(URL(string: "https://cdn.example.com/art.png"))
+        _ = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
+
+        let fetched = try await repo.fetch(id: podcastID)
+        #expect(fetched.artworkHash == expectedHash, "stored hash must be the SHA-256 of the file bytes")
+
+        // A pre-M033 row (path set, hash null) heals through the exists
+        // short-circuit without re-downloading.
+        try await repo.setArtwork(id: podcastID, path: fetched.artworkPath, hash: nil)
+        var downloads = 0
+        bed.artMock.handler = { _ in
+            downloads += 1
+            return (artBytes, HTTPURLResponse(
+                url: URL(string: "https://cdn.example.com/art.png")!,
+                statusCode: 200, httpVersion: nil, headerFields: nil
+            )!)
+        }
+        _ = await bed.artCache.cachePodcastArt(podcastID: podcastID, url: artURL, repo: repo)
+        let healed = try await repo.fetch(id: podcastID)
+        #expect(healed.artworkHash == expectedHash)
+        #expect(downloads == 0, "healing a missing hash must not re-download the file")
+
+        try? FileManager.default.removeItem(at: bed.artTempDir)
+    }
+
+    @Test("backfillArtworkHashes hashes cached art, skips missing files, and de-dupes identical bytes")
+    func backfillArtworkHashes() async throws {
+        let bed = try await makeBed()
+        let repo = PodcastRepository(database: bed.db)
+        let dir = bed.artTempDir
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        // Two shows share byte-identical art; a third points at a gone file.
+        let artBytes = Data([0xFF, 0xD8, 0xFF, 0xE0])
+        let expectedHash = SHA256.hash(data: artBytes).map { String(format: "%02x", $0) }.joined()
+        let fileA = dir.appendingPathComponent("a.jpg")
+        let fileB = dir.appendingPathComponent("b.jpg")
+        try artBytes.write(to: fileA)
+        try artBytes.write(to: fileB)
+
+        let idA = try await repo.insert(Podcast(feedURL: "https://a.test/f", title: "A", addedAt: 0))
+        let idB = try await repo.insert(Podcast(feedURL: "https://b.test/f", title: "B", addedAt: 0))
+        let idGone = try await repo.insert(Podcast(feedURL: "https://c.test/f", title: "C", addedAt: 0))
+        try await repo.setArtwork(id: idA, path: fileA.path, hash: nil)
+        try await repo.setArtwork(id: idB, path: fileB.path, hash: nil)
+        try await repo.setArtwork(id: idGone, path: dir.appendingPathComponent("gone.jpg").path, hash: nil)
+
+        await bed.artCache.backfillArtworkHashes(repo: repo)
+
+        let hashA = try await repo.fetch(id: idA).artworkHash
+        let hashB = try await repo.fetch(id: idB).artworkHash
+        #expect(hashA == expectedHash)
+        #expect(hashB == expectedHash, "byte-identical art must advertise the same hash")
+        #expect(try await repo.fetch(id: idGone).artworkHash == nil, "a missing file must stay unhashed")
     }
 
     @Test("artwork cache rejects art larger than its byte cap, accepts within it")
