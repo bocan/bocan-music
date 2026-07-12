@@ -46,6 +46,7 @@
     <string>Bòcan needs Local Network access to discover and pair with AirPlay speakers and Apple TVs on your Wi-Fi.</string>
     <key>NSBonjourServices</key>
     <array>
+        <string>_bocansync._tcp</string>
         <string>_airplay._tcp</string>
         <string>_raop._tcp</string>
         <string>_companion-link._tcp</string>
