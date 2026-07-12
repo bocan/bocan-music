@@ -1,3 +1,4 @@
+import Crypto
 import Foundation
 import Persistence
 import Podcasts
@@ -68,6 +69,7 @@ struct ManifestBuilderPodcastTests {
         #expect(show.author == "Someone")
         #expect(show.descriptionHtml == "<p>A show about things.</p>")
         #expect(show.playbackSpeed == 1.2)
+        // No cached artwork file, so no hash is advertised (22-10).
         #expect(show.artworkHash == nil)
 
         #expect(manifest.episodes.count == 1)
@@ -82,6 +84,56 @@ struct ManifestBuilderPodcastTests {
         #expect(episode.playState == "inProgress")
         #expect(episode.playPositionMs == 1_200_000)
         #expect(episode.durationMs == 3_600_000)
+    }
+
+    @Test("a show with cached artwork advertises its SHA-256; a gone file advertises nil (22-10)")
+    func artworkHashAdvertised() async throws {
+        let database = try await Database(location: .inMemory)
+        let podcasts = PodcastRepository(database: database)
+        let episodes = EpisodeRepository(database: database)
+        let states = EpisodeStateRepository(database: database)
+        let tempRoot = self.makeTempRoot()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+
+        let podcastId = try await podcasts.insert(Podcast(
+            feedURL: "https://example.test/feed",
+            title: "Show",
+            subscribed: true,
+            addedAt: 0
+        ))
+        let guid = "g1"
+        _ = try await episodes.upsert(PodcastEpisode(
+            podcastID: podcastId, guid: guid, title: "E", audioURL: "u", audioMIME: "audio/mpeg", addedAt: 0
+        ))
+        let store = DownloadStore(root: tempRoot)
+        let fileURL = store.fileURL(podcastID: podcastId, guid: guid, mime: "audio/mpeg")
+        try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("x".utf8).write(to: fileURL)
+        try await states.setDownloadState(podcastID: podcastId, guid: guid, state: .downloaded, path: fileURL.path, bytes: 1)
+
+        // The cached art file, hashed the way cache time does (22-10 step 2).
+        let artBytes = Data([0x89, 0x50, 0x4E, 0x47])
+        let artURL = tempRoot.appendingPathComponent("art.png")
+        try artBytes.write(to: artURL)
+        let expectedHash = SHA256.hash(data: artBytes).map { String(format: "%02x", $0) }.joined()
+        try await podcasts.setArtwork(id: podcastId, path: artURL.path, hash: expectedHash)
+
+        let builder = ManifestBuilder(database: database, downloadRoot: tempRoot)
+        let manifest = try await builder.build(
+            profile: .everything(includePodcasts: true),
+            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+        )
+        let show = try #require(manifest.podcasts.first)
+        #expect(show.artworkHash == expectedHash, "the manifest must advertise the stored SHA-256 of the art bytes")
+
+        // A since-deleted file must stop being advertised: the phone would 404
+        // fetching a hash the Mac cannot resolve to bytes.
+        try FileManager.default.removeItem(at: artURL)
+        let rebuilt = try await builder.build(
+            profile: .everything(includePodcasts: true),
+            serverId: "srv", serverName: "Mac", generation: 2, generatedAt: Date(timeIntervalSince1970: 0)
+        )
+        #expect(try #require(rebuilt.podcasts.first).artworkHash == nil)
     }
 
     @Test("podcasts are omitted when the profile excludes them")

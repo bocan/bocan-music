@@ -135,8 +135,7 @@ public struct ManifestBuilder: Sendable {
                     title: podcast.title,
                     author: podcast.author,
                     descriptionHtml: podcast.description,
-                    // v1: podcast artwork is a local path, not a content hash.
-                    artworkHash: nil,
+                    artworkHash: Self.servableArtworkHash(podcast),
                     playbackSpeed: podcast.playbackSpeed
                 ))
             }
@@ -175,6 +174,15 @@ public struct ManifestBuilder: Sendable {
             playPositionMs: Int((state.playPosition * 1000).rounded()),
             playState: state.playState.rawValue
         )
+    }
+
+    /// The stored artwork hash (M033), but only when its bytes are actually
+    /// servable: a nil path or a since-deleted file advertises `nil` instead,
+    /// because the phone would 404 fetching a hash we cannot resolve to bytes.
+    private static func servableArtworkHash(_ podcast: Podcast) -> String? {
+        guard let hash = podcast.artworkHash, let path = podcast.artworkPath,
+              FileManager.default.fileExists(atPath: path) else { return nil }
+        return hash
     }
 
     /// Streams a file through SHA-256 without loading it whole into memory.
