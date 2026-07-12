@@ -24,6 +24,7 @@ struct FileServing {
     private let episodeRepository: EpisodeRepository
     private let episodeStateRepository: EpisodeStateRepository
     private let coverArtRepository: CoverArtRepository
+    private let podcastRepository: PodcastRepository
     private let playlistRepository: PlaylistRepository
     private let profileRepository: SyncProfileRepository
     private let smartService: SmartPlaylistService
@@ -36,6 +37,7 @@ struct FileServing {
         self.episodeRepository = EpisodeRepository(database: database)
         self.episodeStateRepository = EpisodeStateRepository(database: database)
         self.coverArtRepository = CoverArtRepository(database: database)
+        self.podcastRepository = PodcastRepository(database: database)
         self.playlistRepository = PlaylistRepository(database: database)
         self.profileRepository = SyncProfileRepository(database: database)
         self.smartService = SmartPlaylistService(database: database)
@@ -182,23 +184,39 @@ struct FileServing {
     private func artwork(_ match: Router.RouteMatch) async -> HttpResponse {
         guard let hash = match.parameters["hash"] else { return Self.notFound }
         do {
-            guard let art = try await self.coverArtRepository.fetch(hash: hash) else { return Self.notFound }
-            let data: Data
-            do {
-                data = try Data(contentsOf: URL(fileURLWithPath: art.path))
-            } catch {
-                self.log.error("file.artwork.missing", ["hash": hash])
-                return Self.notFound
+            // Cover art first (the common case), then podcast show art (22-10).
+            // Both resolve the hash to a filesystem location through the
+            // database; the request never names a path, so traversal stays
+            // structurally impossible. Order matters only for correctness.
+            if let art = try await self.coverArtRepository.fetch(hash: hash) {
+                return self.serveArtworkFile(path: art.path, format: art.format, hash: hash)
             }
-            let headers = [
-                "content-type": Self.imageMIME(art.format),
-                "etag": hash,
-                "cache-control": "public, max-age=31536000, immutable",
-            ]
-            return HttpResponse(status: 200, headers: headers, body: data)
+            if let podcast = try await self.podcastRepository.fetchByArtworkHash(hash),
+               let path = podcast.artworkPath {
+                return self.serveArtworkFile(path: path, format: URL(fileURLWithPath: path).pathExtension, hash: hash)
+            }
+            return Self.notFound
         } catch {
             return Self.serverError
         }
+    }
+
+    /// Buffers and serves one artwork file (cover and show art are both small).
+    /// `path` came from the database, never the request; a gone file is a 404.
+    private func serveArtworkFile(path: String, format: String?, hash: String) -> HttpResponse {
+        let data: Data
+        do {
+            data = try Data(contentsOf: URL(fileURLWithPath: path))
+        } catch {
+            self.log.error("file.artwork.missing", ["hash": hash])
+            return Self.notFound
+        }
+        let headers = [
+            "content-type": Self.imageMIME(format),
+            "etag": hash,
+            "cache-control": "public, max-age=31536000, immutable",
+        ]
+        return HttpResponse(status: 200, headers: headers, body: data)
     }
 
     // MARK: - Lyrics
