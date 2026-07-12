@@ -83,6 +83,9 @@ public protocol PhoneSyncControlling: Sendable {
     func sizeEstimate(for profile: PhoneSyncProfile) async -> PhoneSyncSizeEstimate
     /// The currently paired phones, most recently paired first.
     func pairedDevices() async -> [TrustedDevice]
+    /// Observes content-hash readiness (missing vs. total hashable tracks), so
+    /// the pane can show how much of the library a paired phone can see.
+    func observeHashingProgress() async -> AsyncThrowingStream<ContentHashProgress, Error>
     /// Revokes a paired phone; blocks it at the TLS layer on its next connect.
     func revoke(fingerprint: String) async
     /// Enters the pairing window (`pm` -> 1) for the coordinator's timeout.

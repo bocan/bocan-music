@@ -33,6 +33,10 @@ public final class PhoneSyncViewModel: ObservableObject, PhoneSyncPairingReceive
     @Published public private(set) var playlists: [PhoneSyncPlaylist] = []
     @Published public private(set) var sizeEstimate: PhoneSyncSizeEstimate = .zero
     @Published public private(set) var pairedDevices: [TrustedDevice] = []
+    /// Content-hash readiness for the "Ready to sync" row, `nil` until the
+    /// observation's first emission. `internal(set)` so snapshot tests can pin
+    /// a state directly.
+    @Published public internal(set) var hashingProgress: ContentHashProgress?
     /// The pairing sheet's current state, or `nil` when not presented.
     /// `internal(set)` so snapshot tests can pin a state directly.
     @Published public internal(set) var pairingSheet: PairingSheetState?
@@ -62,6 +66,20 @@ public final class PhoneSyncViewModel: ObservableObject, PhoneSyncPairingReceive
     /// Refreshes the paired-devices list (after a revoke or a successful pair).
     public func refreshDevices() async {
         self.pairedDevices = await self.control.pairedDevices()
+    }
+
+    /// Follows the content-hash backfill so the pane's readiness row counts up
+    /// live. Call from the view's `.task` after `load()`; it runs until that
+    /// task is cancelled (the stream ends without throwing on cancellation).
+    public func watchHashingProgress() async {
+        let stream = await self.control.observeHashingProgress()
+        do {
+            for try await progress in stream {
+                self.hashingProgress = progress
+            }
+        } catch {
+            self.log.warning("sync.hash_progress.observe.failed", ["error": String(reflecting: error)])
+        }
     }
 
     // MARK: - Enable toggle
