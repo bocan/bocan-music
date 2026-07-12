@@ -13,6 +13,9 @@ final class FakePhoneSyncControl: PhoneSyncControlling, @unchecked Sendable {
     var playlists: [PhoneSyncPlaylist]
     var estimate: PhoneSyncSizeEstimate
     var devices: [TrustedDevice]
+    /// Yielded once by `observeHashingProgress` (then the stream finishes), so
+    /// a watch loop in a test consumes it and returns deterministically.
+    var hashingProgress: ContentHashProgress?
 
     private(set) var setEnabledCalls: [Bool] = []
     private(set) var savedProfiles: [PhoneSyncProfile] = []
@@ -62,6 +65,16 @@ final class FakePhoneSyncControl: PhoneSyncControlling, @unchecked Sendable {
 
     func pairedDevices() async -> [TrustedDevice] {
         self.devices
+    }
+
+    func observeHashingProgress() async -> AsyncThrowingStream<ContentHashProgress, Error> {
+        let progress = self.hashingProgress
+        return AsyncThrowingStream { continuation in
+            if let progress {
+                continuation.yield(progress)
+            }
+            continuation.finish()
+        }
     }
 
     func revoke(fingerprint: String) async {
@@ -149,6 +162,18 @@ struct PhoneSyncViewModelTests {
 
         await vm.togglePlaylist(5)
         #expect(!vm.isPlaylistSelected(5))
+    }
+
+    @Test("watchHashingProgress publishes each emission")
+    func hashingProgress() async {
+        let control = FakePhoneSyncControl()
+        control.hashingProgress = ContentHashProgress(missing: 897, total: 15102)
+        let vm = PhoneSyncViewModel(control: control)
+        #expect(vm.hashingProgress == nil)
+
+        await vm.watchHashingProgress()
+        #expect(vm.hashingProgress == ContentHashProgress(missing: 897, total: 15102))
+        #expect(vm.hashingProgress?.ready == 14205)
     }
 
     @Test("revoke removes the device row")

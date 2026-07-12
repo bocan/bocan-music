@@ -239,4 +239,43 @@ struct TrackRepositoryTests {
         try await repo.setContentHash(trackID: id, hash: "cafe")
         #expect(try await repo.countMissingContentHash() == 0)
     }
+
+    @Test("observeContentHashProgress counts hashable tracks and follows the backfill")
+    func observeContentHashProgress() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+
+        var missing = self.makeTrack(fileURL: "file:///tmp/missing.flac")
+        missing.fileBookmark = Data([1])
+        let missingId = try await repo.insert(missing)
+
+        var hashed = self.makeTrack(fileURL: "file:///tmp/hashed.flac")
+        hashed.fileBookmark = Data([2])
+        hashed.contentHash = "deadbeef"
+        _ = try await repo.insert(hashed)
+
+        // Unhashable rows (disabled, CUE clip, no bookmark) count toward neither.
+        var disabled = self.makeTrack(fileURL: "file:///tmp/disabled.flac")
+        disabled.fileBookmark = Data([3])
+        disabled.disabled = true
+        _ = try await repo.insert(disabled)
+        var clip = self.makeTrack(fileURL: "file:///tmp/rip.cue#1")
+        clip.fileBookmark = Data([4])
+        clip.sourceFileURL = "file:///tmp/rip.flac"
+        _ = try await repo.insert(clip)
+        _ = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/nobookmark.flac"))
+
+        let stream = await repo.observeContentHashProgress()
+        var iterator = stream.makeAsyncIterator()
+
+        let initial = try await iterator.next()
+        #expect(initial == ContentHashProgress(missing: 1, total: 2))
+        #expect(initial?.ready == 1)
+        #expect(initial?.isComplete == false)
+
+        try await repo.setContentHash(trackID: missingId, hash: "cafe")
+        let drained = try await iterator.next()
+        #expect(drained == ContentHashProgress(missing: 0, total: 2))
+        #expect(drained?.isComplete == true)
+    }
 }
