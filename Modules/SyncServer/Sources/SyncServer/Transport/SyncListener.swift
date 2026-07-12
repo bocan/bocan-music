@@ -22,6 +22,13 @@ public actor SyncListener {
     private var listener: NWListener?
     private var advertise = false
     private var fingerprint: String?
+    /// A browser started alongside advertising purely to raise the macOS Local Network
+    /// permission prompt. On macOS 15 and later a sandboxed server that only advertises is
+    /// never prompted (the prompt fires on browsing or outbound local access), so without
+    /// this the Bonjour advertisement is silently suppressed and no phone can discover the
+    /// Mac. Browsing triggers the prompt; once the user allows it, the advertisement is
+    /// published. Its results are ignored.
+    private var permissionBrowser: NWBrowser?
 
     init(
         identity: ServerIdentity,
@@ -75,13 +82,45 @@ public actor SyncListener {
             handler.start(queue: queue)
         }
 
-        return try await self.awaitReady(listener)
+        let boundPort = try await self.awaitReady(listener)
+        if advertise {
+            self.startPermissionBrowser()
+        }
+        return boundPort
     }
 
     func stop() {
+        self.permissionBrowser?.cancel()
+        self.permissionBrowser = nil
         self.listener?.cancel()
         self.listener = nil
         self.advertise = false
+    }
+
+    /// Browse our own service type so macOS presents the Local Network permission prompt
+    /// (see [permissionBrowser]). The browse results are intentionally unused: an
+    /// advertise-only server is never prompted on its own, so this is what lets the
+    /// Bonjour advertisement actually publish once the user allows access.
+    private func startPermissionBrowser() {
+        guard self.permissionBrowser == nil else { return }
+        let parameters = NWParameters()
+        parameters.includePeerToPeer = false
+        let browser = NWBrowser(for: .bonjour(type: Self.serviceType, domain: nil), using: parameters)
+        let log = self.log
+        browser.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                log.debug("sync.localNetwork.browser.ready")
+            case let .waiting(error):
+                log.debug("sync.localNetwork.browser.waiting", ["error": String(reflecting: error)])
+            case let .failed(error):
+                log.error("sync.localNetwork.browser.failed", ["error": String(reflecting: error)])
+            default:
+                break
+            }
+        }
+        browser.start(queue: self.queue)
+        self.permissionBrowser = browser
     }
 
     /// Re-registers the Bonjour service with the current pairing-mode flag in the
