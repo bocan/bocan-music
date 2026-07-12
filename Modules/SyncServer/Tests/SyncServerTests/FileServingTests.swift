@@ -189,6 +189,39 @@ struct FileServingTests {
         let missing = try await server.client.request(port: server.port, path: "/v1/artwork/nope")
         #expect(missing.status == 404)
     }
+
+    @Test("serves podcast show art through the artwork fallback (22-10)")
+    func podcastArtworkFallback() async throws {
+        let server = try await LoopbackFileServer.make()
+        defer { Task { await server.teardown() } }
+
+        let podcasts = PodcastRepository(database: server.database)
+        let imageURL = server.scratch.appendingPathComponent("show.jpg")
+        let bytes = Data((0 ..< 600).map { UInt8($0 % 251) })
+        try bytes.write(to: imageURL)
+        let hash = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+        let podcastId = try await podcasts.insert(Podcast(feedURL: "https://x.test/feed", title: "Show", subscribed: true, addedAt: 0))
+        try await podcasts.setArtwork(id: podcastId, path: imageURL.path, hash: hash)
+
+        // The podcast fallback serves the bytes with the same header contract
+        // as cover art: etag == hash, immutable cache, extension-derived MIME.
+        let response = try await server.client.request(port: server.port, path: "/v1/artwork/\(hash)")
+        #expect(response.status == 200)
+        #expect(response.body == bytes)
+        #expect(self.header(response.headers, "etag") == hash)
+        #expect(self.header(response.headers, "content-type") == "image/jpeg")
+        #expect(self.header(response.headers, "cache-control")?.contains("immutable") == true)
+
+        // A stored hash whose file is gone is a 404, not a 500.
+        try FileManager.default.removeItem(at: imageURL)
+        let gone = try await server.client.request(port: server.port, path: "/v1/artwork/\(hash)")
+        #expect(gone.status == 404)
+
+        // The fallback resolves only through the artwork_hash column: an
+        // encoded traversal is just a hash that matches no row (22-6 rule).
+        let traversal = try await server.client.request(port: server.port, path: "/v1/artwork/..%2f..%2fetc%2fpasswd")
+        #expect(traversal.status == 404)
+    }
 }
 
 /// A loopback server wired to `FileServing`, with a trusted client and a scratch
