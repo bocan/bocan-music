@@ -187,6 +187,43 @@ struct PodcastRepositoryTests {
         #expect(fetched.artworkURL == "https://cdn.test/art-v2.jpg", "feed-derived URL must refresh")
     }
 
+    @Test("upsertByFeedURL preserves the cached artwork_hash (M033 column)")
+    func upsertPreservesArtworkHash() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+
+        var original = self.sample()
+        original.artworkPath = "/tmp/art/abc.jpg"
+        original.artworkHash = "cafe1234"
+        let id = try await repo.upsertByFeedURL(original)
+
+        // A refresh parse never carries the locally derived hash.
+        var refreshed = self.sample()
+        refreshed.artworkHash = nil
+        try await repo.upsertByFeedURL(refreshed)
+
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.artworkHash == "cafe1234", "locally derived hash must survive a refresh")
+    }
+
+    // MARK: - Artwork path + hash
+
+    @Test("setArtwork writes path and hash together; fetchByArtworkHash resolves the show")
+    func setArtworkAndFetchByHash() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        let id = try await repo.insert(self.sample())
+
+        try await repo.setArtwork(id: id, path: "/tmp/art/abc.jpg", hash: "deadbeef")
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.artworkPath == "/tmp/art/abc.jpg")
+        #expect(fetched.artworkHash == "deadbeef")
+
+        let byHash = try await repo.fetchByArtworkHash("deadbeef")
+        #expect(byHash?.id == id)
+        #expect(try await repo.fetchByArtworkHash("0000") == nil)
+    }
+
     // MARK: - fetchAllSubscribed
 
     @Test("fetchAllSubscribed orders by sort_index then title")

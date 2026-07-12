@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 32)
+        #expect(version == 33)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports thirty-two migrations")
+    @Test("Migrator reports thirty-three migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 32)
+        #expect(migrator.migrations.count == 33)
     }
 
     @Test("podcast_episode_state has content_hash after M032")
@@ -80,6 +80,16 @@ struct MigrationTests {
                 .compactMap { $0["name"] as String? }
         }
         #expect(columns.contains("content_hash"))
+    }
+
+    @Test("podcasts table has artwork_hash after M033")
+    func podcastArtworkHashColumn() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(podcasts)")
+                .compactMap { $0["name"] as String? }
+        }
+        #expect(columns.contains("artwork_hash"))
     }
 
     @Test("Phone Sync tables exist with the expected columns after M031")

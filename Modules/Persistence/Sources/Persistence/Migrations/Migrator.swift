@@ -60,6 +60,7 @@ public struct Migrator {
         M030PodcastForceReparse.register(in: &dm)
         M031PhoneSync.register(in: &dm)
         M032PodcastEpisodeContentHash.register(in: &dm)
+        M033PodcastArtworkHash.register(in: &dm)
         return Self(inner: dm)
     }
 

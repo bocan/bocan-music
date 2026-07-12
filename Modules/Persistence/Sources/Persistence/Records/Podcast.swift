@@ -22,6 +22,9 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var description: String?
     public var artworkURL: String?
     public var artworkPath: String?
+    /// SHA-256 of the cached artwork file at `artworkPath`, set when the art is
+    /// cached. Phone Sync advertises it and serves the file by it (phase 22-10).
+    public var artworkHash: String?
     public var link: String?
     public var language: String?
     public var explicit: Bool
@@ -81,6 +84,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         description: String? = nil,
         artworkURL: String? = nil,
         artworkPath: String? = nil,
+        artworkHash: String? = nil,
         link: String? = nil,
         language: String? = nil,
         explicit: Bool = false,
@@ -115,6 +119,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.description = description
         self.artworkURL = artworkURL
         self.artworkPath = artworkPath
+        self.artworkHash = artworkHash
         self.link = link
         self.language = language
         self.explicit = explicit
@@ -161,6 +166,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case description
         case artworkURL = "artwork_url"
         case artworkPath = "artwork_path"
+        case artworkHash = "artwork_hash"
         case link
         case language
         case explicit
