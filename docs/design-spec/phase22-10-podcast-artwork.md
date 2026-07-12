@@ -125,18 +125,20 @@ instead of the `nil` stub. Nothing else in the Podcast object changes.
 
 ## Acceptance criteria
 
-- [ ] `podcasts.artwork_hash` exists, is populated at cache time, and is
+- [x] `podcasts.artwork_hash` exists, is populated at cache time, and is
       backfilled for existing shows.
-- [ ] `ManifestBuilder` advertises the real podcast artwork hash; shows without
+- [x] `ManifestBuilder` advertises the real podcast artwork hash; shows without
       art advertise `nil`.
-- [ ] `GET /v1/artwork/{hash}` serves podcast art by hash through the DB, with the
+- [x] `GET /v1/artwork/{hash}` serves podcast art by hash through the DB, with the
       same headers as cover art, and `404`s an unknown hash; cover art is
       unregressed.
-- [ ] Path-traversal test still proves no request-supplied path reaches the
+- [x] Path-traversal test still proves no request-supplied path reaches the
       filesystem for the podcast fallback.
 - [ ] A paired phone shows real cover art for subscribed shows after one sync,
       with no Android change beyond the already-landed continue-shelf fix.
-- [ ] `make ... test-sync-server` green; coverage floor met.
+      (Wire-level behaviour is covered by tests; the on-device pass with a
+      paired phone is still to be run.)
+- [x] `make ... test-sync-server` green; coverage floor met.
 
 ## Gotchas
 
