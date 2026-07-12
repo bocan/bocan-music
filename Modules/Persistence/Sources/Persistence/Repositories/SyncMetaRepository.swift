@@ -46,6 +46,9 @@ public struct SyncMetaRepository: Sendable {
             Table("playlists"),
             Table("playlist_tracks"),
             Table("podcast_episode_state"),
+            // Show content and artwork_hash feed the manifest Podcast object
+            // (22-10); a hash change must bump so the phone re-syncs art.
+            Table("podcasts"),
             Table("sync_profile"),
         ]) { _ in }
     }

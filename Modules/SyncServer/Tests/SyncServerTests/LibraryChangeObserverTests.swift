@@ -33,6 +33,27 @@ struct LibraryChangeObserverTests {
         #expect(try await self.pollGeneration(syncMeta, atLeast: 1) >= 1)
     }
 
+    @Test("a podcast artwork-hash change bumps the generation (22-10)")
+    func artworkHashChangeBumps() async throws {
+        let database = try await Database(location: .inMemory)
+        let syncMeta = SyncMetaRepository(database: database)
+        let podcasts = PodcastRepository(database: database)
+
+        // Seed the show before the observer starts; the initial emission is ignored.
+        let id = try await podcasts.insert(Podcast(feedURL: "https://a.test/f", title: "A", addedAt: 0))
+
+        let observer = LibraryChangeObserver(syncMeta: syncMeta, debounce: .milliseconds(50))
+        await observer.start()
+        defer { Task { await observer.stop() } }
+
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(try await syncMeta.generation() == 0)
+
+        try await podcasts.setArtwork(id: id, path: "/tmp/a.jpg", hash: "cafe")
+
+        #expect(try await self.pollGeneration(syncMeta, atLeast: 1) >= 1)
+    }
+
     @Test("a profile change also bumps the generation")
     func profileChangeBumps() async throws {
         let database = try await Database(location: .inMemory)
