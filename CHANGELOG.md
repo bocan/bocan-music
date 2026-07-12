@@ -5,6 +5,42 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/bocan/bocan-music/compare/v1.17.1...v2.0.0) (2026-07-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* release v2.0.0
+
+### ### Added
+
+* **library:** backfill track content hashes in the background ([76793d2](https://github.com/bocan/bocan-music/commit/76793d27a75db9784377ea9014d45b273f8331da))
+* **persistence:** add missing-content-hash queries and a single-column hash write ([606a0ce](https://github.com/bocan/bocan-music/commit/606a0ce1326e57bb3b415ea960b736960c2f1efd))
+* **persistence:** add Phone Sync tables (M031) and TrustedDevice ([b6d8883](https://github.com/bocan/bocan-music/commit/b6d8883fbf127ef1325f8a1b4ecf73ed45b9c9d4))
+* **persistence:** add sync_meta and sync_profile repositories ([62f07ea](https://github.com/bocan/bocan-music/commit/62f07eae25d7758dc81fac699f29f000ace61aa1))
+* **podcasts:** store an episode content hash at download time ([b0353b2](https://github.com/bocan/bocan-music/commit/b0353b233b668be81d18a918120708fcd4edfb4b))
+* release v2.0.0 ([96448dd](https://github.com/bocan/bocan-music/commit/96448ddebff2dbe4d39be8d804a6c78f3df3167c))
+* **sync:** add file serving (track, episode, artwork, lyrics) ([9b925a4](https://github.com/bocan/bocan-music/commit/9b925a4b5cdf97f0201672c3a447fb6d337735dd))
+* **sync:** add podcasts to the manifest, the generation observer, and routes ([f936dc1](https://github.com/bocan/bocan-music/commit/f936dc1bc899f5b54a9290ccba3b508504ed2ee8))
+* **sync:** add ServerIdentity with a self-signed P-256 TLS certificate ([c13c2c1](https://github.com/bocan/bocan-music/commit/c13c2c1aae00cf924d73349ed3f57f4f76cd5c88))
+* **sync:** add SyncServer module with PairingCode and golden vectors ([4cb23ca](https://github.com/bocan/bocan-music/commit/4cb23ca90ebe69287476b00f9564cb16f0df7b4a))
+* **sync:** add the HTTP/1.1 parser, router, and connection context ([c4f3967](https://github.com/bocan/bocan-music/commit/c4f396716c3a12961feb9f12937c1a58913f2fe7))
+* **sync:** add the manifest DTOs, SyncProfile, and ManifestBuilder core ([e1b7c30](https://github.com/bocan/bocan-music/commit/e1b7c30f9a69a54289bddb4613a7fb5c63ba46b6))
+* **sync:** add the mutual-TLS listener, connection driver, and /v1/ping ([c664b3c](https://github.com/bocan/bocan-music/commit/c664b3c1c2c2e862bf041f34ba5cdba84d04f64c))
+* **sync:** add the pairing ceremony (server side) ([b24e1cb](https://github.com/bocan/bocan-music/commit/b24e1cbbcb76843f0cc4113c0d3cf38bd07d8bbe))
+* **sync:** add the TrustedDevices trust store ([941afeb](https://github.com/bocan/bocan-music/commit/941afebd51b42b6a5a55ddcb52eb0e0ef504494c))
+* **sync:** assemble the SyncServer lifecycle with Bonjour advertising and app wiring ([9303bab](https://github.com/bocan/bocan-music/commit/9303babea74b606c65542d71c4395de2e68f4258))
+* **sync:** gzip the manifest when the client requests it ([ca54e5c](https://github.com/bocan/bocan-music/commit/ca54e5cfaae6b50c55dd5891833951ab2428460d))
+* **sync:** use the stored episode hash for the manifest and If-Match ([f835dbb](https://github.com/bocan/bocan-music/commit/f835dbbc69392937cc12066abb55fda4ab446eaa))
+* **ui:** add the Phone Sync settings pane and pairing sheet ([20b6946](https://github.com/bocan/bocan-music/commit/20b6946ca092ce214c4eb40b46620975b50372f7))
+
+
+### ### Fixed
+
+* **sync:** serialize permanent key generation in the login Keychain ([c70b2a9](https://github.com/bocan/bocan-music/commit/c70b2a94b82076a0437f7999b134a061afffddb9))
+* **sync:** trigger the Local Network prompt so Bonjour advertising works ([f076ca8](https://github.com/bocan/bocan-music/commit/f076ca8016fcb7ec5c8934e0876a73241a618e1f))
+* **ui:** use checkboxes for the Phone Sync playlist picker ([dcf941e](https://github.com/bocan/bocan-music/commit/dcf941ec586c5630f5f475ea3bfb6dddcc6da8ed))
+
 ## [1.17.1](https://github.com/bocan/bocan-music/compare/v1.17.0...v1.17.1) (2026-07-06)
 
 
