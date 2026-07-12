@@ -632,6 +632,11 @@ extension BocanApp {
             artwork: PodcastArtworkCache()
         )
         let podcastResolver = AppPodcastResolver(service: podcastService)
+        // Phase 22-10: hash cached show art that predates podcasts.artwork_hash
+        // so existing subscriptions advertise artwork on the next sync.
+        Task.detached(priority: .background) { [podcastService] in
+            await podcastService.backfillArtworkHashes()
+        }
         let podcastDownloads = EpisodeDownloadManager(
             stateRepo: stateRepo,
             episodeRepo: episodeRepo

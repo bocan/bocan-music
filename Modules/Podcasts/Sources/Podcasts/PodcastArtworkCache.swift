@@ -44,8 +44,10 @@ public actor PodcastArtworkCache {
     // MARK: - Public API
 
     /// Downloads `url` (if not already cached) to a local file under the cache
-    /// root and writes its path into `podcasts.artwork_path` via `repo`.
-    /// Best-effort; logs and returns `nil` on failure.
+    /// root and writes its path plus its SHA-256 into the podcast row via
+    /// `repo`. The hash is what Phone Sync advertises in the manifest and
+    /// resolves in `GET /v1/artwork/{hash}` (phase 22-10). Best-effort; logs
+    /// and returns `nil` on failure.
     @discardableResult
     public func cachePodcastArt(
         podcastID: Int64,
@@ -57,7 +59,7 @@ public actor PodcastArtworkCache {
         let localPath = localURL.path
 
         if FileManager.default.fileExists(atPath: localPath) {
-            await self.updatePodcastPath(podcastID: podcastID, path: localPath, repo: repo)
+            await self.ensureStoredArt(podcastID: podcastID, fileURL: localURL, repo: repo)
             return localPath
         }
 
@@ -77,9 +79,36 @@ public actor PodcastArtworkCache {
             return nil
         }
 
-        await self.updatePodcastPath(podcastID: podcastID, path: localPath, repo: repo)
+        await self.storeArt(podcastID: podcastID, path: localPath, hash: Self.sha256Hex(of: data), repo: repo)
         self.log.debug("artwork.cached", ["podcastID": podcastID, "path": localPath])
         return localPath
+    }
+
+    /// One-shot backfill for shows cached before the `artwork_hash` column
+    /// existed (M033): hashes any subscribed show whose cached artwork file is
+    /// on disk but whose row carries no hash, so existing libraries advertise
+    /// art on the next sync without re-fetching feeds. A missing file is
+    /// skipped (the manifest advertises `nil` for it).
+    public func backfillArtworkHashes(repo: PodcastRepository) async {
+        let shows: [Podcast]
+        do {
+            shows = try await repo.fetchAllSubscribed()
+        } catch {
+            self.log.warning("artwork.backfill.fetchFailed", ["error": String(reflecting: error)])
+            return
+        }
+        var hashed = 0
+        for show in shows {
+            if Task.isCancelled { return }
+            guard let id = show.id, show.artworkHash == nil, let path = show.artworkPath,
+                  FileManager.default.fileExists(atPath: path),
+                  let hash = self.sha256Hex(ofFileAt: URL(fileURLWithPath: path)) else { continue }
+            await self.storeArt(podcastID: id, path: path, hash: hash, repo: repo)
+            hashed += 1
+        }
+        if hashed > 0 {
+            self.log.info("artwork.backfill.end", ["hashed": hashed])
+        }
     }
 
     /// Downloads episode-level artwork (when present) and writes its path into
@@ -185,20 +214,51 @@ public actor PodcastArtworkCache {
         return data
     }
 
-    private func updatePodcastPath(
-        podcastID: Int64,
-        path: String,
-        repo: PodcastRepository
-    ) async {
+    /// Stores path + hash for an already-cached file, unless the row is
+    /// current. Refresh reaches this on every cycle through the exists
+    /// short-circuit, so an unchanged row costs one fetch and no hash, no
+    /// write (a needless write would also bump the Phone Sync generation).
+    private func ensureStoredArt(podcastID: Int64, fileURL: URL, repo: PodcastRepository) async {
+        let path = fileURL.path
         do {
-            var podcast = try await repo.fetch(id: podcastID)
-            podcast.artworkPath = path
-            try await repo.update(podcast)
+            let podcast = try await repo.fetch(id: podcastID)
+            if podcast.artworkPath == path, podcast.artworkHash != nil { return }
         } catch {
             self.log.warning(
-                "artwork.updatePodcastPath.failed",
+                "artwork.fetchRow.failed",
                 ["podcastID": podcastID, "error": String(reflecting: error)]
             )
+            return
+        }
+        await self.storeArt(podcastID: podcastID, path: path, hash: self.sha256Hex(ofFileAt: fileURL), repo: repo)
+    }
+
+    private func storeArt(podcastID: Int64, path: String, hash: String?, repo: PodcastRepository) async {
+        do {
+            try await repo.setArtwork(id: podcastID, path: path, hash: hash)
+        } catch {
+            self.log.warning(
+                "artwork.updatePodcastArt.failed",
+                ["podcastID": podcastID, "error": String(reflecting: error)]
+            )
+        }
+    }
+
+    private static func sha256Hex(of data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// The file's SHA-256, or `nil` (logged) when it cannot be read. Art is
+    /// capped at `maxBytes`, so a whole-file read is fine here.
+    private func sha256Hex(ofFileAt url: URL) -> String? {
+        do {
+            return try Self.sha256Hex(of: Data(contentsOf: url))
+        } catch {
+            self.log.warning(
+                "artwork.hash.readFailed",
+                ["path": url.path, "error": String(reflecting: error)]
+            )
+            return nil
         }
     }
 
