@@ -124,13 +124,31 @@ public struct PhoneSyncSettingsView: View {
     private var pairedDevicesSection: some View {
         Section(L10n.string("Paired Phones")) {
             if self.viewModel.pairedDevices.isEmpty {
-                Text(localized: "No paired phones yet.")
-                    .foregroundStyle(.secondary)
+                self.pairingCallToAction
             } else {
                 ForEach(self.viewModel.pairedDevices, id: \.fingerprint) { device in
                     self.deviceRow(device)
                 }
             }
+        }
+    }
+
+    /// First-run empty state: no phone is paired yet, so the section itself is
+    /// the call to action, with the prominent pairing button inside it. The
+    /// standalone button section below is hidden in this state (a second
+    /// button would compete with this one).
+    private var pairingCallToAction: some View {
+        ContentUnavailableView {
+            Label(L10n.string("No Phones Paired"), systemImage: "iphone.gen3")
+        } description: {
+            Text(localized: "Pair your phone to start syncing your library.")
+        } actions: {
+            Button {
+                Task { await self.viewModel.startPairing() }
+            } label: {
+                Label(L10n.string("Pair a Phone"), systemImage: "iphone.and.arrow.forward")
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 
@@ -154,12 +172,17 @@ public struct PhoneSyncSettingsView: View {
 
     // MARK: - Pair a phone
 
+    /// The standalone "pair another" button, shown only once at least one
+    /// phone is paired; the empty state carries its own prominent button.
+    @ViewBuilder
     private var pairButton: some View {
-        Section {
-            Button {
-                Task { await self.viewModel.startPairing() }
-            } label: {
-                Label(L10n.string("Pair a Phone"), systemImage: "iphone.and.arrow.forward")
+        if !self.viewModel.pairedDevices.isEmpty {
+            Section {
+                Button {
+                    Task { await self.viewModel.startPairing() }
+                } label: {
+                    Label(L10n.string("Pair a Phone"), systemImage: "iphone.and.arrow.forward")
+                }
             }
         }
     }
