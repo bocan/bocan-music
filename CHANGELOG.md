@@ -5,6 +5,23 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/bocan/bocan-music/compare/v2.0.0...v2.1.0) (2026-07-13)
+
+
+### ### Added
+
+* **persistence:** add podcasts.artwork_hash for Phone Sync artwork (22-10 step 1) ([9b7cbfe](https://github.com/bocan/bocan-music/commit/9b7cbfe27d8f9750a2d7aa465c7047a1caadfcfa))
+* **podcasts:** hash show artwork at cache time and backfill (22-10 step 2) ([6f62ecd](https://github.com/bocan/bocan-music/commit/6f62ecdb6d497df3eb5f061ea27ff45460a07e68))
+* **sync:** advertise podcast artwork hashes in the manifest (22-10 step 3) ([e17b4e0](https://github.com/bocan/bocan-music/commit/e17b4e04d93f7b22b2a6e76602285118d7b53dcc))
+* **sync:** serve podcast show art from /v1/artwork (22-10 step 4) ([464b3e8](https://github.com/bocan/bocan-music/commit/464b3e80c2a59316f7638bc138b3b50bd301ebcf))
+* **sync:** show library hashing readiness in Phone Sync settings ([7c4b7c0](https://github.com/bocan/bocan-music/commit/7c4b7c0d8f8e408f9f3ae00eefab3b9f0cb63f77))
+* **ui:** make the empty Paired Phones state a pairing call to action ([71d35b6](https://github.com/bocan/bocan-music/commit/71d35b6051a7a743dc01e2021550f4bfe4da7c0c))
+
+
+### ### Fixed
+
+* **ui:** move Paired Phones above Sync Profile in Phone Sync settings ([a994953](https://github.com/bocan/bocan-music/commit/a9949531899b11ea22611a45ad2de975b4309a99))
+
 ## [2.0.0](https://github.com/bocan/bocan-music/compare/v1.17.1...v2.0.0) (2026-07-12)
 
 
