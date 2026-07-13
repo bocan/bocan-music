@@ -3,8 +3,11 @@ import SwiftUI
 
 // MARK: - PhoneSyncSettingsView
 
-/// Settings -> Phone Sync (phase 22-8): enable toggle, sync-profile editor with a
-/// size estimate, paired-devices list with Revoke, and "Pair a phone".
+/// Settings -> Phone Sync (phase 22-8): enable toggle, paired-devices list with
+/// Revoke and "Pair a Phone", then the sync-profile editor with a size estimate.
+/// Pairing sits above the profile because it is the first thing a new user needs;
+/// the profile editor (and its playlist picker) can grow tall enough to push
+/// anything below it out of view.
 public struct PhoneSyncSettingsView: View {
     @ObservedObject private var viewModel: PhoneSyncViewModel
 
@@ -16,9 +19,9 @@ public struct PhoneSyncSettingsView: View {
         Form {
             self.enableSection
             if self.viewModel.enabled {
-                self.profileSection
                 self.pairedDevicesSection
                 self.pairButton
+                self.profileSection
             }
         }
         .formStyle(.grouped)
