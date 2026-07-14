@@ -390,6 +390,7 @@ public struct ArtistsView: View {
                     .accessibilityHidden(true)
             }
             .contentShape(Rectangle())
+            .tag(artist.id)
             .accessibilityElement(children: .combine)
             .accessibilityLabel(artist.name)
             .contextMenu {
