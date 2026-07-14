@@ -522,6 +522,11 @@ public final class NowPlayingViewModel {
                     self.isPlaying = false
                     self.isPaused = true
                     self.stopPollingPosition()
+                    // The 500 ms polling cadence can leave `position` stale (or
+                    // still at zero for a quick play/pause). Capture the engine's
+                    // banked pause position so the scrubber freezes exactly where
+                    // playback will resume.
+                    self.position = await self.engine.currentTime
 
                 // `.failed` shares the not-playing teardown; the engine has already
                 // stopped and frozen the position, so we only add the user-facing alert.
@@ -554,6 +559,10 @@ public final class NowPlayingViewModel {
                 guard let self else { break }
                 let pos = await engine.currentTime
                 let dur = await engine.duration
+                // Cancellation can happen while either actor read is suspended.
+                // Do not let that stale tick overwrite the final position captured
+                // by the paused-state handler.
+                guard !Task.isCancelled else { break }
                 await MainActor.run {
                     self.position = pos
                     if dur > 0 { self.duration = dur }
