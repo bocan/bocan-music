@@ -9,9 +9,12 @@ permalink: /privacy/
   <h1>Privacy</h1>
 
   <p>Short version: <strong>{{ site.title }} doesn't spy on you.</strong></p>
-  <p>Longer version follows.</p>
+  <p>This covers both {{ site.title }} for Mac and its companion app,
+  {{ site.title }} Music for Android. Longer version follows.</p>
 
-  <h2>What {{ site.title }} sends</h2>
+  <h2>{{ site.title }} for Mac</h2>
+
+  <h3>What {{ site.title }} sends</h3>
   <p><strong>Nothing.</strong> No usage statistics. No anonymous metrics. No
   crash reports unless you explicitly approve a specific report. No "phone
   home" to check that your licence is valid, because there is no licence.</p>
@@ -21,7 +24,7 @@ permalink: /privacy/
     <li>Checking for updates (daily, can be disabled) by fetching a single XML feed from <code>{{ site.url }}/appcast.xml</code>. Your IP shows up in our web server's logs along with everyone else's.</li>
   </ul>
 
-  <h2>What {{ site.title }} sends only if you turn it on</h2>
+  <h3>What {{ site.title }} sends only if you turn it on</h3>
   <ul>
     <li><strong>Scrobbling</strong> to <a href="https://www.last.fm" rel="external noopener">Last.fm</a> or <a href="https://listenbrainz.org" rel="external noopener">ListenBrainz</a>. Off by default. Per-account, with credentials you supply, sent only to the service you authorised.</li>
     <li><strong>AcoustID lookups</strong> to <a href="https://acoustid.org" rel="external noopener">AcoustID</a>, when you ask it to identify a track. Sends an audio fingerprint (not the audio) plus the track's existing tags.</li>
@@ -30,19 +33,63 @@ permalink: /privacy/
     <li><strong>Crash reports</strong> via MetricKit. Off by default. Each report is shown to you in full before sending; you decide. We never auto-submit.</li>
   </ul>
 
-  <h2>What we collect on this website</h2>
+  <h3>What we collect on this website</h3>
   <p>Standard web server logs (IP, user-agent, request path, timestamp), kept
   for 30 days, used only to spot abuse. No cookies. No analytics. No tracking
   pixels. No "we use cookies to enhance your experience" banner because we
   don't and we don't.</p>
 
-  <h2>What's stored on your machine</h2>
+  <h3>What's stored on your machine</h3>
   <ul>
     <li>Your library database, in <code>~/Library/Application Support/Bocan/</code>.</li>
     <li>Logs, in <code>~/Library/Logs/Bocan/</code>.</li>
     <li>Preferences, in <code>~/Library/Preferences/io.cloudcauldron.bocan.plist</code>.</li>
   </ul>
   <p>Delete those folders to delete everything {{ site.title }} knows about you.</p>
+
+  <h2>{{ site.title }} Music for Android</h2>
+
+  <p>The Android app is a companion player. It pairs with a Mac running
+  {{ site.title }} and syncs your music one way, from the Mac to the phone, over
+  your own Wi-Fi. There is no {{ site.title }} account, no cloud service, and no
+  server of ours anywhere in the picture.</p>
+
+  <h3>What the Android app collects</h3>
+  <p><strong>Nothing.</strong> No analytics, no telemetry, no crash-reporting SDK,
+  no advertising ID, no device fingerprinting. We hold no data about you because we
+  never receive any.</p>
+
+  <h3>What leaves your phone</h3>
+  <p>Only two kinds of traffic, and both stay under your control:</p>
+  <ul>
+    <li><strong>Sync with your Mac.</strong> The app talks only to the Mac you paired
+    it with, on your local network, over pinned mutual TLS (each device verifies the
+    other's certificate). Music, artwork, playlists, and metadata flow one way, from
+    the Mac to the phone. None of it is uploaded to us or to any cloud.</li>
+    <li><strong>Scrobbling, only if you turn it on.</strong> Off by default. When you
+    enable Last.fm, ListenBrainz, or Rocksky, the app sends that play (track, artist,
+    album, timestamp) directly to the service you chose, using credentials you entered.
+    We never receive or relay it. Podcasts never scrobble.</li>
+  </ul>
+
+  <h3>What's stored on your phone</h3>
+  <ul>
+    <li>Synced music and artwork, in the app's own private external-storage folder.
+    The app is a player, not an editor: it never modifies your files, tags, or
+    playlists.</li>
+    <li>Scrobble-service credentials, encrypted with the Android Keystore, never in
+    plain preferences or the database, and redacted from all logs.</li>
+  </ul>
+  <p>Unpairing, or the "remove media" action, wipes all of this from the device.
+  Uninstalling the app removes everything it stored.</p>
+
+  <h3>Permissions, and why</h3>
+  <p>The list is deliberately minimal: no storage permissions, no location, no
+  advertising ID. Network permissions connect to your paired Mac and detect
+  connectivity; notification and foreground-service permissions run playback and show
+  sync progress; a wake lock keeps the CPU awake only during active playback or an
+  in-progress sync. Nothing here reads your files outside the app's own folder or
+  identifies you.</p>
 
   <h2>Source &amp; verifiability</h2>
   <p>
