@@ -345,6 +345,18 @@ public final class TracksViewModel {
         self.applySort([Self.comparator(for: column, order: order)])
     }
 
+    /// Seeds a multi-column sort from an ordered list of `(column, ascending)`
+    /// pairs — the header arrows and reset behaviour then reflect the caller's
+    /// ordering (e.g. a smart playlist's own sort descriptors). No-op when the
+    /// list is empty so callers can pass through only representable columns.
+    public func setSort(columns: [(column: TrackSortColumn, ascending: Bool)]) {
+        guard !columns.isEmpty else { return }
+        let order = columns.map { pair in
+            Self.comparator(for: pair.column, order: pair.ascending ? .forward : .reverse)
+        }
+        self.applySort(order)
+    }
+
     /// Reverts to the default (Date Added, descending) sort order.
     public func resetSort() {
         self.applySort(Self.defaultSortOrder)
