@@ -38,7 +38,7 @@ public struct SmartPlaylistDetailView: View {
                 TracksView(
                     vm: self.library.tracks,
                     library: self.library,
-                    sortable: false
+                    sortable: true
                 )
             }
         }
@@ -48,13 +48,13 @@ public struct SmartPlaylistDetailView: View {
             // Load smart playlist tracks into the shared TracksViewModel so
             // TracksView can render them with full context-menu support.
             await self.vm.load(playlistID: self.playlistID)
-            self.library.tracks.setTracks(self.vm.tracks)
+            self.applySmartTracks()
             if self.library.consumeSmartPlaylistRuleBuilderRequest(for: self.playlistID) {
                 self.isEditingRules = true
             }
         }
         .onChange(of: self.vm.tracks.map(\.id)) { _, _ in
-            self.library.tracks.setTracks(self.vm.tracks)
+            self.applySmartTracks()
         }
         .onChange(of: self.library.smartPlaylistRuleBuilderRequestID) { _, _ in
             if self.library.consumeSmartPlaylistRuleBuilderRequest(for: self.playlistID) {
@@ -196,6 +196,63 @@ public struct SmartPlaylistDetailView: View {
         formatter.timeStyle = .short
         let text = formatter.string(from: Date(timeIntervalSince1970: TimeInterval(unix)))
         return L10n.string("Snapshotted at \(text)")
+    }
+
+    // MARK: - Sort seeding
+
+    /// Pushes the loaded tracks into the shared table in the exact order the
+    /// smart playlist's SQL produced them (`preserveOrder: true`), and seeds the
+    /// table's sort comparator from the playlist's own sort descriptors so the
+    /// column-header arrows match. Column-header clicks can still re-sort after.
+    private func applySmartTracks() {
+        self.library.tracks.setSort(columns: self.displaySortColumns)
+        self.library.tracks.setTracks(self.vm.tracks, preserveOrder: true)
+    }
+
+    /// The playlist's sort descriptors mapped to table columns, dropping keys
+    /// with no table column (`bpm`, `lastPlayedAt`, `random`). The displayed
+    /// order still comes from SQL via `preserveOrder`; this only aligns arrows.
+    private var displaySortColumns: [(column: TrackSortColumn, ascending: Bool)] {
+        guard let descriptors = self.vm.smartPlaylist?.limitSort.sortDescriptors else { return [] }
+        return descriptors.compactMap { descriptor in
+            Self.trackColumn(for: descriptor.key).map { ($0, descriptor.ascending) }
+        }
+    }
+
+    /// Maps a smart-playlist `SortKey` to the table's `TrackSortColumn`.
+    /// Returns `nil` for keys the track table has no column for.
+    private static func trackColumn(for key: SortKey) -> TrackSortColumn? {
+        switch key {
+        case .title:
+            .title
+
+        case .artist:
+            .artist
+
+        case .album:
+            .album
+
+        case .year:
+            .year
+
+        case .trackNumber:
+            .trackNumber
+
+        case .addedAt:
+            .addedAt
+
+        case .playCount:
+            .playCount
+
+        case .rating:
+            .rating
+
+        case .duration:
+            .duration
+
+        case .lastPlayedAt, .bpm, .random:
+            nil
+        }
     }
 
     // MARK: - Actions

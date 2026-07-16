@@ -415,6 +415,45 @@ struct SmartCriteriaCompilerTests {
         #expect(c1.selectSQL != c2.selectSQL)
     }
 
+    // MARK: - Multi-key sort
+
+    @Test func multiKeySortEmitsOrderedTerms() throws {
+        let ls = LimitSort(sortDescriptors: [
+            SmartSortDescriptor(key: .artist, ascending: true),
+            SmartSortDescriptor(key: .trackNumber, ascending: true),
+            SmartSortDescriptor(key: .title, ascending: true),
+        ])
+        let c = try SQLBuilder.compile(
+            criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
+            limitSort: ls
+        )
+        let order = try #require(c.selectSQL.range(of: "ORDER BY"))
+        let orderClause = String(c.selectSQL[order.lowerBound...])
+        #expect(orderClause.contains("artists.name ASC, tracks.track_number ASC, tracks.title ASC"))
+    }
+
+    @Test func sortByArtistWithoutRuleStillJoinsArtists() throws {
+        // Sorting by artist when no rule references the artist table must add
+        // the join, or the query references an unjoined `artists.name`.
+        let ls = LimitSort(sortBy: .artist, ascending: true)
+        let c = try SQLBuilder.compile(
+            criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
+            limitSort: ls
+        )
+        #expect(c.selectSQL.contains("JOIN artists"))
+        #expect(c.selectSQL.contains("artists.name ASC"))
+    }
+
+    @Test func sortByAlbumWithoutRuleStillJoinsAlbums() throws {
+        let ls = LimitSort(sortBy: .album, ascending: false)
+        let c = try SQLBuilder.compile(
+            criteria: .rule(.init(field: .loved, comparator: .isTrue, value: .null)),
+            limitSort: ls
+        )
+        #expect(c.selectSQL.contains("JOIN albums"))
+        #expect(c.selectSQL.contains("albums.title DESC"))
+    }
+
     // MARK: - Validator
 
     @Test func emptyGroupThrows() {
