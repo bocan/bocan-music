@@ -49,7 +49,8 @@ public struct PlaylistDetailView: View {
                     TracksView(
                         vm: self.library.tracks,
                         library: self.library,
-                        sortable: false,
+                        sortable: true,
+                        supportsManualOrder: self.vm.playlist?.kind == .manual,
                         removeFromPlaylist: { [weak vm] tracks in
                             guard let vm else { return }
                             var offsets = IndexSet()

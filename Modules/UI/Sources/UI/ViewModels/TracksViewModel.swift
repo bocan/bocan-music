@@ -68,16 +68,15 @@ public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
 
 /// Manages the sorted, filtered list of tracks shown in `TracksView`.
 ///
-/// Owned by `LibraryViewModel` and injected into `TracksView`.  All mutation
+/// Owned by `LibraryViewModel` and injected into `TracksView`. All mutation
 /// happens on `@MainActor`.
 ///
 /// ## Sorting
 ///
-/// Sort state is a single source of truth: `sortOrder`, an array of
-/// `KeyPathComparator<TrackRow>` bound directly to `Table(sortOrder:)`.
-/// When it changes — whether by a column-header click or programmatic
-/// `setSort(column:ascending:)` — `rows` is resorted in place.  Nothing
-/// else re-sorts the array behind the Table's back.
+/// Sort state has a single source of truth: `sortOrder`, an array of
+/// `KeyPathComparator<TrackRow>`. When it changes (column-header click or
+/// programmatic `setSort`), `rows` is resorted in place; nothing else re-sorts
+/// the array behind the Table's back.
 @Observable
 @MainActor
 public final class TracksViewModel {
@@ -90,11 +89,10 @@ public final class TracksViewModel {
     /// The currently selected track IDs.
     public var selection: Set<Track.ID> = []
 
-    /// Full stack of active comparators.  Owned by `TracksView` as
-    /// `@State` and pushed in via `applySort(_:)` — keeping the Table's
-    /// binding writes out of the observation path is what prevents the
-    /// SwiftUI-reentrant update cycle that otherwise runs CPU to 100%
-    /// and allocates ~1 GB every few seconds.
+    /// Full stack of active comparators. Owned by `TracksView` as `@State` and
+    /// pushed in via `applySort(_:)`; keeping the Table's binding writes out of
+    /// the observation path prevents a SwiftUI-reentrant update cycle that
+    /// otherwise pins the CPU and allocates ~1 GB every few seconds.
     public private(set) var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
     /// Free-text filter (operates client-side for in-memory arrays).
@@ -209,8 +207,7 @@ public final class TracksViewModel {
         self.isLoading = false
     }
 
-    /// Loads tracks for a specific album, preserving the disc/track order
-    /// from the database query rather than applying the global sort preference.
+    /// Loads a specific album, preserving the database disc/track order.
     public func load(albumID: Int64) async {
         self.isLoading = true
         do {
@@ -304,12 +301,10 @@ public final class TracksViewModel {
         }
     }
 
-    /// Sets a pre-fetched track list directly (used by smart folders / search results).
-    ///
+    /// Sets a pre-fetched track list directly (smart folders / search results).
     /// Pass `preserveOrder: true` when the caller owns the canonical ordering
-    /// (e.g. a manual playlist) and the list must **not** be re-sorted by the
-    /// current sort comparator.  Filter text is still applied; only the sort
-    /// step is skipped.
+    /// (e.g. a manual playlist): the list is not re-sorted by the current
+    /// comparator, though the text filter still applies.
     public func setTracks(_ items: [Track], preserveOrder: Bool = false) {
         self.rebuildAllRows(from: items)
         if preserveOrder {
@@ -337,18 +332,16 @@ public final class TracksViewModel {
         self.isLoading = false
     }
 
-    /// Programmatic shim that maps a `(column, ascending)` pair onto
-    /// `sortOrder`.  Kept so persisted `UIStateV1` values restore cleanly
-    /// and the existing view-model tests remain green.
+    /// Maps a `(column, ascending)` pair onto `sortOrder`, so persisted
+    /// `UIStateV1` values restore cleanly and existing tests stay green.
     public func setSort(column: TrackSortColumn, ascending: Bool) {
         let order: SortOrder = ascending ? .forward : .reverse
         self.applySort([Self.comparator(for: column, order: order)])
     }
 
-    /// Seeds a multi-column sort from an ordered list of `(column, ascending)`
-    /// pairs — the header arrows and reset behaviour then reflect the caller's
-    /// ordering (e.g. a smart playlist's own sort descriptors). No-op when the
-    /// list is empty so callers can pass through only representable columns.
+    /// Seeds a multi-column sort from an ordered `(column, ascending)` list so
+    /// the header arrows reflect the caller's ordering (e.g. a smart playlist's
+    /// sort descriptors). No-op when empty, so callers can pass only mappable columns.
     public func setSort(columns: [(column: TrackSortColumn, ascending: Bool)]) {
         guard !columns.isEmpty else { return }
         let order = columns.map { pair in
@@ -362,11 +355,23 @@ public final class TracksViewModel {
         self.applySort(Self.defaultSortOrder)
     }
 
-    /// Called by `TracksView` whenever the Table's `@State sortOrder`
-    /// changes.  Deduplicates identical writes and resorts `rows` in
-    /// place.  `objectWillChange` only fires for the `rows` reassignment,
-    /// never for `sortOrder` — so Table's per-frame binding writes
-    /// cannot trigger a SwiftUI update cycle.
+    /// Clears any active column sort and restores the caller-provided baseline
+    /// (a manual playlist's saved order): rows revert to `allRows` with the text
+    /// filter still applied, and empty `sortOrder` clears the header arrow.
+    public func restoreManualOrder() {
+        self.sortOrder = []
+        if self.filterText.isEmpty {
+            self.rows = self.allRows
+        } else {
+            let lowered = self.filterText.lowercased()
+            self.rows = self.allRows.filter { $0.title.lowercased().contains(lowered) }
+        }
+    }
+
+    /// Called by `TracksView` whenever the Table's `@State sortOrder` changes.
+    /// Deduplicates identical writes and resorts `rows` in place. Observation
+    /// fires only for the `rows` reassignment, never for `sortOrder`, so the
+    /// Table's per-frame binding writes cannot trigger a SwiftUI update cycle.
     public func applySort(_ order: [KeyPathComparator<TrackRow>]) {
         guard order != self.sortOrder else { return }
         self.sortOrder = order
