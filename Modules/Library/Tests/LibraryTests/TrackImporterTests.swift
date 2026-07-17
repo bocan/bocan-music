@@ -275,4 +275,86 @@ struct TrackImporterTests {
         let track = try await TrackRepository(database: db).fetch(id: id)
         #expect(track.extendedTags == nil)
     }
+
+    // MARK: - Compilation grouping (#362)
+
+    /// Builds tags for a compilation track: same album, a distinct artist,
+    /// no album-artist, compilation flag set.
+    private func compilationTags(artist: String, compilation: Bool = true) -> TrackTags {
+        var tags = TrackTags()
+        tags.title = "Track by \(artist)"
+        tags.artist = artist
+        tags.album = "Now That's What I Call Music"
+        tags.isCompilation = compilation
+        tags.duration = 180.0
+        return tags
+    }
+
+    private func makeImporter(_ db: Database) -> TrackImporter {
+        TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+    }
+
+    @Test("compilation with no album-artist groups under one Various Artists album (#362)")
+    func compilationGroupsUnderVariousArtists() async throws {
+        let db = try await makeDB()
+        let importer = self.makeImporter(db)
+
+        for (i, artist) in ["Artist A", "Artist B", "Artist C"].enumerated() {
+            _ = try await importer.importTrack(
+                url: URL(fileURLWithPath: "/tmp/comp\(i).mp3"),
+                bookmark: nil, tags: self.compilationTags(artist: artist),
+                fileMtime: 1000, fileSize: 100
+            )
+        }
+
+        let albums = try await AlbumRepository(database: db).fetchAll()
+        #expect(albums.count == 1)
+        #expect(albums.first?.albumArtistID == nil) // nil => "Various Artists"
+    }
+
+    @Test("non-compilation with no album-artist still splits by track artist")
+    func nonCompilationSplitsByArtist() async throws {
+        let db = try await makeDB()
+        let importer = self.makeImporter(db)
+
+        for (i, artist) in ["Artist A", "Artist B", "Artist C"].enumerated() {
+            _ = try await importer.importTrack(
+                url: URL(fileURLWithPath: "/tmp/split\(i).mp3"),
+                bookmark: nil,
+                tags: self.compilationTags(artist: artist, compilation: false),
+                fileMtime: 1000, fileSize: 100
+            )
+        }
+
+        let albums = try await AlbumRepository(database: db).fetchAll()
+        #expect(albums.count == 3)
+    }
+
+    @Test("explicit album-artist wins over the compilation flag")
+    func explicitAlbumArtistWinsOverCompilation() async throws {
+        let db = try await makeDB()
+        let importer = self.makeImporter(db)
+
+        for (i, artist) in ["Artist A", "Artist B"].enumerated() {
+            var tags = self.compilationTags(artist: artist)
+            tags.albumArtist = "The Curator"
+            _ = try await importer.importTrack(
+                url: URL(fileURLWithPath: "/tmp/curated\(i).mp3"),
+                bookmark: nil, tags: tags, fileMtime: 1000, fileSize: 100
+            )
+        }
+
+        let albums = try await AlbumRepository(database: db).fetchAll()
+        #expect(albums.count == 1)
+        let curator = try await ArtistRepository(database: db).fetchAll()
+            .first { $0.name == "The Curator" }
+        #expect(albums.first?.albumArtistID == curator?.id)
+        #expect(albums.first?.albumArtistID != nil)
+    }
 }

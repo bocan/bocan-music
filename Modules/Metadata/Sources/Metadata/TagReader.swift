@@ -73,6 +73,7 @@ public struct TagReader: Sendable {
             discNumber: raw.discNumber > 0 ? Int(raw.discNumber) : nil,
             discTotal: raw.discTotal > 0 ? Int(raw.discTotal) : nil
         )
+        tags.isCompilation = raw.isCompilation
         tags.sortTitle = raw.sortTitle.map { String($0) }
         tags.dateText = raw.dateText.map { String($0) }
         tags.sortArtist = raw.sortArtist.map { String($0) }

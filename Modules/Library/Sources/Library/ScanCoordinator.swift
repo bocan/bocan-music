@@ -207,6 +207,13 @@ actor ScanCoordinator {
             }
         }
 
+        // Drop album rows no longer referenced by any track — e.g. compilation
+        // albums that regrouped from many split rows into one (#362), so stale
+        // empty albums do not linger after the fix lands. Best-effort.
+        if !Task.isCancelled {
+            _ = try? await self.albumRepo.pruneOrphans()
+        }
+
         let elapsed = ContinuousClock.now - start
         emit(.finished(ScanProgress.Summary(
             inserted: inserted,
