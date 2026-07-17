@@ -40,9 +40,8 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     func updateRows(_ newRows: [TrackRow]) {
         self.rows = newRows
-        // Use uniquingKeysWith because the same track can appear more than once
-        // in a playlist (different positions). We only need one lookup entry per
-        // track ID for cell rendering; last-writer-wins is fine here.
+        // The same track can repeat in a playlist; keep one entry per ID
+        // (last-writer-wins) for cell rendering.
         self.rowsByID = Dictionary(
             newRows.compactMap { row -> (Int64, TrackRow)? in
                 guard let id = row.id else { return nil }
@@ -93,8 +92,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         cell.textField?.font = isNowPlaying
             ? NSFontManager.shared.convert(baseFont, toHaveTrait: .boldFontMask)
             : baseFont
-        // Give VoiceOver context by prefixing the column name.
-        // Rating uses a spoken form ("3 stars") instead of the star glyphs.
+        // Prefix the column name for VoiceOver; rating speaks as "3 stars".
         let colTitle = TrackTable.columnSpecs.first { $0.id == column.identifier }?.title ?? column.title
         let spokenValue: String
         if column.identifier == .rating {
@@ -150,8 +148,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     // MARK: NSTableViewDelegate — accessibility
 
-    /// Gives VoiceOver a single spoken sentence per row instead of reading
-    /// each column value individually.  Format: "[Now playing, ]Title, Artist, Album, Duration".
+    /// One spoken sentence per row: "[Now playing, ]Title, Artist, Album, Duration".
     public func tableView(_ tableView: NSTableView, accessibilityLabelForRow row: Int) -> String? {
         guard row < self.rows.count else { return nil }
         let r = self.rows[row]
@@ -200,7 +197,14 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     func syncSortIfNeeded(sortOrder: [KeyPathComparator<TrackRow>]) {
         guard let tv = tableView else { return }
         guard let first = sortOrder.first,
-              let key = TrackTable.sortKey(for: first) else { return }
+              let key = TrackTable.sortKey(for: first) else {
+            // Empty sort => manual order: clear any lingering column indicator.
+            guard !tv.sortDescriptors.isEmpty else { return }
+            self.isSyncingSort = true
+            tv.sortDescriptors = []
+            self.isSyncingSort = false
+            return
+        }
         let desired = [NSSortDescriptor(key: key, ascending: first.order == .forward)]
         guard tv.sortDescriptors != desired else { return }
         self.isSyncingSort = true
@@ -214,8 +218,8 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         let row = sender.clickedRow
         guard row >= 0, let id = dataSource?.itemIdentifier(forRow: row),
               let trackRow = rowsByID[id] else { return }
-        // Option-double-click → play just this track, no context.  The default
-        // double-click replays the surrounding browse-view context.
+        // Option-double-click plays just this track; plain double-click replays
+        // the surrounding browse-view context.
         if NSApp.currentEvent?.modifierFlags.contains(.option) == true {
             self.parent.actions.playSingle(trackRow.track)
         } else {
@@ -227,8 +231,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         guard let col = sender.representedObject as? NSTableColumn else { return }
         col.isHidden.toggle()
         sender.state = col.isHidden ? .off : .on
-        // Persist visibility so it survives view recreation.
-        // NSTableView.autosaveTableColumns only saves column width and order.
+        // Persist visibility (autosaveTableColumns only saves width and order).
         if let autosaveName = tableView?.autosaveName {
             TrackTable.saveColumnVisibility(autosaveName: autosaveName, column: col)
         }
@@ -254,11 +257,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     // MARK: Context menu — helpers
 
-    /// Syncs the table selection to the right-clicked row before building the menu,
-    /// mirroring Finder / Music.app: a click inside the existing selection keeps the
-    /// multi-row selection; a click outside it replaces the selection with the
-    /// clicked row so the menu always targets an unambiguous set.
-    /// Do **not** remove the selection-replace branch; it is intentional, not a bug.
+    /// Syncs selection to the right-clicked row before building the menu,
+    /// mirroring Finder / Music.app. Do not remove the selection-replace branch
+    /// (a click outside the selection replaces it); it is intentional, not a bug.
     private func syncClickedRow(in tv: NSTableView) {
         let clicked = tv.clickedRow
         // Already inside the selection — leave multi-row selection intact.
@@ -273,8 +274,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     }
 
     private func selectedTracks() -> [Track] {
-        // O(selection.count) via pre-built dictionary — avoids O(14k+) linear scan
-        // on every context-menu open.
+        // O(selection.count) via pre-built dictionary, not an O(14k+) scan per open.
         self.parent.selection.compactMap { id in id.flatMap { self.rowsByID[$0]?.track } }
     }
 

@@ -22,12 +22,24 @@ public struct TracksView: View {
     public var library: LibraryViewModel
     public var title: String?
     public var sortable: Bool
+    /// When `true` this view has a caller-owned baseline order (a manual
+    /// playlist's saved order). Column-header sorting becomes a *temporary*
+    /// view sort: the baseline is preserved, drag-reorder is suspended while a
+    /// column sort is active, and a "Playlist Order" control returns to it.
+    public var supportsManualOrder: Bool
     /// When non-nil, a "Remove from Playlist" item appears at the top of the
     /// destructive section of the track context menu.
     public var removeFromPlaylist: (([Track]) -> Void)?
     /// When non-nil, enables intra-table drag-reorder and calls this closure
     /// on drop with SwiftUI-style `(source, destination)` index sets.
     public var onMove: ((IndexSet, Int) -> Void)?
+
+    /// Reorder is only coherent in the baseline (unsorted) order, so it is
+    /// suspended while a temporary column sort is active on a manual-order view.
+    var effectiveOnMove: ((IndexSet, Int) -> Void)? {
+        guard self.supportsManualOrder else { return self.onMove }
+        return self.sortOrder.isEmpty ? self.onMove : nil
+    }
 
     /// Observed separately so that changes to `nowPlayingTrackID` / `isPlaying`
     /// invalidate this view (`@Observable` tracking handles property-level granularity).
@@ -45,6 +57,7 @@ public struct TracksView: View {
         library: LibraryViewModel,
         title: String? = nil,
         sortable: Bool = true,
+        supportsManualOrder: Bool = false,
         removeFromPlaylist: (([Track]) -> Void)? = nil,
         onMove: ((IndexSet, Int) -> Void)? = nil
     ) {
@@ -53,8 +66,13 @@ public struct TracksView: View {
         self.nowPlaying = library.nowPlaying
         self.title = title
         self.sortable = sortable
+        self.supportsManualOrder = supportsManualOrder
         self.removeFromPlaylist = removeFromPlaylist
         self.onMove = onMove
+        // A manual-order view starts in its baseline order (no column sort).
+        self._sortOrder = State(
+            initialValue: supportsManualOrder ? [] : TracksViewModel.defaultSortOrder
+        )
     }
 
     public var body: some View {
@@ -87,7 +105,17 @@ public struct TracksView: View {
         }
         .navigationTitle(self.title ?? L10n.string("Songs"))
         .toolbar {
-            if self.sortable, self.sortOrder != TracksViewModel.defaultSortOrder {
+            if self.supportsManualOrder {
+                if !self.sortOrder.isEmpty {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button(L10n.string("Playlist Order")) {
+                            self.sortOrder = []
+                        }
+                        .help(L10n.string("Return to the manual playlist order"))
+                        .keyboardShortcut("r", modifiers: [.command, .shift])
+                    }
+                }
+            } else if self.sortable, self.sortOrder != TracksViewModel.defaultSortOrder {
                 ToolbarItem(placement: .primaryAction) {
                     Button(L10n.string("Clear Sort")) {
                         self.sortOrder = TracksViewModel.defaultSortOrder
@@ -98,11 +126,19 @@ public struct TracksView: View {
             }
         }
         .onChange(of: self.sortOrder) { _, newOrder in
-            self.vm.applySort(newOrder)
+            if self.supportsManualOrder, newOrder.isEmpty {
+                self.vm.restoreManualOrder()
+            } else {
+                self.vm.applySort(newOrder)
+            }
         }
         .onAppear {
-            // Seed local sort state from the VM (e.g. restored UIStateV1).
-            if self.sortOrder != self.vm.sortOrder {
+            // Seed local sort state from the VM (e.g. restored UIStateV1), but
+            // never for a manual-order view (it owns its baseline) and never
+            // adopt an empty order another view left on the shared VM.
+            if !self.supportsManualOrder,
+               !self.vm.sortOrder.isEmpty,
+               self.sortOrder != self.vm.sortOrder {
                 self.sortOrder = self.vm.sortOrder
             }
             self.syncSelectionToNowPlaying()
