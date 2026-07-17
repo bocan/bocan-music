@@ -126,6 +126,23 @@ public struct AlbumRepository: Sendable {
         }
     }
 
+    /// Deletes album rows no longer referenced by any track (enabled or
+    /// disabled). Run after a scan so albums emptied by regrouping — e.g. a
+    /// compilation collapsing from many split rows into one "Various Artists"
+    /// album (#362) — do not linger as empty cards. Returns the rows removed.
+    @discardableResult
+    public func pruneOrphans() async throws -> Int {
+        try await self.database.write { db in
+            try db.execute(sql: """
+            DELETE FROM albums
+            WHERE NOT EXISTS (
+                SELECT 1 FROM tracks WHERE tracks.album_id = albums.id
+            )
+            """)
+            return db.changesCount
+        }
+    }
+
     /// Fetches all albums, alphabetically by title.
     public func fetchAll() async throws -> [Album] {
         try await self.database.read { db in

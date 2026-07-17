@@ -54,18 +54,31 @@ actor TrackImporter {
         let artistName = primaryArtist
         let artist = try await artistRepo.findOrCreate(name: artistName)
 
-        // Album artist (may differ from track artist)
+        // Album artist (may differ from track artist). Prefer an explicit
+        // ALBUMARTIST tag. With none, fall back to the track artist — EXCEPT
+        // for compilations, which group under a single "Various Artists" album
+        // (nil album artist). Without this a multi-artist compilation with no
+        // album-artist tag splits into one album per track artist (#362).
         let albumArtistValues = tags.extendedTags["ALBUMARTIST"] ?? []
-        let albumArtistName = albumArtistValues.first ?? tags.albumArtist ?? artistName
-        let albumArtist = albumArtistName == artistName
-            ? artist
-            : try await self.artistRepo.findOrCreate(name: albumArtistName)
+        let explicitAlbumArtist = (albumArtistValues.first ?? tags.albumArtist)
+            .flatMap { $0.isEmpty ? nil : $0 }
+        let albumArtistID: Int64?
+        if let explicitAlbumArtist {
+            let albumArtist = explicitAlbumArtist == artistName
+                ? artist
+                : try await self.artistRepo.findOrCreate(name: explicitAlbumArtist)
+            albumArtistID = albumArtist.id
+        } else if tags.isCompilation {
+            albumArtistID = nil // Various Artists
+        } else {
+            albumArtistID = artist.id
+        }
 
         // Album
         let albumTitle = tags.album ?? "Unknown Album"
         let album = try await albumRepo.findOrCreate(
             title: albumTitle,
-            albumArtistID: albumArtist.id
+            albumArtistID: albumArtistID
         )
 
         // Cover art
@@ -141,7 +154,7 @@ actor TrackImporter {
             isLossless: self.isLossless(format: url.pathExtension.lowercased()),
             title: tags.title,
             artistID: artist.id,
-            albumArtistID: albumArtist.id,
+            albumArtistID: albumArtistID,
             albumID: album.id,
             trackNumber: tags.trackNumber,
             trackTotal: tags.trackTotal,

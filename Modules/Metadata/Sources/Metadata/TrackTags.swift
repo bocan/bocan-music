@@ -8,6 +8,10 @@ public struct TrackTags: Sendable {
     public var artist: String?
     public var albumArtist: String?
     public var album: String?
+    /// `true` when the file carries a set compilation flag (ID3 `TCMP`, MP4
+    /// `cpil`, or Vorbis `COMPILATION`). Used to group multi-artist
+    /// compilations under a single album even without an album-artist tag.
+    public var isCompilation: Bool
     public var genre: String?
     public var composer: String?
     public var comment: String?
@@ -70,6 +74,7 @@ public struct TrackTags: Sendable {
         artist: String? = nil,
         albumArtist: String? = nil,
         album: String? = nil,
+        isCompilation: Bool = false,
         genre: String? = nil,
         composer: String? = nil,
         comment: String? = nil,
@@ -104,6 +109,7 @@ public struct TrackTags: Sendable {
         self.artist = artist
         self.albumArtist = albumArtist
         self.album = album
+        self.isCompilation = isCompilation
         self.genre = genre
         self.composer = composer
         self.comment = comment

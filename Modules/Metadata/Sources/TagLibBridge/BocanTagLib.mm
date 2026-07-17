@@ -47,6 +47,16 @@ static NSString *_Nullable firstValue(const TagLib::PropertyMap &props,
     return nil;
 }
 
+// TagLib normalises the compilation flag (ID3 TCMP, MP4 cpil, Vorbis
+// COMPILATION) to the "COMPILATION" property. Treat 1/true/yes as set.
+static BOOL parseCompilation(const TagLib::PropertyMap &props) {
+    NSString *raw = firstValue(props, "COMPILATION");
+    if (!raw) return NO;
+    NSString *v = [[raw stringByTrimmingCharactersInSet:
+                        [NSCharacterSet whitespaceCharacterSet]] lowercaseString];
+    return [v isEqualToString:@"1"] || [v isEqualToString:@"true"] || [v isEqualToString:@"yes"];
+}
+
 static double replayGainDB(const TagLib::PropertyMap &props, const char *key) {
     NSString *raw = firstValue(props, key);
     if (!raw) return NAN;
@@ -177,6 +187,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     TagLib::PropertyMap props = fileRef.properties();
 
     tags.albumArtist    = firstValue(props, "ALBUMARTIST");
+    tags.isCompilation  = parseCompilation(props);
     tags.composer       = firstValue(props, "COMPOSER");
     tags.sortTitle      = firstValue(props, "TITLESORT");
     tags.sortArtist     = firstValue(props, "ARTISTSORT");

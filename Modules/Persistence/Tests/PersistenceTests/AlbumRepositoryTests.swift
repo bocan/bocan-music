@@ -211,4 +211,51 @@ struct AlbumRepositoryTests {
         let hits = try await albumRepo.search(query: "fire")
         #expect(hits.contains { $0.id == albumID } == false)
     }
+
+    // MARK: - Orphan pruning (#362)
+
+    @Test("pruneOrphans removes unreferenced albums but keeps referenced ones")
+    func pruneOrphansRemovesEmptyAlbums() async throws {
+        let db = try await makeDatabase()
+        let albumRepo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let now = Int64(Date().timeIntervalSince1970)
+
+        let kept = try await albumRepo.insert(Album(title: "Kept"))
+        _ = try await albumRepo.insert(Album(title: "Orphan"))
+        // An album referenced only by a disabled (soft-removed) track is kept,
+        // matching the soft-delete semantics of a scan.
+        let disabledOnly = try await albumRepo.insert(Album(title: "Disabled Only"))
+
+        _ = try await trackRepo.insert(
+            Track(
+                fileURL: "file:///tmp/\(UUID().uuidString).flac",
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 200,
+                title: "Live",
+                albumID: kept,
+                addedAt: now,
+                updatedAt: now
+            )
+        )
+        var disabledTrack = Track(
+            fileURL: "file:///tmp/\(UUID().uuidString).flac",
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 200,
+            title: "Gone",
+            albumID: disabledOnly,
+            addedAt: now,
+            updatedAt: now
+        )
+        disabledTrack.disabled = true
+        _ = try await trackRepo.insert(disabledTrack)
+
+        let removed = try await albumRepo.pruneOrphans()
+        #expect(removed == 1)
+
+        let titles = try await Set(albumRepo.fetchAll().map(\.title))
+        #expect(titles == ["Kept", "Disabled Only"])
+    }
 }
