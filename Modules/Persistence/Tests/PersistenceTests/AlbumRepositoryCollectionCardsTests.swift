@@ -31,12 +31,15 @@ struct AlbumRepositoryCollectionCardsTests {
         )
     }
 
-    /// Inserts a track by `artistID` on `albumID`.
+    /// Inserts a track by `artistID` on `albumID`, optionally tagged with a
+    /// genre/composer.
     private func insertTrack(
         _ repo: TrackRepository,
         title: String,
-        artistID: Int64?,
-        albumID: Int64?,
+        artistID: Int64? = nil,
+        albumID: Int64? = nil,
+        genre: String? = nil,
+        composer: String? = nil,
         disabled: Bool = false
     ) async throws {
         var track = Track(
@@ -48,6 +51,8 @@ struct AlbumRepositoryCollectionCardsTests {
             title: title,
             artistID: artistID,
             albumID: albumID,
+            genre: genre,
+            composer: composer,
             addedAt: self.now,
             updatedAt: self.now
         )
@@ -173,5 +178,105 @@ struct AlbumRepositoryCollectionCardsTests {
 
         let capTwo = try await repo.fetchCoverArtPathsByArtist(maxPerArtist: 2)
         #expect(capTwo[artist]?.count == 2)
+    }
+
+    // MARK: - Genre / composer cards
+
+    /// Seeds an assortment of genre edge rows and returns the database.
+    ///
+    /// - "Rock": two albums (one with art), plus a track with no album.
+    /// - "Jazz": one album with art.
+    /// - "": an empty-string genre on one track (the list includes it).
+    /// - NULL genre on one track (the list excludes it).
+    /// - a disabled track carrying an otherwise-unique genre "Deleted".
+    /// - a compilation album (nil album artist) whose track is tagged "Rock".
+    private func seedGenres(_ repo: AlbumRepository, _ trackRepo: TrackRepository) async throws {
+        let rockA = try await self.insertAlbum(repo, title: "RockA", albumArtistID: nil, year: 2001, coverArtPath: "/covers/rockA.jpg")
+        let rockB = try await self.insertAlbum(repo, title: "RockB", albumArtistID: nil, year: 2002, coverArtPath: nil)
+        let jazz = try await self.insertAlbum(repo, title: "JazzA", albumArtistID: nil, year: 1999, coverArtPath: "/covers/jazz.jpg")
+        let comp = try await self.insertAlbum(repo, title: "Comp", albumArtistID: nil, year: 2010, coverArtPath: "/covers/comp.jpg")
+        try await self.insertTrack(trackRepo, title: "r1", albumID: rockA, genre: "Rock")
+        try await self.insertTrack(trackRepo, title: "r2", albumID: rockB, genre: "Rock")
+        try await self.insertTrack(trackRepo, title: "r3", albumID: nil, genre: "Rock") // no album
+        try await self.insertTrack(trackRepo, title: "r4", albumID: comp, genre: "Rock") // compilation
+        try await self.insertTrack(trackRepo, title: "j1", albumID: jazz, genre: "Jazz")
+        try await self.insertTrack(trackRepo, title: "e1", albumID: rockA, genre: "") // empty string
+        try await self.insertTrack(trackRepo, title: "n1", albumID: rockA, genre: nil) // null
+        try await self.insertTrack(trackRepo, title: "d1", albumID: jazz, genre: "Deleted", disabled: true)
+    }
+
+    @Test("Genre cards match the list set exactly (empty string in, null and disabled out)")
+    func genreSetEquality() async throws {
+        let db = try await self.makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        try await self.seedGenres(repo, trackRepo)
+
+        let cards = try await repo.fetchGenreCards()
+        let listGenres = try await trackRepo.allGenres()
+        #expect(Set(cards.map(\.name)) == Set(listGenres))
+        // Concretely: Rock, Jazz and the empty string; not "Deleted" (disabled) or null.
+        #expect(Set(cards.map(\.name)) == ["Rock", "Jazz", ""])
+    }
+
+    @Test("Genre counts: distinct albums, songs include album-less tracks, exclude disabled")
+    func genreCounts() async throws {
+        let db = try await self.makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        try await self.seedGenres(repo, trackRepo)
+
+        let cards = try await repo.fetchGenreCards()
+        let rock = try #require(cards.first { $0.name == "Rock" })
+        // Three distinct albums (RockA, RockB, Comp); r3 has no album so adds no
+        // album but does count as a song. Four Rock songs total.
+        #expect(rock.albumCount == 3)
+        #expect(rock.songCount == 4)
+        // Covers only from albums that have art: RockA and Comp (RockB has none).
+        #expect(rock.coverArtPaths.contains("/covers/rockA.jpg"))
+        #expect(rock.coverArtPaths.contains("/covers/comp.jpg"))
+        #expect(!rock.coverArtPaths.contains { $0.isEmpty })
+        #expect(rock.coverArtPaths.count == 2)
+    }
+
+    @Test("Composer cards match the list set exactly")
+    func composerSetEquality() async throws {
+        let db = try await self.makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let album = try await self.insertAlbum(repo, title: "A", albumArtistID: nil, year: 2000, coverArtPath: "/covers/a.jpg")
+        try await self.insertTrack(trackRepo, title: "t1", albumID: album, composer: "Bach")
+        try await self.insertTrack(trackRepo, title: "t2", albumID: album, composer: "Mozart")
+        try await self.insertTrack(trackRepo, title: "t3", albumID: album, composer: "") // empty string
+        try await self.insertTrack(trackRepo, title: "t4", albumID: album, composer: nil) // null
+        try await self.insertTrack(trackRepo, title: "t5", albumID: album, composer: "Ghost", disabled: true)
+
+        let cards = try await repo.fetchComposerCards()
+        let listComposers = try await trackRepo.allComposers()
+        #expect(Set(cards.map(\.name)) == Set(listComposers))
+        #expect(Set(cards.map(\.name)) == ["Bach", "Mozart", ""])
+    }
+
+    @Test("Genre cover paths are deduped and capped")
+    func genreCoversDedupedAndCapped() async throws {
+        let db = try await self.makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        // Six distinct albums with art, all tagged "Pop".
+        for i in 0 ..< 6 {
+            let album = try await self.insertAlbum(
+                repo,
+                title: "P\(i)",
+                albumArtistID: nil,
+                year: 2000 + i,
+                coverArtPath: "/covers/p\(i).jpg"
+            )
+            try await self.insertTrack(trackRepo, title: "t\(i)", albumID: album, genre: "Pop")
+        }
+        let cards = try await repo.fetchGenreCards(maxCovers: 4)
+        let pop = try #require(cards.first { $0.name == "Pop" })
+        #expect(pop.coverArtPaths.count == 4)
+        // Newest four first (years 2005..2002), deterministic.
+        #expect(pop.coverArtPaths == ["/covers/p5.jpg", "/covers/p4.jpg", "/covers/p3.jpg", "/covers/p2.jpg"])
     }
 }

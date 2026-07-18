@@ -104,6 +104,46 @@ extension UISnapshotTests {
             self.assertCard(self.card(paths: [], mosaic: nil), dark: true, named: "card-placeholder-dark")
         }
 
+        // MARK: - Genre / composer cards (placeholder variant)
+
+        private func sectionCard(title: String, symbol: String) -> CollectionCard {
+            CollectionCard(
+                model: CollectionCardModel(
+                    id: title, title: title, albumCount: 3, songCount: 24, coverArtPaths: []
+                ),
+                placeholderSymbol: symbol,
+                accessibilityHint: "Opens this collection's songs"
+            )
+        }
+
+        @Test("Genre card light")
+        func genreCardLight() {
+            self.assertCard(self.sectionCard(title: "Jazz", symbol: "tag"), dark: false, named: "card-genre-light")
+        }
+
+        @Test("Genre card dark")
+        func genreCardDark() {
+            self.assertCard(self.sectionCard(title: "Jazz", symbol: "tag"), dark: true, named: "card-genre-dark")
+        }
+
+        @Test("Composer card light")
+        func composerCardLight() {
+            self.assertCard(
+                self.sectionCard(title: "J.S. Bach", symbol: "music.quarternote.3"),
+                dark: false,
+                named: "card-composer-light"
+            )
+        }
+
+        @Test("Composer card dark")
+        func composerCardDark() {
+            self.assertCard(
+                self.sectionCard(title: "J.S. Bach", symbol: "music.quarternote.3"),
+                dark: true,
+                named: "card-composer-dark"
+            )
+        }
+
         // MARK: - Grid
 
         @Test("CollectionCardGrid fixed layout light")
