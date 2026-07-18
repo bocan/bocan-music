@@ -322,7 +322,7 @@
 		F9FA03B30FC5E8E7FB6D2DE8 /* LogStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogStoreTests.swift; sourceTree = "<group>"; };
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
-		"TEMP_684AECFA-622D-4FEA-871E-412414D95DA4" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_EB97829B-561C-47BB-8224-80A14A6287B1" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -656,10 +656,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_4F001A37-DA12-44CD-868F-513DA68DC5EF" /* bocan-music */ = {
+		"TEMP_3131FA1D-CD76-42CB-9514-058CFBB5B5E3" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_684AECFA-622D-4FEA-871E-412414D95DA4" /* Secrets.xcconfig */,
+				"TEMP_EB97829B-561C-47BB-8224-80A14A6287B1" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1021,7 +1021,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_684AECFA-622D-4FEA-871E-412414D95DA4" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_EB97829B-561C-47BB-8224-80A14A6287B1" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1157,7 +1157,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_684AECFA-622D-4FEA-871E-412414D95DA4" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_EB97829B-561C-47BB-8224-80A14A6287B1" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
