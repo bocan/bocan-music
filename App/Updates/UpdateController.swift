@@ -6,11 +6,19 @@ import Observation
 
 /// Wraps `SPUStandardUpdaterController` and exposes update actions to the menu.
 ///
-/// Created once in `BocanApp.init()` and held as a `private let`. The
-/// updater starts automatically on launch, controlled by
+/// Created once in `BocanApp.init()` and held as a `private let`. In release
+/// builds the updater starts on launch, controlled by
 /// `SUEnableAutomaticChecks` in Info.plist. Feed URL and automatic-update
 /// preference are set via Info.plist keys; beta-channel overriding is
 /// handled separately in issue #213.
+///
+/// Debug builds never start the updater. A debug build carries
+/// `CFBundleVersion` 1, so every published release looks like an upgrade and
+/// Sparkle nags at launch. Worse, the debug and installed apps share one
+/// defaults container, so a stray "Skip This Version" click in a dev session
+/// silences the installed app's automatic checks for that release too. The
+/// "Check for Updates" menu item simply stays disabled in debug
+/// (`canCheckForUpdates` never flips true).
 ///
 /// `canCheckForUpdates` is a stored `@Observable` property updated via KVO so
 /// the "Check for Updates…" button and menu item disable/enable reactively.
@@ -24,8 +32,13 @@ final class UpdateController: NSObject {
     private(set) var canCheckForUpdates = false
 
     override init() {
+        #if DEBUG
+            let startsUpdater = false
+        #else
+            let startsUpdater = true
+        #endif
         self.standardController = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: startsUpdater,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
