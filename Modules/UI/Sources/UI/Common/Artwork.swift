@@ -155,6 +155,9 @@ public struct Artwork: View {
 
 struct GradientPlaceholder: View {
     let seed: Int
+    /// Symbol drawn faintly over the gradient. Defaults to the track/album
+    /// note; collection cards pass their section symbol (mic / tag / notes).
+    var symbol = "music.note"
 
     private var gradient: LinearGradient {
         let hue1 = Double(abs(seed) % 360) / 360.0
@@ -172,7 +175,7 @@ struct GradientPlaceholder: View {
     var body: some View {
         self.gradient
             .overlay {
-                Image(systemName: "music.note")
+                Image(systemName: self.symbol)
                     .font(.system(size: 28, weight: .thin))
                     .foregroundStyle(.white.opacity(0.4))
                     .accessibilityHidden(true)

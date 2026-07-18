@@ -414,7 +414,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         )
         self.playlistImporter = importer
         self.playlistExporter = exporter
-        self.artists = ArtistsViewModel(repository: artistRepo)
+        self.artists = ArtistsViewModel(repository: artistRepo, albumRepository: albumRepo)
         self.nowPlaying = NowPlayingViewModel(
             engine: engine,
             database: database,

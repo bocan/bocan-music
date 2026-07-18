@@ -5,7 +5,9 @@ import Observability
 public struct AlbumRepository: Sendable {
     // MARK: - Properties
 
-    private let database: Database
+    /// Internal (not `private`) so query extensions in sibling files
+    /// (`AlbumRepository+CollectionCards.swift`) can reach the connection.
+    let database: Database
     private let log = AppLogger.make(.persistence)
 
     // MARK: - Init

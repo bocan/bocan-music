@@ -86,9 +86,9 @@ public final class PlaylistDetailViewModel: ObservableObject {
             guard !Task.isCancelled else { return }
             let paths = await (try? Self.fetchCoverPaths(trackIDs: trackIDs, database: db)) ?? []
             guard !Task.isCancelled, !paths.isEmpty else { return }
-            let img = await PlaylistMosaicGenerator.shared.mosaic(
+            let img = await CoverMosaicGenerator.shared.mosaic(
                 paths: paths,
-                updatedAt: updatedAt
+                version: updatedAt
             )
             guard !Task.isCancelled else { return }
             self.mosaicImage = img
