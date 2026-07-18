@@ -12,6 +12,11 @@ public final class ArtistsViewModel: ObservableObject {
     @Published public private(set) var artists: [Artist] = []
     @Published public private(set) var albumCounts: [Int64: Int] = [:]
     @Published public private(set) var trackCounts: [Int64: Int] = [:]
+    /// Up to four cover-art file paths per artist id, feeding the grid mode's
+    /// card mosaics. Keyed on the track artist so the covers match the same
+    /// album set as ``albumCounts``. Deterministic order (year DESC then title).
+    /// Kept `@Published private(set)` like ``albumCounts``.
+    @Published public private(set) var coverArtPaths: [Int64: [String]] = [:]
     @Published public private(set) var isLoading = false
     @Published public var selectedArtistID: Int64?
 
@@ -26,6 +31,11 @@ public final class ArtistsViewModel: ObservableObject {
     /// `@Published`: it must not trigger a re-render.
     public var lastVisitedArtistID: Int64?
 
+    /// Live scroll offset of the grid, snapshotted when opening an artist so the
+    /// grid returns to it when rebuilt on the way back (mirrors
+    /// `AlbumsViewModel.gridScrollOffset`, #349). Plain `var`, not `@Published`.
+    public var gridScrollOffset: Double = 0
+
     // MARK: - Internal
 
     /// UserDefaults key backing ``sortOrder`` (read at init, written by
@@ -33,12 +43,16 @@ public final class ArtistsViewModel: ObservableObject {
     public static let sortOrderKey = "artists.sortOrder"
 
     private let repository: ArtistRepository
+    /// Backs the grid mode's cover-art mosaics (album covers grouped by
+    /// album-artist). Only read in ``load()``.
+    private let albumRepository: AlbumRepository
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
 
-    public init(repository: ArtistRepository) {
+    public init(repository: ArtistRepository, albumRepository: AlbumRepository) {
         self.repository = repository
+        self.albumRepository = albumRepository
         let raw = UserDefaults.standard.string(forKey: Self.sortOrderKey)
         self.sortOrder = raw.flatMap(ArtistSortOrder.init(rawValue:)) ?? .artistName
     }
@@ -53,11 +67,13 @@ public final class ArtistsViewModel: ObservableObject {
             async let artistsFetch = self.repository.fetchAll()
             async let albumCountsFetch = self.repository.fetchAlbumCounts()
             async let trackCountsFetch = self.repository.fetchTrackCounts()
+            async let coverPathsFetch = self.albumRepository.fetchCoverArtPathsByArtist()
             let fetched = try await artistsFetch
             // Counts first: the count-based sorts read them.
             self.albumCounts = await (try? albumCountsFetch) ?? [:]
             self.trackCounts = await (try? trackCountsFetch) ?? [:]
-            self.artists = self.sortedArtists(fetched)
+            self.coverArtPaths = await (try? coverPathsFetch) ?? [:]
+            self.artists = self.sortedArtists(self.visibleArtists(fetched))
             self.log.debug("artists.load.end", ["count": self.artists.count])
         } catch {
             self.log.error("artists.load.failed", ["error": String(reflecting: error)])
@@ -67,14 +83,15 @@ public final class ArtistsViewModel: ObservableObject {
 
     /// Replaces the artist list with a pre-fetched result (search results).
     public func setArtists(_ items: [Artist]) {
-        self.artists = self.sortedArtists(items)
+        self.artists = self.sortedArtists(self.visibleArtists(items))
     }
 
     /// FTS search: replaces the visible list with artists matching `query`.
     public func search(query: String) async {
         self.isLoading = true
         do {
-            self.artists = try await self.sortedArtists(self.repository.search(query: query))
+            let matches = try await self.repository.search(query: query)
+            self.artists = self.sortedArtists(self.visibleArtists(matches))
         } catch {
             self.log.error("artists.search.failed", ["error": String(reflecting: error)])
         }
@@ -87,6 +104,16 @@ public final class ArtistsViewModel: ObservableObject {
         self.sortOrder = order
         UserDefaults.standard.set(order.rawValue, forKey: Self.sortOrderKey)
         self.artists = self.sortedArtists(self.artists)
+    }
+
+    /// Drops orphan artist rows with no playable tracks. These are dangling
+    /// records left after a removal (their tracks are gone but the artist row
+    /// survives); they contribute nothing and render as an empty "0 albums,
+    /// 0 songs" entry. Filtering here hides them from both list and grid without
+    /// mutating the database. Artists appear iff they have at least one
+    /// non-disabled track (``trackCounts`` is populated in ``load()``).
+    private func visibleArtists(_ items: [Artist]) -> [Artist] {
+        items.filter { ($0.id.flatMap { self.trackCounts[$0] } ?? 0) > 0 }
     }
 
     /// Sorts `items` by the current ``sortOrder``. The count-based orders fall

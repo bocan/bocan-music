@@ -71,9 +71,24 @@ struct ArtistsViewModelSortTests {
     func sortByArtistName() async throws {
         let db = try await makeDatabase()
         try await self.seed(db)
-        let vm = ArtistsViewModel(repository: ArtistRepository(database: db))
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
         await vm.load()
         vm.setSortOrder(.artistName)
+        #expect(vm.artists.map(\.name) == ["Alpha", "Mu", "Zeta"])
+    }
+
+    @Test("Orphan artists with no tracks are hidden from the list")
+    func hidesOrphanArtists() async throws {
+        let db = try await makeDatabase()
+        try await self.seed(db)
+        // An artist row with no tracks (e.g. left dangling after a removal).
+        try await db.write { db in
+            var ghost = Artist(name: "Ghost")
+            try ghost.insert(db)
+        }
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
+        await vm.load()
+        #expect(!vm.artists.map(\.name).contains("Ghost"))
         #expect(vm.artists.map(\.name) == ["Alpha", "Mu", "Zeta"])
     }
 
@@ -81,7 +96,7 @@ struct ArtistsViewModelSortTests {
     func sortByAlbumCount() async throws {
         let db = try await makeDatabase()
         try await self.seed(db)
-        let vm = ArtistsViewModel(repository: ArtistRepository(database: db))
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
         await vm.load()
         vm.setSortOrder(.albumCount)
         // Zeta (2 albums) first; Alpha and Mu tie at 1, so artist name breaks it.
@@ -92,7 +107,7 @@ struct ArtistsViewModelSortTests {
     func sortBySongCount() async throws {
         let db = try await makeDatabase()
         try await self.seed(db)
-        let vm = ArtistsViewModel(repository: ArtistRepository(database: db))
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
         await vm.load()
         vm.setSortOrder(.songCount)
         #expect(vm.artists.map(\.name) == ["Zeta", "Mu", "Alpha"])
@@ -108,12 +123,12 @@ struct ArtistsViewModelSortTests {
         let db = try await makeDatabase()
         let repo = ArtistRepository(database: db)
 
-        let first = ArtistsViewModel(repository: repo)
+        let first = ArtistsViewModel(repository: repo, albumRepository: AlbumRepository(database: db))
         #expect(first.sortOrder == .artistName) // default with a clean key
         first.setSortOrder(.songCount)
 
         // A new instance (next launch) reads the persisted preference.
-        let second = ArtistsViewModel(repository: repo)
+        let second = ArtistsViewModel(repository: repo, albumRepository: AlbumRepository(database: db))
         #expect(second.sortOrder == .songCount)
     }
 }

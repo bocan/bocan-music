@@ -283,6 +283,10 @@ public struct ArtistsView: View {
     @ObservedObject public var vm: ArtistsViewModel
     public var library: LibraryViewModel
 
+    /// List vs grid, persisted per section; defaults to `.list` so today's
+    /// behaviour is unchanged until the user opts into the grid (phase 23-1).
+    @AppStorage("artists.viewMode") private var viewMode: CollectionViewMode = .list
+
     public init(vm: ArtistsViewModel, library: LibraryViewModel) {
         self.vm = vm
         self.library = library
@@ -311,6 +315,8 @@ public struct ArtistsView: View {
                         Task { await self.library.addFolderByPicker() }
                     }
                 }
+            } else if self.viewMode == .grid {
+                ArtistsGridContent(vm: self.vm, library: self.library)
             } else {
                 self.artistList
             }
@@ -318,9 +324,28 @@ public struct ArtistsView: View {
         .navigationTitle(L10n.string("Artists"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                self.viewModePicker
+            }
+            ToolbarItem(placement: .primaryAction) {
                 SortMenu(selection: self.sortBinding, help: L10n.string("Choose how artists are sorted"))
             }
         }
+    }
+
+    /// Segmented List / Grid toggle placed next to the sort menu. Icons carry
+    /// localized accessibility labels; the picker as a whole carries a help tip.
+    private var viewModePicker: some View {
+        Picker(L10n.string("Choose how this view is displayed"), selection: self.$viewMode) {
+            Image(systemName: "list.bullet")
+                .accessibilityLabel(L10n.string("View as list"))
+                .tag(CollectionViewMode.list)
+            Image(systemName: "square.grid.2x2")
+                .accessibilityLabel(L10n.string("View as grid"))
+                .tag(CollectionViewMode.grid)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .help(L10n.string("Choose how this view is displayed"))
     }
 
     /// Bridges the sort menu to the view model, which owns and persists the

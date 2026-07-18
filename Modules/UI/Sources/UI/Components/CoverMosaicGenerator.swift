@@ -1,21 +1,30 @@
 import AppKit
 
-// MARK: - PlaylistMosaicGenerator
+// MARK: - CoverMosaicGenerator
 
-/// Off-main-thread actor that composites up to four album-cover images
-/// into a 2×2 mosaic suitable for the playlist header hero.
+/// Off-main-thread actor that composites up to four album-cover images into a
+/// 2×2 mosaic. Shared by the playlist header hero and the collection cards
+/// (Artists / Genres / Composers grids).
 ///
-/// Results are cached by the union of source paths and the playlist's
-/// `updated_at` epoch; stale entries are evicted automatically when
-/// membership changes.
-actor PlaylistMosaicGenerator {
-    static let shared = PlaylistMosaicGenerator()
+/// Results are cached by the union of source paths plus a `version` key. Callers
+/// that have a natural version signal (a playlist's `updated_at` epoch) pass it
+/// so the cache invalidates when membership changes; callers whose paths are
+/// content-addressed (collection cards, whose cover paths come from
+/// `CoverArtCache` hashes) pass `version: 0`, since any art or membership change
+/// already changes the path list and therefore the key.
+actor CoverMosaicGenerator {
+    static let shared = CoverMosaicGenerator()
+
+    /// Cache entries above this count trigger a full clear. Playlists never
+    /// reach it; a large artist grid could. A simple clear is intentional — no
+    /// LRU bookkeeping.
+    private static let cacheCap = 512
 
     // MARK: - Cache
 
     private struct CacheKey: Hashable {
         let paths: [String]
-        let updatedAt: Int64
+        let version: Int64
     }
 
     private var cache: [CacheKey: NSImage] = [:]
@@ -27,14 +36,14 @@ actor PlaylistMosaicGenerator {
     ///
     /// - Parameters:
     ///   - paths:      Ordered cover-art file paths (duplicates are de-duped; up to 4 used).
-    ///   - updatedAt:  The playlist's `updated_at` epoch value; acts as a cache-version key.
+    ///   - version:    A cache-version key (a playlist's `updated_at`, or `0` when the paths are content-addressed).
     ///   - sideLength: Pixel side length of the result (default 144 px ≈ 72 pt @2×).
-    func mosaic(paths: [String], updatedAt: Int64, sideLength: Int = 144) -> NSImage? {
+    func mosaic(paths: [String], version: Int64, sideLength: Int = 144) -> NSImage? {
         let uniquePaths = paths.filter { !$0.isEmpty }.uniqued().prefix(4)
         let pathList = Array(uniquePaths)
         guard !pathList.isEmpty else { return nil }
 
-        let key = CacheKey(paths: pathList, updatedAt: updatedAt)
+        let key = CacheKey(paths: pathList, version: version)
         if let cached = cache[key] { return cached }
 
         let cgImages: [CGImage] = pathList.compactMap { path in
@@ -45,6 +54,11 @@ actor PlaylistMosaicGenerator {
         guard !cgImages.isEmpty else { return nil }
 
         guard let result = Self.compose(images: cgImages, sideLength: sideLength) else { return nil }
+        // Bounded cache: clear wholesale once it grows past the cap so a large
+        // grid can't leak unbounded NSImages.
+        if self.cache.count >= Self.cacheCap {
+            self.cache.removeAll()
+        }
         self.cache[key] = result
         return result
     }
