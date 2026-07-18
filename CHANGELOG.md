@@ -5,6 +5,21 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0](https://github.com/bocan/bocan-music/compare/v2.1.0...v2.2.0) (2026-07-18)
+
+
+### ### Added
+
+* **library:** multi-key smart playlist sort with working headers ([3ed00f2](https://github.com/bocan/bocan-music/commit/3ed00f2f93557dc54a41f88f38f4c702fa61e879))
+* **ui:** sortable manual playlists with preserved order ([44262f6](https://github.com/bocan/bocan-music/commit/44262f64ae9d341ea41e77f7020fb3159be3beff))
+
+
+### ### Fixed
+
+* **library:** group compilations without an album artist ([#362](https://github.com/bocan/bocan-music/issues/362)) ([cfd1ee2](https://github.com/bocan/bocan-music/commit/cfd1ee22b08b2147530775f1445a9d9314e4c846))
+* **ui:** restore artist row navigation ([42f42e8](https://github.com/bocan/bocan-music/commit/42f42e81bfd1250cbdc7125fb63fa18d87a2d2f2))
+* **ui:** restore artist row navigation ([d3154e8](https://github.com/bocan/bocan-music/commit/d3154e8c3adfee1e0701a805b4bca5168a5f05ce))
+
 ## [2.1.0](https://github.com/bocan/bocan-music/compare/v2.0.0...v2.1.0) (2026-07-13)
 
 
