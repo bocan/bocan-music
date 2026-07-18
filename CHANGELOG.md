@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.2.0](https://github.com/bocan/bocan-music/compare/v2.1.0...v2.2.0) (2026-07-18)
 
+This one's a community release: half of what's below started life as a
+sharp-eyed issue or a pull request from users. Thank you both! THIS is why
+I make these things open source.
+
+**Smart playlists learned to sort.** The Sort By setting in the rule editor
+now actually orders the playlist (it was being quietly thrown away before,
+and sorting by Artist or Album could even error out). Better still, sorting
+is no longer a single choice: build an ordered list of sort keys with
+priorities, like artist, then track number, then title, each ascending or
+descending. Track Number is a new sort key, and the column headers in a
+smart playlist's track list are now clickable for on-the-fly re-sorting.
+
+**Regular playlists too, without losing your order.** Click any column
+header in a manual playlist to browse it sorted. Your hand-arranged order
+is kept safe underneath: a Playlist Order button snaps right back to it,
+and drag-to-reorder politely pauses while a column sort is active so your
+saved order can never be scrambled.
+
+**Compilations stay together.** Thanks to a great report from @lukesutton
+(#362): a compilation with no Album Artist tag used to shatter into one
+album per track artist. Files flagged as compilations now group under a
+single "Various Artists" album, and if your library was already split, it
+heals itself automatically on the next scan. No manual cleanup needed.
+
+**Clicking an artist works again.** @0gnev tracked down exactly why
+clicking a row in the a view sometimes did nothing (#360) and sent a tidy fix,
+regression test included.
+
+**The scrubber stays put when you pause.** Also @0gnev (#361): a quick
+play-then-pause could leave the progress bar showing a stale position, or
+zero. The paused position is now captured precisely, so playback resumes
+exactly where the scrubber says it will.
+
+And a peek ahead: @lukesutton's idea to browse Artists, Genres, and
+Composers as album-art card grids (#363) is fully specced and on the list for
+2.3.0.
 
 ### ### Added
 
