@@ -19,6 +19,15 @@ struct ArtistsScrollRestoreConventionTests {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
+    @Test("Artist rows provide selection tags so clicks can navigate")
+    func artistRowsProvideSelectionTags() throws {
+        let source = try self.artistsSource()
+        #expect(
+            source.contains(".tag(artist.id)"),
+            "List(selection:) only updates selectedArtistID when each artist row has a matching tag"
+        )
+    }
+
     @Test("The list snapshots the visited artist and re-centers it on return (#349)")
     func listRestoresScrollPosition() throws {
         let source = try self.artistsSource()
