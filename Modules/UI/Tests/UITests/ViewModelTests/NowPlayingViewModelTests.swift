@@ -192,6 +192,25 @@ struct NowPlayingViewModelTests {
         #expect(engine.pauseCallCount == 1)
     }
 
+    @Test("pausing captures the engine position between polling ticks")
+    func pauseCapturesFinalPosition() async throws {
+        let engine = MockTransport()
+        let db = try await makeDatabase()
+        let vm = NowPlayingViewModel(engine: engine, database: db)
+        engine.storedCurrentTime = 87.25
+
+        // No playing event is needed: this specifically covers pausing before
+        // the periodic UI poll has published its first value.
+        engine.emit(.paused)
+        for _ in 0 ..< 100 {
+            if vm.isPaused, vm.position == 87.25 { break }
+            await Task.yield()
+        }
+
+        #expect(vm.isPaused)
+        #expect(vm.position == 87.25)
+    }
+
     @Test("scrub dispatches seek to engine")
     func scrubDispatchesSsek() async throws {
         let engine = MockTransport()
