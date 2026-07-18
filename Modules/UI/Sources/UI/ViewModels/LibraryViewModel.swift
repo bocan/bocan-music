@@ -136,6 +136,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// `var`, not `@Published`: it must not trigger a re-render.
     public var lastVisitedComposer: String?
 
+    /// Grid-mode scroll offsets for the genre and composer grids, snapshotted on
+    /// open so `CollectionCardGrid` can restore them when the view (which owns no
+    /// view model) is rebuilt on return (#349). Plain `var`s, not `@Published`.
+    public var genreGridScrollOffset: Double = 0
+    public var composerGridScrollOffset: Double = 0
+
     // MARK: - Tag editor state
 
     /// Non-nil when the tag editor sheet should be presented.
