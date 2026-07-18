@@ -522,6 +522,11 @@ public final class NowPlayingViewModel {
                     self.isPlaying = false
                     self.isPaused = true
                     self.stopPollingPosition()
+                    // The 500 ms polling cadence can leave `position` stale (or
+                    // still at zero for a quick play/pause). Capture the engine's
+                    // banked pause position so the scrubber freezes exactly where
+                    // playback will resume.
+                    self.position = await self.engine.currentTime
 
                 // `.failed` shares the not-playing teardown; the engine has already
                 // stopped and frozen the position, so we only add the user-facing alert.
@@ -545,27 +550,6 @@ public final class NowPlayingViewModel {
                 }
             }
         }
-    }
-
-    private func startPollingPosition() {
-        self.stopPollingPosition()
-        self.positionTask = Task { [weak self] in
-            while !Task.isCancelled {
-                guard let self else { break }
-                let pos = await engine.currentTime
-                let dur = await engine.duration
-                await MainActor.run {
-                    self.position = pos
-                    if dur > 0 { self.duration = dur }
-                }
-                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 s
-            }
-        }
-    }
-
-    private func stopPollingPosition() {
-        self.positionTask?.cancel()
-        self.positionTask = nil
     }
 }
 
@@ -602,6 +586,31 @@ extension NowPlayingViewModel {
 }
 
 private extension NowPlayingViewModel {
+    func startPollingPosition() {
+        self.stopPollingPosition()
+        self.positionTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { break }
+                let pos = await engine.currentTime
+                let dur = await engine.duration
+                // Cancellation can happen while either actor read is suspended.
+                // Do not let that stale tick overwrite the final position captured
+                // by the paused-state handler.
+                guard !Task.isCancelled else { break }
+                await MainActor.run {
+                    self.position = pos
+                    if dur > 0 { self.duration = dur }
+                }
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 s
+            }
+        }
+    }
+
+    func stopPollingPosition() {
+        self.positionTask?.cancel()
+        self.positionTask = nil
+    }
+
     /// Fills podcast-specific now-playing state when the current queue item is a podcast episode.
     func applyPodcastItem(feedURL: URL, episodeGUID: String) async {
         self.isPodcast = true
