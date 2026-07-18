@@ -69,6 +69,10 @@ One file per phase. Point a fresh Claude Code / Copilot session at a single file
 | 22.7 | [phase22-7-lifecycle-bonjour.md](phase22-7-lifecycle-bonjour.md) | Phone Sync: `SyncServer` actor lifecycle, Bonjour advertising, app wiring, sleep/wake |
 | 22.8 | [phase22-8-settings-ui.md](phase22-8-settings-ui.md) | Phone Sync: Settings pane + pairing sheet, localized, snapshot-tested |
 | 22.9 | [phase22-9-docs-e2e.md](phase22-9-docs-e2e.md) | Phone Sync: README + website, cross-repo end-to-end, acceptance sweep |
+| 23.0 | [phase23-0-overview.md](phase23-0-overview.md) | Collection grids: contract, shared types, mosaic engine, preference keys (read first) |
+| 23.1 | [phase23-1-artists-grid.md](phase23-1-artists-grid.md) | Collection grids: shared card infrastructure + Artists grid mode |
+| 23.2 | [phase23-2-genres-composers-grid.md](phase23-2-genres-composers-grid.md) | Collection grids: genre/composer card queries + grid modes, view-file split |
+| 23.3 | [phase23-3-view-menu-destination-albums.md](phase23-3-view-menu-destination-albums.md) | Collection grids: View menu, genre/composer album destinations, docs |
 
 ## Conventions used in every phase file
 
