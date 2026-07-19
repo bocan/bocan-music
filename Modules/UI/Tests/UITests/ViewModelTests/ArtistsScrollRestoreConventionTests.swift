@@ -19,12 +19,20 @@ struct ArtistsScrollRestoreConventionTests {
         return try String(contentsOf: url, encoding: .utf8)
     }
 
-    @Test("Artist rows provide selection tags so clicks can navigate")
-    func artistRowsProvideSelectionTags() throws {
+    @Test("Artist rows navigate directly when clicked")
+    func artistRowsNavigateDirectlyWhenClicked() throws {
         let source = try self.artistsSource()
         #expect(
-            source.contains(".tag(artist.id)"),
-            "List(selection:) only updates selectedArtistID when each artist row has a matching tag"
+            source.contains("Button {") && source.contains("self.openArtist(artist)"),
+            "artist rows must be buttons that navigate directly instead of relying on List selection"
+        )
+        #expect(
+            source.contains("Task { await self.library.selectDestination(.artist(id)) }"),
+            "the artist click handler must navigate to the selected artist"
+        )
+        #expect(
+            !source.contains("selection: self.$vm.selectedArtistID"),
+            "artist navigation must not depend on unreliable List selection changes"
         )
     }
 

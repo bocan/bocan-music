@@ -360,48 +360,53 @@ public struct ArtistsView: View {
     }
 
     private var artistListContent: some View {
-        List(self.vm.artists, id: \.id, selection: self.$vm.selectedArtistID) { artist in
-            HStack(spacing: 10) {
-                // Avatar circle
-                ZStack {
-                    Circle()
-                        .fill(Color.accentColor.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                    Image(systemName: "music.mic")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.accentColor)
-                }
-                .accessibilityHidden(true)
+        List(self.vm.artists, id: \.id) { artist in
+            Button {
+                self.openArtist(artist)
+            } label: {
+                HStack(spacing: 10) {
+                    // Avatar circle
+                    ZStack {
+                        Circle()
+                            .fill(Color.accentColor.opacity(0.15))
+                            .frame(width: 36, height: 36)
+                        Image(systemName: "music.mic")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(artist.name)
-                        .font(Typography.body)
-                        .foregroundStyle(Color.textPrimary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(artist.name)
+                            .font(Typography.body)
+                            .foregroundStyle(Color.textPrimary)
 
-                    if let id = artist.id {
-                        let albumCount = self.vm.albumCounts[id] ?? 0
-                        let trackCount = self.vm.trackCounts[id] ?? 0
-                        if albumCount > 0 || trackCount > 0 {
-                            let albumPart = L10n.string("\(albumCount) albums")
-                            let songPart = L10n.string("\(trackCount) songs")
-                            Text(localized: "\(albumPart), \(songPart)")
-                                .font(Typography.caption)
-                                .foregroundStyle(Color.textSecondary)
+                        if let id = artist.id {
+                            let albumCount = self.vm.albumCounts[id] ?? 0
+                            let trackCount = self.vm.trackCounts[id] ?? 0
+                            if albumCount > 0 || trackCount > 0 {
+                                let albumPart = L10n.string("\(albumCount) albums")
+                                let songPart = L10n.string("\(trackCount) songs")
+                                Text(localized: "\(albumPart), \(songPart)")
+                                    .font(Typography.caption)
+                                    .foregroundStyle(Color.textSecondary)
+                            }
                         }
                     }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.textTertiary)
+                        .accessibilityHidden(true)
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(Typography.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .accessibilityHidden(true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
-            .tag(artist.id)
-            .accessibilityElement(children: .combine)
+            .buttonStyle(.plain)
             .accessibilityLabel(artist.name)
+            .accessibilityHint(L10n.string("Open artist"))
             .contextMenu {
                 if let id = artist.id {
                     Button(L10n.string("Remove Artist from Library"), role: .destructive) {
@@ -414,15 +419,13 @@ public struct ArtistsView: View {
                 }
             }
         }
-        // Reset to nil so the same artist can be re-selected on the next tap.
-        .onChange(of: self.vm.selectedArtistID) { _, id in
-            if let id {
-                self.vm.selectedArtistID = nil
-                // Snapshot the visited artist so the list scrolls it back into
-                // view when it's rebuilt on the way back (#349-style restore).
-                self.vm.lastVisitedArtistID = id
-                Task { await self.library.selectDestination(.artist(id)) }
-            }
-        }
+    }
+
+    private func openArtist(_ artist: Artist) {
+        guard let id = artist.id else { return }
+        // Snapshot the visited artist so the list scrolls it back into view
+        // when it's rebuilt on the way back (#349-style restore).
+        self.vm.lastVisitedArtistID = id
+        Task { await self.library.selectDestination(.artist(id)) }
     }
 }
