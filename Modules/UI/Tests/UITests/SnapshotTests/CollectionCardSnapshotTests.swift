@@ -13,27 +13,18 @@ extension UISnapshotTests {
     struct CollectionCardSnapshotTests {
         private let cardSize = CGSize(width: 180, height: 230)
 
-        /// Writes a solid-colour PNG to a unique temp file and returns its path.
-        private func writePNG(_ color: NSColor) throws -> String {
-            let size = NSSize(width: 100, height: 100)
-            let image = NSImage(size: size)
-            image.lockFocus()
-            color.setFill()
-            NSRect(origin: .zero, size: size).fill()
-            image.unlockFocus()
-            guard let tiff = image.tiffRepresentation,
-                  let rep = NSBitmapImageRep(data: tiff),
-                  let png = rep.representation(using: .png, properties: [:]) else {
-                throw CocoaError(.fileWriteUnknown)
-            }
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("card-\(UUID().uuidString).png")
-            try png.write(to: url)
-            return url.path
-        }
+        /// Distinct tile colours for the mosaic snapshots (re-recorded when the
+        /// shared TestImage helper replaced the per-test PNG writer).
+        private static let fourTiles: [CGColor] = [
+            CGColor(red: 0.85, green: 0.2, blue: 0.2, alpha: 1),
+            CGColor(red: 0.2, green: 0.45, blue: 0.9, alpha: 1),
+            CGColor(red: 0.2, green: 0.7, blue: 0.35, alpha: 1),
+            CGColor(red: 0.95, green: 0.6, blue: 0.15, alpha: 1),
+        ]
+        private static let oneTile: [CGColor] = [CGColor(red: 0.55, green: 0.3, blue: 0.75, alpha: 1)]
 
-        private func mosaic(_ colors: [NSColor]) async throws -> (NSImage, [String]) {
-            let paths = try colors.map { try self.writePNG($0) }
+        private func mosaic(_ colors: [CGColor]) async throws -> (NSImage, [String]) {
+            let paths = try colors.map { try TestImage.solidPNG(color: $0).path }
             let image = try #require(await CoverMosaicGenerator().mosaic(paths: paths, version: 0))
             return (image, paths)
         }
@@ -72,25 +63,25 @@ extension UISnapshotTests {
 
         @Test("Card with four covers light")
         func fourCoversLight() async throws {
-            let (image, paths) = try await self.mosaic([.systemRed, .systemBlue, .systemGreen, .systemOrange])
+            let (image, paths) = try await self.mosaic(Self.fourTiles)
             self.assertCard(self.card(paths: paths, mosaic: image), dark: false, named: "card-four-light")
         }
 
         @Test("Card with four covers dark")
         func fourCoversDark() async throws {
-            let (image, paths) = try await self.mosaic([.systemRed, .systemBlue, .systemGreen, .systemOrange])
+            let (image, paths) = try await self.mosaic(Self.fourTiles)
             self.assertCard(self.card(paths: paths, mosaic: image), dark: true, named: "card-four-dark")
         }
 
         @Test("Card with one cover light")
         func oneCoverLight() async throws {
-            let (image, paths) = try await self.mosaic([.systemPurple])
+            let (image, paths) = try await self.mosaic(Self.oneTile)
             self.assertCard(self.card(paths: paths, mosaic: image), dark: false, named: "card-one-light")
         }
 
         @Test("Card with one cover dark")
         func oneCoverDark() async throws {
-            let (image, paths) = try await self.mosaic([.systemPurple])
+            let (image, paths) = try await self.mosaic(Self.oneTile)
             self.assertCard(self.card(paths: paths, mosaic: image), dark: true, named: "card-one-dark")
         }
 

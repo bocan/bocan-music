@@ -24,6 +24,7 @@
 		11A7481C1C61E6968569DB90 /* PodcastsViewModelSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45DD51AFB9A514CB59B83D8D /* PodcastsViewModelSearchTests.swift */; };
 		146E67FA9E1B65EC2CB4F01E /* libSvtAv1Enc.4.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 10497567C431D6A1E5AE1805 /* libSvtAv1Enc.4.dylib */; };
 		14ECDF8167EC86D4BF63ED83 /* SubsonicAnnotationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D336D59F9188111951FCC5DF /* SubsonicAnnotationCoordinatorTests.swift */; };
+		15E3D444F86A2C9F79E77A0C /* TestImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 723BFA4C81FBBBE3F94AB028 /* TestImage.swift */; };
 		171ED43E8939DABF4D9DB1E8 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 4BD8C9A8D2F5753BB057397D /* Sparkle */; };
 		1A7E5FA27ADE29289C39EC19 /* LibraryViewModelToastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBAA3D7563E34731CF32FDE /* LibraryViewModelToastTests.swift */; };
 		1B8195C2FABED50EAFF33686 /* SubsonicStoreSidebarListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62CA9772727FF5A9FBC5ED1A /* SubsonicStoreSidebarListing.swift */; };
@@ -237,6 +238,7 @@
 		6C8BD227AC55BA870F3E55D5 /* libmp3lame.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libmp3lame.0.dylib; sourceTree = "<group>"; };
 		6E014B4987A60B08F6DE299A /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Modules/Persistence; sourceTree = SOURCE_ROOT; };
 		7239B94475BB9DFDD91C52FA /* SidebarAddFolderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarAddFolderTests.swift; sourceTree = "<group>"; };
+		723BFA4C81FBBBE3F94AB028 /* TestImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestImage.swift; sourceTree = "<group>"; };
 		72E65557F0B1086D83C44E4F /* ArtworkLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtworkLoaderTests.swift; sourceTree = "<group>"; };
 		755D5AD500E590F89922716C /* FirstRunUXTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunUXTests.swift; sourceTree = "<group>"; };
 		77E7DE0CD8E491E9AA61F4A3 /* DiagnosticsSettingsConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsSettingsConventionTests.swift; sourceTree = "<group>"; };
@@ -330,7 +332,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_24466FEB-8B6C-421E-9E7D-64D9059EEE4B" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_A83D051C-026F-4CA6-8DA8-8D6A41160197" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -505,6 +507,7 @@
 				CCB19AAB29930C92F958AB05 /* SubsonicSongNowPlayingSelectionTests.swift */,
 				D2EA275000509650FFC93292 /* SubsonicSourcesDiscoveryTests.swift */,
 				EEE4418B4A2222EEC024FF83 /* TagEditorViewModelCoverArtTests.swift */,
+				723BFA4C81FBBBE3F94AB028 /* TestImage.swift */,
 				8970E26BF3C2A096FC2108E1 /* TrackRowContentTests.swift */,
 				11E51128CC37D446E9B3634D /* TracksViewModelTests.swift */,
 				4974E7D03EB41C73C23C1851 /* TracksViewRemoveFromPlaylistConfirmationTests.swift */,
@@ -668,10 +671,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_F0379D46-0B17-4D0B-AC05-70875F500B18" /* bocan-music */ = {
+		"TEMP_1EA803FE-50FD-4E7B-AA73-062C4FB21677" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_24466FEB-8B6C-421E-9E7D-64D9059EEE4B" /* Secrets.xcconfig */,
+				"TEMP_A83D051C-026F-4CA6-8DA8-8D6A41160197" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -942,6 +945,7 @@
 				D660F301BE49F78BD9E83A59 /* SubsonicSongNowPlayingSelectionTests.swift in Sources */,
 				7BC373783953DCFDB5666EAC /* SubsonicSourcesDiscoveryTests.swift in Sources */,
 				E97F656EB92A9BEF410F136A /* TagEditorViewModelCoverArtTests.swift in Sources */,
+				15E3D444F86A2C9F79E77A0C /* TestImage.swift in Sources */,
 				4F66AFD8D90284DE6FA5B88F /* TrackRowContentTests.swift in Sources */,
 				1BE075CCA10285155142000B /* TrackTableDragTests.swift in Sources */,
 				CDC6FA7516C4C15CBFBDF92F /* TracksViewModelTests.swift in Sources */,
@@ -1037,7 +1041,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_24466FEB-8B6C-421E-9E7D-64D9059EEE4B" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A83D051C-026F-4CA6-8DA8-8D6A41160197" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1173,7 +1177,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_24466FEB-8B6C-421E-9E7D-64D9059EEE4B" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_A83D051C-026F-4CA6-8DA8-8D6A41160197" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
