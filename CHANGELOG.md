@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.0](https://github.com/bocan/bocan-music/compare/v2.2.0...v2.3.0) (2026-07-19)
 
+This one adds a new card-grid view mode to Artists, Genres, and Composers, and adds a new "View" menu to switch between the list and card-grid modes.  The card-grid mode shows album art for each artist, genre, or composer, and lets you browse their details by clicking on the album art.
 
 ### ### Added
 
