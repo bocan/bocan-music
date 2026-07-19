@@ -5,6 +5,29 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0](https://github.com/bocan/bocan-music/compare/v2.2.0...v2.3.0) (2026-07-19)
+
+
+### ### Added
+
+* **app:** mirror collection view modes in the View menu ([#363](https://github.com/bocan/bocan-music/issues/363)) ([aa88b52](https://github.com/bocan/bocan-music/commit/aa88b52acb55afae94c428066952b713ac3f3a05))
+* **ui:** add card-grid view mode to Artists ([#363](https://github.com/bocan/bocan-music/issues/363)) ([33284bf](https://github.com/bocan/bocan-music/commit/33284bfd7584e5d3fac59f8cbae56f3066fbf76d))
+* **ui:** add card-grid view mode to Genres and Composers ([#363](https://github.com/bocan/bocan-music/issues/363)) ([db21e47](https://github.com/bocan/bocan-music/commit/db21e47067d7bb8103f3ae71f3ecd43bb2d602e2))
+* **ui:** browse genre and composer destinations by album ([#363](https://github.com/bocan/bocan-music/issues/363)) ([f0a1820](https://github.com/bocan/bocan-music/commit/f0a1820ec548acdd578a1f1a496d57a7a2683a0d))
+
+
+### ### Fixed
+
+* **app:** never start the Sparkle updater in debug builds ([7ae9571](https://github.com/bocan/bocan-music/commit/7ae9571506ee15fe42262757612aaf27e0f868ec))
+
+
+### ### Changed
+
+* **app:** extract the Tools menu into BocanCommands+Tools.swift ([105d408](https://github.com/bocan/bocan-music/commit/105d40871e977739cdd9c2349296f3613b5c5d1a))
+* **ui:** extract the shared collection mode toggles ([#363](https://github.com/bocan/bocan-music/issues/363)) ([742b8db](https://github.com/bocan/bocan-music/commit/742b8db6c70018f521ca49320569d959503eccec))
+* **ui:** share the collection list row and sort between Genres and Composers ([f01d13a](https://github.com/bocan/bocan-music/commit/f01d13a9d6789c9026fcffbffd7455d181fc8873))
+* **ui:** split GenresComposersView into per-view files ([18c1212](https://github.com/bocan/bocan-music/commit/18c12123857ad281312bf3de7c8c2d0facbb857a))
+
 ## [2.2.0](https://github.com/bocan/bocan-music/compare/v2.1.0...v2.2.0) (2026-07-18)
 
 This one's a community release: half of what's below started life as a
