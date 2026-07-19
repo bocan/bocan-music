@@ -90,6 +90,23 @@ public extension AlbumRepository {
             try Self.collectionCards(in: db, column: .composer, maxCovers: maxCovers)
         }
     }
+
+    /// Albums having at least one non-disabled track in `genre`, distinct and
+    /// ordered by title. Tracks with a NULL `album_id` contribute no album (the
+    /// join drops them). Backs the genre destination's Albums mode (phase 23-3).
+    func fetchAll(genre: String) async throws -> [Album] {
+        try await self.database.read { db in
+            try Self.albums(in: db, column: .genre, value: genre)
+        }
+    }
+
+    /// Albums having at least one non-disabled track by `composer`, distinct and
+    /// ordered by title. Same rules as ``fetchAll(genre:)``.
+    func fetchAll(composer: String) async throws -> [Album] {
+        try await self.database.read { db in
+            try Self.albums(in: db, column: .composer, value: composer)
+        }
+    }
 }
 
 // MARK: - Shared genre/composer card query
@@ -147,5 +164,19 @@ private extension AlbumRepository {
                 coverArtPaths: covers[name] ?? []
             )
         }
+    }
+
+    /// Distinct albums whose non-disabled tracks match `value` on `column`,
+    /// ordered by title.
+    static func albums(in db: GRDB.Database, column: CollectionColumn, value: String) throws -> [Album] {
+        let sql = """
+            SELECT DISTINCT al.*
+            FROM albums al
+            JOIN tracks t ON t.album_id = al.id
+            WHERE t.\(column.rawValue) = ? AND t.disabled = 0
+            ORDER BY al.title
+        """
+        let rows = try Row.fetchAll(db, sql: sql, arguments: [value])
+        return try rows.map { try Album(row: $0) }
     }
 }

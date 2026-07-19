@@ -12,3 +12,15 @@ public enum CollectionViewMode: String, CaseIterable, Sendable {
     case list
     case grid
 }
+
+// MARK: - CollectionDetailMode
+
+/// How a genre or composer *destination* renders its contents: a flat track list
+/// (the historical behaviour) or a grid of that collection's albums.
+///
+/// Persisted per section with `@AppStorage` (`genres.detailMode`,
+/// `composers.detailMode`), default `.songs` so today's behaviour is unchanged.
+public enum CollectionDetailMode: String, CaseIterable, Sendable {
+    case songs
+    case albums
+}

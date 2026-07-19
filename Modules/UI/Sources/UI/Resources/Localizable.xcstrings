@@ -16901,6 +16901,16 @@
         }
       }
     },
+    "Show albums" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŵ áĺƀúḿš one"
+          }
+        }
+      }
+    },
     "Show chapters" : {
       "localizations" : {
         "en-XA" : {
@@ -16961,6 +16971,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šĥóŵ ƥŕóĝŕéšš ƀáŕ óñ Đóçķ íçóñ one two three"
+          }
+        }
+      }
+    },
+    "Show songs" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŵ šóñĝš one"
           }
         }
       }

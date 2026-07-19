@@ -94,6 +94,36 @@ public final class AlbumsViewModel: ObservableObject {
         self.isLoading = false
     }
 
+    /// Loads the albums that contain at least one non-disabled track in `genre`.
+    /// Used by the genre destination's Albums mode; mirrors ``load(albumArtistID:)``.
+    public func load(genre: String) async {
+        await self.loadFiltered { try await self.repository.fetchAll(genre: genre) }
+    }
+
+    /// Loads the albums that contain at least one non-disabled track by `composer`.
+    public func load(composer: String) async {
+        await self.loadFiltered { try await self.repository.fetchAll(composer: composer) }
+    }
+
+    /// Shared body for the filtered destination loads: fetch albums via `fetch`,
+    /// plus the artist-name and track-count maps the cells need, then assign.
+    private func loadFiltered(_ fetch: @Sendable () async throws -> [Album]) async {
+        self.isLoading = true
+        do {
+            async let artistNamesTask = self.repository.fetchArtistNameMap()
+            async let trackCountsTask = self.repository.fetchTrackCounts()
+            let albums = try await fetch()
+            let artistNames = await (try? artistNamesTask) ?? [:]
+            let trackCounts = await (try? trackCountsTask) ?? [:]
+            self.artistNames = artistNames
+            self.trackCounts = trackCounts
+            self.albums = self.sortedAlbums(albums)
+        } catch {
+            self.log.error("albums.loadFiltered.failed", ["error": String(reflecting: error)])
+        }
+        self.isLoading = false
+    }
+
     /// Replaces the album list with a pre-fetched result (search results).
     public func setAlbums(_ items: [Album]) {
         self.albums = self.sortedAlbums(items)
