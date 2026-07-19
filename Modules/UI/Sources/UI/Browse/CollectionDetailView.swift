@@ -46,25 +46,9 @@ struct CollectionDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                self.detailModePicker
+                CollectionDetailModeToggle(mode: self.$mode)
             }
         }
-    }
-
-    /// Segmented Songs / Albums toggle, same conventions as the 23-1 List/Grid
-    /// toggle: icons with localized accessibility labels and a help tip.
-    private var detailModePicker: some View {
-        Picker(L10n.string("Choose how this view is displayed"), selection: self.$mode) {
-            Image(systemName: "music.note.list")
-                .accessibilityLabel(L10n.string("Show songs"))
-                .tag(CollectionDetailMode.songs)
-            Image(systemName: "square.grid.2x2")
-                .accessibilityLabel(L10n.string("Show albums"))
-                .tag(CollectionDetailMode.albums)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .help(L10n.string("Choose how this view is displayed"))
     }
 
     private func loadAlbums() async {

@@ -26,11 +26,21 @@ struct CollectionDetailConventionTests {
         #expect(source.contains("CollectionDetailView(name: c, kind: .composer"))
     }
 
-    @Test("The destination presents a segmented Songs / Albums picker")
+    @Test("The destination presents the shared Songs / Albums toggle")
     func detailModePicker() throws {
         let source = try self.uiSource("Browse/CollectionDetailView.swift")
+        #expect(source.contains("CollectionDetailModeToggle(mode: self.$mode)"))
+    }
+
+    @Test("The shared mode toggles render segmented pickers with the right icons")
+    func toggleComponentShape() throws {
+        let source = try self.uiSource("Components/CollectionModeToggle.swift")
+        // List / Grid toggle.
         #expect(source.contains(".pickerStyle(.segmented)"))
-        #expect(source.contains("music.note.list") && source.contains("square.grid.2x2"))
+        #expect(source.contains("list.bullet") && source.contains("square.grid.2x2"))
+        #expect(source.contains("CollectionViewMode.list") && source.contains("CollectionViewMode.grid"))
+        // Songs / Albums toggle.
+        #expect(source.contains("music.note.list"))
         #expect(source.contains("CollectionDetailMode.songs") && source.contains("CollectionDetailMode.albums"))
     }
 
