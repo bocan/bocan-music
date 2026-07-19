@@ -15,6 +15,13 @@ public struct ContentPane: View {
     /// a plain `let` on `LibraryViewModel` (not `@Published`).
     @ObservedObject private var sidebar: PlaylistSidebarViewModel
 
+    /// Per-section Songs / Albums choice for the genre and composer
+    /// destinations, default Songs (phase 23-3). Read here (not observed on the
+    /// VM) so the destination switches live when the View menu or the toolbar
+    /// toggle writes the key.
+    @AppStorage("genres.detailMode") private var genreDetailMode: CollectionDetailMode = .songs
+    @AppStorage("composers.detailMode") private var composerDetailMode: CollectionDetailMode = .songs
+
     public init(vm: LibraryViewModel) {
         self.vm = vm
         self.sidebar = vm.playlistSidebar
@@ -86,10 +93,10 @@ public struct ContentPane: View {
             AlbumDetailView(albumID: id, library: self.vm)
 
         case let .genre(genre):
-            TracksView(vm: self.vm.tracks, library: self.vm, title: genre)
+            CollectionDetailView(name: genre, kind: .genre, mode: self.$genreDetailMode, library: self.vm)
 
         case let .composer(c):
-            TracksView(vm: self.vm.tracks, library: self.vm, title: c)
+            CollectionDetailView(name: c, kind: .composer, mode: self.$composerDetailMode, library: self.vm)
 
         case .upNext:
             QueueView(vm: self.vm)

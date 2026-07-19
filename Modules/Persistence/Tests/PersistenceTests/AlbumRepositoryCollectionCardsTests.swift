@@ -257,6 +257,47 @@ struct AlbumRepositoryCollectionCardsTests {
         #expect(Set(cards.map(\.name)) == ["Bach", "Mozart", ""])
     }
 
+    // MARK: - Destination album filters (fetchAll(genre:) / fetchAll(composer:))
+
+    @Test("fetchAll(genre:) returns distinct albums in title order, excluding disabled")
+    func fetchAlbumsByGenre() async throws {
+        let db = try await self.makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let zed = try await self.insertAlbum(repo, title: "Zed", albumArtistID: nil, year: 2001, coverArtPath: nil)
+        let ace = try await self.insertAlbum(repo, title: "Ace", albumArtistID: nil, year: 2002, coverArtPath: nil)
+        let other = try await self.insertAlbum(repo, title: "Other", albumArtistID: nil, year: 2003, coverArtPath: nil)
+        // Two Rock tracks on "Ace" must not duplicate the album.
+        try await self.insertTrack(trackRepo, title: "r1", albumID: ace, genre: "Rock")
+        try await self.insertTrack(trackRepo, title: "r2", albumID: ace, genre: "Rock")
+        try await self.insertTrack(trackRepo, title: "r3", albumID: zed, genre: "Rock")
+        // A disabled Rock track on "Other" must not include it.
+        try await self.insertTrack(trackRepo, title: "r4", albumID: other, genre: "Rock", disabled: true)
+        // A Rock track with no album contributes nothing.
+        try await self.insertTrack(trackRepo, title: "r5", albumID: nil, genre: "Rock")
+        // A Jazz track must not leak into the Rock result.
+        try await self.insertTrack(trackRepo, title: "j1", albumID: other, genre: "Jazz")
+
+        let albums = try await repo.fetchAll(genre: "Rock")
+        #expect(albums.map(\.title) == ["Ace", "Zed"])
+    }
+
+    @Test("fetchAll(composer:) returns distinct albums in title order, excluding disabled")
+    func fetchAlbumsByComposer() async throws {
+        let db = try await self.makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let beta = try await self.insertAlbum(repo, title: "Beta", albumArtistID: nil, year: 2001, coverArtPath: nil)
+        let alpha = try await self.insertAlbum(repo, title: "Alpha", albumArtistID: nil, year: 2002, coverArtPath: nil)
+        let gone = try await self.insertAlbum(repo, title: "Gone", albumArtistID: nil, year: 2003, coverArtPath: nil)
+        try await self.insertTrack(trackRepo, title: "b1", albumID: beta, composer: "Bach")
+        try await self.insertTrack(trackRepo, title: "a1", albumID: alpha, composer: "Bach")
+        try await self.insertTrack(trackRepo, title: "g1", albumID: gone, composer: "Bach", disabled: true)
+
+        let albums = try await repo.fetchAll(composer: "Bach")
+        #expect(albums.map(\.title) == ["Alpha", "Beta"])
+    }
+
     @Test("Genre cover paths are deduped and capped")
     func genreCoversDedupedAndCapped() async throws {
         let db = try await self.makeDatabase()

@@ -144,6 +144,9 @@ private struct AlbumInteractiveCell<Menu: View>: View {
 public struct AlbumsGridView: View {
     @ObservedObject public var vm: AlbumsViewModel
     public var library: LibraryViewModel
+    /// Optional navigation title override. Defaults to "Albums"; the filtered
+    /// genre/composer album destinations pass the collection name (phase 23-3).
+    private let titleOverride: String?
     /// Phase 4 audit L3: Cmd-click multi-select for albums.
     @State private var selection: Set<Int64> = []
     /// Phase 5: keyboard focus — which album cell has keyboard focus.
@@ -159,9 +162,10 @@ public struct AlbumsGridView: View {
     /// Scales the minimum album cell width proportionally to the user's text size setting.
     @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
-    public init(vm: AlbumsViewModel, library: LibraryViewModel) {
+    public init(vm: AlbumsViewModel, library: LibraryViewModel, title: String? = nil) {
         self.vm = vm
         self.library = library
+        self.titleOverride = title
     }
 
     private var columns: [GridItem] {
@@ -195,7 +199,7 @@ public struct AlbumsGridView: View {
                 self.albumGrid
             }
         }
-        .navigationTitle(L10n.string("Albums"))
+        .navigationTitle(self.titleOverride ?? L10n.string("Albums"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 self.sortMenu
