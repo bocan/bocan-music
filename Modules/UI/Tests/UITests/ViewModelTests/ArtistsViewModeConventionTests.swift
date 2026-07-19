@@ -32,16 +32,12 @@ struct ArtistsViewModeConventionTests {
         )
     }
 
-    @Test("ArtistsView presents a segmented view-mode picker")
+    @Test("ArtistsView presents the shared List/Grid toggle")
     func segmentedPicker() throws {
         let source = try self.browseSource("ArtistsView.swift")
         #expect(
-            source.contains(".pickerStyle(.segmented)"),
-            "the List/Grid toggle must be a segmented Picker"
-        )
-        #expect(
-            source.contains("square.grid.2x2") && source.contains("list.bullet"),
-            "the toggle must use the list.bullet and square.grid.2x2 icons"
+            source.contains("CollectionViewModeToggle(mode: self.$viewMode)"),
+            "the List/Grid toggle must be the shared CollectionViewModeToggle component"
         )
     }
 

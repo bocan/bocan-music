@@ -23,8 +23,7 @@ struct GenresComposersViewModeConventionTests {
         let source = try self.browseSource("GenresView.swift")
         #expect(source.contains("@AppStorage(\"genres.viewMode\")"))
         #expect(source.contains("CollectionViewMode = .list"))
-        #expect(source.contains(".pickerStyle(.segmented)"))
-        #expect(source.contains("square.grid.2x2") && source.contains("list.bullet"))
+        #expect(source.contains("CollectionViewModeToggle(mode: self.$viewMode)"))
     }
 
     @Test("Genres grid opens the genre and snapshots it for scroll restore")
@@ -40,8 +39,7 @@ struct GenresComposersViewModeConventionTests {
         let source = try self.browseSource("ComposersView.swift")
         #expect(source.contains("@AppStorage(\"composers.viewMode\")"))
         #expect(source.contains("CollectionViewMode = .list"))
-        #expect(source.contains(".pickerStyle(.segmented)"))
-        #expect(source.contains("square.grid.2x2") && source.contains("list.bullet"))
+        #expect(source.contains("CollectionViewModeToggle(mode: self.$viewMode)"))
     }
 
     @Test("Composers grid opens the composer and snapshots it for scroll restore")

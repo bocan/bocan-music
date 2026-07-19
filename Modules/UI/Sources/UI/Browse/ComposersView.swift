@@ -43,7 +43,7 @@ public struct ComposersView: View {
         .navigationTitle(L10n.string("Composers"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                self.viewModePicker
+                CollectionViewModeToggle(mode: self.$viewMode)
             }
             ToolbarItem(placement: .primaryAction) {
                 SortMenu(selection: self.$sortOrder, help: L10n.string("Choose how composers are sorted"))
@@ -63,21 +63,6 @@ public struct ComposersView: View {
         }
         // Re-sort in place when the user changes the order (no refetch).
         .onChange(of: self.sortOrder) { _, _ in self.composers = self.sortedComposers(self.composers) }
-    }
-
-    /// Segmented List / Grid toggle placed next to the sort menu.
-    private var viewModePicker: some View {
-        Picker(L10n.string("Choose how this view is displayed"), selection: self.$viewMode) {
-            Image(systemName: "list.bullet")
-                .accessibilityLabel(L10n.string("View as list"))
-                .tag(CollectionViewMode.list)
-            Image(systemName: "square.grid.2x2")
-                .accessibilityLabel(L10n.string("View as grid"))
-                .tag(CollectionViewMode.grid)
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .help(L10n.string("Choose how this view is displayed"))
     }
 
     /// Grid of composer cards, ordered by the same sorted `composers` array the
