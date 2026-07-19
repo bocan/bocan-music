@@ -93,21 +93,9 @@ public struct GenresView: View {
         )
     }
 
-    /// Sorts `items` by the current ``sortOrder``. Song count falls back to genre
-    /// name as a secondary key; `localizedStandardCompare` orders names naturally.
+    /// Sorts `items` by the current ``sortOrder`` via the shared algorithm.
     private func sortedGenres(_ items: [String]) -> [String] {
-        switch self.sortOrder {
-        case .songCount:
-            items.sorted { lhs, rhs in
-                let lcount = self.trackCounts[lhs] ?? 0
-                let rcount = self.trackCounts[rhs] ?? 0
-                if lcount != rcount { return lcount > rcount }
-                return lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
-
-        case .genreName:
-            items.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        }
+        CollectionSort.apply(items, byName: self.sortOrder == .genreName, counts: self.trackCounts)
     }
 
     private var genreList: some View {
@@ -128,45 +116,16 @@ public struct GenresView: View {
 
     private var genreListContent: some View {
         List(self.genres, id: \.self) { genre in
-            HStack(spacing: 10) {
-                ZStack {
-                    Circle()
-                        .fill(Color.accentColor.opacity(0.12))
-                        .frame(width: 36, height: 36)
-                    Image(systemName: "tag.fill")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.accentColor)
+            CollectionListRow(name: genre, symbol: "tag.fill", songCount: self.trackCounts[genre])
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Snapshot the visited genre so the list scrolls it back into
+                    // view when it's rebuilt on the way back (#349).
+                    self.library.lastVisitedGenre = genre
+                    Task { await self.library.selectDestination(.genre(genre)) }
                 }
-                .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(genre)
-                        .font(Typography.body)
-                        .foregroundStyle(Color.textPrimary)
-
-                    if let count = self.trackCounts[genre], count > 0 {
-                        Text(localized: "\(count) songs")
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textSecondary)
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(Typography.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .accessibilityHidden(true)
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                // Snapshot the visited genre so the list scrolls it back into
-                // view when it's rebuilt on the way back (#349).
-                self.library.lastVisitedGenre = genre
-                Task { await self.library.selectDestination(.genre(genre)) }
-            }
-            .accessibilityLabel(genre)
-            .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(genre)
+                .accessibilityAddTraits(.isButton)
         }
     }
 }

@@ -93,22 +93,9 @@ public struct ComposersView: View {
         )
     }
 
-    /// Sorts `items` by the current ``sortOrder``. Song count falls back to
-    /// composer name as a secondary key; `localizedStandardCompare` orders names
-    /// naturally.
+    /// Sorts `items` by the current ``sortOrder`` via the shared algorithm.
     private func sortedComposers(_ items: [String]) -> [String] {
-        switch self.sortOrder {
-        case .composerName:
-            items.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-
-        case .songCount:
-            items.sorted { lhs, rhs in
-                let lcount = self.trackCounts[lhs] ?? 0
-                let rcount = self.trackCounts[rhs] ?? 0
-                if lcount != rcount { return lcount > rcount }
-                return lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
-        }
+        CollectionSort.apply(items, byName: self.sortOrder == .composerName, counts: self.trackCounts)
     }
 
     private var composerList: some View {
@@ -129,45 +116,16 @@ public struct ComposersView: View {
 
     private var composerListContent: some View {
         List(self.composers, id: \.self) { composer in
-            HStack(spacing: 10) {
-                ZStack {
-                    Circle()
-                        .fill(Color.accentColor.opacity(0.12))
-                        .frame(width: 36, height: 36)
-                    Image(systemName: "music.note.list")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.accentColor)
+            CollectionListRow(name: composer, symbol: "music.note.list", songCount: self.trackCounts[composer])
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    // Snapshot the visited composer so the list scrolls it back
+                    // into view when it's rebuilt on the way back (#349).
+                    self.library.lastVisitedComposer = composer
+                    Task { await self.library.selectDestination(.composer(composer)) }
                 }
-                .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(composer)
-                        .font(Typography.body)
-                        .foregroundStyle(Color.textPrimary)
-
-                    if let count = self.trackCounts[composer], count > 0 {
-                        Text(localized: "\(count) songs")
-                            .font(Typography.caption)
-                            .foregroundStyle(Color.textSecondary)
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(Typography.caption)
-                    .foregroundStyle(Color.textTertiary)
-                    .accessibilityHidden(true)
-            }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                // Snapshot the visited composer so the list scrolls it back into
-                // view when it's rebuilt on the way back (#349).
-                self.library.lastVisitedComposer = composer
-                Task { await self.library.selectDestination(.composer(composer)) }
-            }
-            .accessibilityLabel(composer)
-            .accessibilityAddTraits(.isButton)
+                .accessibilityLabel(composer)
+                .accessibilityAddTraits(.isButton)
         }
     }
 }
