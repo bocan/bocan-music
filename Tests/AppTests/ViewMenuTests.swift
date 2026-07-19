@@ -72,6 +72,50 @@ struct ViewMenuTests {
         }
     }
 
+    // MARK: "View as" collection mode items (#363)
+
+    @Test("The View menu mirrors the collection List / Grid toggle, radio-style and gated")
+    func collectionViewModeItems() throws {
+        let source = try self.commandsSource()
+        // A radio-style inline picker with the two labelled items.
+        #expect(source.contains("Picker(\"View as\""), "the View menu must offer a \"View as\" picker")
+        #expect(
+            source.contains("as List") && source.contains("as Album Grid"),
+            "the picker must offer 'as List' and 'as Album Grid'"
+        )
+        #expect(source.contains(".pickerStyle(.inline)"), "radio checkmarks come from an inline picker style")
+        // Disabled unless the visible destination is a collection listing.
+        #expect(
+            source.contains(".disabled(!self.isCollectionListing)"),
+            "the items must be disabled off the collection listings"
+        )
+        // They live in the View (sidebar) group, before the app-specific menus.
+        let viewStart = try #require(source.range(of: "CommandGroup(after: .sidebar)"))
+        let playbackStart = try #require(source.range(of: "CommandMenu(\"Playback\")"))
+        let viewBody = String(source[viewStart.upperBound ..< playbackStart.lowerBound])
+        #expect(viewBody.contains("Picker(\"View as\""), "the 'View as' picker must sit in the View menu group")
+    }
+
+    @Test("The View-menu mode picker routes to the active section's viewMode key (#363)")
+    func collectionViewModeRouting() throws {
+        // The three keys are declared (and written) in BocanCommands.swift.
+        let commands = try self.commandsSource()
+        for key in ["artists.viewMode", "genres.viewMode", "composers.viewMode"] {
+            #expect(commands.contains("@AppStorage(\"\(key)\")"), "must declare @AppStorage for \(key)")
+        }
+        // The get/set routing by destination lives in the helper extension.
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("App/BocanCommands+CollectionViewMenu.swift")
+        let helpers = try String(contentsOf: url, encoding: .utf8)
+        #expect(helpers.contains("self.vm.selectedDestination"), "routing must read the active destination")
+        #expect(helpers.contains("self.genresViewMode = newValue"), "must write genres to genresViewMode")
+        #expect(helpers.contains("self.composersViewMode = newValue"), "must write composers to composersViewMode")
+        #expect(helpers.contains("self.artistsViewMode = newValue"), "must write artists to artistsViewMode")
+    }
+
     // MARK: Standard Edit / Window groups (#304)
 
     @Test("Standard Cut/Copy/Paste and Undo/Redo groups are not stripped (#304)")

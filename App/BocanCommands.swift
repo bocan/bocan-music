@@ -25,6 +25,12 @@ struct BocanCommands: Commands {
     /// In-app Reduce Motion toggle, mirrored so menu-driven pane changes can match
     /// the toolbar buttons' animation behaviour (issue #312).
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
+    // Collection listing view modes, mirrored so the "View as" menu can read and
+    // write the same keys the Artists/Genres/Composers views observe (phase
+    // 23-3). Not `private`: the routing helpers live in an extension file.
+    @AppStorage("artists.viewMode") var artistsViewMode: CollectionViewMode = .list
+    @AppStorage("genres.viewMode") var genresViewMode: CollectionViewMode = .list
+    @AppStorage("composers.viewMode") var composersViewMode: CollectionViewMode = .list
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
@@ -165,6 +171,18 @@ struct BocanCommands: Commands {
                 self.openWindow(id: "dsp")
             }
             .keyboardShortcut(KeyBindings.showEQPanel)
+
+            Divider()
+
+            // Mirrors the List / Grid toggle for the active collection listing
+            // (Artists, Genres, Composers). Radio checkmarks via an inline
+            // Picker; disabled when the current destination is not a listing.
+            Picker("View as", selection: self.collectionViewModeBinding) {
+                Text("as List").tag(CollectionViewMode.list)
+                Text("as Album Grid").tag(CollectionViewMode.grid)
+            }
+            .pickerStyle(.inline)
+            .disabled(!self.isCollectionListing)
         }
 
         CommandMenu("Playback") {
