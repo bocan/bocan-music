@@ -504,9 +504,9 @@
       <sparkle:version>1784487215</sparkle:version>
       <sparkle:shortVersionString>2.3.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
-      <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/V2.3.0</sparkle:releaseNotesLink>
+      <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.3.0</sparkle:releaseNotesLink>
       <enclosure
-        url="https://github.com/bocan/bocan-music/releases/download/V2.3.0/Bocan.dmg"
+        url="https://github.com/bocan/bocan-music/releases/download/v2.3.0/Bocan.dmg"
         sparkle:edSignature="GBTjg8Xy3uIwGVaOdgA6GXHXM9+8ZQFVJGC1k8Smlsl2A7eGkUHJ1kP8ez7zu8QGlFx8+cvRR8rGQvSIxvKRBQ=="
         length="47106232"
         type="application/octet-stream" />
