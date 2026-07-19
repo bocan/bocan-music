@@ -10,28 +10,9 @@ import Testing
 @Suite("CoverMosaicGenerator")
 @MainActor
 struct CoverMosaicGeneratorTests {
-    /// Writes a solid-colour PNG to a unique temp file and returns its path.
-    private func writePNG(_ color: NSColor) throws -> String {
-        let size = NSSize(width: 100, height: 100)
-        let image = NSImage(size: size)
-        image.lockFocus()
-        color.setFill()
-        NSRect(origin: .zero, size: size).fill()
-        image.unlockFocus()
-        guard let tiff = image.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff),
-              let png = rep.representation(using: .png, properties: [:]) else {
-            throw CocoaError(.fileWriteUnknown)
-        }
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("mosaic-\(UUID().uuidString).png")
-        try png.write(to: url)
-        return url.path
-    }
-
     @Test("Composes 1 to 4 images into a square", arguments: 1 ... 4)
     func composesSquare(count: Int) async throws {
-        let paths = try (0 ..< count).map { _ in try self.writePNG(.systemBlue) }
+        let paths = try (0 ..< count).map { _ in try TestImage.solidPNG().path }
         let generator = CoverMosaicGenerator()
         let image = await generator.mosaic(paths: paths, version: 0)
         let unwrapped = try #require(image)
@@ -48,7 +29,7 @@ struct CoverMosaicGeneratorTests {
 
     @Test("Cache returns the identical instance on a second call")
     func cacheIdentity() async throws {
-        let path = try self.writePNG(.systemRed)
+        let path = try TestImage.solidPNG().path
         let generator = CoverMosaicGenerator()
         let first = try #require(await generator.mosaic(paths: [path], version: 0))
         let second = try #require(await generator.mosaic(paths: [path], version: 0))
@@ -57,7 +38,7 @@ struct CoverMosaicGeneratorTests {
 
     @Test("A different version key composes a fresh image")
     func versionInvalidates() async throws {
-        let path = try self.writePNG(.systemGreen)
+        let path = try TestImage.solidPNG().path
         let generator = CoverMosaicGenerator()
         let v0 = try #require(await generator.mosaic(paths: [path], version: 0))
         let v1 = try #require(await generator.mosaic(paths: [path], version: 1))
@@ -66,7 +47,7 @@ struct CoverMosaicGeneratorTests {
 
     @Test("The cache clears once it exceeds the 512-entry cap")
     func capClears() async throws {
-        let path = try self.writePNG(.systemOrange)
+        let path = try TestImage.solidPNG().path
         let generator = CoverMosaicGenerator()
         // Seed version 0, then fill the cache to the 512-entry cap with distinct
         // version keys. The 512th distinct key past the seed triggers a clear.
