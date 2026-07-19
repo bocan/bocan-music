@@ -5,6 +5,15 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1](https://github.com/bocan/bocan-music/compare/v2.3.0...v2.3.1) (2026-07-19)
+
+
+### ### Fixed
+
+* **release:** point the 2.3.0 appcast at the canonical v2.3.0 release ([770871b](https://github.com/bocan/bocan-music/commit/770871b244c8f4302737cab90198f0485f6092c3))
+* **release:** point the 2.3.0 appcast entry at the real DMG ([0340175](https://github.com/bocan/bocan-music/commit/03401752bca869ddbed6cb336f9169c7201bff2c))
+* **ui:** navigate from artist rows directly ([b7bcb84](https://github.com/bocan/bocan-music/commit/b7bcb84f7ac3593c1c19badb26cbdaa3dee587b2))
+
 ## [2.3.0](https://github.com/bocan/bocan-music/compare/v2.2.0...v2.3.0) (2026-07-19)
 
 This one adds a new card-grid view mode to Artists, Genres, and Composers, and adds a new "View" menu to switch between the list and card-grid modes.  The card-grid mode shows album art for each artist, genre, or composer, and lets you browse their details by clicking on the album art.
