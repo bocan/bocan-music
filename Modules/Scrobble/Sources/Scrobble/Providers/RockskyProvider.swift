@@ -29,7 +29,7 @@ public actor RockskyProvider: ScrobbleProvider {
     public nonisolated let displayName = "Rocksky"
 
     private let config: RockskyConfig
-    private let http: HTTPClient
+    private let transport: ListenBrainzCompatibleTransport
     private let credentials: any RockskyCredentialsStore
     private let log = AppLogger.make(.scrobble)
     private let now: @Sendable () -> Date
@@ -42,7 +42,7 @@ public actor RockskyProvider: ScrobbleProvider {
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.config = config
-        self.http = http
+        self.transport = ListenBrainzCompatibleTransport(http: http, endpoint: config.endpoint)
         self.credentials = credentials
         self.now = now
     }
@@ -62,8 +62,8 @@ public actor RockskyProvider: ScrobbleProvider {
         guard let token = try await self.credentials.rockskyApiKey(), !token.isEmpty else {
             throw ScrobbleError.notAuthenticated(provider: self.id)
         }
-        let payload = self.buildPayload(listenType: "playing_now", plays: [play])
-        _ = try await self.post(path: "/1/submit-listens", token: token, payload: payload)
+        let payload = self.transport.buildPayload(listenType: "playing_now", plays: [play])
+        _ = try await self.transport.post(path: "/1/submit-listens", token: token, payload: payload, providerID: self.id)
         self.log.debug("scrobble.rocksky.nowplaying.ok", ["title": play.title])
     }
 
@@ -79,9 +79,9 @@ public actor RockskyProvider: ScrobbleProvider {
         var out: [SubmissionResult] = []
         out.reserveCapacity(plays.count)
         for batch in batches {
-            let payload = self.buildPayload(listenType: batch.count == 1 ? "single" : "import", plays: batch)
+            let payload = self.transport.buildPayload(listenType: batch.count == 1 ? "single" : "import", plays: batch)
             do {
-                _ = try await self.post(path: "/1/submit-listens", token: token, payload: payload)
+                _ = try await self.transport.post(path: "/1/submit-listens", token: token, payload: payload, providerID: self.id)
                 out.append(contentsOf: batch.map { SubmissionResult(queueID: $0.queueID, outcome: .success) })
                 self.log.info("scrobble.rocksky.batch.ok", ["count": batch.count])
             } catch let ScrobbleError.transient(_, reason, retryAfter) {
@@ -105,67 +105,6 @@ public actor RockskyProvider: ScrobbleProvider {
         // XRPC API (api.rocksky.app), which requires a separate integration.
         // Skip silently so callers don't surface a spurious error.
         self.log.debug("scrobble.rocksky.love.skip", ["reason": "not supported by scrobble api", "track": track.title])
-    }
-
-    // MARK: Private
-
-    private func buildPayload(listenType: String, plays: [PlayEvent]) -> [String: Any] {
-        let listens = plays.map { play -> [String: Any] in
-            var trackMetadata: [String: Any] = [
-                "artist_name": play.artist,
-                "track_name": play.title,
-            ]
-            if let album = play.album { trackMetadata["release_name"] = album }
-            var additional: [String: Any] = [:]
-            additional["media_player"] = "Bòcan"
-            additional["submission_client"] = "Bòcan"
-            if let mbid = play.mbid { additional["recording_mbid"] = mbid }
-            if play.duration > 0 { additional["duration_ms"] = Int(play.duration * 1000) }
-            if !additional.isEmpty { trackMetadata["additional_info"] = additional }
-            var listen: [String: Any] = ["track_metadata": trackMetadata]
-            if listenType != "playing_now" {
-                listen["listened_at"] = Int(play.playedAt.timeIntervalSince1970)
-            }
-            return listen
-        }
-        return ["listen_type": listenType, "payload": listens]
-    }
-
-    @discardableResult
-    private func post(path: String, token: String, payload: [String: Any]) async throws -> [String: Any] {
-        var components = URLComponents(url: self.config.endpoint, resolvingAgainstBaseURL: true)!
-        components.path = path
-        guard let url = components.url else {
-            throw ScrobbleError.malformedResponse(provider: self.id, reason: "bad url")
-        }
-        var req = URLRequest(url: url)
-        req.httpMethod = "POST"
-        req.setValue("Token \(token)", forHTTPHeaderField: "Authorization")
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue("application/json", forHTTPHeaderField: "Accept")
-        req.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
-
-        let (data, response) = try await self.http.data(for: req)
-        let http = response as? HTTPURLResponse
-        let status = http?.statusCode ?? 0
-        let retryAfter = http?.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init)
-
-        if status >= 200, status < 300 {
-            return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
-        }
-        switch status {
-        case 401, 403:
-            let body = String(data: data, encoding: .utf8) ?? "<binary>"
-            self.log.error("scrobble.rocksky.auth.fail", ["status": status, "url": url.absoluteString, "body": body.prefix(300)])
-            throw ScrobbleError.invalidCredentials(provider: self.id)
-        case 429:
-            throw ScrobbleError.transient(provider: self.id, reason: "rate limited", retryAfter: retryAfter ?? 60)
-        case 500 ... 599:
-            throw ScrobbleError.transient(provider: self.id, reason: "http \(status)", retryAfter: retryAfter)
-        default:
-            let body = String(data: data, encoding: .utf8) ?? "<binary>"
-            throw ScrobbleError.permanent(provider: self.id, reason: "http \(status): \(body.prefix(200))")
-        }
     }
 }
 
