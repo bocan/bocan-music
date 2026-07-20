@@ -75,17 +75,64 @@ sessions dedup against it instead of re-copying. Format: `symbol -- module -- wh
 | S4-5 | S4 / Playback | `GaplessScheduler` vs `CrossfadeScheduler` | parallel-types | 2x ~200 lines, ~304 diff lines (mostly distinct) | tolerated | Distinct timing models (poll-and-preschedule vs volume-ramp handoff); no shared code reference between them. Seed: keep the timing math distinct. Format-compat check is already shared via `FormatBridge`. | -- |
 | S4-6 | S4 / Playback | `PlayableSource` per-case accessors + discriminated `Codable` | parallel-types | 4 accessors + 1 encode/decode switch | tolerated | Canonical discriminated-enum shape; each accessor extracts a different associated value (can't share). Switch-over-source appears only in the enum itself and `QueuePlayer`, not repeated across files. | -- |
 | S4-7 | S4 / Playback | `FisherYatesShuffle` vs `SmartShuffle` | parallel-types | 2 strategies behind `ShuffleStrategy` | tolerated | Genuinely different algorithms behind one protocol (strategy pattern); nothing to fold. | -- |
+| S5-1 | S5 / Subsonic | `SubsonicService` endpoint methods (getArtists/getAlbum/search3/star/scrobble/… + the 3 capability-gated) | boilerplate-wrapper | 20x ~8 lines, ~identical (`requireClient` -> call client -> `catch SwiftSonicError { throw .transport }`) | consolidated | Added `withClient(_:_:)` and `withCapabilityGatedClient(_:feature:_:)`. 20 endpoints collapse to one delegating line each; public signatures + behavior unchanged. Not the cross-module HTTP shape -- SwiftSonic owns the actual HTTP; this is the SwiftSonic->Subsonic error-map wrapper. Net -61 lines. | `cd7b4fb` |
+| S5-2 | S5 / Subsonic | `loadCapabilities`, `refreshCapabilities` | boilerplate-wrapper | 2x, complex bodies | tolerated | Kept explicit: each has an early-return cache check before the client call plus multi-step persist/compare/yield; forcing them through `withClient` would bury a 25-line closure and obscure the early return. | -- |
+| S5-3 | S5 / Subsonic+SyncServer+Podcasts (cross-module) | `HTTPClient` protocol + request/decode/error-map (Acoustics, Scrobble, Podcasts identical; Library) | boilerplate-wrapper | protocol byte-identical across 3 modules; send/status/decode repeated per client | deferred | The third+ sighting; concrete S10 proposal recorded below. Subsonic excluded (delegates HTTP to SwiftSonic). Target: **Session 10**. | -- |
+| S5-4 | S5 / Scrobble+Subsonic+SyncServer (cross-module) | `SecItem` Keychain access (`Scrobble/Credentials`, `Subsonic/SubsonicServerStore`, `SyncServer/IdentityStore`) | copy-paste-block | 3x SecItemAdd/CopyMatching/Delete query-dict + OSStatus mapping | deferred | Seed's "one helper or several?" -> several. Scrobble+Subsonic store generic passwords (closest pair); SyncServer stores a `SecKey`+certificate (distinct). Concrete S10 proposal below. Target: **Session 10**. | -- |
+| S5-5 | S5 / SyncServer | `SelfSignedCert` (P-256 key + cert), `IdentityStore` | boilerplate-wrapper | single-source | tolerated | Cert/key derivation is centralized in `SelfSignedCert.generate`/`makeCertificate`; `IdentityStore` delegates to it. No repeated derivation. | -- |
+| S5-6 | S5 / SyncServer | `Http/` route handlers + `HttpResponse` | boilerplate-wrapper | factories centralize | tolerated | Response building goes through `HttpResponse` static factories (`.json`, 204, …); only ~6 raw `HttpResponse(` sites, mostly inside those factories. Routes already share. | -- |
+| S5-7 | S5 / Podcasts | `Mapping/ParsedFeed+Records` feed field-mapping | boilerplate-wrapper | single-source | tolerated | Seed check: field-mapping lives in one file. OPML carries only subscription URLs (no field map); refresh and import both route through the same mapping + `upsertByFeedURL`. | -- |
+| S5-8 | S5 / Podcasts vs Scrobble (cross-module) | `Downloads/EpisodeDownloadManager` vs `ScrobbleQueueWorker`/`RetryPolicy` | parallel-types | not near-identical | tolerated | Seed check: not twins. Downloads drive `URLSession` download tasks (bytes/progress/resume); the scrobble queue is a DB-backed pending-row retry loop with backoff. No shared retry/backoff to fold. | -- |
 
 <!--
 Append rows below per session. Keep the example row at the top as the format
 reference. Do not delete rows once written.
 -->
 
+## Session 10 concrete proposals (cross-module)
+
+Recorded here so Session 10 starts from a design, not a re-investigation.
+
+### HTTP client (S2-5, S3-9, S4-4, S5-3, S5-8's clients)
+- **Home:** a new leaf module `Networking` (Foundation-only, sits at the DAG floor
+  beside `Observability`), imported by Acoustics/Scrobble/Podcasts/Library. Do **not**
+  put it in `Observability` (that module is the logging floor and should not grow a
+  networking surface). Subsonic is out of scope -- it delegates HTTP to SwiftSonic.
+- **Interface sketch:**
+  ```swift
+  public protocol HTTPClient: Sendable {
+      func data(for request: URLRequest) async throws -> (Data, URLResponse)
+  }
+  extension URLSession: HTTPClient { /* delegate: nil */ }
+
+  public struct HTTPStatus: Sendable { public let code: Int; public let retryAfter: TimeInterval? }
+  public extension HTTPClient {
+      /// Sends and returns the body + parsed status; callers map status -> their own typed error.
+      func send(_ request: URLRequest) async throws -> (Data, HTTPStatus)
+  }
+  ```
+- **Collapses:** the byte-identical `HTTPClient` protocol + `URLSession` conformance
+  (Acoustics, Scrobble, Podcasts) into one; the `response as? HTTPURLResponse` +
+  `statusCode` + `Retry-After` extraction repeated in each client into `send`.
+- **Stays per-module:** typed error mapping (`AcousticsError`/`ScrobbleError`/`PodcastsError`),
+  auth (PodcastIndex HMAC-SHA1, Last.fm `api_sig`, ListenBrainz `Token`), and payload
+  building. The `RateLimiter` + `MusicBrainzClient` siblings (S3-9) sit above this layer;
+  fold them once the shared client exists.
+
+### Login-Keychain store (S5-4)
+- **Home:** a small `LoginKeychain` helper (own leaf module, or alongside `Networking`).
+- **Interface sketch:** `func read(service:account:) -> Data?`, `func upsert(_:service:account:)`,
+  `func delete(service:account:)` -- generic-password items, file (login) Keychain, **no**
+  `kSecAttrAccessible` and **no** `kSecUseDataProtectionKeychain` (per repo memory / TN3137).
+- **Shares:** `Scrobble/Credentials` + `Subsonic/SubsonicServerStore` (both generic passwords).
+- **Excluded:** `SyncServer/IdentityStore` stores a `SecKey` + certificate (a `SecIdentity`),
+  a distinct concern -- leave it, or add a separate typed helper.
+
 ## Running totals
 
 Update at the end of each session (Session 10 finalizes):
 
-- Lines removed (net): _42_
-- Consolidated: _2_  ·  Tolerated: _24_  ·  Rejected: _4_  ·  Deferred: _4_
-- New shared helpers introduced: _2_ (`Database.fetchOne(_:id:entity:)`; `ListenBrainzCompatibleTransport`)
-- Session 10 queue (deferred, cross-module): `clamped(to:)` micro-helper (S2-4, ~46 sites); the generic HTTP request/decode/error-map client primitive beneath the service-specific transports (S2-5 Acoustics, S4-4 Scrobble, + Subsonic in S5); per-service `RateLimiter` + `MusicBrainzClient` siblings (S3-9, Acoustics + Library/CoverArt) fold into that same HTTP/rate-limiter work.
+- Lines removed (net): _103_
+- Consolidated: _3_  ·  Tolerated: _29_  ·  Rejected: _4_  ·  Deferred: _6_
+- New shared helpers introduced: _2_ (`Database.fetchOne(_:id:entity:)`; `ListenBrainzCompatibleTransport`) + Subsonic-internal `withClient`/`withCapabilityGatedClient`
+- Session 10 queue (deferred, cross-module): `clamped(to:)` micro-helper (S2-4, ~46 sites); the HTTP client (concrete proposal above); the login-Keychain store (concrete proposal above).
