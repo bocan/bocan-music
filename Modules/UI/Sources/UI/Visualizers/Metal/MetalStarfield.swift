@@ -105,23 +105,11 @@ final class MetalStarfield: MetalVisualizer {
         guard let fragmentFunction = library.makeFunction(name: "starfield_fragment") else {
             throw MetalRendererError.missingFunction(name: "starfield_fragment")
         }
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.vertexFunction = vertexFunction
-        descriptor.fragmentFunction = fragmentFunction
-        descriptor.colorAttachments[0].pixelFormat = pixelFormat
-        let attachment = descriptor.colorAttachments[0]
-        attachment?.isBlendingEnabled = true
-        attachment?.rgbBlendOperation = .add
-        attachment?.alphaBlendOperation = .add
-        attachment?.sourceRGBBlendFactor = .sourceAlpha
-        attachment?.sourceAlphaBlendFactor = .sourceAlpha
-        attachment?.destinationRGBBlendFactor = .oneMinusSourceAlpha
-        attachment?.destinationAlphaBlendFactor = .oneMinusSourceAlpha
-        do {
-            self.pipeline = try device.makeRenderPipelineState(descriptor: descriptor)
-        } catch {
-            throw MetalRendererError.pipelineCreationFailed(reason: String(reflecting: error))
-        }
+        self.pipeline = try device.makeAlphaBlendedPipeline(
+            vertexFunction: vertexFunction,
+            fragmentFunction: fragmentFunction,
+            pixelFormat: pixelFormat
+        )
 
         let bytesPerSlot = (Self.starCount + 1) * MemoryLayout<StarInstance>.stride
         guard let ring = FrameRing(device: device, bytesPerSlot: bytesPerSlot) else {

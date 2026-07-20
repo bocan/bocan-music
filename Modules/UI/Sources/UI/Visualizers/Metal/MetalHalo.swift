@@ -188,23 +188,11 @@ final class MetalHalo: MetalVisualizer {
         guard let fragmentFunction = library.makeFunction(name: fragment) else {
             throw MetalRendererError.missingFunction(name: fragment)
         }
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.vertexFunction = vertexFunction
-        descriptor.fragmentFunction = fragmentFunction
-        descriptor.colorAttachments[0].pixelFormat = pixelFormat
-        let attachment = descriptor.colorAttachments[0]
-        attachment?.isBlendingEnabled = true
-        attachment?.rgbBlendOperation = .add
-        attachment?.alphaBlendOperation = .add
-        attachment?.sourceRGBBlendFactor = .sourceAlpha
-        attachment?.sourceAlphaBlendFactor = .sourceAlpha
-        attachment?.destinationRGBBlendFactor = .oneMinusSourceAlpha
-        attachment?.destinationAlphaBlendFactor = .oneMinusSourceAlpha
-        do {
-            return try device.makeRenderPipelineState(descriptor: descriptor)
-        } catch {
-            throw MetalRendererError.pipelineCreationFailed(reason: String(reflecting: error))
-        }
+        return try device.makeAlphaBlendedPipeline(
+            vertexFunction: vertexFunction,
+            fragmentFunction: fragmentFunction,
+            pixelFormat: pixelFormat
+        )
     }
 
     /// The static fan index triples `(0, i, i+1)`, drawing the membrane as a
