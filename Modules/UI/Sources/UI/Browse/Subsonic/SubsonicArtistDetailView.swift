@@ -150,15 +150,7 @@ public struct SubsonicArtistDetailView: View {
         .task(id: self.artistID) {
             if self.vm.artist == nil { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load artist"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load artist"), message: self.$vm.errorMessage)
     }
 
     // MARK: - Sub-views

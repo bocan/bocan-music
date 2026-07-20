@@ -45,15 +45,7 @@ public struct SubsonicGenresView: View {
         .task(id: self.serverID) {
             if self.vm.genres.isEmpty { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load genres"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load genres"), message: self.$vm.errorMessage)
     }
 
     @ViewBuilder
