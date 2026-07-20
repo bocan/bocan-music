@@ -45,12 +45,7 @@ public struct ArtistRepository: Sendable {
 
     /// Fetches the artist with `id`, or throws `.notFound` if absent.
     public func fetch(id: Int64) async throws -> Artist {
-        try await self.database.read { db in
-            guard let artist = try Artist.fetchOne(db, key: id) else {
-                throw PersistenceError.notFound(entity: "Artist", id: id)
-            }
-            return artist
-        }
+        try await self.database.fetchOne(Artist.self, id: id, entity: "Artist")
     }
 
     /// Fetches the artist whose `name` matches exactly, or `nil` if absent.

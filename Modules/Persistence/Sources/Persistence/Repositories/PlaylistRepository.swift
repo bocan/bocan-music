@@ -100,12 +100,7 @@ public struct PlaylistRepository: Sendable {
 
     /// Fetches the playlist with `id`, or throws `.notFound` if absent.
     public func fetch(id: Int64) async throws -> Playlist {
-        try await self.database.read { db in
-            guard let playlist = try Playlist.fetchOne(db, key: id) else {
-                throw PersistenceError.notFound(entity: "Playlist", id: id)
-            }
-            return playlist
-        }
+        try await self.database.fetchOne(Playlist.self, id: id, entity: "Playlist")
     }
 
     /// Fetches all playlists in user-defined display order.

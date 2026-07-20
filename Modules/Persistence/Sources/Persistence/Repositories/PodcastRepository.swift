@@ -175,13 +175,7 @@ public struct PodcastRepository: Sendable {
 
     /// Fetches a podcast by primary key. Throws `PersistenceError.notFound` when absent.
     public func fetch(id: Int64) async throws -> Podcast {
-        let record = try await self.database.read { db in
-            try Podcast.fetchOne(db, key: id)
-        }
-        guard let record else {
-            throw PersistenceError.notFound(entity: "Podcast", id: id)
-        }
-        return record
+        try await self.database.fetchOne(Podcast.self, id: id, entity: "Podcast")
     }
 
     /// Fetches a podcast by its canonical `feed_url`, or `nil` if not subscribed.

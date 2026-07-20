@@ -144,12 +144,7 @@ public struct TrackRepository: Sendable {
 
     /// Fetches the track with `id`, or throws `.notFound` if absent.
     public func fetch(id: Int64) async throws -> Track {
-        try await self.database.read { db in
-            guard let track = try Track.fetchOne(db, key: id) else {
-                throw PersistenceError.notFound(entity: "Track", id: id)
-            }
-            return track
-        }
+        try await self.database.fetchOne(Track.self, id: id, entity: "Track")
     }
 
     /// Emits the `Track` row for `id` (or `nil` if absent) immediately and on

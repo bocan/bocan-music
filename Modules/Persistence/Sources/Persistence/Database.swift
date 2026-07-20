@@ -44,6 +44,26 @@ public actor Database {
         try await self.writer.write(work)
     }
 
+    // MARK: - Typed fetch helpers
+
+    /// Reads the record of type `Record` with primary key `id`, throwing
+    /// `PersistenceError.notFound(entity:id:)` when no row matches.
+    ///
+    /// Folds the "fetch by primary key or throw not-found" body that otherwise
+    /// recurs verbatim across the typed repositories' `fetch(id:)` methods.
+    func fetchOne<Record: FetchableRecord & TableRecord & Sendable>(
+        _: Record.Type,
+        id: Int64,
+        entity: String
+    ) async throws -> Record {
+        try await self.read { db in
+            guard let record = try Record.fetchOne(db, key: id) else {
+                throw PersistenceError.notFound(entity: entity, id: id)
+            }
+            return record
+        }
+    }
+
     // MARK: - Observation
 
     /// Returns a stream that emits the current value immediately and again on every change.
