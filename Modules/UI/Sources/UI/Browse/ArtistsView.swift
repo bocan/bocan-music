@@ -285,7 +285,9 @@ public struct ArtistsView: View {
 
     /// List vs grid, persisted per section; defaults to `.list` so today's
     /// behaviour is unchanged until the user opts into the grid (phase 23-1).
-    @AppStorage("artists.viewMode") private var viewMode: CollectionViewMode = .list
+    /// String-backed (`CollectionViewModeStorage`) so the "View as" menu's writes
+    /// reliably redraw this listing; see that wrapper's note (phase 23-3).
+    @CollectionViewModeStorage("artists.viewMode") private var viewMode
 
     public init(vm: ArtistsViewModel, library: LibraryViewModel) {
         self.vm = vm

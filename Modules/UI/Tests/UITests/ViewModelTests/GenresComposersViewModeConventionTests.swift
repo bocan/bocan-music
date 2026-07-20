@@ -21,8 +21,7 @@ struct GenresComposersViewModeConventionTests {
     @Test("Genres persist the view mode, default to list, and present a segmented picker")
     func genresToggle() throws {
         let source = try self.browseSource("GenresView.swift")
-        #expect(source.contains("@AppStorage(\"genres.viewMode\")"))
-        #expect(source.contains("CollectionViewMode = .list"))
+        #expect(source.contains("@CollectionViewModeStorage(\"genres.viewMode\")"))
         #expect(source.contains("CollectionViewModeToggle(mode: self.$viewMode)"))
     }
 
@@ -37,8 +36,7 @@ struct GenresComposersViewModeConventionTests {
     @Test("Composers persist the view mode, default to list, and present a segmented picker")
     func composersToggle() throws {
         let source = try self.browseSource("ComposersView.swift")
-        #expect(source.contains("@AppStorage(\"composers.viewMode\")"))
-        #expect(source.contains("CollectionViewMode = .list"))
+        #expect(source.contains("@CollectionViewModeStorage(\"composers.viewMode\")"))
         #expect(source.contains("CollectionViewModeToggle(mode: self.$viewMode)"))
     }
 

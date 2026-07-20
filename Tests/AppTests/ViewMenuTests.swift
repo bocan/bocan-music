@@ -101,7 +101,10 @@ struct ViewMenuTests {
         // The three keys are declared (and written) in BocanCommands.swift.
         let commands = try self.commandsSource()
         for key in ["artists.viewMode", "genres.viewMode", "composers.viewMode"] {
-            #expect(commands.contains("@AppStorage(\"\(key)\")"), "must declare @AppStorage for \(key)")
+            #expect(
+                commands.contains("@CollectionViewModeStorage(\"\(key)\")"),
+                "must declare @CollectionViewModeStorage for \(key)"
+            )
         }
         // The get/set routing by destination lives in the helper extension.
         let url = URL(filePath: #filePath)
