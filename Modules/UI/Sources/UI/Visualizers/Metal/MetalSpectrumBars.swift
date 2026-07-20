@@ -116,23 +116,11 @@ final class MetalSpectrumBars: MetalVisualizer {
         guard let fragmentFunction = library.makeFunction(name: "spectrum_fragment") else {
             throw MetalRendererError.missingFunction(name: "spectrum_fragment")
         }
-        let descriptor = MTLRenderPipelineDescriptor()
-        descriptor.vertexFunction = vertexFunction
-        descriptor.fragmentFunction = fragmentFunction
-        descriptor.colorAttachments[0].pixelFormat = pixelFormat
-        let attachment = descriptor.colorAttachments[0]
-        attachment?.isBlendingEnabled = true
-        attachment?.rgbBlendOperation = .add
-        attachment?.alphaBlendOperation = .add
-        attachment?.sourceRGBBlendFactor = .sourceAlpha
-        attachment?.sourceAlphaBlendFactor = .sourceAlpha
-        attachment?.destinationRGBBlendFactor = .oneMinusSourceAlpha
-        attachment?.destinationAlphaBlendFactor = .oneMinusSourceAlpha
-        do {
-            self.pipeline = try device.makeRenderPipelineState(descriptor: descriptor)
-        } catch {
-            throw MetalRendererError.pipelineCreationFailed(reason: String(reflecting: error))
-        }
+        self.pipeline = try device.makeAlphaBlendedPipeline(
+            vertexFunction: vertexFunction,
+            fragmentFunction: fragmentFunction,
+            pixelFormat: pixelFormat
+        )
 
         let bytesPerSlot = Self.bandCount * 2 * MemoryLayout<BarInstance>.stride
         guard let ring = FrameRing(device: device, bytesPerSlot: bytesPerSlot) else {
