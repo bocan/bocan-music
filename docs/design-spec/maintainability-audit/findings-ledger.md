@@ -33,6 +33,8 @@ sessions dedup against it instead of re-copying. Format: `symbol -- module -- wh
 | `SQL.escapeFTSTerm` / `SQL.escapeLIKETerm` | Persistence | FTS5 MATCH prefix-token builder and LIKE operand escaper. Confirmed single-source (module-internal); do not re-implement inline. | S1 (pre-existing) |
 | `CoverArtCache` (`persist` / `sweep`) | Library | Single-source cover-art on-disk scheme: path `<cacheRoot>/<sha256[0..<2]>/<sha256>.<ext>`, LRU sweep re-derives the hash from the filename. sha256 itself comes from `Metadata.ExtractedCoverArt.sha256`. UI/others read `cover_art.path`; never re-derive the path or hash. | S3 (pre-existing) |
 | `M3UReader` (`decode`/`splitLines`/`resolveURL`) + `M3UWriter` (`renderPath`/`relativePath`) | Library | Shared playlist path-resolution and text-decode helpers; PLS/XSPF readers and writers already route through these. Confirmed single-source for playlist path/relative-path math. | S3 (pre-existing) |
+| `LastFmCompatibleTransport` | Scrobble | Last.fm-compatible HTTP + `api_sig` signing + error-code mapping engine; Last.fm (and future signed providers) delegate to it. Confirmed single-source. | S4 (pre-existing) |
+| `ListenBrainzCompatibleTransport` | Scrobble | ListenBrainz-compatible `submit-listens` payload builder + POST/`ScrobbleError`-mapping engine; ListenBrainz and Rocksky delegate to it. Any future ListenBrainz-protocol provider should too. | S4 |
 
 ## Findings
 
@@ -66,6 +68,13 @@ sessions dedup against it instead of re-copying. Format: `symbol -- module -- wh
 | S3-8 | S3 / Library | `ConflictResolver.resolve` | near-duplicate-fn | 1x 30 lines | tolerated | v1 policy is a single "user-edited wins" decision; no compare-old-vs-new field ladder exists to compress. | -- |
 | S3-9 | S3 / Library CoverArt (cross-module) | `CoverArt/MusicBrainzClient.swift` (140), `CoverArt/RateLimiter.swift` vs `Acoustics/MusicBrainzClient.swift` (94), `Acoustics/RateLimiter.swift` | parallel-types | 2 MB clients (diverge: cover-art release-group search vs recording lookup); 2 rate-limiters (same concept, ~different impl) | deferred | Cross-module siblings, not copies. Fold into the Session 10 HTTP-client + rate-limiter cross-module work (with Scrobble/Subsonic). Target: **Session 10**. | -- |
 | S3-10 | S3 / Library | `FSWatcher.swift` (FSEvents) | boilerplate-wrapper | 1 | tolerated | Single file-watcher; no second debounce/coalesce implementation to dedup against. | -- |
+| S4-1 | S4 / Scrobble providers | `ListenBrainzProvider` + `RockskyProvider` (`buildPayload`, `post`) | parallel-types | 2x: `buildPayload` byte-identical (~20 lines); `post` ~35 lines differing only in one log line | consolidated | Rocksky is ListenBrainz-compatible *by definition* -- the payload must stay in lockstep (rule-of-three lockstep exception), and the module already set the precedent with `LastFmCompatibleTransport`. Extracted `ListenBrainzCompatibleTransport`; providers keep their own method logic/logging and distinct love/auth. Shares the skeleton, not the bodies (seed's ask). Net -25 lines. | `889d78d` |
+| S4-2 | S4 / Scrobble providers | `LastFmProvider` request/sign/parse/error-map | parallel-types | already factored | tolerated | Already consolidated: `LastFmProvider` delegates all HTTP/signing/error-mapping to `LastFmCompatibleTransport`. This was the precedent for S4-1. | -- |
+| S4-3 | S4 / Scrobble | offline queue enqueue/flush/retry (`ScrobbleQueueWorker`, `ScrobbleQueueRepository`, `RetryPolicy`) | boilerplate-wrapper | single-source | tolerated | Seed check: the queue/retry loop is centralized in the worker; providers only build+submit and return `SubmissionResult`. Not re-implemented per provider. | -- |
+| S4-4 | S4 / Scrobble (cross-module) | provider transports' generic request/decode/error-map vs Acoustics (S2-5) / Subsonic | copy-paste-block | the generic HTTP-client layer beneath the protocol-specific transports | deferred | The two Scrobble transports are protocol-specific (Last.fm signing; ListenBrainz payload) and correctly stay distinct. The *generic* send/status/decode primitive beneath them is the cross-module candidate; fold with Acoustics/Subsonic in Session 10. Target: **Session 10**. | -- |
+| S4-5 | S4 / Playback | `GaplessScheduler` vs `CrossfadeScheduler` | parallel-types | 2x ~200 lines, ~304 diff lines (mostly distinct) | tolerated | Distinct timing models (poll-and-preschedule vs volume-ramp handoff); no shared code reference between them. Seed: keep the timing math distinct. Format-compat check is already shared via `FormatBridge`. | -- |
+| S4-6 | S4 / Playback | `PlayableSource` per-case accessors + discriminated `Codable` | parallel-types | 4 accessors + 1 encode/decode switch | tolerated | Canonical discriminated-enum shape; each accessor extracts a different associated value (can't share). Switch-over-source appears only in the enum itself and `QueuePlayer`, not repeated across files. | -- |
+| S4-7 | S4 / Playback | `FisherYatesShuffle` vs `SmartShuffle` | parallel-types | 2 strategies behind `ShuffleStrategy` | tolerated | Genuinely different algorithms behind one protocol (strategy pattern); nothing to fold. | -- |
 
 <!--
 Append rows below per session. Keep the example row at the top as the format
@@ -76,7 +85,7 @@ reference. Do not delete rows once written.
 
 Update at the end of each session (Session 10 finalizes):
 
-- Lines removed (net): _17_
-- Consolidated: _1_  ·  Tolerated: _19_  ·  Rejected: _4_  ·  Deferred: _3_
-- New shared helpers introduced: _1_ (`Database.fetchOne(_:id:entity:)`)
-- Session 10 queue (deferred, cross-module): `clamped(to:)` micro-helper (S2-4, ~46 sites); HTTP request/decode/error-map client shape (S2-5, recurs in Acoustics/Scrobble/Subsonic); per-service `RateLimiter` + `MusicBrainzClient` siblings (S3-9, Acoustics + Library/CoverArt) fold into that same HTTP/rate-limiter work.
+- Lines removed (net): _42_
+- Consolidated: _2_  ·  Tolerated: _24_  ·  Rejected: _4_  ·  Deferred: _4_
+- New shared helpers introduced: _2_ (`Database.fetchOne(_:id:entity:)`; `ListenBrainzCompatibleTransport`)
+- Session 10 queue (deferred, cross-module): `clamped(to:)` micro-helper (S2-4, ~46 sites); the generic HTTP request/decode/error-map client primitive beneath the service-specific transports (S2-5 Acoustics, S4-4 Scrobble, + Subsonic in S5); per-service `RateLimiter` + `MusicBrainzClient` siblings (S3-9, Acoustics + Library/CoverArt) fold into that same HTTP/rate-limiter work.
