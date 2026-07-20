@@ -96,15 +96,7 @@ public struct SubsonicInternetRadioView: View {
         .task(id: self.serverID) {
             if self.vm.stations.isEmpty { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load stations"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load stations"), message: self.$vm.errorMessage)
         .sheet(item: self.$infoStation) { station in
             SubsonicInternetRadioInfoSheet(station: station) { self.infoStation = nil }
         }

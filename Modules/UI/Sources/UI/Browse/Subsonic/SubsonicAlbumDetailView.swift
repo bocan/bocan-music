@@ -91,15 +91,7 @@ public struct SubsonicAlbumDetailView: View {
         .task(id: self.albumID) {
             if self.vm.album == nil { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load album"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load album"), message: self.$vm.errorMessage)
     }
 
     // MARK: - Sub-views

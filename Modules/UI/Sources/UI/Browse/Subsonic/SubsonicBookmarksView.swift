@@ -94,15 +94,7 @@ public struct SubsonicBookmarksView: View {
         .task(id: self.serverID) {
             if self.vm.bookmarks.isEmpty { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load bookmarks"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load bookmarks"), message: self.$vm.errorMessage)
     }
 
     private var list: some View {

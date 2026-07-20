@@ -89,15 +89,7 @@ public struct SubsonicPlaylistsView: View {
         .task(id: self.serverID) {
             if self.vm.playlists.isEmpty { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load playlists"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load playlists"), message: self.$vm.errorMessage)
     }
 
     private var list: some View {
@@ -230,15 +222,7 @@ public struct SubsonicPlaylistDetailView: View {
         .task(id: self.playlistID) {
             if self.vm.playlist == nil { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load playlist"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load playlist"), message: self.$vm.errorMessage)
     }
 
     @ViewBuilder

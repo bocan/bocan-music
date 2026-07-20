@@ -94,15 +94,7 @@ public struct SubsonicStarredView: View {
         .task(id: self.serverID) {
             if self.vm.songs.isEmpty { await self.vm.load() }
         }
-        .alert(
-            L10n.string("Couldn't load starred items"),
-            isPresented: Binding(
-                get: { self.vm.errorMessage != nil },
-                set: { if !$0 { self.vm.errorMessage = nil } }
-            ),
-            actions: { Button(L10n.string("OK"), role: .cancel) {} },
-            message: { Text(self.vm.errorMessage ?? "") }
-        )
+        .loadErrorAlert(L10n.string("Couldn't load starred items"), message: self.$vm.errorMessage)
     }
 
     /// "%lld artists" and "%lld albums" pluralize independently, so the
