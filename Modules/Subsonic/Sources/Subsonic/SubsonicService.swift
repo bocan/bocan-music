@@ -201,12 +201,9 @@ public actor SubsonicService {
 
     /// Pings the server; throws `SubsonicError` on failure.
     public func ping(serverID: UUID) async throws {
-        let client = try self.requireClient(serverID)
-        do {
+        try await self.withClient(serverID) { client in
             try await client.ping()
             self.log.debug("subsonic.ping.ok", ["id": serverID.uuidString])
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
         }
     }
 
@@ -292,39 +289,19 @@ public actor SubsonicService {
     // MARK: - Browsing
 
     public func getArtists(serverID: UUID) async throws -> [ArtistIndex] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getArtists()
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getArtists() }
     }
 
     public func getArtist(serverID: UUID, id: String) async throws -> ArtistID3 {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getArtist(id: id)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getArtist(id: id) }
     }
 
     public func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3 {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getAlbum(id: id)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getAlbum(id: id) }
     }
 
     public func getGenres(serverID: UUID) async throws -> [Genre] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getGenres()
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getGenres() }
     }
 
     // MARK: - Lists
@@ -335,21 +312,11 @@ public actor SubsonicService {
         size: Int = 50,
         offset: Int = 0
     ) async throws -> [AlbumID3] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getAlbumList2(type: type, size: size, offset: offset)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getAlbumList2(type: type, size: size, offset: offset) }
     }
 
     public func getRandomSongs(serverID: UUID, size: Int = 50) async throws -> [Song] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getRandomSongs(size: size)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getRandomSongs(size: size) }
     }
 
     public func getSongsByGenre(
@@ -358,41 +325,21 @@ public actor SubsonicService {
         count: Int = 50,
         offset: Int = 0
     ) async throws -> [Song] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getSongsByGenre(genre, count: count, offset: offset)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getSongsByGenre(genre, count: count, offset: offset) }
     }
 
     public func getStarred2(serverID: UUID) async throws -> Starred2 {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getStarred2()
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getStarred2() }
     }
 
     // MARK: - Playlists
 
     public func getPlaylists(serverID: UUID) async throws -> [Playlist] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getPlaylists()
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getPlaylists() }
     }
 
     public func getPlaylist(serverID: UUID, id: String) async throws -> PlaylistWithSongs {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getPlaylist(id: id)
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getPlaylist(id: id) }
     }
 
     // MARK: - Search
@@ -404,119 +351,77 @@ public actor SubsonicService {
         albumCount: Int = 5,
         songCount: Int = 20
     ) async throws -> SearchResult3 {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.search3(
+        try await self.withClient(serverID) {
+            try await $0.search3(
                 query,
                 artistCount: artistCount,
                 albumCount: albumCount,
                 songCount: songCount
             )
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
         }
     }
 
     // MARK: - Podcasts (capability-gated)
 
     public func getPodcasts(serverID: UUID) async throws -> [PodcastChannel] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getPodcasts()
-        } catch let e as SwiftSonicError {
-            if isCapabilityLie(e) {
-                await self.markCapabilityUnsupported("podcasts", for: serverID)
-            }
-            throw SubsonicError.transport(e)
-        }
+        try await self.withCapabilityGatedClient(serverID, feature: "podcasts") { try await $0.getPodcasts() }
     }
 
     // MARK: - Internet radio (capability-gated)
 
     public func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getInternetRadioStations()
-        } catch let e as SwiftSonicError {
-            if isCapabilityLie(e) {
-                await self.markCapabilityUnsupported("internetRadio", for: serverID)
-            }
-            throw SubsonicError.transport(e)
+        try await self.withCapabilityGatedClient(serverID, feature: "internetRadio") {
+            try await $0.getInternetRadioStations()
         }
     }
 
     // MARK: - Bookmarks (capability-gated)
 
     public func getBookmarks(serverID: UUID) async throws -> [Bookmark] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getBookmarks()
-        } catch let e as SwiftSonicError {
-            if isCapabilityLie(e) {
-                await self.markCapabilityUnsupported("bookmarks", for: serverID)
-            }
-            throw SubsonicError.transport(e)
-        }
+        try await self.withCapabilityGatedClient(serverID, feature: "bookmarks") { try await $0.getBookmarks() }
     }
 
     // MARK: - Now Playing
 
     public func getNowPlaying(serverID: UUID) async throws -> [NowPlayingEntry] {
-        let client = try self.requireClient(serverID)
-        do {
-            return try await client.getNowPlaying()
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
-        }
+        try await self.withClient(serverID) { try await $0.getNowPlaying() }
     }
 
     // MARK: - Annotations
 
     public func star(serverID: UUID, songID: String) async throws {
-        let client = try self.requireClient(serverID)
-        do {
+        try await self.withClient(serverID) { client in
             try await client.star(songId: songID)
             self.log.debug("subsonic.star", ["server": serverID.uuidString, "song": songID])
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
         }
     }
 
     public func unstar(serverID: UUID, songID: String) async throws {
-        let client = try self.requireClient(serverID)
-        do {
+        try await self.withClient(serverID) { client in
             try await client.unstar(songId: songID)
             self.log.debug("subsonic.unstar", ["server": serverID.uuidString, "song": songID])
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
         }
     }
 
     public func setRating(serverID: UUID, songID: String, rating: Int) async throws {
-        let client = try self.requireClient(serverID)
-        do {
+        try await self.withClient(serverID) { client in
             try await client.setRating(id: songID, rating: rating)
             self.log.debug(
                 "subsonic.rating",
                 ["server": serverID.uuidString, "song": songID, "rating": rating]
             )
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
         }
     }
 
     // MARK: - Scrobble
 
     public func scrobble(serverID: UUID, songID: String, submission: Bool = true) async throws {
-        let client = try self.requireClient(serverID)
-        do {
+        try await self.withClient(serverID) { client in
             try await client.scrobble(id: songID, submission: submission)
             self.log.debug(
                 "subsonic.scrobble",
                 ["server": serverID.uuidString, "song": songID, "submission": submission]
             )
-        } catch let e as SwiftSonicError {
-            throw SubsonicError.transport(e)
         }
     }
 
@@ -584,6 +489,40 @@ public actor SubsonicService {
             throw SubsonicError.unknownServer(serverID)
         }
         return entry.client
+    }
+
+    /// Resolves the client for `serverID`, runs `body` against it, and maps any
+    /// `SwiftSonicError` to `SubsonicError.transport`. Folds the request wrapper
+    /// that every endpoint method otherwise repeats verbatim.
+    private func withClient<T>(
+        _ serverID: UUID,
+        _ body: (SwiftSonicClient) async throws -> T
+    ) async throws -> T {
+        let client = try self.requireClient(serverID)
+        do {
+            return try await body(client)
+        } catch let e as SwiftSonicError {
+            throw SubsonicError.transport(e)
+        }
+    }
+
+    /// Like `withClient`, but for capability-gated endpoints: when the server
+    /// 404/501s an endpoint it advertised, `feature`'s capability flag is
+    /// revoked before the error is surfaced (see `isCapabilityLie`).
+    private func withCapabilityGatedClient<T>(
+        _ serverID: UUID,
+        feature: String,
+        _ body: (SwiftSonicClient) async throws -> T
+    ) async throws -> T {
+        let client = try self.requireClient(serverID)
+        do {
+            return try await body(client)
+        } catch let e as SwiftSonicError {
+            if isCapabilityLie(e) {
+                await self.markCapabilityUnsupported(feature, for: serverID)
+            }
+            throw SubsonicError.transport(e)
+        }
     }
 
     /// Reads the persisted capability snapshot for a server, or `nil` if none
