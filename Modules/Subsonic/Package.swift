@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "Subsonic", targets: ["Subsonic"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/MathieuDubart/swiftsonic.git", from: "0.8.3"),
+        .package(url: "https://github.com/MathieuDubart/swiftsonic.git", from: "0.9.0"),
         .package(path: "../Observability"),
         .package(path: "../Persistence"),
     ],

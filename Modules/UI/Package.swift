@@ -26,7 +26,7 @@ let package = Package(
         .package(path: "../Subsonic"),
         .package(
             url: "https://github.com/MathieuDubart/swiftsonic.git",
-            from: "0.8.2"
+            from: "0.9.0"
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
