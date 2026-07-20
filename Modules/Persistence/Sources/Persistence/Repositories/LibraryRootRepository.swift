@@ -59,11 +59,6 @@ public struct LibraryRootRepository: Sendable {
 
     /// Returns the root with `id`, or throws if not found.
     public func fetch(id: Int64) async throws -> LibraryRoot {
-        try await self.database.read { db in
-            guard let root = try LibraryRoot.fetchOne(db, key: id) else {
-                throw PersistenceError.notFound(entity: "library_roots", id: id)
-            }
-            return root
-        }
+        try await self.database.fetchOne(LibraryRoot.self, id: id, entity: "library_roots")
     }
 }

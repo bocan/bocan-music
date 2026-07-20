@@ -82,13 +82,7 @@ public struct EpisodeRepository: Sendable {
 
     /// Fetches an episode by primary key. Throws `PersistenceError.notFound` when absent.
     public func fetch(id: Int64) async throws -> PodcastEpisode {
-        let record = try await self.database.read { db in
-            try PodcastEpisode.fetchOne(db, key: id)
-        }
-        guard let record else {
-            throw PersistenceError.notFound(entity: "PodcastEpisode", id: id)
-        }
-        return record
+        try await self.database.fetchOne(PodcastEpisode.self, id: id, entity: "PodcastEpisode")
     }
 
     /// Fetches an episode by `(podcastID, guid)`, or `nil` if not found.

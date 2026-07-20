@@ -103,12 +103,7 @@ public struct AlbumRepository: Sendable {
 
     /// Fetches the album with `id`, or throws `.notFound` if absent.
     public func fetch(id: Int64) async throws -> Album {
-        try await self.database.read { db in
-            guard let album = try Album.fetchOne(db, key: id) else {
-                throw PersistenceError.notFound(entity: "Album", id: id)
-            }
-            return album
-        }
+        try await self.database.fetchOne(Album.self, id: id, entity: "Album")
     }
 
     /// Returns the album matching `(title, albumArtistID)`, inserting a new row if none exists.
