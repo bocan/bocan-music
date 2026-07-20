@@ -43,6 +43,8 @@ sessions dedup against it instead of re-copying. Format: `symbol -- module -- wh
 | `SubsonicSongRow` | UI/Browse/Subsonic | Shared Subsonic song cell (cover + title + subtitle). Already reused across Bookmarks/Starred/etc.; the seed's "share the cell" is satisfied. | S7 (pre-existing) |
 | `TagFieldRow` | UI/MetadataEditor | Editable tag field row (label + editor + revert), multiple inits. Use for tag-editor field rows; the read-only Info tabs legitimately use `LabeledContent` instead. | S8 (pre-existing) |
 | `PlaylistHeader` | UI/Playlists | Manual-playlist detail header (title/count/duration + cover-or-mosaic thumbnail + Play/Shuffle). Smart playlists intentionally use a distinct sparkles header (see S8-5). | S8 (pre-existing) |
+| `MTLDevice.makeAlphaBlendedPipeline(vertexFunction:fragmentFunction:pixelFormat:)` | UI/Visualizers/Metal | Builds a standard straight-alpha render pipeline + maps failure to `MetalRendererError.pipelineCreationFailed`. New blended Metal renderers should call it instead of hand-rolling the descriptor. | S9 |
+| `MetalRendererConfig`, `MetalShaderLibrary`, `PaletteRampLUT`, `FrameRing`, `PolylineRibbon`, `MetalVisualizerFactory.instantiate` | UI/Visualizers/Metal | Pre-existing shared Metal plumbing (config bundle, cached shader compile, palette LUT, triple-buffer ring, polyline geometry, throwing-init wrapper). Confirmed single-source; keep render math out of these. | S9 (pre-existing) |
 
 ## Findings
 
@@ -112,6 +114,11 @@ sessions dedup against it instead of re-copying. Format: `symbol -- module -- wh
 | S8-6 | S8 / UI Playlists | `PlaylistRow` (194) vs `PlaylistFolderRow` (172) | parallel-types | 148 diff lines (normalized) | tolerated | Complex parallel rows: the shareable leaves (`rowIcon`, `nameView`, count badge) are intertwined with per-row `@State` (inline-rename, `isDropTargeted`) and each has distinct context menus / drop behavior. Folding couples two controllers (share-the-trunk). | -- |
 | S8-7 | S8 / UI Playlists | Play/Shuffle button pair (`PlaylistHeader`, Smart header, album/artist details) | copy-paste-block | 4x+ | tolerated | The button pair looks alike but the `.help`/`.accessibilityHint`/`.accessibilityIdentifier` text and the `disabled`/action wiring differ per context; a shared control needs those as params = config bag. | -- |
 | S8-8 | S8 / UI Playlists/Smart | `RuleRowView` per-datatype controls (`textControl`/`intControl`/`dateControl`/`durationControl`/`enumerationControl`/`membershipControl`) | parallel-types | 6 controls | tolerated | Unique editor per criterion data type, not duplication -- the same situation as Library's `FieldDefinitions` table. Each control is genuinely different. | -- |
+| S9-1 | S9 / UI Visualizers/Metal | `MetalSpectrumBars`/`MetalOscilloscope`/`MetalHalo`/`MetalStarfield` render-pipeline setup | copy-paste-block | 4x ~15 lines byte-identical (descriptor + straight-alpha blend + do/catch->pipelineCreationFailed) | consolidated | Extracted `MTLDevice.makeAlphaBlendedPipeline(...)`. The seed's share-plumbing-not-math target: config-free (3 Metal params), no render math touched, and a blend-mode fix now lives in one place. Cascade/Nebula don't blend, so they're out. Net -15 lines. | `06fc680` |
+| S9-2 | S9 / UI Visualizers | Metal renderer architecture (`MetalVisualizer` protocol, `MetalRendererConfig`, factory `instantiate`, `MetalShaderLibrary`, `PaletteRampLUT`, `FrameRing`, `PolylineRibbon`, `ColorPacking`, `OnsetEnvelope`) | boilerplate-wrapper | already shared | tolerated | The setup/teardown plumbing the seed points at is already extracted: config bundle, cached shader compile, palette LUT, frame ring, polyline geometry. The pipeline descriptor (S9-1) was the one remaining copy. Recorded in shared surface. | -- |
+| S9-3 | S9 / UI Visualizers | palette->colour + `reduceMotion`/`reduceTransparency` usage across renderers | repeated-literal | ~15 palette sites, high reduce-motion counts | tolerated | Not duplication: `PaletteResolver`/`PaletteRampLUT` are the shared resolvers and the accessibility flags are bundled in `MetalRendererConfig`; the per-renderer `palette.color(at:)` sampling and motion damping are render math (kept distinct by design). | -- |
+| S9-4 | S9 / UI Transport/MiniPlayer | `MusicTransportControls` vs `MiniPlayerTransport` (play/pause/prev/next button rows) | parallel-types | 348 diff lines / 388 total (~90% distinct) | tolerated | Seed's "share the button row": on measurement the two hosts diverge almost entirely (layout, button set, sizing, styling). A shared button would need icon/size/style/action/a11y params = config bag. | -- |
+| S9-5 | S9 / UI Tests | visualizer snapshot-test scaffolding | test-scaffolding | already shared | tolerated | `SnapshotTests/MetalOffscreenRenderer` is the shared Metal harness and `TestImage` the shared image helper; the CPU-Canvas `GraphicsContext` harness recurs in only 2 files (below the bar). | -- |
 
 <!--
 Append rows below per session. Keep the example row at the top as the format
@@ -161,8 +168,9 @@ Recorded here so Session 10 starts from a design, not a re-investigation.
 
 Update at the end of each session (Session 10 finalizes):
 
-- Lines removed (net): _172_
-- Consolidated: _4_  ·  Tolerated: _44_  ·  Rejected: _8_  ·  Deferred: _8_
-- New shared helpers introduced: _3_ (`Database.fetchOne(_:id:entity:)`; `ListenBrainzCompatibleTransport`; `View.loadErrorAlert(_:message:)`) + Subsonic-internal `withClient`/`withCapabilityGatedClient`
+- Lines removed (net): _187_
+- Consolidated: _5_  ·  Tolerated: _48_  ·  Rejected: _8_  ·  Deferred: _8_
+- New shared helpers introduced: _4_ (`Database.fetchOne(_:id:entity:)`; `ListenBrainzCompatibleTransport`; `View.loadErrorAlert(_:message:)`; `MTLDevice.makeAlphaBlendedPipeline(...)`) + Subsonic-internal `withClient`/`withCapabilityGatedClient`
+- UI module (Sessions 6-9) fully audited. Remaining: Session 10 (App + cross-module sweep + close-out).
 - S6-5/S6-6 (deferred to S7) resolved: scroll-restore tolerated (S7-4, break-even); `CollectionModeToggle`/`ErrorState` not shadowed -- dead/superseded (S7-6).
 - Session 10 queue (deferred, cross-module): `clamped(to:)` micro-helper (S2-4, ~46 sites); the HTTP client (concrete proposal above); the login-Keychain store (concrete proposal above); a shared duration/byte display formatter (S6-7, ~13 files).
