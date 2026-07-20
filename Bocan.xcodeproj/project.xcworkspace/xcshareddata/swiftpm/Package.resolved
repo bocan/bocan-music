@@ -1,5 +1,5 @@
 {
-  "originHash" : "a08c3b51a46e8b85666c9b220a904d1a87b28ba9677c6e13bc738e382e8f10b8",
+  "originHash" : "a10186313f996397536c5c6a98ce9378ca998c953a886bfb1d797bc87f1580f9",
   "pins" : [
     {
       "identity" : "feedkit",
@@ -87,8 +87,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/MathieuDubart/swiftsonic.git",
       "state" : {
-        "revision" : "57ed3b1fc3608a64a73be5fceff03baef5f082ca",
-        "version" : "0.8.3"
+        "revision" : "9ba4b2eb7fcc841a6a6887c96929565b66f8fa90",
+        "version" : "0.9.0"
       }
     },
     {
