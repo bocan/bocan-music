@@ -23,12 +23,25 @@ struct ArtistsViewModeConventionTests {
     func persistsViewMode() throws {
         let source = try self.browseSource("ArtistsView.swift")
         #expect(
-            source.contains("@AppStorage(\"artists.viewMode\")"),
-            "the Artists view mode must persist via @AppStorage(\"artists.viewMode\")"
+            source.contains("@CollectionViewModeStorage(\"artists.viewMode\")"),
+            "the Artists view mode must persist via @CollectionViewModeStorage(\"artists.viewMode\")"
+        )
+    }
+
+    @Test("The view-mode storage is String-backed and defaults to .list")
+    func stringBackedStorage() throws {
+        // The wrapper stores the raw String, not the enum, so a write from the
+        // "View as" menu reliably redraws this separate instance. A refactor back
+        // to a RawRepresentable @AppStorage reintroduces the cross-instance
+        // stale-view bug (phase 23-3); this pins the fix.
+        let source = try self.browseSource("CollectionViewMode.swift")
+        #expect(
+            source.contains("@AppStorage private var rawValue: String"),
+            "CollectionViewModeStorage must persist a primitive String for reliable cross-instance updates"
         )
         #expect(
-            source.contains("CollectionViewMode = .list"),
-            "the persisted default must be .list so list mode is unchanged by default"
+            source.contains("CollectionViewMode.list.rawValue"),
+            "the storage wrapper must default to .list so list mode is unchanged by default"
         )
     }
 

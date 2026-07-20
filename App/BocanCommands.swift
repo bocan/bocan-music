@@ -28,9 +28,9 @@ struct BocanCommands: Commands {
     // Collection listing view modes, mirrored so the "View as" menu can read and
     // write the same keys the Artists/Genres/Composers views observe (phase
     // 23-3). Not `private`: the routing helpers live in an extension file.
-    @AppStorage("artists.viewMode") var artistsViewMode: CollectionViewMode = .list
-    @AppStorage("genres.viewMode") var genresViewMode: CollectionViewMode = .list
-    @AppStorage("composers.viewMode") var composersViewMode: CollectionViewMode = .list
+    @CollectionViewModeStorage("artists.viewMode") var artistsViewMode
+    @CollectionViewModeStorage("genres.viewMode") var genresViewMode
+    @CollectionViewModeStorage("composers.viewMode") var composersViewMode
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings

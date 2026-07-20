@@ -16,8 +16,9 @@ public struct ComposersView: View {
     /// Persisted list sort order; defaults to composer name.
     @AppStorage("composers.sortOrder") private var sortOrder: ComposerSortOrder = .composerName
     /// Persisted List vs Grid mode; defaults to List so the view is unchanged
-    /// until the user opts in (phase 23-2).
-    @AppStorage("composers.viewMode") private var viewMode: CollectionViewMode = .list
+    /// until the user opts in (phase 23-2). String-backed so the "View as" menu's
+    /// writes reliably redraw this listing (phase 23-3).
+    @CollectionViewModeStorage("composers.viewMode") private var viewMode
 
     public init(library: LibraryViewModel) {
         self.library = library
