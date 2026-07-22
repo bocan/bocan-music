@@ -5,6 +5,22 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2](https://github.com/bocan/bocan-music/compare/v2.3.1...v2.3.2) (2026-07-22)
+
+
+### ### Fixed
+
+* **ui:** make View-menu List/Grid switch reliably redraw listings ([#363](https://github.com/bocan/bocan-music/issues/363)) ([3c09047](https://github.com/bocan/bocan-music/commit/3c09047f3b0f8608142b63fbcd15e501bdd5296c))
+
+
+### ### Changed
+
+* **persistence:** fold fetch-by-id-or-throw into a Database helper ([083de5a](https://github.com/bocan/bocan-music/commit/083de5a980db35925049a143767ecb6a8a773e46))
+* **scrobble:** share a ListenBrainz-compatible transport ([889d78d](https://github.com/bocan/bocan-music/commit/889d78db80281117d77cd2c63a99c6f4d1dba034))
+* **subsonic:** fold the request wrapper into withClient helpers ([cd7b4fb](https://github.com/bocan/bocan-music/commit/cd7b4fb8f14e7a08d31e1265364aa1b2555e1e7d))
+* **ui:** share loadErrorAlert across the Subsonic browse views ([c82de1a](https://github.com/bocan/bocan-music/commit/c82de1a9006403a184c8c94f8779fba1aba4e5fc))
+* **ui:** share the alpha-blended Metal pipeline setup ([06fc680](https://github.com/bocan/bocan-music/commit/06fc6808e0357a5c27a86065ff9154c4896c2f1b))
+
 ## [2.3.1](https://github.com/bocan/bocan-music/compare/v2.3.0...v2.3.1) (2026-07-19)
 
 
