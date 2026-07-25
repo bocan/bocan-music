@@ -4,6 +4,13 @@ import MediaPlayer
 import Observability
 import Persistence
 
+// MARK: - ArtworkPayload
+
+private struct ArtworkPayload: Sendable {
+    let data: Data
+    let boundsSize: CGSize
+}
+
 // MARK: - NowPlayingCentre
 
 /// Updates `MPNowPlayingInfoCenter` and manages the 1 Hz position ticker.
@@ -18,6 +25,12 @@ public final class NowPlayingCentre {
     private var isPlaying = false
     private var getPosition: (@Sendable () async -> TimeInterval)?
 
+    /// Monotonic token guarding against a late-arriving artwork load from a
+    /// superseded track overwriting the now-playing info of the current one.
+    /// Bumped on every `update(track:…)` / `clear()`; in-flight loads compare
+    /// their captured token against this and bail if they've been superseded.
+    private var artworkToken: UInt64 = 0
+
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
@@ -26,10 +39,13 @@ public final class NowPlayingCentre {
 
     // MARK: - Public API
 
-    /// Update the displayed track. Artwork is loaded from `coverArtPath` if available.
+    /// Update the displayed track. Artwork is loaded asynchronously from
+    /// `coverArtPath` (when non-`nil`) and applied to `nowPlayingInfo` once
+    /// ready; until then the system shows a generic audio glyph.
     public func update(
         track: Track,
         duration: TimeInterval,
+        coverArtPath: String? = nil,
         positionProvider: @Sendable @escaping () async -> TimeInterval
     ) {
         self.getPosition = positionProvider
@@ -42,8 +58,12 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying { self.startPositionTimer() }
+        if self.isPlaying {
+            self.startPositionTimer()
+        }
         self.log.debug("nowplaying.update", ["title": track.title ?? "unknown"])
+
+        self.loadArtwork(path: coverArtPath)
     }
 
     /// Update the displayed item for a podcast episode. Maps the episode title
@@ -73,7 +93,9 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying { self.startPositionTimer() }
+        if self.isPlaying {
+            self.startPositionTimer()
+        }
         self.log.debug("nowplaying.update.podcast", ["title": title, "show": showName])
     }
 
@@ -94,12 +116,71 @@ public final class NowPlayingCentre {
     /// Clear the now-playing info (e.g. when queue is exhausted).
     public func clear() {
         self.stopPositionTimer()
+        self.artworkToken &+= 1
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         self.getPosition = nil
         self.log.debug("nowplaying.clear")
     }
 
     // MARK: - Private
+
+    /// Loads artwork from `path` off the main thread and applies it to
+    /// `nowPlayingInfo` on completion. A monotonic token guards against a
+    /// late-arriving image from a superseded track overwriting the current
+    /// track's now-playing info (e.g. when skipping quickly between tracks).
+    private func loadArtwork(path: String?) {
+        self.artworkToken &+= 1
+        let token = self.artworkToken
+        guard let path else { return }
+
+        Task { [weak self] in
+            // Keep file I/O and image inspection off the main thread. Only
+            // Sendable value types cross back to the main actor.
+            let payload = await Task.detached(priority: .utility) { () -> ArtworkPayload? in
+                guard let data = FileManager.default.contents(atPath: path),
+                      !data.isEmpty,
+                      let image = NSImage(data: data) else {
+                    return nil
+                }
+                return ArtworkPayload(data: data, boundsSize: image.size)
+            }.value
+
+            guard let self else { return }
+            // Bail if a newer `update` / `clear` superseded this load.
+            guard self.artworkToken == token else { return }
+            guard let payload else {
+                self.log.debug("nowplaying.artwork.load_failed", ["path": path])
+                return
+            }
+            // No suspension point between the token check and the write, so a
+            // concurrent `update` cannot slip in and clobber our mutation.
+            var current = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+            current[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(
+                boundsSize: payload.boundsSize,
+                requestHandler: Self.artworkRequestHandler(data: payload.data)
+            )
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = current
+            self.log.debug("nowplaying.artwork.set", ["path": path])
+        }
+    }
+
+    /// MediaPlayer invokes this callback on its private access queue. Building
+    /// it inline in a `@MainActor` method makes Swift 6 enforce main-actor
+    /// isolation at runtime, so construct an explicitly Sendable callback that
+    /// captures only image data and decodes on the requesting queue.
+    nonisolated static func artworkRequestHandler(
+        data: Data
+    ) -> @Sendable (CGSize) -> NSImage {
+        { requestedSize in
+            guard let image = NSImage(data: data) else {
+                let fallbackSize = requestedSize.width > 0 && requestedSize.height > 0
+                    ? requestedSize
+                    : CGSize(width: 1, height: 1)
+                return NSImage(size: fallbackSize)
+            }
+            return image
+        }
+    }
 
     private func startPositionTimer() {
         self.stopPositionTimer()
