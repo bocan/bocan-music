@@ -77,6 +77,7 @@ private struct AlbumInteractiveCell<Menu: View>: View {
     let onTap: () -> Void
     let onCmdTap: () -> Void
     let onOpen: () -> Void
+    let onPlay: () -> Void
     let onMoveLeft: () -> Void
     let onMoveRight: () -> Void
     let onMoveUp: () -> Void
@@ -87,6 +88,26 @@ private struct AlbumInteractiveCell<Menu: View>: View {
     @State private var isHovered = false
 
     var body: some View {
+        self.styledCell
+            .focusable()
+            .focused(self.$focusedAlbumID, equals: self.album.id)
+            .focusEffectDisabled()
+            .highPriorityGesture(TapGesture().modifiers(.command).onEnded { self.onCmdTap() })
+            .albumOpenPlayGesture(open: { self.onTap() }, play: { self.onPlay() })
+            .onHover { self.isHovered = $0 }
+            .contextMenu { self.contextMenuContent() }
+            // Gesture-composed clicks don't synthesize an assistive activation,
+            // so expose both outcomes as explicit accessibility actions.
+            .accessibilityAction { self.onOpen() }
+            .accessibilityAction(named: L10n.string("Play Album")) { self.onPlay() }
+            .onKeyPress(keys: [.return, .space, .leftArrow, .rightArrow, .upArrow, .downArrow]) {
+                self.handleKeyPress($0)
+            }
+    }
+
+    /// The visual half of the cell, split from ``body`` so the type-checker
+    /// never times out on one continuous modifier chain.
+    private var styledCell: some View {
         AlbumCell(album: self.album, artistName: self.artistName, trackCount: self.trackCount)
             .padding(4)
             .background(
@@ -100,16 +121,6 @@ private struct AlbumInteractiveCell<Menu: View>: View {
             .contentShape(Rectangle())
             .scaleEffect(self.isHovered && !self.reduceMotion ? 1.04 : 1.0)
             .animation(self.reduceMotion ? nil : .easeOut(duration: 0.15), value: self.isHovered)
-            .focusable()
-            .focused(self.$focusedAlbumID, equals: self.album.id)
-            .focusEffectDisabled()
-            .highPriorityGesture(TapGesture().modifiers(.command).onEnded { self.onCmdTap() })
-            .onTapGesture { self.onTap() }
-            .onHover { self.isHovered = $0 }
-            .contextMenu { self.contextMenuContent() }
-            .onKeyPress(keys: [.return, .space, .leftArrow, .rightArrow, .upArrow, .downArrow]) {
-                self.handleKeyPress($0)
-            }
     }
 
     private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
@@ -261,6 +272,10 @@ public struct AlbumsGridView: View {
                                 guard let id = album.id else { return }
                                 self.selection = []
                                 self.vm.selectedAlbumID = id
+                            },
+                            onPlay: {
+                                guard let id = album.id else { return }
+                                Task { await self.library.playAlbum(albumID: id) }
                             },
                             onMoveLeft: { self.moveFocus(by: -1) },
                             onMoveRight: { self.moveFocus(by: +1) },
