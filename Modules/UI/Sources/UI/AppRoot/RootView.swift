@@ -255,6 +255,9 @@ public struct BocanRootView: View {
                 .frame(width: 0, height: 0)
                 .allowsHitTesting(false)
             )
+            // Type-to-search (#369): the first printable keypress anywhere in
+            // the main window starts a fresh search seeded with it.
+            .background(TypeToSearchBackground(vm: self.vm))
             .onChange(of: self.vm.searchFocusRequestID) { _, _ in
                 // Phase 4 audit H5: ⌘F (Find) focuses the search field.
                 self.searchFocused = true
