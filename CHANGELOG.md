@@ -5,6 +5,33 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0](https://github.com/bocan/bocan-music/compare/v2.3.1...v2.4.0) (2026-07-30)
+
+
+### ### Added
+
+* **ui:** double-click an album cover to play it in place ([#369](https://github.com/bocan/bocan-music/issues/369)) ([cb5f892](https://github.com/bocan/bocan-music/commit/cb5f892a29f78e776e049859fd4b183f5bfe5e74))
+* **ui:** filter the Artists list to album artists only ([#369](https://github.com/bocan/bocan-music/issues/369)) ([e373f4b](https://github.com/bocan/bocan-music/commit/e373f4b7219a821491c3d56f740a4bb89a22d56b))
+* **ui:** type-to-search from any view ([#369](https://github.com/bocan/bocan-music/issues/369)) ([874947d](https://github.com/bocan/bocan-music/commit/874947d5325d78af1958131dc8b8648e7f178bd6))
+* **website:** send GNU Terry Pratchett on every page ([5d806af](https://github.com/bocan/bocan-music/commit/5d806affcfbf52190154e22cd42b7021a9667427))
+
+
+### ### Fixed
+
+* **playback:** invalidate in-flight artwork loads on podcast updates ([544b1c2](https://github.com/bocan/bocan-music/commit/544b1c2b550b0949182dcc873647812bb9868f12))
+* **playback:** show album artwork without Now Playing crashes ([#372](https://github.com/bocan/bocan-music/issues/372)) ([37f68d1](https://github.com/bocan/bocan-music/commit/37f68d17519c84868aecded4f2db701dc75b60b5))
+* **ui:** add missing Open artist accessibility-hint catalog key ([ad92d55](https://github.com/bocan/bocan-music/commit/ad92d555074facbb7472c643403c01578be36bb1))
+* **ui:** make View-menu List/Grid switch reliably redraw listings ([#363](https://github.com/bocan/bocan-music/issues/363)) ([3c09047](https://github.com/bocan/bocan-music/commit/3c09047f3b0f8608142b63fbcd15e501bdd5296c))
+
+
+### ### Changed
+
+* **persistence:** fold fetch-by-id-or-throw into a Database helper ([083de5a](https://github.com/bocan/bocan-music/commit/083de5a980db35925049a143767ecb6a8a773e46))
+* **scrobble:** share a ListenBrainz-compatible transport ([889d78d](https://github.com/bocan/bocan-music/commit/889d78db80281117d77cd2c63a99c6f4d1dba034))
+* **subsonic:** fold the request wrapper into withClient helpers ([cd7b4fb](https://github.com/bocan/bocan-music/commit/cd7b4fb8f14e7a08d31e1265364aa1b2555e1e7d))
+* **ui:** share loadErrorAlert across the Subsonic browse views ([c82de1a](https://github.com/bocan/bocan-music/commit/c82de1a9006403a184c8c94f8779fba1aba4e5fc))
+* **ui:** share the alpha-blended Metal pipeline setup ([06fc680](https://github.com/bocan/bocan-music/commit/06fc6808e0357a5c27a86065ff9154c4896c2f1b))
+
 ## [2.3.1](https://github.com/bocan/bocan-music/compare/v2.3.0...v2.3.1) (2026-07-19)
 
 
