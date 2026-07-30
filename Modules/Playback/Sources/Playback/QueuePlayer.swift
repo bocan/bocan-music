@@ -786,14 +786,10 @@ public actor QueuePlayer: Transport {
     private func notifyHistoryStart(for item: QueueItem) async {
         // Internet radio is a live stream — no track row, no scrobble.
         // Skip the history recorder entirely.
-        if case .internetRadio = item.playableSource {
-            return
-        }
+        if case .internetRadio = item.playableSource { return }
         // Podcasts are not music tracks and never scrobble to Last.fm /
         // ListenBrainz. Skip the recorder so no scrobble is ever enqueued.
-        if case .podcast = item.playableSource {
-            return
-        }
+        if case .podcast = item.playableSource { return }
         if case let .subsonic(serverID, songID) = item.playableSource {
             let context = SubsonicPlayContext(
                 serverID: serverID,
@@ -989,12 +985,8 @@ public actor QueuePlayer: Transport {
     }
 
     private static func isMissingFileError(_ error: Error) -> Bool {
-        if case AudioEngineError.fileNotFound = error {
-            return true
-        }
-        if case PlaybackError.bookmarkResolutionFailed = error {
-            return true
-        }
+        if case AudioEngineError.fileNotFound = error { return true }
+        if case PlaybackError.bookmarkResolutionFailed = error { return true }
         return false
     }
 
@@ -1072,12 +1064,8 @@ public actor QueuePlayer: Transport {
 
         // CUE virtual tracks require segment-offset handling that the gapless
         // path doesn't support. Fall back to normal stop/load/play transition.
-        if item.isCUETrack {
-            return nil
-        }
-        if await self.queue.currentItem?.isCUETrack == true {
-            return nil
-        }
+        if item.isCUETrack { return nil }
+        if await self.queue.currentItem?.isCUETrack == true { return nil }
 
         // Determine whether the next item's album has `force_gapless` set and
         // the current item belongs to the same album.
@@ -1149,9 +1137,7 @@ public actor QueuePlayer: Transport {
 
         // Fail early if the file is unreachable — avoids opaque AVAudioFile errors.
         guard FileManager.default.fileExists(atPath: url.path) else {
-            if resolvedFromPerFileBookmark {
-                url.stopAccessingSecurityScopedResource()
-            }
+            if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
             // `rootScope` deinit releases on return.
             throw PlaybackError.bookmarkResolutionFailed(
                 trackID: item.trackID,
@@ -1169,9 +1155,7 @@ public actor QueuePlayer: Transport {
                 }
             }
         } catch {
-            if resolvedFromPerFileBookmark {
-                url.stopAccessingSecurityScopedResource()
-            }
+            if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
             // `rootScope` deinit releases on return.
             throw error
         }
@@ -1503,9 +1487,7 @@ public actor QueuePlayer: Transport {
         var artistNames: [Int64: String] = [:]
         artistNames.reserveCapacity(artists.count)
         for a in artists {
-            if let aid = a.id {
-                artistNames[aid] = a.name
-            }
+            if let aid = a.id { artistNames[aid] = a.name }
         }
         var items: [QueueItem] = []
         items.reserveCapacity(trackIDs.count)
