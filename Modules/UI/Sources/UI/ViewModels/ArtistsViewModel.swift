@@ -25,6 +25,11 @@ public final class ArtistsViewModel: ObservableObject {
     /// sorted without a flash. Persisted in UserDefaults under ``sortOrderKey``.
     @Published public private(set) var sortOrder: ArtistSortOrder
 
+    /// Which artists populate the list (#369). Owned here like ``sortOrder``
+    /// so the persisted preference applies to the first load without a flash.
+    /// Persisted in UserDefaults under ``scopeKey``.
+    @Published public private(set) var scope: ArtistScope
+
     /// The artist last navigated into, snapshotted when opening an artist so the
     /// list can scroll it back into view when the list is rebuilt on return
     /// (mirrors the album-grid scroll restore, #349). Plain `var`, not
@@ -42,6 +47,18 @@ public final class ArtistsViewModel: ObservableObject {
     /// ``setSortOrder(_:)``).
     public static let sortOrderKey = "artists.sortOrder"
 
+    /// UserDefaults key backing ``scope`` (read at init, written by
+    /// ``setScope(_:)``).
+    public static let scopeKey = "artists.scope"
+
+    /// Artists credited as the album artist of at least one album, refreshed by
+    /// ``load()``. Backs the `.albumArtists` scope filter.
+    private var albumArtistIDs: Set<Int64> = []
+
+    /// The last unfiltered input (full load or search matches). ``setScope(_:)``
+    /// refilters from here so toggling the scope needs no refetch.
+    private var baseArtists: [Artist] = []
+
     private let repository: ArtistRepository
     /// Backs the grid mode's cover-art mosaics (album covers grouped by
     /// album-artist). Only read in ``load()``.
@@ -55,6 +72,8 @@ public final class ArtistsViewModel: ObservableObject {
         self.albumRepository = albumRepository
         let raw = UserDefaults.standard.string(forKey: Self.sortOrderKey)
         self.sortOrder = raw.flatMap(ArtistSortOrder.init(rawValue:)) ?? .artistName
+        let rawScope = UserDefaults.standard.string(forKey: Self.scopeKey)
+        self.scope = rawScope.flatMap(ArtistScope.init(rawValue:)) ?? .allArtists
     }
 
     // MARK: - Public API
@@ -68,11 +87,15 @@ public final class ArtistsViewModel: ObservableObject {
             async let albumCountsFetch = self.repository.fetchAlbumCounts()
             async let trackCountsFetch = self.repository.fetchTrackCounts()
             async let coverPathsFetch = self.albumRepository.fetchCoverArtPathsByArtist()
+            async let albumArtistIDsFetch = self.repository.fetchAlbumArtistIDs()
             let fetched = try await artistsFetch
-            // Counts first: the count-based sorts read them.
+            // Counts and album-artist IDs first: the count-based sorts and the
+            // scope filter read them.
             self.albumCounts = await (try? albumCountsFetch) ?? [:]
             self.trackCounts = await (try? trackCountsFetch) ?? [:]
             self.coverArtPaths = await (try? coverPathsFetch) ?? [:]
+            self.albumArtistIDs = await (try? albumArtistIDsFetch) ?? []
+            self.baseArtists = fetched
             self.artists = self.sortedArtists(self.visibleArtists(fetched))
             self.log.debug("artists.load.end", ["count": self.artists.count])
         } catch {
@@ -83,6 +106,7 @@ public final class ArtistsViewModel: ObservableObject {
 
     /// Replaces the artist list with a pre-fetched result (search results).
     public func setArtists(_ items: [Artist]) {
+        self.baseArtists = items
         self.artists = self.sortedArtists(self.visibleArtists(items))
     }
 
@@ -91,6 +115,7 @@ public final class ArtistsViewModel: ObservableObject {
         self.isLoading = true
         do {
             let matches = try await self.repository.search(query: query)
+            self.baseArtists = matches
             self.artists = self.sortedArtists(self.visibleArtists(matches))
         } catch {
             self.log.error("artists.search.failed", ["error": String(reflecting: error)])
@@ -106,14 +131,37 @@ public final class ArtistsViewModel: ObservableObject {
         self.artists = self.sortedArtists(self.artists)
     }
 
+    /// Changes the artist scope, persists it, and refilters the last fetched or
+    /// searched result in place (no refetch).
+    public func setScope(_ scope: ArtistScope) {
+        guard scope != self.scope else { return }
+        self.scope = scope
+        UserDefaults.standard.set(scope.rawValue, forKey: Self.scopeKey)
+        self.artists = self.sortedArtists(self.visibleArtists(self.baseArtists))
+    }
+
     /// Drops orphan artist rows with no playable tracks. These are dangling
     /// records left after a removal (their tracks are gone but the artist row
     /// survives); they contribute nothing and render as an empty "0 albums,
     /// 0 songs" entry. Filtering here hides them from both list and grid without
     /// mutating the database. Artists appear iff they have at least one
     /// non-disabled track (``trackCounts`` is populated in ``load()``).
+    ///
+    /// The `.albumArtists` scope additionally requires an album-artist credit
+    /// (``albumArtistIDs``), hiding per-track guest credits (#369). Every list
+    /// input (load, search, external replace) funnels through here, so search
+    /// results respect the scope automatically.
     private func visibleArtists(_ items: [Artist]) -> [Artist] {
-        items.filter { ($0.id.flatMap { self.trackCounts[$0] } ?? 0) > 0 }
+        items.filter { artist in
+            guard let id = artist.id, self.trackCounts[id] ?? 0 > 0 else { return false }
+            switch self.scope {
+            case .allArtists:
+                return true
+
+            case .albumArtists:
+                return self.albumArtistIDs.contains(id)
+            }
+        }
     }
 
     /// Sorts `items` by the current ``sortOrder``. The count-based orders fall
@@ -146,6 +194,29 @@ public final class ArtistsViewModel: ObservableObject {
     /// display name (matches the database's `sort_name`, `name` ordering).
     private static func nameKey(_ artist: Artist) -> String {
         artist.sortName ?? artist.name
+    }
+}
+
+// MARK: - ArtistScope
+
+/// Which artists populate the Artists list (#369). A filter, not a sort: the
+/// `.albumArtists` scope hides artists whose only credits are per-track (guest
+/// spots, "feat." appearances), leaving the list that matches the album shelf.
+public enum ArtistScope: String, CaseIterable, Sendable {
+    /// Every artist credited on any track (the historical behaviour).
+    case allArtists
+    /// Only artists credited as the album artist of at least one album.
+    case albumArtists
+
+    /// Localized label shown in the list's filter menu.
+    public var displayName: String {
+        switch self {
+        case .allArtists:
+            L10n.string("All Artists")
+
+        case .albumArtists:
+            L10n.string("Album Artists")
+        }
     }
 }
 

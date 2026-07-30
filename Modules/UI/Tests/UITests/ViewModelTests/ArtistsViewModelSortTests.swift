@@ -5,10 +5,10 @@ import Testing
 
 // MARK: - ArtistsViewModelSortTests
 
-// `.serialized`: setSortOrder writes a shared UserDefaults key, so running the
-// sort/persistence cases in parallel could let one test's write leak into
-// another's view-model init.
-@Suite("ArtistsViewModel Sort Tests", .serialized)
+// `.serialized`: setSortOrder and setScope write shared UserDefaults keys, so
+// running the sort/scope/persistence cases in parallel could let one test's
+// write leak into another's view-model init.
+@Suite("ArtistsViewModel Sort and Scope Tests", .serialized)
 @MainActor
 struct ArtistsViewModelSortTests {
     private func makeDatabase() async throws -> Database {
@@ -111,6 +111,105 @@ struct ArtistsViewModelSortTests {
         await vm.load()
         vm.setSortOrder(.songCount)
         #expect(vm.artists.map(\.name) == ["Zeta", "Mu", "Alpha"])
+    }
+
+    /// Adds a guest artist who sings one track on Zeta's album but fronts no
+    /// album of their own, i.e. a per-track credit the albumArtists scope hides.
+    private func seedGuest(_ db: Database) async throws {
+        try await db.write { db in
+            var guest = Artist(name: "Guest")
+            try guest.insert(db)
+            let guestID = try #require(guest.id)
+            let zetaAlbumID = try #require(
+                try Int64.fetchOne(db, sql: "SELECT id FROM albums WHERE title = 'Z1'")
+            )
+            var t = Track(
+                fileURL: "file:///tmp/guest-feature.mp3",
+                fileSize: 1,
+                fileMtime: 0,
+                fileFormat: "mp3",
+                duration: 1,
+                title: "guest-feature",
+                addedAt: 0,
+                updatedAt: 0
+            )
+            t.artistID = guestID
+            t.albumID = zetaAlbumID
+            try t.insert(db)
+        }
+    }
+
+    @Test("albumArtists scope hides artists with only per-track credits")
+    func albumArtistsScopeHidesGuests() async throws {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: ArtistsViewModel.scopeKey)
+        defer { defaults.removeObject(forKey: ArtistsViewModel.scopeKey) }
+
+        let db = try await makeDatabase()
+        try await self.seed(db)
+        try await self.seedGuest(db)
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
+        await vm.load()
+        #expect(vm.scope == .allArtists) // default with a clean key
+        #expect(vm.artists.map(\.name).contains("Guest"))
+
+        vm.setScope(.albumArtists)
+        #expect(!vm.artists.map(\.name).contains("Guest"))
+        #expect(Set(vm.artists.map(\.name)) == ["Alpha", "Mu", "Zeta"])
+    }
+
+    @Test("switching back to allArtists restores the full list without a refetch")
+    func scopeToggleRestoresFullList() async throws {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: ArtistsViewModel.scopeKey)
+        defer { defaults.removeObject(forKey: ArtistsViewModel.scopeKey) }
+
+        let db = try await makeDatabase()
+        try await self.seed(db)
+        try await self.seedGuest(db)
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
+        await vm.load()
+        vm.setScope(.albumArtists)
+        vm.setScope(.allArtists)
+        #expect(Set(vm.artists.map(\.name)) == ["Alpha", "Guest", "Mu", "Zeta"])
+    }
+
+    @Test("externally supplied results are filtered by the active scope")
+    func scopeAppliesToSetArtists() async throws {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: ArtistsViewModel.scopeKey)
+        defer { defaults.removeObject(forKey: ArtistsViewModel.scopeKey) }
+
+        let db = try await makeDatabase()
+        try await self.seed(db)
+        try await self.seedGuest(db)
+        let vm = ArtistsViewModel(repository: ArtistRepository(database: db), albumRepository: AlbumRepository(database: db))
+        await vm.load()
+        vm.setScope(.albumArtists)
+
+        // Simulate a search-result replacement containing a guest credit: the
+        // scope filter must still apply because every input funnels through it.
+        let all = try await ArtistRepository(database: db).fetchAll()
+        vm.setArtists(all)
+        #expect(!vm.artists.map(\.name).contains("Guest"))
+    }
+
+    @Test("scope is persisted and restored by a fresh view model")
+    func scopePersists() async throws {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: ArtistsViewModel.scopeKey)
+        defer { defaults.removeObject(forKey: ArtistsViewModel.scopeKey) }
+
+        let db = try await makeDatabase()
+        let repo = ArtistRepository(database: db)
+
+        let first = ArtistsViewModel(repository: repo, albumRepository: AlbumRepository(database: db))
+        #expect(first.scope == .allArtists) // default with a clean key
+        first.setScope(.albumArtists)
+
+        // A new instance (next launch) reads the persisted preference.
+        let second = ArtistsViewModel(repository: repo, albumRepository: AlbumRepository(database: db))
+        #expect(second.scope == .albumArtists)
     }
 
     @Test("sort order is persisted and restored by a fresh view model")

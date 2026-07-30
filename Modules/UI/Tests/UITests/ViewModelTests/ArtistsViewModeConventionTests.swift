@@ -80,3 +80,69 @@ struct ArtistsViewModeConventionTests {
         )
     }
 }
+
+// MARK: - ArtistScopeConventionTests
+
+/// Source-convention checks for the Artists scope filter (#369). The funnel
+/// icon's filled state is the only always-visible sign that a persisted filter
+/// is hiding artists, so these pin the menu, the icon swap, and the persistence
+/// key against silent regression.
+@Suite("Artists scope filter conventions")
+struct ArtistScopeConventionTests {
+    private func uiSource(_ relativePath: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/\(relativePath)")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("ArtistsView presents the scope filter menu")
+    func presentsScopeMenu() throws {
+        let source = try self.uiSource("Browse/ArtistsView.swift")
+        #expect(
+            source.contains("ArtistScopeMenu(selection: self.scopeBinding)"),
+            "the Artists toolbar must present the shared ArtistScopeMenu"
+        )
+    }
+
+    @Test("The funnel icon fills when the albumArtists scope is active")
+    func funnelFillsWhenFiltered() throws {
+        // The filled funnel is the platform's "a filter is active" signal and
+        // the only indication visible with the menu closed; losing the swap
+        // silently hides artists with no on-screen explanation.
+        let source = try self.uiSource("Browse/ArtistScopeMenu.swift")
+        #expect(
+            source.contains("self.selection == .albumArtists"),
+            "the icon must be gated on the albumArtists scope"
+        )
+        #expect(
+            source.contains("\"line.3.horizontal.decrease.circle.fill\""),
+            "the active state must use the filled funnel"
+        )
+        #expect(
+            source.contains("\"line.3.horizontal.decrease.circle\""),
+            "the inactive state must use the outline funnel"
+        )
+    }
+
+    @Test("The scope is persisted under artists.scope")
+    func persistsScope() throws {
+        let source = try self.uiSource("ViewModels/ArtistsViewModel.swift")
+        #expect(
+            source.contains("scopeKey = \"artists.scope\""),
+            "the scope must persist under the artists.scope UserDefaults key"
+        )
+    }
+
+    @Test("The filtered empty state offers a one-click return to All Artists")
+    func emptyStateEscapeHatch() throws {
+        let source = try self.uiSource("Browse/ArtistsView.swift")
+        #expect(
+            source.contains("self.vm.setScope(.allArtists)"),
+            "the No Album Artists empty state must reset the scope in one click"
+        )
+    }
+}

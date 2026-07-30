@@ -305,8 +305,21 @@ public struct ArtistsView: View {
                     EmptyState(
                         symbol: "magnifyingglass",
                         title: L10n.string("No Results"),
-                        message: L10n.string("No artists match \u{201C}\(activeQuery)\u{201D}.")
+                        message: self.vm.scope == .albumArtists
+                            ? L10n.string("No album artists match \u{201C}\(activeQuery)\u{201D}.")
+                            : L10n.string("No artists match \u{201C}\(activeQuery)\u{201D}.")
                     )
+                } else if self.vm.scope == .albumArtists {
+                    // The library has artists, just none credited as an album
+                    // artist. Offer the one-click way out of the filter.
+                    EmptyState(
+                        symbol: "line.3.horizontal.decrease.circle",
+                        title: L10n.string("No Album Artists"),
+                        message: L10n.string("No artist in your library is credited as an album artist."),
+                        actionLabel: L10n.string("Show All Artists")
+                    ) {
+                        self.vm.setScope(.allArtists)
+                    }
                 } else {
                     EmptyState(
                         symbol: "music.mic",
@@ -329,6 +342,9 @@ public struct ArtistsView: View {
                 CollectionViewModeToggle(mode: self.$viewMode)
             }
             ToolbarItem(placement: .primaryAction) {
+                ArtistScopeMenu(selection: self.scopeBinding)
+            }
+            ToolbarItem(placement: .primaryAction) {
                 SortMenu(selection: self.sortBinding, help: L10n.string("Choose how artists are sorted"))
             }
         }
@@ -340,6 +356,15 @@ public struct ArtistsView: View {
         Binding(
             get: { self.vm.sortOrder },
             set: { self.vm.setSortOrder($0) }
+        )
+    }
+
+    /// Bridges the filter menu to the view model, which owns and persists the
+    /// scope and refilters in place on change.
+    private var scopeBinding: Binding<ArtistScope> {
+        Binding(
+            get: { self.vm.scope },
+            set: { self.vm.setScope($0) }
         )
     }
 
