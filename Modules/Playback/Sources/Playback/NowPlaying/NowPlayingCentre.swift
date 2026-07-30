@@ -27,8 +27,9 @@ public final class NowPlayingCentre {
 
     /// Monotonic token guarding against a late-arriving artwork load from a
     /// superseded track overwriting the now-playing info of the current one.
-    /// Bumped on every `update(track:…)` / `clear()`; in-flight loads compare
-    /// their captured token against this and bail if they've been superseded.
+    /// Bumped on every `update(track:…)` / `updatePodcast(…)` / `clear()`;
+    /// in-flight loads compare their captured token against this and bail if
+    /// they've been superseded.
     private var artworkToken: UInt64 = 0
 
     private let log = AppLogger.make(.playback)
@@ -80,6 +81,9 @@ public final class NowPlayingCentre {
         positionProvider: @Sendable @escaping () async -> TimeInterval
     ) {
         self.getPosition = positionProvider
+        // Invalidate any in-flight music artwork load so a late-arriving image
+        // from a superseded track cannot land on this episode's info.
+        self.artworkToken &+= 1
 
         var info: [String: Any] = [:]
         info[MPMediaItemPropertyTitle] = title
