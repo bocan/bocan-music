@@ -6,7 +6,7 @@ import Persistence
 
 // MARK: - ArtworkPayload
 
-private struct ArtworkPayload: Sendable {
+private struct ArtworkPayload {
     let data: Data
     let boundsSize: CGSize
 }
@@ -58,9 +58,7 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying {
-            self.startPositionTimer()
-        }
+        if self.isPlaying { self.startPositionTimer() }
         self.log.debug("nowplaying.update", ["title": track.title ?? "unknown"])
 
         self.loadArtwork(path: coverArtPath)
@@ -93,9 +91,7 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying {
-            self.startPositionTimer()
-        }
+        if self.isPlaying { self.startPositionTimer() }
         self.log.debug("nowplaying.update.podcast", ["title": title, "show": showName])
     }
 
