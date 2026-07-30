@@ -120,6 +120,24 @@ public struct ArtistRepository: Sendable {
         }
     }
 
+    /// Returns the IDs of artists credited as the album artist of at least one
+    /// album containing an enabled track. Backs the Artists list's "Album
+    /// Artists" scope (#369): guest and per-track-credit artists appear in the
+    /// full list but are absent here. Compilations without a single album
+    /// artist (`album_artist_id IS NULL`) contribute nothing; they stay
+    /// reachable through the Albums grid's "Various Artists" grouping.
+    public func fetchAlbumArtistIDs() async throws -> Set<Int64> {
+        try await self.database.read { db in
+            let ids = try Int64.fetchAll(db, sql: """
+                SELECT DISTINCT albums.album_artist_id
+                FROM albums
+                JOIN tracks ON tracks.album_id = albums.id AND tracks.disabled = 0
+                WHERE albums.album_artist_id IS NOT NULL
+            """)
+            return Set(ids)
+        }
+    }
+
     // MARK: - Search
 
     /// Full-text search across artist name field.
