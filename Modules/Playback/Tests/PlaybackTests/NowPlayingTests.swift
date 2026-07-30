@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Persistence
 import Testing
@@ -82,6 +83,58 @@ struct NowPlayingTests {
         centre.setPlaying(true)
         centre.setPlaying(false)
         // Verify no crash; actual MPNowPlayingInfoCenter state is app-level.
+    }
+
+    @Test("update with missing coverArtPath does not crash")
+    @MainActor
+    func updateWithMissingArtworkPath() async throws {
+        let centre = NowPlayingCentre()
+        let track = self.makeTrack(title: "Artwork Test")
+        centre.update(
+            track: track,
+            duration: 200,
+            coverArtPath: "/nonexistent/cover.jpg",
+            positionProvider: { 0 }
+        )
+        // Give the off-main load a moment to settle before clearing.
+        try await Task.sleep(nanoseconds: 200_000_000)
+        centre.clear()
+    }
+
+    @Test("rapid update supersedes in-flight artwork load without crash")
+    @MainActor
+    func rapidUpdateSupersedesArtwork() async throws {
+        let centre = NowPlayingCentre()
+        // First update kicks off an artwork load against a bogus path.
+        centre.update(
+            track: self.makeTrack(title: "A"),
+            duration: 100,
+            coverArtPath: "/nonexistent/a.jpg",
+            positionProvider: { 0 }
+        )
+        // Second update supersedes it immediately with a different track and no art.
+        centre.update(
+            track: self.makeTrack(title: "B"),
+            duration: 100,
+            coverArtPath: nil,
+            positionProvider: { 0 }
+        )
+        try await Task.sleep(nanoseconds: 200_000_000)
+        centre.clear()
+    }
+
+    @Test("artwork request handler can run off the main actor")
+    func artworkRequestHandlerRunsOffMainActor() async throws {
+        let encodedPNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        let data = try #require(Data(base64Encoded: encodedPNG))
+        let requestHandler = NowPlayingCentre.artworkRequestHandler(data: data)
+
+        let imageSize = await Task.detached {
+            requestHandler(CGSize(width: 64, height: 64)).size
+        }.value
+
+        #expect(imageSize.width > 0)
+        #expect(imageSize.height > 0)
     }
 
     // MARK: - Helpers
