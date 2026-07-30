@@ -135,20 +135,23 @@ public struct ArtistDetailView: View {
             .background(Color.bgSecondary)
     }
 
+    @ViewBuilder
+    private func albumArtwork(_ album: Album) -> some View {
+        if let path = album.coverArtPath {
+            Artwork(artPath: path, seed: Int(album.id ?? 0), size: Theme.albumGridMinWidth)
+                .accessibilityLabel(L10n.string("\(album.title) artwork"))
+        } else {
+            GradientPlaceholder(seed: Int(album.id ?? 0))
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
+                .accessibilityLabel(L10n.string("\(album.title) artwork placeholder"))
+        }
+    }
+
     private func albumCell(_ album: Album, trackCount: Int?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Group {
-                if let path = album.coverArtPath {
-                    Artwork(artPath: path, seed: Int(album.id ?? 0), size: Theme.albumGridMinWidth)
-                        .accessibilityLabel(L10n.string("\(album.title) artwork"))
-                } else {
-                    GradientPlaceholder(seed: Int(album.id ?? 0))
-                        .aspectRatio(1, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
-                        .accessibilityLabel(L10n.string("\(album.title) artwork placeholder"))
-                }
-            }
-            .frame(maxWidth: .infinity)
+            self.albumArtwork(album)
+                .frame(maxWidth: .infinity)
 
             Text(album.title)
                 .font(Typography.subheadline)
@@ -168,11 +171,14 @@ public struct ArtistDetailView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-        .onTapGesture {
-            if let id = album.id {
-                self.openAlbum(id)
-            }
-        }
+        .albumOpenPlayGesture(
+            open: {
+                if let id = album.id {
+                    self.openAlbum(id)
+                }
+            },
+            play: { self.playAlbum(album) }
+        )
         .contextMenu {
             self.albumContextMenu(album: album)
         }
@@ -183,11 +189,31 @@ public struct ArtistDetailView: View {
                 .joined(separator: ", ")
         )
         .accessibilityHint(L10n.string("Double-tap to open album"))
+        // Gesture-composed clicks don't synthesize an assistive activation,
+        // so expose both outcomes as explicit accessibility actions.
+        .accessibilityAction {
+            if let id = album.id {
+                self.openAlbum(id)
+            }
+        }
+        .accessibilityAction(named: L10n.string("Play Album")) { self.playAlbum(album) }
+    }
+
+    /// Replaces the queue with `album` and starts playback, no navigation (#369).
+    private func playAlbum(_ album: Album) {
+        guard let id = album.id else { return }
+        Task { await self.library.playAlbum(albumID: id) }
     }
 
     @ViewBuilder
     private func albumContextMenu(album: Album) -> some View {
+        // Play Album plays in place; View Album navigates (matching the
+        // Albums grid's context-menu split, #349).
         Button(L10n.string("Play Album")) {
+            self.playAlbum(album)
+        }
+        .disabled(album.id == nil)
+        Button(L10n.string("View Album")) {
             if let id = album.id {
                 self.openAlbum(id)
             }
