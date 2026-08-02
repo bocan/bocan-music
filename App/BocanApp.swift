@@ -184,7 +184,10 @@ struct BocanApp: App {
         .defaultSize(width: 1100, height: 700)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
-        .commands { AppCommands(model: self.model, updateController: self.updateController) }
+        .commands {
+            AppCommands(model: self.model, updateController: self.updateController)
+            ToolsCommands()
+        }
 
         // MARK: About / Help / Notices (database-independent)
 
@@ -245,6 +248,15 @@ struct BocanApp: App {
         .windowResizability(.contentMinSize)
         .restorationBehavior(.disabled)
         .keyboardShortcut(KeyBindings.showEQPanel)
+
+        // MARK: Library summary
+
+        Window("Library Summary", id: "library-summary") {
+            LibrarySummaryWindowContent(model: self.model)
+        }
+        .defaultSize(width: 640, height: 440)
+        .windowResizability(.contentMinSize)
+        .restorationBehavior(.disabled)
 
         // MARK: Menu bar widget
 

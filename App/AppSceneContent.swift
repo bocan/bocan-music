@@ -67,6 +67,17 @@ struct DSPWindowContent: View {
     }
 }
 
+// MARK: - Library summary
+
+struct LibrarySummaryWindowContent: View {
+    let model: AppModel
+    var body: some View {
+        GraphContent(model: self.model) { graph in
+            LibrarySummaryView(database: graph.libraryViewModel.database)
+        }
+    }
+}
+
 // MARK: - Mini player
 
 struct MiniPlayerWindowContent: View {
