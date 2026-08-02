@@ -94,3 +94,63 @@ struct TrackTableDragTests {
         #expect(coordinator.fileURL(forTrackID: 999) == nil)
     }
 }
+
+// MARK: - ColumnAutosaveConventionTests
+
+/// Source-convention checks for column order/width persistence (#369).
+/// `NSTableView` restores autosaved column state at the moment `autosaveName`
+/// is set, onto whatever columns exist right then. Arming autosave before the
+/// columns are added silently breaks persistence: every drag is saved, nothing
+/// is ever restored, and each rebuild re-saves the default order. These pin
+/// the arm-after-columns ordering in both song tables.
+@Suite("Track table column autosave conventions")
+struct ColumnAutosaveConventionTests {
+    private func browseSource(_ relativePath: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/Browse/\(relativePath)")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// Asserts `first` appears before `second` in `source`.
+    private func expectOrder(_ source: String, _ first: String, _ second: String, _ note: Comment) {
+        let firstRange = source.range(of: first)
+        let secondRange = source.range(of: second)
+        #expect(firstRange != nil, "missing: \(first)")
+        #expect(secondRange != nil, "missing: \(second)")
+        if let firstRange, let secondRange {
+            #expect(firstRange.lowerBound < secondRange.lowerBound, note)
+        }
+    }
+
+    @Test("TrackTable adds columns before arming autosave")
+    func trackTableArmsAutosaveAfterColumns() throws {
+        let source = try self.browseSource("TrackTable.swift")
+        self.expectOrder(
+            source,
+            "Self.addColumns(to: tableView, sortable: self.sortable, autosaveName: autosaveName)",
+            "tableView.autosaveName = autosaveName",
+            "autosaveName must be set after addColumns or saved order is never restored"
+        )
+        self.expectOrder(
+            source,
+            "tableView.autosaveName = autosaveName",
+            "Self.applySavedVisibility(to: tableView, autosaveName: autosaveName)",
+            "the visibility store must be re-asserted after the autosave restore"
+        )
+    }
+
+    @Test("SubsonicSongTable adds columns before arming autosave")
+    func subsonicTableArmsAutosaveAfterColumns() throws {
+        let source = try self.browseSource("Subsonic/SubsonicSongTable.swift")
+        self.expectOrder(
+            source,
+            "Self.addColumns(to: tableView, includingSource: self.showsSource, autosaveName: autosaveName)",
+            "tableView.autosaveName = autosaveName",
+            "autosaveName must be set after addColumns or saved order is never restored"
+        )
+    }
+}

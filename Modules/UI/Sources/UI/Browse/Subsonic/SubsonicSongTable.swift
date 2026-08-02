@@ -131,10 +131,14 @@ struct SubsonicSongTable: NSViewRepresentable {
         tableView.allowsColumnResizing = true
         tableView.allowsEmptySelection = true
         tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
-        tableView.autosaveName = "bocan.subsonicSongsTable.v1"
-        tableView.autosaveTableColumns = true
 
-        Self.addColumns(to: tableView, includingSource: self.showsSource)
+        let autosaveName = "bocan.subsonicSongsTable.v1"
+        Self.addColumns(to: tableView, includingSource: self.showsSource, autosaveName: autosaveName)
+        // Arm autosave only after the columns exist; setting `autosaveName`
+        // triggers the order/width restore onto the current columns (#369,
+        // same ordering bug as TrackTable).
+        tableView.autosaveTableColumns = true
+        tableView.autosaveName = autosaveName
         Self.buildHeaderMenu(for: tableView, coordinator: context.coordinator)
 
         let dataSource = SubsonicSongDiffableDataSource(tableView: tableView) { tv, col, _, id in
@@ -233,8 +237,11 @@ struct SubsonicSongTable: NSViewRepresentable {
         rawID: "source", title: L10n.string("Source"), min: 80, ideal: 120, max: 240, sortKey: "source"
     )
 
-    private static func addColumns(to tableView: NSTableView, includingSource: Bool) {
-        let autosaveName = tableView.autosaveName ?? ""
+    private static func addColumns(
+        to tableView: NSTableView,
+        includingSource: Bool,
+        autosaveName: String
+    ) {
         var defs = self.colDefs
         if includingSource { defs.append(self.sourceColDef) }
         for def in defs {
