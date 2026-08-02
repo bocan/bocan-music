@@ -67,4 +67,62 @@ struct LibrarySummaryTests {
             "the pane must observe the view model or the progress row never updates"
         )
     }
+
+    @Test("The Audio Quality pane surfaces suspected transcodes honestly (phase 24-4)")
+    func suspectedTranscodesWired() throws {
+        let source = try String(contentsOf: Self.uiSource("Summary/LibraryAudioQualityPane.swift"), encoding: .utf8)
+        #expect(
+            source.contains("Suspected Transcodes (\\(report.suspectedTranscodeCount))"),
+            "the offender disclosure group must exist with its count"
+        )
+        #expect(
+            source.contains("@State private var suspectsExpanded = false"),
+            "the offender list must be collapsed by default like the other offender sections"
+        )
+        #expect(
+            source.contains("confident · shelf at"),
+            "rows must carry the confidence-and-shelf detail the phase spec fixes"
+        )
+        #expect(
+            source.contains("report.provenanceAnalysedCount > 0"),
+            "the section must be gated on at least one analysed track"
+        )
+        #expect(
+            source.contains("Not yet analysed: \\(report.provenanceUnanalysedCount) lossless tracks"),
+            "the unanalysed count must surface beside the section so coverage is honest"
+        )
+    }
+
+    @Test("The provenance footer's multiline copy matches its catalog key exactly (phase 24-4)")
+    func footerKeyInCatalog() throws {
+        // A multiline Text(localized: \"\"\"...\"\"\") literal resolves to the
+        // joined single-line key; if the catalog entry drifts even one word,
+        // the copy silently renders unlocalized. Pin the two together.
+        let source = try String(contentsOf: Self.uiSource("Summary/LibraryAudioQualityPane.swift"), encoding: .utf8)
+        let start = try #require(source.range(of: "localized: \"\"\"\n"))
+        let tail = source[start.upperBound...]
+        let end = try #require(tail.range(of: "\"\"\""))
+        let joined = tail[..<end.lowerBound]
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .map { $0.hasSuffix("\\") ? String($0.dropLast()) : $0 }
+            .joined()
+        #expect(joined.contains("ever suspected"), "the copy must keep the suspected-never-accused stance")
+
+        let data = try Data(contentsOf: Self.uiSource("Resources/Localizable.xcstrings"))
+        let catalog = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try #require(catalog["strings"] as? [String: Any])
+        #expect(strings[joined] != nil, "the footer copy must exist as a catalog key, got: \(joined)")
+    }
+
+    /// Path to a file under `Modules/UI/Sources/UI/`.
+    private static func uiSource(_ relativePath: String) -> URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/\(relativePath)")
+    }
 }

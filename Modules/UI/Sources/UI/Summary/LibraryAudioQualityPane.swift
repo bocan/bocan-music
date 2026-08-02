@@ -19,6 +19,7 @@ struct LibraryAudioQualityPane: View {
     @State private var loadFailed = false
     @State private var mixedExpanded = false
     @State private var oversExpanded = false
+    @State private var suspectsExpanded = false
 
     var body: some View {
         Group {
@@ -47,7 +48,7 @@ struct LibraryAudioQualityPane: View {
 
     private func reportForm(_ report: LibraryAudioQualityReport) -> some View {
         Form {
-            self.provenanceSection
+            self.provenanceSection(report)
             self.losslessSection(report)
             self.formatsSection(report)
             self.fidelitySection(report)
@@ -61,40 +62,111 @@ struct LibraryAudioQualityPane: View {
         .formStyle(.grouped)
     }
 
-    /// Live progress for the Tools menu's "Analyse Provenance" batch
-    /// (phase 24-3). Present only while a run is underway or its completion
-    /// banner has not been dismissed; the suspects themselves surface in 24-4.
+    /// The Transcode Detection section (phases 24-3 and 24-4): live batch
+    /// progress while a run is underway, and the suspected-transcode offender
+    /// list once at least one track holds a verdict. The word is always
+    /// "suspected"; the footer explains what a shelf is and why a flagged
+    /// file can be innocent.
     @ViewBuilder
-    private var provenanceSection: some View {
-        if let progress = self.library.provenanceProgress {
-            Section(L10n.string("Transcode Detection")) {
-                if progress.isComplete {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                        Text(L10n.string("\(progress.succeeded) analysed, \(progress.suspected) suspected"))
-                    }
-                    Button(L10n.string("Dismiss")) {
-                        self.library.provenanceProgress = nil
-                    }
-                    .buttonStyle(.bordered)
-                } else {
-                    HStack(spacing: 8) {
-                        ProgressView(
-                            value: Double(progress.done),
-                            total: Double(progress.total)
-                        )
-                        Text(verbatim: "\(progress.done) / \(progress.total)")
-                            .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                        Button(L10n.string("Cancel")) {
-                            self.library.cancelProvenanceAnalysis()
-                        }
-                        .buttonStyle(.bordered)
-                    }
+    private func provenanceSection(_ report: LibraryAudioQualityReport) -> some View {
+        if self.library.provenanceProgress != nil || report.provenanceAnalysedCount > 0 {
+            Section {
+                if let progress = self.library.provenanceProgress {
+                    self.provenanceProgressRows(progress)
                 }
+                if report.provenanceAnalysedCount > 0 {
+                    self.suspectRows(report)
+                }
+            } header: {
+                Text(localized: "Transcode Detection")
+            } footer: {
+                self.provenanceFooter(report)
             }
         }
+    }
+
+    /// Live progress for the Tools menu's "Analyse Provenance" batch
+    /// (phase 24-3), with Cancel while running and Dismiss once complete.
+    @ViewBuilder
+    private func provenanceProgressRows(_ progress: ProvenanceBatchProgress) -> some View {
+        if progress.isComplete {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text(L10n.string("\(progress.succeeded) analysed, \(progress.suspected) suspected"))
+            }
+            Button(L10n.string("Dismiss")) {
+                self.library.provenanceProgress = nil
+            }
+            .buttonStyle(.bordered)
+        } else {
+            HStack(spacing: 8) {
+                ProgressView(
+                    value: Double(progress.done),
+                    total: Double(progress.total)
+                )
+                Text(verbatim: "\(progress.done) / \(progress.total)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Button(L10n.string("Cancel")) {
+                    self.library.cancelProvenanceAnalysis()
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+    }
+
+    /// The offenders (phase 24-4): highest confidence first, collapsed by
+    /// default, each row navigating to its album. A clean run gets a plain
+    /// all-clear instead of an empty disclosure group.
+    @ViewBuilder
+    private func suspectRows(_ report: LibraryAudioQualityReport) -> some View {
+        if report.suspectedTranscodeCount == 0 {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.seal.fill")
+                    .foregroundStyle(.green)
+                Text(L10n.string("No suspected transcodes in \(report.provenanceAnalysedCount) analysed files"))
+            }
+        } else {
+            DisclosureGroup(
+                L10n.string("Suspected Transcodes (\(report.suspectedTranscodeCount))"),
+                isExpanded: self.$suspectsExpanded
+            ) {
+                ForEach(report.suspectedTranscodes) { track in
+                    SummaryOffenderRow(
+                        title: track.albumTitle
+                            .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
+                        detail: Self.suspectDetail(track),
+                        albumID: track.albumID,
+                        library: self.library
+                    )
+                }
+                SummaryMoreRow(
+                    total: report.suspectedTranscodeCount,
+                    shown: report.suspectedTranscodes.count
+                )
+            }
+        }
+    }
+
+    /// Honest coverage plus the plain-copy explanation the phase spec fixes:
+    /// what a shelf is, and why a verdict can be wrong.
+    private func provenanceFooter(_ report: LibraryAudioQualityReport) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if report.provenanceUnanalysedCount > 0 {
+                Text(localized: "Not yet analysed: \(report.provenanceUnanalysedCount) lossless tracks")
+            }
+            Text(
+                localized: """
+                A lossy encoder throws away everything above a frequency ceiling, and that hard \
+                spectral shelf survives re-encoding to a lossless file. Old digitisations, live \
+                recordings, and dull masters can show the same shelf, so a flagged file is only \
+                ever suspected. Nothing is changed, moved, or deleted.
+                """
+            )
+        }
+        .font(Typography.caption)
+        .foregroundStyle(Color.textTertiary)
     }
 
     private func losslessSection(_ report: LibraryAudioQualityReport) -> some View {
@@ -214,6 +286,15 @@ struct LibraryAudioQualityPane: View {
     /// Linear true peak (> 1) as a decibel string, one decimal ("0.9").
     private static func dBTP(_ linear: Double) -> String {
         String(format: "%.1f", 20 * log10(linear))
+    }
+
+    /// The phase 24-4 offender detail: "87% confident · shelf at 16 kHz".
+    private static func suspectDetail(_ track: LibraryAudioQualityReport.SuspectedTranscodeTrack) -> String {
+        let confidence = track.confidence.formatted(.percent.precision(.fractionLength(0)))
+        guard let shelfHz = track.shelfFrequencyHz else {
+            return L10n.string("\(confidence) confident")
+        }
+        return L10n.string("\(confidence) confident · shelf at \(self.kHz(shelfHz)) kHz")
     }
 
     // MARK: - Data
