@@ -32,7 +32,9 @@ struct BocanCommands: Commands {
     @CollectionViewModeStorage("genres.viewMode") var genresViewMode
     @CollectionViewModeStorage("composers.viewMode") var composersViewMode
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    @Environment(\.openWindow) private var openWindow
+    // Internal (not private): the file-split command extensions
+    // (`BocanCommands+Tools.swift`) open windows too.
+    @Environment(\.openWindow) var openWindow
     @Environment(\.openSettings) private var openSettings
 
     /// `true` when motion should be suppressed (system Reduce Motion or the in-app toggle).

@@ -29,6 +29,14 @@ extension BocanCommands {
                 Task { await self.vm.recomputeAllReplayGain() }
             }
             .help("Re-analyse loudness for every track in the library")
+
+            Divider()
+
+            Button("Library Summary\u{2026}") {
+                self.openWindow(id: "library-summary")
+            }
+            .keyboardShortcut(KeyBindings.librarySummary)
+            .help("Whole-library totals: songs, albums, artists, and playback time")
         }
     }
 }

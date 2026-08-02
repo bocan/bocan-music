@@ -145,11 +145,6 @@ struct AppCommands: Commands {
                 settingsRouter: graph.settingsRouter,
                 updateController: self.updateController
             )
-            // Inside the graph conditional deliberately: a custom CommandMenu
-            // that exists before the commands tree rebuilds (graph nil -> ready)
-            // gets re-added next to its old self, i.e. two Tools menus (#303
-            // class of bug). Same lifecycle as Playback/Track keeps it single.
-            ToolsCommands()
         }
     }
 }
