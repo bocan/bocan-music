@@ -39,7 +39,9 @@ public struct LibrarySummaryStats: Equatable, Sendable {
 
 /// Read-only aggregate queries over the whole library.
 public struct LibraryStatsRepository: Sendable {
-    private let database: Database
+    /// Internal (not private): the hygiene detectors live in a file-split
+    /// extension (`LibraryStatsRepository+Hygiene.swift`) and read through it.
+    let database: Database
 
     /// Creates a repository backed by `database`.
     public init(database: Database) {
