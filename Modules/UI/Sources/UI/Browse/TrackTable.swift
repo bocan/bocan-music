@@ -105,10 +105,6 @@ public struct TrackTable: NSViewRepresentable {
         tableView.identifier = NSUserInterfaceItemIdentifier(A11y.TracksTable.table)
         tableView.setAccessibilityLabel(L10n.string("Track List"))
         tableView.setAccessibilityRoleDescription(L10n.string("Music track list"))
-        tableView.autosaveName = self.sortable
-            ? "bocan.tracksTable.sortable.v4"
-            : "bocan.tracksTable.plain.v4"
-        tableView.autosaveTableColumns = true
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.style = .inset
         tableView.allowsMultipleSelection = true
@@ -134,7 +130,21 @@ public struct TrackTable: NSViewRepresentable {
         tableView.target = coordinator
         self.configureCallbacks(for: tableView, coordinator: coordinator)
 
-        Self.addColumns(to: tableView, sortable: self.sortable)
+        let autosaveName = self.sortable
+            ? "bocan.tracksTable.sortable.v4"
+            : "bocan.tracksTable.plain.v4"
+        Self.addColumns(to: tableView, sortable: self.sortable, autosaveName: autosaveName)
+        // Arm autosave only after the columns exist: setting `autosaveName` is
+        // the trigger that restores saved order/width, and it restores onto
+        // whatever columns are present at that moment. Armed before
+        // `addColumns`, every restore was a no-op on an empty table and each
+        // rebuild re-saved the default order, so a dragged arrangement never
+        // survived leaving the view (#369).
+        tableView.autosaveTableColumns = true
+        tableView.autosaveName = autosaveName
+        // The restore may also carry hidden flags from NSTableView's own
+        // store; the header-menu visibility preference stays authoritative.
+        Self.applySavedVisibility(to: tableView, autosaveName: autosaveName)
         Self.buildHeaderMenu(for: tableView, coordinator: coordinator)
 
         // nonisolated(unsafe) lets the cell-provider closure capture the coordinator
