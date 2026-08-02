@@ -73,7 +73,10 @@ struct LibrarySummaryWindowContent: View {
     let model: AppModel
     var body: some View {
         GraphContent(model: self.model) { graph in
-            LibrarySummaryView(database: graph.libraryViewModel.database)
+            LibrarySummaryView(
+                database: graph.libraryViewModel.database,
+                library: graph.libraryViewModel
+            )
         }
     }
 }

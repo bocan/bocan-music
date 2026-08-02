@@ -21,6 +21,8 @@ public struct LibraryHygieneReport: Equatable, Sendable {
     public struct SuspiciousYearTrack: Equatable, Sendable, Identifiable {
         public let id: Int64
         public let trackTitle: String
+        /// Navigation target for the offender row, when the track has one.
+        public let albumID: Int64?
         public let albumTitle: String?
         public let year: Int
         /// The album's year when the problem is a disagreement, else `nil`.
@@ -41,12 +43,17 @@ public struct LibraryHygieneReport: Equatable, Sendable {
         public let variantCount: Int
         /// How many variants have two or fewer enabled tracks.
         public let shardCount: Int
+        /// The variant with the most tracks: the navigation target that lands
+        /// the user on the substantial copy rather than a shard.
+        public let primaryAlbumID: Int64
     }
 
     /// A track row whose file has vanished (the scanner marked it disabled).
     public struct MissingFileTrack: Equatable, Sendable, Identifiable {
         public let id: Int64
         public let trackTitle: String
+        /// Navigation target for the offender row, when the track has one.
+        public let albumID: Int64?
         public let fileURL: String
     }
 
@@ -206,6 +213,7 @@ private extension LibraryStatsRepository {
             SELECT tracks.id AS id,
                    tracks.title AS title,
                    tracks.year AS year,
+                   tracks.album_id AS album_id,
                    albums.title AS album_title,
                    albums.year AS album_year
             FROM tracks
@@ -225,6 +233,7 @@ private extension LibraryStatsRepository {
             examples.append(LibraryHygieneReport.SuspiciousYearTrack(
                 id: id,
                 trackTitle: row["title"] ?? "",
+                albumID: row["album_id"],
                 albumTitle: row["album_title"],
                 year: year,
                 albumYear: albumYear == year ? nil : albumYear
@@ -245,14 +254,20 @@ private extension LibraryStatsRepository {
         """)
 
         struct Variant {
+            let albumID: Int64
             let artistID: Int64?
             let trackCount: Int
         }
         var groups: [String: (display: String, variants: [Variant])] = [:]
         for row in rows {
-            guard let title: String = row["title"], !title.isEmpty else { continue }
+            guard let title: String = row["title"], !title.isEmpty,
+                  let albumID: Int64 = row["id"] else { continue }
             let key = title.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            let variant = Variant(artistID: row["artist_id"], trackCount: row["track_count"] ?? 0)
+            let variant = Variant(
+                albumID: albumID,
+                artistID: row["artist_id"],
+                trackCount: row["track_count"] ?? 0
+            )
             groups[key, default: (title, [])].variants.append(variant)
         }
 
@@ -264,11 +279,13 @@ private extension LibraryStatsRepository {
             // Same-titled albums by genuinely different artists are all
             // substantial; an exploded album leaves one-or-two-track shards.
             let shards = group.variants.count { $0.trackCount <= 2 }
-            guard shards >= 1 else { continue }
+            guard shards >= 1,
+                  let primary = group.variants.max(by: { $0.trackCount < $1.trackCount }) else { continue }
             offenders.append(LibraryHygieneReport.SplitAlbumGroup(
                 title: group.display,
                 variantCount: group.variants.count,
-                shardCount: shards
+                shardCount: shards,
+                primaryAlbumID: primary.albumID
             ))
         }
         offenders.sort { ($0.variantCount, $0.title) > ($1.variantCount, $1.title) }
@@ -280,7 +297,7 @@ private extension LibraryStatsRepository {
         let rows = try Row.fetchAll(
             db,
             sql: """
-            SELECT id, title, file_url FROM tracks
+            SELECT id, title, album_id, file_url FROM tracks
             WHERE disabled = 1
             ORDER BY title ASC
             LIMIT ?
@@ -292,6 +309,7 @@ private extension LibraryStatsRepository {
             return LibraryHygieneReport.MissingFileTrack(
                 id: id,
                 trackTitle: row["title"] ?? "",
+                albumID: row["album_id"],
                 fileURL: row["file_url"] ?? ""
             )
         }

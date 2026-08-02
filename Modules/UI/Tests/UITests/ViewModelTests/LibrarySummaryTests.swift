@@ -36,8 +36,8 @@ struct LibrarySummaryTests {
             .appendingPathComponent("Sources/UI/Summary/LibrarySummaryView.swift")
         let source = try String(contentsOf: url, encoding: .utf8)
         #expect(
-            source.contains("LibraryHygienePane(repository: self.statsRepository)"),
-            "the hygiene tab must render LibraryHygienePane"
+            source.contains("LibraryHygienePane(repository: self.statsRepository, library: self.library)"),
+            "the hygiene tab must render LibraryHygienePane with navigation wiring"
         )
     }
 }

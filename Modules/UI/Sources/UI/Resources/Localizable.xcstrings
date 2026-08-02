@@ -20656,22 +20656,22 @@
         }
       }
     },
-    "Year %lld" : {
+    "Year %@" : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ýéáŕ %lld one"
+            "value" : "Ýéáŕ %@ one"
           }
         }
       }
     },
-    "Year %lld, album says %lld" : {
+    "Year %@, album says %@" : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ýéáŕ %lld, áĺƀúḿ šáýš %lld one two"
+            "value" : "Ýéáŕ %@, áĺƀúḿ šáýš %@ one two"
           }
         }
       }

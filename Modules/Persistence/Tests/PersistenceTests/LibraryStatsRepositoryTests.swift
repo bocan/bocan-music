@@ -204,13 +204,14 @@ struct LibraryStatsRepositoryTests {
         #expect(implausible?.albumYear == nil) // no album year to disagree with
         let disagreement = report.suspiciousYearTracks.first { $0.year == 1999 }
         #expect(disagreement?.albumYear == 2001)
+        #expect(disagreement?.albumID != nil) // offender rows navigate to the album
     }
 
     @Test("fetchHygiene flags exploded albums but not shared titles")
     func hygieneSplitAlbums() async throws {
         let db = try await makeDB()
         // The explosion: one shard variant beside the real album.
-        _ = try await self.seedHygieneAlbum(
+        let substantialID = try await self.seedHygieneAlbum(
             db,
             title: "Use Your Illusion",
             artistName: "Guns N' Roses",
@@ -253,6 +254,8 @@ struct LibraryStatsRepositoryTests {
         #expect(report.splitAlbums.first?.title == "Use Your Illusion")
         #expect(report.splitAlbums.first?.variantCount == 2)
         #expect(report.splitAlbums.first?.shardCount == 1)
+        // Navigation lands on the substantial copy, not the shard.
+        #expect(report.splitAlbums.first?.primaryAlbumID == substantialID)
     }
 
     @Test("fetchHygiene counts completeness gaps and missing files")
@@ -299,6 +302,7 @@ struct LibraryStatsRepositoryTests {
         #expect(report.albumsMissingMusicBrainzID == 1)
         #expect(report.missingFileCount == 1)
         #expect(report.missingFiles.first?.trackTitle == "Ghost")
+        #expect(report.missingFiles.first?.albumID == bareID)
         #expect(report.isClean == false)
     }
 

@@ -19,6 +19,7 @@ final class MainWindowTracker {
     private static let secondaryIdentifiers: Set = [
         "mini", "about", "bocan-help", "notices", "track-info",
         "visualizer-fullscreen", "dsp", "log-console", "debug-audio",
+        "library-summary",
     ]
 
     /// Returns the live main window.
