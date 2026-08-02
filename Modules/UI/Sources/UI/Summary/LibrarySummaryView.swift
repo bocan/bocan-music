@@ -73,12 +73,16 @@ enum LibrarySummaryTab: String, CaseIterable, Identifiable {
 /// they refresh every time the window (re)appears.
 public struct LibrarySummaryView: View {
     private let statsRepository: LibraryStatsRepository
+    /// Held as a plain `let`: the summary panes navigate through it but never
+    /// observe it, so the window doesn't re-render on library churn.
+    private let library: LibraryViewModel
     @State private var selection: LibrarySummaryTab = .basicInfo
     @State private var stats: LibrarySummaryStats?
     @State private var loadFailed = false
 
-    public init(database: Database) {
+    public init(database: Database, library: LibraryViewModel) {
         self.statsRepository = LibraryStatsRepository(database: database)
+        self.library = library
     }
 
     public var body: some View {
@@ -138,7 +142,7 @@ public struct LibrarySummaryView: View {
             self.basicInfoPane
 
         case .libraryHygiene:
-            LibraryHygienePane(repository: self.statsRepository)
+            LibraryHygienePane(repository: self.statsRepository, library: self.library)
 
         default:
             self.comingSoonPane(tab)
