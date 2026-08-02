@@ -6,8 +6,10 @@ import Observability
 public struct TrackRepository: Sendable {
     // MARK: - Properties
 
-    private let database: Database
-    private let log = AppLogger.make(.persistence)
+    // Internal (not private): the provenance queries live in a file-split
+    // extension (`TrackRepository+Provenance.swift`) and read these directly.
+    let database: Database
+    let log = AppLogger.make(.persistence)
 
     // MARK: - Init
 

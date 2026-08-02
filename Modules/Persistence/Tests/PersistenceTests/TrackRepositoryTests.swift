@@ -278,4 +278,100 @@ struct TrackRepositoryTests {
         #expect(drained == ContentHashProgress(missing: 0, total: 2))
         #expect(drained?.isComplete == true)
     }
+
+    // MARK: - Provenance (phase 24-2)
+
+    /// A track eligible for provenance analysis unless a variation opts out.
+    private func makeLosslessTrack(fileURL: String, mtime: Int64 = 1000) -> Track {
+        var track = self.makeTrack(fileURL: fileURL)
+        track.fileMtime = mtime
+        track.isLossless = true
+        track.fileBookmark = Data([1])
+        return track
+    }
+
+    @Test("fetchNeedingProvenance returns only lossless, unanalysed, whole-file candidates")
+    func fetchNeedingProvenanceFilters() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+
+        let eligibleID = try await repo.insert(self.makeLosslessTrack(fileURL: "file:///tmp/a.flac"))
+
+        var lossy = self.makeTrack(fileURL: "file:///tmp/b.mp3")
+        lossy.isLossless = false
+        lossy.fileBookmark = Data([1])
+        _ = try await repo.insert(lossy)
+
+        var noBookmark = self.makeLosslessTrack(fileURL: "file:///tmp/c.flac")
+        noBookmark.fileBookmark = nil
+        _ = try await repo.insert(noBookmark)
+
+        var disabled = self.makeLosslessTrack(fileURL: "file:///tmp/d.flac")
+        disabled.disabled = true
+        _ = try await repo.insert(disabled)
+
+        var clip = self.makeLosslessTrack(fileURL: "file:///tmp/rip.cue#1")
+        clip.sourceFileURL = "file:///tmp/rip.flac"
+        _ = try await repo.insert(clip)
+
+        var analysed = self.makeLosslessTrack(fileURL: "file:///tmp/e.flac", mtime: 1000)
+        analysed.provenanceAnalysedAt = 2000
+        _ = try await repo.insert(analysed)
+
+        // Analysed, but the file changed on disk after the verdict was written.
+        var stale = self.makeLosslessTrack(fileURL: "file:///tmp/f.flac", mtime: 3000)
+        stale.provenanceAnalysedAt = 2000
+        let staleID = try await repo.insert(stale)
+
+        let candidates = try await repo.fetchNeedingProvenance(limit: 10)
+        #expect(candidates.map(\.id) == [eligibleID, staleID])
+        #expect(try await repo.countNeedingProvenance() == 2)
+
+        let paged = try await repo.fetchNeedingProvenance(limit: 10, afterID: eligibleID)
+        #expect(paged.map(\.id) == [staleID])
+    }
+
+    @Test("setProvenance round-trips a verdict and drains the queue")
+    func setProvenanceRoundTrips() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        let id = try await repo.insert(self.makeLosslessTrack(fileURL: "file:///tmp/verdict.flac"))
+
+        try await repo.setProvenance(
+            trackID: id,
+            suspected: true,
+            confidence: 0.87,
+            shelfHz: 16000,
+            analysedAt: 5000
+        )
+
+        let fetched = try await repo.fetch(id: id)
+        #expect(fetched.provenanceSuspected == true)
+        #expect(fetched.provenanceConfidence == 0.87)
+        #expect(fetched.provenanceShelfHz == 16000)
+        #expect(fetched.provenanceAnalysedAt == 5000)
+        #expect(try await repo.countNeedingProvenance() == 0)
+    }
+
+    @Test("clearProvenance and carryProvenance move all four fields together")
+    func provenanceFieldHelpers() {
+        var analysed = self.makeLosslessTrack(fileURL: "file:///tmp/g.flac")
+        analysed.provenanceSuspected = true
+        analysed.provenanceConfidence = 0.5
+        analysed.provenanceShelfHz = 19000
+        analysed.provenanceAnalysedAt = 4000
+
+        var fresh = self.makeLosslessTrack(fileURL: "file:///tmp/g.flac")
+        fresh.carryProvenance(from: analysed)
+        #expect(fresh.provenanceSuspected == true)
+        #expect(fresh.provenanceConfidence == 0.5)
+        #expect(fresh.provenanceShelfHz == 19000)
+        #expect(fresh.provenanceAnalysedAt == 4000)
+
+        fresh.clearProvenance()
+        #expect(fresh.provenanceSuspected == nil)
+        #expect(fresh.provenanceConfidence == nil)
+        #expect(fresh.provenanceShelfHz == nil)
+        #expect(fresh.provenanceAnalysedAt == nil)
+    }
 }

@@ -357,4 +357,112 @@ struct TrackImporterTests {
         #expect(albums.first?.albumArtistID == curator?.id)
         #expect(albums.first?.albumArtistID != nil)
     }
+
+    // MARK: - Provenance carry-over (phase 24-2)
+
+    @Test("re-importing an unchanged file keeps its provenance verdict")
+    func provenanceSurvivesUnchangedReimport() async throws {
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let url = URL(fileURLWithPath: "/tmp/provenance-keep.flac")
+
+        let id = try await self.makeImporter(db).importTrack(
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(),
+            fileMtime: 1000,
+            fileSize: 100
+        )
+        try await trackRepo.setProvenance(
+            trackID: id,
+            suspected: true,
+            confidence: 0.9,
+            shelfHz: 16000,
+            analysedAt: 2000
+        )
+
+        _ = try await self.makeImporter(db).importTrack(
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(),
+            fileMtime: 1000,
+            fileSize: 100
+        )
+
+        let track = try await trackRepo.fetch(id: id)
+        #expect(track.provenanceSuspected == true)
+        #expect(track.provenanceConfidence == 0.9)
+        #expect(track.provenanceShelfHz == 16000)
+        #expect(track.provenanceAnalysedAt == 2000)
+    }
+
+    @Test("re-importing a changed file nulls its provenance verdict")
+    func provenanceClearedOnChangedFile() async throws {
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let url = URL(fileURLWithPath: "/tmp/provenance-drop.flac")
+
+        let id = try await self.makeImporter(db).importTrack(
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(),
+            fileMtime: 1000,
+            fileSize: 100
+        )
+        try await trackRepo.setProvenance(
+            trackID: id,
+            suspected: true,
+            confidence: 0.9,
+            shelfHz: 16000,
+            analysedAt: 2000
+        )
+
+        _ = try await self.makeImporter(db).importTrack(
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(),
+            fileMtime: 3000,
+            fileSize: 100
+        )
+
+        let track = try await trackRepo.fetch(id: id)
+        #expect(track.provenanceSuspected == nil)
+        #expect(track.provenanceConfidence == nil)
+        #expect(track.provenanceShelfHz == nil)
+        #expect(track.provenanceAnalysedAt == nil)
+    }
+
+    @Test("a changed file nulls the verdict even when user-edited tags are preserved")
+    func provenanceClearedOnUserEditedChangedFile() async throws {
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let url = URL(fileURLWithPath: "/tmp/provenance-edited.flac")
+
+        let id = try await self.makeImporter(db).importTrack(
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(),
+            fileMtime: 1000,
+            fileSize: 100
+        )
+        var edited = try await trackRepo.fetch(id: id)
+        edited.userEdited = true
+        edited.provenanceSuspected = false
+        edited.provenanceConfidence = 0
+        edited.provenanceAnalysedAt = 2000
+        try await trackRepo.update(edited)
+
+        _ = try await self.makeImporter(db).importTrack(
+            url: url,
+            bookmark: nil,
+            tags: self.makeTags(),
+            fileMtime: 3000,
+            fileSize: 100
+        )
+
+        let track = try await trackRepo.fetch(id: id)
+        #expect(track.userEdited, "the user-edited skip branch must have handled this import")
+        #expect(track.provenanceSuspected == nil)
+        #expect(track.provenanceAnalysedAt == nil)
+    }
 }

@@ -61,6 +61,7 @@ public struct Migrator {
         M031PhoneSync.register(in: &dm)
         M032PodcastEpisodeContentHash.register(in: &dm)
         M033PodcastArtworkHash.register(in: &dm)
+        M034Provenance.register(in: &dm)
         return Self(inner: dm)
     }
 
