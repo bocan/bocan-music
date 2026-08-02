@@ -44,7 +44,31 @@ struct ToolsMenuTests {
             source.contains("LibrarySummaryWindowContent(model: self.model)"),
             "the scene must use a named content view (scene type-checker constraint)"
         )
-        #expect(source.contains("ToolsCommands()"), "the Tools commands must be attached")
+    }
+
+    @Test("ToolsCommands attaches inside the graph conditional, not beside it")
+    func toolsCommandsLifecycle() throws {
+        // A custom CommandMenu that exists before the commands tree rebuilds
+        // (graph nil -> ready) is re-added next to its old self, producing a
+        // duplicate Tools menu. It must share BocanCommands' lifecycle.
+        let scene = try self.appSource("AppSceneContent.swift")
+        let graphBranch = try #require(
+            scene.range(of: "if let graph = model.graph {"),
+            "AppCommands must gate its menus on the graph"
+        )
+        let tools = try #require(
+            scene.range(of: "ToolsCommands()"),
+            "ToolsCommands must be instantiated in AppCommands"
+        )
+        #expect(
+            tools.lowerBound > graphBranch.lowerBound,
+            "ToolsCommands must sit inside the graph-ready branch"
+        )
+        let app = try self.appSource("BocanApp.swift")
+        #expect(
+            !app.contains("ToolsCommands()"),
+            "ToolsCommands must not also be attached unconditionally in BocanApp"
+        )
     }
 
     @Test("The app-target String Catalog covers the new menu copy")
