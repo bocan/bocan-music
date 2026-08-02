@@ -25,4 +25,19 @@ struct LibrarySummaryTests {
         #expect(Set(tabs.map(\.systemImage)).count == tabs.count, "symbols must not repeat across tabs")
         #expect(Set(tabs.map(\.displayName)).count == tabs.count, "labels must not repeat across tabs")
     }
+
+    @Test("The Library Hygiene tab renders the hygiene pane, not Coming Soon")
+    func hygienePaneWired() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/Summary/LibrarySummaryView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("LibraryHygienePane(repository: self.statsRepository)"),
+            "the hygiene tab must render LibraryHygienePane"
+        )
+    }
 }

@@ -2876,6 +2876,36 @@
         }
       }
     },
+    "Albums Missing Artwork" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áĺƀúḿš Ḿíššíñĝ Áŕţŵóŕķ one two"
+          }
+        }
+      }
+    },
+    "Albums Missing MusicBrainz ID" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áĺƀúḿš Ḿíššíñĝ ḾúšíçƁŕáíñž ÍĐ one two three"
+          }
+        }
+      }
+    },
+    "Albums Missing Year" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áĺƀúḿš Ḿíššíñĝ Ýéáŕ one two"
+          }
+        }
+      }
+    },
     "All" : {
       "localizations" : {
         "en" : {
@@ -3071,6 +3101,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Áƥƥéáŕáñçé one"
+          }
+        }
+      }
+    },
+    "Appears as %lld separate albums" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áƥƥéáŕš áš %lld šéƥáŕáţé áĺƀúḿš one two three"
           }
         }
       }
@@ -4961,6 +5001,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çóḿƥĺéţéđ. %lld íḿáĝéš šávéđ. one two three"
+          }
+        }
+      }
+    },
+    "Completeness" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóḿƥĺéţéñéšš one"
           }
         }
       }
@@ -11045,6 +11095,26 @@
         }
       }
     },
+    "Missing Files (%lld)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿíššíñĝ Ƒíĺéš (%lld) one two"
+          }
+        }
+      }
+    },
+    "Missing tracks: %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ḿíššíñĝ ţŕáçķš: %@ one two"
+          }
+        }
+      }
+    },
     "Mode" : {
       "localizations" : {
         "en-XA" : {
@@ -11747,6 +11817,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ñó Ƥŕéšéţš one"
+          }
+        }
+      }
+    },
+    "No Problems Found" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñó Ƥŕóƀĺéḿš Ƒóúñđ one two"
           }
         }
       }
@@ -17937,6 +18017,16 @@
         }
       }
     },
+    "Split Albums (%lld)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šƥĺíţ Áĺƀúḿš (%lld) one two"
+          }
+        }
+      }
+    },
     "Spoken Word" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -18419,6 +18509,16 @@
         }
       }
     },
+    "Suspicious Years (%lld)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šúšƥíçíóúš Ýéáŕš (%lld) one two"
+          }
+        }
+      }
+    },
     "Switched to Spectrum Bars for performance." : {
       "localizations" : {
         "en" : {
@@ -18543,6 +18643,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţáĝš one"
+          }
+        }
+      }
+    },
+    "Tags, artwork, and files all look healthy." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţáĝš, áŕţŵóŕķ, áñđ ƒíĺéš áĺĺ ĺóóķ ĥéáĺţĥý. one two three"
           }
         }
       }
@@ -19398,6 +19508,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţŕáçķ Ñúḿƀéŕ one"
+          }
+        }
+      }
+    },
+    "Track Number Gaps (%lld)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţŕáçķ Ñúḿƀéŕ Ĝáƥš (%lld) one two"
           }
         }
       }
@@ -20536,6 +20656,26 @@
         }
       }
     },
+    "Year %lld" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ýéáŕ %lld one"
+          }
+        }
+      }
+    },
+    "Year %lld, album says %lld" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ýéáŕ %lld, áĺƀúḿ šáýš %lld one two"
+          }
+        }
+      }
+    },
     "Year (Newest First)" : {
       "localizations" : {
         "en-XA" : {
@@ -20701,6 +20841,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "áĺĺ one"
+          }
+        }
+      }
+    },
+    "and %lld more" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "áñđ %lld ḿóŕé one"
           }
         }
       }

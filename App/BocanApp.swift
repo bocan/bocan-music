@@ -251,7 +251,7 @@ struct BocanApp: App {
         Window("Library Summary", id: "library-summary") {
             LibrarySummaryWindowContent(model: self.model)
         }
-        .defaultSize(width: 640, height: 440)
+        .defaultSize(width: 760, height: 560)
         .windowResizability(.contentMinSize)
         .restorationBehavior(.disabled)
 

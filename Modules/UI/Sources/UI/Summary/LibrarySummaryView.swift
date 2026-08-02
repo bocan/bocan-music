@@ -137,6 +137,9 @@ public struct LibrarySummaryView: View {
         case .basicInfo:
             self.basicInfoPane
 
+        case .libraryHygiene:
+            LibraryHygienePane(repository: self.statsRepository)
+
         default:
             self.comingSoonPane(tab)
         }
