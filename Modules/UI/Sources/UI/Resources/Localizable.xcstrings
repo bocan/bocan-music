@@ -653,6 +653,16 @@
         }
       }
     },
+    "%lld analysed, %lld suspected" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld áñáĺýšéđ, %lld šúšƥéçţéđ one two three"
+          }
+        }
+      }
+    },
     "%lld artists" : {
       "localizations" : {
         "en" : {
@@ -12121,6 +12131,16 @@
         }
       }
     },
+    "No lossless tracks need provenance analysis" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñó ĺóššĺéšš ţŕáçķš ñééđ ƥŕóvéñáñçé áñáĺýšíš one two three"
+          }
+        }
+      }
+    },
     "No loudness normalisation applied." : {
       "localizations" : {
         "en" : {
@@ -14412,6 +14432,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƥŕóḿó one"
+          }
+        }
+      }
+    },
+    "Provenance analysis complete: %lld analysed, %lld suspected" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥŕóvéñáñçé áñáĺýšíš çóḿƥĺéţé: %lld áñáĺýšéđ, %lld šúšƥéçţéđ one two three four"
+          }
+        }
+      }
+    },
+    "Provenance analysis stopped: %lld of %lld files analysed" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥŕóvéñáñçé áñáĺýšíš šţóƥƥéđ: %lld óƒ %lld ƒíĺéš áñáĺýšéđ one two three four"
           }
         }
       }
@@ -19668,6 +19708,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţŕáçķš ýóú ƥĺáý ŵíĺĺ áƥƥéáŕ ĥéŕé ŵíţĥ ţĥéíŕ šçŕóƀƀĺé šúƀḿíššíóñ šţáţúš. one two three four five"
+          }
+        }
+      }
+    },
+    "Transcode Detection" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţŕáñšçóđé Đéţéçţíóñ one two"
           }
         }
       }

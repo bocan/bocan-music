@@ -30,6 +30,11 @@ extension BocanCommands {
             }
             .help("Re-analyse loudness for every track in the library")
 
+            Button("Analyse Provenance\u{2026}") {
+                self.vm.startProvenanceAnalysis()
+            }
+            .help("Scan lossless files for signs they were transcoded from a lossy source")
+
             Divider()
 
             Button("Library Summary\u{2026}") {

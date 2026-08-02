@@ -55,6 +55,19 @@ struct ToolsMenuTests {
         #expect(declarations == 1, "found \(declarations) CommandMenu(\"Tools\") declarations; must be exactly 1")
     }
 
+    @Test("The Tools menu starts the provenance batch through the view model")
+    func toolsMenuStartsProvenance() throws {
+        let source = try self.appSource("BocanCommands+Tools.swift")
+        #expect(
+            source.contains("Button(\"Analyse Provenance\\u{2026}\")"),
+            "the Analyse Provenance item must exist"
+        )
+        #expect(
+            source.contains("self.vm.startProvenanceAnalysis()"),
+            "the item must start the batch via the view model so cancel and re-run guards apply"
+        )
+    }
+
     @Test("The Library Summary window scene is registered")
     func summaryWindowSceneExists() throws {
         let source = try self.appSource("BocanApp.swift")
@@ -79,6 +92,10 @@ struct ToolsMenuTests {
         #expect(
             source.contains("\"Library Summary…\""),
             "the menu item label must be in the app catalog"
+        )
+        #expect(
+            source.contains("\"Analyse Provenance…\""),
+            "the provenance menu item label must be in the app catalog"
         )
     }
 }
