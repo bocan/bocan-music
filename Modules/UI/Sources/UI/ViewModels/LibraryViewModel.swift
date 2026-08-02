@@ -198,6 +198,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Non-nil while a batch ReplayGain analysis is running.
     @Published public var replayGainProgress: ReplayGainBatchProgress?
 
+    // MARK: - Provenance analysis state (phase 24-3)
+
+    /// Non-nil while a transcode-detection batch is running, or when one has
+    /// completed and its banner has not been dismissed yet. The batch logic
+    /// lives in `LibraryViewModel+Provenance.swift`.
+    @Published public var provenanceProgress: ProvenanceBatchProgress?
+
+    /// Handle for the running provenance batch so Cancel can reach it.
+    var provenanceTask: Task<Void, Never>?
+
     // MARK: - Scan state
 
     @Published public var isScanning = false

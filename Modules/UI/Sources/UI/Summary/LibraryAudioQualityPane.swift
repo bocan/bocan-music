@@ -11,8 +11,9 @@ import SwiftUI
 /// default, offender rows navigating the main window to their album.
 struct LibraryAudioQualityPane: View {
     let repository: LibraryStatsRepository
-    /// Held as a plain `let`: only used to navigate, never observed.
-    let library: LibraryViewModel
+    /// Observed (unlike the other panes' plain `let`) so the provenance
+    /// batch progress row updates live while a run is underway.
+    @ObservedObject var library: LibraryViewModel
 
     @State private var report: LibraryAudioQualityReport?
     @State private var loadFailed = false
@@ -35,12 +36,18 @@ struct LibraryAudioQualityPane: View {
             }
         }
         .task { await self.load() }
+        .onChange(of: self.library.provenanceProgress) { _, progress in
+            // Fresh verdicts change the report; reload once the batch lands.
+            guard progress?.isComplete == true else { return }
+            Task { await self.load() }
+        }
     }
 
     // MARK: - Sections
 
     private func reportForm(_ report: LibraryAudioQualityReport) -> some View {
         Form {
+            self.provenanceSection
             self.losslessSection(report)
             self.formatsSection(report)
             self.fidelitySection(report)
@@ -52,6 +59,42 @@ struct LibraryAudioQualityPane: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// Live progress for the Tools menu's "Analyse Provenance" batch
+    /// (phase 24-3). Present only while a run is underway or its completion
+    /// banner has not been dismissed; the suspects themselves surface in 24-4.
+    @ViewBuilder
+    private var provenanceSection: some View {
+        if let progress = self.library.provenanceProgress {
+            Section(L10n.string("Transcode Detection")) {
+                if progress.isComplete {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text(L10n.string("\(progress.succeeded) analysed, \(progress.suspected) suspected"))
+                    }
+                    Button(L10n.string("Dismiss")) {
+                        self.library.provenanceProgress = nil
+                    }
+                    .buttonStyle(.bordered)
+                } else {
+                    HStack(spacing: 8) {
+                        ProgressView(
+                            value: Double(progress.done),
+                            total: Double(progress.total)
+                        )
+                        Text(verbatim: "\(progress.done) / \(progress.total)")
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                        Button(L10n.string("Cancel")) {
+                            self.library.cancelProvenanceAnalysis()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+            }
+        }
     }
 
     private func losslessSection(_ report: LibraryAudioQualityReport) -> some View {

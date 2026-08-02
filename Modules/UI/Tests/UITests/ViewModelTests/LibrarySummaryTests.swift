@@ -44,4 +44,27 @@ struct LibrarySummaryTests {
             "the audio quality tab must render LibraryAudioQualityPane with navigation wiring"
         )
     }
+
+    @Test("The Audio Quality pane surfaces provenance batch progress with a cancel affordance")
+    func provenanceProgressWired() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/Summary/LibraryAudioQualityPane.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("self.library.provenanceProgress"),
+            "the pane must render the live batch progress (phase 24-3)"
+        )
+        #expect(
+            source.contains("self.library.cancelProvenanceAnalysis()"),
+            "a running batch must be cancellable from the pane"
+        )
+        #expect(
+            source.contains("@ObservedObject var library"),
+            "the pane must observe the view model or the progress row never updates"
+        )
+    }
 }
