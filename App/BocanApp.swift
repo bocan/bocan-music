@@ -184,10 +184,7 @@ struct BocanApp: App {
         .defaultSize(width: 1100, height: 700)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
-        .commands {
-            AppCommands(model: self.model, updateController: self.updateController)
-            ToolsCommands()
-        }
+        .commands { AppCommands(model: self.model, updateController: self.updateController) }
 
         // MARK: About / Help / Notices (database-independent)
 
