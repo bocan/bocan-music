@@ -21,7 +21,7 @@ struct ToolsMenuTests {
 
     @Test("The Tools menu offers Library Summary with the shared shortcut")
     func toolsMenuOpensSummary() throws {
-        let source = try self.appSource("ToolsCommands.swift")
+        let source = try self.appSource("BocanCommands+Tools.swift")
         #expect(source.contains("CommandMenu(\"Tools\")"), "a Tools menu must exist")
         #expect(
             source.contains("self.openWindow(id: \"library-summary\")"),
@@ -31,6 +31,28 @@ struct ToolsMenuTests {
             source.contains(".keyboardShortcut(KeyBindings.librarySummary)"),
             "the shortcut must come from the shared KeyBindings table"
         )
+    }
+
+    @Test("Exactly one Tools CommandMenu exists across the App target")
+    func singleToolsMenu() throws {
+        // SwiftUI does not merge same-titled CommandMenus: a second
+        // CommandMenu(\"Tools\") anywhere renders a second Tools menu in the
+        // menu bar (the regression behind the duplicate-menu report on #373).
+        let appDir = URL(filePath: #filePath)
+            .deletingLastPathComponent() // AppTests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // repo root
+            .appendingPathComponent("App")
+        let files = try FileManager.default.contentsOfDirectory(
+            at: appDir,
+            includingPropertiesForKeys: nil
+        ).filter { $0.pathExtension == "swift" }
+        var declarations = 0
+        for file in files {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            declarations += source.components(separatedBy: "CommandMenu(\"Tools\")").count - 1
+        }
+        #expect(declarations == 1, "found \(declarations) CommandMenu(\"Tools\") declarations; must be exactly 1")
     }
 
     @Test("The Library Summary window scene is registered")
@@ -43,31 +65,6 @@ struct ToolsMenuTests {
         #expect(
             source.contains("LibrarySummaryWindowContent(model: self.model)"),
             "the scene must use a named content view (scene type-checker constraint)"
-        )
-    }
-
-    @Test("ToolsCommands attaches inside the graph conditional, not beside it")
-    func toolsCommandsLifecycle() throws {
-        // A custom CommandMenu that exists before the commands tree rebuilds
-        // (graph nil -> ready) is re-added next to its old self, producing a
-        // duplicate Tools menu. It must share BocanCommands' lifecycle.
-        let scene = try self.appSource("AppSceneContent.swift")
-        let graphBranch = try #require(
-            scene.range(of: "if let graph = model.graph {"),
-            "AppCommands must gate its menus on the graph"
-        )
-        let tools = try #require(
-            scene.range(of: "ToolsCommands()"),
-            "ToolsCommands must be instantiated in AppCommands"
-        )
-        #expect(
-            tools.lowerBound > graphBranch.lowerBound,
-            "ToolsCommands must sit inside the graph-ready branch"
-        )
-        let app = try self.appSource("BocanApp.swift")
-        #expect(
-            !app.contains("ToolsCommands()"),
-            "ToolsCommands must not also be attached unconditionally in BocanApp"
         )
     }
 
