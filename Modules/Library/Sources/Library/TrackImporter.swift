@@ -125,6 +125,12 @@ actor TrackImporter {
         // Fetch existing to preserve play stats and user_edited flag
         let existing = try await trackRepo.fetchOne(fileURL: fileURLString)
 
+        // Provenance verdicts (phase 24) describe the audio bytes, so they
+        // survive rescans of an unchanged file and are nulled the moment the
+        // file itself changed. In-app tag edits stamp file_mtime after the
+        // rewrite (EditTransaction), so those keep their verdicts too.
+        let audioUnchanged = existing?.fileMtime == fileMtime
+
         // If the user has manually edited tags, skip overwriting them
         if let ex = existing, ex.userEdited {
             // Still update file-level fields
@@ -134,6 +140,9 @@ actor TrackImporter {
             updated.fileBookmark = bookmark
             updated.updatedAt = now
             updated.disabled = false
+            if !audioUnchanged {
+                updated.clearProvenance()
+            }
             try await self.trackRepo.update(updated)
             self.log.debug("track.user_edited_skip", ["url": url.lastPathComponent])
             return ex.id ?? 0
@@ -192,6 +201,10 @@ actor TrackImporter {
             addedAt: existing?.addedAt ?? now,
             updatedAt: now
         )
+
+        if audioUnchanged, let existing {
+            track_.carryProvenance(from: existing)
+        }
 
         let id = try await trackRepo.upsert(track_)
         track_.id = id

@@ -138,6 +138,23 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
     /// ReplayGain album peak level.
     public var replaygainAlbumPeak: Double?
 
+    // MARK: - Audio provenance (M034)
+
+    /// Whether transcode detection flagged this track as a suspected lossy
+    /// transcode. `nil` until analysed; suspected, never accused.
+    public var provenanceSuspected: Bool?
+
+    /// Heuristic confidence in the suspicion, 0...1. `nil` until analysed.
+    public var provenanceConfidence: Double?
+
+    /// Detected spectral-shelf edge in Hz when suspected. `nil` otherwise.
+    public var provenanceShelfHz: Int?
+
+    /// Unix timestamp of the provenance analysis. The scanner nulls all four
+    /// provenance columns when `file_mtime` changes, so a non-nil value always
+    /// describes the current file bytes.
+    public var provenanceAnalysedAt: Int64?
+
     // MARK: - Player state
 
     /// Number of complete plays.
@@ -258,6 +275,10 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
         replaygainTrackPeak: Double? = nil,
         replaygainAlbumGain: Double? = nil,
         replaygainAlbumPeak: Double? = nil,
+        provenanceSuspected: Bool? = nil,
+        provenanceConfidence: Double? = nil,
+        provenanceShelfHz: Int? = nil,
+        provenanceAnalysedAt: Int64? = nil,
         playCount: Int = 0,
         skipCount: Int = 0,
         lastPlayedAt: Int64? = nil,
@@ -318,6 +339,10 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
         self.replaygainTrackPeak = replaygainTrackPeak
         self.replaygainAlbumGain = replaygainAlbumGain
         self.replaygainAlbumPeak = replaygainAlbumPeak
+        self.provenanceSuspected = provenanceSuspected
+        self.provenanceConfidence = provenanceConfidence
+        self.provenanceShelfHz = provenanceShelfHz
+        self.provenanceAnalysedAt = provenanceAnalysedAt
         self.playCount = playCount
         self.skipCount = skipCount
         self.lastPlayedAt = lastPlayedAt
@@ -348,6 +373,28 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
     /// Captures the auto-incremented row ID after insertion.
     public mutating func didInsert(_ inserted: InsertionSuccess) {
         self.id = inserted.rowID
+    }
+
+    // MARK: - Provenance
+
+    /// Nulls all four provenance columns (phase 24). The scanner calls this
+    /// whenever the file's bytes changed, so a replaced file is never judged
+    /// by its predecessor's spectrum.
+    public mutating func clearProvenance() {
+        self.provenanceSuspected = nil
+        self.provenanceConfidence = nil
+        self.provenanceShelfHz = nil
+        self.provenanceAnalysedAt = nil
+    }
+
+    /// Copies the provenance verdict from `other`. The scanner calls this
+    /// when re-importing a file whose `file_mtime` is unchanged, so a benign
+    /// rescan never discards an expensive analysis.
+    public mutating func carryProvenance(from other: Self) {
+        self.provenanceSuspected = other.provenanceSuspected
+        self.provenanceConfidence = other.provenanceConfidence
+        self.provenanceShelfHz = other.provenanceShelfHz
+        self.provenanceAnalysedAt = other.provenanceAnalysedAt
     }
 
     // MARK: - CodingKeys (column name mapping)
@@ -391,6 +438,10 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
         case replaygainTrackPeak = "replaygain_track_peak"
         case replaygainAlbumGain = "replaygain_album_gain"
         case replaygainAlbumPeak = "replaygain_album_peak"
+        case provenanceSuspected = "provenance_suspected"
+        case provenanceConfidence = "provenance_confidence"
+        case provenanceShelfHz = "provenance_shelf_hz"
+        case provenanceAnalysedAt = "provenance_analysed_at"
         case playCount = "play_count"
         case skipCount = "skip_count"
         case lastPlayedAt = "last_played_at"

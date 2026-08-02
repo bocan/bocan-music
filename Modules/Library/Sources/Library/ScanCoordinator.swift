@@ -278,6 +278,9 @@ actor ScanCoordinator {
                 // EditTransaction stamp was introduced.
                 updated.fileSize = size
                 updated.fileMtime = mtime
+                // A changed file invalidates its transcode verdict (phase 24)
+                // even when the user's edited tags are being preserved.
+                if mtime != ex.fileMtime { updated.clearProvenance() }
                 if ex.disabled { updated.disabled = false }
                 // Only raise the review flag when disk tags actually differ from
                 // the DB values. A mtime-only change (e.g. app rewrote the file

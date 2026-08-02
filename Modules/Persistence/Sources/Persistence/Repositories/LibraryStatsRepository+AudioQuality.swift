@@ -38,6 +38,21 @@ public struct LibraryAudioQualityReport: Equatable, Sendable {
         public let formats: [String]
     }
 
+    /// A lossless-claiming track whose spectrum was flagged as a suspected
+    /// lossy transcode (phase 24). Suspected, never accused: the confidence
+    /// and shelf edge explain the reading, the UI copy carries the caveats.
+    public struct SuspectedTranscodeTrack: Equatable, Sendable, Identifiable {
+        public let id: Int64
+        public let trackTitle: String
+        /// Navigation target for the offender row, when the track has one.
+        public let albumID: Int64?
+        public let albumTitle: String?
+        /// Heuristic confidence in the suspicion, 0...1.
+        public let confidence: Double
+        /// Detected spectral-shelf edge in Hz, when recorded.
+        public let shelfFrequencyHz: Int?
+    }
+
     /// A track whose stored EBU R128 true peak exceeds full scale.
     public struct TruePeakOverTrack: Equatable, Sendable, Identifiable {
         public let id: Int64
@@ -75,6 +90,17 @@ public struct LibraryAudioQualityReport: Equatable, Sendable {
     /// Enabled tracks with no stored ReplayGain true peak: the honest
     /// denominator gap for the overs figure.
     public let unanalysedTrackCount: Int
+
+    /// Lossless tracks holding a transcode-detection verdict; the Suspected
+    /// Transcodes section stays hidden until this is non-zero (24-4).
+    public let provenanceAnalysedCount: Int
+    /// Lossless tracks not yet analysed: the honest coverage gap for the
+    /// suspected-transcode figures.
+    public let provenanceUnanalysedCount: Int
+    public let suspectedTranscodeCount: Int
+    /// Highest-confidence suspects first, capped at
+    /// ``LibraryHygieneReport/maxExamples``.
+    public let suspectedTranscodes: [SuspectedTranscodeTrack]
 }
 
 // MARK: - Audio quality queries
@@ -88,6 +114,7 @@ public extension LibraryStatsRepository {
             let lossless = try Self.losslessSplit(db)
             let mixed = try Self.mixedFormatAlbums(db)
             let overs = try Self.truePeakOvers(db)
+            let provenance = try Self.provenanceCounts(db)
             return try LibraryAudioQualityReport(
                 losslessCount: lossless.losslessCount,
                 lossyCount: lossless.lossyCount,
@@ -103,7 +130,11 @@ public extension LibraryStatsRepository {
                 mixedFormatAlbums: mixed.examples,
                 truePeakOverCount: overs.total,
                 truePeakOvers: overs.examples,
-                unanalysedTrackCount: Self.unanalysedCount(db)
+                unanalysedTrackCount: Self.unanalysedCount(db),
+                provenanceAnalysedCount: provenance.analysed,
+                provenanceUnanalysedCount: provenance.unanalysed,
+                suspectedTranscodeCount: provenance.suspectedTotal,
+                suspectedTranscodes: Self.suspectedTranscodes(db)
             )
         }
     }
@@ -247,5 +278,56 @@ private extension LibraryStatsRepository {
             SELECT COUNT(*) FROM tracks
             WHERE disabled = 0 AND replaygain_track_peak IS NULL
         """) ?? 0
+    }
+
+    struct ProvenanceCounts {
+        let analysed: Int
+        let unanalysed: Int
+        let suspectedTotal: Int
+    }
+
+    /// Transcode-detection coverage over enabled lossless tracks (phase 24):
+    /// only lossless files are ever analysed, so they are the denominator.
+    static func provenanceCounts(_ db: GRDB.Database) throws -> ProvenanceCounts {
+        let row = try Row.fetchOne(db, sql: """
+            SELECT COALESCE(SUM(provenance_analysed_at IS NOT NULL), 0) AS analysed,
+                   COALESCE(SUM(provenance_analysed_at IS NULL), 0) AS unanalysed,
+                   COALESCE(SUM(provenance_suspected = 1), 0) AS suspected
+            FROM tracks WHERE disabled = 0 AND is_lossless = 1
+        """)
+        return ProvenanceCounts(
+            analysed: row?["analysed"] ?? 0,
+            unanalysed: row?["unanalysed"] ?? 0,
+            suspectedTotal: row?["suspected"] ?? 0
+        )
+    }
+
+    static func suspectedTranscodes(
+        _ db: GRDB.Database
+    ) throws -> [LibraryAudioQualityReport.SuspectedTranscodeTrack] {
+        let rows = try Row.fetchAll(db, sql: """
+            SELECT tracks.id AS id,
+                   tracks.title AS title,
+                   tracks.album_id AS album_id,
+                   albums.title AS album_title,
+                   tracks.provenance_confidence AS confidence,
+                   tracks.provenance_shelf_hz AS shelf_hz
+            FROM tracks
+            LEFT JOIN albums ON albums.id = tracks.album_id
+            WHERE tracks.disabled = 0 AND tracks.provenance_suspected = 1
+            ORDER BY tracks.provenance_confidence DESC, tracks.title ASC
+            LIMIT \(LibraryHygieneReport.maxExamples)
+        """)
+        return rows.compactMap { row in
+            guard let id: Int64 = row["id"] else { return nil }
+            return LibraryAudioQualityReport.SuspectedTranscodeTrack(
+                id: id,
+                trackTitle: row["title"] ?? "",
+                albumID: row["album_id"],
+                albumTitle: row["album_title"],
+                confidence: row["confidence"] ?? 0,
+                shelfFrequencyHz: row["shelf_hz"]
+            )
+        }
     }
 }
