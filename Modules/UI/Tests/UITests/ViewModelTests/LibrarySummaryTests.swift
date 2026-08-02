@@ -39,5 +39,9 @@ struct LibrarySummaryTests {
             source.contains("LibraryHygienePane(repository: self.statsRepository, library: self.library)"),
             "the hygiene tab must render LibraryHygienePane with navigation wiring"
         )
+        #expect(
+            source.contains("LibraryAudioQualityPane(repository: self.statsRepository, library: self.library)"),
+            "the audio quality tab must render LibraryAudioQualityPane with navigation wiring"
+        )
     }
 }

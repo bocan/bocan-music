@@ -93,16 +93,17 @@ struct LibraryHygienePane: View {
                 isExpanded: self.$gapsExpanded
             ) {
                 ForEach(report.trackGapAlbums) { album in
-                    self.offenderRow(
+                    SummaryOffenderRow(
                         title: album.albumArtistName
                             .map { "\(album.albumTitle) · \($0)" } ?? album.albumTitle,
                         detail: L10n.string(
                             "Missing tracks: \(album.missingTrackNumbers.map(String.init).joined(separator: ", "))"
                         ),
-                        albumID: album.id
+                        albumID: album.id,
+                        library: self.library
                     )
                 }
-                self.moreRow(total: report.trackGapAlbumCount, shown: report.trackGapAlbums.count)
+                SummaryMoreRow(total: report.trackGapAlbumCount, shown: report.trackGapAlbums.count)
             }
         }
     }
@@ -116,16 +117,17 @@ struct LibraryHygienePane: View {
                 ForEach(report.suspiciousYearTracks) { track in
                     // Years interpolate as pre-rendered strings: a year is a
                     // name, not a quantity, so no grouping separators.
-                    self.offenderRow(
+                    SummaryOffenderRow(
                         title: track.albumTitle
                             .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
                         detail: track.albumYear
                             .map { L10n.string("Year \(String(track.year)), album says \(String($0))") }
                             ?? L10n.string("Year \(String(track.year))"),
-                        albumID: track.albumID
+                        albumID: track.albumID,
+                        library: self.library
                     )
                 }
-                self.moreRow(total: report.suspiciousYearCount, shown: report.suspiciousYearTracks.count)
+                SummaryMoreRow(total: report.suspiciousYearCount, shown: report.suspiciousYearTracks.count)
             }
         }
     }
@@ -137,13 +139,14 @@ struct LibraryHygienePane: View {
                 isExpanded: self.$splitsExpanded
             ) {
                 ForEach(report.splitAlbums) { group in
-                    self.offenderRow(
+                    SummaryOffenderRow(
                         title: group.title,
                         detail: L10n.string("Appears as \(group.variantCount) separate albums"),
-                        albumID: group.primaryAlbumID
+                        albumID: group.primaryAlbumID,
+                        library: self.library
                     )
                 }
-                self.moreRow(total: report.splitAlbumCount, shown: report.splitAlbums.count)
+                SummaryMoreRow(total: report.splitAlbumCount, shown: report.splitAlbums.count)
             }
         }
     }
@@ -155,73 +158,16 @@ struct LibraryHygienePane: View {
                 isExpanded: self.$missingExpanded
             ) {
                 ForEach(report.missingFiles) { track in
-                    self.offenderRow(
+                    SummaryOffenderRow(
                         title: track.trackTitle,
                         detail: URL(string: track.fileURL)?.lastPathComponent ?? track.fileURL,
-                        albumID: track.albumID
+                        albumID: track.albumID,
+                        library: self.library
                     )
                 }
-                self.moreRow(total: report.missingFileCount, shown: report.missingFiles.count)
+                SummaryMoreRow(total: report.missingFileCount, shown: report.missingFiles.count)
             }
         }
-    }
-
-    // MARK: - Rows
-
-    /// An offender row. With an `albumID` it becomes a button that jumps the
-    /// main window to that album; without one it renders as plain text.
-    @ViewBuilder
-    private func offenderRow(title: String, detail: String, albumID: Int64?) -> some View {
-        if let albumID {
-            Button {
-                self.openAlbum(albumID)
-            } label: {
-                HStack(spacing: 6) {
-                    self.rowText(title: title, detail: detail)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color.textTertiary)
-                        .accessibilityHidden(true)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint(L10n.string("Double-tap to open album"))
-        } else {
-            self.rowText(title: title, detail: detail)
-        }
-    }
-
-    private func rowText(title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(Typography.body)
-                .foregroundStyle(Color.textPrimary)
-                .lineLimit(1)
-            Text(detail)
-                .font(Typography.caption)
-                .foregroundStyle(Color.textSecondary)
-                .lineLimit(1)
-        }
-    }
-
-    @ViewBuilder
-    private func moreRow(total: Int, shown: Int) -> some View {
-        if total > shown {
-            Text(localized: "and \(total - shown) more")
-                .font(Typography.caption)
-                .foregroundStyle(Color.textTertiary)
-        }
-    }
-
-    // MARK: - Navigation
-
-    /// Jumps the main window to `albumID` and brings it forward; the summary
-    /// window stays open so the user can work through the list.
-    private func openAlbum(_ albumID: Int64) {
-        Task { await self.library.selectDestination(.album(albumID)) }
-        MainWindowTracker.shared.resolveWindow()?.makeKeyAndOrderFront(nil)
     }
 
     // MARK: - Data
