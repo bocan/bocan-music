@@ -18,6 +18,9 @@ public enum KeyBindings {
     /// `⌘F` — Focus the search field.
     public static let focusSearch = KeyboardShortcut("f", modifiers: .command)
 
+    /// `⌘⇧Y` — Open the Library Summary window.
+    public static let librarySummary = KeyboardShortcut("y", modifiers: [.command, .shift])
+
     /// `Space` — Play / pause (when not in a text field).
     public static let playPause = KeyboardShortcut(" ", modifiers: [])
 

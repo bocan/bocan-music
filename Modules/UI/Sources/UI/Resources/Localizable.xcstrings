@@ -3297,6 +3297,16 @@
         }
       }
     },
+    "Audio Quality" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áúđíó Qúáĺíţý one"
+          }
+        }
+      }
+    },
     "Audio codec / container format" : {
       "localizations" : {
         "en-XA" : {
@@ -3534,6 +3544,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ɓáçķíñĝ úƥ… one"
+          }
+        }
+      }
+    },
+    "Basic Info" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ɓášíç Íñƒó one"
           }
         }
       }
@@ -4823,6 +4843,16 @@
         }
       }
     },
+    "Collection Shape" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóĺĺéçţíóñ Šĥáƥé one two"
+          }
+        }
+      }
+    },
     "Colour" : {
       "localizations" : {
         "en-XA" : {
@@ -4851,6 +4881,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çóĺóúŕ Ƥáĺéţţé one two"
+          }
+        }
+      }
+    },
+    "Coming Soon" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóḿíñĝ Šóóñ one"
           }
         }
       }
@@ -10163,6 +10203,16 @@
         }
       }
     },
+    "Library Hygiene" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĺíƀŕáŕý Ĥýĝíéñé one two"
+          }
+        }
+      }
+    },
     "Light" : {
       "localizations" : {
         "en-XA" : {
@@ -10229,6 +10279,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ĹíšţéñƁŕáíñž úšéŕ ţóķéñ one two"
+          }
+        }
+      }
+    },
+    "Listening Behaviour" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĺíšţéñíñĝ Ɓéĥávíóúŕ one two"
           }
         }
       }
@@ -18329,6 +18389,16 @@
         }
       }
     },
+    "Summary Unavailable" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šúḿḿáŕý Úñáváíĺáƀĺé one two"
+          }
+        }
+      }
+    },
     "Support This Show" : {
       "localizations" : {
         "en-XA" : {
@@ -18635,6 +18705,16 @@
         }
       }
     },
+    "The library statistics could not be loaded." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţĥé ĺíƀŕáŕý šţáţíšţíçš çóúĺđ ñóţ ƀé ĺóáđéđ. one two three"
+          }
+        }
+      }
+    },
     "The selected tracks belong to more than one album. Renumbering will overwrite each track's number. Continue?" : {
       "localizations" : {
         "en-XA" : {
@@ -18919,6 +18999,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţĥíš ŕéḿóvéš ţĥé šéŕvéŕ áñđ íţš šávéđ çŕéđéñţíáĺš ƒŕóḿ ţĥíš Ḿáç. Ýóúŕ ḿúšíç óñ ţĥé šéŕvéŕ íšñ'ţ áƒƒéçţéđ. one two three four five six seven"
+          }
+        }
+      }
+    },
+    "This section is on the roadmap." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţĥíš šéçţíóñ íš óñ ţĥé ŕóáđḿáƥ. one two three"
           }
         }
       }
@@ -19208,6 +19298,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţóţáĺ Éƥíšóđéš one two"
+          }
+        }
+      }
+    },
+    "Total Playback Duration" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţóţáĺ Ƥĺáýƀáçķ Đúŕáţíóñ one two"
           }
         }
       }
