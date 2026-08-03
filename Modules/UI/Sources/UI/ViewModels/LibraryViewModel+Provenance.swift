@@ -37,14 +37,25 @@ public extension LibraryViewModel {
     /// Starts the transcode-detection batch at utility QoS: a large library
     /// is hours of decoding, and that is fine because verdicts persist and
     /// the analysis never competes with playback for the interactive tiers.
-    /// No-op while a batch is running; a stale completed banner is cleared
-    /// and a fresh run started.
-    func startProvenanceAnalysis() {
+    /// A stale completed banner is cleared and a fresh run started.
+    ///
+    /// `announce` controls the where-to-watch toasts: the Tools menu keeps it
+    /// on so the click visibly does something; the Library Summary pane's own
+    /// button passes false because the progress appears right under it.
+    func startProvenanceAnalysis(announce: Bool = true) {
         if let progress = self.provenanceProgress {
-            guard progress.isComplete else { return } // already running
+            guard progress.isComplete else {
+                if announce {
+                    self.showToast(ToastMessage(
+                        text: L10n.string("Provenance analysis is already running. See Tools → Library Summary → Audio Quality."),
+                        kind: .info
+                    ))
+                }
+                return
+            }
             self.provenanceProgress = nil
         }
-        self.provenanceTask = Task(priority: .utility) { await self.analyseProvenance() }
+        self.provenanceTask = Task(priority: .utility) { await self.analyseProvenance(announce: announce) }
     }
 
     /// Requests cancellation; the batch stops once the file in flight winds
@@ -55,8 +66,8 @@ public extension LibraryViewModel {
 
     /// Analyses every lossless-claiming track still needing a verdict, one
     /// file at a time, writing each verdict as it lands. Public so tests can
-    /// await the whole run; app code goes through ``startProvenanceAnalysis()``.
-    func analyseProvenance() async {
+    /// await the whole run; app code goes through ``startProvenanceAnalysis(announce:)``.
+    func analyseProvenance(announce: Bool = false) async {
         guard self.provenanceProgress == nil else { return } // already running
         let log = AppLogger.make(.audio)
         let repo = TrackRepository(database: self.database)
@@ -74,6 +85,12 @@ public extension LibraryViewModel {
                 kind: .info
             ))
             return
+        }
+        if announce {
+            self.showToast(ToastMessage(
+                text: L10n.string("Analysing \(total) lossless files. Watch progress in Tools → Library Summary → Audio Quality."),
+                kind: .info
+            ))
         }
         log.debug("provenance.batch.start", ["total": total])
         self.provenanceProgress = ProvenanceBatchProgress(done: 0, total: total, failed: 0, suspected: 0)
