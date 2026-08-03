@@ -16,6 +16,16 @@
         }
       }
     },
+    "%@ (%@)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ (%@)"
+          }
+        }
+      }
+    },
     "%@ (%lld)" : {
       "localizations" : {
         "en" : {
@@ -92,6 +102,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ áđđéđ ţó ĺíƀŕáŕý one two"
+          }
+        }
+      }
+    },
+    "%@ albums" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ áĺƀúḿš one"
           }
         }
       }
@@ -298,6 +318,26 @@
         }
       }
     },
+    "%@ of the library" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ óƒ ţĥé ĺíƀŕáŕý one two"
+          }
+        }
+      }
+    },
+    "%@ of the library · %@ of listening" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ óƒ ţĥé ĺíƀŕáŕý · %@ óƒ ĺíšţéñíñĝ one two three"
+          }
+        }
+      }
+    },
     "%@ songs · %@" : {
       "localizations" : {
         "en-XA" : {
@@ -354,6 +394,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@ albums" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@ áĺƀúḿš one two"
           }
         }
       }
@@ -529,6 +579,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%1$@: šţóŕéđ %2$@, óñ đíšķ %3$@ one two three"
+          }
+        }
+      }
+    },
+    "%@s" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@š one"
           }
         }
       }
@@ -2594,6 +2654,16 @@
         }
       }
     },
+    "Add music to the library and its shape will appear here." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áđđ ḿúšíç ţó ţĥé ĺíƀŕáŕý áñđ íţš šĥáƥé ŵíĺĺ áƥƥéáŕ ĥéŕé. one two three four"
+          }
+        }
+      }
+    },
     "Add new source server" : {
       "localizations" : {
         "en-XA" : {
@@ -2976,6 +3046,16 @@
         }
       }
     },
+    "Albums with at least %lld tracks. Watch the average climb when the CD arrives, then fall again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áĺƀúḿš ŵíţĥ áţ ĺéášţ %lld ţŕáçķš. Ŵáţçĥ ţĥé ávéŕáĝé çĺíḿƀ ŵĥéñ ţĥé ÇĐ áŕŕívéš, ţĥéñ ƒáĺĺ áĝáíñ. one two three four five six seven"
+          }
+        }
+      }
+    },
     "All" : {
       "localizations" : {
         "en" : {
@@ -3305,6 +3385,16 @@
         }
       }
     },
+    "Artist Depth" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áŕţíšţ Đéƥţĥ one"
+          }
+        }
+      }
+    },
     "Artist MBID" : {
       "localizations" : {
         "en-XA" : {
@@ -3359,6 +3449,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Áŕţíšţš one"
+          }
+        }
+      }
+    },
+    "Artists with %lld+ albums" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áŕţíšţš ŵíţĥ %lld+ áĺƀúḿš one two"
           }
         }
       }
@@ -3602,6 +3702,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Áúţóḿáţíçáĺĺý đóŵñĺóáđ ñéŵ éƥíšóđéš óƒ ţĥíš šĥóŵ áš ţĥéý áŕé ƥúƀĺíšĥéđ one two three four five"
+          }
+        }
+      }
+    },
+    "Average Album Length by Decade" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ávéŕáĝé Áĺƀúḿ Ĺéñĝţĥ ƀý Đéçáđé one two three"
           }
         }
       }
@@ -6486,6 +6596,16 @@
         }
       }
     },
+    "Deepest Catalogues" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đééƥéšţ Çáţáĺóĝúéš one two"
+          }
+        }
+      }
+    },
     "Default font size" : {
       "localizations" : {
         "en-XA" : {
@@ -8100,6 +8220,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Éxţŕá ĝáíñ óñ ţóƥ óƒ ţĥé ŔéƥĺáýĜáíñ váĺúé. Á çĺíƥƥíñĝ ĝúáŕđ ƥŕévéñţš ţĥé ƥéáķ ƒŕóḿ éxçééđíñĝ −0.5 đƁƑŠ. one two three four five six seven"
+          }
+        }
+      }
+    },
+    "Extremes" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éxţŕéḿéš one"
           }
         }
       }
@@ -10615,6 +10745,26 @@
         }
       }
     },
+    "Longest album · %@ · %@ songs" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĺóñĝéšţ áĺƀúḿ · %@ · %@ šóñĝš one two three"
+          }
+        }
+      }
+    },
+    "Longest song · %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĺóñĝéšţ šóñĝ · %@ one two"
+          }
+        }
+      }
+    },
     "Looking for music files…" : {
       "localizations" : {
         "en-XA" : {
@@ -12417,6 +12567,16 @@
         }
       }
     },
+    "No usable year on %lld tracks" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñó úšáƀĺé ýéáŕ óñ %lld ţŕáçķš one two three"
+          }
+        }
+      }
+    },
     "None" : {
       "comment" : "A button that clears all selections in a list.",
       "isCommentAutoGenerated" : true,
@@ -12688,6 +12848,26 @@
         }
       }
     },
+    "Nothing played yet, so there is no listening strip to compare." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñóţĥíñĝ ƥĺáýéđ ýéţ, šó ţĥéŕé íš ñó ĺíšţéñíñĝ šţŕíƥ ţó çóḿƥáŕé. one two three four"
+          }
+        }
+      }
+    },
+    "Nothing to Measure" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñóţĥíñĝ ţó Ḿéášúŕé one two"
+          }
+        }
+      }
+    },
     "Notifications" : {
       "localizations" : {
         "en-XA" : {
@@ -12920,6 +13100,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Óñé áĺƀúḿ íš ŕéqúéšţéđ ƥéŕ šéçóñđ ţó ŕéšƥéçţ ţĥé ḾúšíçƁŕáíñž ŕáţé ĺíḿíţ. one two three four five"
+          }
+        }
+      }
+    },
+    "One-track artists" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óñé-ţŕáçķ áŕţíšţš one two"
           }
         }
       }
@@ -13328,6 +13518,26 @@
         }
       }
     },
+    "Owned" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óŵñéđ one"
+          }
+        }
+      }
+    },
+    "Owned vs Played by Decade" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óŵñéđ vš Ƥĺáýéđ ƀý Đéçáđé one two"
+          }
+        }
+      }
+    },
     "PLS" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -13557,6 +13767,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƥáúšé ñéŵ éñţŕíéš ƒŕóḿ ƒĺóŵíñĝ íñ one two three"
+          }
+        }
+      }
+    },
+    "Peak: %@ · %@ songs" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥéáķ: %@ · %@ šóñĝš one two"
           }
         }
       }
@@ -15070,6 +15290,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŕéĺéášé ḾƁÍĐ one"
+          }
+        }
+      }
+    },
+    "Release Years" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéĺéášé Ýéáŕš one"
+          }
+        }
+      }
+    },
+    "Release year histogram from %@ to %@, peaking in %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéĺéášé ýéáŕ ĥíšţóĝŕáḿ ƒŕóḿ %@ ţó %@, ƥéáķíñĝ íñ %@ one two three four"
           }
         }
       }
@@ -17213,6 +17453,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šĥíƒţš ĥíĝĥĺíĝĥţéđ ĺíñé ţíḿíñĝ.\nŔéšéţš ŵĥéñ ţĥé ţŕáçķ çĥáñĝéš. one two three four"
+          }
+        }
+      }
+    },
+    "Shortest song · %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŕţéšţ šóñĝ · %@ one two"
           }
         }
       }
@@ -20764,6 +21014,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŵĥéñ óñ, šávíñĝ çóvéŕ áŕţ ŕéŵŕíţéš ţĥé áúđíó ƒíĺé ţó éḿƀéđ ţĥé íḿáĝé. one two three four five"
+          }
+        }
+      }
+    },
+    "Where the strips disagree, your shelf and your taste part ways." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŵĥéŕé ţĥé šţŕíƥš đíšáĝŕéé, ýóúŕ šĥéĺƒ áñđ ýóúŕ ţášţé ƥáŕţ ŵáýš. one two three four"
           }
         }
       }
