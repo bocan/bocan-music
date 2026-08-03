@@ -107,17 +107,14 @@ public final class TracksViewModel {
     /// Maps `albumID → cover art file-system path` for the art column.  Refreshed on every load.
     private var albumArtPaths: [Int64: String] = [:]
 
-    /// Incremented each time the caller wants the table to scroll the now-playing
-    /// track into view.  `TrackTable.updateNSView` detects the change and calls
-    /// `scrollRowToVisible` for the matching row.
-    public private(set) var scrollRequest = 0
+    /// Incremented when a caller wants the table to scroll a row into view;
+    /// `TrackTable.updateNSView` reacts with `scrollRowToVisible`. Mutated,
+    /// with `scrollTargetTrackID`, by the request functions in
+    /// `TracksViewModel+Scrolling.swift`, hence internal(set).
+    public internal(set) var scrollRequest = 0
 
-    /// Signals `TrackTable` to scroll the now-playing track into view on the
-    /// next `updateNSView` pass.  Each call increments the counter so repeated
-    /// "jump" requests always scroll even when the same track is playing.
-    public func requestScrollToNowPlaying() {
-        self.scrollRequest += 1
-    }
+    /// The track a pending scroll request targets; `nil` means now-playing.
+    public internal(set) var scrollTargetTrackID: Int64?
 
     // MARK: - Computed back-compat accessors
 

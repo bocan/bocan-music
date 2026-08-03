@@ -50,6 +50,7 @@ struct TrackTableDragTests {
             playlistNodes: [],
             actions: actions,
             scrollRequest: 0,
+            scrollTargetTrackID: nil,
             onMove: nil
         )
         return TrackTableCoordinator(parent: table)

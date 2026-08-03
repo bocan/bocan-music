@@ -163,7 +163,8 @@ struct LibraryAudioQualityPane: View {
                             .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
                         detail: Self.suspectDetail(track),
                         albumID: track.albumID,
-                        library: self.library
+                        library: self.library,
+                        trackID: track.id
                     )
                 }
                 SummaryMoreRow(
@@ -277,7 +278,8 @@ struct LibraryAudioQualityPane: View {
                             .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
                         detail: L10n.string("Peaks at +\(Self.dBTP(track.truePeakLinear)) dBTP"),
                         albumID: track.albumID,
-                        library: self.library
+                        library: self.library,
+                        trackID: track.id
                     )
                 }
                 SummaryMoreRow(total: report.truePeakOverCount, shown: report.truePeakOvers.count)

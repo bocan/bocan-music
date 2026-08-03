@@ -154,7 +154,8 @@ struct LibraryCollectionShapePane: View {
                 .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
             detail: caption,
             albumID: track.albumID,
-            library: self.library
+            library: self.library,
+            trackID: track.id
         )
     }
 

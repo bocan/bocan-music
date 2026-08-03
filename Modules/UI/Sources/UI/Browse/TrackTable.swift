@@ -85,6 +85,8 @@ public struct TrackTable: NSViewRepresentable {
     let actions: TrackContextMenuActions
     /// Each increment triggers a scroll-to-now-playing in `updateNSView`.
     let scrollRequest: Int
+    /// Track a pending scroll request targets; `nil` scrolls to now-playing.
+    let scrollTargetTrackID: Int64?
     /// When non-nil the table allows intra-table drag-reorder and calls this
     /// closure (on the main thread) with SwiftUI-style `(source, destination)` indices.
     let onMove: ((IndexSet, Int) -> Void)?
@@ -292,8 +294,10 @@ public struct TrackTable: NSViewRepresentable {
     private func applyScrollIfNeeded(coordinator: TrackTableCoordinator, tableView: NSTableView) {
         guard self.scrollRequest != coordinator.lastScrollRequest else { return }
         coordinator.lastScrollRequest = self.scrollRequest
-        if let nowID = self.nowPlayingTrackID,
-           let idx = coordinator.rows.firstIndex(where: { $0.id == nowID }) {
+        // nowPlayingTrackID is Track.ID? (a double optional); flatten it.
+        let target: Int64? = self.scrollTargetTrackID ?? self.nowPlayingTrackID.flatMap(\.self)
+        if let target,
+           let idx = coordinator.rows.firstIndex(where: { $0.id == target }) {
             tableView.scrollRowToVisible(idx)
         }
     }

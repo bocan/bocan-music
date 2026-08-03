@@ -30,7 +30,10 @@ public struct AlbumDetailView: View {
             // Track list
             TracksView(vm: self.library.tracks, library: self.library)
         }
-        .task {
+        // task(id:), not task: switching .album(A) -> .album(B) keeps this
+        // view's identity (same switch arm in ContentPane), so a plain task
+        // never re-fires and the header shows album A over album B's tracks.
+        .task(id: self.albumID) {
             await self.load()
         }
     }
