@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 34)
+        #expect(version == 35)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,27 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports thirty-four migrations")
+    @Test("Migrator reports thirty-five migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 34)
+        #expect(migrator.migrations.count == 35)
+    }
+
+    @Test("imported_listens exists with its identity index after M035")
+    func importedListensTable() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(imported_listens)")
+                .compactMap { $0["name"] as String? }
+        }
+        for name in ["source", "played_at", "artist", "title", "album", "track_mbid", "track_id"] {
+            #expect(columns.contains(name), "Expected column '\(name)' not found")
+        }
+        let indexes = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA index_list(imported_listens)")
+                .compactMap { $0["name"] as String? }
+        }
+        #expect(indexes.contains("idx_imported_listens_identity"), "re-imports rely on the unique identity index")
     }
 
     @Test("Tracks table has the provenance columns after M034")

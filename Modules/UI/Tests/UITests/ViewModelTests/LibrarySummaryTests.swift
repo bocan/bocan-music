@@ -47,6 +47,34 @@ struct LibrarySummaryTests {
             source.contains("LibraryCollectionShapePane(repository: self.statsRepository, library: self.library)"),
             "the collection shape tab must render LibraryCollectionShapePane with navigation wiring"
         )
+        #expect(
+            source.contains("LibraryListeningBehaviourPane(library: self.library)"),
+            "the listening behaviour tab must render LibraryListeningBehaviourPane"
+        )
+    }
+
+    @Test("The Listening Behaviour pane manages imported history safely (phase 25-1)")
+    func listeningImportWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryListeningBehaviourPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("importListeningHistoryByPicker()"),
+            "the pane must offer the import in place, not only in the Tools menu"
+        )
+        #expect(
+            source.contains("rematchImportedListens()"),
+            "Match Again must exist so unmatched listens link up after the library grows"
+        )
+        #expect(
+            source.contains(".confirmationDialog(") && source.contains("removeImportedListens()"),
+            "removing imported history is destructive and must sit behind a confirmation"
+        )
+        #expect(
+            source.contains("@ObservedObject var library"),
+            "the pane must observe the view model or the import spinner never updates"
+        )
     }
 
     @Test("The Collection Shape pane pairs ownership with listening and keeps the honest gaps")

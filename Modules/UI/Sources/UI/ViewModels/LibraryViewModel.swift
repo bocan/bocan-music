@@ -208,6 +208,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Handle for the running provenance batch so Cancel can reach it.
     var provenanceTask: Task<Void, Never>?
 
+    // MARK: - Listening-history import state (phase 25-1)
+
+    /// True while a Last.fm export import is running; the Listening
+    /// Behaviour pane shows a spinner and reloads its counts on completion.
+    /// The import logic lives in `LibraryViewModel+ListenImport.swift`.
+    @Published public var isImportingListens = false
+
     // MARK: - Scan state
 
     @Published public var isScanning = false

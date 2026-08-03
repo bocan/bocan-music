@@ -150,6 +150,9 @@ public struct LibrarySummaryView: View {
         case .collectionShape:
             LibraryCollectionShapePane(repository: self.statsRepository, library: self.library)
 
+        case .listeningBehaviour:
+            LibraryListeningBehaviourPane(library: self.library)
+
         default:
             self.comingSoonPane(tab)
         }

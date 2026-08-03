@@ -68,6 +68,19 @@ struct ToolsMenuTests {
         )
     }
 
+    @Test("The Tools menu imports Last.fm history through the view model")
+    func toolsMenuImportsListens() throws {
+        let source = try self.appSource("BocanCommands+Tools.swift")
+        #expect(
+            source.contains("Button(\"Import Last.fm History\\u{2026}\")"),
+            "the Import Last.fm History item must exist"
+        )
+        #expect(
+            source.contains("self.vm.importListeningHistoryByPicker()"),
+            "the item must go through the view model's picker flow"
+        )
+    }
+
     @Test("The Library Summary window scene is registered")
     func summaryWindowSceneExists() throws {
         let source = try self.appSource("BocanApp.swift")
