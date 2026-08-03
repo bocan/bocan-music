@@ -116,9 +116,13 @@ struct LibraryAudioQualityPane: View {
     private func provenanceProgressRows(_ progress: ProvenanceBatchProgress) -> some View {
         if progress.isComplete {
             HStack(spacing: 6) {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
-                Text(L10n.string("\(progress.succeeded) analysed, \(progress.suspected) suspected"))
+                // Failures must be visible right here: the completion toast
+                // lands in the main window, which this pane usually covers.
+                Image(systemName: progress.failed > 0
+                    ? "exclamationmark.triangle.fill"
+                    : "checkmark.circle.fill")
+                    .foregroundStyle(progress.failed > 0 ? Color.orange : Color.green)
+                Text(Self.completionRowText(progress))
             }
             Button(L10n.string("Dismiss")) {
                 self.library.provenanceProgress = nil
@@ -311,6 +315,13 @@ struct LibraryAudioQualityPane: View {
     /// Linear true peak (> 1) as a decibel string, one decimal ("0.9").
     private static func dBTP(_ linear: Double) -> String {
         String(format: "%.1f", 20 * log10(linear))
+    }
+
+    /// "N analysed, M suspected(, K failed)": the batch outcome with its
+    /// failures owned, not hidden.
+    private static func completionRowText(_ progress: ProvenanceBatchProgress) -> String {
+        let base = L10n.string("\(progress.succeeded) analysed, \(progress.suspected) suspected")
+        return progress.failed > 0 ? L10n.string("\(base), \(progress.failed) failed") : base
     }
 
     /// The phase 24-4 offender detail: "87% confident · shelf at 16 kHz".

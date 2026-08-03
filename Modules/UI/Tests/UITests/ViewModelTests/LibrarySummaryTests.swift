@@ -125,6 +125,30 @@ struct LibrarySummaryTests {
             source.contains("Seasonal Listening"),
             "the seasonal artists section must exist"
         )
+        let charts = try String(
+            contentsOf: Self.uiSource("Summary/ListeningTimeCharts.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            charts.contains("PaletteResolver.thermalColor"),
+            "the heatmap must ride the shared thermal ramp, not an accent-opacity ramp"
+        )
+    }
+
+    @Test("The provenance completion row owns its failures")
+    func provenanceFailuresVisible() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryAudioQualityPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("completionRowText(progress)"),
+            "the completion row must include the failed count, not just analysed and suspected"
+        )
+        #expect(
+            source.contains("exclamationmark.triangle.fill"),
+            "failures must swap the green checkmark for a warning"
+        )
     }
 
     @Test("The Collection Shape pane pairs ownership with listening and keeps the honest gaps")

@@ -98,7 +98,9 @@ public enum PaletteResolver {
 
     /// Position-independent heat colour, linearly interpolated between
     /// ``thermalStops`` in sRGB and indexed by `magnitude`.
-    private static func thermalColor(magnitude: Float) -> Color {
+    /// Internal (not private): the Library Summary's listening heatmap keys
+    /// its cells off the same ramp so "thermal" means one thing app-wide.
+    static func thermalColor(magnitude: Float) -> Color {
         let level = min(1, max(0, Double(magnitude)))
         let scaled = level * Double(Self.thermalStops.count - 1)
         let index = min(Self.thermalStops.count - 2, Int(scaled))
