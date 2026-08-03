@@ -186,7 +186,8 @@ struct LibraryListeningBehaviourPane: View {
                             .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
                         detail: Self.skipDetail(track),
                         albumID: track.albumID,
-                        library: self.library
+                        library: self.library,
+                        trackID: track.id
                     )
                 }
                 SummaryMoreRow(total: report.skipCandidateCount, shown: report.skipCandidates.count)
@@ -210,7 +211,8 @@ struct LibraryListeningBehaviourPane: View {
                             .map { "\(track.trackTitle) · \($0)" } ?? track.trackTitle,
                         detail: Self.dormantDetail(track),
                         albumID: track.albumID,
-                        library: self.library
+                        library: self.library,
+                        trackID: track.id
                     )
                 }
                 SummaryMoreRow(total: report.dormantFavouriteCount, shown: report.dormantFavourites.count)

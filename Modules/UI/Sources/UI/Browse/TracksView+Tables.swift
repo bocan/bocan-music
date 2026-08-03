@@ -14,6 +14,7 @@ extension TracksView {
             playlistNodes: self.library.playlistSidebar.nodes,
             actions: self.trackContextMenuActions,
             scrollRequest: self.vm.scrollRequest,
+            scrollTargetTrackID: self.vm.scrollTargetTrackID,
             onMove: self.effectiveOnMove
         )
     }
@@ -28,6 +29,7 @@ extension TracksView {
             playlistNodes: self.library.playlistSidebar.nodes,
             actions: self.trackContextMenuActions,
             scrollRequest: self.vm.scrollRequest,
+            scrollTargetTrackID: self.vm.scrollTargetTrackID,
             onMove: self.effectiveOnMove
         )
     }

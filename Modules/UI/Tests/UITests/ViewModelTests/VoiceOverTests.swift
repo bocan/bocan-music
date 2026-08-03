@@ -93,6 +93,7 @@ struct VoiceOverTests {
             playlistNodes: [],
             actions: self.makeNoopActions(),
             scrollRequest: 0,
+            scrollTargetTrackID: nil,
             onMove: nil
         )
         let coordinator = TrackTableCoordinator(parent: table)
@@ -131,6 +132,7 @@ struct VoiceOverTests {
             playlistNodes: [],
             actions: self.makeNoopActions(),
             scrollRequest: 0,
+            scrollTargetTrackID: nil,
             onMove: nil
         )
         let coordinator = TrackTableCoordinator(parent: table)
@@ -158,6 +160,7 @@ struct VoiceOverTests {
             playlistNodes: [],
             actions: self.makeNoopActions(),
             scrollRequest: 0,
+            scrollTargetTrackID: nil,
             onMove: nil
         )
         let coordinator = TrackTableCoordinator(parent: table)

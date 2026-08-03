@@ -71,7 +71,10 @@ public struct ArtistDetailView: View {
             self.sectionLabel(L10n.string("Songs"), count: self.library.tracks.rows.count)
             TracksView(vm: self.library.tracks, library: self.library, sortable: true)
         }
-        .task {
+        // task(id:), not task: switching .artist(A) -> .artist(B) keeps this
+        // view's identity (same switch arm in ContentPane), so a plain task
+        // never re-fires and the header goes stale. Same fix as AlbumDetailView.
+        .task(id: self.artistID) {
             await self.load()
         }
         // Restore the album strip's saved offset when the albums load on a

@@ -124,7 +124,8 @@ struct LibraryHygienePane: View {
                             .map { L10n.string("Year \(String(track.year)), album says \(String($0))") }
                             ?? L10n.string("Year \(String(track.year))"),
                         albumID: track.albumID,
-                        library: self.library
+                        library: self.library,
+                        trackID: track.id
                     )
                 }
                 SummaryMoreRow(total: report.suspiciousYearCount, shown: report.suspiciousYearTracks.count)
@@ -162,7 +163,8 @@ struct LibraryHygienePane: View {
                         title: track.trackTitle,
                         detail: URL(string: track.fileURL)?.lastPathComponent ?? track.fileURL,
                         albumID: track.albumID,
-                        library: self.library
+                        library: self.library,
+                        trackID: track.id
                     )
                 }
                 SummaryMoreRow(total: report.missingFileCount, shown: report.missingFiles.count)

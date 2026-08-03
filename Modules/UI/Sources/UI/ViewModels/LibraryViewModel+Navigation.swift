@@ -70,6 +70,16 @@ extension LibraryViewModel {
         }
     }
 
+    /// Jumps to a track's album, then selects and scrolls to the track: the
+    /// Library Summary's reveal path, so an offender row lands the user on
+    /// the exact song, not just its album. Selection survives the detail
+    /// view's own reload because loads never touch `tracks.selection`.
+    public func revealTrack(_ trackID: Int64, inAlbum albumID: Int64) async {
+        await self.selectDestination(.album(albumID))
+        self.tracks.selection = [trackID]
+        self.tracks.requestScroll(to: trackID)
+    }
+
     // MARK: - Destination helpers
 
     private func loadSongsDestination(query: String) async {

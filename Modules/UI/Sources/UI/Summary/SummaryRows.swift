@@ -4,16 +4,32 @@ import SwiftUI
 
 // MARK: - SummaryOffenderRow
 
-/// A Library Summary offender row shared by the hygiene and audio-quality
-/// panes. With an `albumID` it becomes a button that jumps the main window
-/// to that album and brings it forward (the summary window stays open as the
-/// user's worklist); without one it renders as plain text.
+/// A Library Summary offender row shared by the report panes. With an
+/// `albumID` it becomes a button that jumps the main window to that album
+/// and brings it forward (the summary window stays open as the user's
+/// worklist); with a `trackID` too, the exact song is selected and scrolled
+/// into view. Without an album it renders as plain text.
 struct SummaryOffenderRow: View {
     let title: String
     let detail: String
     let albumID: Int64?
     /// Held as a plain `let`: only used to navigate, never observed.
     let library: LibraryViewModel
+    let trackID: Int64?
+
+    init(
+        title: String,
+        detail: String,
+        albumID: Int64?,
+        library: LibraryViewModel,
+        trackID: Int64? = nil
+    ) {
+        self.title = title
+        self.detail = detail
+        self.albumID = albumID
+        self.library = library
+        self.trackID = trackID
+    }
 
     var body: some View {
         if let albumID {
@@ -31,7 +47,9 @@ struct SummaryOffenderRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint(L10n.string("Double-tap to open album"))
+            .accessibilityHint(self.trackID == nil
+                ? L10n.string("Double-tap to open album")
+                : L10n.string("Double-tap to open the album and select this song"))
         } else {
             self.rowText
         }
@@ -51,7 +69,11 @@ struct SummaryOffenderRow: View {
     }
 
     private func openAlbum(_ albumID: Int64) {
-        Task { await self.library.selectDestination(.album(albumID)) }
+        if let trackID = self.trackID {
+            Task { await self.library.revealTrack(trackID, inAlbum: albumID) }
+        } else {
+            Task { await self.library.selectDestination(.album(albumID)) }
+        }
         MainWindowTracker.shared.resolveWindow()?.makeKeyAndOrderFront(nil)
     }
 }
