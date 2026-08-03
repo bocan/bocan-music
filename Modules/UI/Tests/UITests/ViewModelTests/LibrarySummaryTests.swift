@@ -99,6 +99,34 @@ struct LibrarySummaryTests {
         }
     }
 
+    @Test("The Listening Behaviour pane serves the 25-3 time analytics honestly")
+    func listeningTimeWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryListeningBehaviourPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("fetchListeningTime()"),
+            "the pane must load the time report"
+        )
+        #expect(
+            source.contains("HourWeekdayHeatmap(cells: time.heatmap)"),
+            "the when-you-listen heatmap must be rendered"
+        )
+        #expect(
+            source.contains("DiscoveryLineChart(months: time.discoveryByMonth)"),
+            "the discovery-rate line must be rendered"
+        )
+        #expect(
+            source.contains("current time"),
+            "the footer must own the time zone caveat"
+        )
+        #expect(
+            source.contains("Seasonal Listening"),
+            "the seasonal artists section must exist"
+        )
+    }
+
     @Test("The Collection Shape pane pairs ownership with listening and keeps the honest gaps")
     func collectionShapeWired() throws {
         let source = try String(
