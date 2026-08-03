@@ -125,6 +125,36 @@ struct ProvenanceBatchTests {
         #expect(vm.toast != nil)
     }
 
+    @Test("A menu start while already running toasts where to watch instead of doing nothing")
+    func alreadyRunningAnnounces() async throws {
+        let vm = try await self.makeVM()
+        let running = ProvenanceBatchProgress(done: 1, total: 5, failed: 0, suspected: 0)
+        vm.provenanceProgress = running
+        vm.startProvenanceAnalysis()
+        #expect(vm.provenanceProgress == running, "the running batch must be left alone")
+        let toast = try #require(vm.toast)
+        #expect(toast.text.contains("Library Summary"), "the toast must say where to watch")
+    }
+
+    @Test("Menu starts announce where to watch; the pane button stays quiet")
+    func startAnnouncementConvention() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/ViewModels/LibraryViewModel+Provenance.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(
+            source.contains("Watch progress in Tools → Library Summary → Audio Quality"),
+            "starting a run with announce must toast where the progress lives"
+        )
+        #expect(
+            source.contains("already running. See Tools → Library Summary → Audio Quality"),
+            "a start while running must point at the live progress instead of silently no-oping"
+        )
+    }
+
     @Test("Progress arithmetic")
     func progressArithmetic() {
         let running = ProvenanceBatchProgress(done: 3, total: 10, failed: 1, suspected: 2)

@@ -85,11 +85,19 @@ struct LibrarySummaryTests {
         )
         #expect(
             source.contains("report.provenanceAnalysedCount > 0"),
-            "the section must be gated on at least one analysed track"
+            "the offender content must be gated on at least one analysed track"
         )
         #expect(
-            source.contains("Not yet analysed: \\(report.provenanceUnanalysedCount) lossless tracks"),
-            "the unanalysed count must surface beside the section so coverage is honest"
+            source.contains("startProvenanceAnalysis(announce: false)"),
+            "the pane must offer an in-place Analyse Now trigger, unannounced (progress shows right here)"
+        )
+        #expect(
+            source.contains(".disabled(report.provenanceUnanalysedCount == 0)"),
+            "the trigger must go quiet when nothing awaits analysis"
+        )
+        #expect(
+            source.contains("lossless files awaiting analysis"),
+            "the awaiting count must surface beside the trigger so coverage is honest"
         )
     }
 

@@ -62,27 +62,52 @@ struct LibraryAudioQualityPane: View {
         .formStyle(.grouped)
     }
 
-    /// The Transcode Detection section (phases 24-3 and 24-4): live batch
-    /// progress while a run is underway, and the suspected-transcode offender
-    /// list once at least one track holds a verdict. The word is always
-    /// "suspected"; the footer explains what a shelf is and why a flagged
-    /// file can be innocent.
-    @ViewBuilder
+    /// The Transcode Detection section (phases 24-3 and 24-4): an always
+    /// present Analyse Now trigger (or the live batch progress while a run is
+    /// underway), and the suspected-transcode offender list once at least one
+    /// track holds a verdict. The word is always "suspected"; the footer
+    /// explains what a shelf is and why a flagged file can be innocent.
     private func provenanceSection(_ report: LibraryAudioQualityReport) -> some View {
-        if self.library.provenanceProgress != nil || report.provenanceAnalysedCount > 0 {
-            Section {
-                if let progress = self.library.provenanceProgress {
-                    self.provenanceProgressRows(progress)
-                }
-                if report.provenanceAnalysedCount > 0 {
-                    self.suspectRows(report)
-                }
-            } header: {
-                Text(localized: "Transcode Detection")
-            } footer: {
-                self.provenanceFooter(report)
+        Section {
+            if let progress = self.library.provenanceProgress {
+                self.provenanceProgressRows(progress)
+            } else {
+                self.analyseRow(report)
             }
+            if report.provenanceAnalysedCount > 0 {
+                self.suspectRows(report)
+            }
+        } header: {
+            Text(localized: "Transcode Detection")
+        } footer: {
+            self.provenanceFooter
         }
+    }
+
+    /// The in-place trigger. Nothing runs automatically (a first pass over a
+    /// big library is hours of decoding), so the button stays put: the
+    /// scanner queues new and changed files up for it by clearing their
+    /// verdicts, and the button goes quiet when nothing is waiting.
+    private func analyseRow(_ report: LibraryAudioQualityReport) -> some View {
+        HStack {
+            Text(self.analyseRowStatus(report))
+            Spacer()
+            Button(L10n.string("Analyse Now")) {
+                self.library.startProvenanceAnalysis(announce: false)
+            }
+            .buttonStyle(.bordered)
+            .disabled(report.provenanceUnanalysedCount == 0)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func analyseRowStatus(_ report: LibraryAudioQualityReport) -> String {
+        if report.provenanceUnanalysedCount == 0 {
+            return L10n.string("Nothing awaiting analysis")
+        }
+        return report.provenanceAnalysedCount == 0
+            ? L10n.string("\(report.provenanceUnanalysedCount) lossless files have never been checked")
+            : L10n.string("\(report.provenanceUnanalysedCount) lossless files awaiting analysis")
     }
 
     /// Live progress for the Tools menu's "Analyse Provenance" batch
@@ -149,13 +174,11 @@ struct LibraryAudioQualityPane: View {
         }
     }
 
-    /// Honest coverage plus the plain-copy explanation the phase spec fixes:
-    /// what a shelf is, and why a verdict can be wrong.
-    private func provenanceFooter(_ report: LibraryAudioQualityReport) -> some View {
+    /// The plain-copy explanation the phase spec fixes: what a shelf is, and
+    /// why a verdict can be wrong. Coverage lives in the analyse row above,
+    /// which shows the awaiting count whenever anything is unanalysed.
+    private var provenanceFooter: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if report.provenanceUnanalysedCount > 0 {
-                Text(localized: "Not yet analysed: \(report.provenanceUnanalysedCount) lossless tracks")
-            }
             Text(
                 localized: """
                 A lossy encoder throws away everything above a frequency ceiling, and that hard \
