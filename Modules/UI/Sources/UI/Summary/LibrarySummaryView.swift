@@ -147,6 +147,9 @@ public struct LibrarySummaryView: View {
         case .audioQuality:
             LibraryAudioQualityPane(repository: self.statsRepository, library: self.library)
 
+        case .collectionShape:
+            LibraryCollectionShapePane(repository: self.statsRepository, library: self.library)
+
         default:
             self.comingSoonPane(tab)
         }

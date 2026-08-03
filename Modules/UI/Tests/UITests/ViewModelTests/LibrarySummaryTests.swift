@@ -43,6 +43,34 @@ struct LibrarySummaryTests {
             source.contains("LibraryAudioQualityPane(repository: self.statsRepository, library: self.library)"),
             "the audio quality tab must render LibraryAudioQualityPane with navigation wiring"
         )
+        #expect(
+            source.contains("LibraryCollectionShapePane(repository: self.statsRepository, library: self.library)"),
+            "the collection shape tab must render LibraryCollectionShapePane with navigation wiring"
+        )
+    }
+
+    @Test("The Collection Shape pane pairs ownership with listening and keeps the honest gaps")
+    func collectionShapeWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryCollectionShapePane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("DecadeStripsChart(decades: report.decades)"),
+            "the owned-versus-played strips are the tab's centrepiece"
+        )
+        #expect(
+            source.contains("YearHistogramChart(years: report.years)"),
+            "the release-year histogram must be rendered"
+        )
+        #expect(
+            source.contains("No usable year on \\(report.undatedTrackCount) tracks"),
+            "undated tracks must surface so the histogram's coverage is honest"
+        )
+        #expect(
+            source.contains("SummaryOffenderRow"),
+            "the extremes must navigate to their albums like the other panes' offender rows"
+        )
     }
 
     @Test("The Audio Quality pane surfaces provenance batch progress with a cancel affordance")
