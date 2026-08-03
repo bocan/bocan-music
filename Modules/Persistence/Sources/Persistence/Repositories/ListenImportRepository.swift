@@ -132,9 +132,27 @@ public struct ListenImportRepository: Sendable {
 
     // MARK: - Internal matching machinery
 
-    /// Case- and Unicode-normalised identity for artist+title matching.
+    /// Case- and Unicode-normalised identity for artist+title matching
+    /// (tier one: exact after lowercasing).
     static func matchKey(artist: String, title: String) -> String {
         self.normalised(artist) + "\n" + self.normalised(title)
+    }
+
+    /// Tier two: typography folded on top of tier one. Curly apostrophes and
+    /// quotes, en/em dashes, collapsed whitespace, and "&" versus "and" are
+    /// the difference between a library rip and a streaming-era scrobble far
+    /// more often than the actual words are (measured on a real export).
+    static func foldedKey(artist: String, title: String) -> String {
+        self.folded(artist) + "\n" + self.folded(title)
+    }
+
+    /// Tier three: tier two plus edition qualifiers stripped from the title
+    /// ("- 2015 Remaster", "(Album Version)", "- Radio Edit", "(Live)").
+    /// Applied to both sides, so it heals a suffix on either. For listening
+    /// history this is the right trade: a play of the remaster credited to
+    /// the rip beats a play credited to nothing.
+    static func strippedKey(artist: String, title: String) -> String {
+        self.folded(artist) + "\n" + self.strippedTitle(title)
     }
 
     private static func normalised(_ value: String) -> String {
@@ -143,9 +161,56 @@ public struct ListenImportRepository: Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private static func folded(_ value: String) -> String {
+        var folded = self.normalised(value)
+        for (fancy, plain) in [("\u{2019}", "'"), ("\u{2018}", "'"), ("\u{201C}", "\""), ("\u{201D}", "\"")] {
+            folded = folded.replacingOccurrences(of: fancy, with: plain)
+        }
+        folded = folded.replacingOccurrences(of: "\u{2013}", with: "-")
+        folded = folded.replacingOccurrences(of: "\u{2014}", with: "-")
+        folded = folded.replacingOccurrences(of: " & ", with: " and ")
+        return folded.split(separator: " ").joined(separator: " ")
+    }
+
+    /// Trailing edition qualifiers, stripped repeatedly so stacked suffixes
+    /// ("Song - Radio Edit - 2011 Remaster") unwind fully.
+    /// nonisolated(unsafe): `Regex` lacks Sendable, but this literal is
+    /// immutable after initialisation and matching does not mutate it.
+    private nonisolated(unsafe) static let titleQualifier = #/
+        \s* (?: - | \( ) \s*
+        (?: (?: \d{4} \s )? remaster (?: ed )? (?: \s \d{4} )? (?: \s version )?
+          | single \s version | album \s version | radio \s edit
+          | live (?: \s [^)]* )? | acoustic (?: \s version )?
+          | feat \. [^)]* | bonus \s track | deluxe (?: \s [^)]* )? | explicit | mono | stereo
+        ) \)? \s* $
+    /#.ignoresCase()
+
+    private static func strippedTitle(_ value: String) -> String {
+        var title = self.folded(value)
+        while true {
+            let stripped = title.replacing(Self.titleQualifier, with: "").trimmingCharacters(in: .whitespaces)
+            if stripped == title || stripped.isEmpty {
+                return title
+            }
+            title = stripped
+        }
+    }
+
     private struct LibraryKeys {
-        let byMbid: [String: Int64]
-        let byArtistTitle: [String: Int64]
+        var byMbid: [String: Int64] = [:]
+        var exact: [String: Int64] = [:]
+        var folded: [String: Int64] = [:]
+        var stripped: [String: Int64] = [:]
+
+        /// Strictest tier first; a looser tier never overrides a stricter hit.
+        func trackID(mbid: String?, artist: String, title: String) -> Int64? {
+            if let mbid, let hit = self.byMbid[mbid] {
+                return hit
+            }
+            return self.exact[ListenImportRepository.matchKey(artist: artist, title: title)]
+                ?? self.folded[ListenImportRepository.foldedKey(artist: artist, title: title)]
+                ?? self.stripped[ListenImportRepository.strippedKey(artist: artist, title: title)]
+        }
     }
 
     private static func libraryKeys(_ db: GRDB.Database) throws -> LibraryKeys {
@@ -158,21 +223,24 @@ public struct ListenImportRepository: Sendable {
             LEFT JOIN artists ON artists.id = tracks.artist_id
             WHERE tracks.disabled = 0
         """)
-        var byMbid: [String: Int64] = [:]
-        var byArtistTitle: [String: Int64] = [:]
+        var keys = LibraryKeys()
         for row in rows {
             guard let id: Int64 = row["id"] else { continue }
-            if let mbid: String = row["mbid"], !mbid.isEmpty, byMbid[mbid] == nil {
-                byMbid[mbid] = id
+            if let mbid: String = row["mbid"], !mbid.isEmpty, keys.byMbid[mbid] == nil {
+                keys.byMbid[mbid] = id
             }
             let title: String = row["title"] ?? ""
             guard !title.isEmpty else { continue }
-            let key = self.matchKey(artist: row["artist_name"] ?? "", title: title)
-            if byArtistTitle[key] == nil {
-                byArtistTitle[key] = id
+            let artist: String = row["artist_name"] ?? ""
+            for (key, tier) in [
+                (self.matchKey(artist: artist, title: title), \LibraryKeys.exact),
+                (self.foldedKey(artist: artist, title: title), \LibraryKeys.folded),
+                (self.strippedKey(artist: artist, title: title), \LibraryKeys.stripped),
+            ] where keys[keyPath: tier][key] == nil {
+                keys[keyPath: tier][key] = id
             }
         }
-        return LibraryKeys(byMbid: byMbid, byArtistTitle: byArtistTitle)
+        return keys
     }
 
     private static func applyMatches(_ db: GRDB.Database) throws -> Int {
@@ -184,11 +252,12 @@ public struct ListenImportRepository: Sendable {
         var matched = 0
         for row in unmatched {
             guard let id: Int64 = row["id"] else { continue }
-            let mbid: String? = row["track_mbid"]
-            let key = self.matchKey(artist: row["artist"] ?? "", title: row["title"] ?? "")
-            guard let trackID = mbid.flatMap({ keys.byMbid[$0] }) ?? keys.byArtistTitle[key] else {
-                continue
-            }
+            let trackID = keys.trackID(
+                mbid: row["track_mbid"],
+                artist: row["artist"] ?? "",
+                title: row["title"] ?? ""
+            )
+            guard let trackID else { continue }
             try db.execute(
                 sql: "UPDATE imported_listens SET track_id = ? WHERE id = ?",
                 arguments: [trackID, id]

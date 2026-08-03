@@ -23,10 +23,13 @@ not hold, so imported history must survive unmatched and link up later.
   title, album, track_mbid, nullable track_id, unique identity index so
   re-imports are idempotent).
 - `ListenImportRepository`: idempotent batch insert; `rematch()` links rows
-  by MusicBrainz track id first, then normalised artist+title, and drops
-  matched rows within 300 s of a local play of the same track (the export
-  echoes what Bòcan itself scrobbled); `counts()`; `removeAll()` as the
-  one-statement undo.
+  by MusicBrainz track id first, then tiered-normalised artist+title (exact,
+  then typography folding for curly quotes and dashes, then edition-suffix
+  stripping such as "- 2015 Remaster" on either side; strictest tier wins),
+  and drops matched rows within 300 s of a local play of the same track (the
+  export echoes what Bòcan itself scrobbled); `counts()`; `removeAll()` as
+  the one-statement undo. Tier yields were measured against a real 63k-row
+  export before being built.
 - `LastFMExportParser` (Library): RFC 4180 tokenizer, header-driven on the
   official export shape (`uts,utc_time,artist,artist_mbid,album,album_mbid,
   track,track_mbid`). `uts` is trusted; `utc_time` ignored. Broken rows are
@@ -67,5 +70,5 @@ not hold, so imported history must survive unmatched and link up later.
 
 - No mutation of local play counters from imports, ever.
 - No scrobble submission changes; this phase only reads history.
-- No fuzzy matching beyond normalisation (no edit distance); Match Again
-  plus a growing library covers the long tail honestly.
+- No fuzzy matching beyond tiered normalisation (no edit distance); Match
+  Again plus a growing library covers the long tail honestly.
