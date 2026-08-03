@@ -77,6 +77,28 @@ struct LibrarySummaryTests {
         )
     }
 
+    @Test("The Listening Behaviour pane serves the 25-2 counter analytics")
+    func listeningAnalyticsWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryListeningBehaviourPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("fetchListeningBehaviour()"),
+            "the pane must load the listening report"
+        )
+        #expect(
+            source.contains("Play-count concentration (Gini)"),
+            "the Gini coefficient must be shown with its label"
+        )
+        for section in ["Skip Candidates (", "Dormant Favourites (", "Abandoned Albums ("] {
+            #expect(source.contains(section), "the \(section)...) offender group must exist")
+        }
+        for state in ["skipsExpanded = false", "dormantExpanded = false", "abandonedExpanded = false"] {
+            #expect(source.contains(state), "offender groups must be collapsed by default (\(state))")
+        }
+    }
+
     @Test("The Collection Shape pane pairs ownership with listening and keeps the honest gaps")
     func collectionShapeWired() throws {
         let source = try String(
