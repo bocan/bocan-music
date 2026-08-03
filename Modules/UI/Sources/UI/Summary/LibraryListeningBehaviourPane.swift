@@ -15,6 +15,7 @@ struct LibraryListeningBehaviourPane: View {
 
     @State private var counts: ListenImportRepository.Counts?
     @State private var report: LibraryListeningReport?
+    @State private var time: LibraryListeningTimeReport?
     @State private var showRemoveConfirm = false
     @State private var skipsExpanded = false
     @State private var dormantExpanded = false
@@ -26,6 +27,12 @@ struct LibraryListeningBehaviourPane: View {
             if let report, report.playedTrackCount > 0 {
                 self.utilisationSection(report)
             }
+            if let time, time.totalPlays > 0 {
+                self.whenYouListenSection(time)
+            }
+            if let time, time.discoveryByMonth.count > 1 {
+                self.discoverySection(time)
+            }
             if let report, !report.skipCandidates.isEmpty {
                 self.skipSection(report)
             }
@@ -34,6 +41,9 @@ struct LibraryListeningBehaviourPane: View {
             }
             if let report, !report.abandonedAlbums.isEmpty {
                 self.abandonedSection(report)
+            }
+            if let time, !time.seasonalArtists.isEmpty {
+                self.seasonalSection(time)
             }
         }
         .formStyle(.grouped)
@@ -236,7 +246,61 @@ struct LibraryListeningBehaviourPane: View {
         }
     }
 
+    // MARK: - Time sections (phase 25-3)
+
+    private func whenYouListenSection(_ time: LibraryListeningTimeReport) -> some View {
+        Section {
+            HourWeekdayHeatmap(cells: time.heatmap)
+                .padding(.vertical, 4)
+        } header: {
+            Text(localized: "When You Listen")
+        } footer: {
+            Text(
+                localized: """
+                Every play, local and imported, bucketed in your current time \
+                zone. Plays scrobbled from another time zone shift by the \
+                offset.
+                """
+            )
+            .font(Typography.caption)
+            .foregroundStyle(Color.textTertiary)
+        }
+    }
+
+    private func discoverySection(_ time: LibraryListeningTimeReport) -> some View {
+        Section {
+            DiscoveryLineChart(months: time.discoveryByMonth)
+                .padding(.vertical, 4)
+        } header: {
+            Text(localized: "Discovery Rate")
+        } footer: {
+            Text(localized: "Artists heard for the first time each month. Unmatched scrobbles count too.")
+                .font(Typography.caption)
+                .foregroundStyle(Color.textTertiary)
+        }
+    }
+
+    private func seasonalSection(_ time: LibraryListeningTimeReport) -> some View {
+        Section {
+            ForEach(time.seasonalArtists) { artist in
+                LabeledContent(artist.name, value: Self.seasonalValue(artist))
+            }
+        } header: {
+            Text(localized: "Seasonal Listening")
+        } footer: {
+            Text(localized: "Artists whose plays pile into one month of the year, seen across at least two years.")
+                .font(Typography.caption)
+                .foregroundStyle(Color.textTertiary)
+        }
+    }
+
     // MARK: - Formatting
+
+    private static func seasonalValue(_ artist: LibraryListeningTimeReport.SeasonalArtist) -> String {
+        let share = artist.share.formatted(.percent.precision(.fractionLength(0)))
+        let month = Calendar.current.monthSymbols[artist.peakMonth - 1]
+        return L10n.string("\(share) in \(month) · \(artist.totalPlays.formatted()) plays")
+    }
 
     private static func utilisationValue(_ report: LibraryListeningReport) -> String {
         let share = report.trackCount > 0
@@ -274,6 +338,8 @@ struct LibraryListeningBehaviourPane: View {
             self.counts = try await ListenImportRepository(database: self.library.database).counts()
             self.report = try await LibraryStatsRepository(database: self.library.database)
                 .fetchListeningBehaviour()
+            self.time = try await LibraryStatsRepository(database: self.library.database)
+                .fetchListeningTime()
         } catch {
             AppLogger.make(.ui).error(
                 "librarySummary.listening.load.failed",
