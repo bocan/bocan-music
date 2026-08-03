@@ -94,6 +94,38 @@ struct ListenImportRepositoryTests {
         #expect(counts.unmatched == 1)
     }
 
+    @Test("Rematch survives typography and edition suffixes (tiers two and three)")
+    func rematchTiers() async throws {
+        let db = try await makeDB()
+        let repo = ListenImportRepository(database: db)
+        // The shapes measured on a real export: curly apostrophes in the
+        // library rip, remaster/edit suffixes on the scrobble, and a suffix
+        // on the library side instead.
+        let curly = try await self.seedTrack(db, artistName: "Adele", title: "Don\u{2019}t You Remember")
+        let plain = try await self.seedTrack(db, artistName: "Alanis Morissette", title: "You Learn")
+        let live = try await self.seedTrack(db, artistName: "Wade Bowen", title: "Saturday Night")
+        let libSuffix = try await self.seedTrack(db, artistName: "Avicii", title: "Levels - Radio Edit")
+
+        _ = try await repo.insert([
+            self.listen(at: 1000, artist: "Adele", title: "Don't You Remember"),
+            self.listen(at: 2000, artist: "Alanis Morissette", title: "You Learn - 2015 Remaster"),
+            self.listen(at: 3000, artist: "Wade Bowen", title: "Saturday Night (Live)"),
+            self.listen(at: 4000, artist: "Avicii", title: "Levels"),
+            self.listen(at: 5000, artist: "Adele", title: "Someone Like You"),
+        ])
+
+        let summary = try await repo.rematch()
+        #expect(summary.newlyMatched == 4)
+        let rows = try await db.read { db in
+            try ImportedListen.order(sql: "played_at").fetchAll(db)
+        }
+        #expect(rows[0].trackID == curly, "straight versus curly apostrophes must not defeat the match")
+        #expect(rows[1].trackID == plain, "a remaster suffix on the scrobble must be stripped")
+        #expect(rows[2].trackID == live, "a live qualifier still credits the song for history purposes")
+        #expect(rows[3].trackID == libSuffix, "a suffix on the library side must be stripped too")
+        #expect(rows[4].trackID == nil, "a genuinely absent song must stay unmatched")
+    }
+
     @Test("A matched listen inside the overlap window of a local play is dropped")
     func overlapWithLocalPlayIsRemoved() async throws {
         let db = try await makeDB()
