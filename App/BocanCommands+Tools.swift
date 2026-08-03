@@ -35,6 +35,11 @@ extension BocanCommands {
             }
             .help("Scan lossless files for signs they were transcoded from a lossy source")
 
+            Button("Import Last.fm History\u{2026}") {
+                Task { await self.vm.importListeningHistoryByPicker() }
+            }
+            .help("Backfill listening history from a Last.fm export file")
+
             Divider()
 
             Button("Library Summary\u{2026}") {

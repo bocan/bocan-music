@@ -26,6 +26,9 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
     /// Wraps an underlying system error.
     case underlying(Error)
 
+    /// A listening-history export could not be read or recognised (phase 25-1).
+    case listenExportUnreadable(reason: String)
+
     public var description: String {
         switch self {
         case let .bookmarkStale(url):
@@ -44,6 +47,8 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
             "Library: invalid file URL '\(raw)'"
         case let .underlying(err):
             "Library: \(err)"
+        case let .listenExportUnreadable(reason):
+            "Library: listening-history export unreadable: \(reason)"
         }
     }
 }

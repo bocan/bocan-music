@@ -69,7 +69,9 @@ public extension LibraryViewModel {
     /// `runModal()` this does **not** spin a nested modal run loop, so the
     /// audio engine's render callback keeps its scheduling priority while the
     /// panel is on screen.
-    private static func runOpenPanelAsync(_ panel: NSOpenPanel) async -> NSApplication.ModalResponse {
+    /// Internal (not private): the listening-history import picker in
+    /// `LibraryViewModel+ListenImport.swift` shares this helper.
+    static func runOpenPanelAsync(_ panel: NSOpenPanel) async -> NSApplication.ModalResponse {
         await withCheckedContinuation { (continuation: CheckedContinuation<NSApplication.ModalResponse, Never>) in
             panel.begin { response in
                 continuation.resume(returning: response)
