@@ -63,8 +63,12 @@ public actor AVFoundationDecoder: Decoder {
 
     /// Read frames into `buffer`. Returns 0 at end-of-file.
     public func read(into buffer: AVAudioPCMBuffer) async throws -> AVAudioFrameCount {
-        // Guard: nothing left to read.
-        guard self.file.framePosition < self.file.length else { return 0 }
+        // Guard: nothing left to read. FLACs without a STREAMINFO sample
+        // count report length 0 even though the audio decodes fine (the same
+        // quirk ReplayGainAnalyzer works around), so zero must not read as
+        // instant EOF; fall through and let read(into:) find the real end,
+        // which surfaces as the zero-frame/noErr case handled below.
+        guard self.file.length == 0 || self.file.framePosition < self.file.length else { return 0 }
         let before = self.file.framePosition
         do {
             try self.file.read(into: buffer)

@@ -46,18 +46,22 @@ struct HourWeekdayHeatmap: View {
         HStack(spacing: 2) {
             ForEach(0 ..< 24, id: \.self) { hour in
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.accentColor.opacity(Self.intensity(row[hour], peak: peak)))
+                    .fill(Self.cellColor(row[hour], peak: peak))
                     .frame(maxWidth: .infinity)
                     .frame(height: 12)
             }
         }
     }
 
-    /// Zero plays stay a faint outline of the grid; anything above scales
-    /// from clearly-visible to solid at the busiest cell.
-    private static func intensity(_ count: Int, peak: Int) -> Double {
-        guard count > 0 else { return 0.07 }
-        return 0.2 + 0.8 * Double(count) / Double(peak)
+    /// Zero plays stay a faint neutral so the grid reads; anything above
+    /// rides the visualizers' thermal ramp (navy through magenta and orange
+    /// to white-hot), so "thermal" means one thing app-wide. Square-root
+    /// scaling spreads the mid-tones: play counts skew hard toward a few
+    /// busy evening cells, and a linear ramp leaves everything else cold.
+    private static func cellColor(_ count: Int, peak: Int) -> Color {
+        guard count > 0 else { return Color.primary.opacity(0.05) }
+        let intensity = (Double(count) / Double(peak)).squareRoot()
+        return PaletteResolver.thermalColor(magnitude: Float(intensity))
     }
 
     private var hourAxis: some View {
