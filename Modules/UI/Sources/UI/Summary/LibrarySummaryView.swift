@@ -153,8 +153,8 @@ public struct LibrarySummaryView: View {
         case .listeningBehaviour:
             LibraryListeningBehaviourPane(library: self.library)
 
-        default:
-            self.comingSoonPane(tab)
+        case .podcasts:
+            LibraryPodcastsPane(repository: self.statsRepository, library: self.library)
         }
     }
 
@@ -186,14 +186,6 @@ public struct LibrarySummaryView: View {
             ProgressView()
                 .controlSize(.small)
         }
-    }
-
-    private func comingSoonPane(_ tab: LibrarySummaryTab) -> some View {
-        ContentUnavailableView(
-            L10n.string("Coming Soon"),
-            systemImage: tab.systemImage,
-            description: Text(localized: "This section is on the roadmap.")
-        )
     }
 
     // MARK: - Data
