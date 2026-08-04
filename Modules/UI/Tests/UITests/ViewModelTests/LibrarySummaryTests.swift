@@ -51,6 +51,37 @@ struct LibrarySummaryTests {
             source.contains("LibraryListeningBehaviourPane(library: self.library)"),
             "the listening behaviour tab must render LibraryListeningBehaviourPane"
         )
+        #expect(
+            source.contains("LibraryPodcastsPane(repository: self.statsRepository, library: self.library)"),
+            "the podcasts tab must render LibraryPodcastsPane"
+        )
+        #expect(
+            !source.contains("comingSoonPane"),
+            "all six tabs are live; the Coming Soon pane must be gone"
+        )
+    }
+
+    @Test("The Podcasts pane keeps its projections and navigation honest (phase 26-1)")
+    func podcastsPaneWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryPodcastsPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("At your current rate: never"),
+            "a zero listening rate must project never, not divide by zero"
+        )
+        #expect(
+            source.contains("selectDestination(.podcastShow(self.podcastID))"),
+            "show rows must navigate the main window to the show"
+        )
+        #expect(
+            source.contains("treat it as an estimate"),
+            "the listening-rate footnote must own the approximation"
+        )
+        for section in ["Dead Feeds (", "Downloaded, Never Played", "Reapable Storage"] {
+            #expect(source.contains(section), "the \(section) section must exist")
+        }
     }
 
     @Test("The Listening Behaviour pane manages imported history safely (phase 25-1)")
