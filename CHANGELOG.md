@@ -5,6 +5,39 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0](https://github.com/bocan/bocan-music/compare/v2.4.0...v2.5.0) (2026-08-04)
+
+
+### ### Added
+
+* **audio:** ProvenanceAnalyzer spectral-shelf transcode detection (phase 24-1) ([a78fe26](https://github.com/bocan/bocan-music/commit/a78fe2612e5c5120fbc9e66926a5ceb0144f1c0f))
+* **library:** Last.fm listening-history import (phase 25-1) ([40c5d1d](https://github.com/bocan/bocan-music/commit/40c5d1d2fdf2abd005073fbbfc7ff77ee12e0806))
+* **persistence:** provenance verdict storage and scanner invalidation (phase 24-2) ([70fbc7f](https://github.com/bocan/bocan-music/commit/70fbc7f7d4e0a2fad8ce3f36956956d3f54e9f2d))
+* **persistence:** tiered listen matching from real-export evidence (25-1) ([1c7764f](https://github.com/bocan/bocan-music/commit/1c7764fda8b4ea6820dea63fe60c485fd6203369))
+* **ui:** Analyse Provenance batch job in the Tools menu (phase 24-3) ([810ffdd](https://github.com/bocan/bocan-music/commit/810ffdd89cb861b586e6ac247ace793b0eb67bde))
+* **ui:** Audio Quality tab with distributions and offenders ([#373](https://github.com/bocan/bocan-music/issues/373)) ([a0669fe](https://github.com/bocan/bocan-music/commit/a0669fe4570dbd1dd05d52dcc8f4e53b64f98d87))
+* **ui:** collapsible, navigable hygiene sections; comma-free years ([#373](https://github.com/bocan/bocan-music/issues/373)) ([7e25cbd](https://github.com/bocan/bocan-music/commit/7e25cbd45fdd5fb544a1e42bb9f46112ae0c17c0))
+* **ui:** Collection Shape tab with owned-vs-played decades ([#373](https://github.com/bocan/bocan-music/issues/373)) ([dbc02c7](https://github.com/bocan/bocan-music/commit/dbc02c77ca5f869c49bb26e3cbad831e6dc6cf94))
+* **ui:** Library Hygiene tab with actionable library problems ([#373](https://github.com/bocan/bocan-music/issues/373)) ([604dbfc](https://github.com/bocan/bocan-music/commit/604dbfc46898c7d33267ae0ccf50338b062b8878))
+* **ui:** Library Summary window with whole-library stats ([#373](https://github.com/bocan/bocan-music/issues/373)) ([3a78326](https://github.com/bocan/bocan-music/commit/3a78326f7cd7e4305813294167bc681ea99ebeae))
+* **ui:** Listening Behaviour counter analytics (phase 25-2) ([3038412](https://github.com/bocan/bocan-music/commit/3038412ffbfb3df9c78394f20be3a25e4e89edb9))
+* **ui:** listening time analytics: heatmap, discovery, seasons (25-3) ([a4cae18](https://github.com/bocan/bocan-music/commit/a4cae189345537c224fcb5417c1ae43152651e2a))
+* **ui:** make Analyse Provenance visible and triggerable in place ([6247395](https://github.com/bocan/bocan-music/commit/62473958c4fb0d419328df8eaaed7eff55bf62bc))
+* **ui:** podcast behaviour: completion, creep, time-to-listen (26-2) ([84156f0](https://github.com/bocan/bocan-music/commit/84156f07ee3b1a2574cad63d68c4ff935b783f2d))
+* **ui:** Podcasts tab: backlog debt, dead feeds, hoards, reapable (26-1) ([ae5884c](https://github.com/bocan/bocan-music/commit/ae5884c221340aa156d89354bd629689406e059b))
+* **ui:** Reap Now and dead-feed unsubscribe (26-3): phase 26 complete ([2a2540b](https://github.com/bocan/bocan-music/commit/2a2540b4efa260dec58491fef955682bf0ecbd82))
+* **ui:** Suspected Transcodes report in the Audio Quality tab (phase 24-4) ([e1d3b40](https://github.com/bocan/bocan-music/commit/e1d3b40f21b60e481236f96ecb7a8be3d1cf3e52))
+
+
+### ### Fixed
+
+* **app:** merge Library Summary into the existing Tools menu ([26c15ac](https://github.com/bocan/bocan-music/commit/26c15acaf4b4dda3e628943422fb9fec1a61ebce))
+* **app:** stop the Tools menu appearing twice ([95a4655](https://github.com/bocan/bocan-music/commit/95a465595a9ce71dad60ea0dcfc785b34727ecd1))
+* **audio:** decode length-0 FLACs; thermal heatmap; honest failures ([843cdce](https://github.com/bocan/bocan-music/commit/843cdce2e776994fbc8affccc7fe7a019eddacfb))
+* **ui:** correct the episodes-and-bytes catalog key; retire stale copy ([2efd49c](https://github.com/bocan/bocan-music/commit/2efd49c7b78cc0e954e80411913def94907ce05d))
+* **ui:** restore saved column order in song tables ([7a01984](https://github.com/bocan/bocan-music/commit/7a019846f89442241c55c421196b5b125ed8a491))
+* **ui:** summary rows land on the right album and select the song ([11e415f](https://github.com/bocan/bocan-music/commit/11e415f120b83069f821ae51cf3d12a49b2290b3))
+
 ## [2.4.0](https://github.com/bocan/bocan-music/compare/v2.3.1...v2.4.0) (2026-07-30)
 
 
