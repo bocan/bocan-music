@@ -540,5 +540,19 @@
         type="application/octet-stream" />
     </item>
 
+    <item>
+      <title>Bòcan 2.5.0</title>
+      <pubDate>Tue, 04 Aug 2026 13:10:28 +0000</pubDate>
+      <sparkle:version>1785848525</sparkle:version>
+      <sparkle:shortVersionString>2.5.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.5.0</sparkle:releaseNotesLink>
+      <enclosure
+        url="https://github.com/bocan/bocan-music/releases/download/v2.5.0/Bocan.dmg"
+        sparkle:edSignature="S/sGZ7Qw12ynpM5ABSdy8jTqQW8jnS9Tkq/F20ChbzF5gLc6UP30vXuBG+wxf3iBT5kO5hUnPqW8zoWakSBhDQ=="
+        length="47589730"
+        type="application/octet-stream" />
+    </item>
+
   </channel>
 </rss>
