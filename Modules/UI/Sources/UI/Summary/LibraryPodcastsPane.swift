@@ -16,9 +16,13 @@ struct LibraryPodcastsPane: View {
     let library: LibraryViewModel
 
     @State private var report: LibraryPodcastReport?
+    @State private var behaviour: LibraryPodcastBehaviourReport?
     @State private var loadFailed = false
     @State private var deadExpanded = false
     @State private var hoardExpanded = false
+    @State private var completionExpanded = false
+    @State private var creepExpanded = false
+    @State private var listenExpanded = false
 
     var body: some View {
         Group {
@@ -54,6 +58,15 @@ struct LibraryPodcastsPane: View {
     private func reportForm(_ report: LibraryPodcastReport) -> some View {
         Form {
             self.backlogSection(report)
+            if let behaviour, !behaviour.completions.isEmpty {
+                self.completionSection(behaviour)
+            }
+            if let behaviour, !behaviour.creeps.isEmpty {
+                self.creepSection(behaviour)
+            }
+            if let behaviour, !behaviour.timeToListen.isEmpty {
+                self.timeToListenSection(behaviour)
+            }
             if !report.deadFeeds.isEmpty {
                 self.deadFeedsSection(report)
             }
@@ -80,6 +93,80 @@ struct LibraryPodcastsPane: View {
             Text(Self.rateFootnote)
                 .font(Typography.caption)
                 .foregroundStyle(Color.textTertiary)
+        }
+    }
+
+    // MARK: - Behaviour sections (phase 26-2)
+
+    private func completionSection(_ behaviour: LibraryPodcastBehaviourReport) -> some View {
+        Section {
+            DisclosureGroup(
+                L10n.string("Completion by Show (\(behaviour.completions.count))"),
+                isExpanded: self.$completionExpanded
+            ) {
+                ForEach(behaviour.completions) { show in
+                    PodcastShowRow(
+                        title: show.title,
+                        detail: Self.completionDetail(show),
+                        podcastID: show.id,
+                        library: self.library
+                    )
+                }
+            }
+        } footer: {
+            Text(localized: "Played over started. If the abandonments cluster at the same minute, that is where the ad break is.")
+                .font(Typography.caption)
+                .foregroundStyle(Color.textTertiary)
+        }
+    }
+
+    private func creepSection(_ behaviour: LibraryPodcastBehaviourReport) -> some View {
+        Section {
+            DisclosureGroup(
+                L10n.string("Length Creep (\(behaviour.creeps.count))"),
+                isExpanded: self.$creepExpanded
+            ) {
+                ForEach(behaviour.creeps) { show in
+                    PodcastShowRow(
+                        title: show.title,
+                        detail: Self.creepDetail(show),
+                        podcastID: show.id,
+                        library: self.library
+                    )
+                }
+            }
+        } footer: {
+            Text(localized: "Mean episode length, first qualifying year against the latest. Nearly every successful podcast bloats.")
+                .font(Typography.caption)
+                .foregroundStyle(Color.textTertiary)
+        }
+    }
+
+    private func timeToListenSection(_ behaviour: LibraryPodcastBehaviourReport) -> some View {
+        Section {
+            DisclosureGroup(
+                L10n.string("Time to Listen (\(behaviour.timeToListen.count))"),
+                isExpanded: self.$listenExpanded
+            ) {
+                ForEach(behaviour.timeToListen) { show in
+                    PodcastShowRow(
+                        title: show.title,
+                        detail: Self.listenDetail(show),
+                        podcastID: show.id,
+                        library: self.library
+                    )
+                }
+            }
+        } footer: {
+            Text(
+                localized: """
+                Median gap from publish to first listen: news at the top, \
+                comfort at the bottom. First listens are approximated from \
+                the last-played timestamp.
+                """
+            )
+            .font(Typography.caption)
+            .foregroundStyle(Color.textTertiary)
         }
     }
 
@@ -188,6 +275,51 @@ struct LibraryPodcastsPane: View {
         L10n.string("\(count.formatted()) episodes · \(bytes.formatted(.byteCount(style: .file)))")
     }
 
+    private static func completionDetail(_ show: LibraryPodcastBehaviourReport.ShowCompletion) -> String {
+        let rate = show.completionRate.formatted(.percent.precision(.fractionLength(0)))
+        guard let abandon = show.meanAbandonSeconds else {
+            return L10n.string("\(rate) finished")
+        }
+        return L10n.string("\(rate) finished · abandons around \(Self.clock(abandon))")
+    }
+
+    private static func creepDetail(_ show: LibraryPodcastBehaviourReport.ShowCreep) -> String {
+        let delta = show.creep.formatted(.percent.sign(strategy: .always()).precision(.fractionLength(0)))
+        let from = Self.minutes(show.firstYearMeanSeconds)
+        let to = Self.minutes(show.latestYearMeanSeconds)
+        return L10n.string("\(from) in \(String(show.firstYear)) → \(to) in \(String(show.latestYear)) (\(delta))")
+    }
+
+    private static func listenDetail(_ show: LibraryPodcastBehaviourReport.ShowTimeToListen) -> String {
+        L10n.string("Usually within \(self.gap(show.medianSeconds)) of release · \(show.sampleCount) listens")
+    }
+
+    /// 843 s -> "14:03"; over an hour gains the hour figure.
+    private static func clock(_ seconds: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = seconds >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.unitsStyle = .positional
+        formatter.zeroFormattingBehavior = .pad
+        return formatter.string(from: seconds) ?? String(Int(seconds))
+    }
+
+    /// 2520 s -> "42 min".
+    private static func minutes(_ seconds: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute]
+        formatter.unitsStyle = .short
+        return formatter.string(from: seconds) ?? String(Int(seconds / 60))
+    }
+
+    /// One leading unit: "9 hr" under two days, "12 days" beyond.
+    private static func gap(_ seconds: Double) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = seconds < 172_800 ? [.hour, .minute] : [.day]
+        formatter.unitsStyle = .short
+        formatter.maximumUnitCount = 1
+        return formatter.string(from: max(seconds, 60)) ?? String(Int(seconds / 3600))
+    }
+
     private static func monthYear(_ epoch: Double) -> String {
         Date(timeIntervalSince1970: epoch).formatted(.dateTime.month(.wide).year())
     }
@@ -197,6 +329,7 @@ struct LibraryPodcastsPane: View {
     private func load() async {
         do {
             self.report = try await self.repository.fetchPodcastReport()
+            self.behaviour = try await self.repository.fetchPodcastBehaviour()
         } catch {
             self.loadFailed = true
             AppLogger.make(.ui).error(

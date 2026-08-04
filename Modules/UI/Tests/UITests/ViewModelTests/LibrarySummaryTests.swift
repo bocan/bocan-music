@@ -84,6 +84,25 @@ struct LibrarySummaryTests {
         }
     }
 
+    @Test("The Podcasts pane serves the 26-2 behaviour analytics")
+    func podcastBehaviourWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryPodcastsPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("fetchPodcastBehaviour()"),
+            "the pane must load the behaviour report"
+        )
+        for section in ["Completion by Show (", "Length Creep (", "Time to Listen ("] {
+            #expect(source.contains(section), "the \(section)...) section must exist")
+        }
+        #expect(
+            source.contains("approximated from"),
+            "the time-to-listen footer must own the first-listen proxy"
+        )
+    }
+
     @Test("The Listening Behaviour pane manages imported history safely (phase 25-1)")
     func listeningImportWired() throws {
         let source = try String(
