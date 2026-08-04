@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.5.0](https://github.com/bocan/bocan-music/compare/v2.4.0...v2.5.0) (2026-08-04)
 
+New: Library Summary
+
+Open Tools → Library Summary (⌘⇧Y) for six tabs that tell you the truth about your music collection. Everything is computed on your Mac, from data Bòcan already keeps. Nothing is sent anywhere.
+
+- Basic Info: how many songs, albums, and artists you have, and how many days it would take to play everything once.
+- Library Hygiene finds the problems worth fixing: missing track numbers, albums split apart by messy tags, impossible years, missing artwork, and files that have vanished from disk. Click any problem and Bòcan takes you straight to the song.
+- Audio Quality shows what your library is made of: formats, sample rates, and your lossless-to-lossy ratio in both songs and gigabytes. It can also analyse your lossless files for fakes: FLACs that were secretly made from MP3s leave a telltale fingerprint in the audio, and Bòcan can spot it. Files are only ever "suspected", and nothing is changed or deleted.
+- Collection Shape charts when your music was made against when you actually listen to it, your one-song artists versus your twenty-album favourites, and how album lengths ballooned in the CD era.
+- Listening Behaviour can import your Last.fm history, bringing years of listening home and matching it to your library. Then it shows how much of your collection you have actually ever played, which songs you skip more than you finish, the old favourites you have not touched in two years, and a heat map of exactly when in the week you listen.
+- Podcasts adds up your unheard backlog in hours and estimates how long it would really take you to clear it, finds subscribed shows that stopped publishing, shows what you download but never play, and includes a Reap button to delete episodes you finished months ago that are still taking up disk space. It always asks first.
+
+Also in this release: fixed a bug where certain FLAC files (ones missing a length header) would fail analysis and could end playback instantly.
+
 
 ### ### Added
 
