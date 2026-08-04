@@ -103,6 +103,28 @@ struct LibrarySummaryTests {
         )
     }
 
+    @Test("The Podcasts pane's actions are confirmed and reuse the real machinery (26-3)")
+    func podcastActionsWired() throws {
+        let source = try String(
+            contentsOf: Self.uiSource("Summary/LibraryPodcastsPane.swift"),
+            encoding: .utf8
+        )
+        #expect(
+            source.contains("fetchReapableEpisodes()") && source.contains("removeDownload("),
+            "Reap Now must delete through the same path as per-episode Remove Download"
+        )
+        let confirmations = source.components(separatedBy: ".confirmationDialog(").count - 1
+        #expect(confirmations >= 2, "both Reap Now and Unsubscribe are destructive and must be confirmed")
+        #expect(
+            source.contains("podcasts.unsubscribe(feed.id)"),
+            "dead-feed unsubscribe must use the existing path"
+        )
+        #expect(
+            source.contains("Reaping never runs on its own"),
+            "the footer must promise reaping stays manual"
+        )
+    }
+
     @Test("The Listening Behaviour pane manages imported history safely (phase 25-1)")
     func listeningImportWired() throws {
         let source = try String(

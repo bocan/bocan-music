@@ -23,6 +23,10 @@ struct LibraryPodcastsPane: View {
     @State private var completionExpanded = false
     @State private var creepExpanded = false
     @State private var listenExpanded = false
+    @State private var showReapConfirm = false
+    @State private var isReaping = false
+    @State private var showUnsubscribeConfirm = false
+    @State private var feedToUnsubscribe: LibraryPodcastReport.DeadFeed?
 
     var body: some View {
         Group {
@@ -40,6 +44,30 @@ struct LibraryPodcastsPane: View {
             }
         }
         .task { await self.load() }
+        .confirmationDialog(
+            L10n.string("Delete the reapable downloads?"),
+            isPresented: self.$showReapConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string("Reap"), role: .destructive) {
+                Task { await self.reapNow() }
+            }
+            Button(L10n.string("Cancel"), role: .cancel) {}
+        } message: {
+            Text(localized: "The audio files are deleted from disk. Episodes and playback history are kept.")
+        }
+        .confirmationDialog(
+            L10n.string("Unsubscribe from \(self.feedToUnsubscribe?.title ?? "")?"),
+            isPresented: self.$showUnsubscribeConfirm,
+            titleVisibility: .visible
+        ) {
+            Button(L10n.string("Unsubscribe"), role: .destructive) {
+                Task { await self.unsubscribeDeadFeed() }
+            }
+            Button(L10n.string("Cancel"), role: .cancel) {}
+        } message: {
+            Text(localized: "Episodes and playback history stay; the feed stops refreshing and leaves the sidebar.")
+        }
     }
 
     @ViewBuilder
@@ -177,12 +205,20 @@ struct LibraryPodcastsPane: View {
                 isExpanded: self.$deadExpanded
             ) {
                 ForEach(report.deadFeeds) { feed in
-                    PodcastShowRow(
-                        title: feed.title,
-                        detail: L10n.string("Last episode \(Self.monthYear(feed.lastPublishedAt))"),
-                        podcastID: feed.id,
-                        library: self.library
-                    )
+                    HStack(spacing: 8) {
+                        PodcastShowRow(
+                            title: feed.title,
+                            detail: L10n.string("Last episode \(Self.monthYear(feed.lastPublishedAt))"),
+                            podcastID: feed.id,
+                            library: self.library
+                        )
+                        Button(L10n.string("Unsubscribe…")) {
+                            self.feedToUnsubscribe = feed
+                            self.showUnsubscribeConfirm = true
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
                 }
                 SummaryMoreRow(total: report.deadFeedCount, shown: report.deadFeeds.count)
             }
@@ -228,13 +264,70 @@ struct LibraryPodcastsPane: View {
                 L10n.string("Listened, 90+ days old, still on disk"),
                 value: Self.countAndBytes(report.reapableEpisodeCount, report.reapableBytes)
             )
+            HStack {
+                if self.isReaping {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text(localized: "Reaping…")
+                }
+                Spacer()
+                Button(L10n.string("Reap Now…"), role: .destructive) {
+                    self.showReapConfirm = true
+                }
+                .buttonStyle(.bordered)
+                .disabled(self.isReaping)
+            }
         } header: {
             Text(localized: "Reapable Storage")
         } footer: {
-            Text(localized: "Already heard, three months cold, still holding disk space.")
+            Text(localized: "Already heard, three months cold, still holding disk space. Reaping never runs on its own.")
                 .font(Typography.caption)
                 .foregroundStyle(Color.textTertiary)
         }
+    }
+
+    // MARK: - Actions (phase 26-3)
+
+    /// Deletes every reapable download through the same machinery as the
+    /// per-episode Remove Download action, then reloads the accounting.
+    private func reapNow() async {
+        guard let report, !self.isReaping else { return }
+        self.isReaping = true
+        defer { self.isReaping = false }
+        do {
+            let episodes = try await self.repository.fetchReapableEpisodes()
+            for episode in episodes {
+                await self.library.podcasts.actions?.removeDownload(
+                    podcastID: episode.podcastID,
+                    guid: episode.guid
+                )
+            }
+            self.library.showToast(ToastMessage(
+                text: L10n.string(
+                    "Reaped \(episodes.count) episodes, reclaiming \(report.reapableBytes.formatted(.byteCount(style: .file)))"
+                ),
+                kind: .success
+            ))
+        } catch {
+            AppLogger.make(.ui).error(
+                "librarySummary.podcasts.reap.failed",
+                ["error": String(reflecting: error)]
+            )
+        }
+        await self.load()
+    }
+
+    /// Unsubscribes the confirmed dead feed via the existing path, then
+    /// reloads so the row leaves the list.
+    private func unsubscribeDeadFeed() async {
+        guard let feed = self.feedToUnsubscribe else { return }
+        self.feedToUnsubscribe = nil
+        await self.library.podcasts.unsubscribe(feed.id)
+        self.library.showToast(ToastMessage(
+            text: L10n.string("Unsubscribed from \(feed.title)"),
+            kind: .info
+        ))
+        await self.load()
     }
 
     // MARK: - Formatting
