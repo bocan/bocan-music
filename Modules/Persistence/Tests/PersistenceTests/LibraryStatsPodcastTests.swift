@@ -324,6 +324,35 @@ struct LibraryStatsPodcastTests {
         #expect(median.medianSeconds == 7200, "the negative gap clamps to zero and the median holds")
     }
 
+    @Test("Reapable identities match the reapable count's filter exactly")
+    func reapableIdentities() async throws {
+        let db = try await makeDB()
+        let now = Date().timeIntervalSince1970
+        let show = try await seedShow(db, title: "Reap IDs")
+        try await self.seedEpisode(db, showID: show, guid: "aged", spec: .init(
+            playState: "played",
+            completedAt: now - 100 * 86400,
+            downloadState: "downloaded",
+            downloadPath: "/tmp/aged.mp3",
+            downloadBytes: 1000
+        ))
+        try await self.seedEpisode(db, showID: show, guid: "fresh", spec: .init(
+            playState: "played",
+            completedAt: now - 5 * 86400,
+            downloadState: "downloaded",
+            downloadPath: "/tmp/fresh.mp3",
+            downloadBytes: 1000
+        ))
+
+        let repo = LibraryStatsRepository(database: db)
+        let identities = try await repo.fetchReapableEpisodes()
+        #expect(identities.count == 1)
+        #expect(identities.first?.podcastID == show)
+        #expect(identities.first?.guid == "aged")
+        let report = try await repo.fetchPodcastReport()
+        #expect(identities.count == report.reapableEpisodeCount, "the action must cover exactly what the report promises")
+    }
+
     @Test("An empty library reports zeroes")
     func emptyReport() async throws {
         let db = try await makeDB()
