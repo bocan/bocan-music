@@ -69,7 +69,8 @@ title: null
     {% for f in features %}
     <article class="feature">
       <h3>{{ f.title }}</h3>
-      <p>{{ f.body }}</p>
+      {# body is trusted repo-authored copy and may carry links/entities #}
+      <p>{{ f.body | safe }}</p>
     </article>
     {% endfor %}
   </div>
