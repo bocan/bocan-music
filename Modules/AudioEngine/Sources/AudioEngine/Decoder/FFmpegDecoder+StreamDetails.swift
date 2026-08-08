@@ -32,11 +32,13 @@ extension FFmpegDecoder {
         }
 
         var icy: [String: String] = [:]
+        var supportsTitles = false
         if isHTTP, let fmtCtx = formatCtx {
             icy = self.readIcyHeaders(fmtCtx: fmtCtx)
             if bitrateKbps == nil, let br = icy["icy-br"].flatMap({ Int($0) }), br > 0 {
                 bitrateKbps = br
             }
+            supportsTitles = icy["icy-metaint"] != nil || self.hasInterleavedMetadata(fmtCtx: fmtCtx)
         }
 
         return StreamDetails(
@@ -50,8 +52,29 @@ extension FFmpegDecoder {
             icyGenre: icy["icy-genre"],
             icyDescription: icy["icy-description"],
             icyURL: icy["icy-url"],
-            supportsIcyMetadata: icy["icy-metaint"] != nil
+            supportsIcyMetadata: supportsTitles
         )
+    }
+
+    /// Whether the connection demonstrably carries interleaved ICY metadata.
+    ///
+    /// FFmpeg's http protocol consumes the `icy-metaint` response header
+    /// itself (it drives the de-interleaving) and never appends it to
+    /// `icy_metadata_headers`, so checking the header block alone is blind
+    /// even on stations that send titles. Look for evidence instead: a
+    /// metadata packet already captured, or a `StreamTitle` that landed in
+    /// the context metadata while `avformat_find_stream_info` was reading
+    /// (it typically consumes far more bytes than one metaint interval).
+    private static func hasInterleavedMetadata(
+        fmtCtx: UnsafeMutablePointer<AVFormatContext>
+    ) -> Bool {
+        if av_dict_get(fmtCtx.pointee.metadata, "StreamTitle", nil, 0) != nil { return true }
+        let searchChildren: Int32 = 1 << 0 // AV_OPT_SEARCH_CHILDREN
+        var raw: UnsafeMutablePointer<UInt8>?
+        let ret = av_opt_get(UnsafeMutableRawPointer(fmtCtx), "icy_metadata_packet", searchChildren, &raw)
+        guard ret >= 0, let raw else { return false }
+        defer { av_free(raw) }
+        return raw.pointee != 0
     }
 
     /// Reads the `icy_metadata_headers` option FFmpeg's http protocol fills in
@@ -67,6 +90,17 @@ extension FFmpegDecoder {
         guard ret >= 0, let raw else { return [:] }
         defer { av_free(raw) }
         return StreamDetails.parseIcyHeaders(String(cString: raw))
+    }
+
+    // MARK: - Live details
+
+    /// The open-time snapshot upgraded with runtime evidence: once a title
+    /// has been observed, `supportsIcyMetadata` reports true regardless of
+    /// what open-time probing could see.
+    var liveDetails: StreamDetails {
+        self.lastEmittedTitle != nil
+            ? self.streamDetails.withObservedTitles()
+            : self.streamDetails
     }
 
     // MARK: - Read-loop titles

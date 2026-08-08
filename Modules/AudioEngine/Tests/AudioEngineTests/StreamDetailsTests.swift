@@ -73,6 +73,26 @@ struct StreamDetailsTests {
         #expect(lc.codecDisplay == "aac (LC)")
         #expect(plain.codecDisplay == "mp3")
     }
+
+    @Test("an observed title upgrades supportsIcyMetadata, evidence beats headers")
+    func observedTitlesUpgrade() {
+        // FFmpeg eats the icy-metaint response header (it drives the
+        // de-interleaving), so open-time detection can under-report; a
+        // received title is the ground truth and must win.
+        let undetected = StreamDetails(
+            container: "mp3",
+            codec: "mp3",
+            codecProfile: nil,
+            sampleRateHz: 44100,
+            channelCount: 2,
+            claimedBitrateKbps: 256,
+            supportsIcyMetadata: false
+        )
+        let upgraded = undetected.withObservedTitles()
+        #expect(undetected.supportsIcyMetadata == false)
+        #expect(upgraded.supportsIcyMetadata == true)
+        #expect(upgraded.codec == undetected.codec, "everything else stays untouched")
+    }
 }
 
 // MARK: - FFmpegDecoder detail capture

@@ -29,9 +29,10 @@ public struct StreamDetails: Sendable, Equatable {
     public let icyDescription: String?
     /// `icy-url`: the station homepage.
     public let icyURL: String?
-    /// Whether the server interleaves ICY metadata blocks (`icy-metaint`
-    /// present): true means the station sends now-playing titles.
-    public let supportsIcyMetadata: Bool
+    /// Whether the connection carries interleaved ICY metadata: true means
+    /// the station sends now-playing titles. Derived from evidence at open
+    /// time and upgraded via `withObservedTitles()` once a title arrives.
+    public var supportsIcyMetadata: Bool
 
     public init(
         container: String?,
@@ -64,6 +65,14 @@ public struct StreamDetails: Sendable, Equatable {
         guard let codec else { return nil }
         guard let codecProfile, !codecProfile.isEmpty else { return codec }
         return "\(codec) (\(codecProfile))"
+    }
+
+    /// A copy that reports now-playing titles as supported. Used once a title
+    /// has actually been observed, which outranks any open-time heuristic.
+    public func withObservedTitles() -> Self {
+        var copy = self
+        copy.supportsIcyMetadata = true
+        return copy
     }
 }
 
