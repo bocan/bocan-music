@@ -108,9 +108,17 @@ public final class NowPlayingViewModel {
     private nonisolated(unsafe) var scrobbleStatsTask: Task<Void, Never>?
     private nonisolated(unsafe) var currentTrackTask: Task<Void, Never>?
     private nonisolated(unsafe) var queueChangesTask: Task<Void, Never>?
+    private nonisolated(unsafe) var streamTitleTask: Task<Void, Never>?
     /// The full `Track` record for the currently-playing item, or `nil` when idle.
     /// Populated by `setCurrentTrack(_:)` and used by `TrackInfoPanel`.
     public private(set) var currentTrack: Track?
+
+    /// Stream URL of the playing internet radio station, nil for every other
+    /// source (phase 27-5). Drives the strip's info button in radio mode.
+    public private(set) var nowPlayingRadioStreamURL: String?
+    /// The station's display name, kept aside so live ICY titles can take
+    /// over `title` while the station moves to the artist line.
+    public private(set) var nowPlayingRadioStationName: String?
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -153,6 +161,7 @@ public final class NowPlayingViewModel {
         self.scrobbleStatsTask?.cancel()
         self.currentTrackTask?.cancel()
         self.queueChangesTask?.cancel()
+        self.streamTitleTask?.cancel()
     }
 
     private func startObservingScrobbleStats(_ repo: ScrobbleQueueRepository) {
@@ -200,6 +209,8 @@ public final class NowPlayingViewModel {
         // A local track is not a Subsonic stream; drop any stale stream identity.
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
+        self.nowPlayingRadioStreamURL = nil
+        self.nowPlayingRadioStationName = nil
         self.nowPlayingIsLoved = track.loved
         self.title = track.title ?? L10n.string("Unknown Track")
         self.artist = ""
@@ -411,6 +422,8 @@ public final class NowPlayingViewModel {
         self.artwork = nil
 
         if case let .podcast(feedURL, episodeGUID) = item.playableSource {
+            self.nowPlayingRadioStreamURL = nil
+            self.nowPlayingRadioStationName = nil
             await self.applyPodcastItem(feedURL: feedURL, episodeGUID: episodeGUID)
         } else if case let .subsonic(serverID, songID) = item.playableSource {
             self.isPodcast = false
@@ -419,7 +432,18 @@ public final class NowPlayingViewModel {
             self.podcastGUID = nil
             self.nowPlayingSubsonicServerID = serverID
             self.nowPlayingSubsonicSongID = songID
+            self.nowPlayingRadioStreamURL = nil
+            self.nowPlayingRadioStationName = nil
             await self.loadSubsonicArtwork(serverID: serverID, songID: songID)
+        } else if case let .internetRadio(streamURL) = item.playableSource {
+            self.isPodcast = false
+            self.podcastID = nil
+            self.podcastFeedURL = nil
+            self.podcastGUID = nil
+            self.nowPlayingSubsonicServerID = nil
+            self.nowPlayingSubsonicSongID = nil
+            self.nowPlayingRadioStreamURL = streamURL.absoluteString
+            self.nowPlayingRadioStationName = item.title
         } else {
             self.isPodcast = false
             self.podcastID = nil
@@ -427,6 +451,8 @@ public final class NowPlayingViewModel {
             self.podcastGUID = nil
             self.nowPlayingSubsonicServerID = nil
             self.nowPlayingSubsonicSongID = nil
+            self.nowPlayingRadioStreamURL = nil
+            self.nowPlayingRadioStationName = nil
         }
     }
 
@@ -437,6 +463,8 @@ public final class NowPlayingViewModel {
         self.nowPlayingArtistID = nil
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
+        self.nowPlayingRadioStreamURL = nil
+        self.nowPlayingRadioStationName = nil
         self.isPodcast = false
         self.podcastID = nil
         self.podcastFeedURL = nil
@@ -445,47 +473,6 @@ public final class NowPlayingViewModel {
         self.artist = ""
         self.album = ""
         self.artwork = nil
-    }
-
-    private func startObservingCurrentTrack(_ qp: QueuePlayer) {
-        self.currentTrackTask = Task { [weak self] in
-            guard let self else { return }
-            for await track in qp.currentTrackChanges {
-                if let track {
-                    self.setCurrentTrack(track)
-                } else if let item = await qp.queue.currentItem {
-                    await self.applyStreamItem(item)
-                } else {
-                    self.clearNowPlayingDisplay()
-                }
-            }
-        }
-        // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
-        self.queueChangesTask = Task { [weak self] in
-            guard let self else { return }
-            let initialRepeat = await qp.queue.repeatMode
-            let initialShuffle = await qp.queue.shuffleState
-            let initialStopAfter = await qp.queue.stopAfterCurrent
-            self.repeatMode = initialRepeat
-            self.shuffleOn = initialShuffle != .off
-            self.stopAfterCurrent = initialStopAfter
-
-            for await change in await qp.queue.changes() {
-                switch change {
-                case let .stopAfterCurrentChanged(enabled):
-                    self.stopAfterCurrent = enabled
-
-                case let .repeatChanged(mode):
-                    self.repeatMode = mode
-
-                case let .shuffleChanged(state):
-                    self.shuffleOn = state != .off
-
-                default:
-                    break
-                }
-            }
-        }
     }
 
     private func startObservingSleepTimer(_ qp: QueuePlayer) {
@@ -752,6 +739,67 @@ private extension NowPlayingViewModel {
             self.log.info("notifications.posted", ["title": title])
         } catch {
             self.log.error("notifications.add.failed", ["error": String(reflecting: error)])
+        }
+    }
+}
+
+// MARK: - Current-item observation
+
+/// Split out of the class body to stay inside the `type_body_length` lint
+/// limit; same-file extension so the private task handles stay reachable.
+private extension NowPlayingViewModel {
+    func startObservingCurrentTrack(_ qp: QueuePlayer) {
+        self.currentTrackTask = Task { [weak self] in
+            guard let self else { return }
+            for await track in qp.currentTrackChanges {
+                if let track {
+                    self.setCurrentTrack(track)
+                } else if let item = await qp.queue.currentItem {
+                    await self.applyStreamItem(item)
+                } else {
+                    self.clearNowPlayingDisplay()
+                }
+            }
+        }
+        // Live ICY titles (phase 27-5): while a station plays, the stream
+        // title takes the title line and the station name moves to the
+        // artist line. Junk or absent titles simply never emit, so the
+        // station-name display from `applyStreamItem` stays put.
+        self.streamTitleTask = Task { [weak self] in
+            guard let self else { return }
+            for await streamTitle in qp.streamTitleUpdates {
+                guard self.nowPlayingRadioStreamURL != nil else { continue }
+                self.title = streamTitle
+                if let station = self.nowPlayingRadioStationName, !station.isEmpty {
+                    self.artist = station
+                }
+            }
+        }
+        // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
+        self.queueChangesTask = Task { [weak self] in
+            guard let self else { return }
+            let initialRepeat = await qp.queue.repeatMode
+            let initialShuffle = await qp.queue.shuffleState
+            let initialStopAfter = await qp.queue.stopAfterCurrent
+            self.repeatMode = initialRepeat
+            self.shuffleOn = initialShuffle != .off
+            self.stopAfterCurrent = initialStopAfter
+
+            for await change in await qp.queue.changes() {
+                switch change {
+                case let .stopAfterCurrentChanged(enabled):
+                    self.stopAfterCurrent = enabled
+
+                case let .repeatChanged(mode):
+                    self.repeatMode = mode
+
+                case let .shuffleChanged(state):
+                    self.shuffleOn = state != .off
+
+                default:
+                    break
+                }
+            }
         }
     }
 }

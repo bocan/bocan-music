@@ -9,6 +9,17 @@ struct MusicTransportControls: View {
     var vm: NowPlayingViewModel
     var library: LibraryViewModel
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
+    @State private var radioInfo: LibraryViewModel.RadioStationInfoContext?
+
+    /// Radio has no `tracks` row, so the info button switches to the station
+    /// sheet instead of the tag editor (phase 27-5).
+    private var isRadio: Bool {
+        self.vm.nowPlayingRadioStreamURL != nil
+    }
+
+    private var infoAvailable: Bool {
+        self.vm.nowPlayingTrackID != nil || self.isRadio
+    }
 
     var body: some View {
         HStack(spacing: 20) {
@@ -33,18 +44,30 @@ struct MusicTransportControls: View {
             .accessibilityIdentifier(A11y.NowPlaying.loveButton)
 
             Button {
-                self.library.showTagEditorForNowPlaying()
+                if self.isRadio {
+                    Task { self.radioInfo = await self.library.nowPlayingRadioInfo() }
+                } else {
+                    self.library.showTagEditorForNowPlaying()
+                }
             } label: {
                 Image(systemName: "info.circle")
                     .scaledSystemFont(size: 15, weight: .medium)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .foregroundStyle(self.vm.nowPlayingTrackID != nil ? Color.textPrimary : Color.textTertiary)
-            .disabled(self.vm.nowPlayingTrackID == nil)
-            .help(L10n.string("Get info for current track"))
-            .accessibilityLabel(L10n.string("Track Info"))
+            .foregroundStyle(self.infoAvailable ? Color.textPrimary : Color.textTertiary)
+            .disabled(!self.infoAvailable)
+            .help(self.isRadio
+                ? L10n.string("Get info for this station")
+                : L10n.string("Get info for current track"))
+            .accessibilityLabel(self.isRadio ? L10n.string("Station Info") : L10n.string("Track Info"))
             .accessibilityIdentifier(A11y.NowPlaying.infoButton)
+            .sheet(item: self.$radioInfo) { context in
+                RadioStationInfoSheet(
+                    station: context.station,
+                    liveDetails: context.liveDetails
+                ) { self.radioInfo = nil }
+            }
 
             Button {
                 Task { await self.vm.previous() }
