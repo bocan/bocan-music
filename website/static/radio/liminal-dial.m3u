@@ -1,0 +1,38 @@
+#EXTM3U
+#PLAYLIST:The Liminal Dial
+
+#EXTINF:-1,SomaFM: Groove Salad (San Francisco, California)
+https://ice1.somafm.com/groovesalad-256-mp3
+
+#EXTINF:-1,Ambient Sleeping Pill (South Plainfield, New Jersey)
+https://radio.stereoscenic.com/asp-h
+
+#EXTINF:-1,Nightride FM - Synthwave (Global)
+https://stream.nightride.fm/nightride.mp3
+
+#EXTINF:-1,KUTX 98.9 FM (Austin, Texas)
+https://streams.kut.org/4428_192.mp3
+
+#EXTINF:-1,WWOZ 90.7 FM (New Orleans, Louisiana)
+https://wwoz-sc.streamguys1.com/wwoz-hi.mp3
+
+#EXTINF:-1,The Lot Radio (New York City)
+https://livepeercdn.studio/hls/85c28sa2o8wppm58/index.m3u8
+
+#EXTINF:-1,Radio Free Nashville (Nashville, Tennessee)
+https://ice23.securenetsystems.net/WRFNLP
+
+#EXTINF:-1,Kennet Radio (Newbury, United Kingdom)
+https://stream.kennetradio.com/128.mp3
+
+#EXTINF:-1,Kiosk Radio (Brussels, Belgium)
+https://kioskradiobxl.out.airtime.pro/kioskradiobxl_b
+
+#EXTINF:-1,Radio Caroline (United Kingdom)
+https://stream.radiocaroline.net/rc128/;stream.mp3
+
+#EXTINF:-1,KBOO FM (Portland, Oregon)
+https://live.kboo.fm:8443/high
+
+#EXTINF:-1,CKUT 90.3 FM (Montreal, Canada)
+https://delray.ckut.ca:8001/903fm-192-stereo

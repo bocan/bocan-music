@@ -22,6 +22,7 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "static/robots.txt": "robots.txt" });
   eleventyConfig.addPassthroughCopy({ "static/screenshots": "screenshots" });
   eleventyConfig.addPassthroughCopy({ "static/appcast.xml": "appcast.xml" });
+  eleventyConfig.addPassthroughCopy({ "static/radio": "radio" });
   eleventyConfig.addPassthroughCopy({
     "static/appcast-beta.xml": "appcast-beta.xml",
   });
