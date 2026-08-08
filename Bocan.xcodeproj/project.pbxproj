@@ -354,7 +354,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_75024820-68B8-4998-889E-320910B926AB" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_655CA8F5-7F30-4418-99DC-3B2FCA2BFCF3" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -704,10 +704,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_428D78DA-93D6-473F-945D-C984877E267D" /* bocan-music */ = {
+		"TEMP_DAB2351C-9725-4F1B-B081-6E57E652DC3C" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_75024820-68B8-4998-889E-320910B926AB" /* Secrets.xcconfig */,
+				"TEMP_655CA8F5-7F30-4418-99DC-3B2FCA2BFCF3" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1085,7 +1085,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_75024820-68B8-4998-889E-320910B926AB" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_655CA8F5-7F30-4418-99DC-3B2FCA2BFCF3" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1221,7 +1221,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_75024820-68B8-4998-889E-320910B926AB" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_655CA8F5-7F30-4418-99DC-3B2FCA2BFCF3" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1406,7 +1406,7 @@
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.9.2;
+				minimumVersion = 2.9.5;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
