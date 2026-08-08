@@ -354,9 +354,8 @@ public struct BocanRootView: View {
                 PlaylistImportSheet(
                     isPresented: self.$vm.isPlaylistImportSheetPresented,
                     importer: self.vm.playlistImporter
-                ) { id in
-                    Task { await self.vm.playlistSidebar.reload() }
-                    self.vm.selectedDestination = .playlist(id)
+                ) { playlistID, stationsAdded in
+                    self.vm.handlePlaylistImportCompletion(playlistID: playlistID, stationsAdded: stationsAdded)
                 }
             }
             .sheet(item: self.$vm.playlistExportRequest) { req in

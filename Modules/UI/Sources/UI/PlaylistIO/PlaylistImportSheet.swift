@@ -7,7 +7,10 @@ import UniformTypeIdentifiers
 public struct PlaylistImportSheet: View {
     @Binding public var isPresented: Bool
     public let importer: PlaylistImportService
-    public let onImported: (Int64) -> Void
+    /// Called after a successful import with the last created playlist (nil
+    /// when every file was a pure station list, 27-4) and how many radio
+    /// stations were added across all files.
+    public let onImported: (Int64?, Int) -> Void
 
     @State private var pickedURLs: [URL] = []
     @State private var preview: [PreviewRow] = []
@@ -17,7 +20,7 @@ public struct PlaylistImportSheet: View {
     public init(
         isPresented: Binding<Bool>,
         importer: PlaylistImportService,
-        onImported: @escaping (Int64) -> Void
+        onImported: @escaping (Int64?, Int) -> Void
     ) {
         self._isPresented = isPresented
         self.importer = importer
@@ -94,6 +97,10 @@ public struct PlaylistImportSheet: View {
                     Text(localized: "\(row.missed) missing")
                         .font(.caption2).foregroundStyle(.orange)
                 }
+                if row.stations > 0 {
+                    Text(localized: "\(row.stations) stations")
+                        .font(.caption2).foregroundStyle(.blue)
+                }
             }
             .accessibilityLabel(Self.rowAccessibilityLabel(for: row))
         }
@@ -104,6 +111,7 @@ public struct PlaylistImportSheet: View {
         var parts = [row.url.lastPathComponent, row.summary]
         if row.matched > 0 { parts.append(L10n.string("\(row.matched) matched")) }
         if row.missed > 0 { parts.append(L10n.string("\(row.missed) missing")) }
+        if row.stations > 0 { parts.append(L10n.string("\(row.stations) stations")) }
         return parts.joined(separator: ", ")
     }
 
@@ -158,9 +166,23 @@ public struct PlaylistImportSheet: View {
                     L10n.string("Unknown format")
                 }
                 let counts = await self.importer.previewFile(at: url)
-                rows.append(PreviewRow(id: url, url: url, summary: summary, matched: counts.matched, missed: counts.missed))
+                rows.append(PreviewRow(
+                    id: url,
+                    url: url,
+                    summary: summary,
+                    matched: counts.matched,
+                    missed: counts.missed,
+                    stations: counts.stations
+                ))
             } catch {
-                rows.append(PreviewRow(id: url, url: url, summary: L10n.string("Could not read"), matched: 0, missed: 0))
+                rows.append(PreviewRow(
+                    id: url,
+                    url: url,
+                    summary: L10n.string("Could not read"),
+                    matched: 0,
+                    missed: 0,
+                    stations: 0
+                ))
             }
         }
         await MainActor.run { self.preview = rows }
@@ -170,17 +192,19 @@ public struct PlaylistImportSheet: View {
         self.isImporting = true
         defer { self.isImporting = false }
         var lastID: Int64?
+        var stationsAdded = 0
         for url in self.pickedURLs {
             do {
                 let report = try await self.importer.importFile(at: url, parentID: nil)
-                lastID = report.playlistID
+                if let id = report.playlistID { lastID = id }
+                stationsAdded += report.stationsAdded
             } catch {
                 self.errorMessage = L10n.string("Failed to import \(url.lastPathComponent): \(error.localizedDescription)")
                 return
             }
         }
-        if let id = lastID {
-            self.onImported(id)
+        if lastID != nil || stationsAdded > 0 {
+            self.onImported(lastID, stationsAdded)
         }
         self.isPresented = false
     }
@@ -192,4 +216,5 @@ private struct PreviewRow: Identifiable {
     let summary: String
     let matched: Int
     let missed: Int
+    let stations: Int
 }

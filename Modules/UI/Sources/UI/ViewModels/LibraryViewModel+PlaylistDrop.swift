@@ -29,14 +29,17 @@ extension LibraryViewModel {
             }
         }
 
+        var stationsAdded = 0
         for url in urls {
             do {
                 let start = Date()
                 let report = try await self.playlistImporter.importFile(at: url, parentID: parentID)
                 let elapsed = Int(Date().timeIntervalSince(start) * 1000)
+                stationsAdded += report.stationsAdded
                 self.log.debug("playlist.drop.imported", [
                     "name": report.payloadName,
-                    "playlist_id": report.playlistID,
+                    "playlist_id": report.playlistID.map(String.init) ?? "none",
+                    "stations_added": report.stationsAdded,
                     "elapsed_ms": elapsed,
                 ])
             } catch {
@@ -47,6 +50,29 @@ extension LibraryViewModel {
             }
         }
 
+        self.toastStationsAdded(stationsAdded)
         await self.playlistSidebar.reload()
+    }
+
+    /// Completion for the playlist import sheet (RootView): reloads the
+    /// sidebar, toasts any station additions, and lands the user on the
+    /// created playlist, or on Radio when the import produced only stations
+    /// (27-4), so the imported dial is immediately visible.
+    func handlePlaylistImportCompletion(playlistID: Int64?, stationsAdded: Int) {
+        Task { await self.playlistSidebar.reload() }
+        self.toastStationsAdded(stationsAdded)
+        if let id = playlistID {
+            self.selectedDestination = .playlist(id)
+        } else if stationsAdded > 0 {
+            self.selectedDestination = .radio
+        }
+    }
+
+    private func toastStationsAdded(_ count: Int) {
+        guard count > 0 else { return }
+        self.showToast(.init(
+            text: L10n.string("Added \(count) radio stations"),
+            kind: .success
+        ))
     }
 }
