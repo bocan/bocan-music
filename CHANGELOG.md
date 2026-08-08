@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.0](https://github.com/bocan/bocan-music/compare/v2.5.0...v2.6.0) (2026-08-08)
 
+Internet radio, done properly. There's a new Radio section in the sidebar where you can build your own station list: add a stream by hand, paste a .m3u or .pls playlist link into the Add Station sheet and every station inside gets offered with its name intact, or just drop (or import) a playlist file on Bòcan and its streams become stations instead of "missing tracks". While a station plays, the song title arrives live from the stream and shows in the player and the macOS Now Playing widget, and the player's info button tells you exactly what you're hearing: codec, sample rate, channels, and the bitrate the station claims. Bòcan remembers each station's details, so the info sheet works even offline. Radio never scrobbles, never pretends live audio can rewind, and reconnects by itself if a stream hiccups. There's a starter pack of twelve stations to try. Thanks to @DanaturCode for requesting this one (#376) and pointing out that a playlist full of radio streams deserved better than becoming an empty playlist.
+
+Getting around is quicker. The back and forward side buttons on your mouse should now walk your browsing history, just like a browser. The Escape key backs you out of whatever you've drilled into: an album returns to the artist you opened it from, then to Artists. Esc still does all its old jobs first, so leaving the search box, cancelling a rename, closing sheets, and exiting full screen all work exactly as before (#378).
+
+And one small fix that felt bigger than it was: pressing Cmd+A while typing in the search field now selects your typed text, like every Mac app should, instead of quietly selecting every track in a list you weren't looking at (#379). Both this and the navigation work were suggested by @go1968, so thanks Guy!
 
 ### ### Added
 
