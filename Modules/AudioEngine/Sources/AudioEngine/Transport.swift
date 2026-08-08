@@ -34,4 +34,18 @@ public protocol Transport: Sendable {
 
     /// Set the playback volume in the range [0, 1].
     func setVolume(_ volume: Float) async
+
+    /// Stream facts for the currently audible source, when it is decoded by
+    /// FFmpeg (network streams, exotic formats); nil otherwise. Defaulted so
+    /// simple conformers need not care (phase 27-5).
+    var currentStreamDetails: StreamDetails? { get async }
+}
+
+/// Default so conformers without an FFmpeg decoder (tests, simple mocks)
+/// satisfy the requirement without writing anything.
+public extension Transport {
+    /// By default a transport knows nothing beyond the protocol surface.
+    var currentStreamDetails: StreamDetails? {
+        get async { nil }
+    }
 }

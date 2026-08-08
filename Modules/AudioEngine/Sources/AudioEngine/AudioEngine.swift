@@ -86,6 +86,14 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     public nonisolated let state: AsyncStream<PlaybackState>
 
+    // MARK: - Stream titles (phase 27-5, logic in AudioEngine+StreamDetails)
+
+    /// ICY now-playing titles from the live decoder. Long-lived: survives
+    /// track loads and stream reconnects. Local files never emit.
+    public nonisolated let streamTitleUpdates: AsyncStream<String>
+    nonisolated let streamTitleContinuation: AsyncStream<String>.Continuation
+    var titleForwardTask: Task<Void, Never>?
+
     // MARK: - Computed properties
 
     public var currentTime: TimeInterval {
@@ -112,14 +120,6 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     }
 
     // MARK: - Gapless public API
-
-    /// The native source format of the currently loaded track.
-    ///
-    /// Used by `GaplessScheduler` to determine format compatibility before scheduling
-    /// the next track onto the same `AVAudioPlayerNode`.
-    public var sourceFormat: AVAudioFormat? {
-        get async { self.decoder?.sourceFormat }
-    }
 
     /// Pre-schedule the next track's audio buffers onto the current player node.
     ///
@@ -192,6 +192,10 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.state = AsyncStream { continuation = $0 }
         self.stateContinuation = continuation
 
+        var titleContinuation: AsyncStream<String>.Continuation!
+        self.streamTitleUpdates = AsyncStream { titleContinuation = $0 }
+        self.streamTitleContinuation = titleContinuation
+
         // When AVAudioEngine reconfigures itself (sample-rate change, device plug/unplug)
         // it silently removes all installed taps from the mixer. We must tear down the
         // AudioTap ourselves so the AsyncStream continuation is properly finished,
@@ -256,6 +260,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             self._playerTimeOffset = 0
             self.segmentStart = 0
             self.segmentEndTime = nil
+            self.rewireTitleForwarding()
             self.emit(.ready)
             self.log.debug("engine.load.end", ["ms": -start.timeIntervalSinceNow * 1000])
         } catch {

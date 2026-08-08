@@ -81,11 +81,24 @@ public actor FFmpegDecoder: Decoder {
     // MARK: - Properties
 
     private let ctx: FFContext
-    private let log = AppLogger.make(.audio)
+    let log = AppLogger.make(.audio)
     private let url: URL
 
     public nonisolated let sourceFormat: AVAudioFormat
     public nonisolated let duration: TimeInterval
+
+    /// Measured source facts captured at open time (phase 27-5): container,
+    /// codec and profile, sample rate, channels, claimed bitrate, and, for
+    /// network streams, the ICY headers.
+    public nonisolated let streamDetails: StreamDetails
+
+    /// ICY now-playing titles (phase 27-5), de-interleaved by FFmpeg's http
+    /// protocol and surfaced from the packet-read loop. Local files never
+    /// emit. Finishes when the decoder closes. The backing members are
+    /// internal (not private) so FFmpegDecoder+StreamDetails.swift can emit.
+    public nonisolated let titleUpdates: AsyncStream<String>
+    nonisolated let titleContinuation: AsyncStream<String>.Continuation
+    var lastEmittedTitle: String?
 
     private var _position: TimeInterval = 0
     private var residualBuffer: [Float] = []
@@ -110,7 +123,11 @@ public actor FFmpegDecoder: Decoder {
         let ctx = FFContext()
         self.ctx = ctx
         self.url = url
-        let sampleRate = try Self.openAndConfigure(ctx: ctx, url: url)
+        let (sampleRate, details) = try Self.openAndConfigure(ctx: ctx, url: url)
+        self.streamDetails = details
+        var continuation: AsyncStream<String>.Continuation!
+        self.titleUpdates = AsyncStream { continuation = $0 }
+        self.titleContinuation = continuation
         self.duration = Self.detectDuration(ctx: ctx)
         // kAudioChannelLayoutTag_Stereo is a compile-time constant; init always succeeds.
         // swiftlint:disable:next force_unwrapping
@@ -173,14 +190,17 @@ public actor FFmpegDecoder: Decoder {
     }
 
     public func close() async {
+        self.titleContinuation.finish()
         self.log.debug("ffmpeg.decoder.closed", ["url": self.url.lastPathComponent])
     }
 }
 
 private extension FFmpegDecoder {
     /// Opens the format context, finds the best audio stream, opens the codec,
-    /// and initialises the SWR resampler. Returns the stream's native sample rate.
-    private static func openAndConfigure(ctx: FFContext, url: URL) throws -> Double {
+    /// and initialises the SWR resampler. Returns the stream's native sample
+    /// rate plus the `StreamDetails` snapshot captured while the codec
+    /// parameters are in hand (phase 27-5).
+    private static func openAndConfigure(ctx: FFContext, url: URL) throws -> (Double, StreamDetails) {
         // For HTTP / HTTPS URLs pass the full absolute string so FFmpeg's
         // network protocol handlers fire. Everything else (file URLs,
         // bare paths) uses the on-disk path so security-scoped bookmark
@@ -239,7 +259,12 @@ private extension FFmpegDecoder {
         // live, fully-initialised resampler reaches ctx.swrCtx. (#295)
         ctx.swrCtx = try self.buildSWR(codecCtx: codecCtx)
 
-        return Double(codecCtx.pointee.sample_rate)
+        let details = Self.captureDetails(
+            formatCtx: ctx.formatCtx,
+            codecParams: codecParams,
+            isHTTP: isHTTP
+        )
+        return (Double(codecCtx.pointee.sample_rate), details)
     }
 
     /// Allocates and configures an SWR resampler for the given codec context.
@@ -324,6 +349,9 @@ private extension FFmpegDecoder {
             if readRet < 0 {
                 throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: ffError(readRet))
             }
+            // ICY now-playing (phase 27-5): checked before the stream-index
+            // guard because the update can ride along with any packet.
+            self.consumeMetadataUpdate(fmtCtx: fmtCtx)
             defer { av_packet_unref(pkt) }
             guard pkt.pointee.stream_index == self.ctx.streamIndex else { continue }
             let sendRet = avcodec_send_packet(codecCtx, pkt)
