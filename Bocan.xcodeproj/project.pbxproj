@@ -56,6 +56,7 @@
 		4048626C7584950E6D201081 /* LaunchSanity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1DE49AE8BEADA5F7A3D8406 /* LaunchSanity.swift */; };
 		441B3381BCAFD513AD0594E8 /* RadioViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CAD09E45371E22ED0901715 /* RadioViewModelTests.swift */; };
 		46B88126867F417C1F626EFA /* LogConsoleAppConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9F3ECEBA0831D7E932406AE /* LogConsoleAppConventionTests.swift */; };
+		473AB5B2EE6C216844AC0F1A /* TrackMenuSelectAllTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4345B74618EDB42D7A1E53 /* TrackMenuSelectAllTests.swift */; };
 		48F02DEF188788635F6AB26F /* PlaylistRowDropHighlightTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2583AD98028864A547B9DB /* PlaylistRowDropHighlightTests.swift */; };
 		4B0E91A52204EF74A81ED572 /* ToolsMenuTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F66E36224B360425CC7481 /* ToolsMenuTests.swift */; };
 		4D449CD10644566E38908F3E /* PodcastPodrollUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B3AA76BFF13D95483017DAE /* PodcastPodrollUITests.swift */; };
@@ -311,6 +312,7 @@
 		C4262BE7B022BB4DC4BDA75C /* SingleInstance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleInstance.swift; sourceTree = "<group>"; };
 		C8B44F463A6E3D8189D6553D /* libavformat.62.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavformat.62.dylib; sourceTree = "<group>"; };
 		C8CF7E346ACE0ACFBD6D7A20 /* SubsonicSettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicSettingsViewModelTests.swift; sourceTree = "<group>"; };
+		CA4345B74618EDB42D7A1E53 /* TrackMenuSelectAllTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackMenuSelectAllTests.swift; sourceTree = "<group>"; };
 		CC0A39F8A3F03E93D2B4B849 /* libx265.216.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libx265.216.dylib; sourceTree = "<group>"; };
 		CCB19AAB29930C92F958AB05 /* SubsonicSongNowPlayingSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicSongNowPlayingSelectionTests.swift; sourceTree = "<group>"; };
 		CEA16B515E4559A3EB0AD4A1 /* LaunchLoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchLoadingView.swift; sourceTree = "<group>"; };
@@ -350,7 +352,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_6E5C8E41-A389-4157-9294-B2EE2CB84152" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_16EAD150-0567-4B54-A676-3BBDF39F450B" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -692,16 +694,17 @@
 				5ED57792C57E833ECFCE6DC3 /* SettingsMenuTests.swift */,
 				3D1CAA6A918DE471019AB205 /* SingleInstanceTests.swift */,
 				33F66E36224B360425CC7481 /* ToolsMenuTests.swift */,
+				CA4345B74618EDB42D7A1E53 /* TrackMenuSelectAllTests.swift */,
 				377CDD783D5E45B2A404260D /* UpdateControllerConventionTests.swift */,
 				0C9322FD4F5214BF2D3D40B7 /* ViewMenuTests.swift */,
 			);
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_76276C14-6B78-4F0C-A7B7-0FC112681FCE" /* bocan-music */ = {
+		"TEMP_9687F52B-5F4B-46CB-BCB4-3E584A2F8A54" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_6E5C8E41-A389-4157-9294-B2EE2CB84152" /* Secrets.xcconfig */,
+				"TEMP_16EAD150-0567-4B54-A676-3BBDF39F450B" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -981,6 +984,7 @@
 				E97F656EB92A9BEF410F136A /* TagEditorViewModelCoverArtTests.swift in Sources */,
 				15E3D444F86A2C9F79E77A0C /* TestImage.swift in Sources */,
 				4B0E91A52204EF74A81ED572 /* ToolsMenuTests.swift in Sources */,
+				473AB5B2EE6C216844AC0F1A /* TrackMenuSelectAllTests.swift in Sources */,
 				4F66AFD8D90284DE6FA5B88F /* TrackRowContentTests.swift in Sources */,
 				1BE075CCA10285155142000B /* TrackTableDragTests.swift in Sources */,
 				CDC6FA7516C4C15CBFBDF92F /* TracksViewModelTests.swift in Sources */,
@@ -1077,7 +1081,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_6E5C8E41-A389-4157-9294-B2EE2CB84152" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_16EAD150-0567-4B54-A676-3BBDF39F450B" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1213,7 +1217,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_6E5C8E41-A389-4157-9294-B2EE2CB84152" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_16EAD150-0567-4B54-A676-3BBDF39F450B" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;

@@ -429,13 +429,19 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            // ⌘A must still reach the field editor while text is being edited;
+            // the shortcut fires ahead of the responder chain (#379).
             Button("Select All") {
-                self.vm.selectAllTracks()
+                if !EditMenuRouting.forwardSelectAllToTextEditor() {
+                    self.vm.selectAllTracks()
+                }
             }
             .keyboardShortcut(KeyBindings.selectAll)
 
             Button("Deselect All") {
-                self.vm.deselectAllTracks()
+                if !EditMenuRouting.textEditorIsActive {
+                    self.vm.deselectAllTracks()
+                }
             }
             .keyboardShortcut(KeyBindings.deselectAll)
             .disabled(!self.vm.hasTrackSelection)
