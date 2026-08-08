@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 36)
+        #expect(version == 37)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,22 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports thirty-six migrations")
+    @Test("Migrator reports thirty-seven migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 36)
+        #expect(migrator.migrations.count == 37)
+    }
+
+    @Test("radio_stations has the stream-detail profile columns after M037")
+    func radioStationStreamDetailColumns() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(radio_stations)")
+                .compactMap { $0["name"] as String? }
+        }
+        for name in ["last_container", "last_sample_rate_hz", "last_channels"] {
+            #expect(columns.contains(name), "Expected column '\(name)' not found")
+        }
     }
 
     @Test("radio_stations exists with its catalog and profile columns after M036")
