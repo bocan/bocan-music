@@ -41,7 +41,7 @@
   },
   {
     "title": "Podcasts that keep up.",
-    "body": "Subscribe by URL or search Podcast Index and Apple. Grab one episode, a whole batch for the flight, or let new ones auto-download per show. Full Podcasting 2.0 where the feed bothers: show notes that render cleanly (no raw HTML) right from the player bar, jump-to chapters, readable transcripts, host and guest credits with faces, and a shelf of shows the publisher recommends. Variable speed, skip-back and skip-forward, and it remembers exactly where you stopped."
+    "body": "Subscribe by URL or search Podcast Index and Apple. Grab one episode, a batch for the flight, or auto-download new ones per show. Podcasting 2.0 where the feed bothers: clean show notes from the player bar, jump-to chapters, transcripts, host and guest credits, and publisher-recommended shelves. Variable speed, skip buttons, and it remembers exactly where you stopped."
   },
   {
     "title": "Radio, without the tab clutter.",
@@ -69,6 +69,6 @@
   },
   {
     "title": "A library that audits itself.",
-    "body": "Tools &#x2192; Library Summary: six tabs of honest answers. How big it all got, in songs, albums, and days of music. What needs fixing, from gap-toothed track numbers to files that quietly vanished, every offender one click from its album. What it is made of, down to a spectral scan that catches \"FLACs\" laundered from lossy sources: suspected, never accused, nothing deleted. The shape of your taste, with the decades you own laid against the decades you actually play. Your listening habits, with your Last.fm history imported and matched: skip rates, dormant favourites, a when-you-listen heatmap on the thermal palette, and a Gini coefficient you may not forgive us for. And the podcast reckoning: the backlog in hours, how long clearing it would truly take, the feeds that quietly died, and one confirmed click to reap listened episodes still squatting on your disk. Everything computed locally. Nothing leaves your Mac."
+    "body": "<strong>Tools &#x2192; Library Summary</strong>: six tabs of honest answers. How big it all got, what needs fixing (every offender one click from its album), a spectral scan that catches \"FLACs\" laundered from lossy sources, the decades you own laid against the decades you actually play, your Last.fm history matched into skip rates and a when-you-listen heatmap, and a podcast backlog reckoning with one confirmed click to clean it up. Everything computed locally. Nothing leaves your Mac."
   }
 ]

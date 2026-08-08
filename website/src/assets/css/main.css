@@ -315,10 +315,12 @@ hr {
 
 /* Feature grid */
 
+/* Masonry-style columns: cards keep their natural height, so bodies of
+   different lengths read as intentional instead of stretching whole rows
+   to the tallest card. */
 .features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1em;
+  columns: 3 280px;
+  column-gap: 1em;
   max-width: var(--maxw);
   margin: 3em auto;
   padding: 0 1.5em;
@@ -329,6 +331,8 @@ hr {
   border-radius: var(--radius-lg);
   padding: 1.4em 1.4em 1.6em;
   transition: border-color 120ms ease, transform 120ms ease;
+  break-inside: avoid;
+  margin-bottom: 1em;
 }
 .feature:hover {
   border-color: var(--accent-2);
@@ -450,12 +454,15 @@ th {
   to   { transform: translateX(-50%); }
 }
 
+/* Reduced motion: a hand-scrollable strip instead of the marquee, with the
+   scrollbar chrome hidden (the strip is decorative and the edge fade already
+   signals there's more) so no bare scrollbar sits under the screenshots. */
 @media (prefers-reduced-motion: reduce) {
   .screenshots-marquee {
     overflow-x: auto;
-    -webkit-mask-image: none;
-    mask-image: none;
+    scrollbar-width: none;
   }
+  .screenshots-marquee::-webkit-scrollbar { display: none; }
   .marquee__track { animation: none; }
 }
 
