@@ -70,6 +70,53 @@ extension LibraryViewModel {
         }
     }
 
+    /// The structural parent of a drill-down destination (#378): where Esc
+    /// backs out to. Nil for section roots and for destinations whose parent
+    /// cannot be derived from the destination alone (playlist folders nest,
+    /// so their parent lives in the sidebar tree, not the destination).
+    nonisolated static func parentDestination(of destination: SidebarDestination) -> SidebarDestination? {
+        switch destination {
+        case .artist:
+            .artists
+
+        case .album:
+            .albums
+
+        case .genre:
+            .genres
+
+        case .composer:
+            .composers
+
+        case .podcastShow:
+            .podcasts
+
+        case let .subsonicArtist(server, _):
+            .subsonicArtists(server)
+
+        case let .subsonicAlbum(server, _):
+            .subsonicAlbums(server)
+
+        case let .subsonicPlaylist(server, _):
+            .subsonicPlaylists(server)
+
+        default:
+            nil
+        }
+    }
+
+    /// Esc drill-out (#378): navigates to the structural parent of the
+    /// current drill-down. Returns false at section roots so the caller can
+    /// pass the event through. Deliberately not history-back: history can
+    /// cross sidebar sections, and Esc teleporting across the sidebar would
+    /// feel broken.
+    @discardableResult
+    public func drillOutToParent() -> Bool {
+        guard let parent = Self.parentDestination(of: self.selectedDestination) else { return false }
+        Task { await self.selectDestination(parent) }
+        return true
+    }
+
     /// Jumps to a track's album, then selects and scrolls to the track: the
     /// Library Summary's reveal path, so an offender row lands the user on
     /// the exact song, not just its album. Selection survives the detail
