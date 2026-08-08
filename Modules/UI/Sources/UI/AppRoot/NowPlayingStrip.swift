@@ -113,31 +113,41 @@ public struct NowPlayingStrip: View {
         .accessibilityIdentifier(A11y.NowPlaying.artworkButton)
     }
 
+    /// The title line, shared by the jump-button and plain-text renderings so
+    /// both stay pixel-identical: full-strength while something plays, dimmed
+    /// only for the idle "Not playing" placeholder.
+    private var titleText: some View {
+        Text(self.vm.title.isEmpty ? L10n.string("Not playing") : self.vm.title)
+            .font(Typography.body)
+            .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
+            .lineLimit(1)
+    }
+
     private var trackInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
-            // Title — click to jump to current track in the track list.
-            Button {
-                Task { await self.library.scrollToNowPlayingTrack() }
-            } label: {
-                Text(self.vm.title.isEmpty ? L10n.string("Not playing") : self.vm.title)
-                    .font(Typography.body)
-                    .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
-                    .lineLimit(1)
-                    .accessibilityHidden(true)
+            // Title — click to jump to current track in the track list. Radio
+            // and podcast items have no tracks row to jump to; render plain
+            // text there instead of a permanently disabled button, whose
+            // plain-style dimming greyed the title down to subtitle strength.
+            if self.vm.nowPlayingTrackID != nil {
+                Button {
+                    Task { await self.library.scrollToNowPlayingTrack() }
+                } label: {
+                    self.titleText
+                        .accessibilityHidden(true)
+                }
+                .buttonStyle(.plain)
+                .help(L10n.string("Jump to \"\(self.vm.title)\" in track list"))
+                .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
+                .accessibilityLabel(L10n.string("Jump to \(self.vm.title) in track list"))
+                .accessibilityAddTraits(.updatesFrequently)
+                .accessibilityIdentifier(A11y.NowPlaying.titleButton)
+            } else {
+                self.titleText
+                    .accessibilityLabel(self.vm.title.isEmpty ? L10n.string("Not playing") : self.vm.title)
+                    .accessibilityAddTraits(.updatesFrequently)
+                    .accessibilityIdentifier(A11y.NowPlaying.titleButton)
             }
-            .buttonStyle(.plain)
-            .disabled(self.vm.nowPlayingTrackID == nil)
-            .help(self.vm.nowPlayingTrackID != nil
-                ? L10n.string("Jump to \"\(self.vm.title)\" in track list")
-                : L10n.string("Not playing"))
-            .keyboardShortcut(KeyBindings.jumpToCurrentTrack)
-            .accessibilityLabel(
-                self.vm.nowPlayingTrackID != nil
-                    ? L10n.string("Jump to \(self.vm.title) in track list")
-                    : L10n.string("Not playing")
-            )
-            .accessibilityAddTraits(.updatesFrequently)
-            .accessibilityIdentifier(A11y.NowPlaying.titleButton)
 
             // Artist/show — click to navigate to the artist or podcast show.
             if !self.vm.artist.isEmpty {
