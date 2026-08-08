@@ -111,7 +111,17 @@ and an empty playlist.
   matched, entries missed).
 - README and website feature blurb.
 
-### 27-5: ICY now-playing and station profile (AudioEngine + Playback + UI)
+### 27-5: ICY now-playing, stream details, and station profile (AudioEngine + Playback + UI)
+
+Scope grew on request: the player's info button, disabled for radio today
+(it keys on a `tracks` row id that radio items never have), opens the
+station info sheet instead, enriched with everything the open decoder
+knows. A `StreamDetails` snapshot (container, codec and profile, sample
+rate, channels, claimed bitrate, the `icy-*` headers, and whether the
+station sends now-playing titles) is captured in `FFmpegDecoder` at open
+time, surfaced through a defaulted `Transport` accessor, shown live in the
+sheet, and persisted into the station profile (migration M037 adds
+container / sample rate / channels columns).
 
 The request side is already done: FFmpeg sends `Icy-MetaData: 1` by
 default, de-interleaves the metadata blocks in `http.c`, and copies

@@ -11,7 +11,7 @@ public struct RadioView: View {
     public let library: LibraryViewModel
 
     @StateObject private var vm: RadioViewModel
-    @State private var infoStation: RadioStation?
+    @State private var infoContext: LibraryViewModel.RadioStationInfoContext?
     @State private var sheetMode: RadioStationSheetMode?
     @State private var stationToDelete: RadioStation?
 
@@ -42,8 +42,11 @@ public struct RadioView: View {
         .sheet(item: self.$sheetMode) { mode in
             RadioStationSheet(vm: self.vm, mode: mode)
         }
-        .sheet(item: self.$infoStation) { station in
-            RadioStationInfoSheet(station: station) { self.infoStation = nil }
+        .sheet(item: self.$infoContext) { context in
+            RadioStationInfoSheet(
+                station: context.station,
+                liveDetails: context.liveDetails
+            ) { self.infoContext = nil }
         }
         .confirmationDialog(
             L10n.string("Delete Station"),
@@ -82,7 +85,7 @@ public struct RadioView: View {
                 RadioStationRow(
                     station: station,
                     onPlay: { self.play(station) },
-                    onInfo: { self.infoStation = station }
+                    onInfo: { self.showInfo(station) }
                 )
                 .contextMenu {
                     Button(L10n.string("Edit")) { self.sheetMode = .edit(station) }
@@ -98,6 +101,15 @@ public struct RadioView: View {
 
     private func play(_ station: RadioStation) {
         Task { await self.library.play(radioStation: station) }
+    }
+
+    /// Opens the info sheet, carrying live decoder facts when this station
+    /// is the one currently playing (phase 27-5).
+    private func showInfo(_ station: RadioStation) {
+        Task {
+            let details = await self.library.liveRadioDetails(for: station.streamURL)
+            self.infoContext = .init(station: station, liveDetails: details)
+        }
     }
 }
 
@@ -166,106 +178,5 @@ private struct RadioStationRow: View {
     }
 }
 
-// MARK: - RadioStationInfoSheet
-
-/// Station metadata, including the machine-owned profile fields (27-1) that
-/// get backfilled on a successful connect (27-5). Stream URL is copyable;
-/// the homepage opens in the default browser.
-struct RadioStationInfoSheet: View {
-    let station: RadioStation
-    let onDismiss: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
-                Image(systemName: "dot.radiowaves.left.and.right")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundStyle(Color.accentColor)
-                Text(self.station.name)
-                    .font(Typography.title)
-                    .foregroundStyle(Color.textPrimary)
-                Spacer()
-            }
-
-            self.field(label: L10n.string("Stream URL"), value: self.station.streamURL, copyable: true)
-
-            if let home = station.homePageURL, !home.isEmpty, let url = URL(string: home) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(localized: "Homepage")
-                        .font(Typography.caption.weight(.semibold))
-                        .foregroundStyle(Color.textSecondary)
-                    Link(home, destination: url)
-                        .font(Typography.subheadline)
-                        .lineLimit(2)
-                }
-            }
-
-            if let genre = station.genre, !genre.isEmpty {
-                self.field(label: L10n.string("Genre"), value: genre, copyable: false)
-            }
-            if let description = station.stationDescription, !description.isEmpty {
-                self.field(label: L10n.string("Description"), value: description, copyable: false)
-            }
-            if let format = self.formatLine {
-                self.field(label: L10n.string("Format"), value: format, copyable: false)
-            }
-            if let connectedAt = station.lastConnectedAt {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(localized: "Last Connected")
-                        .font(Typography.caption.weight(.semibold))
-                        .foregroundStyle(Color.textSecondary)
-                    Text(
-                        Date(timeIntervalSince1970: TimeInterval(connectedAt)),
-                        format: .dateTime.day().month().year().hour().minute()
-                    )
-                    .font(Typography.subheadline)
-                    .foregroundStyle(Color.textPrimary)
-                }
-            }
-
-            HStack {
-                Spacer()
-                Button(L10n.string("Close"), action: self.onDismiss)
-                    .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 420, idealWidth: 480)
-    }
-
-    /// "mp3, 128 kbps" from whatever profile parts exist; nil when neither does.
-    private var formatLine: String? {
-        var parts: [String] = []
-        if let codec = self.station.lastCodec, !codec.isEmpty { parts.append(codec) }
-        if let kbps = self.station.lastBitrateKbps { parts.append(L10n.string("\(kbps) kbps")) }
-        return parts.isEmpty ? nil : parts.joined(separator: ", ")
-    }
-
-    private func field(label: String, value: String, copyable: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Text(label)
-                    .font(Typography.caption.weight(.semibold))
-                    .foregroundStyle(Color.textSecondary)
-                Spacer()
-                if copyable {
-                    Button {
-                        let pb = NSPasteboard.general
-                        pb.clearContents()
-                        pb.setString(value, forType: .string)
-                    } label: {
-                        Label(L10n.string("Copy"), systemImage: "doc.on.doc")
-                    }
-                    .buttonStyle(.borderless)
-                    .controlSize(.small)
-                }
-            }
-            Text(value)
-                .font(Typography.subheadline)
-                .foregroundStyle(Color.textPrimary)
-                .textSelection(.enabled)
-                .lineLimit(3)
-                .truncationMode(.middle)
-        }
-    }
-}
+// The station info sheet lives in RadioStationInfoSheet.swift (phase 27-5):
+// it grew live stream facts and is shared with the Now Playing strip.

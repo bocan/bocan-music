@@ -83,4 +83,32 @@ struct RadioSidebarConventionTests {
             "loadDestination must include .radio in its self-loading arm"
         )
     }
+
+    // MARK: - Now Playing strip (phase 27-5)
+
+    @Test("the strip's info button presents the station sheet for radio")
+    func stripInfoButtonHandlesRadio() throws {
+        let controls = try self.source("Transport/MusicTransportControls.swift")
+        #expect(
+            controls.contains("nowPlayingRadioStreamURL"),
+            "MusicTransportControls must branch on the radio stream URL"
+        )
+        #expect(
+            controls.contains("RadioStationInfoSheet"),
+            "the info button must present the station sheet in radio mode"
+        )
+    }
+
+    @Test("NowPlayingViewModel captures radio identity and live titles")
+    func viewModelCapturesRadioIdentity() throws {
+        let vmSource = try self.source("ViewModels/NowPlayingViewModel.swift")
+        #expect(
+            vmSource.contains("nowPlayingRadioStreamURL"),
+            "the VM must expose the playing station's stream URL"
+        )
+        #expect(
+            vmSource.contains("streamTitleUpdates"),
+            "the VM must observe live ICY titles"
+        )
+    }
 }
