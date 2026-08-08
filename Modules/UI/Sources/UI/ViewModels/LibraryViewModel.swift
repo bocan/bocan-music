@@ -414,7 +414,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicSearch = subsonicDataSource.map { SubsonicMultiSourceSearchViewModel(dataSource: $0) }
         self.subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
         self.settingsRepo = SettingsRepository(database: database)
-        self.radioStations = RadioStationRepository(database: database)
+        let radioStations = RadioStationRepository(database: database)
+        self.radioStations = radioStations
         self.metadataEditService = try? MetadataEditService(database: database)
 
         self.fingerprintQueue = Self.makeFingerprintQueue(database: database)
@@ -438,7 +439,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         let (importer, exporter) = Self.makePlaylistIO(
             database: database,
             trackRepo: trackRepo,
-            playlistService: playlistService
+            playlistService: playlistService,
+            radioStations: radioStations
         )
         self.playlistImporter = importer
         self.playlistExporter = exporter
@@ -781,10 +783,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private static func makePlaylistIO(
         database: Database,
         trackRepo: TrackRepository,
-        playlistService: PlaylistService
+        playlistService: PlaylistService,
+        radioStations: RadioStationRepository
     ) -> (PlaylistImportService, PlaylistExportService) {
         let resolver = TrackResolver(trackRepo: trackRepo)
-        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService, trackRepo: trackRepo)
+        let importer = PlaylistImportService(
+            resolver: resolver,
+            playlists: playlistService,
+            trackRepo: trackRepo,
+            radioStations: radioStations
+        )
         let exporter = PlaylistExportService(database: database)
         return (importer, exporter)
     }

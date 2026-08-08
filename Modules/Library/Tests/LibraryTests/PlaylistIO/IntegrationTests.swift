@@ -81,19 +81,25 @@ struct PlaylistIOIntegrationTests {
         ])
         let resolver = TrackResolver(trackRepo: TrackRepository(database: db))
         let playlistService = PlaylistService(database: db)
-        let importer = PlaylistImportService(resolver: resolver, playlists: playlistService, trackRepo: TrackRepository(database: db))
+        let importer = PlaylistImportService(
+            resolver: resolver,
+            playlists: playlistService,
+            trackRepo: TrackRepository(database: db),
+            radioStations: RadioStationRepository(database: db)
+        )
         let report = try await importer.importPayload(payload)
         #expect(report.resolution.matches.count == 3)
+        let playlistID = try #require(report.playlistID)
 
         // Verify membership order.
-        let members = try await playlistService.tracks(in: report.playlistID)
+        let members = try await playlistService.tracks(in: playlistID)
         let memberIDs = members.compactMap(\.id)
         #expect(memberIDs == [idC, idA, idB])
 
         // Export and check ordering survives.
         let exporter = PlaylistExportService(database: db)
         let dest = FileManager.default.temporaryDirectory.appendingPathComponent("rt.m3u8")
-        try await exporter.export(.init(playlistID: report.playlistID, destination: dest, format: .m3u8, pathMode: .absolute))
+        try await exporter.export(.init(playlistID: playlistID, destination: dest, format: .m3u8, pathMode: .absolute))
         let body = try String(contentsOf: dest, encoding: .utf8)
         try? FileManager.default.removeItem(at: dest)
         let parsed = try M3UReader.parse(data: Data(body.utf8), sourceURL: dest)
