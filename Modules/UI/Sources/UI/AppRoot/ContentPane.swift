@@ -339,6 +339,9 @@ public struct ContentPane: View {
 
         case let .podcastShow(id):
             PodcastShowView(vm: self.vm.podcasts, library: self.vm, podcastID: id)
+
+        case .radio:
+            RadioView(library: self.vm)
         }
     }
 

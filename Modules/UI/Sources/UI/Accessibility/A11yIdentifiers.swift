@@ -23,6 +23,14 @@ public enum A11y {
         public static let addFolderButton = "sidebar.addFolder"
     }
 
+    /// Radio station catalog (phase 27).
+    public enum Radio {
+        public static let list = "radio.list"
+        public static let emptyState = "radio.emptyState"
+        public static let addButton = "radio.addStation"
+        public static let emptyStateAddButton = "radio.emptyState.addStation"
+    }
+
     // MARK: - Tracks table
 
     public enum TracksTable {

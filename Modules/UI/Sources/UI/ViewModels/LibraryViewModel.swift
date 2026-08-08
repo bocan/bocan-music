@@ -282,6 +282,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public let smartPlaylistService: SmartPlaylistService
     public let playlistImporter: PlaylistImportService
     public let playlistExporter: PlaylistExportService
+
+    /// The local internet radio station catalog (phase 27). `RadioView` builds
+    /// its view model on this; playback goes through `play(radioStation:)`.
+    public let radioStations: RadioStationRepository
     /// Phase 21-7: drives the Podcasts home grid and show episode list.
     public let podcasts: PodcastsViewModel
 
@@ -410,6 +414,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicSearch = subsonicDataSource.map { SubsonicMultiSourceSearchViewModel(dataSource: $0) }
         self.subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
         self.settingsRepo = SettingsRepository(database: database)
+        self.radioStations = RadioStationRepository(database: database)
         self.metadataEditService = try? MetadataEditService(database: database)
 
         self.fingerprintQueue = Self.makeFingerprintQueue(database: database)

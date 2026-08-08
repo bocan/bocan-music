@@ -8,8 +8,8 @@ import GRDB
 /// backfilled from ICY headers and measured stream parameters on a successful
 /// connect (27-5) so the info sheet stays useful offline. Timestamps are epoch
 /// seconds.
-public struct RadioStation: Codable, Equatable, Hashable, FetchableRecord, MutablePersistableRecord,
-    Sendable {
+public struct RadioStation: Codable, Equatable, Hashable, Identifiable, FetchableRecord,
+    MutablePersistableRecord, Sendable {
     // MARK: - Table
 
     public static let databaseTableName = "radio_stations"
