@@ -128,7 +128,10 @@ struct RadioStationRepositoryTests {
             stationDescription: "Space music for space travel",
             homePageURL: "https://somafm.com",
             lastCodec: "mp3",
-            lastBitrateKbps: 128
+            lastBitrateKbps: 128,
+            lastContainer: "mp3",
+            lastSampleRateHz: 44100,
+            lastChannels: 2
         )
 
         let fetched = try #require(try await repo.fetchOne(streamURL: url))
@@ -137,6 +140,9 @@ struct RadioStationRepositoryTests {
         #expect(fetched.homePageURL == "https://somafm.com")
         #expect(fetched.lastCodec == "mp3")
         #expect(fetched.lastBitrateKbps == 128)
+        #expect(fetched.lastContainer == "mp3")
+        #expect(fetched.lastSampleRateHz == 44100)
+        #expect(fetched.lastChannels == 2)
         #expect(fetched.lastConnectedAt == 2000)
     }
 

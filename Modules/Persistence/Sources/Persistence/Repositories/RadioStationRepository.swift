@@ -105,7 +105,10 @@ public struct RadioStationRepository: Sendable {
         stationDescription: String? = nil,
         homePageURL: String? = nil,
         lastCodec: String? = nil,
-        lastBitrateKbps: Int? = nil
+        lastBitrateKbps: Int? = nil,
+        lastContainer: String? = nil,
+        lastSampleRateHz: Int? = nil,
+        lastChannels: Int? = nil
     ) async throws {
         try await self.database.write { db in
             try db.execute(
@@ -116,12 +119,16 @@ public struct RadioStationRepository: Sendable {
                     home_page_url = COALESCE(home_page_url, ?),
                     last_codec = COALESCE(?, last_codec),
                     last_bitrate_kbps = COALESCE(?, last_bitrate_kbps),
+                    last_container = COALESCE(?, last_container),
+                    last_sample_rate_hz = COALESCE(?, last_sample_rate_hz),
+                    last_channels = COALESCE(?, last_channels),
                     last_connected_at = ?
                 WHERE stream_url = ?
                 """,
                 arguments: [
                     genre, stationDescription, homePageURL,
-                    lastCodec, lastBitrateKbps, connectedAt, streamURL,
+                    lastCodec, lastBitrateKbps, lastContainer,
+                    lastSampleRateHz, lastChannels, connectedAt, streamURL,
                 ]
             )
         }
