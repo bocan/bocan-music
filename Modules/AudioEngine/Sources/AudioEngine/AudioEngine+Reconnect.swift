@@ -106,6 +106,9 @@ extension AudioEngine {
         self._duration = dec.duration
         self._currentTime = position
         self._playerTimeOffset = 0
+        // The rebuild opened a fresh FFmpeg context; re-point title
+        // forwarding at it or now-playing titles die with the old decoder.
+        self.rewireTitleForwarding()
         // performPlay (pump == nil) cold-starts a new pump from the fresh decoder.
         try await self.performPlay()
     }

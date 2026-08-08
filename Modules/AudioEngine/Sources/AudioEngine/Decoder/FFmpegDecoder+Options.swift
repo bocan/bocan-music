@@ -31,6 +31,9 @@ extension FFmpegDecoder {
     static func openOptions(isHTTP: Bool) -> [String: String] {
         guard isHTTP else { return [:] }
         var options = ["user_agent": UserAgent.string]
+        // Request ICY (Shoutcast) metadata. FFmpeg defaults this on, but the
+        // 27-5 now-playing path depends on it, so state it explicitly.
+        options["icy"] = "1"
         if let allowed = allowedRemoteProtocols(isRemote: true) {
             options["protocol_whitelist"] = allowed
         }
