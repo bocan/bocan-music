@@ -15,10 +15,14 @@ public extension AudioEngine {
 
     /// Stream facts from the currently audible decoder. Only FFmpeg-backed
     /// sources carry them; AVFoundation-decoded local files return nil.
-    /// Mind the gapless caveat on `decoder`: for the last ~0.8 s of a
-    /// transition this describes the incoming track.
+    /// Served live so observed-title evidence upgrades the snapshot. Mind
+    /// the gapless caveat on `decoder`: for the last ~0.8 s of a transition
+    /// this describes the incoming track.
     var currentStreamDetails: StreamDetails? {
-        get async { (self.decoder as? FFmpegDecoder)?.streamDetails }
+        get async {
+            guard let dec = self.decoder as? FFmpegDecoder else { return nil }
+            return await dec.liveDetails
+        }
     }
 
     /// Replaces the title-forwarding task for the freshly installed decoder.
