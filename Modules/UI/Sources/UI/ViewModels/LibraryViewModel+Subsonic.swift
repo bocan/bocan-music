@@ -55,7 +55,11 @@ public extension LibraryViewModel {
             self.playbackErrorMessage = L10n.string("\u{201C}\(station.name)\u{201D} has no valid stream URL.")
             return
         }
-        let item = QueueItem.makeInternetRadio(station: station, serverID: serverID, streamURL: url)
+        let item = QueueItem.makeInternetRadio(
+            name: station.name,
+            streamURL: url,
+            homePage: station.homePageUrl
+        )
         do {
             try await qp.play(items: [item], startingAt: 0, shuffle: false)
         } catch {
@@ -86,35 +90,6 @@ public extension LibraryViewModel {
 // MARK: - QueueItem factory
 
 extension QueueItem {
-    /// Builds a `QueueItem` representing a Subsonic internet radio station.
-    /// `duration = 0` flags the item as live — no scrobble, no gapless,
-    /// no scrubbing in the now-playing UI.
-    static func makeInternetRadio(
-        station: InternetRadioStation,
-        serverID: UUID,
-        streamURL: URL
-    ) -> QueueItem {
-        let fmt = AudioSourceFormat(
-            sampleRate: 44100,
-            bitDepth: 16,
-            channelCount: 2,
-            isInterleaved: false,
-            codec: "stream"
-        )
-        return QueueItem(
-            trackID: -1,
-            bookmark: nil,
-            fileURL: streamURL.absoluteString,
-            duration: 0,
-            sourceFormat: fmt,
-            title: station.name,
-            artistName: L10n.string("Internet Radio"),
-            albumName: station.homePageUrl,
-            genre: nil,
-            playableSource: .internetRadio(streamURL: streamURL)
-        )
-    }
-
     /// Builds a `QueueItem` from a SwiftSonic `Song`, marking it as a
     /// `.subsonic` `PlayableSource` so the audio engine routes it through
     /// `SubsonicStreamCache`.
