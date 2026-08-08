@@ -1362,6 +1362,18 @@ public actor QueuePlayer: Transport {
         guard savedPosition > 0 else { return }
         UserDefaults.standard.removeObject(forKey: "playback.resumePosition")
 
+        // Live radio cannot resume: there is no position to return to, and a
+        // seek on a live ICY stream degrades into FFmpeg reading the stream
+        // at the server's pace while the transport gate is held, wedging
+        // every subsequent play (launch hang: restoreQueue -> seek ->
+        // SSL_read). Restore the queue rows only; pressing play cold-starts
+        // the station fresh.
+        if let current = await self.queue.currentItem,
+           case .internetRadio = current.playableSource {
+            self.log.debug("queueplayer.position.restore.skippedLiveStream", [:])
+            return
+        }
+
         // A podcast item carries its own per-episode resume position, applied
         // inside `loadAndPlay`. The global last-position must not double-seek it
         // (gotcha: the two resume paths must not fight). Pre-load so the

@@ -434,6 +434,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     func performSeek(to time: TimeInterval) async throws {
         guard let dec = decoder else { return }
+        if self.refuseLiveStreamSeek(time) { return }
         guard self._duration == 0 || time <= self._duration + 0.001 else {
             throw AudioEngineError.seekOutOfRange(requested: time, duration: self._duration)
         }
