@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import Persistence
 import Testing
 @testable import UI
 
@@ -70,6 +71,83 @@ struct NavigationInputTests {
                 "\(destination) must not drill out"
             )
         }
+    }
+
+    // MARK: - Plausible containers
+
+    @Test("an album's plausible containers are its artist, genre, composer, and the Albums root")
+    func albumContainers() {
+        #expect(LibraryViewModel.isPlausibleContainer(.artist(3), of: .album(7)))
+        #expect(LibraryViewModel.isPlausibleContainer(.genre("Ambient"), of: .album(7)))
+        #expect(LibraryViewModel.isPlausibleContainer(.composer("Eno"), of: .album(7)))
+        #expect(LibraryViewModel.isPlausibleContainer(.albums, of: .album(7)))
+        #expect(!LibraryViewModel.isPlausibleContainer(.podcasts, of: .album(7)))
+        #expect(!LibraryViewModel.isPlausibleContainer(.radio, of: .album(7)))
+        #expect(!LibraryViewModel.isPlausibleContainer(.songs, of: .album(7)))
+    }
+
+    @Test("Subsonic containers must match the server")
+    func subsonicContainersMatchServer() {
+        let server = UUID()
+        let other = UUID()
+        #expect(LibraryViewModel.isPlausibleContainer(
+            .subsonicArtist(server, "ar-1"), of: .subsonicAlbum(server, "al-1")
+        ))
+        #expect(LibraryViewModel.isPlausibleContainer(
+            .subsonicAlbums(server), of: .subsonicAlbum(server, "al-1")
+        ))
+        #expect(!LibraryViewModel.isPlausibleContainer(
+            .subsonicAlbums(other), of: .subsonicAlbum(server, "al-1")
+        ))
+    }
+
+    // MARK: - Drill-out behaviour
+
+    @MainActor
+    private func makeVM() async throws -> LibraryViewModel {
+        let db = try await Database(location: .inMemory)
+        return LibraryViewModel(database: db, engine: MockTransport())
+    }
+
+    @MainActor
+    private func awaitDestination(
+        _ expected: SidebarDestination,
+        on vm: LibraryViewModel
+    ) async throws -> Bool {
+        for _ in 0 ..< 100 {
+            if vm.selectedDestination == expected { return true }
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        return false
+    }
+
+    @MainActor
+    @Test("Esc from an album reached via its artist returns to that artist, then to Artists")
+    func albumFromArtistDrillsOutToArtist() async throws {
+        let vm = try await self.makeVM()
+        await vm.selectDestination(.artists)
+        await vm.selectDestination(.artist(3))
+        await vm.selectDestination(.album(7))
+
+        #expect(vm.drillOutToParent())
+        #expect(try await self.awaitDestination(.artist(3), on: vm), "history parent must win")
+
+        #expect(vm.drillOutToParent())
+        #expect(try await self.awaitDestination(.artists, on: vm), "then the structural root")
+    }
+
+    @Test("Esc from an album reached from elsewhere falls back to the Albums root")
+    @MainActor
+    func albumFromElsewhereFallsBackToAlbums() async throws {
+        let vm = try await self.makeVM()
+        await vm.selectDestination(.podcasts)
+        await vm.selectDestination(.album(7))
+
+        #expect(vm.drillOutToParent())
+        #expect(
+            try await self.awaitDestination(.albums, on: vm),
+            "an implausible history entry must not make Esc teleport to Podcasts"
+        )
     }
 
     // MARK: - Wiring
