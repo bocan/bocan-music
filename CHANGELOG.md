@@ -5,6 +5,31 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0](https://github.com/bocan/bocan-music/compare/v2.5.0...v2.6.0) (2026-08-08)
+
+
+### ### Added
+
+* **audio:** capture stream details and ICY now-playing titles in FFmpegDecoder (phase 27-5) ([bffc1b4](https://github.com/bocan/bocan-music/commit/bffc1b4caddbd59e7bc69d5e8b7e2dbd5c129454))
+* **library:** import playlist stream entries as radio stations (phase 27-4) ([1baf399](https://github.com/bocan/bocan-music/commit/1baf399ce35b12eed67655ba5a73adcea9e39b38)), closes [#376](https://github.com/bocan/bocan-music/issues/376)
+* **library:** remote playlist resolver for radio station URLs (phase 27-3) ([2892cf9](https://github.com/bocan/bocan-music/commit/2892cf9dd3466b79d4e18fb05638627d0a0f924f))
+* **persistence:** add radio station catalog (phase 27-1) ([7e034dd](https://github.com/bocan/bocan-music/commit/7e034dd60697f7ad93d645606d05249b12cd95d9))
+* **persistence:** add stream-detail profile columns to radio stations (phase 27-5) ([a8bf227](https://github.com/bocan/bocan-music/commit/a8bf2279d2f1cc346b17faf2eb248228f8977bb4))
+* **playback:** forward stream titles and details through QueuePlayer (phase 27-5) ([64e6e3f](https://github.com/bocan/bocan-music/commit/64e6e3f70eec8fa1370c017c1f63be8a65c712e2))
+* **ui:** live radio titles and the station stream-details sheet (phase 27-5) ([14e6dce](https://github.com/bocan/bocan-music/commit/14e6dce508a3f9b18a9144ac5e14db9aaa8aa186))
+* **ui:** local Radio destination with station catalog (phase 27-3) ([a24df75](https://github.com/bocan/bocan-music/commit/a24df7575b624f19bed7f817918e9310d6ee0685))
+* **ui:** mouse back/forward buttons and Esc drill-out navigation ([866ebc4](https://github.com/bocan/bocan-music/commit/866ebc43b94bb8560a9a50f8cff90a23940fd682)), closes [#378](https://github.com/bocan/bocan-music/issues/378)
+* **ui:** shared internet radio queue-item factory and play path (phase 27-2) ([82eb7d5](https://github.com/bocan/bocan-music/commit/82eb7d5205d3b2071b1d03183a7b061a749f04ca))
+
+
+### ### Fixed
+
+* **audio:** detect ICY title support from evidence, not the consumed icy-metaint header ([a7546b4](https://github.com/bocan/bocan-music/commit/a7546b4acb8092ae24ffd0672457096cba9874be))
+* **playback:** never seek a live radio stream on queue restore ([d41044f](https://github.com/bocan/bocan-music/commit/d41044ff4346d671897f4713c958c100a18fb1fb))
+* **ui:** advertise playlist URLs in the Add Station sheet ([a027f71](https://github.com/bocan/bocan-music/commit/a027f711096dc4188d17069d2a4bc55b60b8ca8a))
+* **ui:** Esc drill-out prefers the artist (or other container) you came from ([11a30b8](https://github.com/bocan/bocan-music/commit/11a30b80a64a769e0aaf09b6e9f3e6a6aef69e2b)), closes [#378](https://github.com/bocan/bocan-music/issues/378)
+* **ui:** route Cmd+A to the focused text editor before selecting tracks ([e19b693](https://github.com/bocan/bocan-music/commit/e19b69389b5e08e1914080783db3f00397c55748)), closes [#379](https://github.com/bocan/bocan-music/issues/379)
+
 ## [2.5.0](https://github.com/bocan/bocan-music/compare/v2.4.0...v2.5.0) (2026-08-04)
 
 New: Library Summary
