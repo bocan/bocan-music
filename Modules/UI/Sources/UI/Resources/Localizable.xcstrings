@@ -14686,6 +14686,23 @@
         }
       }
     },
+    "Paste a .m3u or .pls link and every station inside will be offered." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paste a .m3u or .pls link and every station inside will be offered."
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƥášţé á .ḿ3ú óŕ .ƥĺš ĺíñķ áñđ évéŕý šţáţíóñ íñšíđé ŵíĺĺ ƀé óƒƒéŕéđ. one two three four five"
+          }
+        }
+      }
+    },
     "Paste an image from the clipboard" : {
       "localizations" : {
         "en-XA" : {
@@ -20076,6 +20093,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šţŕéáḿ ÚŔĹ one"
+          }
+        }
+      }
+    },
+    "Stream or Playlist URL" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stream or Playlist URL"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šţŕéáḿ óŕ Ƥĺáýĺíšţ ÚŔĹ one two"
           }
         }
       }
