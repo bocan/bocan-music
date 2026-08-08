@@ -82,6 +82,44 @@ permalink: /docs/
     no "shuffle" that mysteriously plays the same five tracks.
   </p>
 
+  <h2 id="internet-radio">Internet radio</h2>
+  <p>
+    The <strong>Radio</strong> entry in the sidebar holds your station
+    catalog. Three ways to fill it:
+  </p>
+  <ul>
+    <li>
+      <strong>By hand:</strong> click <strong>Add Station</strong> in the
+      Radio pane and paste a stream URL.
+    </li>
+    <li>
+      <strong>From a playlist URL:</strong> paste a <code>.m3u</code> or
+      <code>.pls</code> link into the same sheet and every stream inside is
+      offered as a station, names included.
+    </li>
+    <li>
+      <strong>From a playlist file:</strong> import or drop a playlist and
+      its stream entries become stations instead of missing tracks; any
+      local entries still become a normal playlist.
+    </li>
+  </ul>
+  <p>
+    While a station plays, the song title arrives live from the stream and
+    the station name moves to the artist line; the macOS Now Playing widget
+    follows along. The player's <strong>info</strong> button (or the
+    <strong>i</strong> on any station row) opens the station's details:
+    homepage, genre, description, and the stream facts as measured by the
+    decoder: container, codec and profile (LC vs HE-AAC), sample rate,
+    channels, and the bitrate the stream claims. Details are remembered per
+    station after the first listen, so the sheet works offline too.
+  </p>
+  <p>
+    Live radio deliberately behaves differently from files: there is no
+    seeking (live audio has no timeline), stations never scrobble, and
+    station idents never touch your play history. If a stream drops,
+    Bòcan reconnects on its own before giving up.
+  </p>
+
   <h2 id="viewing-logs">Viewing logs</h2>
   <p>
     Bòcan has a built-in log console you can open without leaving the app.
