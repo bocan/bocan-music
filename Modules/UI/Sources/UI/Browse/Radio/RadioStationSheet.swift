@@ -61,8 +61,13 @@ struct RadioStationSheet: View {
 
             Form {
                 TextField(L10n.string("Station Name"), text: self.$name, prompt: nil)
-                TextField(L10n.string("Stream URL"), text: self.$streamURL)
+                TextField(self.streamURLLabel, text: self.$streamURL)
                     .autocorrectionDisabled()
+                if case .add = self.mode {
+                    Text(localized: "Paste a .m3u or .pls link and every station inside will be offered.")
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.textSecondary)
+                }
                 TextField(L10n.string("Homepage"), text: self.$homePage)
                     .autocorrectionDisabled()
             }
@@ -179,6 +184,18 @@ struct RadioStationSheet: View {
 
         case .edit:
             L10n.string("Edit Station")
+        }
+    }
+
+    /// Only the add path resolves playlist URLs, so only the add label
+    /// advertises them; edit keeps the literal truth.
+    private var streamURLLabel: String {
+        switch self.mode {
+        case .add:
+            L10n.string("Stream or Playlist URL")
+
+        case .edit:
+            L10n.string("Stream URL")
         }
     }
 
