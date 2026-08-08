@@ -1,3 +1,4 @@
+import Foundation
 import Persistence
 
 // MARK: - LibraryViewModel + Navigation
@@ -105,14 +106,84 @@ extension LibraryViewModel {
         }
     }
 
-    /// Esc drill-out (#378): navigates to the structural parent of the
-    /// current drill-down. Returns false at section roots so the caller can
-    /// pass the event through. Deliberately not history-back: history can
-    /// cross sidebar sections, and Esc teleporting across the sidebar would
-    /// feel broken.
+    /// Whether `candidate` is a view the user plausibly opened `destination`
+    /// from: the containers a drill-down legitimately belongs to. An album's
+    /// containers include any artist, genre, or composer page as well as the
+    /// Albums root; the Subsonic drill-downs require the same server. Esc
+    /// follows history only when it passes this check, so an implausible
+    /// previous entry (Podcasts behind an album, say) can never make Esc
+    /// teleport across sidebar sections.
+    nonisolated static func isPlausibleContainer(
+        _ candidate: SidebarDestination,
+        of destination: SidebarDestination
+    ) -> Bool {
+        switch destination {
+        case .album:
+            self.isAlbumContainer(candidate)
+
+        case .artist:
+            candidate == .artists
+
+        case .genre:
+            candidate == .genres
+
+        case .composer:
+            candidate == .composers
+
+        case .podcastShow:
+            candidate == .podcasts
+
+        case let .subsonicAlbum(server, _):
+            self.isSubsonicAlbumContainer(candidate, server: server)
+
+        case let .subsonicArtist(server, _):
+            candidate == .subsonicArtists(server)
+
+        case let .subsonicPlaylist(server, _):
+            candidate == .subsonicPlaylists(server)
+
+        default:
+            false
+        }
+    }
+
+    private nonisolated static func isAlbumContainer(_ candidate: SidebarDestination) -> Bool {
+        switch candidate {
+        case .albums, .artist, .genre, .composer:
+            true
+
+        default:
+            false
+        }
+    }
+
+    private nonisolated static func isSubsonicAlbumContainer(
+        _ candidate: SidebarDestination,
+        server: UUID
+    ) -> Bool {
+        switch candidate {
+        case .subsonicAlbums(server), .subsonicArtist(server, _):
+            true
+
+        default:
+            false
+        }
+    }
+
+    /// Esc drill-out (#378): prefers the history entry the user came from
+    /// when it is a plausible container of the current drill-down (an album
+    /// opened from its artist returns to that artist, popping history so
+    /// mouse-forward still returns to the album), and falls back to the
+    /// structural parent otherwise. Returns false at section roots so the
+    /// caller can pass the event through.
     @discardableResult
     public func drillOutToParent() -> Bool {
-        guard let parent = Self.parentDestination(of: self.selectedDestination) else { return false }
+        let current = self.selectedDestination
+        if let previous = self.lastHistoryEntry, Self.isPlausibleContainer(previous, of: current) {
+            Task { await self.goBack() }
+            return true
+        }
+        guard let parent = Self.parentDestination(of: current) else { return false }
         Task { await self.selectDestination(parent) }
         return true
     }

@@ -116,6 +116,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var backStack: [SidebarDestination] = []
     private var forwardStack: [SidebarDestination] = []
     private static let historyLimit = 50
+    /// The most recent history entry, for Esc drill-out's plausible-container
+    /// check (#378) without widening `backStack` itself.
+    var lastHistoryEntry: SidebarDestination? {
+        self.backStack.last
+    }
 
     // MARK: - Scroll restoration
 
