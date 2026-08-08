@@ -81,6 +81,17 @@ public actor QueuePlayer: Transport {
     public nonisolated let schemaWarnings: AsyncStream<String>
     private var schemaWarningContinuation: AsyncStream<String>.Continuation?
 
+    // MARK: - Stream titles (phase 27-5)
+
+    /// Live ICY now-playing titles, re-emitted for the UI. Yields only while
+    /// the current item is internet radio; the same title also lands in
+    /// `MPNowPlayingInfoCenter` via `NowPlayingCentre.updateStream`.
+    public nonisolated let streamTitleUpdates: AsyncStream<String>
+    private var streamTitleContinuation: AsyncStream<String>.Continuation?
+    /// Long-lived consumer of the engine's title stream; runs for the
+    /// player's lifetime.
+    private var titleObservationTask: Task<Void, Never>?
+
     // MARK: - Internal state
 
     private var currentTrack: Track?
@@ -167,6 +178,10 @@ public actor QueuePlayer: Transport {
         self.schemaWarnings = AsyncStream { schemaWarnContinuation = $0 }
         self.schemaWarningContinuation = schemaWarnContinuation
 
+        var titleContinuation: AsyncStream<String>.Continuation?
+        self.streamTitleUpdates = AsyncStream { titleContinuation = $0 }
+        self.streamTitleContinuation = titleContinuation
+
         // Build sleep timer — captures engine weakly so it can set volume / stop.
         self.sleepTimer = SleepTimer(
             onStop: { [weak engine] in await engine?.stop() },
@@ -192,6 +207,14 @@ public actor QueuePlayer: Transport {
 
         // Bind remote command handlers.
         await self.bindRemoteCommands(commands)
+
+        // Forward live ICY titles for the player's lifetime (phase 27-5).
+        let engineTitles = self.engine.streamTitleUpdates
+        self.titleObservationTask = Task { [weak self] in
+            for await title in engineTitles {
+                await self?.applyStreamTitle(title)
+            }
+        }
 
         // Configure gapless scheduler.
         await self.gaplessScheduler.configure(
@@ -276,6 +299,27 @@ public actor QueuePlayer: Transport {
 
     public var duration: TimeInterval {
         get async { await self.engine.duration }
+    }
+
+    /// Stream facts from the engine's current decoder (phase 27-5); nil for
+    /// AVFoundation-decoded local files.
+    public var currentStreamDetails: StreamDetails? {
+        get async { await self.engine.currentStreamDetails }
+    }
+
+    /// Re-emits a live ICY title while the current item is internet radio:
+    /// once to the UI stream, once to `MPNowPlayingInfoCenter` with the
+    /// station name moved into the artist slot.
+    private func applyStreamTitle(_ title: String) async {
+        guard let item = await self.queue.currentItem,
+              case .internetRadio = item.playableSource else { return }
+        self.streamTitleContinuation?.yield(title)
+        let capturedEngine = self.engine
+        await self.nowPlayingCentre?.updateStream(
+            title: title,
+            stationName: item.title ?? "",
+            positionProvider: { await capturedEngine.currentTime }
+        )
     }
 
     /// Captures the current engine position to `UserDefaults` so the next launch
@@ -716,6 +760,15 @@ public actor QueuePlayer: Transport {
                 title: item.title ?? "",
                 showName: item.artistName ?? "",
                 duration: item.duration,
+                positionProvider: { await capturedEngine.currentTime }
+            )
+        } else if case .internetRadio = item.playableSource {
+            // Radio: no tracks row either. Seed with the station snapshot;
+            // live ICY titles overwrite the title slot as they arrive (27-5).
+            let capturedEngine = self.engine
+            await self.nowPlayingCentre?.updateStream(
+                title: item.title ?? "",
+                stationName: item.artistName ?? "",
                 positionProvider: { await capturedEngine.currentTime }
             )
         } else if let track {

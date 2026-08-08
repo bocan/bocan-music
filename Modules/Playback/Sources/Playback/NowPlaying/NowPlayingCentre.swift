@@ -99,6 +99,31 @@ public final class NowPlayingCentre {
         self.log.debug("nowplaying.update.podcast", ["title": title, "show": showName])
     }
 
+    /// Update the displayed item for a live radio stream (phase 27-5): the
+    /// stream title (or the station name until one arrives) in the title
+    /// slot, the station in the artist slot. No duration is set; live audio
+    /// has no timeline, and `IsLiveStream` tells the system so.
+    public func updateStream(
+        title: String,
+        stationName: String,
+        positionProvider: @Sendable @escaping () async -> TimeInterval
+    ) {
+        self.getPosition = positionProvider
+        // Invalidate any in-flight artwork load from a superseded track.
+        self.artworkToken &+= 1
+
+        var info: [String: Any] = [:]
+        info[MPMediaItemPropertyTitle] = title
+        info[MPMediaItemPropertyArtist] = stationName
+        info[MPNowPlayingInfoPropertyIsLiveStream] = true
+        info[MPNowPlayingInfoPropertyPlaybackRate] = self.isPlaying ? 1.0 : 0.0
+        info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        if self.isPlaying { self.startPositionTimer() }
+        self.log.debug("nowplaying.update.stream", ["title": title, "station": stationName])
+    }
+
     /// Called when playback state changes.
     public func setPlaying(_ playing: Bool) {
         self.isPlaying = playing
