@@ -25,6 +25,19 @@ public extension AudioEngine {
         }
     }
 
+    /// Whether a seek must be refused because the source is a live remote
+    /// stream (no duration, http source). FFmpeg degrades such a seek into
+    /// reading the stream at the server's pace, which holds the transport
+    /// gate for minutes and starves all playback (the phase 27 launch hang).
+    /// Podcasts carry a real duration and still seek. Logs when refusing.
+    internal func refuseLiveStreamSeek(_ time: TimeInterval) -> Bool {
+        guard self._duration <= 0,
+              let scheme = self.currentURL?.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else { return false }
+        self.log.warning("engine.seek.ignoredLiveStream", ["time": time])
+        return true
+    }
+
     /// Replaces the title-forwarding task for the freshly installed decoder.
     /// Called from `load` and the reconnect rebuild; a decoder without ICY
     /// metadata yields a task that ends at its first (immediate) finish.
