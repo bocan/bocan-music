@@ -37,6 +37,11 @@ public struct Sidebar: View {
                         symbol: "antenna.radiowaves.left.and.right",
                         label: L10n.string("Podcasts")
                     )
+                    self.sidebarRow(
+                        .radio,
+                        symbol: "dot.radiowaves.left.and.right",
+                        label: L10n.string("Radio")
+                    )
                 }
             } header: {
                 SidebarSectionHeader(

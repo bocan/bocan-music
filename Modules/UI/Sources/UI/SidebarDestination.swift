@@ -2,8 +2,10 @@ import Foundation
 
 /// All possible navigation destinations in the sidebar.
 ///
-/// Persisted to `settings` as part of `UIStateV1`, so the enum is `Codable`.
-/// New cases must bump the `ui.state.v1` key version or add a migration.
+/// Persisted to `settings` as part of `UIStateV2` (key `ui.state.v2`), so the
+/// enum is `Codable`. Adding a case is decode-compatible with saved blobs
+/// (the discriminator only appears once a new save writes it); changing or
+/// removing an existing case's encoding needs a key bump or a migration.
 public enum SidebarDestination: Hashable, Sendable, Codable {
     // MARK: - Library
 
@@ -87,6 +89,11 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case podcasts
     /// A subscribed show's episode list. Associated value is `podcasts.id`.
     case podcastShow(Int64)
+
+    // MARK: - Phase 27 (Radio)
+
+    /// The local internet radio station catalog.
+    case radio
 
     // MARK: - Search
 
