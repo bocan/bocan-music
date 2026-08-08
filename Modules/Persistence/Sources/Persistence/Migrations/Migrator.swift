@@ -63,6 +63,7 @@ public struct Migrator {
         M033PodcastArtworkHash.register(in: &dm)
         M034Provenance.register(in: &dm)
         M035ImportedListens.register(in: &dm)
+        M036RadioStations.register(in: &dm)
         return Self(inner: dm)
     }
 

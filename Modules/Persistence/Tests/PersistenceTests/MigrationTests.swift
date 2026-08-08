@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 35)
+        #expect(version == 36)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,39 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports thirty-five migrations")
+    @Test("Migrator reports thirty-six migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 35)
+        #expect(migrator.migrations.count == 36)
+    }
+
+    @Test("radio_stations exists with its catalog and profile columns after M036")
+    func radioStationsTable() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(radio_stations)")
+                .compactMap { $0["name"] as String? }
+        }
+        for name in [
+            "name", "stream_url", "home_page_url", "genre", "station_description",
+            "last_codec", "last_bitrate_kbps", "last_connected_at", "added_at",
+        ] {
+            #expect(columns.contains(name), "Expected column '\(name)' not found")
+        }
+
+        // stream_url is the catalog's identity key; duplicates must be rejected.
+        try await db.write { grdb in
+            try grdb.execute(
+                sql: "INSERT INTO radio_stations (name, stream_url, added_at) VALUES ('A', 'https://x', 0)"
+            )
+        }
+        await #expect(throws: (any Error).self) {
+            try await db.write { grdb in
+                try grdb.execute(
+                    sql: "INSERT INTO radio_stations (name, stream_url, added_at) VALUES ('B', 'https://x', 0)"
+                )
+            }
+        }
     }
 
     @Test("imported_listens exists with its identity index after M035")
