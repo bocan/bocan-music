@@ -17,7 +17,7 @@ All everyday commands go through the top-level `Makefile`. Run `make help` for t
 | Debug build | `make build` |
 | Unit + integration tests (Xcode bundle, excludes UI snapshots) | `make test` |
 | Coverage gate (CI gate, fails < 80%) | `make test-coverage` |
-| Per-module SPM tests | `make test-<module>` (e.g. `test-ui`, `test-audio-engine`, `test-persistence`, `test-playback`, `test-scrobble`, `test-metadata`, `test-library`, `test-acoustics`) |
+| Per-module SPM tests | `make test-<module>` (one per module: `test-observability`, `test-persistence`, `test-metadata`, `test-library`, `test-acoustics`, `test-audio-engine`, `test-playback`, `test-scrobble`, `test-subsonic`, `test-podcasts`, `test-sync-server`, `test-ui`) |
 | Per-module coverage with module-level floors | `make coverage-all` |
 | Lint (strict — CI gate) | `make lint` |
 | Auto-format | `make format` |
@@ -33,7 +33,7 @@ Per-module SPM tests use `swift test` under the module directory. To run a singl
 Strict module DAG, no upward imports:
 
 ```
-Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scrobble, Subsonic, Acoustics, SyncServer → UI → App
+Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scrobble, Subsonic, Acoustics, Podcasts, SyncServer → UI → App
 ```
 
 | Module | Owns |
@@ -47,6 +47,7 @@ Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scro
 | `Scrobble` | Last.fm / ListenBrainz / Rocksky providers + an offline-resilient `ScrobbleService` queue. |
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID + MusicBrainz lookup. |
+| `Podcasts` | FeedKit-based RSS/Atom feed refresh, Podcast Index + iTunes search, subscriptions, episode downloads and retention, Podcasting 2.0 extras (chapters, transcripts, persons, podroll). |
 | `SyncServer` | Phone Sync (phase 22): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and, in later slices, the Bonjour-advertised mutual-TLS server that serves a manifest + files read-only to a paired phone. Separate identity/port from any Phase 18 remote control. |
 | `UI` | All SwiftUI views, view models (`LibraryViewModel` is the spine), settings, mini player, snapshot tests. Only module that imports AppKit. |
 
