@@ -13,7 +13,7 @@
       <pubDate>Sun, 10 May 2026 23:04:13 +0000</pubDate>
       <sparkle:version>1778453967</sparkle:version>
       <sparkle:shortVersionString>0.9.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.9.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.9.0/Bocan.dmg"
@@ -27,7 +27,7 @@
       <pubDate>Sun, 10 May 2026 23:27:58 +0000</pubDate>
       <sparkle:version>1778455392</sparkle:version>
       <sparkle:shortVersionString>0.9.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.9.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.9.1/Bocan.dmg"
@@ -41,7 +41,7 @@
       <pubDate>Mon, 11 May 2026 00:06:00 +0000</pubDate>
       <sparkle:version>1778457689</sparkle:version>
       <sparkle:shortVersionString>0.9.3</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.9.3</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.9.3/Bocan.dmg"
@@ -55,7 +55,7 @@
       <pubDate>Mon, 11 May 2026 13:59:24 +0000</pubDate>
       <sparkle:version>1778507657</sparkle:version>
       <sparkle:shortVersionString>0.9.4</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.9.4</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.9.4/Bocan.dmg"
@@ -69,7 +69,7 @@
       <pubDate>Mon, 11 May 2026 16:02:04 +0000</pubDate>
       <sparkle:version>1778514995</sparkle:version>
       <sparkle:shortVersionString>0.10.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.10.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.10.0/Bocan.dmg"
@@ -83,7 +83,7 @@
       <pubDate>Mon, 11 May 2026 19:57:04 +0000</pubDate>
       <sparkle:version>1778529130</sparkle:version>
       <sparkle:shortVersionString>0.11.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.11.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.11.0/Bocan.dmg"
@@ -97,7 +97,7 @@
       <pubDate>Tue, 12 May 2026 10:25:24 +0000</pubDate>
       <sparkle:version>1778581154</sparkle:version>
       <sparkle:shortVersionString>0.12.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v0.12.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v0.12.0/Bocan.dmg"
@@ -111,7 +111,7 @@
       <pubDate>Wed, 13 May 2026 21:34:00 +0000</pubDate>
       <sparkle:version>1778707740</sparkle:version>
       <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.0.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.0.0/Bocan.dmg"
@@ -125,7 +125,7 @@
       <pubDate>Fri, 15 May 2026 16:46:01 +0000</pubDate>
       <sparkle:version>1778863268</sparkle:version>
       <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.0.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.0.1/Bocan.dmg"
@@ -139,7 +139,7 @@
       <pubDate>Sat, 16 May 2026 22:14:40 +0000</pubDate>
       <sparkle:version>1778969406</sparkle:version>
       <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.1.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.1.0/Bocan.dmg"
@@ -153,7 +153,7 @@
       <pubDate>Mon, 18 May 2026 22:59:57 +0000</pubDate>
       <sparkle:version>1779144912</sparkle:version>
       <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.2.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.2.1/Bocan.dmg"
@@ -167,7 +167,7 @@
       <pubDate>Wed, 20 May 2026 16:30:57 +0000</pubDate>
       <sparkle:version>1779294362</sparkle:version>
       <sparkle:shortVersionString>1.2.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.2.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.2.1/Bocan.dmg"
@@ -181,7 +181,7 @@
       <pubDate>Thu, 21 May 2026 08:16:59 +0000</pubDate>
       <sparkle:version>1779351137</sparkle:version>
       <sparkle:shortVersionString>1.3.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.3.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.3.0/Bocan.dmg"
@@ -195,7 +195,7 @@
       <pubDate>Sun, 24 May 2026 00:37:16 +0000</pubDate>
       <sparkle:version>1779582761</sparkle:version>
       <sparkle:shortVersionString>1.3.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.3.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.3.1/Bocan.dmg"
@@ -209,7 +209,7 @@
       <pubDate>Mon, 25 May 2026 08:58:28 +0000</pubDate>
       <sparkle:version>1779699230</sparkle:version>
       <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.4.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.4.0/Bocan.dmg"
@@ -223,7 +223,7 @@
       <pubDate>Wed, 27 May 2026 18:52:53 +0000</pubDate>
       <sparkle:version>1779907646</sparkle:version>
       <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.5.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.5.0/Bocan.dmg"
@@ -237,7 +237,7 @@
       <pubDate>Mon, 01 Jun 2026 07:28:55 +0000</pubDate>
       <sparkle:version>1780298632</sparkle:version>
       <sparkle:shortVersionString>1.6.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.6.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.6.0/Bocan.dmg"
@@ -251,7 +251,7 @@
       <pubDate>Tue, 02 Jun 2026 20:55:27 +0000</pubDate>
       <sparkle:version>1780433376</sparkle:version>
       <sparkle:shortVersionString>1.7.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.7.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.7.0/Bocan.dmg"
@@ -265,7 +265,7 @@
       <pubDate>Tue, 02 Jun 2026 21:22:00 +0000</pubDate>
       <sparkle:version>1780434875</sparkle:version>
       <sparkle:shortVersionString>1.7.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.7.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.7.1/Bocan.dmg"
@@ -279,7 +279,7 @@
       <pubDate>Mon, 08 Jun 2026 22:04:09 +0000</pubDate>
       <sparkle:version>1780955958</sparkle:version>
       <sparkle:shortVersionString>1.8.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.8.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.8.0/Bocan.dmg"
@@ -293,7 +293,7 @@
       <pubDate>Thu, 11 Jun 2026 10:24:23 +0000</pubDate>
       <sparkle:version>1781173096</sparkle:version>
       <sparkle:shortVersionString>1.9.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.9.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.9.0/Bocan.dmg"
@@ -307,7 +307,7 @@
       <pubDate>Sun, 14 Jun 2026 09:11:27 +0000</pubDate>
       <sparkle:version>1781427965</sparkle:version>
       <sparkle:shortVersionString>1.10.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.10.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.10.0/Bocan.dmg"
@@ -321,7 +321,7 @@
       <pubDate>Sun, 21 Jun 2026 21:36:48 +0000</pubDate>
       <sparkle:version>1782077460</sparkle:version>
       <sparkle:shortVersionString>1.11.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.11.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.11.0/Bocan.dmg"
@@ -335,7 +335,7 @@
       <pubDate>Tue, 23 Jun 2026 21:51:53 +0000</pubDate>
       <sparkle:version>1782251092</sparkle:version>
       <sparkle:shortVersionString>1.12.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.12.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.12.0/Bocan.dmg"
@@ -349,7 +349,7 @@
       <pubDate>Tue, 23 Jun 2026 22:40:13 +0000</pubDate>
       <sparkle:version>1782253973</sparkle:version>
       <sparkle:shortVersionString>1.12.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.12.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.12.1/Bocan.dmg"
@@ -363,7 +363,7 @@
       <pubDate>Sun, 28 Jun 2026 21:22:46 +0000</pubDate>
       <sparkle:version>1782681380</sparkle:version>
       <sparkle:shortVersionString>1.14.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.14.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.14.0/Bocan.dmg"
@@ -377,7 +377,7 @@
       <pubDate>Sun, 28 Jun 2026 23:54:09 +0000</pubDate>
       <sparkle:version>1782690514</sparkle:version>
       <sparkle:shortVersionString>1.14.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.14.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.14.1/Bocan.dmg"
@@ -391,7 +391,7 @@
       <pubDate>Wed, 01 Jul 2026 10:36:28 +0000</pubDate>
       <sparkle:version>1782901778</sparkle:version>
       <sparkle:shortVersionString>1.15.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.15.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.15.0/Bocan.dmg"
@@ -405,7 +405,7 @@
       <pubDate>Sun, 05 Jul 2026 20:45:01 +0000</pubDate>
       <sparkle:version>1783283965</sparkle:version>
       <sparkle:shortVersionString>1.16.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.16.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.16.0/Bocan.dmg"
@@ -419,7 +419,7 @@
       <pubDate>Sun, 05 Jul 2026 22:06:30 +0000</pubDate>
       <sparkle:version>1783288776</sparkle:version>
       <sparkle:shortVersionString>1.16.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.16.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.16.1/Bocan.dmg"
@@ -433,7 +433,7 @@
       <pubDate>Mon, 06 Jul 2026 10:22:34 +0000</pubDate>
       <sparkle:version>1783332916</sparkle:version>
       <sparkle:shortVersionString>1.17.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.17.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.17.0/Bocan.dmg"
@@ -447,7 +447,7 @@
       <pubDate>Mon, 06 Jul 2026 23:41:58 +0000</pubDate>
       <sparkle:version>1783380961</sparkle:version>
       <sparkle:shortVersionString>1.17.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v1.17.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v1.17.1/Bocan.dmg"
@@ -461,7 +461,7 @@
       <pubDate>Sun, 12 Jul 2026 02:04:03 +0000</pubDate>
       <sparkle:version>1783821427</sparkle:version>
       <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.0.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.0.0/Bocan.dmg"
@@ -475,7 +475,7 @@
       <pubDate>Mon, 13 Jul 2026 13:08:10 +0000</pubDate>
       <sparkle:version>1783947645</sparkle:version>
       <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.1.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.1.0/Bocan.dmg"
@@ -489,7 +489,7 @@
       <pubDate>Sat, 18 Jul 2026 00:42:38 +0000</pubDate>
       <sparkle:version>1784334983</sparkle:version>
       <sparkle:shortVersionString>2.2.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.2.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.2.0/Bocan.dmg"
@@ -503,7 +503,7 @@
       <pubDate>Sun, 19 Jul 2026 19:00:05 +0000</pubDate>
       <sparkle:version>1784487215</sparkle:version>
       <sparkle:shortVersionString>2.3.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.3.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.3.0/Bocan.dmg"
@@ -517,7 +517,7 @@
       <pubDate>Sun, 19 Jul 2026 22:57:23 +0000</pubDate>
       <sparkle:version>1784501355</sparkle:version>
       <sparkle:shortVersionString>2.3.1</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.3.1</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.3.1/Bocan.dmg"
@@ -531,7 +531,7 @@
       <pubDate>Thu, 30 Jul 2026 20:51:21 +0000</pubDate>
       <sparkle:version>1785444253</sparkle:version>
       <sparkle:shortVersionString>2.4.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.4.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.4.0/Bocan.dmg"
@@ -545,7 +545,7 @@
       <pubDate>Tue, 04 Aug 2026 13:10:28 +0000</pubDate>
       <sparkle:version>1785848525</sparkle:version>
       <sparkle:shortVersionString>2.5.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.5.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.5.0/Bocan.dmg"
@@ -559,7 +559,7 @@
       <pubDate>Sat, 08 Aug 2026 23:22:35 +0000</pubDate>
       <sparkle:version>1786230920</sparkle:version>
       <sparkle:shortVersionString>2.6.0</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
       <sparkle:releaseNotesLink>https://github.com/bocan/bocan-music/releases/tag/v2.6.0</sparkle:releaseNotesLink>
       <enclosure
         url="https://github.com/bocan/bocan-music/releases/download/v2.6.0/Bocan.dmg"

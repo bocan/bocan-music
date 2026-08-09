@@ -96,6 +96,16 @@ if (( DRY_RUN == 0 )); then
 fi
 
 PUBDATE="$(date -u +"%a, %d %b %Y %H:%M:%S +0000")"
+
+# The app's real OS floor, read from the project definition so the appcast
+# can never claim a different minimum than the binary enforces. A hardcoded
+# 26.0 here silently hid every update from macOS 15 users.
+MIN_OS=$(awk -F'"' '/MACOSX_DEPLOYMENT_TARGET/ { print $2; exit }' \
+    "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/project.yml")
+if [[ -z "$MIN_OS" ]]; then
+    echo "error: could not read MACOSX_DEPLOYMENT_TARGET from project.yml" >&2
+    exit 1
+fi
 URL="https://github.com/bocan/bocan-music/releases/download/v${VERSION}/$(basename "$DMG")"
 NOTES_URL="https://github.com/bocan/bocan-music/releases/tag/v${VERSION}"
 
@@ -116,7 +126,7 @@ mkdir -p "$(dirname "$OUTPUT")"
   <pubDate>${PUBDATE}</pubDate>
 ${CHANNEL_LINE:+${CHANNEL_LINE}$'\n'}  <sparkle:version>${BUILD}</sparkle:version>
   <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
-  <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+  <sparkle:minimumSystemVersion>${MIN_OS}</sparkle:minimumSystemVersion>
   <sparkle:releaseNotesLink>${NOTES_URL}</sparkle:releaseNotesLink>
   <enclosure
     url="${URL}"
