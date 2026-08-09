@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.6.1](https://github.com/bocan/bocan-music/compare/v2.6.0...v2.6.1) (2026-08-09)
 
+A big one: in-app updates now actually work on macOS 15. A hardcoded value in our release pipeline told Sparkle that every update required macOS 26, so anyone on Sequoia has been quietly informed they were "up to date" since the very first release. That's fixed, both for this release and retroactively for the published feed, so if this update appeared out of nowhere after months of silence: hello, welcome back, you have some catching up to do.
+
+Small polish. While a radio station or podcast plays, the title line in the player is now properly bright instead of dimmed like the subtitle under it. And the website got a cleanup: the front page no longer displays raw arrow codes and HTML where links should be, the feature cards sit in tidy balanced columns, and the screenshot strip lost its stray scrollbar.
+
+Under the hood, a full dependency spring-clean. Every library Bòcan builds on is now at its latest release, including a Sparkle security patch and a major-version move of the cryptography package behind Phone Sync (verified byte-for-byte against the pairing test vectors, so paired phones notice nothing). The third-party notices file now reports true versions and credits three Apache-licensed components it had missed, and a weekly automated check now files an issue the moment any dependency falls behind, so none of this drifts quietly again.
+
 
 ### ### Fixed
 
