@@ -1,21 +1,28 @@
 #!/bin/bash
 set -euo pipefail
 
-# Regenerate NOTICES.md with current dependency versions from Homebrew and Package.resolved.
+# Regenerate NOTICES.md with current dependency versions from Homebrew and
+# the workspace Package.resolved.
 #
 # Usage: ./Scripts/gen-notices.sh
 #
 # This script:
 # 1. Extracts the app version from Resources/Info.plist
 # 2. Queries installed versions from Homebrew (ffmpeg, chromaprint, taglib)
-# 3. Extracts SPM versions from Package.resolved files
-# 4. Updates NOTICES.md with current versions while preserving license text
+# 3. Extracts SPM versions from the workspace Package.resolved (the single
+#    source of truth for what builds actually link; per-module resolved
+#    files are uncommitted side effects of local test runs)
+# 4. Rewrites NOTICES.md with current versions and the license texts below
+#
+# A missing pin is a hard error: silent fallbacks to hardcoded versions are
+# how this file drifted from reality once already.
 #
 # Run this after updating dependencies or before releases.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLIST_PATH="${REPO_ROOT}/Resources/Info.plist"
 NOTICES_PATH="${REPO_ROOT}/NOTICES.md"
+RESOLVED_PATH="${REPO_ROOT}/Bocan.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
 
 # Extract version from Info.plist CFBundleShortVersionString
 APP_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "${PLIST_PATH}")
@@ -31,38 +38,36 @@ echo "  - FFmpeg: ${FFMPEG_VERSION}"
 echo "  - Chromaprint: ${CHROMAPRINT_VERSION}"
 echo "  - TagLib: ${TAGLIB_VERSION}"
 
-# Extract SPM versions from Package.resolved files using swift package describe
-# (fallback to known versions if jq/parsing fails)
+# Extract an SPM pin version from the workspace Package.resolved by identity.
+# Hard-fails when the pin is absent so a rename or removal upstream cannot
+# silently print a stale number.
 extract_spm_version() {
-    local package_name="$1"
-    local module_path="$2"
+    local identity="$1"
+    python3 - "$RESOLVED_PATH" "$identity" << 'PY'
+import json
+import sys
 
-    if [[ ! -f "${module_path}/Package.resolved" ]]; then
-        return
-    fi
-
-    # Try to extract from Package.resolved JSON using grep+sed
-    grep -i "\"identity\"\s*:\s*\".*${package_name}\"" "${module_path}/Package.resolved" 2>/dev/null | head -1 | \
-        grep -o '"version"\s*:\s*"[^"]*"' | cut -d'"' -f4 || true
+path, identity = sys.argv[1], sys.argv[2]
+pins = json.load(open(path))["pins"]
+for pin in pins:
+    if pin["identity"] == identity:
+        print(pin["state"]["version"])
+        break
+else:
+    sys.exit(f"error: no pin with identity '{identity}' in {path}")
+PY
 }
 
-# Extract SPM versions
-GRDB_VERSION=$(extract_spm_version "grdb" "${REPO_ROOT}/Modules/Persistence")
-SNAPSHOT_VERSION=$(extract_spm_version "snapshot-testing" "${REPO_ROOT}/Modules/UI")
-CUSTOM_DUMP_VERSION=$(extract_spm_version "custom-dump" "${REPO_ROOT}/Modules/UI")
-XCTEST_VERSION=$(extract_spm_version "xctest-dynamic-overlay" "${REPO_ROOT}/Modules/UI")
-SPARKLE_VERSION=$(extract_spm_version "sparkle" "${REPO_ROOT}")
-SWIFTSONIC_VERSION=$(extract_spm_version "swiftsonic" "${REPO_ROOT}/Modules/Subsonic")
-FEEDKIT_VERSION=$(extract_spm_version "feedkit" "${REPO_ROOT}/Modules/Podcasts")
-
-# Fallback to known versions if extraction failed
-GRDB_VERSION=${GRDB_VERSION:-7.10.0}
-SNAPSHOT_VERSION=${SNAPSHOT_VERSION:-1.19.2}
-CUSTOM_DUMP_VERSION=${CUSTOM_DUMP_VERSION:-1.5.0}
-XCTEST_VERSION=${XCTEST_VERSION:-1.9.0}
-SPARKLE_VERSION=${SPARKLE_VERSION:-2.9.1}
-SWIFTSONIC_VERSION=${SWIFTSONIC_VERSION:-0.8.2}
-FEEDKIT_VERSION=${FEEDKIT_VERSION:-10.4.0}
+GRDB_VERSION=$(extract_spm_version "grdb.swift")
+SNAPSHOT_VERSION=$(extract_spm_version "swift-snapshot-testing")
+CUSTOM_DUMP_VERSION=$(extract_spm_version "swift-custom-dump")
+XCTEST_VERSION=$(extract_spm_version "xctest-dynamic-overlay")
+SPARKLE_VERSION=$(extract_spm_version "sparkle")
+SWIFTSONIC_VERSION=$(extract_spm_version "swiftsonic")
+FEEDKIT_VERSION=$(extract_spm_version "feedkit")
+CRYPTO_VERSION=$(extract_spm_version "swift-crypto")
+CERTIFICATES_VERSION=$(extract_spm_version "swift-certificates")
+ASN1_VERSION=$(extract_spm_version "swift-asn1")
 
 echo "  - GRDB: ${GRDB_VERSION}"
 echo "  - swift-snapshot-testing: ${SNAPSHOT_VERSION}"
@@ -71,6 +76,9 @@ echo "  - xctest-dynamic-overlay: ${XCTEST_VERSION}"
 echo "  - Sparkle: ${SPARKLE_VERSION}"
 echo "  - SwiftSonic: ${SWIFTSONIC_VERSION}"
 echo "  - FeedKit: ${FEEDKIT_VERSION}"
+echo "  - swift-crypto: ${CRYPTO_VERSION}"
+echo "  - swift-certificates: ${CERTIFICATES_VERSION}"
+echo "  - swift-asn1: ${ASN1_VERSION}"
 
 # Build the file by replacing version placeholders in the existing template sections
 cat > "${NOTICES_PATH}" << EOF
@@ -334,6 +342,42 @@ SOFTWARE.
 
 ---
 
+## swift-crypto ${CRYPTO_VERSION}
+
+<https://github.com/apple/swift-crypto>
+
+Cryptographic primitives for the Phone Sync feature. Licensed under the
+**Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## swift-certificates ${CERTIFICATES_VERSION}
+
+<https://github.com/apple/swift-certificates>
+
+X.509 certificate handling for the Phone Sync feature's mutual-TLS pairing.
+Licensed under the **Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## swift-asn1 ${ASN1_VERSION}
+
+<https://github.com/apple/swift-asn1>
+
+ASN.1 encoding underneath swift-certificates. Licensed under the
+**Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
 ## Podcast Index API
 
 This product uses the Podcast Index API (<https://podcastindex.org>). Use of the Podcast Index API is subject to the Podcast Index API Terms of Service.
@@ -347,7 +391,7 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 ---
 
 *This file was generated for Bòcan ${APP_VERSION}. Dependency versions are pinned in
-each module's \`Package.resolved\`.*
+the workspace \`Package.resolved\`.*
 EOF
 
 echo "✅ Generated ${NOTICES_PATH}"

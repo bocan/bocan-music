@@ -5,7 +5,7 @@ reproduced below as required by each project's terms.
 
 ---
 
-## FFmpeg 8.1.2
+## FFmpeg 8.1.2_1
 
 <https://ffmpeg.org>
 
@@ -22,7 +22,7 @@ The Homebrew formula used to build the bundled dylibs is
 
 ---
 
-## TagLib 2.3
+## TagLib 2.3.1
 
 <https://taglib.org>
 
@@ -58,7 +58,7 @@ Chromaprint source code is available at
 
 ---
 
-## GRDB.swift 7.10.0
+## GRDB.swift 7.11.1
 
 <https://github.com/groue/GRDB.swift>
 
@@ -86,7 +86,7 @@ SOFTWARE.
 
 ---
 
-## swift-snapshot-testing 1.19.2
+## swift-snapshot-testing 1.19.4
 
 <https://github.com/pointfreeco/swift-snapshot-testing>
 
@@ -114,7 +114,7 @@ SOFTWARE.
 
 ---
 
-## swift-custom-dump 1.5.0
+## swift-custom-dump 1.7.0
 
 <https://github.com/pointfreeco/swift-custom-dump>
 
@@ -142,7 +142,7 @@ SOFTWARE.
 
 ---
 
-## xctest-dynamic-overlay 1.9.0
+## xctest-dynamic-overlay 1.11.0
 
 <https://github.com/pointfreeco/xctest-dynamic-overlay>
 
@@ -170,7 +170,7 @@ SOFTWARE.
 
 ---
 
-## Sparkle 2.9.1
+## Sparkle 2.9.5
 
 <https://sparkle-project.org>
 
@@ -200,7 +200,7 @@ SOFTWARE.
 
 ---
 
-## SwiftSonic 0.8.2
+## SwiftSonic 0.9.0
 
 <https://github.com/MathieuDubart/swiftsonic>
 
@@ -258,6 +258,42 @@ SOFTWARE.
 
 ---
 
+## swift-crypto 4.5.1
+
+<https://github.com/apple/swift-crypto>
+
+Cryptographic primitives for the Phone Sync feature. Licensed under the
+**Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## swift-certificates 1.19.4
+
+<https://github.com/apple/swift-certificates>
+
+X.509 certificate handling for the Phone Sync feature's mutual-TLS pairing.
+Licensed under the **Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
+## swift-asn1 1.7.1
+
+<https://github.com/apple/swift-asn1>
+
+ASN.1 encoding underneath swift-certificates. Licensed under the
+**Apache License, Version 2.0**.
+
+The Apache 2.0 full text is available at:
+<https://www.apache.org/licenses/LICENSE-2.0>
+
+---
+
 ## Podcast Index API
 
 This product uses the Podcast Index API (<https://podcastindex.org>). Use of the Podcast Index API is subject to the Podcast Index API Terms of Service.
@@ -270,5 +306,5 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 1.14.1. Dependency versions are pinned in
-each module's `Package.resolved`.*
+*This file was generated for Bòcan 2.6.0. Dependency versions are pinned in
+the workspace `Package.resolved`.*
