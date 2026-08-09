@@ -1,0 +1,59 @@
+# Weekly check that Package.resolved pins still match upstream releases.
+#
+# Dependabot only watches the github-actions ecosystem here, and its Swift
+# support cannot see the Xcode-level Package.resolved (Sparkle, transitives),
+# so this job is the alert for Swift dependency drift: it opens, or updates,
+# a single "Dependency drift" issue whenever any pin lags upstream, and
+# closes nothing (a human decides when and how to bump).
+
+name: Dependency Drift
+
+on:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_TITLE: "Dependency drift: Package.resolved lags upstream"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare pins against upstream
+        id: drift
+        run: |
+          set +e
+          python3 Scripts/check-package-updates.py > report.md
+          code=$?
+          set -e
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat report.md
+          if [ "$code" -eq 1 ]; then
+            echo "::error::Some pins could not be checked; see warnings above."
+            exit 1
+          fi
+
+      - name: Open or refresh the drift issue
+        if: steps.drift.outputs.code == '2'
+        run: |
+          {
+            echo "Weekly report from the Dependency Drift workflow."
+            echo
+            cat report.md
+            echo
+            echo "_Refreshed automatically; close after bumping, and the next drift reopens a fresh one._"
+          } > issue.md
+          existing=$(gh issue list --state open --search "\"$ISSUE_TITLE\" in:title" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file issue.md
+          else
+            gh issue create --title "$ISSUE_TITLE" --label dependencies --body-file issue.md
+          fi
