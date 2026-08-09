@@ -25,3 +25,33 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # The GitHub release body is generated from release-please's own
+      # pre-computed notes and never re-reads CHANGELOG.md, so prose added
+      # to the changelog on the release PR branch (the documented way to
+      # write human release notes) used to require a manual
+      # `gh release edit` afterwards. Sync it automatically instead: the
+      # release body becomes the changelog section verbatim, which is also
+      # what the Sparkle update prompt shows via releaseNotesLink. The
+      # title is normalised to the bare version while we are here.
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+
+      - name: Sync release notes from CHANGELOG
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          awk -v ver="$VERSION" '
+            index($0, "## [" ver "]") == 1 { found = 1 }
+            found && /^## \[/ && index($0, "## [" ver "]") != 1 { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::error::No CHANGELOG section found for ${VERSION}; release notes left untouched."
+            exit 1
+          fi
+          gh release edit "$TAG" --title "$VERSION" --notes-file release-notes.md
+          echo "Release $TAG notes synced from CHANGELOG.md ($(wc -l < release-notes.md) lines)."
