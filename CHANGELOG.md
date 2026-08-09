@@ -5,6 +5,13 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2](https://github.com/bocan/bocan-music/compare/v2.6.1...v2.6.2) (2026-08-09)
+
+
+### Fixed
+
+* **release:** stop doubling the changelog section headings ([f419b35](https://github.com/bocan/bocan-music/commit/f419b35e9e00d4bdeaf1aa0f6ab14fdafe98ab4a))
+
 ## [2.6.1](https://github.com/bocan/bocan-music/compare/v2.6.0...v2.6.1) (2026-08-09)
 
 A big one: in-app updates now actually work on macOS 15. A hardcoded value in our release pipeline told Sparkle that every update required macOS 26, so anyone on Sequoia has been quietly informed they were "up to date" since the very first release. That's fixed, both for this release and retroactively for the published feed, so if this update appeared out of nowhere after months of silence: hello, welcome back, you have some catching up to do.
