@@ -5,6 +5,22 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1](https://github.com/bocan/bocan-music/compare/v2.6.0...v2.6.1) (2026-08-09)
+
+A big one: in-app updates now actually work on macOS 15. A hardcoded value in our release pipeline told Sparkle that every update required macOS 26, so anyone on Sequoia has been quietly informed they were "up to date" since the very first release. That's fixed, both for this release and retroactively for the published feed, so if this update appeared out of nowhere after months of silence: hello, welcome back, you have some catching up to do.
+
+Small polish. While a radio station or podcast plays, the title line in the player is now properly bright instead of dimmed like the subtitle under it. And the website got a cleanup: the front page no longer displays raw arrow codes and HTML where links should be, the feature cards sit in tidy balanced columns, and the screenshot strip lost its stray scrollbar.
+
+Under the hood, a full dependency spring-clean. Every library Bòcan builds on is now at its latest release, including a Sparkle security patch and a major-version move of the cryptography package behind Phone Sync (verified byte-for-byte against the pairing test vectors, so paired phones notice nothing). The third-party notices file now reports true versions and credits three Apache-licensed components it had missed, and a weekly automated check now files an issue the moment any dependency falls behind, so none of this drifts quietly again.
+
+
+### ### Fixed
+
+* **release:** appcast minimum system version must match the app's real floor ([feed4d3](https://github.com/bocan/bocan-music/commit/feed4d3f97d075ec2ef1696e52605f4bb7133c74))
+* **scripts:** make gen-notices read real pins and cover the Apache packages ([654f2d2](https://github.com/bocan/bocan-music/commit/654f2d288876d6f756428112f812c8c4d3843d8c))
+* **ui:** keep the now-playing title at full strength for radio and podcasts ([7a10ded](https://github.com/bocan/bocan-music/commit/7a10dedcb4ed1ecccb7376772c857e80ed27358e))
+* **website:** render feature bodies as HTML and tidy the front page ([a4990e8](https://github.com/bocan/bocan-music/commit/a4990e8e992b224fb6be64fccc967502fe1c0512))
+
 ## [2.6.0](https://github.com/bocan/bocan-music/compare/v2.5.0...v2.6.0) (2026-08-08)
 
 Internet radio, done properly. There's a new Radio section in the sidebar where you can build your own station list: add a stream by hand, paste a .m3u or .pls playlist link into the Add Station sheet and every station inside gets offered with its name intact, or just drop (or import) a playlist file on Bòcan and its streams become stations instead of "missing tracks". While a station plays, the song title arrives live from the stream and shows in the player and the macOS Now Playing widget, and the player's info button tells you exactly what you're hearing: codec, sample rate, channels, and the bitrate the station claims. Bòcan remembers each station's details, so the info sheet works even offline. Radio never scrobbles, never pretends live audio can rewind, and reconnects by itself if a stream hiccups. There's a starter pack of twelve stations to try. Thanks to @DanaturCode for requesting this one (#376) and pointing out that a playlist full of radio streams deserved better than becoming an empty playlist.
