@@ -155,6 +155,9 @@ public struct PhoneSyncSettingsView: View {
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier(A11y.SettingsIDs.pairPhone)
         }
+        // Form rows lay content out leading-aligned and the view hugs its
+        // content, which parked the whole block left of the card's centre.
+        .frame(maxWidth: .infinity)
     }
 
     private func deviceRow(_ device: TrustedDevice) -> some View {
