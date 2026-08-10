@@ -92,6 +92,11 @@ public actor QueuePlayer: Transport {
     /// player's lifetime.
     private var titleObservationTask: Task<Void, Never>?
 
+    /// Set once the deferred `activate()` has finished; until then,
+    /// `waitUntilActivated` callers queue here.
+    private var isActivated = false
+    private var activationWaiters: [CheckedContinuation<Void, Never>] = []
+
     // MARK: - Internal state
 
     private var currentTrack: Track?
@@ -196,6 +201,16 @@ public actor QueuePlayer: Transport {
         Task(priority: .medium) { await self.activate() }
     }
 
+    /// Suspends until the deferred activation (now-playing helpers, engine
+    /// and queue subscriptions, queue restore) has completed. Callers that
+    /// mutate the queue right after construction (the App layer's E2E queue
+    /// seeding is one) must await this first: a change emitted before the
+    /// persistence subscription attaches is dropped and never saved.
+    public func waitUntilActivated() async {
+        if self.isActivated { return }
+        await withCheckedContinuation { self.activationWaiters.append($0) }
+    }
+
     // MARK: - Async activation
 
     private func activate() async {
@@ -237,8 +252,12 @@ public actor QueuePlayer: Transport {
         // Subscribe to engine state (do not await — runs independently).
         Task { await self.subscribeToEngineState() }
 
-        // Subscribe to queue changes for persistence.
-        Task { await self.subscribeToQueueChanges() }
+        // Subscribe to queue changes for persistence. Attach the stream
+        // synchronously: a change emitted before the subscriber exists is
+        // dropped, so a queue mutation right after activation (the E2E
+        // seed hook is one) would otherwise never be persisted.
+        let queueChanges = await self.queue.changes()
+        Task { await self.subscribeToQueueChanges(stream: queueChanges) }
 
         // Restore persisted queue state.
         await self.restoreQueue()
@@ -246,6 +265,12 @@ public actor QueuePlayer: Transport {
         // Restore sleep timer (resumes countdown if it was set before quit).
         await self.sleepTimer.restoreIfNeeded()
 
+        self.isActivated = true
+        let waiters = self.activationWaiters
+        self.activationWaiters = []
+        for waiter in waiters {
+            waiter.resume()
+        }
         self.log.debug("queueplayer.activated")
     }
 
@@ -1320,8 +1345,8 @@ public actor QueuePlayer: Transport {
 
     // MARK: Queue change subscription (for persistence)
 
-    private func subscribeToQueueChanges() async {
-        for await _ in await self.queue.changes() {
+    private func subscribeToQueueChanges(stream: AsyncStream<QueueChange>) async {
+        for await _ in stream {
             let items = await queue.items
             let currentIndex = await queue.currentIndex
             let repeatMode = await queue.repeatMode
@@ -1435,7 +1460,14 @@ public actor QueuePlayer: Transport {
 
         var missing: Set<QueueItem.ID> = []
         for item in items {
-            guard let path = URL(string: item.fileURL)?.path else {
+            // Only file-backed items can go missing on disk. Remote sources
+            // (internet radio, Subsonic, streamed podcasts) carry http(s)
+            // URLs whose `.path` never exists locally; checking them marked
+            // every restored station "(missing)" and disabled its row.
+            guard let url = URL(string: item.fileURL),
+                  url.scheme == nil || url.isFileURL else { continue }
+            let path = url.path
+            guard !path.isEmpty else {
                 missing.insert(item.id)
                 continue
             }
