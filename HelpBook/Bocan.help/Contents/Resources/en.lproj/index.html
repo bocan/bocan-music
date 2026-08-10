@@ -48,11 +48,27 @@
 
         <dt>Playlists</dt>
         <dd>
-          Create standard playlists with <strong>File → New Playlist…</strong> (⌘N)
+          Create standard playlists with <strong>File → New Playlist…</strong> (⌘⇧N)
           or rules-based Smart Playlists with
           <strong>File → New Smart Playlist…</strong> (⌘⌥N).
           Import existing M3U/PLS/XSPF playlists via
           <strong>File → Import Playlist…</strong>.
+        </dd>
+
+        <dt>Search as you type</dt>
+        <dd>
+          Just start typing over any library view: the first letter jumps into
+          the search field and the query builds from there. <strong>⌘F</strong>
+          focuses the field too, <strong>⌘A</strong> selects your typed text
+          for replacing, and <strong>Esc</strong> leaves the search.
+        </dd>
+
+        <dt>Moving around</dt>
+        <dd>
+          The toolbar's back and forward arrows walk your browsing history,
+          and the back and forward side buttons on a mouse do the same.
+          <strong>Esc</strong> backs out of whatever you drilled into: an album
+          returns to the artist you opened it from, then to Artists.
         </dd>
 
         <dt>Lyrics</dt>
@@ -130,6 +146,46 @@
     </section>
 
     <section>
+      <h2>Internet Radio</h2>
+      <dl>
+        <dt>Adding a station</dt>
+        <dd>
+          Click <strong>Radio</strong> in the sidebar, then
+          <strong>Add Station</strong>. Paste a stream URL, give it a name if
+          you like (Bòcan fills one in from the station itself after the first
+          listen), and add.
+        </dd>
+
+        <dt>Adding a whole station list at once</dt>
+        <dd>
+          Paste a <code>.m3u</code> or <code>.pls</code> playlist link into the
+          <strong>Stream or Playlist URL</strong> field and every station
+          inside is offered with its name intact. Importing or dropping a
+          playlist file works too: its stream entries become stations, and any
+          local tracks still become a normal playlist.
+        </dd>
+
+        <dt>Now playing</dt>
+        <dd>
+          While a station plays, the song title arrives live from the stream
+          and the station name moves to the artist line. Live radio has no
+          timeline, so there is no seeking, and stations never scrobble or
+          touch your play history. If a stream drops, Bòcan reconnects on its
+          own before giving up.
+        </dd>
+
+        <dt>Stream details</dt>
+        <dd>
+          Click the <strong>info</strong> button in the player (or the
+          <strong>i</strong> on any station row) to see what you're hearing:
+          codec, sample rate, channels, the bitrate the station claims, and
+          whether it sends song titles. Details are remembered per station,
+          so the sheet works offline too.
+        </dd>
+      </dl>
+    </section>
+
+    <section>
       <h2>Keyboard Shortcuts</h2>
       <table>
         <thead>
@@ -137,18 +193,23 @@
         </thead>
         <tbody>
           <tr><td>Play / Pause</td><td>Space</td></tr>
+          <tr><td>Play Selection Now</td><td>⌘↩</td></tr>
           <tr><td>Next Track</td><td>⌘→</td></tr>
           <tr><td>Previous Track</td><td>⌘←</td></tr>
-          <tr><td>Toggle Shuffle</td><td>⌘S</td></tr>
-          <tr><td>Cycle Repeat</td><td>⌘R (hold)</td></tr>
+          <tr><td>Toggle Shuffle</td><td>⌘⇧S</td></tr>
+          <tr><td>Cycle Repeat</td><td>⌘⇧E</td></tr>
+          <tr><td>Mute / Unmute</td><td>⌘⌥Z</td></tr>
+          <tr><td>Love / Unlove</td><td>⌘L</td></tr>
+          <tr><td>Jump to Current Track</td><td>⌘J</td></tr>
           <tr><td>Get Info</td><td>⌘I</td></tr>
           <tr><td>Find</td><td>⌘F</td></tr>
-          <tr><td>New Playlist</td><td>⌘N</td></tr>
+          <tr><td>New Playlist</td><td>⌘⇧N</td></tr>
           <tr><td>Add Folder to Library</td><td>⌘⇧O</td></tr>
           <tr><td>Reveal in Finder</td><td>⌘R</td></tr>
           <tr><td>Show Lyrics</td><td>⌘⌥L</td></tr>
           <tr><td>Toggle Miniplayer</td><td>⌘⌥M</td></tr>
           <tr><td>Show Up Next</td><td>⌘⌥U</td></tr>
+          <tr><td>Library Summary</td><td>⌘⇧Y</td></tr>
           <tr><td>Log Console</td><td>⌘⇧L</td></tr>
         </tbody>
       </table>
