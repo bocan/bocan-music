@@ -262,7 +262,7 @@ struct BocanCommands: Commands {
 
             Menu("Playback Speed") {
                 ForEach(NowPlayingViewModel.quickRates, id: \.self) { rate in
-                    Button(String(format: "%.2g×", rate)) {
+                    Button(PlaybackRateLabel.string(for: rate)) {
                         Task { await self.vm.nowPlaying.setRate(rate) }
                     }
                 }
