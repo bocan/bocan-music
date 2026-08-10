@@ -19,6 +19,7 @@ public struct PlaybackSettingsView: View {
                     Slider(value: self.$rate, in: 0.5 ... 2.0, step: 0.05)
                         .frame(width: 160)
                         .accessibilityLabel(L10n.string("Default playback speed"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.speedSlider)
                         .help(L10n.string(
                             "Sets the playback speed for all tracks. 1× is normal speed; 0.5× is half speed; 2× is double speed."
                         ))
@@ -27,6 +28,7 @@ public struct PlaybackSettingsView: View {
                         .frame(width: 40)
                 }
                 Button(L10n.string("Reset to 1×")) { self.rate = 1.0 }
+                    .accessibilityIdentifier(A11y.SettingsIDs.speedReset)
                     .controlSize(.small)
                     .help(L10n.string("Reset playback speed to normal (1×)"))
             }
@@ -38,6 +40,7 @@ public struct PlaybackSettingsView: View {
                     Slider(value: self.$prerollSeconds, in: 1 ... 15, step: 1)
                         .frame(width: 120)
                         .accessibilityLabel(L10n.string("Gapless preroll duration"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.prerollSlider)
                         .help(L10n.string(
                             "How many seconds before a track ends that Bòcan pre-decodes the next one. Increase if you hear gaps."
                         ))
@@ -46,6 +49,7 @@ public struct PlaybackSettingsView: View {
                         .frame(width: 32)
                 }
                 Toggle(L10n.string("Allow gapless across different albums"), isOn: self.$crossAlbumGapless)
+                    .accessibilityIdentifier(A11y.SettingsIDs.crossAlbumGapless)
                     .help(L10n.string(
                         "When off, gapless only applies within the same album. Turn on for seamless transitions between any tracks."
                     ))
@@ -53,6 +57,7 @@ public struct PlaybackSettingsView: View {
 
             Section(L10n.string("Sleep Timer")) {
                 Toggle(L10n.string("Fade out audio in last 30 seconds"), isOn: self.$sleepTimerFadeOut)
+                    .accessibilityIdentifier(A11y.SettingsIDs.sleepFadeOut)
                     .help(L10n.string(
                         "Gradually fades the volume to silence in the final 30 seconds before the sleep timer stops playback."
                     ))

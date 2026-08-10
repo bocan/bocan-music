@@ -151,14 +151,3 @@ final class FoundationJourneys: XCTestCase {
         )
     }
 }
-
-// MARK: - Test-name sanitising
-
-private extension String {
-    /// "-[FoundationJourneys testX]" to a filesystem-friendly "testX".
-    var sanitizedTestName: String {
-        self.components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-            .last ?? "run"
-    }
-}

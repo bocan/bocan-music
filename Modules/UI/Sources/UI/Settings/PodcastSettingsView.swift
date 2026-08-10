@@ -25,7 +25,9 @@ public struct PodcastSettingsView: View {
                     Text(localized: "60 minutes").tag(60)
                     Text(localized: "Manual only").tag(0)
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.podcastRefreshInterval)
                 Toggle(L10n.string("Refresh on launch"), isOn: self.$refreshOnLaunch)
+                    .accessibilityIdentifier(A11y.SettingsIDs.podcastRefreshOnLaunch)
             }
             Section {
                 Picker(L10n.string("Auto-download"), selection: self.$autoDownloadCount) {
@@ -34,6 +36,7 @@ public struct PodcastSettingsView: View {
                     Text(localized: "5 newest episodes").tag(5)
                     Text(localized: "10 newest episodes").tag(10)
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.podcastAutoDownload)
             } footer: {
                 Text(localized: "How many new episodes to download for shows with auto-download enabled.")
             }
@@ -43,11 +46,13 @@ public struct PodcastSettingsView: View {
                     Text(localized: "15 seconds").tag(15.0)
                     Text(localized: "30 seconds").tag(30.0)
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.podcastSkipBack)
                 Picker(L10n.string("Skip forward"), selection: self.$skipForwardInterval) {
                     Text(localized: "15 seconds").tag(15.0)
                     Text(localized: "30 seconds").tag(30.0)
                     Text(localized: "45 seconds").tag(45.0)
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.podcastSkipForward)
                 HStack {
                     Text(localized: "Default speed")
                     Spacer()
@@ -58,6 +63,8 @@ public struct PodcastSettingsView: View {
                     }
                     .labelsHidden()
                     .frame(width: 80)
+                    .accessibilityLabel(L10n.string("Default speed"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.podcastDefaultSpeed)
                 }
             }
             Section(L10n.string("Search")) {
@@ -70,6 +77,7 @@ public struct PodcastSettingsView: View {
                     Text(localized: "France").tag("fr")
                     Text(localized: "Japan").tag("jp")
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.podcastStorefront)
                 HStack {
                     Text(localized: "Podcast Index API")
                     Spacer()

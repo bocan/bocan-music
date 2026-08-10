@@ -131,6 +131,7 @@ public struct LibrarySummaryView: View {
                 .fill(self.selection == tab ? Color.accentColor.opacity(0.12) : Color.clear)
         )
         .accessibilityAddTraits(self.selection == tab ? [.isButton, .isSelected] : [.isButton])
+        .accessibilityIdentifier(A11y.LibrarySummary.tab(tab.rawValue))
     }
 
     // MARK: - Panes

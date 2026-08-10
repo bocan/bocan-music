@@ -78,6 +78,7 @@ public struct ScrobbleSettingsView: View {
                         self.showRecentSheet = true
                     }
                     .help(L10n.string("View the last 50 scrobbled tracks and their submission status"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.recentScrobbles)
                 }
             }
         }
@@ -129,6 +130,7 @@ public struct ScrobbleSettingsView: View {
             if status.isConnected {
                 Button(L10n.string("Disconnect"), role: .destructive, action: disconnectAction)
                     .help(L10n.string("Disconnect \(status.displayName) and remove stored credentials"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.scrobbleDisconnect)
             } else {
                 Button(L10n.string("Connect…"), action: connectAction)
                     .help(L10n.string("Connect your \(status.displayName) account"))

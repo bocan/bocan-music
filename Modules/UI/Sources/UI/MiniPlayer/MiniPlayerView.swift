@@ -197,6 +197,7 @@ public struct MiniPlayerView: View {
             "Layout: \(self.vm.layout.rawValue.capitalized) — click to cycle Strip → Compact → Square → Visualizer"
         ))
         .accessibilityLabel(L10n.string("Cycle mini player layout, currently \(self.vm.layout.rawValue)"))
+        .accessibilityIdentifier(A11y.MiniPlayer.layoutButton)
     }
 
     private var pinButton: some View {
@@ -216,6 +217,7 @@ public struct MiniPlayerView: View {
         .accessibilityLabel(self.vm.alwaysOnTop
             ? L10n.string("Unpin mini player")
             : L10n.string("Pin mini player above other windows"))
+        .accessibilityIdentifier(A11y.MiniPlayer.pinButton)
     }
 
     private var dismissButton: some View {
@@ -231,6 +233,7 @@ public struct MiniPlayerView: View {
         .buttonStyle(.plain)
         .help(L10n.string("Return to main window"))
         .accessibilityLabel(L10n.string("Return to main window"))
+        .accessibilityIdentifier(A11y.MiniPlayer.dismissButton)
     }
 
     // MARK: - Window helpers

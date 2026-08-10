@@ -21,6 +21,7 @@ public struct LyricsSettingsView: View {
         Form {
             Section(L10n.string("Display")) {
                 Toggle(L10n.string("Show lyrics pane when a track has lyrics"), isOn: self.$autoShowPane)
+                    .accessibilityIdentifier(A11y.SettingsIDs.lyricsAutoShow)
 
                 Picker(L10n.string("Default font size"), selection: self.$fontSizeDefault) {
                     ForEach(LyricsFontSize.allCases, id: \.self) { size in
@@ -41,6 +42,7 @@ public struct LyricsSettingsView: View {
 
             Section(L10n.string("LRClib (opt-in)")) {
                 Toggle(L10n.string("Fetch lyrics from LRClib.net"), isOn: self.$lrclibEnabled)
+                    .accessibilityIdentifier(A11y.SettingsIDs.lyricsLrclib)
                 Text(self.lrclibFooter)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -48,6 +50,7 @@ public struct LyricsSettingsView: View {
 
             Section(L10n.string("Saving")) {
                 Toggle(L10n.string("Write lyrics back into audio files when saving"), isOn: self.$embedOnSave)
+                    .accessibilityIdentifier(A11y.SettingsIDs.lyricsEmbedOnSave)
                     .help(L10n.string("Embeds user-edited lyrics as USLT / Vorbis LYRICS tags. Requires file write access."))
             }
         }

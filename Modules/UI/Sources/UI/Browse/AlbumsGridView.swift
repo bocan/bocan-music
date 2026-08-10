@@ -59,6 +59,7 @@ private struct AlbumCell: View {
                 .joined(separator: ", ")
         )
         .accessibilityHint(L10n.string("Double-tap to open album"))
+        .accessibilityIdentifier(A11y.AlbumsGrid.tile(self.album.id))
     }
 }
 

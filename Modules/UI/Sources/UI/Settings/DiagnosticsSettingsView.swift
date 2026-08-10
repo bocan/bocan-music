@@ -38,6 +38,8 @@ public struct DiagnosticsSettingsView: View {
                             MetricKitListener.shared.stop()
                         }
                     }
+                    .accessibilityLabel(L10n.string("Share crash reports with the developer"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.crashConsentToggle)
                 Text(localized: "Reports from crashes are available the next day, after macOS processes them overnight.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -65,6 +67,7 @@ public struct DiagnosticsSettingsView: View {
                 }
                 .help(L10n.string("Opens ~/Library/Logs/Bocan/diagnostics/ in Finder."))
                 .accessibilityLabel(L10n.string("Open diagnostic reports folder in Finder"))
+                .accessibilityIdentifier(A11y.SettingsIDs.openReportsFolder)
             } header: {
                 Text(localized: "Diagnostic Reports")
             } footer: {
@@ -81,12 +84,14 @@ public struct DiagnosticsSettingsView: View {
                 }
                 .help(L10n.string("Open the floating Log Console window."))
                 .accessibilityLabel(L10n.string("Open log console window"))
+                .accessibilityIdentifier(A11y.SettingsIDs.openLogConsole)
 
                 Toggle(L10n.string("Capture in-app logs"), isOn: self.$captureEnabled)
                     .help(self.captureHelp)
                     .onChange(of: self.captureEnabled) { _, enabled in
                         LogStore.shared.isCaptureEnabled = enabled
                     }
+                    .accessibilityIdentifier(A11y.SettingsIDs.captureLogsToggle)
 
                 Text(localized: "\(self.logBufferCount) of \(LogStore.shared.capacity) entries in buffer")
                     .font(.caption)
@@ -172,6 +177,7 @@ public struct DiagnosticsSettingsView: View {
                     "Copy the full path to this report to the clipboard for pasting into a GitHub issue."
                 ))
                 .accessibilityLabel(L10n.string("Copy path of \(url.lastPathComponent)"))
+                .accessibilityIdentifier(A11y.SettingsIDs.reportCopyPath)
 
                 let isExpanded = self.expandedReport == url
                 Button(isExpanded ? L10n.string("Hide") : L10n.string("View")) {
@@ -188,6 +194,7 @@ public struct DiagnosticsSettingsView: View {
                 .controlSize(.mini)
                 .help(isExpanded ? L10n.string("Collapse this report.") : L10n.string("Preview the raw JSON report inline."))
                 .accessibilityLabel(isExpanded ? L10n.string("Collapse report") : L10n.string("View report \(url.lastPathComponent)"))
+                .accessibilityIdentifier(A11y.SettingsIDs.reportView)
             }
 
             if self.expandedReport == url {

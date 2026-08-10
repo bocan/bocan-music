@@ -21,6 +21,7 @@ struct PodcastAddBar: View {
             )
             .textFieldStyle(.plain)
             .accessibilityLabel(L10n.string("Search podcasts or paste a feed URL"))
+            .accessibilityIdentifier(A11y.Podcasts.addBarField)
 
             if !self.vm.addBarText.isEmpty {
                 Button {
@@ -30,6 +31,7 @@ struct PodcastAddBar: View {
                         .foregroundStyle(Color.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier(A11y.Podcasts.addBarClearButton)
                 .accessibilityLabel(L10n.string("Clear search"))
             }
         }

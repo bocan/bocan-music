@@ -109,6 +109,7 @@ public struct ScanBanner: View {
             .help(L10n.string("Dismiss the scan summary"))
             .accessibilityLabel(L10n.string("Dismiss"))
             .accessibilityHint(L10n.string("Hides the scan summary banner."))
+            .accessibilityIdentifier(A11y.ScanBanner.dismissButton)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

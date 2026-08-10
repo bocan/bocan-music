@@ -15,21 +15,18 @@ import UniformTypeIdentifiers
 /// pushed via `NavigationLink` rather than swapped here to avoid macOS
 /// bugs with dynamic detail swapping.
 ///
-/// `LibraryViewModel` is created by the app and injected here.  It is also
-/// placed in the environment so deeply nested views can reach it without
-/// passing it manually through every level.
+/// `LibraryViewModel` is injected by the app and also placed in the
+/// environment so deeply nested views can reach it directly.
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
     @ObservedObject private var lyricsVM: LyricsViewModel
     @ObservedObject private var visualizerVM: VisualizerViewModel
-    /// Held as a plain reference (not @ObservedObject) so `BocanRootView` does
-    /// not re-render on every scrobble-settings change. Only the sheet content
-    /// (`RecentScrobblesView`) subscribes to it as @ObservedObject.
+    /// Plain reference (not @ObservedObject) so `BocanRootView` skips
+    /// scrobble-settings re-renders; only `RecentScrobblesView` subscribes.
     private let scrobbleSettingsVM: ScrobbleSettingsViewModel?
     @EnvironmentObject private var windowMode: WindowModeController
     @FocusState private var searchFocused: Bool
-    /// Restored to `true` whenever any modal sheet closes so keyboard focus
-    /// returns to the main content area rather than being stranded.
+    /// Restored on sheet close so keyboard focus is never stranded.
     @FocusState private var mainContentFocused: Bool
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
@@ -39,9 +36,7 @@ public struct BocanRootView: View {
     @State private var duplicateReviewVM: DuplicateReviewViewModel?
     @AppStorage("appearance.colorScheme") private var colorSchemeKey = "system"
     @AppStorage("appearance.accentColor") private var accentColorKey = "system"
-    /// Phase 4 audit M8: observe so the FSEvents watcher starts/stops live
-    /// when the user toggles "Watch folders for new files" in Settings,
-    /// instead of waiting for the next launch.
+    /// Observed so the FSEvents watcher follows the Settings toggle live (M8).
     @AppStorage("library.watchForChanges") private var watchForChanges = true
     /// Show the first-launch consent banner until the user responds (issue #209).
     @AppStorage(MetricKitListener.consentAskedKey) private var diagnosticsConsentAsked = false
@@ -61,10 +56,9 @@ public struct BocanRootView: View {
         self.scrobbleSettingsVM = scrobbleSettingsVM
     }
 
-    /// `true` once the user has added any music source — a local folder or a
-    /// Subsonic server (including hidden ones). Used to hold the diagnostics
-    /// consent banner back until first launch's sole call to action ("Add Music")
-    /// has been satisfied, so the two prompts never compete (issue #310).
+    /// `true` once any music source exists (local folder or Subsonic server,
+    /// hidden included). Holds the diagnostics consent banner back until the
+    /// first-launch "Add Music" call to action is satisfied (issue #310).
     private var libraryHasContent: Bool {
         !self.vm.libraryRoots.isEmpty
             || !self.vm.subsonicServers.isEmpty
@@ -81,8 +75,8 @@ public struct BocanRootView: View {
             || self.vm.isDuplicateReviewSheetPresented
     }
 
-    /// Main window chrome — split out from `body` to keep the modifier chain short
-    /// enough for the Swift type-checker (which times out on very long chains).
+    /// Main window chrome, split from `body` to keep the modifier chain
+    /// within the Swift type-checker's limits.
     private var windowContent: some View {
         HStack(spacing: 0) {
             VStack(spacing: 0) {
@@ -101,6 +95,7 @@ public struct BocanRootView: View {
                         .disabled(!self.vm.canGoBack)
                         .help(L10n.string("Back"))
                         .keyboardShortcut("[", modifiers: .command)
+                        .accessibilityIdentifier(A11y.Toolbar.back)
 
                         Button(L10n.string("Forward"), systemImage: "chevron.right") {
                             Task { await self.vm.goForward() }
@@ -108,6 +103,7 @@ public struct BocanRootView: View {
                         .disabled(!self.vm.canGoForward)
                         .help(L10n.string("Forward"))
                         .keyboardShortcut("]", modifiers: .command)
+                        .accessibilityIdentifier(A11y.Toolbar.forward)
 
                         Button(
                             self.windowMode.miniPlayerOpen ? L10n.string("Hide Mini Player") : L10n.string("Show Mini Player"),
@@ -116,6 +112,7 @@ public struct BocanRootView: View {
                             self.windowMode.toggleMiniPlayer()
                         }
                         .help(L10n.string("Toggle mini player (⌥⌘M)"))
+                        .accessibilityIdentifier(A11y.Toolbar.miniPlayerToggle)
 
                         Button(
                             self.lyricsVM.paneVisible ? L10n.string("Hide Lyrics") : L10n.string("Show Lyrics"),
@@ -130,6 +127,7 @@ public struct BocanRootView: View {
                             }
                         }
                         .help(L10n.string("Toggle lyrics pane (⌥⌘L)"))
+                        .accessibilityIdentifier(A11y.Toolbar.lyricsToggle)
 
                         Button(
                             self.visualizerVM.paneVisible ? L10n.string("Hide Visualizer") : L10n.string("Show Visualizer"),
@@ -146,12 +144,14 @@ public struct BocanRootView: View {
                             }
                         }
                         .help(L10n.string("Toggle visualizer pane (⇧⌘V)"))
+                        .accessibilityIdentifier(A11y.Toolbar.visualizerToggle)
 
                         Button(L10n.string("Identify Track"), systemImage: "waveform.badge.magnifyingglass") {
                             self.vm.showIdentifyTrackForCurrentSelection()
                         }
                         .disabled(!self.vm.hasSingleTrackSelection)
                         .help(L10n.string("Identify track using AcoustID (⌘⌥I)"))
+                        .accessibilityIdentifier(A11y.Toolbar.identifyTrack)
                     }
                 }
 
@@ -419,9 +419,9 @@ public struct BocanRootView: View {
 
     // MARK: - Helpers
 
-    /// Sets `NSApp.appearance` so the change takes effect immediately for every
-    /// window, avoiding the half-repainted artefact that `.preferredColorScheme`
-    /// can leave when transitioning from a forced scheme back to System.
+    /// Sets `NSApp.appearance` so every window updates immediately, avoiding
+    /// the half-repainted artefact `.preferredColorScheme` can leave when
+    /// returning from a forced scheme to System.
     private func applyAppearance(_ key: String) {
         switch key {
         case "light":

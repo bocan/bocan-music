@@ -79,6 +79,7 @@ public struct SubsonicSettingsView: View {
                 }
                 .help(L10n.string("Add a new Subsonic-compatible server"))
                 .accessibilityLabel(L10n.string("Add new source server"))
+                .accessibilityIdentifier(A11y.SettingsIDs.addServer)
 
                 Spacer()
 
@@ -190,6 +191,7 @@ private struct SubsonicEmptyState: View {
                 Label(L10n.string("Add Server"), systemImage: "plus")
             }
             .keyboardShortcut(.defaultAction)
+            .accessibilityIdentifier(A11y.SettingsIDs.addServerEmpty)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
