@@ -1,0 +1,13 @@
+# Help-text audit allowlist (phase 29). One entry per line, keyed as
+# "<relative-path>|<normalized first line of the call site>", each with a
+# trailing reason. Entries are for controls whose label is self-sufficient;
+# keep this list small enough to read in one sitting. The audit prints a
+# note when an entry goes stale.
+
+# Debug Audio is a DEBUG-only engineering utility window; its transport
+# labels are the whole story.
+App/DebugAudioView.swift|Button("Open File…") { Task { await self.pickFile() } }  # debug-only utility
+App/DebugAudioView.swift|Button("Play") { Task { try? await self.engine.play() } }  # debug-only utility
+App/DebugAudioView.swift|Button("Pause") { Task { await self.engine.pause() } }  # debug-only utility
+App/DebugAudioView.swift|Button("Stop") { Task { await self.engine.stop() } }  # debug-only utility
+App/DebugAudioView.swift|Slider(value: self.$positionSec, in: 0 ... max(self.durationSec, 0.1)) { editing in  # debug-only utility
