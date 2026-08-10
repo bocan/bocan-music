@@ -268,6 +268,7 @@ uitest:
 ## lint: Run SwiftLint
 lint:
 	swiftlint lint --strict
+	@python3 Scripts/audit-help-text.py --warn
 
 ## format: Run SwiftFormat (modifies files)
 format:

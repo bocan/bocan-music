@@ -56,11 +56,15 @@ fail when a control ships without them.
 
 ## Acceptance criteria
 
-- [ ] Zero unidentified interactive controls outside the allowlist.
-- [ ] Zero help-less interactive controls outside the allowlist.
-- [ ] Both audits run in `make test-e2e` (crawler) and `make lint`
-      (help scan).
-- [ ] `docs/design-spec/_standards.md` gains the rule: new interactive
+- [x] Zero unidentified interactive controls outside the allowlist.
+- [ ] Zero help-less interactive controls outside the allowlist. The
+      audit ships in warning mode with a 168-site worklist; help text is
+      user-facing copy, so the sweep (write or allowlist per site) is
+      deliberate work, not bulk generation. Flip `--warn` off in
+      `make lint` when it lands.
+- [x] Both audits run in `make test-e2e` (crawler) and `make lint`
+      (help scan, warning mode until the sweep lands).
+- [x] `docs/design-spec/_standards.md` gains the rule: new interactive
       controls ship with `A11y` identifier + localized `.help()`.
 
 ## Gotchas

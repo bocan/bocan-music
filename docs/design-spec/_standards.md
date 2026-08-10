@@ -119,6 +119,13 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 ## Accessibility
 
 - Every interactive element has an `accessibilityLabel`.
+- Every new interactive control ships with a stable `A11y` accessibility
+  identifier and localized `.help()` text (phase 29). The identifier is
+  enforced by the E2E crawler audit in `make test-e2e`; help coverage is
+  reported by `Scripts/audit-help-text.py` in `make lint`. Controls inside
+  menus, alerts, and dialogs are exempt from `.help()` (macOS renders no
+  tooltips there); a label-is-self-sufficient exemption goes in the
+  audit's allowlist file with a reason.
 - Full keyboard navigation. No mouse-only actions.
 - VoiceOver rotor reaches every meaningful view.
 - Respects `reduceMotion`, `increaseContrast`, `differentiateWithoutColor`, `reduceTransparency`.
