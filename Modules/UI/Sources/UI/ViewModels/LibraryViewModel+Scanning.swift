@@ -221,7 +221,10 @@ public extension LibraryViewModel {
         UTType("public.aiff-audio") ?? .audio,
     ]
 
-    internal func addURLs(_ urls: [URL]) async {
+    /// Public so the App layer's E2E fixture seeding (phase 28) can add a
+    /// library root without driving `NSOpenPanel`; the pickers above route
+    /// through here too.
+    func addURLs(_ urls: [URL]) async {
         guard let scanner else { return }
         for url in urls {
             do {

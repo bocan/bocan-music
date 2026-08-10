@@ -312,7 +312,11 @@ struct BocanApp: App {
 
         // Enforce single-instance *before* any subsystem is initialised.
         // If another instance is already running this call exits immediately.
-        SingleInstance.shared.start()
+        // E2E runs skip the guard so a test copy and a developer's running
+        // copy never mistake each other for duplicates (phase 28).
+        if !E2EEnvironment.isActive {
+            SingleInstance.shared.start()
+        }
 
         Self.registerDefaults()
 
@@ -561,12 +565,47 @@ final class AppModel {
 
         let start = Date()
         do {
-            let db = try await Database(location: .application)
+            // E2E runs re-root the database inside a run home under the
+            // app's own container tmp, so a test can never touch the real
+            // library (phase 28). The app builds that home itself: the
+            // runner cannot write inside this container.
+            E2ESeeder.prepareHomeIfRequested()
+            let location: Database.Location = E2EEnvironment.databaseURL
+                .map { Database.Location.custom($0) } ?? .application
+            let db = try await Database(location: location)
             self.graph = BocanApp.buildGraph(database: db, appDelegate: appDelegate)
+            await self.seedE2EFixturesIfRequested()
             self.log.info("app.bootstrap.ready", ["ms": -start.timeIntervalSinceNow * 1000])
         } catch {
             self.log.error("app.bootstrap.dbOpenFailed", ["error": String(reflecting: error)])
             self.failed = true
+        }
+    }
+
+    /// Phase 28 fixture seeding, active only under `BOCAN_E2E_HOME`.
+    ///
+    /// - Library: the seed folder is added as a root through the same path
+    ///   the open panel uses, so scanning is exercised for real.
+    /// - Radio queue: replaces the queue with one `.internetRadio` item so
+    ///   the *next* launch (the app persists the queue on quit) walks the
+    ///   restore path against the harness's stalling stream listener: the
+    ///   phase 27 launch-wedge regression.
+    private func seedE2EFixturesIfRequested() async {
+        guard E2EEnvironment.isActive, let graph = self.graph else { return }
+        if let seed = E2EEnvironment.seedDirectory {
+            await graph.libraryViewModel.addURLs([seed])
+        }
+        if let streamURL = E2EEnvironment.seedRadioQueueURL,
+           let qp = graph.libraryViewModel.queuePlayer {
+            let item = QueueItem.makeInternetRadio(
+                name: "E2E Wedge FM",
+                streamURL: streamURL,
+                homePage: nil
+            )
+            // Activation attaches the persistence subscription; replacing
+            // the queue before that would drop the change and never save it.
+            await qp.waitUntilActivated()
+            await qp.queue.replace(with: [item], startAt: 0)
         }
     }
 }
