@@ -36,6 +36,7 @@ make doctor
 | `make test-persistence` | Persistence SPM package tests |
 | `make test-metadata` | Metadata SPM package tests |
 | `make test-library` | Library SPM package tests |
+| `make test-e2e` | Whole-app E2E journeys (XCUITest; launches the app repeatedly, opt-in, excluded from `make test` and CI) |
 | `make lint` | SwiftLint + SwiftFormat lint |
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |

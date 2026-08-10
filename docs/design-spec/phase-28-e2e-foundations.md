@@ -54,23 +54,39 @@ which is the phase 27 launch-wedge regression.
 ## Implementation plan
 
 1. **Fixture launch mode (App + modules).** The app honors a
-   `BOCAN_E2E_HOME` launch-environment variable: when set, every persistent
-   path (Application Support, the GRDB database, caches, UserDefaults via a
-   suite name) roots under that directory instead of the real ones. Also
-   under the flag: Sparkle checks disabled, first-run prompts skipped,
-   SwiftUI/NSAnimation animations minimized. Wire through the existing
-   composition root; no module may read the variable directly except via a
-   single `E2EEnvironment` helper in `App/`.
-2. **Fixture library.** A `UITests/Fixtures/` seed: half a dozen tiny audio
-   files (reuse the AudioEngine test fixtures), one playlist, pre-seeded
-   database built by launching the scanner against the seed folder on first
-   run of the harness (not checked-in binary DB, so schema migrations stay
-   exercised).
-3. **Harness conventions (UITests/Support/).** A `BocanRun` launcher
-   (fresh temp home per test by default, opt-in shared home for journey
-   chains), page objects per surface (`SidebarScreen`, `TransportScreen`,
-   `RadioScreen`...) exposing typed accessors over `A11y` identifiers, and
-   a `waitForPlayback()` helper asserting the strip's time advances.
+   `BOCAN_E2E_RUN=<id>` launch-environment variable: when set, the GRDB
+   database roots under a per-run home the *app itself* creates at
+   `<container>/tmp/bocan-e2e/<id>/`, and the single-instance guard is
+   off. The contract is an identifier, not a path, because neither side
+   can cross the sandbox wall: macOS app-container protection denies the
+   runner writes (or unattended reads) inside the app's container, and
+   the sandbox denies the app arbitrary outside paths. Sparkle needs no
+   gating (Debug builds never start the updater). UserDefaults are *not*
+   re-rooted in this phase: injection uses read-only argument-domain
+   overrides (`-key value` launch arguments), and module-level
+   `UserDefaults.standard` writes remain a known, accepted leak until the
+   phase 32 suite/`defaultAppStorage` decision. No file reads the
+   variables except the single `E2EEnvironment` helper in `App/`.
+2. **Fixture library (`App/E2ESeeder.swift`).** On an E2E launch, before
+   the database opens, the app sweeps stale sibling run homes (the runner
+   cannot delete them either) and synthesizes its own fixture library:
+   two 60-second quiet sine-tone WAVs (long enough that transport
+   assertions never race track end), tagged through the real `TagWriter`.
+   The seed folder is added as a library root through
+   `LibraryViewModel.addURLs` (no `NSOpenPanel`), so scanning runs for
+   real; `BOCAN_E2E_SEED_RADIO_URL` additionally seeds a one-item
+   internet-radio queue for the wedge journey. A playlist fixture is
+   deferred to the phase that first needs one.
+3. **Harness conventions (UITests/Support/).** An `E2ESession` (mints the
+   run identifier, reused across relaunches within a journey), a
+   `StallingListener` (loopback-only TCP, accepts then never responds;
+   all-interfaces binding would trip the local-network consent prompt)
+   standing in for a dead radio server, and `XCUIApplication` helpers
+   (`waitUntilPlaying` keyed off the play/pause button's state-mirroring
+   accessibility label, `waitForTrackRows` keyed off the deterministic
+   fixture title). Full page-object surfaces arrive with the phase 29
+   identifier audit; the strip's time label has no identifier yet, so
+   "advancing time" is asserted indirectly until then.
 4. **`make test-e2e`** running `xcodebuild test -only-testing:BocanUITests`
    with the standard destination; excluded from `make test` and CI's normal
    pipeline.
@@ -89,8 +105,13 @@ all three journeys green, twice consecutively, on a developer Mac.
 
 ## Acceptance criteria
 
-- [ ] `BOCAN_E2E_HOME` fully isolates app state (nothing written outside it
-      during a run; assert by scanning the real Application Support mtime).
+- [ ] `BOCAN_E2E_RUN` isolates all file-backed app state. This is
+      structural, not snapshot-asserted: the runner cannot read inside the
+      app's container (any `open(2)` there parks on an unattended TCC
+      consent; only `stat` succeeds), and every E2E path in the app keys
+      off the same activation check, so a broken re-root also disables
+      seeding and fails journey 1 at the track-rows wait. UserDefaults are
+      exempt in this phase (see plan item 1).
 - [ ] Fixture seeding produces a deterministic library (same track count
       every run).
 - [ ] All three journeys pass headed and via `make test-e2e`.
@@ -101,7 +122,12 @@ all three journeys green, twice consecutively, on a developer Mac.
 - XCUITest launches the app fresh per `XCUIApplication.launch()`; harness
   must pass the environment on every launch, including mid-test relaunches.
 - UserDefaults isolation needs a suite name override, not just a home
-  directory, or the real defaults leak in.
+  directory, or the real defaults leak in. Deferred to phase 32; until
+  then E2E runs share the real defaults domain (read and write).
+- The queue save is debounced by 2 s; a journey that terminates the app
+  right after seeding must outlive the debounce or launch #2 restores an
+  empty queue and passes vacuously. Journeys assert non-vacuity (the
+  restored radio item must be visible) rather than trusting timing.
 - The single-instance guard (`SingleInstance.swift`) must not treat the
   test copy and a developer's running copy as duplicates: gate it off under
   the flag.

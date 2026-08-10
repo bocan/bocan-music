@@ -163,7 +163,10 @@ targets:
         PRODUCT_MODULE_NAME: BocanUITests
         BUNDLE_LOADER: ""
         CODE_SIGN_IDENTITY: "-"
-        CODE_SIGN_ENTITLEMENTS: ""
+        # Merged into Xcode's generated xctrunner entitlements; the runner
+        # is force-sandboxed alongside the app and needs network.server for
+        # the E2E stalling listener (phase 28).
+        CODE_SIGN_ENTITLEMENTS: UITests/BocanUITests.entitlements
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: NO
 

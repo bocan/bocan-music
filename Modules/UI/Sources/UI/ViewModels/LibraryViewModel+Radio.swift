@@ -131,10 +131,13 @@ public extension LibraryViewModel {
 
 // MARK: - QueueItem factory
 
-extension QueueItem {
+/// Factory for internet-radio queue items, shared by the radio views and
+/// the App layer's E2E queue seeding.
+public extension QueueItem {
     /// Builds a `QueueItem` representing an internet radio station, local or
     /// Subsonic. `duration = 0` flags the item as live: no scrobble, no
-    /// gapless, no scrubbing in the now-playing UI.
+    /// gapless, no scrubbing in the now-playing UI. Public for the App
+    /// layer's E2E queue seeding (phase 28).
     static func makeInternetRadio(name: String, streamURL: URL, homePage: String?) -> QueueItem {
         let fmt = AudioSourceFormat(
             sampleRate: 44100,

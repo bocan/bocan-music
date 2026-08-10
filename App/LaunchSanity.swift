@@ -28,6 +28,12 @@ final class LaunchSanity {
     private let log = AppLogger.make(.app)
 
     private nonisolated static var sentinelURL: URL {
+        // E2E runs re-root the sentinel with the rest of their state: the
+        // harness force-quits the app, and a shared sentinel would flash
+        // the crash banner at the user's next real launch (and vice versa).
+        if let home = E2EEnvironment.home {
+            return home.appendingPathComponent(".running")
+        }
         guard let base = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { fatalError("Application Support not found") }
         return base.appendingPathComponent("Bocan/.running")

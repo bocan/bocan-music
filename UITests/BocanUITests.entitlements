@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- The xctrunner inherits the app's sandbox but Xcode's generated
+         runner entitlements omit network.server, so the harness cannot bind
+         the loopback stalling listener the launch-wedge journey needs
+         (phase 28). This file is merged into the generated set. -->
+    <key>com.apple.security.network.server</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+</dict>
+</plist>

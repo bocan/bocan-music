@@ -143,6 +143,23 @@ test-coverage:
 		| xcbeautify
 	Scripts/coverage-report.sh build/TestResults.xcresult 80
 
+## test-e2e: Run the whole-app E2E journeys (BocanUITests; launches the app repeatedly)
+test-e2e:
+	@echo "=============================="
+	@echo "= Executing E2E Journeys"
+	@echo "=============================="
+	rm -rf build/E2EResults.xcresult
+	set -o pipefail && xcodebuild \
+		-project Bocan.xcodeproj \
+		-scheme Bocan \
+		-configuration Debug \
+		-destination 'platform=macOS' \
+		-resultBundlePath build/E2EResults.xcresult \
+		-only-testing:BocanUITests \
+		$(XCB_OVERRIDE) \
+		test \
+		| xcbeautify
+
 ## coverage-all: Run SPM module tests with coverage and fail if any module is below threshold
 ## Defaults to 70%. Override with COVERAGE_THRESHOLD=NN for a global
 ## floor, or COVERAGE_MIN_<MODULE>=NN for a per-module floor (e.g. COVERAGE_MIN_UI=20).
