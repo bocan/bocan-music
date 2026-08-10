@@ -28,11 +28,13 @@ least once in fixture mode with a postcondition check.
    is impossible (e.g. Check for Updates under the E2E flag). The manifest
    is the reviewable single source of truth; the crawl is just its
    interpreter.
-2. **Shortcut parity test.** The manifest's shortcut strings are asserted
-   against `KeyBindings.swift` via a generated fixture, so the manifest,
-   the menus, and the help book's shortcut table (phase 27 fix) can never
-   drift apart silently again: one source-convention test compares all
-   three.
+2. **Shortcut parity test (UITests/Menus/ShortcutParityTests.swift).**
+   The manifest's shortcut strings are asserted directly against parsed
+   source (no generated fixture needed): `KeyBindings.swift`, the
+   `.keyboardShortcut(...)` declarations in `BocanCommands*.swift`, the
+   help book's shortcut table row by row, and every shortcut token in the
+   help book's prose, so the manifest, the bindings, the menus, and the
+   shipped docs (phase 27 fix) can never drift apart silently again.
 3. **Structural crawl.** Walk `app.menuBars` recursively; fail on any menu
    item present but absent from the manifest, or vice versa. This is what
    catches "a menu item quietly vanished" a month before a human notices.
@@ -54,11 +56,13 @@ least once in fixture mode with a postcondition check.
 
 ## Acceptance criteria
 
-- [ ] Manifest covers 100% of app-owned menu items (structural crawl
-      proves it bidirectionally).
-- [ ] Shortcut parity: manifest == KeyBindings == help book table.
+- [x] Manifest covers 100% of app-owned menu items (structural crawl
+      proves it bidirectionally; Window menu contents are system-managed
+      and excluded by design).
+- [x] Shortcut parity: manifest == KeyBindings == menu source == help
+      book (table rows and prose tokens).
 - [ ] ⌘A-in-search-field is a permanent enablement-matrix assertion.
-- [ ] A deliberately renamed menu item fails the crawl (verified once,
+- [x] A deliberately renamed menu item fails the crawl (verified once,
       noted in the manifest header).
 
 ## Gotchas
@@ -70,6 +74,14 @@ least once in fixture mode with a postcondition check.
   not by writing defaults, or it tests a lie.
 - Items that open modal panels (About, file pickers) need the panel
   dismissed before the crawl continues; the interpreter owns dismissal.
+- E2E launches share the container's real `UserDefaults` (isolation is a
+  phase 32 decision), so preference-gated items ("Fetch Lyrics from
+  LRClib") and Show/Hide labels vary by machine. The crawl pins the
+  feature flag on via `MenuManifest.pinnedDefaults` (argument domain) and
+  the manifest lists both labels of dynamic titles.
+- The first crawl caught the bug class it exists for: `%.2g` labelled the
+  1.25× quick rate "1.2×" (and 1.75× "1.8×" in Podcast settings) across
+  four surfaces; fixed by `PlaybackRateLabel` with a regression test.
 
 ## Handoff
 
