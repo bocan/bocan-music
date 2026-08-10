@@ -23,7 +23,7 @@ public struct PlaybackSettingsView: View {
                         .help(L10n.string(
                             "Sets the playback speed for all tracks. 1× is normal speed; 0.5× is half speed; 2× is double speed."
                         ))
-                    Text(String(format: "%.2g×", self.rate))
+                    Text(PlaybackRateLabel.string(for: self.rate))
                         .monospacedDigit()
                         .frame(width: 40)
                 }

@@ -58,7 +58,7 @@ public struct PodcastSettingsView: View {
                     Spacer()
                     Picker("", selection: self.$defaultSpeed) {
                         ForEach([0.8, 1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { speed in
-                            Text(String(format: "%.2g\u{00D7}", speed)).tag(speed)
+                            Text(PlaybackRateLabel.string(for: speed)).tag(speed)
                         }
                     }
                     .labelsHidden()

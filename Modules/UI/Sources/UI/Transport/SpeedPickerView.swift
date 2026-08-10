@@ -89,7 +89,7 @@ public struct SpeedPickerView: View {
 
             HStack(spacing: 8) {
                 ForEach(Self.quickRates, id: \.self) { rate in
-                    Button(String(format: "%.2g×", rate)) {
+                    Button(PlaybackRateLabel.string(for: rate)) {
                         Task { await self.vm.setRate(rate) }
                     }
                     .buttonStyle(.bordered)
@@ -114,7 +114,7 @@ public struct SpeedPickerView: View {
     private static let quickRates: [Float] = NowPlayingViewModel.quickRates
 
     private var rateLabel: String {
-        String(format: "%.2g×", self.vm.playbackRate)
+        PlaybackRateLabel.string(for: self.vm.playbackRate)
     }
 
     private var isActive: Bool {
