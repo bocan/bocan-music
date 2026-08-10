@@ -82,8 +82,11 @@ public struct ContrastAuditView: View {
                 self.column(appearance: .init(named: .darkAqua), label: L10n.string("Dark"))
             }
         }
+        // No .navigationTitle here: the view is embedded in the Diagnostics
+        // settings pane, and a title would propagate up and retitle the
+        // whole Settings window (it read "Contrast Audit" until phase 29's
+        // audit caught it).
         .frame(minWidth: 640, minHeight: 320)
-        .navigationTitle(L10n.string("Contrast Audit"))
     }
 
     // MARK: Private
