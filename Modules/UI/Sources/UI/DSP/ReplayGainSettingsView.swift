@@ -68,6 +68,7 @@ public struct ReplayGainSettingsView: View {
                 HStack {
                     Slider(value: self.$vm.state.preAmpDB, in: -12 ... 12, step: 0.5)
                         .accessibilityLabel(L10n.string("ReplayGain pre-amplifier"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.rgPreamp)
                         .help(L10n.string(
                             "Extra gain on top of the ReplayGain value. A clipping guard prevents the peak from exceeding −0.5 dBFS."
                         ))
@@ -105,11 +106,13 @@ public struct ReplayGainSettingsView: View {
                 .help(L10n.string("Analyse any tracks that don't yet have ReplayGain data"))
             }
             .accessibilityElement(children: .combine)
+            .accessibilityIdentifier(A11y.SettingsIDs.rgComputeMissing)
 
             Button(L10n.string("Recompute All…"), role: .destructive) {
                 self.showRecomputeConfirm = true
             }
             .accessibilityLabel(L10n.string("Recompute ReplayGain for all library tracks"))
+            .accessibilityIdentifier(A11y.SettingsIDs.rgRecomputeAll)
             .help(L10n.string("Re-analyse every track in the library. This may take several minutes."))
         }
     }

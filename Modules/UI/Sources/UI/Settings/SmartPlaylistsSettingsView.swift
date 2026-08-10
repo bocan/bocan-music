@@ -20,6 +20,7 @@ public struct SmartPlaylistsSettingsView: View {
         Form {
             Section(L10n.string("Defaults")) {
                 Toggle(L10n.string("New smart playlists use live update"), isOn: self.$defaultLiveUpdate)
+                    .accessibilityIdentifier(A11y.SettingsIDs.smartLiveUpdate)
                     .help(L10n.string("If off, new smart playlists start in snapshot mode and only change on Refresh now"))
             }
 
@@ -32,6 +33,7 @@ public struct SmartPlaylistsSettingsView: View {
 
             Section(L10n.string("Random Sort")) {
                 Toggle(L10n.string("Re-roll random order on app launch"), isOn: self.$randomRerollOnLaunch)
+                    .accessibilityIdentifier(A11y.SettingsIDs.smartRandomReroll)
                     .help(L10n.string("When enabled, smart playlists sorted by Random use a per-launch seed"))
             }
 

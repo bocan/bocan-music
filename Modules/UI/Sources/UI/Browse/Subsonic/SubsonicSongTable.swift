@@ -123,6 +123,7 @@ struct SubsonicSongTable: NSViewRepresentable {
         scrollView.borderType = .noBorder
 
         let tableView = NSTableView()
+        tableView.setAccessibilityIdentifier(A11y.TracksTable.subsonicTable)
         tableView.style = .fullWidth
         tableView.rowSizeStyle = .custom
         tableView.usesAlternatingRowBackgroundColors = true

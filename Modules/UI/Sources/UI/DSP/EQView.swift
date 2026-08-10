@@ -60,6 +60,7 @@ public struct EQView: View {
             .pickerStyle(.segmented)
             .accessibilityLabel(L10n.string("EQ scope: Global, This Album, or This Track"))
             .help(L10n.string("Select which scope the EQ preset applies to"))
+            .accessibilityIdentifier(A11y.DSPWindow.eqScopePicker)
             .fixedSize()
             .disabled(
                 (self.vm.eqScope == .track || self.vm.currentTrackID == nil) &&
@@ -110,6 +111,7 @@ public struct EQView: View {
                 .accessibilityLabel(L10n.string("Enable equaliser"))
                 .toggleStyle(.switch)
                 .help(L10n.string("Enable or bypass the 10-band equaliser"))
+                .accessibilityIdentifier(A11y.DSPWindow.eqEnableToggle)
 
             Spacer()
 
@@ -140,6 +142,7 @@ public struct EQView: View {
         .menuStyle(.borderlessButton)
         .fixedSize()
         .help(L10n.string("Select a built-in or saved EQ preset"))
+        .accessibilityIdentifier(A11y.DSPWindow.eqPresetMenu)
     }
 
     private var abButton: some View {
@@ -198,6 +201,7 @@ public struct EQView: View {
             .accessibilityLabel(L10n.string("EQ output gain"))
             .accessibilityValue(String(format: "%+.1f dB", self.outputGainValue))
             .help(L10n.string("Output trim after EQ — compensate for loudness change introduced by the curve"))
+            .accessibilityIdentifier(A11y.DSPWindow.eqOutputGain)
             Text(String(format: "%+.1f dB", self.outputGainValue))
                 .font(.caption.monospacedDigit())
                 .frame(width: 52, alignment: .trailing)
@@ -292,6 +296,7 @@ private struct BandSliderView: View {
                 .help(L10n.string("\(self.label) Hz band: ±12 dB"))
                 .accessibilityLabel(L10n.string("\(self.label) Hz EQ band"))
                 .accessibilityValue(String(format: "%+.1f dB", self.gain))
+                .accessibilityIdentifier(A11y.DSPWindow.eqBand(self.label))
             Text(self.label)
                 .font(.system(size: 9))
                 .foregroundStyle(.secondary)

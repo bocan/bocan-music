@@ -40,6 +40,7 @@ public struct VisualizerSettingsView: View {
                     }
                 }
                 .pickerStyle(.radioGroup)
+                .accessibilityIdentifier(A11y.SettingsIDs.vizMode)
 
                 // Six palettes no longer fit a segmented control, so use a menu.
                 Picker(L10n.string("Colour Palette"), selection: self.$palette) {
@@ -48,6 +49,7 @@ public struct VisualizerSettingsView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .accessibilityIdentifier(A11y.SettingsIDs.vizPalette)
             }
 
             Section(L10n.string("Performance")) {
@@ -57,8 +59,10 @@ public struct VisualizerSettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .accessibilityIdentifier(A11y.SettingsIDs.vizFrameRate)
 
                 Toggle(L10n.string("Use simpler visualizer on battery"), isOn: self.$simplifyOnBattery)
+                    .accessibilityIdentifier(A11y.SettingsIDs.vizSimplifyOnBattery)
                     .help(L10n.string("Caps to 30 fps and switches to Spectrum Bars when running on battery power"))
                     .accessibilityHint(L10n.string("Caps frame rate to 30 fps and switches to Spectrum Bars on battery"))
             }
@@ -70,12 +74,14 @@ public struct VisualizerSettingsView: View {
                     Slider(value: self.$sensitivityRaw, in: 0.1 ... 3.0, step: 0.1)
                         .frame(width: 160)
                         .accessibilityLabel(L10n.string("Audio sensitivity"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.vizSensitivity)
                         .accessibilityValue(String(format: "%.1f×", self.sensitivityRaw))
                     Text(String(format: "%.1g×", self.sensitivityRaw))
                         .monospacedDigit()
                         .frame(width: 36)
                 }
                 Button(L10n.string("Reset to 1×")) { self.sensitivityRaw = 1.0 }
+                    .accessibilityIdentifier(A11y.SettingsIDs.vizSensitivityReset)
                     .controlSize(.small)
                     .help(L10n.string("Reset sensitivity to default (1×)"))
             }

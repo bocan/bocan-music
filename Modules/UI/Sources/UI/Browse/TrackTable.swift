@@ -105,6 +105,9 @@ public struct TrackTable: NSViewRepresentable {
 
         let tableView = ContextMenuTableView()
         tableView.identifier = NSUserInterfaceItemIdentifier(A11y.TracksTable.table)
+        // NSUserInterfaceItemIdentifier does not surface to the accessibility
+        // tree; XCUITest needs the AX identifier set explicitly.
+        tableView.setAccessibilityIdentifier(A11y.TracksTable.table)
         tableView.setAccessibilityLabel(L10n.string("Track List"))
         tableView.setAccessibilityRoleDescription(L10n.string("Music track list"))
         tableView.usesAlternatingRowBackgroundColors = true

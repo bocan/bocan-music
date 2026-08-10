@@ -69,6 +69,7 @@ public struct LogConsoleView: View {
             .labelsHidden()
             .pickerStyle(.menu)
             .fixedSize()
+            .accessibilityIdentifier(A11y.LogConsole.levelPicker)
         }
         .help(L10n.string("Minimum log level to show"))
     }
@@ -106,6 +107,7 @@ public struct LogConsoleView: View {
             Label(self.categoriesMenuTitle, systemImage: "line.3.horizontal.decrease")
         }
         .help(L10n.string("Filter by log category"))
+        .accessibilityIdentifier(A11y.LogConsole.categoriesMenu)
     }
 
     private var searchField: some View {
@@ -114,6 +116,7 @@ public struct LogConsoleView: View {
             .frame(minWidth: 120, maxWidth: 200)
             .help(L10n.string("Filter entries by message text"))
             .accessibilityLabel(L10n.string("Search log entries"))
+            .accessibilityIdentifier(A11y.LogConsole.searchField)
     }
 
     private var pauseButton: some View {
@@ -131,6 +134,7 @@ public struct LogConsoleView: View {
                 ? L10n.string("Resume ingesting new log entries")
                 : L10n.string("Pause new entries from flowing in")
         )
+        .accessibilityIdentifier(A11y.LogConsole.pauseButton)
     }
 
     private var clearMenu: some View {
@@ -154,6 +158,7 @@ public struct LogConsoleView: View {
             Label(L10n.string("Clear"), systemImage: "trash")
         }
         .help(L10n.string("Clear the log view; expand for option to also clear the ring buffer"))
+        .accessibilityIdentifier(A11y.LogConsole.clearMenu)
     }
 
     private var copyButton: some View {
@@ -164,6 +169,7 @@ public struct LogConsoleView: View {
             Label(L10n.string("Copy"), systemImage: "doc.on.doc")
         }
         .help(L10n.string("Copy visible log lines to the clipboard"))
+        .accessibilityIdentifier(A11y.LogConsole.copyButton)
     }
 
     private var exportButton: some View {
@@ -173,6 +179,7 @@ public struct LogConsoleView: View {
             Label(L10n.string("Export\u{2026}"), systemImage: "square.and.arrow.up")
         }
         .help(L10n.string("Save visible log lines to a .log file"))
+        .accessibilityIdentifier(A11y.LogConsole.exportButton)
     }
 
     private var tailToggle: some View {
@@ -181,6 +188,7 @@ public struct LogConsoleView: View {
         }
         .toggleStyle(.button)
         .help(L10n.string("Auto-scroll to the newest entry as lines arrive"))
+        .accessibilityIdentifier(A11y.LogConsole.tailToggle)
     }
 
     private var lineCountLabel: some View {

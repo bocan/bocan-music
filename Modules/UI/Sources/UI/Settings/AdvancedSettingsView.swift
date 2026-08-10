@@ -18,6 +18,7 @@ public struct AdvancedSettingsView: View {
                 Toggle(L10n.string("Back up library database to iCloud Drive on launch"), isOn: self.$backupVM.isEnabled)
                     .disabled(!self.backupVM.iCloudAvailable)
                     .help(L10n.string("Keeps up to 3 rolling backups in iCloud Drive › Documents › Bocan."))
+                    .accessibilityIdentifier(A11y.SettingsIDs.icloudBackupToggle)
 
                 LabeledContent(L10n.string("Last backup")) {
                     Text(self.backupVM.lastBackupDescription)
@@ -38,6 +39,7 @@ public struct AdvancedSettingsView: View {
                 }
                 .disabled(!self.backupVM.iCloudAvailable || self.backupVM.isBackingUp)
                 .help(L10n.string("Writes a consistent snapshot using the SQLite backup API."))
+                .accessibilityIdentifier(A11y.SettingsIDs.icloudBackupNow)
 
                 if !self.backupVM.iCloudAvailable {
                     Text(localized:
@@ -57,6 +59,7 @@ public struct AdvancedSettingsView: View {
             Section(L10n.string("Local Backup")) {
                 Toggle(L10n.string("Back up library database to local storage on launch"), isOn: self.$backupVM.isLocalEnabled)
                     .help(L10n.string("Saves a rolling set of backups to ~/Library/Application Support/Bocan/Backups/."))
+                    .accessibilityIdentifier(A11y.SettingsIDs.localBackupToggle)
 
                 Stepper(
                     L10n.string("Keep \(self.backupVM.localKeepCount) backups"),
@@ -85,6 +88,7 @@ public struct AdvancedSettingsView: View {
                     }
                     .disabled(self.backupVM.isLocalBackingUp)
                     .help(L10n.string("Writes a consistent snapshot to the local backup folder."))
+                    .accessibilityIdentifier(A11y.SettingsIDs.localBackupNow)
 
                     Button(L10n.string("Show in Finder")) {
                         NSWorkspace.shared.activateFileViewerSelecting(
@@ -92,6 +96,7 @@ public struct AdvancedSettingsView: View {
                         )
                     }
                     .help(L10n.string("Opens ~/Library/Application Support/Bocan/Backups/ in Finder."))
+                    .accessibilityIdentifier(A11y.SettingsIDs.showBackupsInFinder)
                 }
 
                 if let err = self.backupVM.localErrorMessage {
@@ -108,18 +113,21 @@ public struct AdvancedSettingsView: View {
                     Text(localized: "Warning").tag("warning")
                     Text(localized: "Error").tag("error")
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.logLevelPicker)
             }
 
             Section(L10n.string("Database")) {
                 Button(L10n.string("Reveal Database in Finder")) {
                     self.revealDatabase()
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.revealDatabase)
 
                 Button(L10n.string("Rebuild Full-Text Search Index")) {
                     // Phase 11 will implement this
                 }
                 .disabled(true)
                 .help(L10n.string("Not yet available"))
+                .accessibilityIdentifier(A11y.SettingsIDs.rebuildFTS)
             }
 
             Section(L10n.string("Reset")) {
@@ -137,10 +145,12 @@ public struct AdvancedSettingsView: View {
                 } message: {
                     Text(localized: "This cannot be undone. Bòcan will restart with default settings.")
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.resetPreferences)
 
                 Button(L10n.string("Export Diagnostics…")) {
                     self.exportDiagnostics()
                 }
+                .accessibilityIdentifier(A11y.SettingsIDs.exportDiagnostics)
             }
         }
         .formStyle(.grouped)

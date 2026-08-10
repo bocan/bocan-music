@@ -42,6 +42,7 @@ public struct PhoneSyncSettingsView: View {
                 Text(localized: "Phone Sync")
             }
             .accessibilityLabel(L10n.string("Phone Sync"))
+            .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncToggle)
             if self.viewModel.enabled {
                 Text(localized: "On. Discoverable on your local network.")
                     .font(.footnote)
@@ -61,6 +62,7 @@ public struct PhoneSyncSettingsView: View {
                 Text(localized: "Choose playlists").tag(PhoneSyncProfile.Mode.choosePlaylists)
             }
             .pickerStyle(.segmented)
+            .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncMode)
 
             if self.viewModel.profile.mode == .choosePlaylists {
                 self.playlistPicker
@@ -69,6 +71,7 @@ public struct PhoneSyncSettingsView: View {
             Toggle(isOn: self.includePodcastsBinding) {
                 Text(localized: "Include podcasts")
             }
+            .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncIncludePodcasts)
 
             LabeledContent {
                 Text(self.sizeEstimateText)
@@ -115,6 +118,7 @@ public struct PhoneSyncSettingsView: View {
                 }
                 .toggleStyle(.checkbox)
                 .accessibilityLabel(playlist.name)
+                .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncPlaylistToggle)
             }
         }
     }
@@ -149,6 +153,7 @@ public struct PhoneSyncSettingsView: View {
                 Label(L10n.string("Pair a Phone"), systemImage: "iphone.and.arrow.forward")
             }
             .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier(A11y.SettingsIDs.pairPhone)
         }
     }
 

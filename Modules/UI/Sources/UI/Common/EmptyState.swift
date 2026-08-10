@@ -50,6 +50,7 @@ public struct EmptyState: View {
                 Button(actionLabel, action: action)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
+                    .accessibilityIdentifier(A11y.EmptyStateIDs.actionButton)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

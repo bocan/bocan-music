@@ -15,7 +15,9 @@ public struct LibrarySettingsView: View {
         Form {
             Section(L10n.string("Scanning")) {
                 Toggle(L10n.string("Watch folders for new files"), isOn: self.$watchForChanges)
+                    .accessibilityIdentifier(A11y.SettingsIDs.watchFolders)
                 Toggle(L10n.string("Use quick scan by default"), isOn: self.$quickScan)
+                    .accessibilityIdentifier(A11y.SettingsIDs.quickScan)
                 Text(localized: "Quick scan reads only file metadata tags without computing replay gain.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -23,6 +25,7 @@ public struct LibrarySettingsView: View {
 
             Section(L10n.string("Metadata")) {
                 Toggle(L10n.string("Embed cover art directly into audio files"), isOn: self.$embedCoverArt)
+                    .accessibilityIdentifier(A11y.SettingsIDs.embedCoverArt)
                     .help(self.embedCoverArtHelp)
                 if self.embedCoverArt {
                     Text(localized: "Files will be modified when you save cover art changes.")
@@ -66,6 +69,7 @@ public struct LibrarySettingsView: View {
                             .buttonStyle(.borderless)
                             .help(L10n.string("Remove \(url.lastPathComponent) from library (does not delete files on disk)"))
                             .accessibilityLabel(L10n.string("Remove \(url.lastPathComponent) from library"))
+                            .accessibilityIdentifier(A11y.SettingsIDs.removeRoot)
                         }
                         .help(root.path)
                     }
@@ -77,11 +81,13 @@ public struct LibrarySettingsView: View {
                     }
                     .help(L10n.string("Choose a folder containing music to add to your library"))
                     .accessibilityLabel(L10n.string("Add folder to library"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.addFolder)
                     Button(L10n.string("Add Files…")) {
                         Task { await self.vm.addFilesByPicker() }
                     }
                     .help(L10n.string("Choose individual audio files to add to your library"))
                     .accessibilityLabel(L10n.string("Add files to library"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.addFiles)
                 }
                 .buttonStyle(.borderless)
             } header: {

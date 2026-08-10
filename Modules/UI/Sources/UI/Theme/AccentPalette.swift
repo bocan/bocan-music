@@ -89,6 +89,7 @@ public struct AccentPaletteView: View {
                 .help(accent.displayName)
                 .accessibilityLabel(accent.displayName)
                 .accessibilityAddTraits(self.selection == accent.id ? .isSelected : [])
+                .accessibilityIdentifier(A11y.SettingsIDs.accentSwatch(accent.id))
             }
         }
     }

@@ -36,6 +36,8 @@ public enum A11y {
     public enum TracksTable {
         public static let table = "tracksTable"
         public static let emptyState = "tracksTable.emptyState"
+        /// The Subsonic browse song table (a second AppKit `NSTableView`).
+        public static let subsonicTable = "subsonicSongsTable"
     }
 
     // MARK: - Albums grid
@@ -43,6 +45,196 @@ public enum A11y {
     public enum AlbumsGrid {
         public static let grid = "albumsGrid"
         public static let emptyState = "albumsGrid.emptyState"
+
+        /// One tile per album; nil ids (unsaved rows) collapse to a stable
+        /// placeholder so the identifier is never empty.
+        public static func tile(_ albumID: Int64?) -> String {
+            "albumsGrid.tile.\(albumID.map(String.init) ?? "unsaved")"
+        }
+    }
+
+    // MARK: - Main-window toolbar
+
+    public enum Toolbar {
+        public static let back = "toolbar.back"
+        public static let forward = "toolbar.forward"
+        public static let miniPlayerToggle = "toolbar.miniPlayer"
+        public static let lyricsToggle = "toolbar.lyrics"
+        public static let visualizerToggle = "toolbar.visualizer"
+        public static let identifyTrack = "toolbar.identifyTrack"
+    }
+
+    // MARK: - Shared components
+
+    public enum EmptyStateIDs {
+        /// The call-to-action button; at most one empty state is visible per
+        /// screen context, so a uniform identifier stays unambiguous.
+        public static let actionButton = "emptyState.action"
+    }
+
+    public enum ScanBanner {
+        public static let dismissButton = "scanBanner.dismiss"
+    }
+
+    // MARK: - Podcasts browse
+
+    public enum Podcasts {
+        public static let addBarField = "podcasts.addBar.field"
+        public static let addBarClearButton = "podcasts.addBar.clear"
+    }
+
+    // MARK: - Mini player chrome
+
+    public enum MiniPlayer {
+        public static let layoutButton = "miniPlayer.layout"
+        public static let pinButton = "miniPlayer.pin"
+        public static let dismissButton = "miniPlayer.dismiss"
+    }
+
+    // MARK: - Log console window
+
+    public enum LogConsole {
+        public static let levelPicker = "logConsole.level"
+        public static let categoriesMenu = "logConsole.categories"
+        public static let searchField = "logConsole.search"
+        public static let pauseButton = "logConsole.pause"
+        public static let clearMenu = "logConsole.clear"
+        public static let copyButton = "logConsole.copy"
+        public static let exportButton = "logConsole.export"
+        public static let tailToggle = "logConsole.tail"
+    }
+
+    // MARK: - Equaliser & DSP window
+
+    public enum DSPWindow {
+        public static let eqEnableToggle = "dsp.eq.enable"
+        public static let eqOutputGain = "dsp.eq.outputGain"
+        public static let eqPresetMenu = "dsp.eq.preset"
+        public static let eqScopePicker = "dsp.eq.scope"
+
+        /// One vertical slider per EQ band, keyed by its frequency label
+        /// ("32", "1k", "16k", ...).
+        public static func eqBand(_ label: String) -> String {
+            "dsp.eq.band.\(label)"
+        }
+    }
+
+    // MARK: - Settings panes
+
+    public enum SettingsIDs {
+        /// Appearance accent swatches, keyed by palette id ("blue", ...).
+        public static func accentSwatch(_ id: String) -> String {
+            "settings.appearance.accent.\(id)"
+        }
+
+        // Form toggles (each pane's switches, in sidebar order)
+        public static let launchAtLogin = "settings.general.launchAtLogin"
+        public static let restoreWindowMode = "settings.general.restoreWindowMode"
+        public static let menuBarExtra = "settings.general.menuBarExtra"
+        public static let dockAlbumArt = "settings.general.dockAlbumArt"
+        public static let dockBadge = "settings.general.dockBadge"
+        public static let dockProgress = "settings.general.dockProgress"
+        public static let trackNotifications = "settings.general.notifications"
+        public static let watchFolders = "settings.library.watchFolders"
+        public static let quickScan = "settings.library.quickScan"
+        public static let embedCoverArt = "settings.library.embedCoverArt"
+        public static let crossAlbumGapless = "settings.playback.crossAlbumGapless"
+        public static let sleepFadeOut = "settings.playback.sleepFadeOut"
+        public static let podcastRefreshOnLaunch = "settings.podcasts.refreshOnLaunch"
+        public static let smartLiveUpdate = "settings.smartPlaylists.liveUpdate"
+        public static let smartRandomReroll = "settings.smartPlaylists.randomReroll"
+        public static let lyricsAutoShow = "settings.lyrics.autoShowPane"
+        public static let lyricsLrclib = "settings.lyrics.lrclib"
+        public static let lyricsEmbedOnSave = "settings.lyrics.embedOnSave"
+        public static let vizSimplifyOnBattery = "settings.visualizer.simplifyOnBattery"
+
+        // Advanced
+        public static let icloudBackupToggle = "settings.advanced.backup.icloud.toggle"
+        public static let icloudBackupNow = "settings.advanced.backup.icloud.now"
+        public static let localBackupToggle = "settings.advanced.backup.local.toggle"
+        public static let localBackupNow = "settings.advanced.backup.local.now"
+        public static let showBackupsInFinder = "settings.advanced.backup.local.showInFinder"
+        public static let logLevelPicker = "settings.advanced.logLevel"
+        public static let revealDatabase = "settings.advanced.revealDatabase"
+        public static let rebuildFTS = "settings.advanced.rebuildFTS"
+        public static let resetPreferences = "settings.advanced.resetPreferences"
+        public static let exportDiagnostics = "settings.advanced.exportDiagnostics"
+
+        // Diagnostics (report-row controls are uniform; the row's label
+        // carries the file name, per the row-disambiguation convention)
+        public static let reportCopyPath = "settings.diagnostics.report.copyPath"
+        public static let reportView = "settings.diagnostics.report.view"
+        public static let openReportsFolder = "settings.diagnostics.openReportsFolder"
+        public static let openLogConsole = "settings.diagnostics.openLogConsole"
+
+        // Diagnostics toggles
+        public static let crashConsentToggle = "settings.diagnostics.crashConsent"
+        public static let captureLogsToggle = "settings.diagnostics.captureLogs"
+
+        // Podcasts
+        public static let podcastDefaultSpeed = "settings.podcasts.defaultSpeed"
+        public static let podcastRefreshInterval = "settings.podcasts.refreshInterval"
+        public static let podcastAutoDownload = "settings.podcasts.autoDownload"
+        public static let podcastSkipBack = "settings.podcasts.skipBack"
+        public static let podcastSkipForward = "settings.podcasts.skipForward"
+        public static let podcastStorefront = "settings.podcasts.storefront"
+
+        // Visualizer
+        public static let vizSensitivityReset = "settings.visualizer.sensitivityReset"
+        public static let vizMode = "settings.visualizer.mode"
+        public static let vizPalette = "settings.visualizer.palette"
+        public static let vizFrameRate = "settings.visualizer.frameRate"
+
+        // Effects
+        public static let bassBoost = "settings.effects.bassBoost"
+        public static let crossfade = "settings.effects.crossfade"
+        public static let crossfeed = "settings.effects.crossfeed"
+        public static let stereoWidth = "settings.effects.stereoWidth"
+
+        // Library
+        public static let addFiles = "settings.library.addFiles"
+        public static let addFolder = "settings.library.addFolder"
+        public static let removeRoot = "settings.library.removeRoot"
+
+        // Phone Sync
+        public static let phoneSyncToggle = "settings.phoneSync.enable"
+        public static let pairPhone = "settings.phoneSync.pair"
+        public static let phoneSyncMode = "settings.phoneSync.mode"
+        public static let phoneSyncIncludePodcasts = "settings.phoneSync.includePodcasts"
+        /// Uniform across the playlist checkboxes; the row's label (the
+        /// playlist name) disambiguates.
+        public static let phoneSyncPlaylistToggle = "settings.phoneSync.playlistToggle"
+
+        // Playback
+        public static let speedSlider = "settings.playback.speed"
+        public static let speedReset = "settings.playback.speedReset"
+        public static let prerollSlider = "settings.playback.preroll"
+
+        // ReplayGain
+        public static let rgComputeMissing = "settings.replayGain.computeMissing"
+        public static let rgRecomputeAll = "settings.replayGain.recomputeAll"
+        public static let rgPreamp = "settings.replayGain.preamp"
+
+        // Scrobbling
+        public static let scrobbleDisconnect = "settings.scrobble.disconnect"
+        public static let recentScrobbles = "settings.scrobble.recent"
+
+        // Sources
+        public static let addServer = "settings.sources.addServer"
+        public static let addServerEmpty = "settings.sources.addServer.empty"
+
+        /// Visualizer
+        public static let vizSensitivity = "settings.visualizer.sensitivity"
+    }
+
+    // MARK: - Library Summary window
+
+    public enum LibrarySummary {
+        /// One tab-strip button per section, keyed by the tab's raw value
+        /// ("basicInfo", "audioQuality", ...).
+        public static func tab(_ rawValue: String) -> String {
+            "librarySummary.tab.\(rawValue)"
+        }
     }
 
     // MARK: - Now-playing strip

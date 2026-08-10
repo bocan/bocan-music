@@ -31,6 +31,7 @@ public struct DSPView: View {
                 HStack {
                     Slider(value: self.$vm.state.bassBoostDB, in: 0 ... 12, step: 0.5)
                         .accessibilityLabel(L10n.string("Bass boost gain"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.bassBoost)
                         .help(L10n.string("Low-shelf boost at 80 Hz. 0 = off; 12 = maximum bass enhancement."))
                     Text(String(format: "%.1f dB", self.vm.state.bassBoostDB))
                         .font(.caption.monospacedDigit())
@@ -51,6 +52,7 @@ public struct DSPView: View {
                 HStack {
                     Slider(value: self.$vm.state.crossfeedAmount, in: 0 ... 1, step: 0.05)
                         .accessibilityLabel(L10n.string("Crossfeed amount"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.crossfeed)
                         .help(L10n.string(
                             "Bauer crossfeed level. 0 = off; 100% = full binaural matrix (≈−9.5 dB cross-talk). Best for headphones."
                         ))
@@ -73,6 +75,7 @@ public struct DSPView: View {
                 HStack {
                     Slider(value: self.$vm.state.stereoWidth, in: 0.5 ... 2.0, step: 0.05)
                         .accessibilityLabel(L10n.string("Stereo width"))
+                        .accessibilityIdentifier(A11y.SettingsIDs.stereoWidth)
                         .help(L10n.string(
                             "Mid/side width multiplier. 1.0 = original; below 1 narrows toward mono; above 1 widens the stereo field."
                         ))
@@ -99,6 +102,7 @@ public struct DSPView: View {
                         step: 0.5
                     )
                     .accessibilityLabel(L10n.string("Crossfade duration"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.crossfade)
                     .help(L10n.string("Duration of the crossfade between tracks. 0 = sample-accurate gapless playback."))
                     Text(self.crossfadeLabel)
                         .font(.caption.monospacedDigit())

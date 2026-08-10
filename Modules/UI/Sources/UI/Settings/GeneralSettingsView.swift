@@ -18,27 +18,34 @@ public struct GeneralSettingsView: View {
         Form {
             Section(L10n.string("Startup")) {
                 Toggle(L10n.string("Launch Bòcan at login"), isOn: self.$launchAtLogin)
+                    .accessibilityIdentifier(A11y.SettingsIDs.launchAtLogin)
                     .help(L10n.string("Register Bòcan as a macOS login item."))
                 Toggle(L10n.string("Restore last window mode on launch"), isOn: self.$restoresLastMode)
+                    .accessibilityIdentifier(A11y.SettingsIDs.restoreWindowMode)
             }
 
             Section(L10n.string("Menu Bar")) {
                 Toggle(L10n.string("Show Bòcan in menu bar"), isOn: self.showMenuBarExtra)
+                    .accessibilityIdentifier(A11y.SettingsIDs.menuBarExtra)
             }
 
             Section(L10n.string("Dock")) {
                 Toggle(L10n.string("Show album art as Dock icon while playing"), isOn: self.$showAlbumArtInDock)
+                    .accessibilityIdentifier(A11y.SettingsIDs.dockAlbumArt)
                     .help(L10n.string("Replaces the Dock icon with the current track's cover art while something is playing."))
                 Toggle(L10n.string("Show playback state badge on Dock icon"), isOn: self.$showPlaybackBadge)
+                    .accessibilityIdentifier(A11y.SettingsIDs.dockBadge)
                     .help(L10n.string(
                         "Displays a small play ▶ or pause ‖ badge on the Dock icon so you can see playback state at a glance."
                     ))
                 Toggle(L10n.string("Show progress bar on Dock icon"), isOn: self.$showDockProgress)
+                    .accessibilityIdentifier(A11y.SettingsIDs.dockProgress)
                     .help(L10n.string("Shows a thin progress bar along the bottom of the Dock icon while a track is playing."))
             }
 
             Section(L10n.string("Notifications")) {
                 Toggle(L10n.string("Show track-change notifications"), isOn: self.$showNotifications)
+                    .accessibilityIdentifier(A11y.SettingsIDs.trackNotifications)
                     .onChange(of: self.showNotifications) { _, enabled in
                         if enabled { self.requestNotificationAuth() }
                     }
