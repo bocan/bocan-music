@@ -873,10 +873,30 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// to the Songs view before requesting the scroll.
     public func scrollToNowPlayingTrack() async {
         guard let id = self.nowPlaying.nowPlayingTrackID else { return }
-        if !self.tracks.rows.contains(where: { $0.id == id }) {
+        // The shared tracks model keeps the previous list's rows while
+        // grids and self-loading destinations (Albums, Artists listings,
+        // playlists, Up Next, Radio) are on screen, so row membership
+        // alone lies there and the jump silently did nothing (phase 30
+        // invocation pass). Scroll in place only when the visible
+        // destination actually renders the shared track list.
+        if !Self.destinationRendersSharedTrackList(self.selectedDestination)
+            || !self.tracks.rows.contains(where: { $0.id == id }) {
             await self.selectDestination(.songs)
         }
         self.tracks.requestScrollToNowPlaying()
+    }
+
+    /// True when `destination`'s content view is the shared track list
+    /// (`tracks.rows`), making an in-place jump/scroll meaningful.
+    nonisolated static func destinationRendersSharedTrackList(_ destination: SidebarDestination) -> Bool {
+        switch destination {
+        case .songs, .album, .artist, .genre, .composer,
+             .recentlyAdded, .recentlyPlayed, .mostPlayed, .search:
+            true
+
+        default:
+            false
+        }
     }
 
     /// Opens the tag editor for whatever is currently selected in the track table.
