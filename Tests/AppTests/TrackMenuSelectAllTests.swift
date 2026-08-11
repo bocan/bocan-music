@@ -14,7 +14,7 @@ struct TrackMenuSelectAllTests {
             .deletingLastPathComponent() // AppTests/
             .deletingLastPathComponent() // Tests/
             .deletingLastPathComponent() // repo root
-            .appendingPathComponent("App/BocanCommands.swift")
+            .appendingPathComponent("App/BocanCommands+Track.swift")
         return try String(contentsOf: url, encoding: .utf8)
     }
 
