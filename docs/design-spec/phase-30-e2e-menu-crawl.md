@@ -49,6 +49,18 @@ least once in fixture mode with a postcondition check.
    changes). Destructive items (Clear Queue, Remove) run against throwaway
    fixture state and assert the destruction happened, then reset.
 
+5. **Invocation pass (UITests/Menus/MenuInvocationTests.swift).** One
+   scripted sequence invokes every non-skipped manifest leaf with a real
+   postcondition (window opens and closes, pane title flips, queue insert
+   shows in Up Next, rating changes smart-playlist membership, transport
+   toggle flips the strip's AX label, navigation switches destination,
+   Clear Queue empties the queue). State builds forward: queue items are
+   inserted before playback, destructive items run against throwaway
+   fixture state. `MenuInvoker` owns menu clicking and the shared
+   postcondition helpers. Eight items carry written skip reasons; a
+   completeness assertion proves every non-system leaf was invoked or
+   skipped.
+
 ## Test plan
 
 - Structural crawl green against the full manifest.
@@ -65,6 +77,9 @@ least once in fixture mode with a postcondition check.
 - [x] ⌘A-in-search-field is a permanent enablement-matrix assertion.
 - [x] A deliberately renamed menu item fails the crawl (verified once,
       noted in the manifest header).
+- [x] Every app-owned menu item invoked in fixture mode with a
+      postcondition (invocation pass); each skip has a written reason and
+      the completeness assertion proves coverage.
 
 ## Gotchas
 
