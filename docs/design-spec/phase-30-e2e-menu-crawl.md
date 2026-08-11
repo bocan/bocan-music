@@ -38,11 +38,12 @@ least once in fixture mode with a postcondition check.
 3. **Structural crawl.** Walk `app.menuBars` recursively; fail on any menu
    item present but absent from the manifest, or vice versa. This is what
    catches "a menu item quietly vanished" a month before a human notices.
-4. **Enablement matrix.** For a small set of app states (nothing playing;
-   track playing; radio playing; track selected; text field focused) open
-   each menu and assert per-manifest enablement. The ⌘A regression becomes
-   a permanent matrix row: with the search field focused, Select All must
-   leave the field's text selected, not the track list.
+4. **Enablement matrix (UITests/Menus/MenuEnablementTests.swift).** For a
+   small set of app states (fresh launch; track selected; track playing;
+   search field focused; seeded radio queue current) open each menu and
+   assert per-manifest enablement. The ⌘A regression becomes a permanent
+   matrix row: with the search field focused, Select All must leave the
+   field's text selected, not the track list.
 5. **Invocation pass.** In fixture mode, invoke every non-skipped item and
    assert its postcondition (window appears, mode toggles, destination
    changes). Destructive items (Clear Queue, Remove) run against throwaway
@@ -61,7 +62,7 @@ least once in fixture mode with a postcondition check.
       and excluded by design).
 - [x] Shortcut parity: manifest == KeyBindings == menu source == help
       book (table rows and prose tokens).
-- [ ] ⌘A-in-search-field is a permanent enablement-matrix assertion.
+- [x] ⌘A-in-search-field is a permanent enablement-matrix assertion.
 - [x] A deliberately renamed menu item fails the crawl (verified once,
       noted in the manifest header).
 
@@ -82,6 +83,27 @@ least once in fixture mode with a postcondition check.
 - The first crawl caught the bug class it exists for: `%.2g` labelled the
   1.25× quick rate "1.2×" (and 1.75× "1.8×" in Podcast settings) across
   four surfaces; fixed by `PlaybackRateLabel` with a regression test.
+- **A `Commands` body only re-evaluates on @AppStorage or @Observable
+  reads.** The view models arrive as plain `let`s (deliberately, to keep
+  the menu bar off the high-frequency render path), so `.disabled` gates
+  reading `@Published`/plain state freeze at whatever the body was built
+  with. The matrix caught three: the File-menu rescan items
+  (`isScanning`, now an `library.scanActive` defaults mirror), the
+  "View as" pair (`library.collectionListingActive` mirror), and the
+  whole Track menu (now reading the @Observable `tracks.selection`
+  directly). Gate new menu items on @Observable or @AppStorage state
+  only.
+- A menu `Picker`'s options ignore `.disabled` entirely (they stay
+  clickable and write the selection while only the header greys out);
+  the "View as" pair is therefore checkmarked `Toggle`s, not a Picker.
+- The scan-summary banner auto-dismisses after 3 seconds, so it is
+  useless as a "scan settled" signal for tests; the matrix relies on its
+  own retry loop instead.
+- A stopped queue whose current item is a stream emits no current-track
+  change (streams are never engine-preloaded), so the now-playing display
+  sat on "Not playing" after a radio restore, and menu gates keyed off it
+  were wrong. `NowPlayingViewModel` now seeds its display from the queue
+  after activation and re-syncs on queue changes at rest.
 
 ## Handoff
 

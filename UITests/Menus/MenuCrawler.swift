@@ -62,6 +62,14 @@ struct MenuBarCrawler {
         return menus
     }
 
+    /// Opens and captures a single top-level menu by title (the
+    /// enablement matrix re-reads only the menus a state affects).
+    func crawl(menuTitled title: String) throws -> ObservedMenu {
+        let bar = self.app.menuBars.firstMatch
+        XCTAssertTrue(bar.waitForExistence(timeout: 10), "menu bar never appeared")
+        return try self.crawl(menuBarItem: bar.menuBarItems[title], title: title)
+    }
+
     /// Opens one top-level menu, snapshots it, hovers submenu parents to
     /// materialize their children, and closes it again.
     private func crawl(menuBarItem: XCUIElement, title: String) throws -> ObservedMenu {
