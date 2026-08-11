@@ -1,5 +1,24 @@
 import Foundation
 
+// MARK: - MenuState
+
+/// The app states of the phase 30 enablement matrix. The matrix test
+/// scripts each state through the UI (clicks and keystrokes, never by
+/// writing defaults: `BocanCommands` reads live view-model state at menu
+/// validation, and defaults-poking would test a lie).
+enum MenuState: String, CaseIterable {
+    /// Fixture launch, scan settled, nothing selected, nothing playing.
+    case freshLaunch
+    /// One library track row selected; still nothing playing.
+    case trackSelected
+    /// A library track playing (selection retained).
+    case trackPlaying
+    /// The toolbar search field focused with text in it (the ⌘A row).
+    case searchFieldFocused
+    /// A seeded internet-radio queue restored as current, not playing.
+    case radioCurrent
+}
+
 // MARK: - MenuItemSpec
 
 /// One expected menu item (phase 30). `titles` lists every label the item
@@ -26,6 +45,9 @@ struct MenuItemSpec {
     var conditional: String?
     /// Skip child comparison (Services, AutoFill: machine-specific).
     var ignoreChildren = false
+    /// Expected enablement per matrix state; unlisted states are not
+    /// asserted (dynamic or irrelevant there).
+    var enablement: [MenuState: Bool] = [:]
     var submenu: [MenuItemSpec] = []
 
     var canonicalTitle: String {
@@ -39,6 +61,7 @@ struct MenuItemSpec {
         binding: String? = nil,
         row: String? = nil,
         conditional: String? = nil,
+        enablement: [MenuState: Bool] = [:],
         submenu: [MenuItemSpec] = []
     ) -> MenuItemSpec {
         MenuItemSpec(
@@ -47,6 +70,7 @@ struct MenuItemSpec {
             binding: binding,
             helpBookRow: row,
             conditional: conditional,
+            enablement: enablement,
             submenu: submenu
         )
     }
@@ -85,7 +109,8 @@ enum MenuManifest {
     static let menus: [MenuSpec] = [
         MenuSpec(title: "Bòcan Music", items: [
             .own("About Bòcan"),
-            .own("Check for Updates…"),
+            // Sparkle cannot check in unsigned debug/E2E builds.
+            .own("Check for Updates…", enablement: [.freshLaunch: false]),
             .sys("Settings…"),
             .sys("Services", ignoreChildren: true),
             .sys("Hide Bòcan Music"),
@@ -106,8 +131,10 @@ enum MenuManifest {
             ),
             .own("Add Files to Library…", key: "⌘O", binding: "addFiles"),
             .own("Music Sources…"),
-            .own("Quick Rescan Library", key: "⌥⌘R"),
-            .own("Full Rescan Library", key: "⌥⇧⌘R"),
+            // Disabled only while a scan runs; fresh-launch assertion
+            // doubles as the "scan settled" gate (the matrix retries).
+            .own("Quick Rescan Library", key: "⌥⌘R", enablement: [.freshLaunch: true]),
+            .own("Full Rescan Library", key: "⌥⇧⌘R", enablement: [.freshLaunch: true]),
             .own("Import Playlist…", key: "⌥⇧⌘O"),
             .sys("Close"),
             .sys("Close All"),
@@ -136,24 +163,56 @@ enum MenuManifest {
             .own("Show Recent Scrobbles", key: "⌥⇧⌘S"),
             .own("Equaliser & DSP…", key: "⌥⌘E", binding: "showEQPanel"),
             // The "View as" inline picker renders as a header row plus two
-            // radio items at menu level.
-            .own("View as"),
-            .own("as List"),
-            .own("as Album Grid"),
+            // radio items at menu level. The options are only meaningful on
+            // the Artists/Genres/Composers listings; the fresh launch shows
+            // Songs, so all three rows must be disabled there.
+            .own("View as", enablement: [.freshLaunch: false]),
+            .own("as List", enablement: [.freshLaunch: false]),
+            .own("as Album Grid", enablement: [.freshLaunch: false]),
             .sys("Enter Full Screen", "Exit Full Screen"),
         ]),
         MenuSpec(title: "Playback", items: [
             .own("Play / Pause", key: "Space", binding: "playPause", row: "Play / Pause"),
-            .own("Next Track", key: "⌘→", binding: "nextTrack", row: "Next Track"),
-            .own("Previous Track", key: "⌘←", binding: "previousTrack", row: "Previous Track"),
-            .own("Restart Track", key: "⌥⌘←", binding: "restartTrack"),
+            .own(
+                "Next Track",
+                key: "⌘→",
+                binding: "nextTrack",
+                row: "Next Track",
+                enablement: [.freshLaunch: false, .trackSelected: false, .trackPlaying: true]
+            ),
+            .own(
+                "Previous Track",
+                key: "⌘←",
+                binding: "previousTrack",
+                row: "Previous Track",
+                enablement: [.freshLaunch: false, .trackPlaying: true]
+            ),
+            .own(
+                "Restart Track",
+                key: "⌥⌘←",
+                binding: "restartTrack",
+                enablement: [.freshLaunch: false, .trackPlaying: true]
+            ),
             .own("Mute", "Unmute", key: "⌥⌘Z", binding: "mute", row: "Mute / Unmute"),
             .own("Increase Volume", key: "⌘↑", binding: "increaseVolume"),
             .own("Decrease Volume", key: "⌘↓", binding: "decreaseVolume"),
             .own("Toggle Shuffle", key: "⇧⌘S", binding: "toggleShuffle", row: "Toggle Shuffle"),
             .own("Cycle Repeat", key: "⇧⌘E", binding: "cycleRepeat", row: "Cycle Repeat"),
-            .own("Toggle Stop After Current", key: "⌥⌘.", binding: "stopAfterCurrent"),
-            .own("Clear Queue", key: "⇧⌘⌫", binding: "clearQueue"),
+            .own(
+                "Toggle Stop After Current",
+                key: "⌥⌘.",
+                binding: "stopAfterCurrent",
+                enablement: [.freshLaunch: false, .trackPlaying: true]
+            ),
+            // A restored radio queue is still a queue: it must be
+            // clearable from the menu even though no library track is
+            // current.
+            .own(
+                "Clear Queue",
+                key: "⇧⌘⌫",
+                binding: "clearQueue",
+                enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: true]
+            ),
             .own("Show Up Next", key: "⌥⌘U", binding: "showUpNext", row: "Show Up Next"),
             .own("Playback Speed", submenu: [
                 // From NowPlayingViewModel.quickRates via PlaybackRateLabel;
@@ -181,38 +240,114 @@ enum MenuManifest {
                 "Jump to Current Track",
                 key: "⌘J",
                 binding: "jumpToCurrentTrack",
-                row: "Jump to Current Track"
+                row: "Jump to Current Track",
+                enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: false]
             ),
-            .own("Go to Current Album", key: "⌥⌘A", binding: "goToCurrentAlbum"),
-            .own("Go to Current Artist", key: "⌥⌘G", binding: "goToCurrentArtist"),
+            // A radio stream has no album or artist rows to go to.
+            .own(
+                "Go to Current Album",
+                key: "⌥⌘A",
+                binding: "goToCurrentAlbum",
+                enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: false]
+            ),
+            .own(
+                "Go to Current Artist",
+                key: "⌥⌘G",
+                binding: "goToCurrentArtist",
+                enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: false]
+            ),
         ]),
         MenuSpec(title: "Track", items: [
-            .own("Play Now", key: "⌘↩", binding: "playNow", row: "Play Selection Now"),
-            .own("Play Next", key: "⇧⌘↩", binding: "playNext"),
-            .own("Add to Queue", key: "⇧⌘Q", binding: "addToQueue"),
-            .own("Play Album"),
-            .own("Shuffle Album"),
-            .own("Play Artist"),
-            .own("Get Info", key: "⌘I", binding: "getInfo", row: "Get Info"),
-            .own("Identify Track…", key: "⌥⌘I"),
-            .own("Reveal in Finder", key: "⌘R", binding: "revealInFinder", row: "Reveal in Finder"),
-            .own("Love / Unlove", key: "⌘L", binding: "love", row: "Love / Unlove"),
+            .own(
+                "Play Now",
+                key: "⌘↩",
+                binding: "playNow",
+                row: "Play Selection Now",
+                enablement: [.freshLaunch: false, .trackSelected: true, .radioCurrent: false]
+            ),
+            .own(
+                "Play Next",
+                key: "⇧⌘↩",
+                binding: "playNext",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own(
+                "Add to Queue",
+                key: "⇧⌘Q",
+                binding: "addToQueue",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own("Play Album", enablement: [.freshLaunch: false, .trackSelected: true]),
+            .own("Shuffle Album", enablement: [.freshLaunch: false, .trackSelected: true]),
+            .own("Play Artist", enablement: [.freshLaunch: false, .trackSelected: true]),
+            // Selection-scoped like their siblings: all three no-op
+            // without a selection, so they must be disabled without one.
+            .own(
+                "Get Info",
+                key: "⌘I",
+                binding: "getInfo",
+                row: "Get Info",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own(
+                "Identify Track…",
+                key: "⌥⌘I",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own(
+                "Reveal in Finder",
+                key: "⌘R",
+                binding: "revealInFinder",
+                row: "Reveal in Finder",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own(
+                "Love / Unlove",
+                key: "⌘L",
+                binding: "love",
+                row: "Love / Unlove",
+                enablement: [.freshLaunch: false, .trackSelected: true, .radioCurrent: false]
+            ),
+            // SwiftUI leaves a `.disabled` Menu parent enabled and greys
+            // its children instead, so the matrix rows sit on the children.
             .own("Rate", submenu: [
-                .own("None", key: "⌘0"),
-                .own("★", key: "⌘1", binding: "rate1"),
+                .own("None", key: "⌘0", enablement: [.freshLaunch: false, .trackSelected: true]),
+                .own("★", key: "⌘1", binding: "rate1", enablement: [.freshLaunch: false, .trackSelected: true]),
                 .own("★★", key: "⌘2", binding: "rate2"),
                 .own("★★★", key: "⌘3", binding: "rate3"),
                 .own("★★★★", key: "⌘4", binding: "rate4"),
-                .own("★★★★★", key: "⌘5", binding: "rate5"),
+                .own("★★★★★", key: "⌘5", binding: "rate5", enablement: [.trackSelected: true]),
             ]),
-            .own("Compute Replay Gain"),
-            .own("Select All", key: "⌘A", binding: "selectAll"),
-            .own("Deselect All", key: "⇧⌘A", binding: "deselectAll"),
-            .own("Edit Lyrics…", key: "⌥⇧⌘L"),
+            .own(
+                "Compute Replay Gain",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own(
+                "Select All",
+                key: "⌘A",
+                binding: "selectAll",
+                enablement: [.freshLaunch: true]
+            ),
+            .own(
+                "Deselect All",
+                key: "⇧⌘A",
+                binding: "deselectAll",
+                enablement: [.freshLaunch: false, .trackSelected: true]
+            ),
+            .own(
+                "Edit Lyrics…",
+                key: "⌥⇧⌘L",
+                enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: false]
+            ),
             // Present iff `lyrics.lrclibEnabled`; the crawl launch pins the
             // flag on via the argument domain so the item is exercised.
             .own("Fetch Lyrics from LRClib"),
-            .own("Clear Lyrics"),
+            // Fixture tones carry no lyrics, so there is nothing to clear
+            // even while one plays (LRClib is pinned off in the matrix).
+            .own(
+                "Clear Lyrics",
+                enablement: [.freshLaunch: false, .trackPlaying: false]
+            ),
         ]),
         MenuSpec(title: "Tools", items: [
             .own("Fetch Missing Cover Art…"),
@@ -237,6 +372,11 @@ enum MenuManifest {
     /// deterministic regardless of the machine's real preferences (E2E
     /// launches share the container's `UserDefaults`; see phase 32).
     static let pinnedDefaults = ["-lyrics.lrclibEnabled", "YES"]
+
+    /// The enablement matrix pins LRClib *off* instead: it plays a track,
+    /// and with the flag on the app would fire a real lyrics lookup for
+    /// the fixture tone (tests must not hit the network).
+    static let matrixDefaults = ["-lyrics.lrclibEnabled", "NO"]
 
     /// Every spec in the manifest, submenus included.
     static var allItems: [MenuItemSpec] {

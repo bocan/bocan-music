@@ -51,6 +51,7 @@ enum MenuSourceParsing {
     static func commandShortcutSites() throws -> [ShortcutSite] {
         let files = [
             "App/BocanCommands.swift",
+            "App/BocanCommands+Track.swift",
             "App/BocanCommands+Tools.swift",
             "App/BocanCommands+CollectionViewMenu.swift",
         ]
