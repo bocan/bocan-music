@@ -81,7 +81,22 @@ struct UIStateV2: Codable {
 public final class LibraryViewModel: ObservableObject { // swiftlint:disable:this type_body_length
     // MARK: - Published state
 
-    @Published public var selectedDestination: SidebarDestination = .songs
+    @Published public var selectedDestination: SidebarDestination = .songs {
+        didSet {
+            // Same CommandGroup-staleness mirror as `isScanning` below: the
+            // View menu's "View as" toggles gate on whether the active
+            // destination is a collection listing.
+            let isListing = switch self.selectedDestination {
+            case .artists, .genres, .composers:
+                true
+
+            default:
+                false
+            }
+            UserDefaults.standard.set(isListing, forKey: "library.collectionListingActive")
+        }
+    }
+
     @Published public var searchQuery = ""
 
     /// Phase 19 step 9: expand/collapse state for top-level sidebar
@@ -222,7 +237,20 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     // MARK: - Scan state
 
-    @Published public var isScanning = false
+    @Published public var isScanning = false {
+        didSet {
+            // Mirrored into defaults for the menu bar: items injected into
+            // system menus via CommandGroup evaluate their `.disabled` only
+            // when the Commands body rebuilds, and a plain `let` view model
+            // never triggers one, so the File-menu rescan items froze in
+            // whatever state they were built with. An @AppStorage read in
+            // BocanCommands both rebuilds the body and stays fresh
+            // (phase 30 enablement matrix; the established live-label
+            // pattern from App/CLAUDE.md).
+            UserDefaults.standard.set(self.isScanning, forKey: "library.scanActive")
+        }
+    }
+
     /// `true` from the moment a scan begins against an empty library until the
     /// post-scan `tracks.load()` has completed.  `ContentPane` uses this to
     /// show a full-pane progress overlay instead of an empty tracks list —
@@ -406,6 +434,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         podcastSearch: (any PodcastSearchProviding)? = nil,
         podcastTranscript: (any PodcastTranscriptProviding)? = nil
     ) {
+        // Reset the menu-bar mirror keys (see the property didSets): a
+        // crash mid-scan would otherwise leave a stale `true` wedging the
+        // File-menu rescan items disabled for the whole next session.
+        UserDefaults.standard.set(false, forKey: "library.scanActive")
+        UserDefaults.standard.set(false, forKey: "library.collectionListingActive")
         self.database = database
         self.engine = engine
         self.scanner = scanner

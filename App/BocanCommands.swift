@@ -17,11 +17,19 @@ struct BocanCommands: Commands {
     /// Mirrors `LyricsViewModel.paneVisible` (`@AppStorage("lyrics.paneVisible")`).
     @AppStorage("lyrics.paneVisible") private var lyricsPaneVisible = false
     /// Mirrors `LyricsViewModel.lrclibEnabled` (`@AppStorage("lyrics.lrclibEnabled")`).
-    @AppStorage("lyrics.lrclibEnabled") private var lyricsLrclibEnabled = false
+    /// Not `private`: the Track menu lives in an extension file.
+    @AppStorage("lyrics.lrclibEnabled") var lyricsLrclibEnabled = false
     /// Mirrors `VisualizerViewModel.paneVisible` (`@AppStorage("visualizer.paneVisible")`).
     @AppStorage("visualizer.paneVisible") private var visualizerPaneVisible = false
     /// Mirrors `NowPlayingStrip.showRecentScrobbles` (`@AppStorage("scrobble.showRecentSheet")`).
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
+    /// Mirrors `LibraryViewModel.isScanning`. CommandGroup items on system
+    /// menus only re-evaluate `.disabled` when this body rebuilds, so
+    /// enablement must come from defaults, not the plain-`let` VM.
+    @AppStorage("library.scanActive") private var libraryScanActive = false
+    /// Mirrors "the active destination is a collection listing"
+    /// (`LibraryViewModel.selectedDestination` didSet), same rebuild rule.
+    @AppStorage("library.collectionListingActive") private var collectionListingActive = false
     /// In-app Reduce Motion toggle, mirrored so menu-driven pane changes can match
     /// the toolbar buttons' animation behaviour (issue #312).
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
@@ -112,13 +120,13 @@ struct BocanCommands: Commands {
                 self.vm.rescanLibrary(mode: .quick)
             }
             .keyboardShortcut("r", modifiers: [.command, .option])
-            .disabled(self.vm.isScanning)
+            .disabled(self.libraryScanActive)
 
             Button("Full Rescan Library") {
                 self.vm.rescanLibrary(mode: .full)
             }
             .keyboardShortcut("r", modifiers: [.command, .option, .shift])
-            .disabled(self.vm.isScanning)
+            .disabled(self.libraryScanActive)
 
             Divider()
 
@@ -177,14 +185,16 @@ struct BocanCommands: Commands {
             Divider()
 
             // Mirrors the List / Grid toggle for the active collection listing
-            // (Artists, Genres, Composers). Radio checkmarks via an inline
-            // Picker; disabled when the current destination is not a listing.
-            Picker("View as", selection: self.collectionViewModeBinding) {
-                Text("as List").tag(CollectionViewMode.list)
-                Text("as Album Grid").tag(CollectionViewMode.grid)
-            }
-            .pickerStyle(.inline)
-            .disabled(!self.isCollectionListing)
+            // (Artists, Genres, Composers): a header row plus two checkmarked
+            // toggle items. Not an inline Picker: a menu Picker's options
+            // ignore `.disabled` entirely (they stay clickable and write the
+            // mode while the header greys out), so each item is gated
+            // individually instead (phase 30 enablement matrix).
+            Text("View as")
+            Toggle("as List", isOn: self.viewModeIsOn(.list))
+                .disabled(!self.collectionListingActive)
+            Toggle("as Album Grid", isOn: self.viewModeIsOn(.grid))
+                .disabled(!self.collectionListingActive)
         }
 
         CommandMenu("Playback") {
@@ -247,11 +257,13 @@ struct BocanCommands: Commands {
 
             Divider()
 
+            // Gated on any current item, not just a library track: a
+            // restored radio/stream queue must be clearable too (phase 30).
             Button("Clear Queue") {
                 Task { await self.vm.requestClearQueue() }
             }
             .keyboardShortcut(KeyBindings.clearQueue)
-            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
+            .disabled(!self.vm.nowPlaying.hasCurrentItem)
 
             Button("Show Up Next") {
                 Task { await self.vm.selectDestination(.upNext) }
@@ -337,140 +349,7 @@ struct BocanCommands: Commands {
             .keyboardShortcut(KeyBindings.focusSearch)
         }
 
-        CommandMenu("Track") {
-            Button("Play Now") {
-                self.vm.playNowForCurrentSelection()
-            }
-            .keyboardShortcut(KeyBindings.playNow)
-            .disabled(!self.vm.hasTrackSelection)
-
-            Button("Play Next") {
-                self.vm.playNextForCurrentSelection()
-            }
-            .keyboardShortcut(KeyBindings.playNext)
-            .disabled(!self.vm.hasTrackSelection)
-
-            Button("Add to Queue") {
-                self.vm.addToQueueForCurrentSelection()
-            }
-            .keyboardShortcut(KeyBindings.addToQueue)
-            .disabled(!self.vm.hasTrackSelection)
-
-            Divider()
-
-            Button("Play Album") {
-                self.vm.playAlbumForCurrentSelection(shuffle: false)
-            }
-            .disabled(!self.vm.hasTrackSelection)
-
-            Button("Shuffle Album") {
-                self.vm.playAlbumForCurrentSelection(shuffle: true)
-            }
-            .disabled(!self.vm.hasTrackSelection)
-
-            Button("Play Artist") {
-                self.vm.playArtistForCurrentSelection()
-            }
-            .disabled(!self.vm.hasTrackSelection)
-
-            Divider()
-
-            Button("Get Info") {
-                self.vm.showTagEditorForCurrentSelection()
-            }
-            .keyboardShortcut(KeyBindings.getInfo)
-
-            Button("Identify Track\u{2026}") {
-                self.vm.showIdentifyTrackForCurrentSelection()
-            }
-            .keyboardShortcut("i", modifiers: [.command, .option])
-
-            Button("Reveal in Finder") {
-                self.vm.revealSelectedInFinder()
-            }
-            .keyboardShortcut(KeyBindings.revealInFinder)
-
-            Divider()
-
-            // Phase 4 audit C1: real Love command, replacing the disabled stub.
-            Button("Love / Unlove") {
-                self.vm.toggleLovedForCurrentSelection()
-            }
-            .keyboardShortcut(KeyBindings.love)
-            .disabled(!self.vm.hasTrackSelection)
-
-            // Phase 4 audit C3: ⌘1…⌘5 rating shortcuts must work as global
-            // accelerators (the per-context-menu Rate submenu only fires when
-            // the menu is open).  ⌘0 clears the rating to round out the set.
-            Menu("Rate") {
-                Button("None") { self.vm.setRatingForCurrentSelection(stars: 0) }
-                    .keyboardShortcut("0", modifiers: .command)
-                Button("★") { self.vm.setRatingForCurrentSelection(stars: 1) }
-                    .keyboardShortcut(KeyBindings.rate1)
-                Button("★★") { self.vm.setRatingForCurrentSelection(stars: 2) }
-                    .keyboardShortcut(KeyBindings.rate2)
-                Button("★★★") { self.vm.setRatingForCurrentSelection(stars: 3) }
-                    .keyboardShortcut(KeyBindings.rate3)
-                Button("★★★★") { self.vm.setRatingForCurrentSelection(stars: 4) }
-                    .keyboardShortcut(KeyBindings.rate4)
-                Button("★★★★★") { self.vm.setRatingForCurrentSelection(stars: 5) }
-                    .keyboardShortcut(KeyBindings.rate5)
-            }
-            .disabled(!self.vm.hasTrackSelection)
-
-            Divider()
-
-            Button("Compute Replay Gain") {
-                let ids = self.vm.tracks.selection.compactMap(\.self)
-                Task { await self.vm.computeReplayGain(forTrackIDs: ids) }
-            }
-            .help("Analyse loudness for the selected tracks and save ReplayGain values")
-            .disabled(!self.vm.hasTrackSelection)
-
-            Divider()
-
-            // ⌘A must still reach the field editor while text is being edited;
-            // the shortcut fires ahead of the responder chain (#379).
-            Button("Select All") {
-                if !EditMenuRouting.forwardSelectAllToTextEditor() {
-                    self.vm.selectAllTracks()
-                }
-            }
-            .keyboardShortcut(KeyBindings.selectAll)
-
-            Button("Deselect All") {
-                if !EditMenuRouting.textEditorIsActive {
-                    self.vm.deselectAllTracks()
-                }
-            }
-            .keyboardShortcut(KeyBindings.deselectAll)
-            .disabled(!self.vm.hasTrackSelection)
-
-            Divider()
-
-            Button("Edit Lyrics\u{2026}") {
-                self.lyricsVM.openEditor()
-            }
-            .keyboardShortcut("l", modifiers: [.command, .option, .shift])
-            .help("Open the lyrics editor for the current track")
-            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil)
-
-            if self.lyricsLrclibEnabled {
-                Button("Fetch Lyrics from LRClib") {
-                    self.lyricsVM.forceFetch()
-                }
-                .help("Fetch lyrics from LRClib for the current track, replacing any existing lyrics")
-                .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.isFetching)
-            }
-
-            Button("Clear Lyrics") {
-                if let id = self.vm.nowPlaying.nowPlayingTrackID {
-                    self.lyricsVM.clearLyrics(for: id)
-                }
-            }
-            .help("Delete stored lyrics for the current track")
-            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.document == nil)
-        }
+        self.trackCommands
 
         // Both items open dedicated in-app windows — no browser or external viewer.
         CommandGroup(replacing: .help) {

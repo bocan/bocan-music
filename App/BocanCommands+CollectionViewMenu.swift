@@ -17,6 +17,19 @@ extension BocanCommands {
         }
     }
 
+    /// Checkmark binding for one mode of the View-menu "View as" pair.
+    /// Radio semantics: switching a mode on routes through
+    /// `collectionViewModeBinding`; clicking the already-active mode is a
+    /// no-op rather than unchecking it.
+    func viewModeIsOn(_ mode: CollectionViewMode) -> Binding<Bool> {
+        Binding(
+            get: { self.collectionViewModeBinding.wrappedValue == mode },
+            set: { isOn in
+                if isOn { self.collectionViewModeBinding.wrappedValue = mode }
+            }
+        )
+    }
+
     /// Routes the View-menu List / Grid choice to the active section's
     /// `@AppStorage` key, so the visible listing updates live and persists. Reads
     /// `selectedDestination` when the menu acts rather than observing it (the VM

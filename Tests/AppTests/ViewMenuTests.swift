@@ -77,23 +77,28 @@ struct ViewMenuTests {
     @Test("The View menu mirrors the collection List / Grid toggle, radio-style and gated")
     func collectionViewModeItems() throws {
         let source = try self.commandsSource()
-        // A radio-style inline picker with the two labelled items.
-        #expect(source.contains("Picker(\"View as\""), "the View menu must offer a \"View as\" picker")
+        // Checkmarked toggle items under a header row. Deliberately not an
+        // inline Picker: a menu Picker's options ignore `.disabled` (they
+        // stay clickable and write the mode while only the header greys
+        // out), which the phase 30 enablement matrix caught.
+        #expect(source.contains("Text(\"View as\")"), "the View menu must keep the \"View as\" header row")
         #expect(
-            source.contains("as List") && source.contains("as Album Grid"),
-            "the picker must offer 'as List' and 'as Album Grid'"
+            source.contains("Toggle(\"as List\"") && source.contains("Toggle(\"as Album Grid\""),
+            "the pair must offer 'as List' and 'as Album Grid' as checkmarked toggles"
         )
-        #expect(source.contains(".pickerStyle(.inline)"), "radio checkmarks come from an inline picker style")
-        // Disabled unless the visible destination is a collection listing.
-        #expect(
-            source.contains(".disabled(!self.isCollectionListing)"),
-            "the items must be disabled off the collection listings"
-        )
+        #expect(!source.contains("Picker(\"View as\""), "a menu Picker cannot disable its options; use toggles")
+        // Each item disabled unless the visible destination is a collection
+        // listing (the header Text is inert by nature). The gate reads the
+        // @AppStorage mirror, not the VM: CommandGroup items on system menus
+        // only re-evaluate .disabled when the Commands body rebuilds, and
+        // only a defaults change triggers that (phase 30).
+        let gates = source.components(separatedBy: ".disabled(!self.collectionListingActive)").count - 1
+        #expect(gates >= 2, "both toggles must be gated on the collectionListingActive mirror")
         // They live in the View (sidebar) group, before the app-specific menus.
         let viewStart = try #require(source.range(of: "CommandGroup(after: .sidebar)"))
         let playbackStart = try #require(source.range(of: "CommandMenu(\"Playback\")"))
         let viewBody = String(source[viewStart.upperBound ..< playbackStart.lowerBound])
-        #expect(viewBody.contains("Picker(\"View as\""), "the 'View as' picker must sit in the View menu group")
+        #expect(viewBody.contains("Toggle(\"as List\""), "the 'View as' pair must sit in the View menu group")
     }
 
     @Test("The View-menu mode picker routes to the active section's viewMode key (#363)")
