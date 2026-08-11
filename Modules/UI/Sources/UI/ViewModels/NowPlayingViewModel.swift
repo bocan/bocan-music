@@ -107,6 +107,7 @@ public final class NowPlayingViewModel {
     private nonisolated(unsafe) var sleepTimerTask: Task<Void, Never>?
     private nonisolated(unsafe) var scrobbleStatsTask: Task<Void, Never>?
     private nonisolated(unsafe) var currentTrackTask: Task<Void, Never>?
+    private nonisolated(unsafe) var initialItemSyncTask: Task<Void, Never>?
     private nonisolated(unsafe) var queueChangesTask: Task<Void, Never>?
     private nonisolated(unsafe) var streamTitleTask: Task<Void, Never>?
     /// The full `Track` record for the currently-playing item, or `nil` when idle.
@@ -119,6 +120,18 @@ public final class NowPlayingViewModel {
     /// The station's display name, kept aside so live ICY titles can take
     /// over `title` while the station moves to the artist line.
     public private(set) var nowPlayingRadioStationName: String?
+
+    /// True when the queue has a current item of any source (library
+    /// track, radio, Subsonic stream, podcast). Menu commands that act on
+    /// "whatever is current" (Clear Queue) key off this rather than the
+    /// library-track ID, which is nil for streams (phase 30).
+    public var hasCurrentItem: Bool {
+        self.nowPlayingTrackID != nil
+            || self.nowPlayingRadioStreamURL != nil
+            || self.nowPlayingSubsonicSongID != nil
+            || self.isPodcast
+    }
+
     private let log = AppLogger.make(.ui)
 
     // MARK: - Init
@@ -160,6 +173,7 @@ public final class NowPlayingViewModel {
         self.sleepTimerTask?.cancel()
         self.scrobbleStatsTask?.cancel()
         self.currentTrackTask?.cancel()
+        self.initialItemSyncTask?.cancel()
         self.queueChangesTask?.cancel()
         self.streamTitleTask?.cancel()
     }
@@ -407,6 +421,32 @@ public final class NowPlayingViewModel {
         self.sleepTimerFadeOut = fadeOut
         self.sleepTimerActiveMinutes = minutes
         if minutes == nil { self.sleepTimerRemaining = nil }
+    }
+
+    /// Streams are never engine-preloaded, so a restored queue whose
+    /// current item is a stream emits no current-track change at launch
+    /// and the display (and everything keyed off it: the strip, the Clear
+    /// Queue menu gate) would sit on "Not playing" forever (phase 28
+    /// flag). Called once after activation; engine-driven emissions
+    /// overwrite the seeded display the moment anything actually loads.
+    private func seedDisplayFromRestoredQueue(_ qp: QueuePlayer) async {
+        guard self.currentTrack == nil, !self.hasCurrentItem else { return }
+        guard let item = await qp.queue.currentItem else { return }
+        if case .localBookmark = item.playableSource { return }
+        await self.applyStreamItem(item)
+    }
+
+    /// Re-derives the display from the queue after a mutation that never
+    /// reaches the engine (nothing loaded, nothing playing). An
+    /// engine-loaded track owns the display, so this backs off then.
+    private func syncDisplayWithQueueIfIdle(_ qp: QueuePlayer) async {
+        guard self.currentTrack == nil else { return }
+        guard let item = await qp.queue.currentItem else {
+            if self.hasCurrentItem { self.clearNowPlayingDisplay() }
+            return
+        }
+        if case .localBookmark = item.playableSource { return }
+        await self.applyStreamItem(item)
     }
 
     /// Populates the now-playing display from a queue item that has no local
@@ -761,6 +801,10 @@ private extension NowPlayingViewModel {
                 }
             }
         }
+        self.initialItemSyncTask = Task { [weak self] in
+            await qp.waitUntilActivated()
+            await self?.seedDisplayFromRestoredQueue(qp)
+        }
         // Live ICY titles (phase 27-5): while a station plays, the stream
         // title takes the title line and the station name moves to the
         // artist line. Junk or absent titles simply never emit, so the
@@ -795,6 +839,14 @@ private extension NowPlayingViewModel {
 
                 case let .shuffleChanged(state):
                     self.shuffleOn = state != .off
+
+                case .reset, .cleared, .currentChanged:
+                    // Queue mutations that swap the current item touch the
+                    // engine only while something is playing; a replaced or
+                    // cleared queue at rest (the seeded E2E radio queue, a
+                    // stopped queue being cleared) emits no current-track
+                    // change, so re-derive the display from the queue.
+                    await self.syncDisplayWithQueueIfIdle(qp)
 
                 default:
                     break
