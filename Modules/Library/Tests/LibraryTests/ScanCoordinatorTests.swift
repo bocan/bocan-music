@@ -61,6 +61,35 @@ struct ScanCoordinatorTests {
         }
     }
 
+    @Test("a repeated full scan never marks present files removed")
+    func fullRescanKeepsPresentTracks() async throws {
+        let db = try await makeDB()
+        let coordinator = ScanCoordinator(database: db)
+        let dir = try sampleLibraryURL
+
+        await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { _ in }
+
+        // Regression (phase 30 invocation pass): full-mode imports skipped
+        // the change detector entirely, so nothing was marked visited and
+        // the removal sweep disabled the whole library while re-importing
+        // every file in the same pass (removed == count, all rows hidden).
+        let box = EventBox()
+        await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
+
+        if case let .finished(summary) = box.events.last {
+            #expect(summary.removed == 0, "present files must never be marked removed")
+            #expect(summary.errors == 0)
+        } else {
+            Issue.record("full rescan emitted no finished event")
+        }
+        let tracks = try await TrackRepository(database: db).fetchAllIncludingDisabled()
+        #expect(!tracks.isEmpty)
+        #expect(
+            tracks.allSatisfy { !$0.disabled },
+            "a full rescan must not disable tracks whose files are present"
+        )
+    }
+
     @Test("full scan inserts tracks for all audio files in sample-library")
     func fullScanInsertsAllTracks() async throws {
         let db = try await makeDB()

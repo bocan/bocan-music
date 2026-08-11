@@ -248,13 +248,16 @@ actor ScanCoordinator {
         let size = Int64(values?.fileSize ?? 0)
         let mtime = Int64(values?.contentModificationDate?.timeIntervalSince1970 ?? 0)
 
-        // Change detection for quick scans
-        if mode == .quick {
-            let status = await changeDetector.check(url: url, mtime: mtime, size: size)
-            if status == .unchanged {
-                emit(.processed(url: url, outcome: .skippedUnchanged))
-                return .skipped
-            }
+        // The check must run in every mode: it is also what marks the file
+        // *visited*, and the removal pass disables every seeded URL that
+        // was never visited. Running it only for quick scans meant a Full
+        // Rescan re-imported each track and then marked the entire library
+        // removed (phase 30 invocation pass). Only the skip-unchanged
+        // shortcut is quick-mode behaviour.
+        let status = await changeDetector.check(url: url, mtime: mtime, size: size)
+        if mode == .quick, status == .unchanged {
+            emit(.processed(url: url, outcome: .skippedUnchanged))
+            return .skipped
         }
 
         // Read tags
