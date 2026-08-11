@@ -249,7 +249,11 @@ public extension LibraryViewModel {
 
     internal func triggerScan(mode: ScanMode) {
         guard let scanner else { return }
-        guard !self.isScanning else { return }
+        guard !self.isScanning else {
+            self.log.debug("scan.trigger.skipped", ["mode": "\(mode)", "reason": "in-flight"])
+            return
+        }
+        self.log.debug("scan.trigger", ["mode": "\(mode)"])
         self.isScanning = true
         self.scanWalked = 0
         self.scanInserted = 0
@@ -281,6 +285,7 @@ public extension LibraryViewModel {
             }
             // Safety net: if the stream ends without a .finished event, reset state.
             if self.isScanning {
+                self.log.warning("scan.stream.ended_without_finished")
                 self.stopScanFlush()
                 self.isScanning = false
                 self.isInitialScan = false
@@ -317,6 +322,7 @@ public extension LibraryViewModel {
         case let .finished(summary):
             // Final flush before clearing isScanning so the banner shows the
             // true final counts even if the last tick was mid-interval.
+            self.log.debug("scan.finished.applied", ["inserted": summary.inserted])
             self.stopScanFlush()
             self.scanSummary = summary
             self.isScanning = false

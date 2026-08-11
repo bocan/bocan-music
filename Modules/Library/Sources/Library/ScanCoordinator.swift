@@ -92,6 +92,7 @@ actor ScanCoordinator {
         var inserted = 0, updated = 0, removed = 0, errors = 0, skipped = 0
 
         emit(.started(rootCount: roots.count))
+        self.log.debug("scan.start", ["roots": roots.count, "mode": "\(mode)"])
 
         // Seed the change detector from the current DB state — but only with
         // tracks that belong to the roots we are about to scan.  Seeding with
@@ -180,6 +181,7 @@ actor ScanCoordinator {
             return collected
         }
 
+        self.log.debug("scan.walk.end", ["results": results.count])
         guard !Task.isCancelled else { return }
 
         for result in results {
@@ -215,6 +217,10 @@ actor ScanCoordinator {
         }
 
         let elapsed = ContinuousClock.now - start
+        self.log.debug("scan.end", [
+            "inserted": inserted, "updated": updated, "removed": removed,
+            "skipped": skipped, "errors": errors,
+        ])
         emit(.finished(ScanProgress.Summary(
             inserted: inserted,
             updated: updated,
