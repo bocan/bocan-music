@@ -193,6 +193,49 @@ public struct Sidebar: View {
             .font(Typography.body)
             .tag(dest)
             .accessibilityLabel(label)
+            // Without an explicit identifier the tag-selected List rows do
+            // not surface as addressable accessibility elements at all
+            // (they were absent from the AX tree, so VoiceOver and the E2E
+            // menu crawl alike could not reach them). Phase 30.
+            .accessibilityIdentifier(Self.rowIdentifier(for: dest))
+    }
+
+    /// Stable A11y identifier for a fixed sidebar destination row.
+    private static func rowIdentifier(for dest: SidebarDestination) -> String {
+        switch dest {
+        case .songs:
+            A11y.Sidebar.songs
+
+        case .albums:
+            A11y.Sidebar.albums
+
+        case .artists:
+            A11y.Sidebar.artists
+
+        case .genres:
+            A11y.Sidebar.genres
+
+        case .composers:
+            A11y.Sidebar.composers
+
+        case .recentlyAdded:
+            A11y.Sidebar.recentlyAdded
+
+        case .recentlyPlayed:
+            A11y.Sidebar.recentlyPlayed
+
+        case .mostPlayed:
+            A11y.Sidebar.mostPlayed
+
+        case .upNext:
+            A11y.Sidebar.upNext
+
+        case .radio:
+            A11y.Sidebar.radio
+
+        default:
+            A11y.Sidebar.sidebar
+        }
     }
 
     private func folderRow(_ root: LibraryRoot) -> some View {
