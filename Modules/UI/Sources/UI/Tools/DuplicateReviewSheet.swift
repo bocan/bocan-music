@@ -69,12 +69,16 @@ public struct DuplicateReviewSheet: View {
             } description: {
                 Text(err)
             }
+            // The enclosing VStack is leading-aligned (for the list rows),
+            // so these empty states need to fill the width to centre.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if self.vm.groups.isEmpty {
             ContentUnavailableView {
                 Label(L10n.string("No Duplicates Found"), systemImage: "checkmark.seal")
             } description: {
                 Text(localized: "No tracks in your library share the same title, artist and duration.")
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             List(self.vm.groups) { group in
                 DuplicateGroupRow(group: group) { trackID in
