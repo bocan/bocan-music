@@ -63,17 +63,32 @@ tooltip window appears containing the control's help text.
 Landed (`UITests/Surfaces/`): the `SurfaceCrawler` table interpreter
 (`SurfaceControl` + `ControlContext`), and green crawl suites for the
 **Toolbar** (6 controls), the **transport strip** (17 controls plus 3
-documented skips), **Songs** (double-click to play), and **Albums** (grid
-+ tile open, with the Esc and mouse-back drill-out invariants).
-`SurfaceCompletenessTests` enforces the bidirectional guard for the
-fully-owned surfaces (Toolbar exactly matches `A11y.Toolbar`; every
-attached transport identifier is crawled or skipped with a reason) and
-lists the deferred surfaces.
+documented skips), **Songs** (double-click to play), **Albums** (grid +
+tile open, with the Esc and mouse-back drill-out invariants), **Radio**
+(empty state + toolbar add-station sheet), the **smart-playlist detail**
+(Edit Rules opens the rule editor), and **search** (type-to-filter the
+local track table, an interaction test since `.searchable` has no app
+identifier). `SurfaceCompletenessTests` enforces the bidirectional guard
+for the fully-owned surfaces and lists the deferred surfaces with reasons.
 
-Deferred to a later slice (documented in `SurfaceCompletenessTests`):
-Artists/Genres/Composers listings, Podcasts, Radio, Up Next, the Recents
-destinations, local and smart playlists, search results, the sidebar rows
-as a formal surface, the empty-state action button, and the scan banner.
+Notes surfaced while building these:
+- `nowPlayingStrip.visualizer` is a dead constant (defined, never
+  attached) — dropped.
+- Container identifiers that name a layout view, not a control, are not
+  queryable and can mask a child control's identifier: `radio.emptyState`'s
+  add button (inside a combining `ContentUnavailableView`) and
+  `smartPlaylist.detail.edit` (masked by the header HStack's own id). The
+  controls are still reached — by the toolbar twin and by label
+  respectively — but the masked ids are automation-only dead weight worth
+  a later cleanup.
+
+Deferred to a later slice (each with a reason in
+`SurfaceCompletenessTests`): the Artists/Genres/Composers listings (no
+per-row identifiers), Podcasts (networked search), Up Next queue rows
+(composed labels + context-menu actions), Recently Played / Most Played
+(empty without a play-history seed), local playlist detail (needs
+create+populate setup), the empty-state action button, and the scan
+banner.
 
 ## Acceptance criteria
 
