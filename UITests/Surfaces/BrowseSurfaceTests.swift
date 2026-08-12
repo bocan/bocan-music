@@ -36,6 +36,26 @@ final class BrowseSurfaceTests: XCTestCase {
         XCTAssertTrue(app.waitUntilPlaying(timeout: 15), "[Songs] double-click did not start playback")
     }
 
+    // MARK: Recently Added
+
+    /// The Recently Added Recents destination is populated with the fixtures
+    /// (freshly imported), sharing the Songs track-table contract:
+    /// double-clicking a row plays. An interaction test (it reuses the
+    /// `tracksTable` identifier already owned by the Songs surface).
+    func testRecentlyAddedSurface() {
+        let app = self.launch()
+        let inv = MenuInvoker(app: app)
+        inv.selectSidebar("Recently Added")
+
+        XCTAssertTrue(
+            inv.element("tracksTable").waitForExistence(timeout: 6),
+            "[Recently Added] tracksTable is missing"
+        )
+        inv.waitFor("fixtures appear in Recently Added") { inv.visibleFixtureTitleCount() == 2 }
+        app.firstTrackRow.doubleClick()
+        XCTAssertTrue(app.waitUntilPlaying(timeout: 15), "[Recently Added] double-click did not play")
+    }
+
     // MARK: Albums
 
     /// The Albums grid: the grid and its first tile are present, and
