@@ -108,7 +108,7 @@ final class SurfaceCompletenessTests: XCTestCase {
             "Up Next queue rows":
                 "rows are accessibilityElement(children: .ignore) with composed labels and context-menu actions, not identified controls",
             "Recently Played / Most Played":
-                "empty on a fresh fixture launch (zero plays); their populated crawl needs a play-history seed",
+                "empty on a fresh fixture launch (zero plays); their populated crawl needs a play-history seed (Recently Added is covered)",
             "local playlist detail":
                 "requires creating and populating a playlist first; a later slice adds that fixture setup",
             "empty-state action button (emptyState.action)":
