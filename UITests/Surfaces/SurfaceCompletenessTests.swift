@@ -49,6 +49,8 @@ final class SurfaceCompletenessTests: XCTestCase {
             + TransportSurfaceTests.coveredIdentifiers
             + BrowseSurfaceTests.songsCoveredIdentifiers
             + BrowseSurfaceTests.albumsCoveredIdentifiers
+            + RadioSurfaceTests.coveredIdentifiers
+            + PlaylistSurfaceTests.smartPlaylistCoveredIdentifiers
     }
 
     @MainActor
@@ -96,17 +98,28 @@ final class SurfaceCompletenessTests: XCTestCase {
     /// Listed so the remaining work is explicit, not silently missing.
     @MainActor
     func testDeferredSurfacesAreDocumented() {
-        let deferred = [
-            "Artists / Genres / Composers listings",
-            "Podcasts browse", "Radio", "Up Next queue rows",
-            "Recently Added / Played / Most Played", "local playlist",
-            "smart playlist detail", "search results", "sidebar rows",
-            "empty-state action button", "scan banner",
+        // Each entry pairs the remaining surface with why it is not yet a
+        // crawl table, so the remaining work is explicit and reasoned.
+        let deferred: [String: String] = [
+            "Artists / Genres / Composers listings":
+                "the collection rows carry no per-row A11y identifiers; the List/Grid \"View as\" control is covered by the phase 30 menu tests",
+            "Podcasts browse":
+                "the add bar's field triggers a networked podcast search; interaction belongs to the phase 34 hermetic-network layer",
+            "Up Next queue rows":
+                "rows are accessibilityElement(children: .ignore) with composed labels and context-menu actions, not identified controls",
+            "Recently Played / Most Played":
+                "empty on a fresh fixture launch (zero plays); their populated crawl needs a play-history seed",
+            "local playlist detail":
+                "requires creating and populating a playlist first; a later slice adds that fixture setup",
+            "empty-state action button (emptyState.action)":
+                "shown only on empty destinations with a call to action; needs a deterministic empty surface to anchor",
+            "scan banner (scanBanner.dismiss)":
+                "transient post-scan banner owned by the phase 28 journeys",
         ]
         XCTAssertFalse(deferred.isEmpty)
         XCTAssertTrue(
-            deferred.allSatisfy { !$0.isEmpty },
-            "each deferred surface must be named"
+            deferred.allSatisfy { !$0.value.isEmpty },
+            "each deferred surface must carry a reason"
         )
     }
 }
