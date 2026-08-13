@@ -813,7 +813,7 @@ extension BocanApp {
             editService: lvm.metadataEditService
         )
         let lyricsViewModel = LyricsViewModel(service: lsvc)
-        let visualizerViewModel = VisualizerViewModel(engine: eng)
+        let visualizerViewModel = VisualizerViewModel(engine: eng, e2eLiveness: E2EEnvironment.isActive)
 
         // Wire quit-guard references so AppDelegate can check live background-work
         // state in applicationShouldTerminate without importing UI into AppKit code.

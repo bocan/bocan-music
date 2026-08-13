@@ -356,6 +356,17 @@ public enum A11y {
         public static let pane = "visualizerPane"
         public static let closeButton = "visualizerPane.close"
         public static let host = "visualizerPane.host"
+        /// Shared across the pane, mini player, and fullscreen overlays — only
+        /// one is ever on screen frontmost at a time in the E2E crawl.
+        public static let modeStepper = "visualizer.overlay.mode"
+        public static let paletteStepper = "visualizer.overlay.palette"
+        /// Plain, non-adjustable siblings of the steppers above, exposing the
+        /// current mode/palette name as their `.accessibilityValue`: the
+        /// stepper rows' own `.accessibilityAdjustableAction` role does not
+        /// reliably bridge a value to XCUITest, even though its label does
+        /// (phase 33, found empirically).
+        public static let modeValue = "visualizer.overlay.mode.value"
+        public static let paletteValue = "visualizer.overlay.palette.value"
     }
 
     // MARK: - Lyrics

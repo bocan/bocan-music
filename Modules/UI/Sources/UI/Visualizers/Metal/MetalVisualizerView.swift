@@ -188,6 +188,8 @@ extension MetalVisualizerView {
             if self.frameMonitor.record(time: CACurrentMediaTime()) {
                 self.vm.autoSimplify()
             }
+            // A no-op unless E2E liveness is on; see VisualizerViewModel.
+            self.vm.recordLiveFrame(fps: self.frameMonitor.currentFPS)
         }
 
         /// Fades the view up from transparent once the first frame is on screen,

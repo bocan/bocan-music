@@ -78,6 +78,12 @@ public struct VisualizerPane: View {
                     Divider()
                 }
             }
+            // .contain, not the default: setting both a label and an
+            // identifier on a compound container implicitly combines its
+            // children, silently overriding their own separately-set
+            // identifiers (the close button's, the host's, the mode/palette
+            // steppers') with this one (phase 33).
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier(A11y.Visualizer.pane)
             .accessibilityLabel(L10n.string("Visualizer pane, \(self.vm.mode.displayName)"))
             .transition(self.reduceMotion ? .opacity : .move(edge: .trailing))

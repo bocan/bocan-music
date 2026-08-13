@@ -63,6 +63,43 @@ public final class VisualizerViewModel: ObservableObject {
         set { self.sensitivityRaw = Double(max(0.1, min(3.0, newValue))) }
     }
 
+    // MARK: - Liveness (phase 33, E2E only)
+
+    /// True only under `BOCAN_E2E_RUN`, injected at construction (`Modules/UI`
+    /// cannot see `E2EEnvironment`; `App/` reads it once and passes a plain
+    /// `Bool`). Gates `recordLiveFrame` and `currentFPS` so a real user's
+    /// accessibility tree never carries this internal metric, and the
+    /// throttled publish loop it drives never exists for them either.
+    public let e2eLiveness: Bool
+
+    /// EMA-smoothed rolling FPS from whichever renderer is currently drawing
+    /// (Metal or Canvas), published at most twice a second — never per-frame,
+    /// so observing this doesn't invalidate `VisualizerHost.body` at the
+    /// display rate. Always 0 when `e2eLiveness` is false.
+    @Published public private(set) var currentFPS: Double = 0
+    private var latestLiveFPS: Double = 0
+    private var fpsPublishTask: Task<Void, Never>?
+
+    /// Called every rendered frame by the active renderer (the Metal
+    /// coordinator's `draw(in:)` or the Canvas path's tick) with the current
+    /// rolling FPS. A cheap no-op unless `e2eLiveness` is set.
+    public func recordLiveFrame(fps: Double) {
+        guard self.e2eLiveness else { return }
+        self.latestLiveFPS = fps
+        self.startFPSPublishLoopIfNeeded()
+    }
+
+    private func startFPSPublishLoopIfNeeded() {
+        guard self.fpsPublishTask == nil else { return }
+        self.fpsPublishTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard let self, !Task.isCancelled else { return }
+                self.currentFPS = self.latestLiveFPS
+            }
+        }
+    }
+
     // MARK: - Private
 
     private let engine: AudioEngine
@@ -83,9 +120,10 @@ public final class VisualizerViewModel: ObservableObject {
 
     // MARK: - Init
 
-    public init(engine: AudioEngine, toastDismissalDuration: Duration = .seconds(6)) {
+    public init(engine: AudioEngine, toastDismissalDuration: Duration = .seconds(6), e2eLiveness: Bool = false) {
         self.engine = engine
         self.toastDismissalDuration = toastDismissalDuration
+        self.e2eLiveness = e2eLiveness
     }
 
     // MARK: - Lifecycle
