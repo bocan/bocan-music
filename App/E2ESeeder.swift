@@ -28,6 +28,11 @@ enum E2ESeeder {
                 let siblings = try fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
                 for stale in siblings where stale.lastPathComponent != home.lastPathComponent {
                     try? fm.removeItem(at: stale)
+                    // Drop the stale run's isolated Settings suite too (the
+                    // runner cannot, and it would otherwise leak plists).
+                    UserDefaults().removePersistentDomain(
+                        forName: E2EEnvironment.settingsSuiteName(forRunID: stale.lastPathComponent)
+                    )
                 }
             }
             try fm.createDirectory(at: seed, withIntermediateDirectories: true)

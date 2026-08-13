@@ -37,6 +37,10 @@ struct SettingsWindowContent: View {
             .environment(graph.dspViewModel)
             .environmentObject(graph.libraryViewModel)
             .environment(\.menuBarExtraEnabled, self.$showMenuBarExtra)
+            // In E2E, route Settings `@AppStorage` through a per-run suite so
+            // persistence tests can flip and relaunch-verify preferences
+            // without mutating real ones. A no-op (`.standard`) otherwise.
+            .defaultAppStorage(E2EEnvironment.settingsDefaults ?? .standard)
         }
     }
 }

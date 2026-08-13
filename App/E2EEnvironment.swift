@@ -49,6 +49,27 @@ enum E2EEnvironment {
         self.home?.appendingPathComponent("Music", isDirectory: true)
     }
 
+    // MARK: Settings isolation (phase 32)
+
+    /// The per-run `UserDefaults` suite name backing the Settings scene in
+    /// E2E. Deriving it from the run id keeps every run isolated from the
+    /// others and from the real `.standard` domain, while a relaunch that
+    /// reuses the run id reads the same suite so persistence is testable.
+    static func settingsSuiteName(forRunID runID: String) -> String {
+        "io.cloudcauldron.bocan.e2e.\(runID)"
+    }
+
+    /// This run's Settings `UserDefaults` suite, or nil in normal operation.
+    /// The Settings scene routes its `@AppStorage` through this so a test can
+    /// flip a preference and prove it survives a relaunch, without ever
+    /// touching the developer's real preferences (the isolation decision the
+    /// phase 32 spec calls out).
+    static var settingsDefaults: UserDefaults? {
+        self.runID
+            .map { self.settingsSuiteName(forRunID: $0) }
+            .flatMap { UserDefaults(suiteName: $0) }
+    }
+
     /// When set, the launch seeds the playback queue with a single internet
     /// radio item pointing at this URL (the harness's stalling listener),
     /// so a relaunch exercises the persisted-radio-queue restore path (the

@@ -46,6 +46,7 @@ public struct SettingsScene: View {
                         ForEach(section.pages, id: \.self) { page in
                             Label(page.title, systemImage: page.systemImage)
                                 .tag(page)
+                                .accessibilityIdentifier(A11y.SettingsIDs.sidebarRow(page.rawValue))
                         }
                     } header: {
                         if let title = section.title { Text(title) }

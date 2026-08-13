@@ -124,6 +124,13 @@ public enum A11y {
     // MARK: - Settings panes
 
     public enum SettingsIDs {
+        /// Sidebar navigation rows, keyed by `SettingsPage.rawValue`. Tag-
+        /// selected `List(selection:)` rows are otherwise absent from the AX
+        /// tree (the same VoiceOver defect the main sidebar hit in phase 30).
+        public static func sidebarRow(_ pageRawValue: String) -> String {
+            "settings.sidebar.\(pageRawValue)"
+        }
+
         /// Appearance accent swatches, keyed by palette id ("blue", ...).
         public static func accentSwatch(_ id: String) -> String {
             "settings.appearance.accent.\(id)"
