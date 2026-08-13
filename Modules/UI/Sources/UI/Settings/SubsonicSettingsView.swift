@@ -19,17 +19,36 @@ public struct SubsonicSettingsView: View {
     }
 
     public var body: some View {
-        HStack(spacing: 0) {
-            self.sidebar
-                .frame(width: 240)
+        Group {
+            if self.isTrulyEmpty {
+                // No server-list sidebar when there is nothing to list: an
+                // always-empty 240pt column pushed the "No Sources
+                // Configured" message off-centre from the window, reading as
+                // a layout bug. The empty state's own "Add Server" button
+                // (equal to the sidebar's) still starts a new server draft,
+                // which switches back to the normal two-pane layout below.
+                self.detail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                HStack(spacing: 0) {
+                    self.sidebar
+                        .frame(width: 240)
 
-            Divider()
+                    Divider()
 
-            self.detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    self.detail
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
         }
         .task { await self.vm.reload() }
         .navigationTitle(L10n.string("Sources"))
+    }
+
+    /// True when there is nothing to show a server-list sidebar for: no
+    /// configured servers and no add/edit draft in progress.
+    private var isTrulyEmpty: Bool {
+        self.vm.servers.isEmpty && self.vm.editor.id == nil && self.vm.editor.name.isEmpty
     }
 
     // MARK: - Sidebar
@@ -98,7 +117,7 @@ public struct SubsonicSettingsView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if self.vm.servers.isEmpty, self.vm.editor.id == nil, self.vm.editor.name.isEmpty {
+        if self.isTrulyEmpty {
             SubsonicEmptyState { self.vm.beginAddServer() }
         } else {
             SubsonicServerEditorView(vm: self.vm)
