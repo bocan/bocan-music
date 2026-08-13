@@ -91,7 +91,13 @@ struct SurfaceCrawler {
             )
             let context = ControlContext(
                 priorLabel: element.label,
-                priorValue: (element.value as? String) ?? "",
+                // `String(describing:)`, not `as? String`: a manually
+                // `.isToggle`-trait button (transport shuffle/repeat) bridges
+                // its AX value as a String, but a native SwiftUI `Toggle`
+                // (DSP EQ enable, Log Console Tail) bridges it as an
+                // NSNumber, silently failing the cast and reading "" on both
+                // sides of a flip check.
+                priorValue: String(describing: element.value ?? ""),
                 priorWindowCount: self.app.windows.count,
                 priorEnabled: element.isEnabled
             )

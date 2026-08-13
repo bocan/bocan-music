@@ -80,7 +80,25 @@ struct E2ESession {
         for (key, value) in environment {
             app.launchEnvironment[key] = value
         }
-        app.launchArguments = arguments
+        // Deterministic launch state, pinned via the argument domain so a
+        // developer's real preferences (and prior tests) never leak in:
+        //
+        // - `-ApplePersistenceIgnoreState YES` suppresses macOS scene
+        //   restoration, and `-ui.windowMode.miniPlayerOpen NO` stops the
+        //   app's own `restoreIfNeeded()` from reopening the mini player.
+        //   Either path can order out the main window before its bootstrap
+        //   `.task` runs, wedging the launch so no fixtures ever scan. (The
+        //   argument domain shadows reads without blocking a live in-test
+        //   toggle, which writes the property directly.)
+        // - `-sync.enabled NO` keeps the Phone Sync Bonjour server from
+        //   starting, which otherwise raises a modal macOS "find devices on
+        //   your local network" permission dialog that blocks every UI
+        //   interaction underneath it.
+        app.launchArguments = [
+            "-ApplePersistenceIgnoreState", "YES",
+            "-ui.windowMode.miniPlayerOpen", "NO",
+            "-sync.enabled", "NO",
+        ] + arguments
         app.launch()
         return app
     }
