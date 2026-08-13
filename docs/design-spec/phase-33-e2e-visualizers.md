@@ -56,10 +56,21 @@ artifacts.
 
 ## Acceptance criteria
 
-- [ ] Every mode x palette combination cycled with the FPS floor met.
-- [ ] Mini player and full screen reduced matrices green.
-- [ ] Rapid-cycling torture test green with playback surviving.
-- [ ] GitHub tier runs only the tagged smoke subset.
+- [x] Every mode x palette combination cycled with the FPS floor met
+      (`testMainPaneModeAndPaletteMatrix`, `UITests/Visualizers/VisualizerLivenessTests.swift`).
+- [x] Mini player and full screen reduced matrices green
+      (`testMiniPlayerModeMatrix`, `testFullScreenModeMatrix`).
+- [x] Rapid-cycling torture test green with playback surviving
+      (`testRapidModeCyclingSurvivesPlayback`).
+- [x] Appearance interaction test green with a Metal mode live
+      (`testAppearanceSwitchWhileMetalModeLive`).
+- [ ] GitHub tier runs only the tagged smoke subset. Not implemented: this
+      harness is plain XCTest with no GPU/GitHub tier split or `.tags(.gpu)`
+      mechanism yet. All five tests currently run together, untagged, on
+      whatever machine invokes `make test` (or a direct `xcodebuild test`
+      filter) — no nightly-only or CI-gated scheduling exists. Screenshot
+      artifact capture (`visualizer-<mode>-<palette>.png` per the test plan)
+      is also not implemented; the suite asserts liveness only.
 
 ## Gotchas
 
