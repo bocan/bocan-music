@@ -85,7 +85,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         didSet {
             // Same CommandGroup-staleness mirror as `isScanning` below: the
             // View menu's "View as" toggles gate on whether the active
-            // destination is a collection listing.
+            // destination is a collection listing. `UserDefaults.set`
+            // broadcasts the key-agnostic `didChangeNotification` on every
+            // call regardless of whether the value actually changed, and
+            // `BocanCommands` subscribes via `@AppStorage` — an unguarded
+            // write here fired that broadcast on every single navigation
+            // click (most of which aren't even entering/leaving a listing),
+            // reconstructing the menu bar on the main thread often enough
+            // to audibly crackle live playback. Only write on a real flip.
             let isListing = switch self.selectedDestination {
             case .artists, .genres, .composers:
                 true
@@ -93,7 +100,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             default:
                 false
             }
-            UserDefaults.standard.set(isListing, forKey: "library.collectionListingActive")
+            if UserDefaults.standard.bool(forKey: "library.collectionListingActive") != isListing {
+                UserDefaults.standard.set(isListing, forKey: "library.collectionListingActive")
+            }
         }
     }
 
@@ -246,8 +255,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             // whatever state they were built with. An @AppStorage read in
             // BocanCommands both rebuilds the body and stays fresh
             // (phase 30 enablement matrix; the established live-label
-            // pattern from App/CLAUDE.md).
-            UserDefaults.standard.set(self.isScanning, forKey: "library.scanActive")
+            // pattern from App/CLAUDE.md). Guarded the same way as
+            // `selectedDestination` above: only write on an actual flip, so
+            // a redundant same-value set can never fire the app-wide
+            // `didChangeNotification` broadcast.
+            if UserDefaults.standard.bool(forKey: "library.scanActive") != self.isScanning {
+                UserDefaults.standard.set(self.isScanning, forKey: "library.scanActive")
+            }
         }
     }
 
