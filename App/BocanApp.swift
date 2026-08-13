@@ -285,6 +285,13 @@ struct BocanApp: App {
         .defaultPosition(.bottomTrailing)
         .windowStyle(.hiddenTitleBar)
         .commandsRemoved()
+        // The mini player is a transient companion; the app reopens it from
+        // `ui.windowMode.miniPlayerOpen`, not from macOS scene restoration.
+        // Without this, SwiftUI restores the mini window on the next launch,
+        // and its `onAppear` orders out the main window before that window's
+        // bootstrap `.task` runs, so the database never opens (a wedged
+        // launch). The other secondary windows already disable restoration.
+        .restorationBehavior(.disabled)
 
         // MARK: Log console
 

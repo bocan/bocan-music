@@ -276,6 +276,7 @@ public struct MiniPlayerView: View {
         let targetSize = NSSize(width: size.width, height: size.height)
         guard animated, !self.reduceMotion else {
             win.setContentSize(targetSize)
+            Self.constrainToVisibleFrame(win)
             return
         }
         NSAnimationContext.runAnimationGroup { ctx in
@@ -284,7 +285,35 @@ public struct MiniPlayerView: View {
             // overshoot matches the SwiftUI spring on the content inside the window.
             ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.2, 0.64, 1.0)
             win.animator().setContentSize(targetSize)
+        } completionHandler: {
+            Self.constrainToVisibleFrame(win)
         }
+    }
+
+    /// `setContentSize` grows/shrinks the window from a fixed corner, so
+    /// snapping to a wider or taller layout (e.g. compact 585×145) than the
+    /// scene's `.defaultPosition(.bottomTrailing)` was computed for (the
+    /// strip layout's 420×72) can push the far edge past the screen bounds
+    /// — the window renders partially or fully off-screen, its far-edge
+    /// controls unreachable. Slide the frame back on-screen without
+    /// changing its size. `win` (a class instance) is captured directly by
+    /// the animation completion handler above; no `self` involved, so this
+    /// is `static` rather than risk a struct `weak self` capture.
+    ///
+    /// `NSWindow.constrainFrameRect(_:to:)` does not do this: it is built to
+    /// keep a title bar reachable under the menu bar, and left this
+    /// `.hiddenTitleBar` borderless window's right edge untouched in
+    /// testing. Clamp each edge explicitly instead.
+    private static func constrainToVisibleFrame(_ win: NSWindow) {
+        guard let screen = win.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        var frame = win.frame
+        if frame.maxX > visible.maxX { frame.origin.x = visible.maxX - frame.width }
+        if frame.minX < visible.minX { frame.origin.x = visible.minX }
+        if frame.maxY > visible.maxY { frame.origin.y = visible.maxY - frame.height }
+        if frame.minY < visible.minY { frame.origin.y = visible.minY }
+        guard frame != win.frame else { return }
+        win.setFrame(frame, display: true)
     }
 
     // MARK: - Color scheme
