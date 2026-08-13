@@ -94,10 +94,20 @@ struct E2ESession {
         //   starting, which otherwise raises a modal macOS "find devices on
         //   your local network" permission dialog that blocks every UI
         //   interaction underneath it.
+        // - `-lyrics.paneVisible NO` / `-visualizer.paneVisible NO`: an
+        //   earlier, unrelated test (e.g. a menu crawl toggling "Show
+        //   Lyrics") leaves its pane open in the real, un-isolated
+        //   `UserDefaults.standard` these view models read directly — the
+        //   next run then launches with a stale pane already showing
+        //   (phase 33 found this via the visualizer suite: a prior lyrics
+        //   toggle from an earlier test made a fresh launch open Lyrics
+        //   instead of nothing).
         app.launchArguments = [
             "-ApplePersistenceIgnoreState", "YES",
             "-ui.windowMode.miniPlayerOpen", "NO",
             "-sync.enabled", "NO",
+            "-lyrics.paneVisible", "NO",
+            "-visualizer.paneVisible", "NO",
         ] + arguments
         app.launch()
         return app

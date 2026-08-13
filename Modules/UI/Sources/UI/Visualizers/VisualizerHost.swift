@@ -30,9 +30,12 @@ public struct VisualizerHost: View {
 
     // MARK: - Frame-rate monitoring
 
-    @State private var lastTickDate: Date?
-    @State private var slowFrameAccum: TimeInterval = 0
-    @State private var hasAutoSimplified = false
+    /// Owns both the auto-simplify watchdog and (phase 33, E2E only) the
+    /// rolling FPS fed to `VisualizerViewModel.recordLiveFrame`. Canvas mode
+    /// already re-evaluates `body` every tick via `TimelineView`, unlike the
+    /// stricter Metal path (see `activeContent`'s doc comment), so mutating
+    /// this `@State` per frame here is the existing, accepted cost.
+    @State private var frameMonitor = FrameRateMonitor()
 
     // MARK: - Init
 
@@ -55,14 +58,20 @@ public struct VisualizerHost: View {
             }
         }
         .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.25), value: self.vm.performanceToast?.id)
+        // No .accessibilityIdentifier here: A11y.Visualizer.host lives on
+        // VisualizerControlOverlay's zero-size readout element instead
+        // (see LivenessAccessibilityValue's doc comment) — two elements
+        // sharing one identifier would make `.firstMatch` non-deterministic
+        // about which one (this label-only one, or that value-bearing one)
+        // a query resolves to. The label stays here for VoiceOver users
+        // navigating to the render area itself.
         .accessibilityLabel(self.accessibilityLabel)
         .onAppear { self.rebuildRenderer() }
         .onChange(of: self.vm.mode) { _, _ in
             self.rebuildRenderer()
             // Reset FPS monitor so a manual mode change (or revert) gets a
             // fresh 3-second window before another auto-simplify can fire.
-            self.slowFrameAccum = 0
-            self.hasAutoSimplified = false
+            self.frameMonitor = FrameRateMonitor()
         }
         .onChange(of: self.vm.palette) { _, _ in self.rebuildRenderer() }
         .onChange(of: self.reduceMotion) { _, _ in self.rebuildRenderer() }
@@ -121,24 +130,11 @@ public struct VisualizerHost: View {
     /// Records a frame tick and triggers ``VisualizerViewModel/autoSimplify()``
     /// when the rolling average FPS stays below 30 for ≥ 3 consecutive seconds.
     private func recordFrameTick(at date: Date) {
-        defer { self.lastTickDate = date }
-        guard let last = self.lastTickDate else { return }
-        let elapsed = date.timeIntervalSince(last)
-        // Ignore outliers: first tick after resume, extremely slow machine, etc.
-        guard elapsed > 0, elapsed < 1.0 else {
-            self.slowFrameAccum = 0
-            return
+        if self.frameMonitor.record(time: date.timeIntervalSinceReferenceDate) {
+            self.vm.autoSimplify()
         }
-        let fps = 1.0 / elapsed
-        if fps < 30 {
-            self.slowFrameAccum += elapsed
-            if self.slowFrameAccum >= 3.0, !self.hasAutoSimplified {
-                self.hasAutoSimplified = true
-                self.vm.autoSimplify()
-            }
-        } else {
-            self.slowFrameAccum = 0
-        }
+        // A no-op unless E2E liveness is on; see VisualizerViewModel.
+        self.vm.recordLiveFrame(fps: self.frameMonitor.currentFPS)
     }
 
     // MARK: - Renderer management
@@ -267,5 +263,25 @@ public struct VisualizerHost: View {
             )
         )
         .foregroundStyle(.white)
+    }
+}
+
+// MARK: - LivenessAccessibilityValue
+
+/// Applies `VisualizerViewModel.currentFPS` as an accessibility value only
+/// under `e2eLiveness` — never for a real user, whose accessibility tree
+/// must not carry this internal metric (phase 33). Always applies the
+/// modifier (an empty value reads as no value to VoiceOver) rather than
+/// branching to a differently-shaped view per condition, which resets
+/// SwiftUI's identity for the wrapped content and can silently drop
+/// modifiers applied to it further up the chain. Not `private`: shared by
+/// `VisualizerControlOverlay`, common to all three visualizer surfaces.
+struct LivenessAccessibilityValue: ViewModifier {
+    @ObservedObject var vm: VisualizerViewModel
+
+    func body(content: Content) -> some View {
+        content.accessibilityValue(
+            self.vm.e2eLiveness ? L10n.string("\(Int(self.vm.currentFPS.rounded())) fps") : ""
+        )
     }
 }

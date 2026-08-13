@@ -244,7 +244,7 @@ public struct BocanRootView: View {
         self.windowContent
             .focused(self.$mainContentFocused)
             .frame(minWidth: 900, minHeight: 550)
-            .accessibilityIdentifier("BocanMainWindow")
+            // No root .accessibilityIdentifier: an unused "BocanMainWindow" one masked a child's own identifier (phase 33).
             .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
             .background(
                 // Phase 4 audit H2: persist sidebar divider position via NSSplitView

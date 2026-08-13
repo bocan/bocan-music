@@ -26,18 +26,63 @@ struct VisualizerControlOverlay: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
+        self.controlsCard
+            // Zero-size readouts, applied here rather than inside
+            // `controlsCard` so they stay queryable regardless of that
+            // card's own fade state (an `.opacity`/`.allowsHitTesting`
+            // applied to a parent affects everything nested inside it,
+            // including a value-bearing element that has nothing to do
+            // with the card's own visibility). Shared by all three
+            // surfaces this overlay is embedded in (pane, mini player,
+            // fullscreen). Three separate plain (non-adjustable) elements,
+            // each exposing one thing as its `.accessibilityValue`, because
+            // two other AX roles in this view don't reliably bridge a value
+            // to XCUITest even though their label bridges fine (found
+            // empirically, phase 33): a Canvas/MTKView-backed render
+            // surface, and — less expected — a plain view carrying
+            // `.accessibilityAdjustableAction` (the mode/palette stepper
+            // rows below), which XCUITest exposes with no `value:` at all.
+            .overlay {
+                Text(verbatim: "\u{00A0}")
+                    .frame(width: 0, height: 0)
+                    .accessibilityIdentifier(A11y.Visualizer.host)
+                    .modifier(LivenessAccessibilityValue(vm: self.vm))
+            }
+            .overlay {
+                Text(verbatim: "\u{00A0}")
+                    .frame(width: 0, height: 0)
+                    .accessibilityIdentifier(A11y.Visualizer.modeValue)
+                    .accessibilityValue(self.vm.mode.displayName)
+            }
+            .overlay {
+                Text(verbatim: "\u{00A0}")
+                    .frame(width: 0, height: 0)
+                    .accessibilityIdentifier(A11y.Visualizer.paletteValue)
+                    .accessibilityValue(self.vm.palette.displayName)
+            }
+            // .contain, not the default: without it, this composite view
+            // (controlsCard + the readouts' `.overlay`s) auto-combines into
+            // a single accessibility element, silently absorbing the mode
+            // and palette steppers' own identifiers into whichever leaf
+            // SwiftUI picks (phase 33, found empirically).
+            .accessibilityElement(children: .contain)
+    }
+
+    private var controlsCard: some View {
         VStack(alignment: .center, spacing: self.compact ? 4 : 8) {
             self.stepperRow(Stepper(
                 label: self.vm.mode.displayName,
                 accessibility: L10n.string("Visualizer mode"),
                 previousHelp: L10n.string("Previous visualizer"),
-                nextHelp: L10n.string("Next visualizer")
+                nextHelp: L10n.string("Next visualizer"),
+                identifier: A11y.Visualizer.modeStepper
             ) { self.cycleMode(by: $0) })
             self.stepperRow(Stepper(
                 label: self.vm.palette.displayName,
                 accessibility: L10n.string("Colour Palette"),
                 previousHelp: L10n.string("Previous palette"),
-                nextHelp: L10n.string("Next palette")
+                nextHelp: L10n.string("Next palette"),
+                identifier: A11y.Visualizer.paletteStepper
             ) { self.cyclePalette(by: $0) })
         }
         .padding(.horizontal, self.compact ? 8 : 12)
@@ -74,6 +119,7 @@ struct VisualizerControlOverlay: View {
         let accessibility: String
         let previousHelp: String
         let nextHelp: String
+        let identifier: String
         let onStep: (Int) -> Void
     }
 
@@ -92,8 +138,12 @@ struct VisualizerControlOverlay: View {
             self.arrowButton(systemName: "chevron.right", help: stepper.nextHelp) { stepper.onStep(1) }
         }
         // One adjustable element for VoiceOver: swipe up/down maps to next/previous,
-        // which is the idiomatic stepper gesture; the visible chevrons serve the mouse.
+        // which is the idiomatic stepper gesture; the visible chevrons serve the
+        // mouse (and an E2E coordinate tap near either edge of this identified
+        // row — .ignore combines the chevron buttons out of the AX tree, but a
+        // synthesized click still hits the real NSView underneath).
         .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier(stepper.identifier)
         .accessibilityLabel(stepper.accessibility)
         .accessibilityValue(stepper.label)
         .accessibilityAdjustableAction { direction in
