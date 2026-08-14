@@ -162,6 +162,72 @@ final class RadioStreamJourneyTests: XCTestCase {
         )
     }
 
+    // MARK: - Reconnect
+
+    /// Scripts a bare connection drop shorter than the combined FFmpeg
+    /// (`reconnect_max_retries`/`reconnect_delay_max`,
+    /// `FFmpegDecoder+Options.swift`) and app-level
+    /// (`AudioEngine.maxReconnectAttempts`, `AudioEngine+Reconnect.swift`)
+    /// retry budget, then asserts playback resumes on its own and no
+    /// failure alert appears. The server is never told to refuse new
+    /// connections, so the very next reconnect attempt succeeds.
+    func testReconnectRecoversFromAShortDrop() {
+        let app = self.launch()
+        let inv = MenuInvoker(app: app)
+        self.openRadio(app, inv)
+        self.addStation(app, inv, name: "E2E Dial FM", streamURL: self.server.streamURL.absoluteString)
+        app.staticTexts["E2E Dial FM"].doubleClick()
+        XCTAssertTrue(app.waitUntilPlaying(timeout: 15), "the fake stream never started playing")
+        inv.waitFor("strip shows the scripted ICY title", timeout: 20) {
+            inv.value("nowPlayingStrip.title.button") == "Opening Theme"
+        }
+
+        self.server.dropConnections()
+
+        XCTAssertTrue(app.waitUntilPlaying(timeout: 30), "playback never resumed after a short, recoverable drop")
+        XCTAssertFalse(
+            app.alerts.firstMatch.waitForExistence(timeout: 2),
+            "a short, recoverable drop must not surface a failure alert"
+        )
+    }
+
+    /// Scripts a drop combined with the server refusing all new connections
+    /// for well longer than the layered retry budget above could plausibly
+    /// take to exhaust, and asserts the app gives up and surfaces a
+    /// failure toast. Deliberately *not* the "Playback Error" `.alert`
+    /// bound to `LibraryViewModel.playbackErrorMessage` — that only fires
+    /// for the initial `qp.play(items:...)` call throwing synchronously
+    /// (`LibraryViewModel+Radio.swift`). A mid-stream exhaustion instead
+    /// flows `AudioEngine.emit(.failed)` -> `QueuePlayer`'s state
+    /// pass-through -> `NowPlayingViewModel.onPlaybackError` ->
+    /// `LibraryViewModel.showToast(...)`. The `ToastBanner` carries
+    /// `.accessibilityAddTraits(.isStaticText)` (`RootView.swift`), which —
+    /// like `.updatesFrequently`/`.textSelection(.enabled)` elsewhere in
+    /// this suite — bridges its text via `.value`, not `.label`.
+    func testReconnectExhaustionSurfacesAFailureToast() {
+        let app = self.launch()
+        let inv = MenuInvoker(app: app)
+        self.openRadio(app, inv)
+        self.addStation(app, inv, name: "E2E Dial FM", streamURL: self.server.streamURL.absoluteString)
+        app.staticTexts["E2E Dial FM"].doubleClick()
+        XCTAssertTrue(app.waitUntilPlaying(timeout: 15), "the fake stream never started playing")
+        inv.waitFor("strip shows the scripted ICY title", timeout: 20) {
+            inv.value("nowPlayingStrip.title.button") == "Opening Theme"
+        }
+
+        self.server.refuseConnections(for: 180)
+        self.server.dropConnections()
+
+        // Worst case is FFmpeg's own reconnect budget (up to 3 attempts x
+        // (15s read timeout + 5s backoff), FFmpegDecoder+Options.swift)
+        // followed by the app-level rebuild loop (up to 3 attempts x 20s
+        // stabilize window, AudioEngine+Reconnect.swift); give it generous
+        // headroom above that rather than cutting it close.
+        let toastText = "Playback stopped: the audio stream could not be reached."
+        let toast = app.descendants(matching: .any).matching(NSPredicate(format: "value == %@", toastText)).firstMatch
+        XCTAssertTrue(toast.waitForExistence(timeout: 120), "reconnect exhaustion must surface a failure toast")
+    }
+
     /// `XCTAssertNotNil` alone would pass on an empty string, which is
     /// exactly the wrong-property symptom (`.label` on a `.value`-bridged
     /// element) this suite already found once; require real content.

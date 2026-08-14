@@ -1,3 +1,4 @@
+import Darwin
 import Network
 import XCTest
 
@@ -110,6 +111,42 @@ final class E2EStreamServerTests: XCTestCase {
         server.dropConnections()
 
         XCTAssertTrue(client.waitForClose(timeout: 5), "the connection must close once dropConnections() is called")
+    }
+
+    /// FFmpeg's own HTTP client is a raw BSD socket, not Network.framework.
+    /// `testDropConnectionsClosesAnOpenStreamConnection` above only proves an
+    /// `NWConnection` peer observes the drop; these check the same thing for a
+    /// genuine POSIX socket, matching what the app actually does.
+    func testDropConnectionsClosesAConnectionForARawPOSIXClient() throws {
+        let server = try E2EStreamServer(metaintBytes: 4096)
+        defer { server.stop() }
+        let client = try RawPOSIXClient(url: server.streamURL)
+        defer { client.close() }
+        try client.sendRequest()
+        XCTAssertGreaterThan(client.read(4096), 0, "expected some bytes before the drop")
+
+        server.dropConnections()
+
+        XCTAssertTrue(client.waitForClose(timeout: 10), "a raw POSIX client must see the connection close after dropConnections()")
+    }
+
+    /// Same as above, but reads continuously in a tight loop for a bit first,
+    /// matching a real player draining the stream as fast as it can rather
+    /// than doing one read and idling.
+    func testDropConnectionsClosesAConnectionUnderContinuousReading() throws {
+        let server = try E2EStreamServer(metaintBytes: 4096)
+        defer { server.stop() }
+        let client = try RawPOSIXClient(url: server.streamURL)
+        defer { client.close() }
+        try client.sendRequest()
+        XCTAssertGreaterThan(client.drain(for: 2), 0, "expected bytes while continuously reading")
+
+        server.dropConnections()
+
+        XCTAssertTrue(
+            client.waitForClose(timeout: 10),
+            "a continuously-reading raw client must see the connection close after dropConnections()"
+        )
     }
 
     func testRefuseConnectionsRejectsNewConnectionsWithoutAnyBytes() throws {
@@ -297,6 +334,79 @@ final class E2EStreamServerTests: XCTestCase {
 
         func cancel() {
             self.connection.cancel()
+        }
+    }
+
+    /// A genuine BSD socket client, unlike `RawClient` above (which is itself
+    /// built on `NWConnection`) -- needed to verify drop/refuse behavior the
+    /// way FFmpeg's own HTTP client actually observes a connection, not just
+    /// how another Network.framework peer observes it.
+    private final class RawPOSIXClient {
+        private let fd: Int32
+        private let path: String
+
+        init(url: URL) throws {
+            guard let host = url.host, let port = url.port else { throw TestClientError.badURL }
+            self.path = url.path
+            self.fd = socket(AF_INET, SOCK_STREAM, 0)
+            guard self.fd >= 0 else { throw TestClientError.neverConnected }
+
+            var addr = sockaddr_in()
+            addr.sin_family = sa_family_t(AF_INET)
+            addr.sin_port = UInt16(bigEndian: UInt16(port))
+            addr.sin_addr.s_addr = inet_addr(host)
+            let connected = withUnsafePointer(to: &addr) { ptr -> Int32 in
+                ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
+                    connect(self.fd, sa, socklen_t(MemoryLayout<sockaddr_in>.size))
+                }
+            }
+            guard connected == 0 else { throw TestClientError.neverConnected }
+        }
+
+        func sendRequest() throws {
+            let request = "GET \(self.path) HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n"
+            let sent = request.withCString { send(self.fd, $0, strlen($0), 0) }
+            guard sent > 0 else { throw TestClientError.neverConnected }
+        }
+
+        /// One `recv()` call up to `maxLength` bytes; returns the byte count
+        /// read (0 on clean close, negative on error).
+        func read(_ maxLength: Int) -> Int {
+            var buf = [UInt8](repeating: 0, count: maxLength)
+            return recv(self.fd, &buf, buf.count, 0)
+        }
+
+        /// Reads continuously for `seconds`, matching a real player draining
+        /// the stream as fast as it can. Returns the total bytes read.
+        func drain(for seconds: TimeInterval) -> Int {
+            var buf = [UInt8](repeating: 0, count: 65536)
+            var total = 0
+            let deadline = Date().addingTimeInterval(seconds)
+            while Date() < deadline {
+                let n = recv(self.fd, &buf, buf.count, 0)
+                if n <= 0 { break }
+                total += n
+            }
+            return total
+        }
+
+        /// Polls (via a bounded `SO_RCVTIMEO`) until the connection reports
+        /// closed (EOF or a hard error), or `timeout` elapses without that.
+        func waitForClose(timeout: TimeInterval) -> Bool {
+            var tv = timeval(tv_sec: 1, tv_usec: 0)
+            setsockopt(self.fd, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+            var buf = [UInt8](repeating: 0, count: 65536)
+            let deadline = Date().addingTimeInterval(timeout)
+            while Date() < deadline {
+                let n = recv(self.fd, &buf, buf.count, 0)
+                if n == 0 { return true }
+                if n < 0, errno != EAGAIN, errno != EWOULDBLOCK { return true }
+            }
+            return false
+        }
+
+        func close() {
+            Darwin.close(self.fd)
         }
     }
 }

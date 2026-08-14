@@ -35,22 +35,13 @@ public actor FFmpegDecoder: Decoder {
 
     /// RAII owner of every FFmpeg C allocation the decoder makes.
     ///
-    /// Cleanup contract (#295): each FFmpeg resource is parked on a property of
-    /// this class *immediately* after it is allocated, and `deinit` frees every
-    /// property unconditionally. All the FFmpeg free functions used here
-    /// (`av_packet_free`, `av_frame_free`, `swr_free`, `avcodec_free_context`,
-    /// `avformat_close_input`) are NULL-safe, so a partially-constructed context
-    /// -- where a later allocation threw before its property was set -- still
-    /// tears down cleanly: the unset members are simply skipped.
-    ///
-    /// This is why `openAndConfigure` can assign `ctx.codecCtx` *before* the
-    /// throwing `avcodec_open2` call, and why `FFmpegDecoder.init` stores the
-    /// context in `self.ctx` before configuring it: any throw releases the
-    /// `FFContext`, `deinit` runs exactly once, and every allocation made so far
-    /// is freed. The one allocation that is *not* owned here until it fully
-    /// succeeds is the SWR resampler -- `buildSWR` frees it on its own throw
-    /// paths (see there) and only hands a live pointer back to be parked on
-    /// `swrCtx`.
+    /// Cleanup contract (#295): each resource is parked on a property the
+    /// instant it's allocated, and every free in `deinit` is NULL-safe, so a
+    /// throw partway through construction still tears down cleanly. That's
+    /// why `openAndConfigure` assigns `ctx.codecCtx` *before* the throwing
+    /// `avcodec_open2` call. The one allocation not owned here until fully
+    /// built is the SWR resampler -- `buildSWR` frees it on its own throw
+    /// paths and only hands back a live pointer to park on `swrCtx`.
     private final class FFContext {
         var formatCtx: UnsafeMutablePointer<AVFormatContext>?
         var codecCtx: UnsafeMutablePointer<AVCodecContext>?
@@ -104,6 +95,12 @@ public actor FFmpegDecoder: Decoder {
     private var residualBuffer: [Float] = []
     private let outChannels: Int32 = 2
 
+    /// True for a remote source with no known duration (internet radio, vs.
+    /// a finite Subsonic/podcast HTTP track or local file). EOF here only
+    /// happens once FFmpeg's reconnect budget is exhausted, so it must
+    /// surface as a failure rather than a silent end-of-track.
+    private let isUnboundedRemoteStream: Bool
+
     public var position: TimeInterval {
         self._position
     }
@@ -129,6 +126,7 @@ public actor FFmpegDecoder: Decoder {
         self.titleUpdates = AsyncStream { continuation = $0 }
         self.titleContinuation = continuation
         self.duration = Self.detectDuration(ctx: ctx)
+        self.isUnboundedRemoteStream = isHTTP && self.duration <= 0
         // kAudioChannelLayoutTag_Stereo is a compile-time constant; init always succeeds.
         // swiftlint:disable:next force_unwrapping
         let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
@@ -208,22 +206,17 @@ private extension FFmpegDecoder {
         let isHTTP = (url.scheme?.lowercased()).map { $0 == "http" || $0 == "https" } ?? false
         let inputPath = isHTTP ? url.absoluteString : url.path
 
-        // For remote (server-supplied) inputs, restrict FFmpeg to network
-        // protocols. Without this a malicious internet-radio / Subsonic server
-        // could return an HLS / `concat:` / `file:` / `subfile:` URL that makes
-        // the demuxer read sandbox-reachable local files (local file
-        // disclosure). Local files deliberately get no whitelist so the default
-        // `file` protocol still works. See #280.
+        // Remote inputs are whitelisted to network protocols only, so a
+        // malicious server can't redirect the demuxer to a local `file:` /
+        // `concat:` / `subfile:` URL (#280). Local files get no whitelist.
         var opts: OpaquePointer? // AVDictionary*
         defer { av_dict_free(&opts) }
         for (key, value) in self.openOptions(isHTTP: isHTTP) {
             av_dict_set(&opts, key, value, 0)
         }
 
-        // avformat_open_input writes straight into ctx.formatCtx. On failure it
-        // leaves it NULL; on partial success (opened but find_stream_info below
-        // throws) it is non-NULL and owned by FFContext.deinit via
-        // avformat_close_input. Either way the throw path is covered. (#295)
+        // Either way ctx.formatCtx ends up NULL-or-owned, so FFContext.deinit
+        // covers both the failure and partial-success throw paths. (#295)
         let openRet = avformat_open_input(&ctx.formatCtx, inputPath, nil, &opts)
         if openRet < 0 {
             throw AudioEngineError.accessDenied(url, underlying: ffError(openRet))
@@ -248,9 +241,8 @@ private extension FFmpegDecoder {
         guard let codecCtx = avcodec_alloc_context3(codec) else {
             throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: FFmpegInternalError.alloc)
         }
-        // Park the codec context on ctx *before* the two throwing calls below so
-        // that a failure in parameters_to_context / open2 is still covered by
-        // FFContext.deinit's avcodec_free_context. (#295)
+        // Parked before the throwing calls below so a failure there is still
+        // covered by FFContext.deinit's avcodec_free_context. (#295)
         ctx.codecCtx = codecCtx
 
         try self.ffCheck(avcodec_parameters_to_context(codecCtx, codecParams))
@@ -259,11 +251,7 @@ private extension FFmpegDecoder {
         // live, fully-initialised resampler reaches ctx.swrCtx. (#295)
         ctx.swrCtx = try self.buildSWR(codecCtx: codecCtx)
 
-        let details = Self.captureDetails(
-            formatCtx: ctx.formatCtx,
-            codecParams: codecParams,
-            isHTTP: isHTTP
-        )
+        let details = Self.captureDetails(formatCtx: ctx.formatCtx, codecParams: codecParams, isHTTP: isHTTP)
         return (Double(codecCtx.pointee.sample_rate), details)
     }
 
@@ -274,11 +262,8 @@ private extension FFmpegDecoder {
         av_channel_layout_default(&outLayout, 2)
         defer { av_channel_layout_uninit(&outLayout) }
 
-        // Builder that frees on throw (#295): swr_alloc_set_opts2 can allocate
-        // the context and still return an error, so a half-built resampler must
-        // be freed on *every* throw path, not just swr_init failure. We free it
-        // in a defer unless ownership is handed back to the caller (who parks it
-        // on FFContext.swrCtx for deinit to own). swr_free is NULL-safe.
+        // swr_alloc_set_opts2 can allocate and still error, so free on every
+        // throw path (#295) unless ownership is handed back to the caller.
         var swrCtx: OpaquePointer?
         var handedOff = false
         defer { if !handedOff { swr_free(&swrCtx) } }
@@ -342,8 +327,7 @@ private extension FFmpegDecoder {
         outer: while true {
             let readRet = av_read_frame(fmtCtx, pkt)
             if readRet == avErrorEof {
-                _ = avcodec_send_packet(codecCtx, nil)
-                try self.drainCodec(codecCtx, swrCtx: swrCtx, frame: frm, into: &result)
+                try self.finishAtEOF(codecCtx, swrCtx: swrCtx, frame: frm, readRet: readRet, into: &result)
                 break
             }
             if readRet < 0 {
@@ -369,6 +353,22 @@ private extension FFmpegDecoder {
             }
         }
         return result
+    }
+
+    /// Drains buffered frames at a finite source's real end; throws instead
+    /// for a live stream, where EOF means FFmpeg gave up reconnecting.
+    func finishAtEOF(
+        _ codecCtx: UnsafeMutablePointer<AVCodecContext>,
+        swrCtx: OpaquePointer,
+        frame: UnsafeMutablePointer<AVFrame>,
+        readRet: Int32,
+        into result: inout [Float]
+    ) throws {
+        if self.isUnboundedRemoteStream {
+            throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: ffError(readRet))
+        }
+        _ = avcodec_send_packet(codecCtx, nil)
+        try self.drainCodec(codecCtx, swrCtx: swrCtx, frame: frame, into: &result)
     }
 
     func drainCodec(

@@ -25,6 +25,14 @@ extension FFmpegDecoder {
     ///   decoder. Bounded so a dead URL gives up to the engine's app-level reconnect
     ///   rather than blocking forever. Unknown keys are ignored by `av_dict_set`
     ///   (safe across builds); verified against the linked FFmpeg 8.1.2.
+    /// - `timeout`: the `reconnect*` options only fire once a read call actually
+    ///   returns an error. A server that stops sending bytes without closing the
+    ///   socket (a silent stall rather than a clean drop) never returns one, so
+    ///   `av_read_frame` blocks forever with no error, no reconnect, and no
+    ///   `.failed` state for the app-level reconnect loop to react to. `timeout`
+    ///   (microseconds) makes FFmpeg itself raise an error after this long without
+    ///   data, turning a silent stall into the same recoverable path as a dropped
+    ///   connection.
     ///
     /// Local inputs get no options so FFmpeg's default protocol set (incl. `file`)
     /// still works.
@@ -42,6 +50,7 @@ extension FFmpegDecoder {
         options["reconnect_on_network_error"] = "1" // and on tcp/tls error during (re)connect
         options["reconnect_delay_max"] = "5" // cap the backoff between attempts at 5s
         options["reconnect_max_retries"] = "3" // then give up so the engine can rebuild the stream
+        options["timeout"] = "15000000" // 15s with no data is a stall, not silence to wait out
         return options
     }
 }
