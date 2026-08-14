@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -156,6 +156,33 @@ test-e2e:
 		-destination 'platform=macOS' \
 		-resultBundlePath build/E2EResults.xcresult \
 		-only-testing:BocanUITests \
+		$(XCB_OVERRIDE) \
+		test \
+		| xcbeautify
+
+# The curated <=10 minute subset for a quick pre-release sanity check: phase 28
+# journeys, the menu structural crawl, one surface, one radio journey. Deliberately
+# excludes the reconnect pair (slow, the flake watch) and hover tooltip checks
+# (quarantinable by design) -- those belong in the full `test-e2e` run.
+E2E_SMOKE_TESTS := \
+	-only-testing:BocanUITests/FoundationJourneys \
+	-only-testing:BocanUITests/MenuCrawlTests/testMenuBarMatchesManifest \
+	-only-testing:BocanUITests/ToolbarSurfaceTests/testToolbarSurface \
+	-only-testing:BocanUITests/RadioStreamJourneyTests/testAddByURLPlaysAndShowsScriptedTitle
+
+## test-e2e-smoke: Run a curated <=10 minute E2E subset for quick local pre-release checks
+test-e2e-smoke:
+	@echo "=============================="
+	@echo "= Executing E2E Smoke Subset"
+	@echo "=============================="
+	rm -rf build/E2ESmokeResults.xcresult
+	set -o pipefail && xcodebuild \
+		-project Bocan.xcodeproj \
+		-scheme Bocan \
+		-configuration Debug \
+		-destination 'platform=macOS' \
+		-resultBundlePath build/E2ESmokeResults.xcresult \
+		$(E2E_SMOKE_TESTS) \
 		$(XCB_OVERRIDE) \
 		test \
 		| xcbeautify
