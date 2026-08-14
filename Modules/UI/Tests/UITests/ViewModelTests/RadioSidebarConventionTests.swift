@@ -111,4 +111,48 @@ struct RadioSidebarConventionTests {
             "the VM must observe live ICY titles"
         )
     }
+
+    // MARK: - Next / previous station
+
+    @Test("the strip's transport buttons route to station skipping in radio mode")
+    func stripTransportButtonsHandleRadio() throws {
+        let controls = try self.source("Transport/MusicTransportControls.swift")
+        #expect(
+            controls.contains("playNextStation"),
+            "the Next button must route to playNextStation() in radio mode"
+        )
+        #expect(
+            controls.contains("playPreviousStation"),
+            "the Previous button must route to playPreviousStation() in radio mode"
+        )
+    }
+
+    @Test("LibraryViewModel+Radio exposes next/previous station playback")
+    func libraryViewModelExposesStationSkipping() throws {
+        let radioVM = try self.source("ViewModels/LibraryViewModel+Radio.swift")
+        #expect(radioVM.contains("func playNextStation"))
+        #expect(radioVM.contains("func playPreviousStation"))
+    }
+
+    // MARK: - Row selection
+
+    @Test("RadioView selects the catalog row for the currently playing station")
+    func radioViewSelectsPlayingRow() throws {
+        let radioView = try self.source("Browse/Radio/RadioView.swift")
+        #expect(
+            radioView.contains("List(selection:"),
+            "the station list must bind a selection so clicking a row selects it"
+        )
+        #expect(
+            radioView.contains("syncSelection"),
+            "the list must sync its selection to whatever station is playing"
+        )
+    }
+
+    @Test("RadioViewModel owns selection state kept in sync with playback")
+    func radioViewModelOwnsSelection() throws {
+        let radioVM = try self.source("Browse/Radio/RadioViewModel.swift")
+        #expect(radioVM.contains("var selectedStationID"))
+        #expect(radioVM.contains("func syncSelection"))
+    }
 }

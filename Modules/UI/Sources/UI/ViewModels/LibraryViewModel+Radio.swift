@@ -35,6 +35,52 @@ public extension LibraryViewModel {
         }
     }
 
+    // MARK: - Next / previous station
+
+    /// Plays the station immediately after the one currently playing, in the
+    /// same name-ordered catalog list the Radio pane shows, wrapping from the
+    /// last station back to the first. A live stream has no queue of its own
+    /// to advance through (`play(radioStation:)` replaces Up Next with a
+    /// single item), so this is the radio-aware substitute for
+    /// `QueuePlayer.next()` — the transport's Next button routes here
+    /// instead whenever radio is playing.
+    func playNextStation() async {
+        await self.playAdjacentStation(offset: 1)
+    }
+
+    /// Plays the station immediately before the one currently playing,
+    /// wrapping from the first station to the last. The radio-aware
+    /// substitute for `QueuePlayer.previous()` — a live stream can't be
+    /// seeked or restarted, so there's no "restart current" branch here
+    /// the way `NowPlayingViewModel.previous()` has for ordinary tracks.
+    func playPreviousStation() async {
+        await self.playAdjacentStation(offset: -1)
+    }
+
+    private func playAdjacentStation(offset: Int) async {
+        guard let currentURL = self.nowPlaying.nowPlayingRadioStreamURL else { return }
+        do {
+            let stations = try await self.radioStations.fetchAll()
+            guard let target = Self.adjacentStation(to: currentURL, offset: offset, in: stations) else { return }
+            await self.play(radioStation: target)
+        } catch {
+            self.log.error("radio.adjacent.fetch.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// The station `offset` positions away from `currentURL` in `stations`,
+    /// wrapping around either end. `nil` when `currentURL` isn't in the list
+    /// at all — e.g. an ephemeral Subsonic station outside the local
+    /// catalog — rather than guessing at some other station. Pure and
+    /// synchronous so the wraparound arithmetic is unit-testable without a
+    /// database or engine.
+    static func adjacentStation(to currentURL: String, offset: Int, in stations: [RadioStation]) -> RadioStation? {
+        guard let currentIndex = stations.firstIndex(where: { $0.streamURL == currentURL }) else { return nil }
+        let count = stations.count
+        let targetIndex = ((currentIndex + offset) % count + count) % count
+        return stations[targetIndex]
+    }
+
     // MARK: - Station info (phase 27-5)
 
     /// Payload for `RadioStationInfoSheet`: the catalog row (or an ephemeral
