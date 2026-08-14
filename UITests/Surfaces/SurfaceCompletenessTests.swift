@@ -70,7 +70,8 @@ final class SurfaceCompletenessTests: XCTestCase {
     @MainActor
     func testToolbarSurfaceCoversItsRegistry() {
         XCTAssertEqual(
-            Set(ToolbarSurfaceTests.coveredIdentifiers), Self.toolbarRegistry,
+            Set(ToolbarSurfaceTests.coveredIdentifiers),
+            Self.toolbarRegistry,
             "the Toolbar crawl table and A11y.Toolbar must match exactly"
         )
     }
@@ -84,7 +85,8 @@ final class SurfaceCompletenessTests: XCTestCase {
             "a transport identifier is both crawled and skipped"
         )
         XCTAssertEqual(
-            covered.union(skipped), Self.transportRegistry,
+            covered.union(skipped),
+            Self.transportRegistry,
             "every attached transport identifier must be crawled or skipped with a reason"
         )
         for (_, reason) in Self.transportSkips {
@@ -102,9 +104,13 @@ final class SurfaceCompletenessTests: XCTestCase {
         // crawl table, so the remaining work is explicit and reasoned.
         let deferred: [String: String] = [
             "Artists / Genres / Composers listings":
-                "the collection rows carry no per-row A11y identifiers; the List/Grid \"View as\" control is covered by the phase 30 menu tests",
+                "the collection rows carry no per-row A11y identifiers; the List/Grid "
+                + "\"View as\" control is covered by the phase 30 menu tests",
             "Podcasts browse":
-                "the add bar's field triggers a networked podcast search; interaction belongs to the phase 34 hermetic-network layer",
+                "phase 34 added journey coverage (PodcastJourneyTests: subscribe, "
+                + "download, resume, refresh) against a loopback fixture server, not "
+                + "a full crawl table; the show/episode-list controls carry no "
+                + "per-row A11y identifiers yet, matching the Artists/Genres/Composers gap above",
             "Up Next queue rows":
                 "rows are accessibilityElement(children: .ignore) with composed labels and context-menu actions, not identified controls",
             "Recently Played / Most Played":
