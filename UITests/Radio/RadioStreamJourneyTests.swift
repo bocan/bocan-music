@@ -128,6 +128,40 @@ final class RadioStreamJourneyTests: XCTestCase {
         )
     }
 
+    // MARK: - Playlist-URL indirection
+
+    /// Pastes the fake server's `.m3u` endpoint (not the stream itself)
+    /// into Add Station, asserts the sheet switches to the found-stations
+    /// list showing the scripted station, then Add All and asserts it
+    /// lands in the catalog under the name the playlist gave it.
+    func testPlaylistURLIndirectionOffersFoundStationsForAddAll() {
+        let app = self.launch()
+        let inv = MenuInvoker(app: app)
+        self.openRadio(app, inv)
+
+        inv.element("radio.addStation").click()
+        XCTAssertTrue(app.sheets.firstMatch.waitForExistence(timeout: 5), "add-station sheet never opened")
+        inv.pasteText(self.server.playlistURL.absoluteString, into: inv.element("radio.sheet.streamURL"))
+        inv.element("radio.sheet.submit").click()
+
+        XCTAssertTrue(inv.element("radio.sheet.foundList").waitForExistence(timeout: 5), "found-stations list never appeared")
+        XCTAssertTrue(inv.element("radio.sheet.foundRow.0").waitForExistence(timeout: 5))
+        // The row's two Text children (name, stream URL) auto-combine into
+        // one element, but only the first survives into its label/value —
+        // the second is dropped entirely (found empirically). The name
+        // alone is enough here: this fixture's playlist has one station.
+        let rowText = (inv.label("radio.sheet.foundRow.0") ?? "") + (inv.value("radio.sheet.foundRow.0") ?? "")
+        XCTAssertTrue(rowText.contains("E2E Dial FM"), "found row was \"\(rowText)\"")
+
+        inv.element("radio.sheet.addAll").click()
+        inv.waitFor("add-station sheet dismisses") { !app.sheets.firstMatch.exists }
+
+        XCTAssertTrue(
+            app.staticTexts["E2E Dial FM"].waitForExistence(timeout: 5),
+            "the playlist's station never landed in the catalog"
+        )
+    }
+
     /// `XCTAssertNotNil` alone would pass on an empty string, which is
     /// exactly the wrong-property symptom (`.label` on a `.value`-bridged
     /// element) this suite already found once; require real content.
