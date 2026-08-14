@@ -104,6 +104,12 @@ public struct RadioView: View {
                 .tag(station.id)
                 .accessibilityIdentifier(A11y.Radio.row(station.id))
                 .contextMenu {
+                    // Also reachable via the row's hover-revealed info
+                    // button; this is the only path to it without a mouse
+                    // hover (keyboard/rotor users, and — the reason it was
+                    // added — E2E automation, since a synthetic hover never
+                    // reliably reveals a List row's hover-only content).
+                    Button(L10n.string("Get Info")) { self.showInfo(station) }
                     Button(L10n.string("Edit")) { self.sheetMode = .edit(station) }
                     Button(L10n.string("Delete"), role: .destructive) {
                         self.stationToDelete = station

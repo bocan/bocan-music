@@ -104,6 +104,15 @@ struct MenuInvoker {
         self.app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
+    /// The element whose identifier starts with `prefix` — for identifiers
+    /// keyed by a database id the caller doesn't know ahead of time (e.g.
+    /// `"radio.row.42"`), when exactly one match is expected.
+    func elementWithIdentifierPrefix(_ prefix: String) -> XCUIElement {
+        self.app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
+            .firstMatch
+    }
+
     /// `identifier`'s current label, or nil if no matching element exists
     /// yet. Guards on `.exists` first: touching `.label`/`.value` on a
     /// zero-match query hard-fails the test via XCTest's own snapshot
