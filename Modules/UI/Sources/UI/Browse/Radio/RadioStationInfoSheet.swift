@@ -62,6 +62,7 @@ struct RadioStationInfoSheet: View {
                     )
                     .font(Typography.subheadline)
                     .foregroundStyle(Color.textPrimary)
+                    .accessibilityIdentifier(A11y.Radio.infoValue("lastConnected"))
                 }
             }
 
@@ -69,6 +70,7 @@ struct RadioStationInfoSheet: View {
                 Spacer()
                 Button(L10n.string("Close"), action: self.onDismiss)
                     .keyboardShortcut(.defaultAction)
+                    .accessibilityIdentifier(A11y.Radio.infoCloseButton)
             }
         }
         .padding(20)
@@ -82,7 +84,7 @@ struct RadioStationInfoSheet: View {
             Text(self.liveDetails != nil ? L10n.string("Live Stream") : L10n.string("Last Connection"))
                 .font(Typography.caption.weight(.semibold))
                 .foregroundStyle(Color.textSecondary)
-            ForEach(self.streamFacts, id: \.label) { row in
+            ForEach(self.streamFacts, id: \.key) { row in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(row.label)
                         .font(Typography.caption)
@@ -92,41 +94,72 @@ struct RadioStationInfoSheet: View {
                         .font(Typography.subheadline)
                         .foregroundStyle(Color.textPrimary)
                         .textSelection(.enabled)
+                        .accessibilityIdentifier(A11y.Radio.infoValue(row.key))
                 }
             }
         }
     }
 
+    /// One stream-facts row. `key` is a stable, non-localized slug for
+    /// `A11y.Radio.infoValue(_:)` — `label` is `L10n`-translated and must
+    /// stay free to change.
+    private struct StreamFact {
+        let key: String
+        let label: String
+        let value: String
+    }
+
     /// Live decoder facts when playing; the persisted profile otherwise.
-    private var streamFacts: [(label: String, value: String)] {
-        var rows: [(label: String, value: String)] = []
+    private var streamFacts: [StreamFact] {
+        var rows: [StreamFact] = []
         if let live = self.liveDetails {
-            if let container = live.container { rows.append((L10n.string("Container"), container)) }
-            if let codec = live.codecDisplay { rows.append((L10n.string("Codec"), codec)) }
+            if let container = live.container {
+                rows.append(StreamFact(key: "container", label: L10n.string("Container"), value: container))
+            }
+            if let codec = live.codecDisplay {
+                rows.append(StreamFact(key: "codec", label: L10n.string("Codec"), value: codec))
+            }
             if live.sampleRateHz > 0 {
-                rows.append((L10n.string("Sample Rate"), Self.sampleRateText(live.sampleRateHz)))
+                rows.append(StreamFact(
+                    key: "sampleRate",
+                    label: L10n.string("Sample Rate"),
+                    value: Self.sampleRateText(live.sampleRateHz)
+                ))
             }
             if live.channelCount > 0 {
-                rows.append((L10n.string("Channels"), Self.channelsText(live.channelCount)))
+                rows.append(StreamFact(
+                    key: "channels",
+                    label: L10n.string("Channels"),
+                    value: Self.channelsText(live.channelCount)
+                ))
             }
             if let kbps = live.claimedBitrateKbps {
-                rows.append((L10n.string("Bitrate"), L10n.string("\(kbps) kbps")))
+                rows.append(StreamFact(key: "bitrate", label: L10n.string("Bitrate"), value: L10n.string("\(kbps) kbps")))
             }
-            rows.append((
-                L10n.string("Now-Playing Titles"),
-                live.supportsIcyMetadata ? L10n.string("Supported") : L10n.string("Not supported")
+            rows.append(StreamFact(
+                key: "nowPlayingTitles",
+                label: L10n.string("Now-Playing Titles"),
+                value: live.supportsIcyMetadata ? L10n.string("Supported") : L10n.string("Not supported")
             ))
         } else {
-            if let container = self.station.lastContainer { rows.append((L10n.string("Container"), container)) }
-            if let codec = self.station.lastCodec { rows.append((L10n.string("Codec"), codec)) }
+            if let container = self.station.lastContainer {
+                rows.append(StreamFact(key: "container", label: L10n.string("Container"), value: container))
+            }
+            if let codec = self.station.lastCodec {
+                rows.append(StreamFact(key: "codec", label: L10n.string("Codec"), value: codec))
+            }
             if let hz = self.station.lastSampleRateHz {
-                rows.append((L10n.string("Sample Rate"), Self.sampleRateText(hz)))
+                rows.append(StreamFact(key: "sampleRate", label: L10n.string("Sample Rate"), value: Self.sampleRateText(hz)))
             }
             if let channels = self.station.lastChannels {
-                rows.append((L10n.string("Channels"), Self.channelsText(channels)))
+                rows.append(StreamFact(
+                    key: "channels",
+                    label: L10n.string("Channels"),
+                    value: Self.channelsText(channels)
+                ))
             }
             if let kbps = self.station.lastBitrateKbps {
-                rows.append((L10n.string("Bitrate"), L10n.string("\(kbps) kbps")))
+                rows.append(StreamFact(key: "bitrate", label: L10n.string("Bitrate"), value: L10n.string("\(kbps) kbps")))
             }
         }
         return rows

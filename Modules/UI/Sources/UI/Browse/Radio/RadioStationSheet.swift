@@ -61,8 +61,10 @@ struct RadioStationSheet: View {
 
             Form {
                 TextField(L10n.string("Station Name"), text: self.$name, prompt: nil)
+                    .accessibilityIdentifier(A11y.Radio.sheetNameField)
                 TextField(self.streamURLLabel, text: self.$streamURL)
                     .autocorrectionDisabled()
+                    .accessibilityIdentifier(A11y.Radio.sheetStreamURLField)
                 if case .add = self.mode {
                     Text(localized: "Paste a .m3u or .pls link and every station inside will be offered.")
                         .font(Typography.caption)
@@ -70,6 +72,7 @@ struct RadioStationSheet: View {
                 }
                 TextField(L10n.string("Homepage"), text: self.$homePage)
                     .autocorrectionDisabled()
+                    .accessibilityIdentifier(A11y.Radio.sheetHomePageField)
             }
             .formStyle(.columns)
 
@@ -83,11 +86,13 @@ struct RadioStationSheet: View {
                 Spacer()
                 Button(L10n.string("Cancel")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier(A11y.Radio.sheetCancelButton)
                 Button(self.primaryButtonTitle) {
                     Task { await self.submit() }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.isBusy || self.streamURL.trimmingCharacters(in: .whitespaces).isEmpty)
+                .accessibilityIdentifier(A11y.Radio.sheetSubmitButton)
             }
         }
     }
@@ -100,7 +105,7 @@ struct RadioStationSheet: View {
                 .font(Typography.title)
                 .foregroundStyle(Color.textPrimary)
 
-            List(Array(stations.enumerated()), id: \.offset) { _, station in
+            List(Array(stations.enumerated()), id: \.offset) { index, station in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(station.name ?? Self.host(of: station.streamURL))
                         .font(Typography.subheadline)
@@ -113,13 +118,16 @@ struct RadioStationSheet: View {
                         .truncationMode(.middle)
                 }
                 .padding(.vertical, 1)
+                .accessibilityIdentifier(A11y.Radio.sheetFoundRow(index))
             }
             .frame(minHeight: 220)
+            .accessibilityIdentifier(A11y.Radio.sheetFoundList)
 
             HStack {
                 Spacer()
                 Button(L10n.string("Cancel")) { self.dismiss() }
                     .keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier(A11y.Radio.sheetCancelButton)
                 Button(L10n.string("Add All")) {
                     Task {
                         self.isBusy = true
@@ -129,6 +137,7 @@ struct RadioStationSheet: View {
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.isBusy)
+                .accessibilityIdentifier(A11y.Radio.sheetAddAllButton)
             }
         }
     }

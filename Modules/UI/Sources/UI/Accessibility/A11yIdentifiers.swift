@@ -37,6 +37,32 @@ public enum A11y {
         public static func row(_ stationID: Int64?) -> String {
             "radio.row.\(stationID.map(String.init) ?? "unsaved")"
         }
+
+        // MARK: - Add/edit sheet (phase 34)
+
+        public static let sheetNameField = "radio.sheet.name"
+        public static let sheetStreamURLField = "radio.sheet.streamURL"
+        public static let sheetHomePageField = "radio.sheet.homePage"
+        public static let sheetSubmitButton = "radio.sheet.submit"
+        public static let sheetCancelButton = "radio.sheet.cancel"
+        public static let sheetFoundList = "radio.sheet.foundList"
+        public static let sheetAddAllButton = "radio.sheet.addAll"
+
+        public static func sheetFoundRow(_ index: Int) -> String {
+            "radio.sheet.foundRow.\(index)"
+        }
+
+        // MARK: - Info sheet (phase 34)
+
+        /// One row's value text, keyed by a stable slug (not the localized
+        /// label, which must stay free to translate): "container", "codec",
+        /// "sampleRate", "channels", "bitrate", "nowPlayingTitles",
+        /// "lastConnected".
+        public static func infoValue(_ key: String) -> String {
+            "radio.info.value.\(key)"
+        }
+
+        public static let infoCloseButton = "radio.info.close"
     }
 
     // MARK: - Tracks table
