@@ -577,6 +577,7 @@ final class AppModel {
             // library (phase 28). The app builds that home itself: the
             // runner cannot write inside this container.
             E2ESeeder.prepareHomeIfRequested()
+            E2ESeeder.writeDialFileIfRequested()
             let location: Database.Location = E2EEnvironment.databaseURL
                 .map { Database.Location.custom($0) } ?? .application
             let db = try await Database(location: location)

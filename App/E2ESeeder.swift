@@ -47,6 +47,22 @@ enum E2ESeeder {
         }
     }
 
+    /// Writes a one-station `.m3u` dial file into this run's home pointing
+    /// at `BOCAN_E2E_DIAL_FILE_URL`, if set. Must run after
+    /// `prepareHomeIfRequested()` (which creates the run home). No-op
+    /// outside E2E mode or without the env var; failures are logged, never
+    /// surfaced as a crash.
+    static func writeDialFileIfRequested() {
+        guard let streamURL = E2EEnvironment.dialFileStreamURL,
+              let dialFileURL = E2EEnvironment.dialFileURL else { return }
+        let body = "#EXTM3U\n#EXTINF:-1,E2E Dial FM\n\(streamURL.absoluteString)\n"
+        do {
+            try body.write(to: dialFileURL, atomically: true, encoding: .utf8)
+        } catch {
+            self.log.error("e2e.dialFile.failed", ["error": String(reflecting: error)])
+        }
+    }
+
     // MARK: Tone synthesis
 
     private static func toneURL(named name: String, in dir: URL) -> URL {

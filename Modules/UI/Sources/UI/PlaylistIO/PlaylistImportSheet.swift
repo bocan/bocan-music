@@ -46,10 +46,12 @@ public struct PlaylistImportSheet: View {
                 Button(L10n.string("Choose Files…")) { self.pickFiles() }
                     .help(L10n.string("Open a file picker to select one or more playlist files to import"))
                     .accessibilityLabel(L10n.string("Choose playlist files"))
+                    .accessibilityIdentifier(A11y.PlaylistImport.chooseFilesButton)
                 Spacer()
                 Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }
                     .keyboardShortcut(.cancelAction)
                     .help(L10n.string("Dismiss this sheet without importing"))
+                    .accessibilityIdentifier(A11y.PlaylistImport.cancelButton)
                 Button(L10n.string("Import")) { Task { await self.runImport() } }
                     .keyboardShortcut(.defaultAction)
                     .disabled(self.pickedURLs.isEmpty || self.isImporting)
@@ -61,6 +63,7 @@ public struct PlaylistImportSheet: View {
                     .accessibilityLabel(
                         self.isImporting ? L10n.string("Importing, please wait") : L10n.string("Import selected playlists")
                     )
+                    .accessibilityIdentifier(A11y.PlaylistImport.importButton)
             }
         }
         .padding(24)

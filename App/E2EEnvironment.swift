@@ -79,4 +79,20 @@ enum E2EEnvironment {
         return ProcessInfo.processInfo.environment["BOCAN_E2E_SEED_RADIO_URL"]
             .flatMap(URL.init(string:))
     }
+
+    /// When set, `E2ESeeder` writes a one-station `.m3u` dial file into this
+    /// run's home pointing at this URL, so the Import Playlist… journey can
+    /// drive a real `NSOpenPanel` to a file the app can actually read: the
+    /// runner cannot write inside this app's container, and the sandbox
+    /// stops this app reading anywhere else (same contract as `home` above).
+    static var dialFileStreamURL: URL? {
+        guard self.isActive else { return nil }
+        return ProcessInfo.processInfo.environment["BOCAN_E2E_DIAL_FILE_URL"]
+            .flatMap(URL.init(string:))
+    }
+
+    /// Where `E2ESeeder` writes the dial file described above.
+    static var dialFileURL: URL? {
+        self.home?.appendingPathComponent("dial.m3u")
+    }
 }
