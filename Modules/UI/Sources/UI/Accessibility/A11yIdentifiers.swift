@@ -399,6 +399,14 @@ public enum A11y {
         public static let paletteValue = "visualizer.overlay.palette.value"
     }
 
+    // MARK: - Playlist import sheet (phase 34)
+
+    public enum PlaylistImport {
+        public static let chooseFilesButton = "playlistImport.chooseFiles"
+        public static let cancelButton = "playlistImport.cancel"
+        public static let importButton = "playlistImport.import"
+    }
+
     // MARK: - Lyrics
 
     public enum Lyrics {

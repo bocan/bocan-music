@@ -228,6 +228,50 @@ final class RadioStreamJourneyTests: XCTestCase {
         XCTAssertTrue(toast.waitForExistence(timeout: 120), "reconnect exhaustion must surface a failure toast")
     }
 
+    /// Drives a real `NSOpenPanel` end to end: File > Import Playlist… (⌘⌥⇧O)
+    /// opens the sheet, "Choose Files…" opens the panel, ⌘⇧G ("Go to
+    /// Folder") navigates straight to the dial file `E2ESeeder` wrote
+    /// inside the app's own sandbox container — the runner cannot write
+    /// there itself, and the app cannot read anywhere else, so the file's
+    /// path is threaded in via `BOCAN_E2E_DIAL_FILE_URL` rather than the
+    /// test creating it (`E2EEnvironment.swift`/`E2ESeeder.swift`) — and
+    /// Import adds the one HTTP entry as a radio station.
+    func testDialFileImportAddsARadioStation() {
+        let dialFileURL = self.session.home.appendingPathComponent("dial.m3u")
+        let app = self.launch(environment: ["BOCAN_E2E_DIAL_FILE_URL": self.server.streamURL.absoluteString])
+        let inv = MenuInvoker(app: app)
+
+        app.typeKey("o", modifierFlags: [.command, .option, .shift])
+        XCTAssertTrue(app.sheets.firstMatch.waitForExistence(timeout: 5), "the playlist import sheet never opened")
+
+        let windowCountBeforePanel = app.windows.count
+        inv.element("playlistImport.chooseFiles").click()
+        inv.waitFor("the open panel appears") { app.windows.count > windowCountBeforePanel }
+
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        inv.settle(0.5)
+        app.typeText(dialFileURL.path)
+        app.typeKey(.return, modifierFlags: [])
+        inv.settle(0.5)
+        app.typeKey(.return, modifierFlags: [])
+
+        inv.waitFor("the open panel closes") { app.windows.count == windowCountBeforePanel }
+        inv.waitFor("the Import button is enabled") { inv.element("playlistImport.import").isEnabled }
+        inv.element("playlistImport.import").click()
+        inv.waitFor("the import sheet dismisses") { !app.sheets.firstMatch.exists }
+
+        // A pure-station M3U navigates to Radio and adds the row (no
+        // playlist is created for it) -- both persistent signals, unlike
+        // the 2s-auto-dismissing "Added N radio stations" toast this
+        // asserted on originally; that toast proved flaky to query
+        // reliably (broad `descendants(matching: .any)` value-matching
+        // timed out evaluating against the live AX tree) without adding
+        // any coverage this doesn't already give.
+        inv.waitFor("navigates to Radio after a pure-station import") { app.windows.firstMatch.title == "Radio" }
+        let radioRows = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH 'radio.row.'"))
+        XCTAssertEqual(radioRows.count, 1, "importing the dial file must add exactly one radio station")
+    }
+
     /// `XCTAssertNotNil` alone would pass on an empty string, which is
     /// exactly the wrong-property symptom (`.label` on a `.value`-bridged
     /// element) this suite already found once; require real content.
@@ -288,8 +332,8 @@ final class RadioStreamJourneyTests: XCTestCase {
         inv.waitFor("add-station sheet dismisses") { !app.sheets.firstMatch.exists }
     }
 
-    private func launch() -> XCUIApplication {
-        let app = self.session.launch(arguments: MenuManifest.matrixDefaults)
+    private func launch(environment: [String: String] = [:]) -> XCUIApplication {
+        let app = self.session.launch(environment: environment, arguments: MenuManifest.matrixDefaults)
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 15))
         XCTAssertTrue(app.waitForTrackRows(timeout: 60), "fixture scan never produced rows")
         app.activate()
