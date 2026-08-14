@@ -179,6 +179,59 @@ struct RadioViewModelTests {
 
         #expect(try await repo.fetchAll().isEmpty)
     }
+
+    // MARK: - Selection
+
+    /// `syncSelection` reads the live-observed `stations` array, not the
+    /// repository directly, so a test must start observation and wait for
+    /// the stream to deliver before calling it — mirroring how `RadioView`
+    /// only ever calls `syncSelection` after `onAppear` starts observing.
+    private static func waitForStations(_ vm: RadioViewModel, count: Int, timeout: TimeInterval = 5) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while vm.stations.count < count, Date() < deadline {
+            try? await Task.sleep(nanoseconds: 25_000_000)
+        }
+    }
+
+    @Test("syncSelection selects the station whose streamURL is playing")
+    func syncSelectionSelectsPlayingStation() async throws {
+        let (vm, repo) = try await Self.makeVM()
+        vm.startObserving()
+        _ = await vm.submitAdd(name: "A", streamURL: "https://a.example/stream", homePage: nil)
+        _ = await vm.submitAdd(name: "B", streamURL: "https://b.example/stream", homePage: nil)
+        let stationB = try #require(try await repo.fetchOne(streamURL: "https://b.example/stream"))
+        await Self.waitForStations(vm, count: 2)
+
+        vm.syncSelection(nowPlayingStreamURL: "https://b.example/stream")
+
+        #expect(vm.selectedStationID == stationB.id)
+    }
+
+    @Test("syncSelection clears the selection when nothing is playing")
+    func syncSelectionClearsWhenNotPlaying() async throws {
+        let (vm, _) = try await Self.makeVM()
+        vm.startObserving()
+        _ = await vm.submitAdd(name: "A", streamURL: "https://a.example/stream", homePage: nil)
+        await Self.waitForStations(vm, count: 1)
+        vm.syncSelection(nowPlayingStreamURL: "https://a.example/stream")
+        #expect(vm.selectedStationID != nil)
+
+        vm.syncSelection(nowPlayingStreamURL: nil)
+
+        #expect(vm.selectedStationID == nil)
+    }
+
+    @Test("syncSelection clears the selection when the playing stream isn't in the catalog")
+    func syncSelectionClearsForUnknownStream() async throws {
+        let (vm, _) = try await Self.makeVM()
+        vm.startObserving()
+        _ = await vm.submitAdd(name: "A", streamURL: "https://a.example/stream", homePage: nil)
+        await Self.waitForStations(vm, count: 1)
+
+        vm.syncSelection(nowPlayingStreamURL: "https://subsonic.example/ephemeral-station")
+
+        #expect(vm.selectedStationID == nil, "an ephemeral stream outside the catalog must not select the wrong row")
+    }
 }
 
 // MARK: - URLSession stub

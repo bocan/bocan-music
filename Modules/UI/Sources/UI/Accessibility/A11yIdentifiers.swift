@@ -31,6 +31,12 @@ public enum A11y {
         public static let emptyState = "radio.emptyState"
         public static let addButton = "radio.addStation"
         public static let emptyStateAddButton = "radio.emptyState.addStation"
+
+        /// One row per station; nil ids (unsaved rows) collapse to a stable
+        /// placeholder so the identifier is never empty.
+        public static func row(_ stationID: Int64?) -> String {
+            "radio.row.\(stationID.map(String.init) ?? "unsaved")"
+        }
     }
 
     // MARK: - Tracks table

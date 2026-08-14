@@ -70,7 +70,11 @@ struct MusicTransportControls: View {
             }
 
             Button {
-                Task { await self.vm.previous() }
+                if self.isRadio {
+                    Task { await self.library.playPreviousStation() }
+                } else {
+                    Task { await self.vm.previous() }
+                }
             } label: {
                 Image(systemName: "backward.fill")
                     .scaledSystemFont(size: 18, weight: .semibold)
@@ -79,8 +83,10 @@ struct MusicTransportControls: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
             .disabled(self.vm.title.isEmpty)
-            .help(L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
-            .accessibilityLabel(L10n.string("Previous or restart"))
+            .help(self.isRadio
+                ? L10n.string("Previous station")
+                : L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
+            .accessibilityLabel(self.isRadio ? L10n.string("Previous station") : L10n.string("Previous or restart"))
             .accessibilityIdentifier(A11y.NowPlaying.prev)
 
             Button {
@@ -98,7 +104,11 @@ struct MusicTransportControls: View {
             .accessibilityIdentifier(A11y.NowPlaying.playPause)
 
             Button {
-                Task { await self.vm.next() }
+                if self.isRadio {
+                    Task { await self.library.playNextStation() }
+                } else {
+                    Task { await self.vm.next() }
+                }
             } label: {
                 Image(systemName: "forward.fill")
                     .scaledSystemFont(size: 18, weight: .semibold)
@@ -107,8 +117,8 @@ struct MusicTransportControls: View {
             .buttonStyle(.plain)
             .foregroundStyle(self.vm.title.isEmpty ? Color.textTertiary : Color.textPrimary)
             .disabled(self.vm.title.isEmpty)
-            .help(L10n.string("Next track"))
-            .accessibilityLabel(L10n.string("Next track"))
+            .help(self.isRadio ? L10n.string("Next station") : L10n.string("Next track"))
+            .accessibilityLabel(self.isRadio ? L10n.string("Next station") : L10n.string("Next track"))
             .accessibilityIdentifier(A11y.NowPlaying.next)
 
             Button {

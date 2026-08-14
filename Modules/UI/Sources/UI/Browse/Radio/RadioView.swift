@@ -38,6 +38,17 @@ public struct RadioView: View {
             }
         }
         .onAppear { self.vm.startObserving() }
+        .onChange(of: self.library.nowPlaying.nowPlayingRadioStreamURL) { _, newValue in
+            self.vm.syncSelection(nowPlayingStreamURL: newValue)
+        }
+        // Keyed on the count, not the array itself (`RadioStation` isn't
+        // Equatable): re-syncs once the catalog has actually loaded, for
+        // when this view appears after radio is already playing (a
+        // restored queue, or navigating here mid-stream) rather than only
+        // reacting to a later change in what's playing.
+        .task(id: self.vm.stations.count) {
+            self.vm.syncSelection(nowPlayingStreamURL: self.library.nowPlaying.nowPlayingRadioStreamURL)
+        }
         .loadErrorAlert(L10n.string("Station Error"), message: self.$vm.errorMessage)
         .sheet(item: self.$sheetMode) { mode in
             RadioStationSheet(vm: self.vm, mode: mode)
@@ -80,13 +91,18 @@ public struct RadioView: View {
     }
 
     private var stationList: some View {
-        List {
+        List(selection: Binding(
+            get: { self.vm.selectedStationID },
+            set: { self.vm.selectedStationID = $0 }
+        )) {
             ForEach(self.vm.stations) { station in
                 RadioStationRow(
                     station: station,
                     onPlay: { self.play(station) },
                     onInfo: { self.showInfo(station) }
                 )
+                .tag(station.id)
+                .accessibilityIdentifier(A11y.Radio.row(station.id))
                 .contextMenu {
                     Button(L10n.string("Edit")) { self.sheetMode = .edit(station) }
                     Button(L10n.string("Delete"), role: .destructive) {

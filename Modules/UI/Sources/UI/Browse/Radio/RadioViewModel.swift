@@ -21,6 +21,11 @@ public final class RadioViewModel: ObservableObject {
     /// cannot present on top of an open sheet.
     @Published public var errorMessage: String?
     @Published public var sheetErrorMessage: String?
+    /// The row selected in the catalog list. `RadioView`'s `List(selection:)`
+    /// binds directly to this, so a plain click selects a row like any
+    /// selectable list; `syncSelection(nowPlayingStreamURL:)` also writes it
+    /// so the playing station shows selected without a click.
+    @Published public var selectedStationID: Int64?
 
     // MARK: - Dependencies
 
@@ -142,6 +147,20 @@ public final class RadioViewModel: ObservableObject {
             self.sheetErrorMessage = L10n.string("A station with this stream URL already exists.")
             return false
         }
+    }
+
+    // MARK: - Selection
+
+    /// Moves the list selection onto whichever station's `streamURL` matches
+    /// `nowPlayingStreamURL`. Clears selection when radio isn't playing, or
+    /// when the playing stream isn't in this catalog (an ephemeral Subsonic
+    /// station, say) — a stale selection would point at the wrong row.
+    public func syncSelection(nowPlayingStreamURL: String?) {
+        guard let url = nowPlayingStreamURL else {
+            self.selectedStationID = nil
+            return
+        }
+        self.selectedStationID = self.stations.first { $0.streamURL == url }?.id
     }
 
     // MARK: - Delete
