@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 
 // MARK: - MenuInvoker
@@ -103,6 +104,29 @@ struct MenuInvoker {
         self.app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
+    /// `identifier`'s current label, or nil if no matching element exists
+    /// yet. Guards on `.exists` first: touching `.label`/`.value` on a
+    /// zero-match query hard-fails the test via XCTest's own snapshot
+    /// resolution rather than returning something falsy (found empirically,
+    /// phase 33/34) — this is the safe way to poll for text that appears
+    /// asynchronously.
+    func label(_ identifier: String) -> String? {
+        let element = self.element(identifier)
+        return element.exists ? element.label : nil
+    }
+
+    /// `identifier`'s current value as a string, or nil if no matching
+    /// element exists yet (see `label(_:)`). Elements carrying
+    /// `.accessibilityAddTraits(.updatesFrequently)` — e.g. the now-playing
+    /// strip's title — expose their live text as `.value`, not `.label`,
+    /// regardless of which SwiftUI modifier set it (found empirically,
+    /// phase 34, via an AX tree dump).
+    func value(_ identifier: String) -> String? {
+        let element = self.element(identifier)
+        guard element.exists, let value = element.value else { return nil }
+        return String(describing: value)
+    }
+
     /// True when any element in the main window's tree carries `text` in
     /// its label, title, or value (snapshot walk: one AX round trip).
     func mainWindowContains(_ text: String) -> Bool {
@@ -122,9 +146,7 @@ struct MenuInvoker {
     /// this a reliable stand-in for "rows in the visible list" that does
     /// not depend on the AppKit table's ambiguous identifier.
     func visibleFixtureTitleCount() -> Int {
-        ["E2E Tone One", "E2E Tone Two"].count(where: {
-            self.app.staticTexts[$0].firstMatch.exists
-        })
+        ["E2E Tone One", "E2E Tone Two"].count { self.app.staticTexts[$0].firstMatch.exists }
     }
 
     /// Rows currently in the library track table.
@@ -210,5 +232,20 @@ struct MenuInvoker {
 
     func settle(_ seconds: TimeInterval) {
         RunLoop.current.run(until: Date().addingTimeInterval(seconds))
+    }
+
+    /// Types `text` into `field` via the system pasteboard and Cmd-V rather
+    /// than `XCUIElement.typeText`, which silently drops certain characters
+    /// — a colon in a `http://127.0.0.1:PORT/...` loopback URL, found
+    /// empirically (phase 34) — during keyboard-event synthesis. The
+    /// pasteboard is genuine OS-level shared state, so writing from the
+    /// runner process here and pasting in the app process works correctly.
+    /// Selects all first so this also replaces any prefilled text.
+    func pasteText(_ text: String, into field: XCUIElement) {
+        field.click()
+        self.app.typeKey("a", modifierFlags: .command)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        self.app.typeKey("v", modifierFlags: .command)
     }
 }

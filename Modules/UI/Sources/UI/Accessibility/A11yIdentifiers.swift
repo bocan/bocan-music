@@ -283,8 +283,6 @@ public enum A11y {
     public enum NowPlaying {
         public static let strip = "nowPlayingStrip"
         public static let artwork = "nowPlayingStrip.artwork"
-        public static let title = "nowPlayingStrip.title"
-        public static let artist = "nowPlayingStrip.artist"
         public static let playPause = "nowPlayingStrip.playPause"
         public static let prev = "nowPlayingStrip.prev"
         public static let next = "nowPlayingStrip.next"
