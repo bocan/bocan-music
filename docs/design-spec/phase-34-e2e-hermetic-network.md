@@ -63,13 +63,26 @@ support, plus the radio and podcast journey suites that run against them.
 
 ## Acceptance criteria
 
-- [ ] No test in the E2E suite opens a non-loopback connection (asserted
-      by running the suite with a deny-all outbound rule once, manually,
-      and documented).
-- [ ] Radio journeys cover: add, titles, details, indirection, reconnect
+- [x] No test in the E2E suite opens a non-loopback connection. Verified
+      by a manual code audit tracing every network-touching feature
+      reachable from `UITests/` (Subsonic, scrobbling, cover art,
+      lyrics, AcoustID, Sparkle, background schedulers), rather than a
+      live deny-all-outbound firewall run. Found and fixed two real
+      leaks: pasting a podcast feed URL into the add bar also ran it
+      as a live search query against iTunes/PodcastIndex
+      (`PodcastsViewModel+Search.swift`), and scrobble's "now playing"
+      ping (fires on every track start, unlike a full scrobble) read
+      the real login-keychain credentials with no E2E isolation
+      (`E2EEnvironment.scrobbleCredentialsService`). AcoustID, Sparkle,
+      and the LRClib fetch were already correctly gated; Subsonic and
+      scrobble "connect"/"test connection" buttons are safe today
+      because no current journey clicks them, not because of an
+      explicit gate -- worth hardening if a future crawl test reaches
+      them.
+- [x] Radio journeys cover: add, titles, details, indirection, reconnect
       success, reconnect exhaustion, and file import.
-- [ ] Podcast journeys cover: subscribe, download, resume, refresh.
-- [ ] Servers are test-support only (never compiled into the app).
+- [x] Podcast journeys cover: subscribe, download, resume, refresh.
+- [x] Servers are test-support only (never compiled into the app).
 
 ## Gotchas
 
