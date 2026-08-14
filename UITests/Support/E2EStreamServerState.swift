@@ -191,17 +191,29 @@ final class ServerState: @unchecked Sendable {
                 self?.removeStreamConnection(connection)
                 return
             }
-            if nextBytesUntilMetadata == 0 {
-                self.sendMetadataFrame(connection, queue: queue, nextAudioOffset: nextAudioOffset)
-            } else {
-                self.streamChunk(
-                    connection,
-                    queue: queue,
-                    audioOffset: nextAudioOffset,
-                    bytesUntilMetadata: nextBytesUntilMetadata
-                )
+            queue.asyncAfter(deadline: .now() + Self.pacingDelay(forBytes: chunkLength)) {
+                if nextBytesUntilMetadata == 0 {
+                    self.sendMetadataFrame(connection, queue: queue, nextAudioOffset: nextAudioOffset)
+                } else {
+                    self.streamChunk(
+                        connection,
+                        queue: queue,
+                        audioOffset: nextAudioOffset,
+                        bytesUntilMetadata: nextBytesUntilMetadata
+                    )
+                }
             }
         })
+    }
+
+    /// Paces sends to roughly the advertised `icy-br: 128` (128 kbps = 16
+    /// KB/s), matching how a real station streams. Sending as fast as the
+    /// loopback pipe allows let a client end up with a large backlog of
+    /// already-buffered audio, which is unrealistic and, worse, meant a
+    /// dropped connection wasn't actually noticed for a long time -- the
+    /// client just kept consuming what it had already received.
+    private static func pacingDelay(forBytes count: Int) -> DispatchTimeInterval {
+        .milliseconds(Int((Double(count) / 16000) * 1000))
     }
 
     private func sendMetadataFrame(_ connection: NWConnection, queue: DispatchQueue, nextAudioOffset: Int) {
