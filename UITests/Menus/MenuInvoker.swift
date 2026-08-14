@@ -192,6 +192,7 @@ struct MenuInvoker {
         "Composers": "sidebar.composers", "Recently Added": "sidebar.recentlyAdded",
         "Recently Played": "sidebar.recentlyPlayed", "Most Played": "sidebar.mostPlayed",
         "Up Next": "sidebar.upNext", "Radio": "sidebar.radio",
+        "Podcasts": "sidebar.podcasts",
     ]
 
     /// Clicks a sidebar destination row and waits for the switch. Fixed
