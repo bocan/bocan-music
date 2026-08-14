@@ -66,8 +66,13 @@ public enum FeedURL {
             return nil
         }
 
-        // Prefer https.
-        components.scheme = "https"
+        // Prefer https -- except loopback, where TLS buys nothing (no network
+        // to eavesdrop on) and forcing it breaks any same-machine http-only
+        // server outright (E2E fixtures; a local dev feed). Real remote
+        // feeds are unaffected: this only fires for 127.0.0.1/::1/localhost.
+        if !Self.isLoopback(host: components.host) {
+            components.scheme = "https"
+        }
 
         // Lowercase host.
         components.host = components.host?.lowercased()
@@ -88,5 +93,15 @@ public enum FeedURL {
         }
 
         return components.url
+    }
+
+    private static func isLoopback(host: String?) -> Bool {
+        switch host?.lowercased() {
+        case "127.0.0.1", "::1", "[::1]", "localhost":
+            true
+
+        default:
+            false
+        }
     }
 }

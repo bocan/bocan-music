@@ -22,6 +22,7 @@ public enum A11y {
         public static let mostPlayed = "sidebar.mostPlayed"
         public static let upNext = "sidebar.upNext"
         public static let radio = "sidebar.radio"
+        public static let podcasts = "sidebar.podcasts"
         public static let addFolderButton = "sidebar.addFolder"
     }
 
@@ -115,6 +116,15 @@ public enum A11y {
     public enum Podcasts {
         public static let addBarField = "podcasts.addBar.field"
         public static let addBarClearButton = "podcasts.addBar.clear"
+
+        // MARK: - Subscribe by URL (phase 34)
+
+        /// The search results row offering to add the pasted feed URL.
+        public static let addByURLRow = "podcasts.addByURLRow"
+        /// The Subscribe button on the feed detail sheet.
+        public static let detailSubscribeButton = "podcasts.detail.subscribe"
+        /// The show page's "More" toolbar menu (Refresh, Unsubscribe, ...).
+        public static let showMoreMenu = "podcasts.show.moreMenu"
     }
 
     // MARK: - Mini player chrome

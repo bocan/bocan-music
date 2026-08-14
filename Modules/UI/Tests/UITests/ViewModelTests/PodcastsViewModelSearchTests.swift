@@ -92,6 +92,22 @@ struct PodcastsViewModelSearchTests {
         #expect(vm.addByURLCandidate == nil)
     }
 
+    @Test("A recognized feed URL never reaches the live search backend")
+    func urlSkipsLiveSearch() async {
+        // A raw URL can never sensibly match a podcast by keyword, and
+        // running it as a query anyway needlessly hits the real search
+        // backend for what is unambiguously an add-by-URL action.
+        let stub = StubSearchProvider()
+        stub.searchOutcome = .success([makeResult()])
+        let vm = PodcastsViewModel(library: nil, actions: nil, searchProvider: stub)
+        await vm.onAddBarTextChanged("http://127.0.0.1:8080/feed.xml")
+        #expect(stub.searchCallCount == 0)
+        #expect(vm.searchResults.isEmpty)
+        // Not .idle: PodcastsHomeView only shows the results panel (and so
+        // the add-by-URL row inside it) for a non-idle state.
+        #expect(vm.searchState == .results)
+    }
+
     // MARK: - onAddBarTextChanged: empty / whitespace
 
     @Test("Empty text transitions to idle and clears results")

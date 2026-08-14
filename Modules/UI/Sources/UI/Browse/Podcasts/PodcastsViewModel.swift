@@ -44,6 +44,11 @@ public final class PodcastsViewModel: ObservableObject {
     @Published public internal(set) var currentDetail: PodcastDetail?
     @Published public internal(set) var isLoadingDetail = false
     @Published public internal(set) var detailError: String?
+    /// Set when `subscribe(fromDetail:)` fails; `PodcastDetailView` shows it
+    /// inline near the Subscribe button. Without this the failure was only
+    /// logged -- the button silently did nothing, indistinguishable from an
+    /// unresponsive click.
+    @Published public internal(set) var subscribeError: String?
     /// Chapters for the currently-playing episode, loaded by the Now Playing strip.
     @Published public internal(set) var nowPlayingChapters: [UIChapter] = []
     /// The currently-playing episode, resolved for the player-bar Show Notes sheet.

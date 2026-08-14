@@ -233,6 +233,9 @@ public struct Sidebar: View {
         case .radio:
             A11y.Sidebar.radio
 
+        case .podcasts:
+            A11y.Sidebar.podcasts
+
         default:
             A11y.Sidebar.sidebar
         }

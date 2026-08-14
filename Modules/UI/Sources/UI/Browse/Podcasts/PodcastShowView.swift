@@ -141,5 +141,6 @@ public struct PodcastShowView: View {
         } label: {
             Label(L10n.string("More"), systemImage: "ellipsis.circle")
         }
+        .accessibilityIdentifier(A11y.Podcasts.showMoreMenu)
     }
 }

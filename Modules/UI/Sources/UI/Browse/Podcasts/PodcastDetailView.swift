@@ -70,6 +70,13 @@ struct PodcastDetailView: View {
                     self.linkButtons
                 }
                 .padding(.top, 4)
+
+                if let error = self.vm.subscribeError {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                        .padding(.top, 2)
+                }
             }
         }
     }
@@ -117,6 +124,7 @@ struct PodcastDetailView: View {
             }
             .buttonStyle(.borderedProminent)
             .accessibilityLabel(L10n.string("Subscribe"))
+            .accessibilityIdentifier(A11y.Podcasts.detailSubscribeButton)
         }
     }
 

@@ -111,4 +111,20 @@ struct FeedURLTests {
         let stored = FeedURL.normalizedStorageURL(url)
         #expect(stored?.port == nil)
     }
+
+    @Test("loopback http URL is not upgraded to https", arguments: ["127.0.0.1", "[::1]", "localhost"])
+    func loopbackHTTPNotUpgraded(host: String) throws {
+        // IPv6 literals need brackets in the URL string itself (RFC 3986);
+        // URLComponents.host then reports it unbracketed ("::1").
+        let http = try #require(URL(string: "http://\(host):8080/feed"))
+        let stored = FeedURL.normalizedStorageURL(http)
+        #expect(stored?.scheme == "http", "TLS buys nothing on loopback and would break a same-machine http-only server")
+    }
+
+    @Test("non-loopback http URL is still upgraded to https")
+    func nonLoopbackHTTPStillUpgraded() throws {
+        let http = try #require(URL(string: "http://example.com/feed"))
+        let stored = FeedURL.normalizedStorageURL(http)
+        #expect(stored?.scheme == "https")
+    }
 }

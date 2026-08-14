@@ -106,6 +106,7 @@ private struct AddByURLRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.string("Add this feed"))
+        .accessibilityIdentifier(A11y.Podcasts.addByURLRow)
     }
 }
 

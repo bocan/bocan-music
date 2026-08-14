@@ -10,6 +10,10 @@ public extension PodcastsViewModel {
     ///
     /// - Detects whether `text` is a feed URL and sets `addByURLCandidate`.
     /// - Empty/whitespace -> `.idle`, clear results.
+    /// - A recognized feed URL skips the live search entirely: a raw URL
+    ///   string can never sensibly match a podcast by keyword, and running
+    ///   it as a query anyway needlessly hits the real search backend for
+    ///   what is unambiguously an add-by-URL action.
     /// - Otherwise fires `searchProvider.search(term:)` and updates `searchState`.
     ///
     /// Called inside a SwiftUI `task(id: vm.addBarText)` closure, so the in-flight
@@ -23,9 +27,18 @@ public extension PodcastsViewModel {
            scheme == "http" || scheme == "https",
            url.host != nil {
             self.addByURLCandidate = url
-        } else {
-            self.addByURLCandidate = nil
+            // `.idle` would hide the results panel entirely (PodcastsHomeView
+            // only shows it for a non-idle state), taking the add-by-URL row
+            // down with it. `.results` with nothing in it renders just the
+            // row and nothing below -- the same look `.idle`'s inner
+            // EmptyView gives when this state *is* reachable, without
+            // needing a new state some other call site would have to reason
+            // about.
+            self.searchState = .results
+            self.searchResults = []
+            return
         }
+        self.addByURLCandidate = nil
 
         guard !trimmed.isEmpty else {
             self.searchState = .idle
@@ -108,6 +121,7 @@ public extension PodcastsViewModel {
     /// Subscribes using the feed URL from the current detail. On success, flips
     /// `currentDetail.alreadySubscribed` so the button reflects the new state.
     func subscribe(fromDetail detail: PodcastDetail) async {
+        self.subscribeError = nil
         do {
             let newID = try await self.actions?.subscribe(feedURL: detail.feedURL)
             if var updated = self.currentDetail, updated.feedURL == detail.feedURL {
@@ -116,6 +130,7 @@ public extension PodcastsViewModel {
                 self.currentDetail = updated
             }
         } catch {
+            self.subscribeError = error.localizedDescription
             self.log.error("podcasts.subscribe.failed", [
                 "url": detail.feedURL.absoluteString,
                 "error": String(reflecting: error),
