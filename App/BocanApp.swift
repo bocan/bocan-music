@@ -482,7 +482,7 @@ struct BocanApp: App {
         log: AppLogger,
         subsonicDelivery: any SubsonicScrobbleDelivering
     ) -> ScrobbleParts {
-        let credentials = Credentials()
+        let credentials = Credentials(service: E2EEnvironment.scrobbleCredentialsService)
         let adapter = CredentialsAdapter(store: credentials)
         // Module-qualified: both Scrobble and Podcasts export an `HTTPClient`
         // protocol, so the bare name is ambiguous now that App imports Podcasts.

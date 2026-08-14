@@ -1,4 +1,5 @@
 import Foundation
+import Scrobble
 
 // MARK: - E2EEnvironment
 
@@ -68,6 +69,21 @@ enum E2EEnvironment {
         self.runID
             .map { self.settingsSuiteName(forRunID: $0) }
             .flatMap { UserDefaults(suiteName: $0) }
+    }
+
+    /// The Keychain service name scrobble credentials are stored under in
+    /// E2E mode, isolated from the developer's real `Credentials.defaultService`
+    /// namespace: unlike the library/Subsonic/podcast state (re-rooted SQLite)
+    /// and Settings (a per-run `UserDefaults` suite), scrobble tokens live in
+    /// the real login Keychain with no isolation of their own -- so a `Scrobble
+    /// Service`'s "now playing" ping (fired on every track start, unlike a full
+    /// scrobble, which needs 30s+ of playback) would read the developer's own
+    /// real Last.fm/ListenBrainz/Rocksky session and ping those live services
+    /// with fixture track titles. One fixed name (not per-run) is enough: no
+    /// E2E journey ever connects a scrobble account, so nothing ever writes to
+    /// it -- it stays permanently empty, just isolated from the real one.
+    static var scrobbleCredentialsService: String {
+        self.isActive ? "io.cloudcauldron.bocan.scrobble.e2e" : Credentials.defaultService
     }
 
     /// When set, the launch seeds the playback queue with a single internet
