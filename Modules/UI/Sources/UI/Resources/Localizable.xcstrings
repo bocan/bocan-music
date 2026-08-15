@@ -4105,6 +4105,16 @@
         }
       }
     },
+    "Back (⌘[)" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ɓáçķ (⌘[) one"
+          }
+        }
+      }
+    },
     "Back Up Now" : {
       "localizations" : {
         "en-XA" : {
@@ -9453,6 +9463,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƒóŕŵáŕđ one"
+          }
+        }
+      }
+    },
+    "Forward (⌘])" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒóŕŵáŕđ (⌘]) one"
           }
         }
       }
