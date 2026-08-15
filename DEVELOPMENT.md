@@ -4,45 +4,57 @@
 
 | Tool | Version | Install |
 |------|---------|---------|
-| Xcode | 16+ | App Store / developer.apple.com |
+| Xcode | 26+ | App Store / developer.apple.com |
 | Homebrew | any | [brew.sh](https://brew.sh) |
-| Swift | 6.0+ | Bundled with Xcode |
+| Swift | 6.2+ | Bundled with Xcode |
 
 ## Initial setup
 
 ```bash
-git clone https://github.com/cloudcauldron/bocan-music.git
+git clone https://github.com/bocan/bocan-music.git
 cd bocan-music
 
-# Install all tools (swiftlint, swiftformat, xcbeautify, xcodegen, …)
-make bootstrap
+# Required before the project can be generated: project.yml references
+# Secrets.xcconfig, so xcodegen fails without it. The template's empty
+# defaults are fine; add real API keys later if you want those features
+# (see "Local developer API keys" below).
+cp Secrets.xcconfig.template Secrets.xcconfig
 
-# Generate Bocan.xcodeproj from project.yml
-make generate
+# Install all tools (swiftlint, swiftformat, xcbeautify, xcodegen, ...),
+# bundle fpcalc + FFmpeg dylibs, and generate Bocan.xcodeproj. There is
+# no separate generation step: bootstrap runs xcodegen at the end.
+make bootstrap
 
 # Verify environment
 make doctor
 ```
+
+`make generate` exists as a standalone target for later use: run it whenever
+`project.yml` changes or files are added to globbed directories (`Tests/AppTests`,
+`UITests`, `Resources`).
 
 ## Common commands
 
 | Command | Description |
 |---------|-------------|
 | `make build` | Debug build |
-| `make test` | Xcode unit tests — view models + observability (excludes snapshot tests) |
-| `make test-coverage` | Tests + coverage report (≥ 80% required) |
-| `make test-ui` | UI module: snapshot + view-model tests via `swift test` |
+| `make tests` | Format, lint, and the full test matrix in one run (`Scripts/run-tests.sh`) |
+| `make test` | Xcode unit tests: view models, observability, App conventions (excludes snapshot tests) |
+| `make test-coverage` | Tests + coverage report (>= 80% required) |
+| `make coverage-all` | Per-module SPM coverage with module-level floors |
+| `make test-<module>` | One SPM module's tests: `observability`, `persistence`, `metadata`, `library`, `acoustics`, `audio-engine`, `playback`, `scrobble`, `subsonic`, `podcasts`, `sync-server`, `ui` |
+| `make test-ui` | UI module: snapshot + view-model tests (snapshot tests run only here, not in `make test`) |
 | `make test-audio-engine` | AudioEngine SPM package tests (requires FFmpeg via Homebrew) |
-| `make test-persistence` | Persistence SPM package tests |
-| `make test-metadata` | Metadata SPM package tests |
-| `make test-library` | Library SPM package tests |
 | `make test-e2e` | Whole-app E2E journeys (XCUITest; launches the app repeatedly, opt-in, excluded from `make test` and CI) |
+| `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (phase 28 journeys, menu crawl, one surface, one radio journey) |
 | `make lint` | SwiftLint + SwiftFormat lint |
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |
+| `make pseudolocale` | Regenerate the en-XA pseudolocale in the UI String Catalog |
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
 | `make generate` | Regenerate Xcode project from `project.yml` |
+| `make doctor` | Print tool versions and verify the SwiftLint/SwiftFormat pins |
 
 ## Xcode project
 
@@ -63,24 +75,31 @@ Modules/<Name>/
 | Module | Key contents |
 |--------|--------------|
 | `Observability` | `AppLogger`, `Telemetry`, `MetricKitListener`, `Redaction` |
-| `AudioEngine` | `AudioEngine` actor, `EngineGraph`, `BufferPump`, FFmpeg bridge |
-| `Persistence` | GRDB database, migrations, repositories, `AsyncObservation` |
+| `Persistence` | GRDB database, migrations, repositories, FTS5 search, `ValueObservation` streams |
+| `AudioEngine` | `AudioEngine` actor, `EngineGraph`, `BufferPump`, FFmpeg bridge, DSP chain |
 | `Metadata` | `TagReader`/`TagWriter` (TagLib), `CoverArtExtractor`, `LRCParser` |
-| `Library` | `LibraryScanner`, FSEvents watcher, `ScanProgress` |
-| `UI` | SwiftUI views, `LibraryViewModel`, `NowPlayingViewModel`, `TracksViewModel`, `AlbumsViewModel`, `SearchViewModel` |
+| `Library` | `LibraryScanner`, FSEvents watcher, `ScanProgress`, cover-art cache |
+| `Playback` | `QueuePlayer` actor, queue/history/shuffle, gapless + crossfade schedulers, MPNowPlaying |
+| `Scrobble` | Last.fm / ListenBrainz / Rocksky providers, offline-resilient scrobble queue |
+| `Subsonic` | `SubsonicService` actor, capability detection, Keychain credentials |
+| `Acoustics` | Chromaprint fingerprinting, AcoustID + MusicBrainz lookup |
+| `Podcasts` | RSS/Atom feed refresh, podcast search, subscriptions, episode downloads |
+| `SyncServer` | Phone Sync: TLS identity, trust store, Bonjour-advertised sync server |
+| `UI` | SwiftUI views, `LibraryViewModel`, `NowPlayingViewModel`, settings, mini player |
 
-Dependency order (bottom → top):
+Dependency order (bottom → top; the middle tier all sits side by side):
 ```
-Observability → Persistence → AudioEngine → Metadata → Library → UI → App
+Observability → Persistence → AudioEngine, Metadata, Library, Playback,
+Scrobble, Subsonic, Acoustics, Podcasts, SyncServer → UI → App
 ```
 
 ### Test split: Xcode vs SPM
 
-The `BocanTests` Xcode target runs in a **standalone** process (no host app, `TEST_HOST = ""`), which means AppKit rendering — and therefore snapshot tests — is not available. Snapshot tests are part of the `UI` Swift package and run via `make test-ui` instead.
+The `BocanTests` Xcode target runs in a **standalone** process (no host app, `TEST_HOST = ""`), which means AppKit rendering (and therefore snapshot tests) is not available there. Snapshot tests are part of the `UI` Swift package and run via `make test-ui` instead.
 
 | Target | Command | Includes |
 |--------|---------|----------|
-| `BocanTests` (Xcode) | `make test` | View model tests, Observability tests |
+| `BocanTests` (Xcode) | `make test` | View model tests, Observability tests, App source-convention tests |
 | `UI` package | `make test-ui` | View model tests + snapshot tests |
 
 ## Secrets (for release builds)
@@ -112,9 +131,9 @@ any of these are absent.
 
 | Dimension | Decision | Rationale |
 |-----------|----------|-----------|
-| **Minimum macOS** | macOS 26 | Targets the latest Apple APIs (Swift 6.2, new concurrency features). Only Apple Silicon Macs can run macOS 26. |
-| **Architecture** | arm64 only | macOS 26 is not available on Intel Macs, so there is no x86_64 user base to support. Building a universal binary would double CI build time and require rebuilding all bundled FFmpeg dylibs and `fpcalc` as universal binaries — significant extra work for zero gain. |
-| **Intel (x86_64)** | Not supported | If the deployment target is ever lowered to macOS 14 or 15 to support Intel, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, and all bundled dylibs rebuilt with `lipo`. |
+| **Minimum macOS** | macOS 15 | `project.yml` sets `deploymentTarget: macOS 15.0`. Development requires Xcode 26 (and therefore a Mac running macOS 26), but the built app runs on macOS 15+. |
+| **Architecture** | arm64 only | The bundled FFmpeg dylibs and `fpcalc` come from arm64 Homebrew (`/opt/homebrew`), whose prefix is hardcoded in the `Package.swift` build flags. A universal binary would double CI build time and require rebuilding every bundled dylib as universal, for a shrinking x86_64 user base. |
+| **Intel (x86_64)** | Not supported | If Intel support is ever wanted, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, all bundled dylibs rebuilt with `lipo`, and the hardcoded `/opt/homebrew` paths made prefix-aware. |
 
 ## Phases
 
@@ -130,9 +149,9 @@ via FFmpeg using **Option B: system module + Homebrew dynamic linking**.
 
 | Option | Pros | Cons |
 |--------|------|------|
-| A — vendored static libs | No runtime dep | 100+ MB repo weight, GPL concerns |
-| **B — system module (chosen)** | ~0 repo weight, easy updates | Homebrew required on dev + CI |
-| C — SPM binary target | Clean SPM | Complex packaging |
+| A (vendored static libs) | No runtime dep | 100+ MB repo weight, GPL concerns |
+| **B (system module, chosen)** | ~0 repo weight, easy updates | Homebrew required on dev + CI |
+| C (SPM binary target) | Clean SPM | Complex packaging |
 
 ### Setup
 
@@ -163,7 +182,7 @@ make test-audio-engine        # (PKG_CONFIG_PATH already in $GITHUB_ENV on CI)
 
 ## fpcalc / AcoustID fingerprinting
 
-Bòcan uses [Chromaprint](https://acoustid.org/chromaprint) (`fpcalc`) to generate acoustic fingerprints for track identification via the AcoustID API. Because the app runs in the macOS sandbox, `fpcalc` and all of its FFmpeg dylib dependencies must be bundled inside the app bundle with paths rewritten to `@loader_path` — it cannot reach out to Homebrew at runtime.
+Bòcan uses [Chromaprint](https://acoustid.org/chromaprint) (`fpcalc`) to generate acoustic fingerprints for track identification via the AcoustID API. Because the app runs in the macOS sandbox, `fpcalc` and all of its FFmpeg dylib dependencies must be bundled inside the app bundle with paths rewritten to `@loader_path`; it cannot reach out to Homebrew at runtime.
 
 ### Why the binaries are not in the repo
 
@@ -188,9 +207,12 @@ After the script runs, `make generate` picks up the new files in `Resources/` an
 ### Re-running after an FFmpeg or Chromaprint upgrade
 
 ```bash
-make bundle-fpcalc   # re-copies and relinks all dylibs
-make generate        # only needed if dylib filenames changed (e.g. libavcodec.61 → libavcodec.62)
+make bundle-fpcalc   # re-copies and relinks all dylibs, then regenerates the Xcode project
 ```
+
+`bundle-fpcalc` runs `xcodegen generate` itself, so the project picks up
+renamed dylibs (e.g. `libavcodec.62` to `libavcodec.63`) automatically; no
+separate `make generate` is needed.
 
 ### CI
 
