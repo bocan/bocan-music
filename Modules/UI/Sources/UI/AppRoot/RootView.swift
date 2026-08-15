@@ -93,7 +93,7 @@ public struct BocanRootView: View {
                             Task { await self.vm.goBack() }
                         }
                         .disabled(!self.vm.canGoBack)
-                        .help(L10n.string("Back"))
+                        .help(L10n.string("Back (⌘[)"))
                         .keyboardShortcut("[", modifiers: .command)
                         .accessibilityIdentifier(A11y.Toolbar.back)
 
@@ -101,7 +101,7 @@ public struct BocanRootView: View {
                             Task { await self.vm.goForward() }
                         }
                         .disabled(!self.vm.canGoForward)
-                        .help(L10n.string("Forward"))
+                        .help(L10n.string("Forward (⌘])"))
                         .keyboardShortcut("]", modifiers: .command)
                         .accessibilityIdentifier(A11y.Toolbar.forward)
 
