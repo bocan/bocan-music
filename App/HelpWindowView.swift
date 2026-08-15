@@ -9,6 +9,7 @@ struct HelpWindowView: View {
     private enum HelpSection: String, CaseIterable, Hashable {
         case gettingStarted = "Getting Started"
         case shortcuts = "Keyboard Shortcuts"
+        case mouseButtons = "Mouse Buttons"
         case formats = "Supported Formats"
         case subsonic = "Subsonic Servers"
 
@@ -19,6 +20,9 @@ struct HelpWindowView: View {
 
             case .shortcuts:
                 "keyboard"
+
+            case .mouseButtons:
+                "computermouse"
 
             case .formats:
                 "music.note.list"
@@ -53,6 +57,9 @@ struct HelpWindowView: View {
 
             case .shortcuts:
                 ShortcutsSection()
+
+            case .mouseButtons:
+                MouseButtonsSection()
 
             case .formats:
                 FormatsSection()
@@ -105,7 +112,7 @@ private struct GettingStartedSection: View {
         ),
         Topic(
             title: "Playlists",
-            body: "Create standard playlists with File → New Playlist… (⌘N)"
+            body: "Create standard playlists with File → New Playlist… (⌘⇧N)"
                 + " or rules-based Smart Playlists with File → New Smart Playlist… (⌘⌥N)."
                 + " Import M3U, PLS, and XSPF playlists via File → Import Playlist…"
         ),
@@ -152,48 +159,151 @@ private struct ShortcutsSection: View {
         let key: String
     }
 
-    private static let shortcuts: [Shortcut] = [
-        Shortcut(action: "Play / Pause", key: "Space"),
-        Shortcut(action: "Next Track", key: "⌘→"),
-        Shortcut(action: "Previous Track", key: "⌘←"),
-        Shortcut(action: "Toggle Shuffle", key: "⌘S"),
-        Shortcut(action: "Cycle Repeat", key: "⌘R"),
-        Shortcut(action: "Get Info", key: "⌘I"),
-        Shortcut(action: "Find", key: "⌘F"),
-        Shortcut(action: "New Playlist", key: "⌘N"),
-        Shortcut(action: "Add Folder to Library", key: "⌘⇧O"),
-        Shortcut(action: "Reveal in Finder", key: "⌘⌥R"),
-        Shortcut(action: "Show Lyrics", key: "⌘⌥L"),
-        Shortcut(action: "Toggle Miniplayer", key: "⌘⌥M"),
-        Shortcut(action: "Show Up Next", key: "⌘⌥U"),
+    private struct ShortcutGroup {
+        let title: String
+        let shortcuts: [Shortcut]
+    }
+
+    /// Keys mirror KeyBindings.swift and the BocanCommands menu bindings; the
+    /// HTML Help Book table (HelpBook/…/index.html) must list the identical
+    /// rows, and HelpShortcutParityTests fails the build when they drift.
+    private static let groups: [ShortcutGroup] = [
+        ShortcutGroup(title: "Playback", shortcuts: [
+            Shortcut(action: "Play / Pause", key: "Space"),
+            Shortcut(action: "Play Selection Now", key: "⌘↩"),
+            Shortcut(action: "Play Selection Next", key: "⌘⇧↩"),
+            Shortcut(action: "Add Selection to Queue", key: "⌘⇧Q"),
+            Shortcut(action: "Next Track", key: "⌘→"),
+            Shortcut(action: "Previous Track", key: "⌘←"),
+            Shortcut(action: "Restart Track", key: "⌘⌥←"),
+            Shortcut(action: "Stop After Current", key: "⌘⌥."),
+            Shortcut(action: "Toggle Shuffle", key: "⌘⇧S"),
+            Shortcut(action: "Cycle Repeat", key: "⌘⇧E"),
+            Shortcut(action: "Increase Speed", key: "⌘⌥↑"),
+            Shortcut(action: "Decrease Speed", key: "⌘⌥↓"),
+            Shortcut(action: "Reset Speed", key: "⌘⌥0"),
+        ]),
+        ShortcutGroup(title: "Volume", shortcuts: [
+            Shortcut(action: "Increase Volume", key: "⌘↑"),
+            Shortcut(action: "Decrease Volume", key: "⌘↓"),
+            Shortcut(action: "Mute / Unmute", key: "⌘⌥Z"),
+        ]),
+        ShortcutGroup(title: "Navigation & View", shortcuts: [
+            Shortcut(action: "Back", key: "⌘["),
+            Shortcut(action: "Forward", key: "⌘]"),
+            Shortcut(action: "Find", key: "⌘F"),
+            Shortcut(action: "Select All", key: "⌘A"),
+            Shortcut(action: "Deselect All", key: "⌘⇧A"),
+            Shortcut(action: "Jump to Current Track", key: "⌘J"),
+            Shortcut(action: "Go to Current Album", key: "⌘⌥A"),
+            Shortcut(action: "Go to Current Artist", key: "⌘⌥G"),
+            Shortcut(action: "Show Up Next", key: "⌘⌥U"),
+            Shortcut(action: "Show Lyrics", key: "⌘⌥L"),
+            Shortcut(action: "Show Visualizer", key: "⌘⇧V"),
+            Shortcut(action: "Open Fullscreen Visualizer", key: "⌘⇧F"),
+            Shortcut(action: "Toggle Miniplayer", key: "⌘⌥M"),
+        ]),
+        ShortcutGroup(title: "Library & Playlists", shortcuts: [
+            Shortcut(action: "Add Files to Library", key: "⌘O"),
+            Shortcut(action: "Add Folder to Library", key: "⌘⇧O"),
+            Shortcut(action: "Import Playlist", key: "⌘⌥⇧O"),
+            Shortcut(action: "New Playlist", key: "⌘⇧N"),
+            Shortcut(action: "New Smart Playlist", key: "⌘⌥N"),
+            Shortcut(action: "Quick Rescan Library", key: "⌘⌥R"),
+            Shortcut(action: "Full Rescan Library", key: "⌘⌥⇧R"),
+            Shortcut(action: "Library Summary", key: "⌘⇧Y"),
+        ]),
+        ShortcutGroup(title: "Tracks", shortcuts: [
+            Shortcut(action: "Get Info", key: "⌘I"),
+            Shortcut(action: "Love / Unlove", key: "⌘L"),
+            Shortcut(action: "Clear Rating", key: "⌘0"),
+            Shortcut(action: "Rate 1–5 Stars", key: "⌘1–⌘5"),
+            Shortcut(action: "Identify Track", key: "⌘⌥I"),
+            Shortcut(action: "Reveal in Finder", key: "⌘R"),
+        ]),
+        ShortcutGroup(title: "Queue, Windows & Tools", shortcuts: [
+            Shortcut(action: "Clear Queue", key: "⌘⇧⌫"),
+            Shortcut(action: "Equaliser & DSP", key: "⌘⌥E"),
+            Shortcut(action: "Show Recent Scrobbles", key: "⌘⌥⇧S"),
+            Shortcut(action: "Log Console", key: "⌘⇧L"),
+            Shortcut(action: "Bòcan Music Help", key: "⌘?"),
+        ]),
     ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             helpSectionTitle("Keyboard Shortcuts")
-            Grid(alignment: .leading, horizontalSpacing: 32, verticalSpacing: 0) {
-                GridRow {
-                    Text("Action")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                    Text("Shortcut")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.bottom, 8)
-                Divider()
-                    .padding(.bottom, 8)
-                ForEach(Self.shortcuts, id: \.action) { shortcut in
-                    GridRow {
-                        Text(shortcut.action)
-                        Text(shortcut.key)
-                            .font(.system(.body, design: .monospaced))
-                            .foregroundStyle(.secondary)
+            ForEach(Self.groups, id: \.title) { group in
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(group.title)
+                        .font(.headline)
+                        .padding(.bottom, 6)
+                    Grid(alignment: .leading, horizontalSpacing: 32, verticalSpacing: 0) {
+                        ForEach(group.shortcuts, id: \.action) { shortcut in
+                            GridRow {
+                                Text(shortcut.action)
+                                    .gridColumnAlignment(.leading)
+                                    .frame(minWidth: 220, alignment: .leading)
+                                Text(shortcut.key)
+                                    .font(.system(.body, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 3)
+                        }
                     }
-                    .padding(.vertical, 3)
                 }
+                .padding(.bottom, 20)
+            }
+        }
+        .padding(28)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+}
+
+// MARK: - MouseButtonsSection
+
+private struct MouseButtonsSection: View {
+    private struct Topic {
+        let title: String
+        let body: String
+    }
+
+    private static let topics: [Topic] = [
+        Topic(
+            title: "Back and forward buttons",
+            body: "The thumb buttons on a multi-button mouse walk your browse history,"
+                + " exactly like a web browser: the back button returns to the previous"
+                + " view, the forward button revisits it. They mirror the toolbar's"
+                + " chevron buttons and the ⌘[ and ⌘] shortcuts."
+        ),
+        Topic(
+            title: "Escape backs out of a drill-down",
+            body: "Press Esc inside an album, artist, genre, or composer detail view to"
+                + " return to its parent listing. Esc never jumps across sidebar sections;"
+                + " it only climbs out of the current drill-down."
+        ),
+        Topic(
+            title: "Logitech mice and Logi Options+",
+            body: "Logi Options+ intercepts the thumb buttons before they reach Bòcan, so"
+                + " back and forward may do nothing even though the hardware supports them."
+                + " To fix it, open Logi Options+, add Bòcan as an application profile, and"
+                + " assign the thumb buttons the keystrokes ⌘[ (back) and ⌘] (forward)."
+                + " Without Options+ installed, the buttons work with no setup."
+        ),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            helpSectionTitle("Mouse Buttons")
+            ForEach(Self.topics, id: \.title) { topic in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(topic.title)
+                        .font(.headline)
+                    Text(topic.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, 16)
             }
         }
         .padding(28)
