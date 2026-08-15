@@ -256,4 +256,18 @@ struct VisualizerControlOverlayEmbeddingTests {
         )
         #expect(source.contains("if !self.reduceMotion"))
     }
+
+    @Test("The pane's backgrounds never extend into safe areas")
+    func paneBackgroundsStayInFrame() throws {
+        // The ShapeStyle background form defaults to ignoresSafeAreaEdges:
+        // .all, which painted the pane's black up under the toolbar and
+        // native tab strip in a regular (non-fullscreen) window. Every
+        // ShapeStyle background in the pane must pin the edges empty.
+        let source = try String(
+            contentsOf: self.uiSourcesURL.appendingPathComponent("Visualizers/VisualizerPane.swift"),
+            encoding: .utf8
+        )
+        #expect(!source.contains(".background(Color.black)"))
+        #expect(source.contains(".background(Color.black, ignoresSafeAreaEdges: [])"))
+    }
 }

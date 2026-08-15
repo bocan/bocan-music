@@ -54,7 +54,12 @@ public struct VisualizerPane: View {
                 .onHover { _ in self.overlayTrigger += 1 }
             }
             .frame(width: self.paneWidth)
-            .background(Color.black)
+            // ignoresSafeAreaEdges: [] — the ShapeStyle background form
+            // defaults to .all, which paints the black up through the top
+            // safe area, i.e. under the toolbar and native tab strip in a
+            // regular window (fullscreen has no top safe area, hiding the
+            // bug there). The pane must stay inside its own frame.
+            .background(Color.black, ignoresSafeAreaEdges: [])
             .overlay(alignment: .leading) {
                 HStack(spacing: 0) {
                     Rectangle()
@@ -132,7 +137,7 @@ public struct VisualizerPane: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color.black)
+        .background(Color.black, ignoresSafeAreaEdges: [])
     }
 
     @Environment(\.openWindow) private var openWindow
