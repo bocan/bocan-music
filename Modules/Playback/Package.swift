@@ -25,6 +25,13 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
+                // See AudioEngine/Package.swift: pkgconf's cflags don't reach
+                // Xcode's SPM clang module scanner, so any package that
+                // transitively imports CFFmpeg (via the AudioEngine product)
+                // needs this same explicit Homebrew include path, not just
+                // AudioEngine's own target -- unsafeFlags don't propagate
+                // across package boundaries.
+                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
             ],
             linkerSettings: [
                 .linkedFramework("MediaPlayer"),
@@ -39,6 +46,7 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
+                .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
             ]
         ),
     ]
