@@ -42,7 +42,9 @@ run_stage() {
 run_stage "format"         make -s format
 run_stage "lint"           make -s lint
 run_stage "build"          make -s build
-run_stage "test"           make -s test
+# No separate `make test` stage: test-coverage runs the identical Xcode
+# suite (same -skip-testing:BocanUITests) plus the coverage gate, so a
+# plain `test` stage would just run the slowest suite twice.
 run_stage "test-coverage"  make -s test-coverage
 run_stage "audio-engine"   make -s test-audio-engine
 run_stage "persistence"    make -s test-persistence
