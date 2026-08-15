@@ -24,7 +24,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       ISSUE_TITLE: "Dependency drift: Package.resolved lags upstream"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Compare pins against upstream
         id: drift
