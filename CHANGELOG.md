@@ -5,6 +5,56 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0](https://github.com/bocan/bocan-music/compare/v2.6.2...v2.7.0) (2026-08-15)
+
+The only user-visible change in this release is that now next/previous buttons move forward and backwards through the station lists. Behind the scenes, a lot of work went into making the E2E test suite more robust and comprehensive, including a new loopback fixture server for podcasts and ICY radio streams. The E2E suite now covers almost every surface of the app. In the process of building the E2E coverage, a few minor bugs were found and fixed, including a couple of gaps in queue restoration that could cause playback to stop unexpectedly.
+
+Also, users relying on accessibility features should see a big improvement in the app's accessibility identifiers, which are now complete and consistent across the entire UI. This will make it easier to navigate the app using assistive technologies.
+
+### Added
+
+* **e2e:** add whole-app E2E foundations (phase 28) ([aa513b5](https://github.com/bocan/bocan-music/commit/aa513b567db61ad3bb357666239ea95eba388ab4))
+* **e2e:** help-text audit in warning mode (phase 29) ([4f00ca1](https://github.com/bocan/bocan-music/commit/4f00ca1a2ba98c3da25aa968c02c482ac22503f8))
+* **e2e:** local-only smoke subset for phase 35, CI scope deferred ([2d8367e](https://github.com/bocan/bocan-music/commit/2d8367eb17444b811d647bb7bac86db37a40b023))
+* **e2e:** loopback ICY radio fixture server (phase 34, part 1) ([37be372](https://github.com/bocan/bocan-music/commit/37be3729a1c83428dec5fe669d677ae312d01812))
+* **e2e:** loopback podcast fixture server (phase 34, part 2) ([e7a3350](https://github.com/bocan/bocan-music/commit/e7a3350bc0278bb6f3b3cce7a0c98d9d530bddb0))
+* **e2e:** menu enablement matrix with a permanent Cmd-A row (phase 30) ([a2c3bf4](https://github.com/bocan/bocan-music/commit/a2c3bf48a133561c47329de97287f605132850e2))
+* **e2e:** menu invocation pass (phase 30) ([634e092](https://github.com/bocan/bocan-music/commit/634e09243172d42f207a04e3d95bfce936fdd920))
+* **e2e:** menu manifest, structural crawl, shortcut parity (phase 30) ([3f26af3](https://github.com/bocan/bocan-music/commit/3f26af37241b90a775abce4433f722d56c72e30e))
+* **e2e:** more surface crawls - Radio, smart playlist, search (phase 31) ([7d0b097](https://github.com/bocan/bocan-music/commit/7d0b09732238ab281eeac5afb7827ab803624b8e))
+* **e2e:** podcast journeys against the loopback fixture server (phase 34, part 3) ([be191e2](https://github.com/bocan/bocan-music/commit/be191e2076149e60058fee45c5cba9809733aec1))
+* **e2e:** radio add-by-URL journey against the fake ICY server (phase 34) ([22fda4c](https://github.com/bocan/bocan-music/commit/22fda4c1ddc3f170f74e0fc30d5a99585aebc68b))
+* **e2e:** radio dial-file import journey (phase 34) ([29f2c57](https://github.com/bocan/bocan-music/commit/29f2c5728e3659d8d76654bdb59d5793291282ad))
+* **e2e:** radio playlist-URL indirection journey (phase 34) ([28b859e](https://github.com/bocan/bocan-music/commit/28b859e5f338bb49cfc24966253dfd8e56dd0014))
+* **e2e:** radio reconnect journeys (phase 34) ([5538466](https://github.com/bocan/bocan-music/commit/5538466dba92eb92e59066655735d978671623da))
+* **e2e:** radio stream-details journey, live and offline (phase 34) ([e521448](https://github.com/bocan/bocan-music/commit/e5214484f554ffa10636bc546e6de44329567f26))
+* **e2e:** Recently Added surface crawl (phase 31) ([ea6c5d1](https://github.com/bocan/bocan-music/commit/ea6c5d1442fadf72fedb87f2a4d7af23f46e2633))
+* **e2e:** surface crawl foundation (phase 31) ([96852e7](https://github.com/bocan/bocan-music/commit/96852e7dc4494b2bdb4bfb6ad9471f935763287b))
+* **e2e:** total accessibility-identifier coverage (phase 29, audit slice) ([a041dc7](https://github.com/bocan/bocan-music/commit/a041dc7fe2dd5b790debd23123002b5a34bb2889))
+* **e2e:** visualizer liveness matrix (phase 33) ([9d7db37](https://github.com/bocan/bocan-music/commit/9d7db377c634af716bf3bce09de6f517e642dd9e))
+* **e2e:** windows and settings crawl (phase 32) ([564b516](https://github.com/bocan/bocan-music/commit/564b5166bc44598d8cae5af17c7f51693f7a368d))
+* **ui:** accessibility identifiers for the radio add and info sheets ([6f8ebf2](https://github.com/bocan/bocan-music/commit/6f8ebf2550f93fe207d32a3dfebdad2608822df5))
+* **ui:** next/previous transport buttons skip radio stations, list selection tracks playback ([56f60b2](https://github.com/bocan/bocan-music/commit/56f60b251fa9317b42aa87f58299108cecf312c6))
+
+
+### Fixed
+
+* **app:** keep menu-bar enablement live, not frozen at body build ([fc2476e](https://github.com/bocan/bocan-music/commit/fc2476edd131b7952011f6418daba7cfa8d4abca))
+* **build:** propagate FFmpeg include path to packages that transitively import CFFmpeg ([d2d2cbf](https://github.com/bocan/bocan-music/commit/d2d2cbf12909fb1b08699476d2d36e657e8608e2))
+* **e2e:** isolate scrobble credentials from the real keychain in E2E runs ([92f9fe7](https://github.com/bocan/bocan-music/commit/92f9fe7534395d40bb3117a8dc74f1a0c18462ae))
+* **library:** full rescan no longer wipes the library ([4c96e02](https://github.com/bocan/bocan-music/commit/4c96e02eb01ff9c2966e4ecd3e0742613a5b4c5f))
+* **playback:** close two queue-restore gaps surfaced by the E2E journeys ([937bf6e](https://github.com/bocan/bocan-music/commit/937bf6e0482fe7f7d4d08e3d692cea251f70365b))
+* **settings:** centre the Sources empty state ([1fce068](https://github.com/bocan/bocan-music/commit/1fce0681be15857ad04fe57109380782da74d57a))
+* **ui:** centre the Duplicate Review empty states ([871acf0](https://github.com/bocan/bocan-music/commit/871acf03ac276e351545ce5e3e98f4031e7391a1))
+* **ui:** centre the Phone Sync empty state in its settings card ([7587873](https://github.com/bocan/bocan-music/commit/7587873c4d9f80962d5600ed9c9299532eb82414))
+* **ui:** Jump to Current Track works from grids and self-loading views ([99f26d3](https://github.com/bocan/bocan-music/commit/99f26d378b67f57de333d73c503ab2c71c265485))
+* **ui:** make sidebar destination rows reachable by accessibility ([48d71c9](https://github.com/bocan/bocan-music/commit/48d71c9fb5f2b36bd1f92a07ab569038435f44b1))
+* **ui:** populate the now-playing display from a resting queue ([f492d2d](https://github.com/bocan/bocan-music/commit/f492d2db28cea6a96f0775b8bfc220a78c9da4f0))
+* **ui:** stop playback-rate labels rounding away the final digit ([97ca86a](https://github.com/bocan/bocan-music/commit/97ca86a3e88680b0373f359d08fdc6a2614d26a0))
+* **ui:** stop redundant UserDefaults writes that crackled playback during navigation ([873b8fe](https://github.com/bocan/bocan-music/commit/873b8fedbd6a375013a1e72b2251292d23be4249))
+* **ui:** stop the Contrast Audit view retitling the Settings window ([5bf6e09](https://github.com/bocan/bocan-music/commit/5bf6e09c4ebb189510e47bb3676b13e7e88ce6dc))
+* **ui:** stop the mini player wedging or misplacing the next launch ([7406dd1](https://github.com/bocan/bocan-music/commit/7406dd1b697e531cb9cbcd383aed1db87a469266))
+
 ## [2.6.2](https://github.com/bocan/bocan-music/compare/v2.6.1...v2.6.2) (2026-08-09)
 
 
