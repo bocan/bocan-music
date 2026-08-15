@@ -198,6 +198,10 @@ struct BocanApp: App {
 
         // MARK: About / Help / Notices (database-independent)
 
+        // Every secondary window calls `.commandsRemoved()`: SwiftUI otherwise
+        // auto-injects an opener item into the Window menu per scene, and each
+        // of these already has its real opener (app menu, Help, Tools, or an
+        // in-window button). Debug Audio is the deliberate exception below.
         Window("About Bòcan", id: "about") {
             AboutView(
                 onCheckForUpdates: { self.updateController.checkForUpdates() },
@@ -207,6 +211,7 @@ struct BocanApp: App {
         .windowResizability(.contentSize)
         .defaultSize(width: 360, height: 520)
         .restorationBehavior(.disabled)
+        .commandsRemoved()
 
         Window("Bòcan Help", id: "bocan-help") {
             HelpWindowView()
@@ -214,6 +219,7 @@ struct BocanApp: App {
         .windowResizability(.contentMinSize)
         .defaultSize(width: 760, height: 540)
         .restorationBehavior(.disabled)
+        .commandsRemoved()
 
         Window("Notices \u{26} Licences", id: "notices") {
             NoticesWindowView()
@@ -221,6 +227,7 @@ struct BocanApp: App {
         .windowResizability(.contentMinSize)
         .defaultSize(width: 640, height: 560)
         .restorationBehavior(.disabled)
+        .commandsRemoved()
 
         // MARK: Track info panel
 
@@ -230,6 +237,7 @@ struct BocanApp: App {
         .windowResizability(.contentSize)
         .defaultPosition(.topTrailing)
         .restorationBehavior(.disabled)
+        .commandsRemoved()
 
         // MARK: Settings
 
@@ -245,16 +253,20 @@ struct BocanApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentMinSize)
         .defaultSize(width: 1280, height: 800)
+        .commandsRemoved()
 
         // MARK: Equaliser & DSP panel
 
+        // No scene-level .keyboardShortcut: it only decorated the
+        // auto-injected Window-menu item removed below. The Tools menu item
+        // carries KeyBindings.showEQPanel as the single source.
         Window("Equaliser & DSP", id: "dsp") {
             DSPWindowContent(model: self.model)
         }
         .defaultSize(width: 600, height: 520)
         .windowResizability(.contentMinSize)
         .restorationBehavior(.disabled)
-        .keyboardShortcut(KeyBindings.showEQPanel)
+        .commandsRemoved()
 
         // MARK: Library summary
 
@@ -264,6 +276,7 @@ struct BocanApp: App {
         .defaultSize(width: 760, height: 560)
         .windowResizability(.contentMinSize)
         .restorationBehavior(.disabled)
+        .commandsRemoved()
 
         // MARK: Menu bar widget
 
@@ -311,10 +324,13 @@ struct BocanApp: App {
         .defaultSize(width: 900, height: 520)
         .windowResizability(.contentMinSize)
         .restorationBehavior(.disabled)
+        .commandsRemoved()
 
         #if DEBUG
             // Phase 1 audit #14: debug-only manual playback window for codec /
-            // fade / seek triage. Compiled out of Release.
+            // fade / seek triage. Compiled out of Release. Deliberately NOT
+            // .commandsRemoved(): the auto-injected Window-menu item is this
+            // window's only opener, and it never ships.
             Window("Debug Audio", id: "debug-audio") {
                 DebugAudioWindowContent(model: self.model)
             }
