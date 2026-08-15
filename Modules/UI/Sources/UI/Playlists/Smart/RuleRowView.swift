@@ -477,7 +477,9 @@ private struct IntField: View {
     @Binding var value: Int64
 
     var body: some View {
-        TextField(self.label, value: self.$value, format: .number)
+        // grouping(.never): these are exact-value inputs (year, play count),
+        // where locale separators read as noise ("1,980" for the year 1980).
+        TextField(self.label, value: self.$value, format: .number.grouping(.never))
             .textFieldStyle(.roundedBorder)
             .frame(minWidth: 64)
     }
