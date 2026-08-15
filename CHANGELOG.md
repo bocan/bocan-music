@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.7.0](https://github.com/bocan/bocan-music/compare/v2.6.2...v2.7.0) (2026-08-15)
 
+The only user-visible change in this release is that now next/previous buttons move forward and backwards through the station lists. Behind the scenes, a lot of work went into making the E2E test suite more robust and comprehensive, including a new loopback fixture server for podcasts and ICY radio streams. The E2E suite now covers almost every surface of the app. In the process of building the E2E coverage, a few minor bugs were found and fixed, including a couple of gaps in queue restoration that could cause playback to stop unexpectedly.
+
+Also, users relying on accessibility features should see a big improvement in the app's accessibility identifiers, which are now complete and consistent across the entire UI. This will make it easier to navigate the app using assistive technologies.
 
 ### Added
 
