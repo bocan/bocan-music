@@ -186,7 +186,29 @@
     </section>
 
     <section>
+      <h2>Mouse Buttons</h2>
+      <p>
+        The thumb buttons on a multi-button mouse walk your browse history,
+        exactly like a web browser: the back button returns to the previous
+        view, the forward button revisits it. They mirror the toolbar's
+        chevron buttons and the <strong>⌘[</strong> and <strong>⌘]</strong>
+        shortcuts. Press <strong>Esc</strong> inside an album, artist, genre,
+        or composer detail view to climb back out to its parent listing.
+      </p>
+      <p>
+        <strong>Logitech mice:</strong> Logi Options+ intercepts the thumb
+        buttons before they reach Bòcan, so back and forward may do nothing
+        even though the hardware supports them. To fix it, add Bòcan as an
+        application profile in Logi Options+ and assign the thumb buttons the
+        keystrokes <strong>⌘[</strong> (back) and <strong>⌘]</strong>
+        (forward). Without Options+ installed, the buttons work with no setup.
+      </p>
+    </section>
+
+    <section>
       <h2>Keyboard Shortcuts</h2>
+      <!-- Rows must stay identical to the in-app table in
+           App/HelpWindowView.swift; HelpShortcutParityTests enforces it. -->
       <table>
         <thead>
           <tr><th>Action</th><th>Shortcut</th></tr>
@@ -194,23 +216,52 @@
         <tbody>
           <tr><td>Play / Pause</td><td>Space</td></tr>
           <tr><td>Play Selection Now</td><td>⌘↩</td></tr>
+          <tr><td>Play Selection Next</td><td>⌘⇧↩</td></tr>
+          <tr><td>Add Selection to Queue</td><td>⌘⇧Q</td></tr>
           <tr><td>Next Track</td><td>⌘→</td></tr>
           <tr><td>Previous Track</td><td>⌘←</td></tr>
+          <tr><td>Restart Track</td><td>⌘⌥←</td></tr>
+          <tr><td>Stop After Current</td><td>⌘⌥.</td></tr>
           <tr><td>Toggle Shuffle</td><td>⌘⇧S</td></tr>
           <tr><td>Cycle Repeat</td><td>⌘⇧E</td></tr>
+          <tr><td>Increase Speed</td><td>⌘⌥↑</td></tr>
+          <tr><td>Decrease Speed</td><td>⌘⌥↓</td></tr>
+          <tr><td>Reset Speed</td><td>⌘⌥0</td></tr>
+          <tr><td>Increase Volume</td><td>⌘↑</td></tr>
+          <tr><td>Decrease Volume</td><td>⌘↓</td></tr>
           <tr><td>Mute / Unmute</td><td>⌘⌥Z</td></tr>
-          <tr><td>Love / Unlove</td><td>⌘L</td></tr>
-          <tr><td>Jump to Current Track</td><td>⌘J</td></tr>
-          <tr><td>Get Info</td><td>⌘I</td></tr>
+          <tr><td>Back</td><td>⌘[</td></tr>
+          <tr><td>Forward</td><td>⌘]</td></tr>
           <tr><td>Find</td><td>⌘F</td></tr>
-          <tr><td>New Playlist</td><td>⌘⇧N</td></tr>
-          <tr><td>Add Folder to Library</td><td>⌘⇧O</td></tr>
-          <tr><td>Reveal in Finder</td><td>⌘R</td></tr>
-          <tr><td>Show Lyrics</td><td>⌘⌥L</td></tr>
-          <tr><td>Toggle Miniplayer</td><td>⌘⌥M</td></tr>
+          <tr><td>Select All</td><td>⌘A</td></tr>
+          <tr><td>Deselect All</td><td>⌘⇧A</td></tr>
+          <tr><td>Jump to Current Track</td><td>⌘J</td></tr>
+          <tr><td>Go to Current Album</td><td>⌘⌥A</td></tr>
+          <tr><td>Go to Current Artist</td><td>⌘⌥G</td></tr>
           <tr><td>Show Up Next</td><td>⌘⌥U</td></tr>
+          <tr><td>Show Lyrics</td><td>⌘⌥L</td></tr>
+          <tr><td>Show Visualizer</td><td>⌘⇧V</td></tr>
+          <tr><td>Open Fullscreen Visualizer</td><td>⌘⇧F</td></tr>
+          <tr><td>Toggle Miniplayer</td><td>⌘⌥M</td></tr>
+          <tr><td>Add Files to Library</td><td>⌘O</td></tr>
+          <tr><td>Add Folder to Library</td><td>⌘⇧O</td></tr>
+          <tr><td>Import Playlist</td><td>⌘⌥⇧O</td></tr>
+          <tr><td>New Playlist</td><td>⌘⇧N</td></tr>
+          <tr><td>New Smart Playlist</td><td>⌘⌥N</td></tr>
+          <tr><td>Quick Rescan Library</td><td>⌘⌥R</td></tr>
+          <tr><td>Full Rescan Library</td><td>⌘⌥⇧R</td></tr>
           <tr><td>Library Summary</td><td>⌘⇧Y</td></tr>
+          <tr><td>Get Info</td><td>⌘I</td></tr>
+          <tr><td>Love / Unlove</td><td>⌘L</td></tr>
+          <tr><td>Clear Rating</td><td>⌘0</td></tr>
+          <tr><td>Rate 1–5 Stars</td><td>⌘1–⌘5</td></tr>
+          <tr><td>Identify Track</td><td>⌘⌥I</td></tr>
+          <tr><td>Reveal in Finder</td><td>⌘R</td></tr>
+          <tr><td>Clear Queue</td><td>⌘⇧⌫</td></tr>
+          <tr><td>Equaliser &amp; DSP</td><td>⌘⌥E</td></tr>
+          <tr><td>Show Recent Scrobbles</td><td>⌘⌥⇧S</td></tr>
           <tr><td>Log Console</td><td>⌘⇧L</td></tr>
+          <tr><td>Bòcan Music Help</td><td>⌘?</td></tr>
         </tbody>
       </table>
     </section>
