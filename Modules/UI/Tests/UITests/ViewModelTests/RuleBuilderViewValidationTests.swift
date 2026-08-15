@@ -28,4 +28,21 @@ struct RuleBuilderViewValidationTests {
         #expect(!result.nodeErrors.isEmpty)
         #expect(RuleBuilderView.isSaveDisabled(isSaving: false, validationError: result.error))
     }
+
+    @Test("IntField never applies locale grouping separators")
+    func intFieldNeverGroups() throws {
+        // Source-convention guard: the rule builder's integer fields hold
+        // exact values (year, play count), where a plain `.number` format
+        // renders 1980 as "1,980". The field cannot be exercised host-less,
+        // so pin the format style in source.
+        let sourceURL = URL(filePath: #filePath)
+            .deletingLastPathComponent() // ViewModelTests/
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI/Playlists/Smart/RuleRowView.swift")
+        let source = try String(contentsOf: sourceURL, encoding: .utf8)
+        #expect(source.contains("format: .number.grouping(.never)"))
+        #expect(!source.contains("format: .number)"))
+    }
 }
