@@ -124,12 +124,4 @@ public enum KeyBindings {
 
     /// `⌘⇧A` — Deselect all tracks.
     public static let deselectAll = KeyboardShortcut("a", modifiers: [.command, .shift])
-
-    // MARK: - Navigation
-
-    /// `⌥⌘→` — Drill into content (album / artist detail).
-    public static let drillIn = KeyboardShortcut(.rightArrow, modifiers: [.option, .command])
-
-    /// `⌥⌘←` — Navigate back.
-    public static let drillOut = KeyboardShortcut(.leftArrow, modifiers: [.option, .command])
 }
