@@ -36,6 +36,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     // MARK: Lifecycle
 
+    func applicationWillFinishLaunching(_: Notification) {
+        // Native window tabbing is disabled app-wide: every main window
+        // renders the same shared LibraryViewModel, so a "new tab" is a
+        // mirror whose navigation hijacks all the others, not a browse
+        // context. Until tabs hold per-window navigation state, offering
+        // them is a lie. willFinishLaunching so no restored window can
+        // come up tabbed.
+        NSWindow.allowsAutomaticWindowTabbing = false
+    }
+
     func applicationDidFinishLaunching(_: Notification) {
         // Register as the notification delegate early so tap-to-foreground works.
         UNUserNotificationCenter.current().delegate = self
