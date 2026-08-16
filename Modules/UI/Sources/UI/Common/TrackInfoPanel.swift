@@ -114,6 +114,10 @@ public struct TrackInfoPanel: View {
                     if let channels = track.channelCount {
                         LabeledContent(L10n.string("Channels")) { Text(Self.formatChannels(channels)) }
                     }
+                    // Only ever 0 or 2+: single-marker sets are inert (ADR-087).
+                    if !np.markers.isEmpty {
+                        LabeledContent(L10n.string("Cue Markers")) { Text(verbatim: "\(np.markers.count)") }
+                    }
                 }
                 Section(L10n.string("File")) {
                     LabeledContent(L10n.string("Size")) { Text(Self.formatFileSize(track.fileSize)) }

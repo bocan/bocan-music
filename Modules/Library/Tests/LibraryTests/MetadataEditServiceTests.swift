@@ -50,6 +50,23 @@ struct MetadataEditServiceTests {
         throw FixtureError.notFound("mp3 in sample-library")
     }
 
+    // MARK: - markers (read-only surface for the Get Info Markers tab)
+
+    @Test func markersReturnsPositionSortedMarkersAndEmptyForBareTracks() async throws {
+        let db = try await makeDatabase()
+        let withMarkers = try await insertTrack(in: db, fileURL: "file:///m/a.flac")
+        let bare = try await insertTrack(in: db, fileURL: "file:///m/b.flac")
+        try await TrackMarkerRepository(database: db).replaceMarkers(forTrack: withMarkers, with: [
+            TrackMarker(trackID: withMarkers, positionMs: 60000, title: "Two", performer: "P"),
+            TrackMarker(trackID: withMarkers, positionMs: 0, title: "One"),
+        ])
+
+        let svc = try MetadataEditService(database: db)
+        let markers = await svc.markers(trackID: withMarkers)
+        #expect(markers.map(\.title) == ["One", "Two"], "position-sorted")
+        #expect(await svc.markers(trackID: bare).isEmpty)
+    }
+
     // MARK: - edit single track
 
     @Test func editSingleTrackUpdatesFile() async throws {

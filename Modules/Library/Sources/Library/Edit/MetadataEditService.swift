@@ -17,6 +17,7 @@ public actor MetadataEditService {
     private let artistRepo: ArtistRepository
     private let albumRepo: AlbumRepository
     private let rootRepo: LibraryRootRepository
+    private let markerRepo: TrackMarkerRepository
     private let backupRing: BackupRing
     private let coverArtCache: CoverArtCache
     private let log = AppLogger.make(.library)
@@ -40,12 +41,27 @@ public actor MetadataEditService {
         self.artistRepo = ArtistRepository(database: database)
         self.albumRepo = AlbumRepository(database: database)
         self.rootRepo = LibraryRootRepository(database: database)
+        self.markerRepo = TrackMarkerRepository(database: database)
         self.coverArtCache = CoverArtCache.make(database: database)
         let ringDir = Self.backupRingDirectory()
         self.backupRing = try BackupRing(directory: ringDir)
     }
 
     // MARK: - Public API
+
+    /// The track's CUE markers (ADR-087), position-sorted; empty when the
+    /// track has none or the read fails. Read-only surface for the editor.
+    public func markers(trackID: Int64) async -> [TrackMarker] {
+        do {
+            return try await self.markerRepo.markers(forTrack: trackID)
+        } catch {
+            self.log.warning("edit.markers.readFailed", [
+                "trackID": trackID,
+                "error": String(reflecting: error),
+            ])
+            return []
+        }
+    }
 
     /// Applies `patch` to the single track `trackID`.
     ///
