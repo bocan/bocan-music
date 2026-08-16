@@ -338,6 +338,17 @@ public actor LibraryScanner {
                         self.log.warning("fsevents.rescan_failed", ["path": fileURL.path, "error": "\(error)"])
                     }
                 }
+                // ADR-087: the folder may have arrived with sidecar cues, and
+                // the per-file cue event can fire before its audio is indexed
+                // — running the attach after the folder's audio imports makes
+                // a dropped-in single-file rip marker-complete either way.
+                let service = CueMarkerService(
+                    trackRepo: trackRepo,
+                    markerRepo: TrackMarkerRepository(database: self.database)
+                )
+                for folder in ScanCoordinator.cueFolders(under: url) {
+                    if await service.attachMarkers(inFolder: folder) > 0 { didChange = true }
+                }
             } else {
                 if url.pathExtension.lowercased() == "cue" {
                     // A cue appeared or changed: re-attach its folder's
