@@ -55,6 +55,9 @@ struct CoverArtExtractorTests {
             ("image/png", "png"),
             ("image/webp", "webp"),
             ("image/gif", "gif"),
+            ("image/heic", "heic"),
+            ("image/heif", "heic"), // taggers use heif/heic interchangeably (#389)
+            ("image/avif", "avif"),
             ("application/octet-stream", "bin"),
         ]
         for (mime, ext) in cases {
