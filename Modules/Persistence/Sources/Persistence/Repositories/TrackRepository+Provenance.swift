@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// The transcode-detection queries (phase 24-2), split from the core CRUD so
+/// The transcode-detection queries (ADR-075 slice 2), split from the core CRUD so
 /// each file stays focused.
 public extension TrackRepository {
     /// Tracks still needing transcode analysis, oldest id first. `afterID` is
@@ -25,7 +25,7 @@ public extension TrackRepository {
         }
     }
 
-    /// Stores one transcode-detection verdict (phase 24-2).
+    /// Stores one transcode-detection verdict (ADR-075 slice 2).
     ///
     /// `analysedAt` is Unix epoch seconds; pass the shelf frequency only when
     /// `suspected` so the columns mirror `ProvenanceVerdict` exactly.
@@ -55,7 +55,7 @@ public extension TrackRepository {
 
 private extension TrackRepository {
     /// Tracks eligible for provenance analysis: enabled, claiming lossless
-    /// (lossy-from-lossy is out of scope for phase 24), whole-file (CUE clips
+    /// (lossy-from-lossy is out of scope for ADR-075), whole-file (CUE clips
     /// share one rip), with a bookmark to read through, and either never
     /// analysed or modified on disk since their verdict was written.
     static var provenanceCandidates: QueryInterfaceRequest<Track> {

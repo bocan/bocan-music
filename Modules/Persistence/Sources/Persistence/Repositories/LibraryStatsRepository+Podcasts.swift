@@ -3,7 +3,7 @@ import GRDB
 
 // MARK: - LibraryPodcastReport
 
-/// The podcast accounting for the Library Summary window (#373, phase 26-1):
+/// The podcast accounting for the Library Summary window (#373, ADR-077 slice 1):
 /// what the backlog costs, which feeds died, what got downloaded but never
 /// heard, and what listened-and-forgotten audio still holds disk. All
 /// figures cover subscribed shows only. Structured data; prose (and the
@@ -53,7 +53,7 @@ public struct LibraryPodcastReport: Equatable, Sendable {
 
 // MARK: - Podcast accounting queries
 
-/// The Podcasts tab detectors (#373, phase 26-1), split from the other
+/// The Podcasts tab detectors (#373, ADR-077 slice 1), split from the other
 /// report slices so each file stays focused.
 public extension LibraryStatsRepository {
     /// Days without a new episode before a subscribed feed counts as dead.
@@ -70,7 +70,7 @@ public extension LibraryStatsRepository {
     }
 
     /// The identity pairs behind ``LibraryPodcastReport/reapableEpisodeCount``
-    /// (phase 26-3), so Reap Now can hand each row to the same download
+    /// (ADR-077 slice 3), so Reap Now can hand each row to the same download
     /// machinery the per-episode Remove Download action uses.
     func fetchReapableEpisodes() async throws -> [ReapableEpisode] {
         let cutoff = Date().timeIntervalSince1970 - Double(Self.podcastReapableAgeDays) * 86400

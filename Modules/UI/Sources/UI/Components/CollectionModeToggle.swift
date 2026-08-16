@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - CollectionViewModeToggle
 
 /// The List / Grid segmented toggle shared by the Artists, Genres, and Composers
-/// toolbars (phase 23). One definition replaces a copy in each view: icons with
+/// toolbars (ADR-071). One definition replaces a copy in each view: icons with
 /// localized accessibility labels, a help tip, and hidden labels.
 struct CollectionViewModeToggle: View {
     @Binding var mode: CollectionViewMode

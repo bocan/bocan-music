@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - RadioView
 
-/// The local Radio destination (phase 27-3): the user-curated station
+/// The local Radio destination (ADR-078 slice 3): the user-curated station
 /// catalog. Mirrors `SubsonicInternetRadioView`'s interaction model (hover
 /// play / info, double-click to play, rotor actions) and adds what the
 /// read-only original never needed: add, edit, and delete.
@@ -126,7 +126,7 @@ public struct RadioView: View {
     }
 
     /// Opens the info sheet, carrying live decoder facts when this station
-    /// is the one currently playing (phase 27-5).
+    /// is the one currently playing (ADR-078 slice 5).
     private func showInfo(_ station: RadioStation) {
         Task {
             let details = await self.library.liveRadioDetails(for: station.streamURL)
@@ -200,5 +200,5 @@ private struct RadioStationRow: View {
     }
 }
 
-// The station info sheet lives in RadioStationInfoSheet.swift (phase 27-5):
+// The station info sheet lives in RadioStationInfoSheet.swift (ADR-078 slice 5):
 // it grew live stream facts and is shared with the Now Playing strip.

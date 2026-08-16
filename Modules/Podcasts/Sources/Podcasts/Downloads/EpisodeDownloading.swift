@@ -34,7 +34,7 @@ protocol EpisodeDownloading: Sendable {
 /// Builds a delegate-backed `URLSession` from the caller's configuration so that
 /// progress callbacks are delivered (`.shared` carries no delegate). The idle
 /// (request) timeout is 60 s; the total (resource) timeout is left at the default
-/// because episodes can be large, so only idle time is capped (per phase 21-6).
+/// because episodes can be large, so only idle time is capped (per ADR-043).
 final class URLSessionDownloader: NSObject, EpisodeDownloading, URLSessionDownloadDelegate, @unchecked Sendable {
     private struct Callbacks {
         let onProgress: @Sendable (Int64, Int64) -> Void

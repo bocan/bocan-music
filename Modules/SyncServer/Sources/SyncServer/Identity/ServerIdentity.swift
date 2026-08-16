@@ -20,7 +20,7 @@ public struct SendableSecIdentity: @unchecked Sendable {
 /// sync-protocol.md section 2). Exposes a `SecIdentity` for the `NWListener` and
 /// the SHA-256 fingerprint for the Bonjour TXT record and the pairing math.
 ///
-/// This is a separate identity from any future Phase 18 remote-control server.
+/// This is a separate identity from any future ADR-034 remote-control server.
 public actor ServerIdentity {
     /// The loaded identity, ready for the TLS listener.
     public struct Loaded: Sendable {

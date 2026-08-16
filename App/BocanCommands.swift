@@ -189,7 +189,7 @@ struct BocanCommands: Commands {
             // toggle items. Not an inline Picker: a menu Picker's options
             // ignore `.disabled` entirely (they stay clickable and write the
             // mode while the header greys out), so each item is gated
-            // individually instead (phase 30 enablement matrix).
+            // individually instead (ADR-081 enablement matrix).
             Text("View as")
             Toggle("as List", isOn: self.viewModeIsOn(.list))
                 .disabled(!self.collectionListingActive)
@@ -258,7 +258,7 @@ struct BocanCommands: Commands {
             Divider()
 
             // Gated on any current item, not just a library track: a
-            // restored radio/stream queue must be clearable too (phase 30).
+            // restored radio/stream queue must be clearable too (ADR-081).
             Button("Clear Queue") {
                 Task { await self.vm.requestClearQueue() }
             }

@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - PodcastShowSettingsView
 
-/// Per-show overrides sheet (Phase 21-12-h): playback speed, episode order,
+/// Per-show overrides sheet (ADR-057): playback speed, episode order,
 /// retention, and auto-download. Each control's "App Default" / "Use Default" /
 /// "All" choice maps to nil (fall back to the app default). Changes persist
 /// immediately through `PodcastsViewModel` setters. Show title/type is feed

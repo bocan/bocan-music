@@ -7,7 +7,7 @@ import Observability
 
 // MARK: - ProvenanceVerdict
 
-/// The outcome of one transcode-detection pass over an audio file (phase 24).
+/// The outcome of one transcode-detection pass over an audio file (ADR-075).
 ///
 /// Product stance, fixed in the phase spec: **suspected, never accused**.
 /// Live recordings, old digitisations, dull source material, and legitimately
@@ -37,7 +37,7 @@ public struct ProvenanceVerdict: Equatable, Sendable {
 
 // MARK: - ProvenanceAnalyzer
 
-/// Scores an audio file for lossy-transcode provenance (phase 24-1).
+/// Scores an audio file for lossy-transcode provenance (ADR-075 slice 1).
 ///
 /// A lossy encoder discards energy above a codec-and-bitrate-dependent
 /// ceiling, and that hard spectral shelf survives re-encoding to a lossless

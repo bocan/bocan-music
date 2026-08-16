@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - RadioStationInfoSheet
 
-/// Station metadata plus the stream facts (phase 27-5). While the station is
+/// Station metadata plus the stream facts (ADR-078 slice 5). While the station is
 /// playing, `liveDetails` carries what the open decoder measured (container,
 /// codec and profile, sample rate, channels, claimed bitrate, ICY headers);
 /// otherwise the sheet falls back to the profile persisted on the last

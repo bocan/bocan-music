@@ -5,7 +5,7 @@ import Persistence
 
 // MARK: - RadioViewModel
 
-/// Drives the local Radio destination (phase 27-3): the station catalog list,
+/// Drives the local Radio destination (ADR-078 slice 3): the station catalog list,
 /// add/edit/delete, and pasted-playlist-URL resolution for the add sheet.
 ///
 /// The list stays live through `RadioStationRepository.observeAll()`, so

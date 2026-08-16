@@ -4,7 +4,7 @@ import UI
 
 // MARK: - SubsonicMonitorConnectionObserver
 
-/// Phase 19 step 17: App-layer adapter that bridges
+/// ADR-035 step 17: App-layer adapter that bridges
 /// `SubsonicConnectionMonitor` (Subsonic module) to the UI module's
 /// `SubsonicConnectionObserving` protocol. Maps `SubsonicConnectionStatus`
 /// → `SubsonicSidebarConnectionState` and forwards "Retry now" clicks to

@@ -26,7 +26,7 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
     /// Wraps an underlying system error.
     case underlying(Error)
 
-    /// A listening-history export could not be read or recognised (phase 25-1).
+    /// A listening-history export could not be read or recognised (ADR-076 slice 1).
     case listenExportUnreadable(reason: String)
 
     public var description: String {

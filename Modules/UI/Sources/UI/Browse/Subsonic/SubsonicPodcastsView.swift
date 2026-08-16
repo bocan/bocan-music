@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicPodcastsViewModel
 
-/// Drives the per-server Podcasts destination (Phase 19 step 11).
+/// Drives the per-server Podcasts destination (ADR-035 step 11).
 ///
 /// Capability-gated by `SubsonicCapabilities.supportsPodcasts`. Playback of
 /// podcast episodes is out of scope for this step — the view is read-only.

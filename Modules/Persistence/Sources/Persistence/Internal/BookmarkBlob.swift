@@ -2,7 +2,7 @@ import Foundation
 
 /// Wraps a security-scoped bookmark `Data` and resolves it to a file URL.
 ///
-/// Phase 3 (scanning) uses this extensively to reopen sandboxed file URLs
+/// ADR-004 (scanning) uses this extensively to reopen sandboxed file URLs
 /// after an app restart.
 ///
 /// **Contract:** `resolve()` returns a URL with an already-started security scope.

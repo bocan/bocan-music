@@ -244,10 +244,10 @@ public struct BocanRootView: View {
         self.windowContent
             .focused(self.$mainContentFocused)
             .frame(minWidth: 900, minHeight: 550)
-            // No root .accessibilityIdentifier: an unused "BocanMainWindow" one masked a child's own identifier (phase 33).
+            // No root .accessibilityIdentifier: an unused "BocanMainWindow" one masked a child's own identifier (ADR-084).
             .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
             .background(
-                // Phase 4 audit H2: persist sidebar divider position via NSSplitView
+                // ADR-005 audit H2: persist sidebar divider position via NSSplitView
                 // autosave + a settings-key fallback held on LibraryViewModel.
                 SidebarWidthAutosave(initialWidth: self.vm.sidebarWidth) { width in
                     self.vm.sidebarWidth = width
@@ -260,7 +260,7 @@ public struct BocanRootView: View {
             .background(TypeToSearchBackground(vm: self.vm))
             .background(NavigationInputBackground(vm: self.vm))
             .onChange(of: self.vm.searchFocusRequestID) { _, _ in
-                // Phase 4 audit H5: ⌘F (Find) focuses the search field.
+                // ADR-005 audit H5: ⌘F (Find) focuses the search field.
                 self.searchFocused = true
             }
             .onChange(of: self.anySheetOpen) { _, isOpen in
@@ -269,7 +269,7 @@ public struct BocanRootView: View {
                 if !isOpen { self.mainContentFocused = true }
             }
             .onChange(of: self.watchForChanges) { _, _ in
-                // Phase 4 audit M8: live-toggle the FSEvents watcher when the
+                // ADR-005 audit M8: live-toggle the FSEvents watcher when the
                 // Settings switch flips, instead of waiting for next launch.
                 Task { await self.vm.startOrStopWatcher() }
             }
@@ -296,7 +296,7 @@ public struct BocanRootView: View {
                 Task { await self.vm.clearQueue() }
             })
             .overlay(alignment: .top) {
-                // Phase 5.5 audit M2: lightweight toast surface for transient
+                // ADR-007 audit M2: lightweight toast surface for transient
                 // confirmations (e.g. "Re-scanned «Title»"). Auto-dismisses
                 // via LibraryViewModel.showToast after 2 seconds.
                 if let toast = self.vm.toast {

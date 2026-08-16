@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - ProvenanceBatchTests
 
-/// Functional coverage for the phase 24-3 transcode-detection batch on
+/// Functional coverage for the ADR-075 slice 3 transcode-detection batch on
 /// ``LibraryViewModel``: the zero-work toast, the failure path, a real
 /// verdict landing in the database, and the re-run guards.
 @Suite("Provenance batch")

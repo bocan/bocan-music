@@ -1,6 +1,6 @@
 import AVFoundation
 
-// MARK: - AudioEngine + current-source facts (phase 27-5)
+// MARK: - AudioEngine + current-source facts (ADR-078 slice 5)
 
 /// Read-only facts about the currently loaded source: the decoder's native
 /// format, and the stream details FFmpeg-backed sources capture at open.
@@ -28,7 +28,7 @@ public extension AudioEngine {
     /// Whether a seek must be refused because the source is a live remote
     /// stream (no duration, http source). FFmpeg degrades such a seek into
     /// reading the stream at the server's pace, which holds the transport
-    /// gate for minutes and starves all playback (the phase 27 launch hang).
+    /// gate for minutes and starves all playback (the ADR-078 launch hang).
     /// Podcasts carry a real duration and still seek. Logs when refusing.
     internal func refuseLiveStreamSeek(_ time: TimeInterval) -> Bool {
         guard self._duration <= 0,

@@ -5,7 +5,7 @@ import UI
 // MARK: - SubsonicCapabilityObserver
 
 /// App-layer adapter bridging `SubsonicService.capabilityUpdates` to the UI
-/// module's `SubsonicCapabilityChangeObserving` protocol (Phase 19 step 16).
+/// module's `SubsonicCapabilityChangeObserving` protocol (ADR-035 step 16).
 ///
 /// The Subsonic module isn't a dependency of UI, so this thin adapter is the
 /// glue point: it exposes the actor-owned `AsyncStream<UUID>` to consumers

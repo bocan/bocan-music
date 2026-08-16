@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 21.1 - Podcast subscriptions, episode content, and per-episode playback state.
+/// ADR-038 - Podcast subscriptions, episode content, and per-episode playback state.
 ///
 /// Three tables are created together in one migration:
 ///   - `podcasts` - one row per subscribed show

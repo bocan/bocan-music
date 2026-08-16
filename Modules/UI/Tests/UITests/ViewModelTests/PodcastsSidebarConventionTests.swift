@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - PodcastsSidebarConventionTests
 
-/// Guards the structural facts of the Phase 21-7 Podcasts sidebar integration.
+/// Guards the structural facts of the ADR-044 Podcasts sidebar integration.
 /// These are source-convention tests: they read the view source files directly
 /// and assert that the required wiring is present, since the view internals
 /// cannot be exercised host-less.

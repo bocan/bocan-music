@@ -28,11 +28,11 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case genre(String)
     case composer(String)
 
-    // MARK: - Queue (Phase 5)
+    // MARK: - Queue (ADR-006)
 
     case upNext
 
-    // MARK: - Phase 6+
+    // MARK: - ADR-008+
 
     /// A manual playlist.
     case playlist(Int64)
@@ -40,16 +40,16 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     /// A playlist folder (drills in to show children, not a track list).
     case folder(Int64)
 
-    // MARK: - Phase 7+
+    // MARK: - ADR-009+
 
-    /// Stub — populated by Phase 7.
+    /// Stub — populated by ADR-009.
     case smartPlaylist(Int64)
 
-    // MARK: - Phase 19 (Subsonic)
+    // MARK: - ADR-035 (Subsonic)
 
     //
     // Per-server browse roots. The associated `UUID` is the
-    // `SubsonicServer.id`. Content views land in Phase 19 step 10; step 9
+    // `SubsonicServer.id`. Content views land in ADR-035 step 10; step 9
     // only adds the cases so the sidebar can tag rows.
 
     /// The server-level landing destination. The sidebar header button is
@@ -61,7 +61,7 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case subsonicArtists(UUID)
     case subsonicGenres(UUID)
 
-    // Optional per-server rows (Phase 19 step 11). The capability-gated
+    // Optional per-server rows (ADR-035 step 11). The capability-gated
     // ones (Podcasts / Internet Radio / Bookmarks) are only registered in
     // the sidebar when the server's capability flags allow.
 
@@ -83,14 +83,14 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     /// `String` is the album's upstream Subsonic ID.
     case subsonicAlbum(UUID, String)
 
-    // MARK: - Phase 21 (Podcasts)
+    // MARK: - ADR-037 (Podcasts)
 
     /// The local Podcasts library root: Add bar + subscribed-shows grid.
     case podcasts
     /// A subscribed show's episode list. Associated value is `podcasts.id`.
     case podcastShow(Int64)
 
-    // MARK: - Phase 27 (Radio)
+    // MARK: - ADR-078 (Radio)
 
     /// The local internet radio station catalog.
     case radio
@@ -100,10 +100,10 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case search(String)
 }
 
-/// Phase 19 step 17 helpers — Subsonic-server projection for routing.
+/// ADR-035 step 17 helpers — Subsonic-server projection for routing.
 public extension SidebarDestination {
     /// The Subsonic server ID this destination targets, if any. Used by
-    /// `ContentPane` (Phase 19 step 17) to surface a per-server offline
+    /// `ContentPane` (ADR-035 step 17) to surface a per-server offline
     /// banner above the destination content.
     var subsonicServerID: UUID? {
         switch self {

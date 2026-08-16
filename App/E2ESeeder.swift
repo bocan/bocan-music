@@ -5,7 +5,7 @@ import Observability
 
 // MARK: - E2ESeeder
 
-/// Builds the on-disk fixture world for an E2E run (phase 28). The test
+/// Builds the on-disk fixture world for an E2E run (ADR-079). The test
 /// runner cannot write inside this app's container (macOS app-container
 /// protection denies it unattended), so on an E2E launch the app itself
 /// creates the run home and synthesizes a small fixture library: two

@@ -125,7 +125,7 @@ actor ScanCoordinator {
         let supported = TagReader.supportedExtensions
         let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 4)
 
-        // Phase 3 audit H7: opt-in iCloud download for placeholder files.
+        // ADR-004 audit H7: opt-in iCloud download for placeholder files.
         let iCloudDownload: Bool = await (try? self.settingsRepo.get(Bool.self, for: "library.icloudDownload")) ?? nil ?? false
 
         // Feed the FileWalker stream directly into a bounded TaskGroup so
@@ -164,7 +164,7 @@ actor ScanCoordinator {
                     inFlight += 1
                     let url = fileURL
                     let mode_ = mode
-                    // Phase 3 audit M4: scan import work runs at `.utility` so it
+                    // ADR-004 audit M4: scan import work runs at `.utility` so it
                     // doesn't steal CPU priority from playback (engine + queue
                     // operate at higher default priorities).
                     group.addTask(priority: .utility) {
@@ -252,7 +252,7 @@ actor ScanCoordinator {
         // *visited*, and the removal pass disables every seeded URL that
         // was never visited. Running it only for quick scans meant a Full
         // Rescan re-imported each track and then marked the entire library
-        // removed (phase 30 invocation pass). Only the skip-unchanged
+        // removed (ADR-081 invocation pass). Only the skip-unchanged
         // shortcut is quick-mode behaviour.
         let status = await changeDetector.check(url: url, mtime: mtime, size: size)
         if mode == .quick, status == .unchanged {
@@ -287,7 +287,7 @@ actor ScanCoordinator {
                 // EditTransaction stamp was introduced.
                 updated.fileSize = size
                 updated.fileMtime = mtime
-                // A changed file invalidates its transcode verdict (phase 24)
+                // A changed file invalidates its transcode verdict (ADR-075)
                 // even when the user's edited tags are being preserved.
                 if mtime != ex.fileMtime { updated.clearProvenance() }
                 if ex.disabled { updated.disabled = false }

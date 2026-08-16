@@ -3,7 +3,7 @@ import GRDB
 
 // MARK: - LibraryPodcastBehaviourReport
 
-/// The podcast behaviour analytics (#373, phase 26-2): how shows actually
+/// The podcast behaviour analytics (#373, ADR-077 slice 2): how shows actually
 /// get listened to. Completion and abandonment, episode length creep, and
 /// the publish-to-play gap. All figures cover subscribed shows only; the
 /// first-listen timestamps are proxied (the schema stores last-played), and
@@ -63,7 +63,7 @@ public struct LibraryPodcastBehaviourReport: Equatable, Sendable {
 
 // MARK: - Podcast behaviour queries
 
-/// The Podcasts tab's behaviour detectors (#373, phase 26-2), split from the
+/// The Podcasts tab's behaviour detectors (#373, ADR-077 slice 2), split from the
 /// accounting slice so each file stays focused.
 public extension LibraryStatsRepository {
     /// Started episodes a show needs before its completion rate means much:

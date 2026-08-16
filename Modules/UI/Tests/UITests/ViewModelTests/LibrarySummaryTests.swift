@@ -61,7 +61,7 @@ struct LibrarySummaryTests {
         )
     }
 
-    @Test("The Podcasts pane keeps its projections and navigation honest (phase 26-1)")
+    @Test("The Podcasts pane keeps its projections and navigation honest (ADR-077 slice 1)")
     func podcastsPaneWired() throws {
         let source = try String(
             contentsOf: Self.uiSource("Summary/LibraryPodcastsPane.swift"),
@@ -125,7 +125,7 @@ struct LibrarySummaryTests {
         )
     }
 
-    @Test("The Listening Behaviour pane manages imported history safely (phase 25-1)")
+    @Test("The Listening Behaviour pane manages imported history safely (ADR-076 slice 1)")
     func listeningImportWired() throws {
         let source = try String(
             contentsOf: Self.uiSource("Summary/LibraryListeningBehaviourPane.swift"),
@@ -258,7 +258,7 @@ struct LibrarySummaryTests {
         let source = try String(contentsOf: url, encoding: .utf8)
         #expect(
             source.contains("self.library.provenanceProgress"),
-            "the pane must render the live batch progress (phase 24-3)"
+            "the pane must render the live batch progress (ADR-075 slice 3)"
         )
         #expect(
             source.contains("self.library.cancelProvenanceAnalysis()"),
@@ -270,7 +270,7 @@ struct LibrarySummaryTests {
         )
     }
 
-    @Test("The Audio Quality pane surfaces suspected transcodes honestly (phase 24-4)")
+    @Test("The Audio Quality pane surfaces suspected transcodes honestly (ADR-075 slice 4)")
     func suspectedTranscodesWired() throws {
         let source = try String(contentsOf: Self.uiSource("Summary/LibraryAudioQualityPane.swift"), encoding: .utf8)
         #expect(
@@ -303,7 +303,7 @@ struct LibrarySummaryTests {
         )
     }
 
-    @Test("The provenance footer's multiline copy matches its catalog key exactly (phase 24-4)")
+    @Test("The provenance footer's multiline copy matches its catalog key exactly (ADR-075 slice 4)")
     func footerKeyInCatalog() throws {
         // A multiline Text(localized: \"\"\"...\"\"\") literal resolves to the
         // joined single-line key; if the catalog entry drifts even one word,

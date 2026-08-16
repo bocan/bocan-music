@@ -327,7 +327,7 @@ struct BocanApp: App {
         .commandsRemoved()
 
         #if DEBUG
-            // Phase 1 audit #14: debug-only manual playback window for codec /
+            // ADR-002 audit #14: debug-only manual playback window for codec /
             // fade / seek triage. Compiled out of Release. Deliberately NOT
             // .commandsRemoved(): the auto-injected Window-menu item is this
             // window's only opener, and it never ships.
@@ -346,7 +346,7 @@ struct BocanApp: App {
         // Enforce single-instance *before* any subsystem is initialised.
         // If another instance is already running this call exits immediately.
         // E2E runs skip the guard so a test copy and a developer's running
-        // copy never mistake each other for duplicates (phase 28).
+        // copy never mistake each other for duplicates (ADR-079).
         if !E2EEnvironment.isActive {
             SingleInstance.shared.start()
         }
@@ -359,7 +359,7 @@ struct BocanApp: App {
         // not reopen at launch.
         UserDefaults.standard.removeObject(forKey: "scrobble.showRecentSheet")
 
-        // Phase 20: apply the persisted capture preference before the first log
+        // ADR-036: apply the persisted capture preference before the first log
         // line is emitted so the console backfills from the very start of this session.
         LogStore.shared.isCaptureEnabled = UserDefaults.standard.bool(forKey: "console.captureEnabled")
 
@@ -368,7 +368,7 @@ struct BocanApp: App {
             MetricKitListener.shared.start()
         #endif
 
-        // Phase 4 audit C5: reconcile login-item registration with the
+        // ADR-005 audit C5: reconcile login-item registration with the
         // `general.launchAtLogin` preference, and observe the user default so
         // toggling it in Settings registers/unregisters the app immediately.
         LaunchAtLoginController.reconcileAtLaunch()
@@ -393,7 +393,7 @@ struct BocanApp: App {
         }
     }
 
-    /// Phase 4 audit C5: observer that mirrors the `general.launchAtLogin`
+    /// ADR-005 audit C5: observer that mirrors the `general.launchAtLogin`
     /// preference into `SMAppService` registration so flipping the toggle in
     /// Settings registers / unregisters the login item without a relaunch.
     private static func installLaunchAtLoginObserver() {
@@ -408,7 +408,7 @@ struct BocanApp: App {
     /// `App` struct being re-instantiated during SwiftUI scene rebuilds.
     private static var launchAtLoginObserver: LaunchAtLoginObserver?
 
-    /// Phase 1 audit #6/#7/#8: pause-on-sleep, gated resume-on-wake, and
+    /// ADR-002 audit #6/#7/#8: pause-on-sleep, gated resume-on-wake, and
     /// default-output-device-change reconfiguration are wired here.  Pulled
     /// out of `init` to keep the initializer body within SwiftLint's length
     /// limit.
@@ -560,9 +560,9 @@ struct AppGraph {
     /// Shared deep-link navigation for the Settings scene (#305).
     let settingsRouter: SettingsRouter
     let logConsoleViewModel: LogConsoleViewModel
-    /// Phase 22-7: the Phone Sync server (off unless `sync.enabled`).
+    /// ADR-067: the Phone Sync server (off unless `sync.enabled`).
     let syncServer: SyncServer
-    /// Phase 22-8: the Settings -> Phone Sync view model.
+    /// ADR-068: the Settings -> Phone Sync view model.
     let phoneSyncSettingsViewModel: PhoneSyncViewModel
     /// Backfills `tracks.content_hash` (the Phone Sync manifest `sha256`) in
     /// the background. Retained here because its observation holds it weakly.
@@ -600,7 +600,7 @@ final class AppModel {
         do {
             // E2E runs re-root the database inside a run home under the
             // app's own container tmp, so a test can never touch the real
-            // library (phase 28). The app builds that home itself: the
+            // library (ADR-079). The app builds that home itself: the
             // runner cannot write inside this container.
             E2ESeeder.prepareHomeIfRequested()
             E2ESeeder.writeDialFileIfRequested()
@@ -616,14 +616,14 @@ final class AppModel {
         }
     }
 
-    /// Phase 28 fixture seeding, active only under `BOCAN_E2E_HOME`.
+    /// ADR-079 fixture seeding, active only under `BOCAN_E2E_HOME`.
     ///
     /// - Library: the seed folder is added as a root through the same path
     ///   the open panel uses, so scanning is exercised for real.
     /// - Radio queue: replaces the queue with one `.internetRadio` item so
     ///   the *next* launch (the app persists the queue on quit) walks the
     ///   restore path against the harness's stalling stream listener: the
-    ///   phase 27 launch-wedge regression.
+    ///   ADR-078 launch-wedge regression.
     private func seedE2EFixturesIfRequested() async {
         guard E2EEnvironment.isActive, let graph = self.graph else { return }
         if let seed = E2EEnvironment.seedDirectory {
@@ -661,7 +661,7 @@ extension BocanApp {
         let presetStore = PresetStore()
         let eng = AudioEngine(presets: presetStore)
 
-        // Phase 19: Subsonic infra is built before the scrobble service so
+        // ADR-035: Subsonic infra is built before the scrobble service so
         // its provider can write through to the active Subsonic servers.
         let subsonicRepo = SubsonicServerRepository(database: db)
         let subsonicStore = SubsonicServerStore(repository: subsonicRepo)
@@ -678,7 +678,7 @@ extension BocanApp {
         )
         let backupSettingsViewModel = BackupSettingsViewModel(database: db)
 
-        // Phase 19: build the Subsonic stream cache (and resolver) so QueuePlayer
+        // ADR-035: build the Subsonic stream cache (and resolver) so QueuePlayer
         // can turn a `.subsonic` PlayableSource into a local file URL the engine
         // can decode. Cache lives under the user's Caches directory so macOS
         // can reclaim space under pressure.
@@ -699,10 +699,10 @@ extension BocanApp {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }
 
-        // Phase 21-5: build a PodcastService and adapt it to the player's
+        // ADR-042: build a PodcastService and adapt it to the player's
         // PodcastEpisodeResolving seam so .podcast queue items can play,
         // resume, write back position, and mark played.
-        // Phase 21-7: promotes this service into the graph for the Podcasts UI
+        // ADR-044: promotes this service into the graph for the Podcasts UI
         // and wires the FeedRefreshScheduler background task.
         let episodeRepo = EpisodeRepository(database: db)
         let stateRepo = EpisodeStateRepository(database: db)
@@ -714,7 +714,7 @@ extension BocanApp {
             artwork: PodcastArtworkCache()
         )
         let podcastResolver = AppPodcastResolver(service: podcastService)
-        // Phase 22-10: hash cached show art that predates podcasts.artwork_hash
+        // ADR-070: hash cached show art that predates podcasts.artwork_hash
         // so existing subscriptions advertise artwork on the next sync.
         Task.detached(priority: .background) { [podcastService] in
             await podcastService.backfillArtworkHashes()
@@ -784,7 +784,7 @@ extension BocanApp {
         // enqueues the newest N (podcasts.autoDownloadCount, default 3) for shows
         // that have auto-download enabled. Setting the observer before the
         // scheduler starts means the very first background refresh already honours
-        // it. Phase 21-7 spec: start() is called once at launch and is idempotent
+        // it. ADR-044 spec: start() is called once at launch and is idempotent
         // so wake-notifications can also call it without duplicating the loop.
         Task.detached(priority: .background) { [episodeRepo, stateRepo, podcastDownloads, db] in
             await podcastService.setNewEpisodesObserver { podcastID, newGUIDs in
@@ -853,17 +853,17 @@ extension BocanApp {
         // so all NSWorkspace subscriptions live in the app target.
         Self.installSleepWakeAndDeviceChangeObservers(engine: eng, sleepTimer: qp.sleepTimer)
 
-        // Phase 3 audit H1: re-open FSEvent streams after the system wakes.
+        // ADR-004 audit H1: re-open FSEvent streams after the system wakes.
         Self.installLibraryWakeObserver(scanner: scanner)
 
-        // Phase 3 audit M1: kick off the FSEvents watcher at app launch (gated on
+        // ADR-004 audit M1: kick off the FSEvents watcher at app launch (gated on
         // the `library.watchForChanges` preference).
         Task { [weak lvm] in await lvm?.startOrStopWatcher() }
 
         // Persist playback position on quit so it can be restored on next launch.
         registerTerminationObserver(player: qp, database: db)
 
-        // Phase 22-7: the Phone Sync server. Constructed unconditionally so the
+        // ADR-067: the Phone Sync server. Constructed unconditionally so the
         // Settings toggle (22-8) can start/stop it, but only started here when
         // `sync.enabled` is on (default off). `serverName` is injected as a
         // closure so SyncServer never imports AppKit. `downloadRoot: nil` matches
@@ -876,7 +876,7 @@ extension BocanApp {
             ui: phoneSyncBridge,
             serverName: syncServerName
         )
-        // Phase 22-8: the Settings view model, wired over the server via the
+        // ADR-068: the Settings view model, wired over the server via the
         // control seam; the relay bridge forwards the pairing ceremony to it.
         let phoneSyncController = PhoneSyncController(
             server: syncServer,
@@ -903,7 +903,7 @@ extension BocanApp {
         // Start scrobble worker once everything is wired up.
         Task { [scrobble = scrobbleParts.service] in await scrobble.start() }
 
-        // Phase 19: finish Subsonic hydration. migrateOrphans and startMonitoring
+        // ADR-035: finish Subsonic hydration. migrateOrphans and startMonitoring
         // must run here; reloadClients / reloadSubsonicServers are idempotent
         // catch-alls also run by bootstrapSubsonic via RootView.task.
         Task { [subsonicStore, subsonicService, subsonicMonitor, subsonicRepo, weak lvm] in
@@ -911,7 +911,7 @@ extension BocanApp {
             try? await subsonicStore.migrateOrphans()
             try? await subsonicService.reloadClients()
             await lvm?.reloadSubsonicServers()
-            // Phase 19 step 17: kick off the ping/back-off loop for every
+            // ADR-035 step 17: kick off the ping/back-off loop for every
             // persisted server so the sidebar status dots become live as
             // soon as the user finishes launching.
             let servers = await (try? subsonicStore.fetchAll()) ?? []
@@ -960,7 +960,7 @@ extension BocanApp {
 
     // swiftlint:enable function_body_length
 
-    /// Phase 22-7: re-advertise Phone Sync after the system wakes (the listener
+    /// ADR-067: re-advertise Phone Sync after the system wakes (the listener
     /// may drop its Bonjour service across sleep), and withdraw it cleanly on
     /// quit. Only fires effect when the server is running; a no-op while off.
     private static func installSyncServerLifecycleObservers(syncServer: SyncServer) {

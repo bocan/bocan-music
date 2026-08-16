@@ -6,7 +6,7 @@ import SwiftUI
 /// disclosure containing one further disclosure per Subsonic server. Each
 /// server expands into the standard Songs / Albums / Artists / Genres rows.
 ///
-/// The actual destination views land in Phase 19 step 10; step 9 only wires
+/// The actual destination views land in ADR-035 step 10; step 9 only wires
 /// the structure, selection tagging, and persisted expand/collapse.
 public struct SubsonicSidebarSection: View {
     @Binding public var sectionExpanded: Bool
@@ -315,7 +315,7 @@ struct SidebarSectionHeader: View {
 
 /// Compact connection-status indicator rendered next to each source-server
 /// row in the sidebar. The dot itself is `accessibilityHidden(true)`; the
-/// enclosing row carries the spoken label and value (Phase 19 step 17).
+/// enclosing row carries the spoken label and value (ADR-035 step 17).
 struct SubsonicStatusDot: View {
     let state: SubsonicSidebarConnectionState
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor

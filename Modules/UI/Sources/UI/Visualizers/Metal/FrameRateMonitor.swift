@@ -26,7 +26,7 @@ struct FrameRateMonitor {
     private var slowAccumulator: TimeInterval = 0
     private(set) var hasTripped = false
     /// Rolling (EMA-smoothed) frames-per-second, updated by every `record(time:)`
-    /// call regardless of the floor-trip outcome. Phase 33's E2E liveness
+    /// call regardless of the floor-trip outcome. ADR-084's E2E liveness
     /// assertion reads this via `VisualizerViewModel.currentFPS`, which is only
     /// ever populated when the E2E flag is set (see that type's doc comment) —
     /// this struct itself has no gating, since it never touches SwiftUI state.

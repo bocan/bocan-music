@@ -6,7 +6,7 @@ import ServiceManagement
 
 /// Wires the `general.launchAtLogin` `@AppStorage` flag to `SMAppService.mainApp`.
 ///
-/// Phase 4 audit C5: previously the toggle was defined in
+/// ADR-005 audit C5: previously the toggle was defined in
 /// `GeneralSettingsView` but never read.  This controller:
 ///
 /// - Reconciles the on-disk login-item registration with the user default at

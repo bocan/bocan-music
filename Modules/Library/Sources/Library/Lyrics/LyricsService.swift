@@ -357,7 +357,7 @@ public actor LyricsService {
 
     /// `tracks.file_url` holds a URL *string* ("file:///…"); passing it to
     /// `URL(fileURLWithPath:)` mangles it into a relative garbage path — the bug
-    /// that silently broke sidecar loading and no-bookmark embeds since Phase 11.
+    /// that silently broke sidecar loading and no-bookmark embeds since ADR-015.
     /// Plain absolute paths (legacy rows, tests) are still accepted.
     private static func fileURL(from string: String) -> URL? {
         if let url = URL(string: string), url.isFileURL { return url }

@@ -60,7 +60,7 @@ struct MetalVisualizerView: NSViewRepresentable {
 
     static func dismantleNSView(_ view: VisualizerMTKView, coordinator: Coordinator) {
         // Pause before nilling the delegate, or the GPU keeps drawing for a
-        // closed pane (the phase 12 fullscreen open/close bug).
+        // closed pane (the ADR-016 fullscreen open/close bug).
         view.isPaused = true
         view.delegate = nil
     }

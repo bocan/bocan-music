@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicSettingsViewModel
 
-/// Phase 19 step 12: state-store for the Settings → Sources tab.
+/// ADR-035 step 12: state-store for the Settings → Sources tab.
 ///
 /// Wraps `SubsonicServerStore` (CRUD + Keychain), `SubsonicService` (ping,
 /// capabilities), and `SubsonicConnectionMonitor` (live status). UI binds

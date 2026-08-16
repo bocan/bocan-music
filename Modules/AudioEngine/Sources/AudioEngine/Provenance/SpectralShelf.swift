@@ -18,7 +18,7 @@ struct SpectralShelfReading: Equatable {
 
 // MARK: - SpectralShelf
 
-/// Batch spectral analysis for transcode detection (phase 24-1).
+/// Batch spectral analysis for transcode detection (ADR-075 slice 1).
 ///
 /// Produces one averaged, smoothed dB power spectrum from pre-decoded mono
 /// segments (8192-point Hann-windowed FFT frames, averaged per segment, then

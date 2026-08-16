@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// A user-curated internet radio station, stored in `radio_stations` (phase 27).
+/// A user-curated internet radio station, stored in `radio_stations` (ADR-078).
 ///
 /// `name`, `streamURL`, and `homePageURL` are user-editable via the add/edit
 /// sheet. The remaining optionals are the machine-owned station profile,

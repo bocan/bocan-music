@@ -136,7 +136,7 @@ public struct DownloadStore: Sendable {
     }
 
     /// Maps an enclosure MIME type to a file extension. Defaults to `mp3` when the
-    /// MIME is missing or unrecognised (per the phase 21-6 contract).
+    /// MIME is missing or unrecognised (per the ADR-043 contract).
     static func fileExtension(forMIME mime: String?) -> String {
         guard let mime else { return "mp3" }
         let key = mime.lowercased().split(separator: ";").first.map(String.init) ?? mime.lowercased()

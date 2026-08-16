@@ -115,7 +115,7 @@ public final class NowPlayingViewModel {
     public private(set) var currentTrack: Track?
 
     /// Stream URL of the playing internet radio station, nil for every other
-    /// source (phase 27-5). Drives the strip's info button in radio mode.
+    /// source (ADR-078 slice 5). Drives the strip's info button in radio mode.
     public private(set) var nowPlayingRadioStreamURL: String?
     /// The station's display name, kept aside so live ICY titles can take
     /// over `title` while the station moves to the artist line.
@@ -124,7 +124,7 @@ public final class NowPlayingViewModel {
     /// True when the queue has a current item of any source (library
     /// track, radio, Subsonic stream, podcast). Menu commands that act on
     /// "whatever is current" (Clear Queue) key off this rather than the
-    /// library-track ID, which is nil for streams (phase 30).
+    /// library-track ID, which is nil for streams (ADR-081).
     public var hasCurrentItem: Bool {
         self.nowPlayingTrackID != nil
             || self.nowPlayingRadioStreamURL != nil
@@ -426,7 +426,7 @@ public final class NowPlayingViewModel {
     /// Streams are never engine-preloaded, so a restored queue whose
     /// current item is a stream emits no current-track change at launch
     /// and the display (and everything keyed off it: the strip, the Clear
-    /// Queue menu gate) would sit on "Not playing" forever (phase 28
+    /// Queue menu gate) would sit on "Not playing" forever (ADR-079
     /// flag). Called once after activation; engine-driven emissions
     /// overwrite the seeded display the moment anything actually loads.
     private func seedDisplayFromRestoredQueue(_ qp: QueuePlayer) async {
@@ -805,7 +805,7 @@ private extension NowPlayingViewModel {
             await qp.waitUntilActivated()
             await self?.seedDisplayFromRestoredQueue(qp)
         }
-        // Live ICY titles (phase 27-5): while a station plays, the stream
+        // Live ICY titles (ADR-078 slice 5): while a station plays, the stream
         // title takes the title line and the station name moves to the
         // artist line. Junk or absent titles simply never emit, so the
         // station-name display from `applyStreamItem` stays put.

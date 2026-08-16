@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicAlbumsViewModel
 
-/// Drives the per-server Albums destination (Phase 19 step 10).
+/// Drives the per-server Albums destination (ADR-035 step 10).
 /// Pages via `getAlbumList2(type: .alphabeticalByName, size:, offset:)`.
 @MainActor
 public final class SubsonicAlbumsViewModel: ObservableObject {

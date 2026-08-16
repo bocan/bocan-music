@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - SubsonicGenresView
 
-/// Per-server Genres destination (Phase 19 step 10).
+/// Per-server Genres destination (ADR-035 step 10).
 ///
 /// Split layout: the genre list on the left, the songs in the selected
 /// genre on the right (paged via `getSongsByGenre`).

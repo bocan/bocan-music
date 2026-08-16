@@ -69,7 +69,7 @@ struct ScanCoordinatorTests {
 
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { _ in }
 
-        // Regression (phase 30 invocation pass): full-mode imports skipped
+        // Regression (ADR-081 invocation pass): full-mode imports skipped
         // the change detector entirely, so nothing was marked visited and
         // the removal sweep disabled the whole library while re-importing
         // every file in the same pass (removed == count, all rows hidden).

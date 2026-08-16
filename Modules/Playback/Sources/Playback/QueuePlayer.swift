@@ -81,7 +81,7 @@ public actor QueuePlayer: Transport {
     public nonisolated let schemaWarnings: AsyncStream<String>
     private var schemaWarningContinuation: AsyncStream<String>.Continuation?
 
-    // MARK: - Stream titles (phase 27-5)
+    // MARK: - Stream titles (ADR-078 slice 5)
 
     /// Live ICY now-playing titles, re-emitted for the UI. Yields only while
     /// the current item is internet radio; the same title also lands in
@@ -223,7 +223,7 @@ public actor QueuePlayer: Transport {
         // Bind remote command handlers.
         await self.bindRemoteCommands(commands)
 
-        // Forward live ICY titles for the player's lifetime (phase 27-5).
+        // Forward live ICY titles for the player's lifetime (ADR-078 slice 5).
         let engineTitles = self.engine.streamTitleUpdates
         self.titleObservationTask = Task { [weak self] in
             for await title in engineTitles {
@@ -326,7 +326,7 @@ public actor QueuePlayer: Transport {
         get async { await self.engine.duration }
     }
 
-    /// Stream facts from the engine's current decoder (phase 27-5); nil for
+    /// Stream facts from the engine's current decoder (ADR-078 slice 5); nil for
     /// AVFoundation-decoded local files.
     public var currentStreamDetails: StreamDetails? {
         get async { await self.engine.currentStreamDetails }

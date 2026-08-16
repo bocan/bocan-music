@@ -3,7 +3,7 @@ import SwiftUI
 
 // MARK: - PhoneSyncSettingsView
 
-/// Settings -> Phone Sync (phase 22-8): enable toggle, paired-devices list with
+/// Settings -> Phone Sync (ADR-068): enable toggle, paired-devices list with
 /// Revoke and "Pair a Phone", then the sync-profile editor with a size estimate.
 /// Pairing sits above the profile because it is the first thing a new user needs;
 /// the profile editor (and its playlist picker) can grow tall enough to push

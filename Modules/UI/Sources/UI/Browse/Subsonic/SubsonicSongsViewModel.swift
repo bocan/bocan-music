@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicSongsViewModel
 
-/// Drives the per-server Songs destination (Phase 19 step 10).
+/// Drives the per-server Songs destination (ADR-035 step 10).
 ///
 /// Subsonic has no efficient "all songs" endpoint, so this view model
 /// repeatedly calls `getRandomSongs` to surface a deep but shuffled sample of

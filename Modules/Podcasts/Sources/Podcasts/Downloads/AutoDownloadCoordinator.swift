@@ -6,7 +6,7 @@ import Persistence
 /// keeping that policy out of the bare `EpisodeDownloadManager`.
 ///
 /// When a show has `auto_download` enabled, the newest `newestN` episodes that
-/// are not already downloaded or played are enqueued. The App layer (phase 21-4
+/// are not already downloaded or played are enqueued. The App layer (ADR-041
 /// refresh / scheduler) calls `handleRefresh` with the `RefreshOutcome`.
 public struct AutoDownloadCoordinator: Sendable {
     private let podcastRepo: PodcastRepository

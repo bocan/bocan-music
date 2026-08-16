@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 7 migration: adds `smart_limit_sort` column to `playlists`.
+/// ADR-009 migration: adds `smart_limit_sort` column to `playlists`.
 ///
 /// `smart_limit_sort` stores a JSON-encoded `LimitSort` value controlling
 /// track ordering, limit, and live-update behaviour for smart playlists.

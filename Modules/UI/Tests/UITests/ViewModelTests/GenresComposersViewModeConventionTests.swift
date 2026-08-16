@@ -4,7 +4,7 @@ import Testing
 // MARK: - GenresComposersViewModeConventionTests
 
 /// Source-convention checks for the Genres / Composers List / Grid toggles
-/// (phase 23-2), mirroring the Artists checks. These facts can't be exercised
+/// (ADR-073), mirroring the Artists checks. These facts can't be exercised
 /// host-less, so they're asserted against the source text.
 @Suite("Genres/Composers view-mode conventions")
 struct GenresComposersViewModeConventionTests {

@@ -4,7 +4,7 @@ import GRDB
 ///
 /// Holds the human label from Podcasting 2.0 `podcast:funding` (the text between
 /// the element tags), now that the supplementary namespace parser fills it. See
-/// `docs/design-spec/phase21-12-a-namespace-supplement.md`.
+/// `docs/design-spec/ADR-050-namespace-supplement.md`.
 ///
 /// Nullable so existing rows stay valid; populated on the next feed refresh.
 /// `funding_url` and `chapters_url` already exist (M023); only the label is new.

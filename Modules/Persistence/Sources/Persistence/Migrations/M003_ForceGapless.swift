@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// Phase 5.5 migration: adds `force_gapless` flag to the `albums` table.
+/// ADR-007 migration: adds `force_gapless` flag to the `albums` table.
 ///
 /// When set, `QueuePlayer` bypasses the "no padding tags → skip gapless"
 /// short-circuit and passes the pair to `GaplessScheduler` even without

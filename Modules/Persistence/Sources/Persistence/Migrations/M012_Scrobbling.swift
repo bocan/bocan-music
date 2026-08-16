@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 13 — scrobbling.
+/// ADR-029 — scrobbling.
 ///
 /// 1. Adds `dead` flag to `scrobble_queue` (a row that has exhausted its retries).
 /// 2. Creates a unique index on `(track_id, played_at)` so duplicate enqueues of the

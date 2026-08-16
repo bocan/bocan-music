@@ -5,7 +5,7 @@ import SwiftUI
 /// Grid mode for `ArtistsView`: renders each artist as a ``CollectionCard`` in a
 /// ``CollectionCardGrid``. List mode remains the original code path in
 /// `ArtistsView`; this file exists so `ArtistsView.swift` stays under the
-/// 500-line ceiling (phase 23-1).
+/// 500-line ceiling (ADR-072).
 ///
 /// Card order follows `vm.artists`, so the shared `SortMenu` reorders the grid
 /// live, identical to list mode. Opening a card snapshots `lastVisitedArtistID`

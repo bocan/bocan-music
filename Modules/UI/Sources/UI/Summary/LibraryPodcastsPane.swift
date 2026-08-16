@@ -5,7 +5,7 @@ import SwiftUI
 
 // MARK: - LibraryPodcastsPane
 
-/// The Library Summary window's Podcasts tab (#373, phase 26-1): the
+/// The Library Summary window's Podcasts tab (#373, ADR-077 slice 1): the
 /// accounting of a subscription habit. Backlog debt with a projection that
 /// is allowed to be terrifying, dead feeds, downloaded-but-never-played
 /// hoards, and reapable storage. Follows the other panes' shape: load once,
@@ -124,7 +124,7 @@ struct LibraryPodcastsPane: View {
         }
     }
 
-    // MARK: - Behaviour sections (phase 26-2)
+    // MARK: - Behaviour sections (ADR-077 slice 2)
 
     private func completionSection(_ behaviour: LibraryPodcastBehaviourReport) -> some View {
         Section {
@@ -286,7 +286,7 @@ struct LibraryPodcastsPane: View {
         }
     }
 
-    // MARK: - Actions (phase 26-3)
+    // MARK: - Actions (ADR-077 slice 3)
 
     /// Deletes every reapable download through the same machinery as the
     /// per-episode Remove Download action, then reloads the accounting.

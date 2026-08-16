@@ -62,13 +62,13 @@ public enum KeyBindings {
     /// `⌘⌥U` — Reveal the Up Next sidebar destination.
     public static let showUpNext = KeyboardShortcut("u", modifiers: [.command, .option])
 
-    /// `⌘⇧N` — New playlist (Phase 6).
+    /// `⌘⇧N` — New playlist (ADR-008).
     public static let newPlaylist = KeyboardShortcut("n", modifiers: [.command, .shift])
 
-    /// `⌘⌥N` — New smart playlist (Phase 7).
+    /// `⌘⌥N` — New smart playlist (ADR-009).
     public static let newSmartPlaylist = KeyboardShortcut("n", modifiers: [.command, .option])
 
-    /// `⌘I` — Get info / tag editor (Phase 8).
+    /// `⌘I` — Get info / tag editor (ADR-010).
     public static let getInfo = KeyboardShortcut("i", modifiers: .command)
 
     /// `⌘R` — Reveal in Finder.

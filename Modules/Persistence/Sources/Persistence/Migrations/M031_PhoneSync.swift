@@ -1,15 +1,15 @@
 import GRDB
 
-/// Phase 22 — Phone Sync server.
+/// ADR-060 — Phone Sync server.
 ///
 /// 1. `trusted_devices` — one row per paired phone, pinned by its client-cert
 ///    SHA-256 fingerprint. This set is the whole trust decision after pairing:
 ///    a fingerprint absent here is refused at the TLS layer.
 /// 2. `sync_meta` — a singleton row (`id = 1`) holding the stable per-Mac
 ///    `server_id` and the monotonic `generation` counter the phone polls via
-///    `/v1/ping`. Seeded lazily by the sync-meta repository in phase 22-5.
+///    `/v1/ping`. Seeded lazily by the sync-meta repository in ADR-065.
 /// 3. `sync_profile` — a singleton row (`id = 1`) holding the encoded
-///    `SyncProfile` describing what a phone may see. Seeded lazily in phase 22-5.
+///    `SyncProfile` describing what a phone may see. Seeded lazily in ADR-065.
 ///
 /// The server's own private key and certificate live in the Keychain, never
 /// here; `trusted_devices` stores only each phone's public certificate.

@@ -5,7 +5,7 @@ import SwiftUI
 
 /// A genre or composer destination that renders its contents either as the flat
 /// track list (Songs, the historical default) or a grid of that collection's
-/// albums (phase 23-3). The Songs / Albums choice is a persisted binding owned
+/// albums (ADR-074). The Songs / Albums choice is a persisted binding owned
 /// by the caller (`genres.detailMode` / `composers.detailMode`).
 ///
 /// Songs mode is byte-identical to the previous behaviour: the shared

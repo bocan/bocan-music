@@ -345,7 +345,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
     /// copies it into Application Support, and persists the path via the service.
     ///
     /// Uses `NSOpenPanel.begin(completionHandler:)` (not `runModal`) so the
-    /// audio render callback is never starved — see Phase 5.5 audit issue #28.
+    /// audio render callback is never starved — see ADR-007 audit issue #28.
     public func setCoverArt(for node: PlaylistNode) async {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.jpeg, .png, .tiff, .heic, .webP]

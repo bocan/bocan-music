@@ -143,7 +143,7 @@ public struct ScanBanner: View {
 
     private var summaryText: String {
         guard let s = self.vm.scanSummary else { return "" }
-        // Phase 5.5 audit M1: the previous wording read "4231 files · 120 new
+        // ADR-007 audit M1: the previous wording read "4231 files · 120 new
         // tracks", which made readers parse the file count as a separate item
         // count from "new tracks". Disambiguate by leading with "Scanned N
         // files —" and breaking the breakdown out into new / updated /

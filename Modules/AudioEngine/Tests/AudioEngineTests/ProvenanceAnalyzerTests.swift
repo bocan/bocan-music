@@ -6,7 +6,7 @@ import Testing
 
 // MARK: - ProvenanceAnalyzerTests
 
-/// Phase 24-1 contract: everything is judged on synthesized PCM only. Full-band
+/// ADR-075 slice 1 contract: everything is judged on synthesized PCM only. Full-band
 /// noise must pass clean, a lossy-style brick-wall shelf must be suspected with
 /// high confidence, and an analogue-style gradual rolloff must stay clean.
 @Suite("ProvenanceAnalyzer")

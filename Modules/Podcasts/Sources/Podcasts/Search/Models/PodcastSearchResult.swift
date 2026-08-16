@@ -1,6 +1,6 @@
 import Foundation
 
-/// One deduplicated, merged search hit from the dual-index search (phase 21-3).
+/// One deduplicated, merged search hit from the dual-index search (ADR-040).
 ///
 /// The ``id`` property is the ``canonicalFeedKey`` -- a scheme-less, www-less,
 /// trailing-slash-less string derived from the feed URL. Two results with the same

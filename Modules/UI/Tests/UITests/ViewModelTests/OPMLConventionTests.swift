@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - OPMLConventionTests
 
-/// Source-convention guards for the Phase 21-12-g OPML import/export UI: the
+/// Source-convention guards for the ADR-056 OPML import/export UI: the
 /// menu, panels, and import sheet cannot be exercised host-less, so we assert
 /// their structure by reading source.
 @Suite("OPML Import/Export Convention")

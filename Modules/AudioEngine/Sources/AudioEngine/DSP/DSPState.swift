@@ -22,7 +22,7 @@ public struct DSPState: Sendable, Codable, Hashable {
     /// Crossfade duration in seconds (0 = disabled / gapless-only).
     public var crossfadeSeconds: Double = 0
     /// When `true` and `crossfadeSeconds > 0`, tracks from the same album use the
-    /// Phase 5 sample-accurate gapless path; crossfade only activates at album boundaries.
+    /// ADR-006 sample-accurate gapless path; crossfade only activates at album boundaries.
     public var crossfadeAlbumGapless = true
 
     public init() {}

@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - ChapterListConventionTests
 
-/// Source-convention guards for the Phase 21-12-d chapter UI: the views cannot be
+/// Source-convention guards for the ADR-053 chapter UI: the views cannot be
 /// exercised host-less, so we assert the localized chrome and that seeking goes
 /// through the view model's transport path (never AudioEngine) by reading source.
 @Suite("Chapter List Convention")

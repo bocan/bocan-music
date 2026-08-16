@@ -1,0 +1,122 @@
+# ADR-082: E2E Surface Crawl (Every Button in the Main Window)
+
+> Prerequisites: ADR-079 to ADR-081. This is the heart of the dream: every
+> control on every main-window surface gets clicked with a defined
+> postcondition, and a sampled hover pass proves tooltips actually render.
+>
+> Read `docs/design-spec/_standards.md` first.
+
+## Goal
+
+For each sidebar destination and each main-window surface, a crawl suite
+that clicks every identified control and asserts a specific postcondition,
+plus a per-surface hover spot-check (3-5 controls) that verifies a real
+tooltip window appears containing the control's help text.
+
+## Non-goals
+
+- Menus (ADR-081), secondary windows and settings (ADR-083),
+  visualizer content (ADR-084), network-dependent journeys (ADR-085).
+
+## Implementation plan
+
+1. **Surface inventory.** One suite per destination: Songs, Albums,
+   Artists, Genres, Composers, Podcasts, Radio, Up Next, Recents, a local
+   playlist, a smart playlist, and search results. Plus the transport
+   strip and toolbar as their own suites. Each suite is a table of
+   (identifier, action, postcondition), interpreter-driven like the menu
+   manifest, so the reviewable artifact is the table.
+2. **Postcondition discipline.** Every click asserts something concrete:
+   a sheet appears (and is dismissed), a toggle's value flips, the
+   destination changes, a row's state changes. "Did not crash" alone is
+   never a postcondition, except where the control's whole contract is
+   visual (then the assertion is that the app remains responsive and the
+   control remains present).
+3. **Hover-revealed controls.** Rows that reveal buttons on hover (radio
+   stations, Subsonic stations, queue rows) get an explicit
+   hover-then-click step in their tables; the harness's `hoverRow()`
+   helper from ADR-080's crawler is reused.
+4. **The tooltip spot-check.** Per surface, 3-5 representative controls:
+   `element.hover()`, wait up to 3s for a tooltip, and assert the
+   help text appears in the app's window list as static text. Marked
+   `.tags(.tooltip)` so the whole category can be quarantined in one line
+   if macOS tooltip timing turns hostile on some OS release; the
+   guarantee of help-text *existence* stays with ADR-080's audits.
+5. **Navigation invariants woven in**: after each drill-down suite, one
+   Esc drill-out and one mouse-back assertion (the ADR-078/378 semantics)
+   so the navigation contract is re-proven on every surface.
+6. **Interaction coverage beyond clicks** where the surface contract
+   includes it: double-click to play (rows, album covers), type-to-search
+   from each browse view, drag a track to Up Next (XCUIElement
+   press-and-drag), column sort clicks on the track tables.
+
+## Test plan
+
+- Every table row green per surface, headed and via `make test-e2e`.
+- Tooltip spot-checks green on a developer Mac (allowed flaky-quarantine
+  on the GitHub tier from day one).
+- Deliberate breakage drill: hide one button behind a condition and watch
+  the surface's table fail (verified once, documented).
+
+## Progress
+
+Landed (`UITests/Surfaces/`): the `SurfaceCrawler` table interpreter
+(`SurfaceControl` + `ControlContext`), and green crawl suites for the
+**Toolbar** (6 controls), the **transport strip** (17 controls plus 3
+documented skips), **Songs** (double-click to play), **Albums** (grid +
+tile open, with the Esc and mouse-back drill-out invariants), **Radio**
+(empty state + toolbar add-station sheet), the **smart-playlist detail**
+(Edit Rules opens the rule editor), and **search** (type-to-filter the
+local track table, an interaction test since `.searchable` has no app
+identifier). `SurfaceCompletenessTests` enforces the bidirectional guard
+for the fully-owned surfaces and lists the deferred surfaces with reasons.
+
+Notes surfaced while building these:
+- `nowPlayingStrip.visualizer` is a dead constant (defined, never
+  attached) — dropped.
+- Container identifiers that name a layout view, not a control, are not
+  queryable and can mask a child control's identifier: `radio.emptyState`'s
+  add button (inside a combining `ContentUnavailableView`) and
+  `smartPlaylist.detail.edit` (masked by the header HStack's own id). The
+  controls are still reached — by the toolbar twin and by label
+  respectively — but the masked ids are automation-only dead weight worth
+  a later cleanup.
+
+Deferred to a later slice (each with a reason in
+`SurfaceCompletenessTests`): the Artists/Genres/Composers listings (no
+per-row identifiers), Podcasts (networked search), Up Next queue rows
+(composed labels + context-menu actions), Recently Played / Most Played
+(empty without a play-history seed), local playlist detail (needs
+create+populate setup), the empty-state action button, and the scan
+banner.
+
+## Acceptance criteria
+
+- [~] Every `A11y` identifier registered in ADR-080 for these surfaces
+      appears in exactly one crawl table (bidirectional completeness test
+      in place for the implemented surfaces; remaining surfaces are
+      enumerated as deferred, so the guard closes as they land).
+- [x] All postconditions are state assertions, not absence-of-crash
+      (continuous controls use the spec's remains-present-and-responsive
+      fallback, documented per control).
+- [~] Tooltip spot-check present, **quarantined**: macOS tooltip windows
+      are not observable via XCUITest `.hover()` on this OS (existence of
+      `.help()` is guaranteed by ADR-080's audit); one flag re-enables it.
+- [x] Esc/mouse-back invariants asserted from the Albums drill-down (the
+      pattern reused by each future drill-down surface).
+
+## Gotchas
+
+- Tooltips: macOS shows them in an app-owned borderless window after a
+  system-controlled delay; the 3s wait is empirical, and the text match
+  must be `contains`, not equality (macOS may truncate).
+- Coordinate-based drags on SwiftUI lists need
+  `coordinate(withNormalizedOffset:)` anchoring; element-to-element drag
+  is more stable when both ends have identifiers.
+- The crawl's completeness test is the long-term payoff: it converts
+  "we forgot to test the new button" from a review hope into a red build.
+
+## Handoff
+
+ADR-083 extends the same table pattern beyond the main window; ADR-086
+budgets runtime knowing this ADR is the largest suite (est. 30-60 min).

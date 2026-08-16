@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import AudioEngine
 
-// MARK: - StreamDetails tests (phase 27-5)
+// MARK: - StreamDetails tests (ADR-078 slice 5)
 
 @Suite("StreamDetails")
 struct StreamDetailsTests {

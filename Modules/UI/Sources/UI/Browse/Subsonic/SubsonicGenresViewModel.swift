@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicGenresViewModel
 
-/// Drives the per-server Genres destination (Phase 19 step 10).
+/// Drives the per-server Genres destination (ADR-035 step 10).
 ///
 /// The top of the view shows the flat list of genres with song counts.
 /// Selecting a genre lazy-loads its songs via `getSongsByGenre` with

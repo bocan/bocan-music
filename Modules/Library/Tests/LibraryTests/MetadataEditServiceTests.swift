@@ -229,7 +229,7 @@ struct MetadataEditServiceTests {
         #expect(stored[withoutRow] == nil)
     }
 
-    // MARK: - MusicBrainz IDs + ISRC (Phase 8.6)
+    // MARK: - MusicBrainz IDs + ISRC (ADR-012)
 
     @Test func editWritesMusicBrainzIDsToFileAndDB() async throws {
         let db = try await makeDatabase()

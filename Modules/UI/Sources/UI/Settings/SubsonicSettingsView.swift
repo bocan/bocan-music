@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - SubsonicSettingsView
 
-/// Phase 19 step 12: Settings → Sources tab.
+/// ADR-035 step 12: Settings → Sources tab.
 ///
 /// Two-pane layout:
 /// - Left: scrollable list of configured servers with status dots and

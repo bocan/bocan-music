@@ -55,7 +55,7 @@ struct IdentifyCandidateRowConventionTests {
 
     @Test("Field checkboxes speak current and proposed values")
     func checkboxSpeaksDiff() throws {
-        // The grid lives in its own file since the Phase 8.6 release-picker rework.
+        // The grid lives in its own file since the ADR-012 release-picker rework.
         let source = try self.source("Sources/UI/Fingerprint/FieldSelectionGrid.swift")
         #expect(source.contains("Accept \\(field.displayName), currently \\(currentSpoken), proposed \\(proposed)"))
     }

@@ -148,7 +148,7 @@ public actor SubsonicService {
 
     /// Broadcasts server IDs whose advertised capabilities have changed since
     /// the previously persisted snapshot. The UI subscribes here to redraw
-    /// the sidebar when a server upgrade unlocks new sections (Phase 19 step
+    /// the sidebar when a server upgrade unlocks new sections (ADR-035 step
     /// 16). Multiple subscribers are not supported — wrap in a fan-out if you
     /// need more than one consumer.
     public var capabilityUpdates: AsyncStream<UUID> {
@@ -254,7 +254,7 @@ public actor SubsonicService {
     /// Forces a fresh capability fetch, bypassing the staleness check.
     /// Also bypasses the SwiftSonic client's own capability cache so a real
     /// network refetch happens — required for capability-change detection
-    /// after a server upgrade (Phase 19 step 16).
+    /// after a server upgrade (ADR-035 step 16).
     public func refreshCapabilities(serverID: UUID) async throws -> SubsonicCapabilities {
         let client = try self.requireClient(serverID)
         self.clients[serverID]?.capabilities = nil

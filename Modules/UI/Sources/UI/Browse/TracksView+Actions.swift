@@ -228,7 +228,7 @@ extension TracksView {
 
         Task { @MainActor in
             let failures = await library.deleteTracksFromDisk(tracks: tracks)
-            // Phase 5.5 audit M3: offer permanent-delete fallback for any files
+            // ADR-007 audit M3: offer permanent-delete fallback for any files
             // that could not be trashed (external volume, permissions…).
             for (track, error) in failures {
                 await Self.confirmPermanentDelete(track: track, error: error, library: library)

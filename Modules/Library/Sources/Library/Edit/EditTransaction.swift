@@ -101,7 +101,7 @@ actor EditTransaction {
                     try mutable.update(db)
 
                     // Keep the lyrics table in sync with the edited text so
-                    // Phase 11 (lyrics display) sees the updated isSynced flag
+                    // ADR-015 (lyrics display) sees the updated isSynced flag
                     // immediately — without waiting for the next rescan.
                     if let trackID = mutable.id {
                         if let text = patch.syncedLyrics {

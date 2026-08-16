@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - CoverMosaicGeneratorTests
 
-/// Unit tests for the shared cover-mosaic engine (phase 23-1). Each test uses a
+/// Unit tests for the shared cover-mosaic engine (ADR-072). Each test uses a
 /// fresh generator instance so the singleton's cache never leaks across tests.
 @Suite("CoverMosaicGenerator")
 @MainActor

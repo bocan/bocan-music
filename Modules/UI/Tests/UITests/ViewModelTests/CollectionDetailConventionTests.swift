@@ -4,7 +4,7 @@ import Testing
 // MARK: - CollectionDetailConventionTests
 
 /// Source-convention checks for the genre/composer destination Songs / Albums
-/// switch (phase 23-3). These wire-ups can't be exercised host-less.
+/// switch (ADR-074). These wire-ups can't be exercised host-less.
 @Suite("Collection detail (Songs/Albums) conventions")
 struct CollectionDetailConventionTests {
     private func uiSource(_ relativePath: String) throws -> String {

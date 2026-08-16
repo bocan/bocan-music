@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - SubsonicSongsView
 
-/// Per-server Songs destination (Phase 19 step 10).
+/// Per-server Songs destination (ADR-035 step 10).
 ///
 /// Subsonic has no global "all songs" endpoint, so the un-filtered list is
 /// a shuffled sample fetched via `getRandomSongs`. Refresh reseeds the

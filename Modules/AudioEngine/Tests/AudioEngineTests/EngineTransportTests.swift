@@ -355,7 +355,7 @@ struct EngineTransportTests {
 
     // MARK: - Cancellation / leak hardening
 
-    /// Phase 1 audit #11: a `Task` that cancels a `play()` call must leave the
+    /// ADR-002 audit #11: a `Task` that cancels a `play()` call must leave the
     /// engine in a consistent (non-`.failed`) state and tear down the pump
     /// and decoder rather than leaking them.
     ///

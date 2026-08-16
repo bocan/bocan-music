@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// One backfilled play from an external listening-history export (phase 25).
+/// One backfilled play from an external listening-history export (ADR-076).
 ///
 /// `trackID` is nullable by design: an export usually contains years of plays
 /// for music the library no longer (or never) held. Unlinked rows still feed

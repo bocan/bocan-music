@@ -83,12 +83,12 @@ public actor FFmpegDecoder: Decoder {
     public nonisolated let sourceFormat: AVAudioFormat
     public nonisolated let duration: TimeInterval
 
-    /// Measured source facts captured at open time (phase 27-5): container,
+    /// Measured source facts captured at open time (ADR-078 slice 5): container,
     /// codec and profile, sample rate, channels, claimed bitrate, and, for
     /// network streams, the ICY headers.
     public nonisolated let streamDetails: StreamDetails
 
-    /// ICY now-playing titles (phase 27-5), de-interleaved by FFmpeg's http
+    /// ICY now-playing titles (ADR-078 slice 5), de-interleaved by FFmpeg's http
     /// protocol and surfaced from the packet-read loop. Local files never
     /// emit. Finishes when the decoder closes. The backing members are
     /// internal (not private) so FFmpegDecoder+StreamDetails.swift can emit.
@@ -200,7 +200,7 @@ private extension FFmpegDecoder {
     /// Opens the format context, finds the best audio stream, opens the codec,
     /// and initialises the SWR resampler. Returns the stream's native sample
     /// rate plus the `StreamDetails` snapshot captured while the codec
-    /// parameters are in hand (phase 27-5).
+    /// parameters are in hand (ADR-078 slice 5).
     private static func openAndConfigure(ctx: FFContext, url: URL) throws -> (Double, StreamDetails) {
         // For HTTP / HTTPS URLs pass the full absolute string so FFmpeg's
         // network protocol handlers fire. Everything else (file URLs,
@@ -336,7 +336,7 @@ private extension FFmpegDecoder {
             if readRet < 0 {
                 throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: ffError(readRet))
             }
-            // ICY now-playing (phase 27-5): checked before the stream-index
+            // ICY now-playing (ADR-078 slice 5): checked before the stream-index
             // guard because the update can ride along with any packet.
             self.consumeMetadataUpdate(fmtCtx: fmtCtx)
             defer { av_packet_unref(pkt) }

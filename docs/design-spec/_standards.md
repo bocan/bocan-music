@@ -1,6 +1,6 @@
 # Cross-Cutting Standards
 
-Every phase assumes these. Re-read once, then obey without being asked.
+Every ADR assumes these. Re-read once, then obey without being asked.
 
 ## Language & Platform
 
@@ -35,7 +35,7 @@ Current internal-module dependencies:
 | Acoustics     | Observability                                                                             |
 | Persistence   | Observability                                                                             |
 | Subsonic      | Observability, Persistence                                                                |
-| SyncServer    | Observability, Persistence (Library, Podcasts edges land in phase 22-5/22-6)              |
+| SyncServer    | Observability, Persistence (Library, Podcasts edges land in ADR-065/22-6)              |
 | Library       | Observability, Persistence, Metadata, Acoustics                                           |
 | Playback      | Observability, Persistence, AudioEngine                                                   |
 | Scrobble      | Observability, Persistence, Playback                                                      |
@@ -98,15 +98,15 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 - **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`, `build:`, `ci:`, `perf:`). A commit scope matches the module: `feat(audio): schedule gapless handoff`.
 - One logical change per commit. PR titles mirror the leading commit.
-- Every PR links to its phase file.
+- Every PR links to its ADR.
 
 ## Security & privacy
 
 - **Sandbox on**, hardened runtime on, library validation on.
-- Entitlements added per phase, never upfront "just in case".
+- Entitlements added per ADR, never upfront "just in case".
 - No analytics without explicit opt-in. MetricKit (which stays on-device) is fine.
 - Secrets never in the repo. `.env` is gitignored; CI uses GitHub Actions secrets.
-- Sensitive file access goes through `SecurityScope` helper (Phase 3) — never raw `URL.startAccessingSecurityScopedResource()` scattered around.
+- Sensitive file access goes through `SecurityScope` helper (ADR-004) — never raw `URL.startAccessingSecurityScopedResource()` scattered around.
 
 ## Performance baselines
 
@@ -120,7 +120,7 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 - Every interactive element has an `accessibilityLabel`.
 - Every new interactive control ships with a stable `A11y` accessibility
-  identifier and localized `.help()` text (phase 29). The identifier is
+  identifier and localized `.help()` text (ADR-080). The identifier is
   enforced by the E2E crawler audit in `make test-e2e`; help coverage is
   reported by `Scripts/audit-help-text.py` in `make lint`. Controls inside
   menus, alerts, and dialogs are exempt from `.help()` (macOS renders no
@@ -139,14 +139,14 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 ## Context7
 
-Add `use context7` to every prompt that touches evolving APIs. Explicit lookups are listed per phase.
+Add `use context7` to every prompt that touches evolving APIs. Explicit lookups are listed per ADR.
 
 ## What "done" means
 
-A phase is done when:
+An ADR is done when:
 
-1. Every acceptance-criteria box in the phase file is ticked.
+1. Every acceptance-criteria box in the ADR is ticked.
 2. `make format && make lint && make build && make test-{whatever module you changed}` is green.
 3. CI is green on the PR.
-4. The phase's "Handoff" contract is honoured (the next phase's prerequisites hold).
-5. Nothing marked `TODO(phase-NN)` remains.
+4. The ADR's "Handoff" contract is honoured (the next ADR's prerequisites hold).
+5. Nothing marked `TODO(ADR-NNN)` remains.

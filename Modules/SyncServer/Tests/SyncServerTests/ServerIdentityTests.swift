@@ -5,7 +5,7 @@ import Testing
 
 /// In-memory identity store for tests: stable material, never touches the
 /// Keychain. `secIdentity` is unsupported (the real `SecIdentity` path is
-/// covered by `KeychainIdentityStoreTests` and the phase 22-3 loopback test).
+/// covered by `KeychainIdentityStoreTests` and the ADR-063 loopback test).
 final class InMemoryIdentityStore: IdentityStoring, Sendable {
     let material: SelfSignedCert.Material
 

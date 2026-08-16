@@ -8,7 +8,7 @@ extension BocanCommands {
     /// directly: the Commands body only rebuilds on @Observable (or
     /// @AppStorage) reads, so the VM's @Published `hasTrackSelection`
     /// bridge froze these items at whatever state the body was built with
-    /// (phase 30 enablement matrix).
+    /// (ADR-081 enablement matrix).
     private var hasSelection: Bool {
         !self.vm.tracks.selection.isEmpty
     }
@@ -56,7 +56,7 @@ extension BocanCommands {
             Divider()
 
             // Selection-scoped like Play Now above: all three no-op without
-            // a selection (phase 30 enablement matrix).
+            // a selection (ADR-081 enablement matrix).
             Button("Get Info") {
                 self.vm.showTagEditorForCurrentSelection()
             }
@@ -77,14 +77,14 @@ extension BocanCommands {
 
             Divider()
 
-            // Phase 4 audit C1: real Love command, replacing the disabled stub.
+            // ADR-005 audit C1: real Love command, replacing the disabled stub.
             Button("Love / Unlove") {
                 self.vm.toggleLovedForCurrentSelection()
             }
             .keyboardShortcut(KeyBindings.love)
             .disabled(!self.hasSelection)
 
-            // Phase 4 audit C3: ⌘1…⌘5 rating shortcuts must work as global
+            // ADR-005 audit C3: ⌘1…⌘5 rating shortcuts must work as global
             // accelerators (the per-context-menu Rate submenu only fires when
             // the menu is open).  ⌘0 clears the rating to round out the set.
             Menu("Rate") {

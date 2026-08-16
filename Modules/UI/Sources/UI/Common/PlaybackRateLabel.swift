@@ -8,7 +8,7 @@ import Foundation
 /// 0.05-step slider values (1.15) keep their final digit. The previous
 /// per-site `%.2g` rounded to two digits and shipped wrong labels (1.25 as
 /// "1.2×", 1.75 as "1.8×") across the Playback menu, the transport speed
-/// popover, and both Settings speed controls; found by the phase 30 menu
+/// popover, and both Settings speed controls; found by the ADR-081 menu
 /// crawl. The numeral-plus-sign form is locale-neutral by design, matching
 /// the previous format strings, so this stays out of the string catalog.
 public enum PlaybackRateLabel {

@@ -127,7 +127,7 @@ public struct FeedParser: Sendable {
         let categories = Self.parseITunesCategories(channel.iTunes?.categories)
 
         // FeedKit 10.x does not parse podcast:funding; it stays nil until a
-        // supplementary parser is added (see phase21-12-podcast-features.md).
+        // supplementary parser is added (see ADR-049-podcast-features.md).
         let fundingURL: URL? = nil
 
         // podcast:guid is the canonical, cross-platform show identity.
@@ -224,7 +224,7 @@ public struct FeedParser: Sendable {
             episodeNumber: episodeNumber,
             episodeType: item.iTunes?.episodeType,
             artworkURL: artworkURL,
-            // FeedKit 10.x does not parse podcast:chapters (see phase21-12).
+            // FeedKit 10.x does not parse podcast:chapters (see ADR-049).
             chaptersURL: nil,
             transcriptURL: transcriptURL,
             link: item.link.flatMap { URL(string: $0) },
@@ -352,7 +352,7 @@ public struct FeedParser: Sendable {
 
     /// Pick a single transcript URL for the `transcript_url` column, preferring
     /// common readable / timed formats. The full multi-format list is a future
-    /// enhancement (see phase21-12-podcast-features.md).
+    /// enhancement (see ADR-049-podcast-features.md).
     private static func preferredTranscript(_ transcripts: [PodcastTranscript]?) -> URL? {
         guard let transcripts, !transcripts.isEmpty else { return nil }
         let ranked = transcripts.sorted { lhs, rhs in

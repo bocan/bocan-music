@@ -16,7 +16,7 @@ import UniformTypeIdentifiers
 
 /// Serialised sidebar + table UI state persisted to `settings` key `ui.state.v2`.
 ///
-/// Phase 4 audit H2: `sidebarWidth` is persisted here as a fallback for the
+/// ADR-005 audit H2: `sidebarWidth` is persisted here as a fallback for the
 /// AppKit autosave name set on `NSSplitView` — autosave covers the common
 /// case (window restore on relaunch); the explicit value lets us seed a
 /// freshly-installed window or a profile copied between machines.
@@ -29,7 +29,7 @@ struct UIStateV2: Codable {
     var sidebarWidth: Double?
     /// Persisted IDs of expanded playlist folders in the sidebar tree.
     var expandedPlaylistFolders: Set<Int64> = []
-    /// Phase 19 step 9: expand/collapse state for top-level sidebar
+    /// ADR-035 step 9: expand/collapse state for top-level sidebar
     /// sections plus per-Subsonic-server disclosure state.
     var sectionExpansion: SidebarSectionExpansion = .init()
 
@@ -108,13 +108,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     @Published public var searchQuery = ""
 
-    /// Phase 19 step 9: expand/collapse state for top-level sidebar
+    /// ADR-035 step 9: expand/collapse state for top-level sidebar
     /// sections, plus per-Subsonic-server disclosure state. Mutated directly
     /// by `Sidebar` via SwiftUI bindings; persistence is driven by a
     /// debounced Combine sink installed in `init`.
     @Published public var sectionExpansion: SidebarSectionExpansion = .init()
 
-    /// Phase 19 step 9: Subsonic servers the user has chosen to show in the
+    /// ADR-035 step 9: Subsonic servers the user has chosen to show in the
     /// sidebar. Empty until `reloadSubsonicServers()` runs (no-op when no
     /// `SubsonicSidebarListing` was supplied at init).
     @Published public private(set) var subsonicServers: [SubsonicSidebarServer] = []
@@ -124,7 +124,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// click without round-tripping through Settings → Sources.
     @Published public private(set) var hiddenSubsonicServers: [SubsonicSidebarServer] = []
 
-    /// Phase 19 step 17: live connection state per Subsonic server, used by
+    /// ADR-035 step 17: live connection state per Subsonic server, used by
     /// the sidebar status dot and the per-view offline banner. Updated by
     /// the optional `SubsonicConnectionObserving` injected at init.
     @Published public private(set) var subsonicConnectionStates: [UUID: SubsonicSidebarConnectionState] = [:]
@@ -227,7 +227,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Non-nil while a batch ReplayGain analysis is running.
     @Published public var replayGainProgress: ReplayGainBatchProgress?
 
-    // MARK: - Provenance analysis state (phase 24-3)
+    // MARK: - Provenance analysis state (ADR-075 slice 3)
 
     /// Non-nil while a transcode-detection batch is running, or when one has
     /// completed and its banner has not been dismissed yet. The batch logic
@@ -237,7 +237,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Handle for the running provenance batch so Cancel can reach it.
     var provenanceTask: Task<Void, Never>?
 
-    // MARK: - Listening-history import state (phase 25-1)
+    // MARK: - Listening-history import state (ADR-076 slice 1)
 
     /// True while a Last.fm export import is running; the Listening
     /// Behaviour pane shows a spinner and reloads its counts on completion.
@@ -254,7 +254,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             // never triggers one, so the File-menu rescan items froze in
             // whatever state they were built with. An @AppStorage read in
             // BocanCommands both rebuilds the body and stays fresh
-            // (phase 30 enablement matrix; the established live-label
+            // (ADR-081 enablement matrix; the established live-label
             // pattern from App/CLAUDE.md). Guarded the same way as
             // `selectedDestination` above: only write on an actual flip, so
             // a redundant same-value set can never fire the app-wide
@@ -330,19 +330,19 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public let playlistImporter: PlaylistImportService
     public let playlistExporter: PlaylistExportService
 
-    /// The local internet radio station catalog (phase 27). `RadioView` builds
+    /// The local internet radio station catalog (ADR-078). `RadioView` builds
     /// its view model on this; playback goes through `play(radioStation:)`.
     public let radioStations: RadioStationRepository
-    /// Phase 21-7: drives the Podcasts home grid and show episode list.
+    /// ADR-044: drives the Podcasts home grid and show episode list.
     public let podcasts: PodcastsViewModel
 
-    // MARK: - Phase 21 seams (nil when Podcasts feature not wired in)
+    // MARK: - ADR-037 seams (nil when Podcasts feature not wired in)
 
     public let podcastLibrary: (any PodcastLibraryDataSource)?
     public let podcastActions: (any PodcastActions)?
-    /// Phase 21-8: dual-index search + detail provider. Nil until wired in App.
+    /// ADR-045: dual-index search + detail provider. Nil until wired in App.
     public let podcastSearch: (any PodcastSearchProviding)?
-    /// Phase 21-12-b: transcript fetch/cache provider. Nil until wired in App.
+    /// ADR-051: transcript fetch/cache provider. Nil until wired in App.
     public let podcastTranscript: (any PodcastTranscriptProviding)?
 
     // MARK: - Dependencies
@@ -359,7 +359,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Cancelled and replaced whenever a new FSEvents batch arrives so that
     /// a burst of back-to-back file changes collapses into a single refresh.
     var watcherReloadTask: Task<Void, Never>?
-    /// Phase 5.5 audit L2: scan progress is coalesced into these "pending"
+    /// ADR-007 audit L2: scan progress is coalesced into these "pending"
     /// counters and flushed to the `@Published` properties at ~4 Hz so a
     /// 50k-file scan doesn't drown the main actor in objectWillChange ticks
     /// while audio is playing.
@@ -382,21 +382,21 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Background task observing `activePlaylistID`'s membership so that
     /// adds/removes/reorders are mirrored into the live queue.
     var playlistSyncTask: Task<Void, Never>?
-    /// Source of Subsonic servers for the sidebar (Phase 19 step 9). `nil`
+    /// Source of Subsonic servers for the sidebar (ADR-035 step 9). `nil`
     /// when running without the Subsonic module wired in (tests, snapshots).
     private let subsonicSidebarListing: SubsonicSidebarListing?
 
-    /// Phase 19 step 16: emits server IDs whose capabilities changed so the
+    /// ADR-035 step 16: emits server IDs whose capabilities changed so the
     /// sidebar can grow new rows without a relaunch.
     private let subsonicCapabilityObserver: (any SubsonicCapabilityChangeObserving)?
     private var subsonicCapabilityTask: Task<Void, Never>?
 
-    /// Phase 19 step 17: emits per-server connection-state changes so the
+    /// ADR-035 step 17: emits per-server connection-state changes so the
     /// sidebar status dot and per-view offline banner stay current.
     private let subsonicConnectionObserver: (any SubsonicConnectionObserving)?
     private var subsonicConnectionTask: Task<Void, Never>?
 
-    /// Phase 19 step 10: data source for per-server browse view models
+    /// ADR-035 step 10: data source for per-server browse view models
     /// (Songs / Albums / Artists / Genres). `nil` in tests / snapshots that
     /// don't wire the Subsonic module.
     public let subsonicDataSource: (any SubsonicBrowseDataSource)?
@@ -407,7 +407,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// against the background hydration task in `BocanApp`.
     public var subsonicBootstrap: (@Sendable () async -> Void)?
 
-    /// Phase 19 step 10: cover-art URL resolver used by Subsonic browse
+    /// ADR-035 step 10: cover-art URL resolver used by Subsonic browse
     /// views. `nil` when Subsonic isn't wired in.
     public let subsonicCoverArtProvider: SubsonicCoverArtProvider?
 
@@ -421,7 +421,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// search field has text. `nil` when no `subsonicDataSource` was supplied.
     public let subsonicSearch: SubsonicMultiSourceSearchViewModel?
 
-    /// Phase 19 step 14: optimistic star/rating writes for Subsonic songs.
+    /// ADR-035 step 14: optimistic star/rating writes for Subsonic songs.
     /// `nil` when no annotation delivery was supplied.
     public let subsonicAnnotations: SubsonicAnnotationCoordinator?
 
@@ -597,7 +597,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     private func wireExpandedFoldersPersistence() {
-        // Phase 6 audit: persist expanded playlist folders bidirectionally.
+        // ADR-008 audit: persist expanded playlist folders bidirectionally.
         // Restore happens in `restoreUIState()`, and updates are saved with a
         // short debounce to avoid frequent writes while users rapidly expand/collapse.
         self.expandedFoldersCancellable = self.playlistSidebar.$expandedFolders
@@ -610,7 +610,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     private func wireSectionExpansionPersistence() {
-        // Phase 19 step 9: persist sidebar section collapse + per-server
+        // ADR-035 step 9: persist sidebar section collapse + per-server
         // disclosure with the same debounce strategy as expanded folders.
         self.sectionExpansionCancellable = self.$sectionExpansion
             .dropFirst()
@@ -637,7 +637,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             }
     }
 
-    /// Phase 19 step 9: reload the Subsonic server list from the supplied
+    /// ADR-035 step 9: reload the Subsonic server list from the supplied
     /// `SubsonicSidebarListing`. No-op when no listing was injected. Reloads
     /// both the visible and hidden lists so the sidebar's "Hidden Sources"
     /// submenu stays in sync.
@@ -704,7 +704,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         await self.subsonicBootstrap?()
     }
 
-    /// Phase 19 step 16: subscribe to capability-change events from
+    /// ADR-035 step 16: subscribe to capability-change events from
     /// `SubsonicService` and refresh the sidebar listing whenever a server's
     /// advertised capabilities change. This makes new sections (Podcasts,
     /// Internet Radio, Bookmarks…) appear immediately after a server upgrade
@@ -738,7 +738,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             }
     }
 
-    /// Phase 19 step 17: subscribe to per-server connection-state events
+    /// ADR-035 step 17: subscribe to per-server connection-state events
     /// from the App-layer `SubsonicConnectionObserving` so the sidebar
     /// status dot and the per-view offline banner stay live.
     private func observeSubsonicConnectionChanges() {
@@ -777,7 +777,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             : message
     }
 
-    /// Phase 19 step 17: powers the per-view "Retry now" button by asking
+    /// ADR-035 step 17: powers the per-view "Retry now" button by asking
     /// the `SubsonicConnectionObserving` adapter to re-ping immediately.
     public func retrySubsonicConnection(serverID: UUID) async {
         await self.subsonicConnectionObserver?.retry(serverID: serverID)
@@ -893,7 +893,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         // The shared tracks model keeps the previous list's rows while
         // grids and self-loading destinations (Albums, Artists listings,
         // playlists, Up Next, Radio) are on screen, so row membership
-        // alone lies there and the jump silently did nothing (phase 30
+        // alone lies there and the jump silently did nothing (ADR-081
         // invocation pass). Scroll in place only when the visible
         // destination actually renders the shared track list.
         if !Self.destinationRendersSharedTrackList(self.selectedDestination)
@@ -1305,7 +1305,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Jumps to and starts playing the queue item at `index` in the existing
     /// queue.  Used by the Up Next "Play From Here" context-menu action
-    /// (Phase 5 audit M1).
+    /// (ADR-006 audit M1).
     public func playFromQueueIndex(_ index: Int) async {
         guard let qp = engine as? QueuePlayer else { return }
         do {
@@ -1333,7 +1333,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     /// Moves a queue item to the bottom of the queue.  Used by the Up Next
-    /// "Move to Bottom" context-menu action (Phase 5 audit M1).
+    /// "Move to Bottom" context-menu action (ADR-006 audit M1).
     public func moveQueueItemToBottom(id: QueueItem.ID) async {
         guard let qp = engine as? QueuePlayer else { return }
         let items = await qp.queue.items
@@ -1348,11 +1348,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     /// Last sidebar width reported by the AppKit split-view, used to seed
-    /// `UIStateV2.sidebarWidth` at save time.  Phase 4 audit H2.
+    /// `UIStateV2.sidebarWidth` at save time.  ADR-005 audit H2.
     @Published public var sidebarWidth: Double?
 
     /// Bumped by the global ⌘F command; observed by `BocanRootView` to move
-    /// `@FocusState` onto the toolbar search field.  Phase 4 audit H5.
+    /// `@FocusState` onto the toolbar search field.  ADR-005 audit H5.
     @Published public var searchFocusRequestID = UUID()
 
     /// One-shot request for `SmartPlaylistDetailView` to open `RuleBuilderView`

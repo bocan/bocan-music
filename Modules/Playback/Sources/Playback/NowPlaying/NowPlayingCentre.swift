@@ -67,11 +67,11 @@ public final class NowPlayingCentre {
 
     /// Update the displayed item for a podcast episode. Maps the episode title
     /// to the title slot and the show name to the artist + podcast-title slots
-    /// (per the Phase 21 brief: the artist slot carries the show name).
+    /// (per the ADR-037 brief: the artist slot carries the show name).
     ///
     /// Note: `MPNowPlayingInfoMediaType` has only `.none` / `.audio` / `.video`
     /// (there is no `.podcast` member in the MediaPlayer framework, contrary to
-    /// the phase 21-5 spec). The podcast nature is conveyed to the system via
+    /// the ADR-042 spec). The podcast nature is conveyed to the system via
     /// `MPMediaItemPropertyPodcastTitle`; the media type stays `.audio`, which
     /// is the only correct audio value.
     public func updatePodcast(
@@ -99,7 +99,7 @@ public final class NowPlayingCentre {
         self.log.debug("nowplaying.update.podcast", ["title": title, "show": showName])
     }
 
-    /// Update the displayed item for a live radio stream (phase 27-5): the
+    /// Update the displayed item for a live radio stream (ADR-078 slice 5): the
     /// stream title (or the station name until one arrives) in the title
     /// slot, the station in the artist slot. No duration is set; live audio
     /// has no timeline, and `IsLiveStream` tells the system so.

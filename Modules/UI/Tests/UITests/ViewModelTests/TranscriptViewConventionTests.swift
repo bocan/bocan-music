@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - TranscriptViewConventionTests
 
-/// Source-convention guards for the Phase 21-12-b transcript viewer: the view and
+/// Source-convention guards for the ADR-051 transcript viewer: the view and
 /// its two entry points cannot be exercised host-less, so we assert the structural
 /// facts (localized chrome, empty state, gated entry points) by reading the source.
 @Suite("Transcript View Convention")

@@ -38,7 +38,7 @@ struct VisualizerControlOverlay: View {
             // each exposing one thing as its `.accessibilityValue`, because
             // two other AX roles in this view don't reliably bridge a value
             // to XCUITest even though their label bridges fine (found
-            // empirically, phase 33): a Canvas/MTKView-backed render
+            // empirically, ADR-084): a Canvas/MTKView-backed render
             // surface, and — less expected — a plain view carrying
             // `.accessibilityAdjustableAction` (the mode/palette stepper
             // rows below), which XCUITest exposes with no `value:` at all.
@@ -64,7 +64,7 @@ struct VisualizerControlOverlay: View {
             // (controlsCard + the readouts' `.overlay`s) auto-combines into
             // a single accessibility element, silently absorbing the mode
             // and palette steppers' own identifiers into whichever leaf
-            // SwiftUI picks (phase 33, found empirically).
+            // SwiftUI picks (ADR-084, found empirically).
             .accessibilityElement(children: .contain)
     }
 

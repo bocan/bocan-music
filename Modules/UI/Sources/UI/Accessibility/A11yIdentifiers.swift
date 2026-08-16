@@ -26,7 +26,7 @@ public enum A11y {
         public static let addFolderButton = "sidebar.addFolder"
     }
 
-    /// Radio station catalog (phase 27).
+    /// Radio station catalog (ADR-078).
     public enum Radio {
         public static let list = "radio.list"
         public static let emptyState = "radio.emptyState"
@@ -39,7 +39,7 @@ public enum A11y {
             "radio.row.\(stationID.map(String.init) ?? "unsaved")"
         }
 
-        // MARK: - Add/edit sheet (phase 34)
+        // MARK: - Add/edit sheet (ADR-085)
 
         public static let sheetNameField = "radio.sheet.name"
         public static let sheetStreamURLField = "radio.sheet.streamURL"
@@ -53,7 +53,7 @@ public enum A11y {
             "radio.sheet.foundRow.\(index)"
         }
 
-        // MARK: - Info sheet (phase 34)
+        // MARK: - Info sheet (ADR-085)
 
         /// One row's value text, keyed by a stable slug (not the localized
         /// label, which must stay free to translate): "container", "codec",
@@ -117,7 +117,7 @@ public enum A11y {
         public static let addBarField = "podcasts.addBar.field"
         public static let addBarClearButton = "podcasts.addBar.clear"
 
-        // MARK: - Subscribe by URL (phase 34)
+        // MARK: - Subscribe by URL (ADR-085)
 
         /// The search results row offering to add the pasted feed URL.
         public static let addByURLRow = "podcasts.addByURLRow"
@@ -168,7 +168,7 @@ public enum A11y {
     public enum SettingsIDs {
         /// Sidebar navigation rows, keyed by `SettingsPage.rawValue`. Tag-
         /// selected `List(selection:)` rows are otherwise absent from the AX
-        /// tree (the same VoiceOver defect the main sidebar hit in phase 30).
+        /// tree (the same VoiceOver defect the main sidebar hit in ADR-081).
         public static func sidebarRow(_ pageRawValue: String) -> String {
             "settings.sidebar.\(pageRawValue)"
         }
@@ -404,12 +404,12 @@ public enum A11y {
         /// current mode/palette name as their `.accessibilityValue`: the
         /// stepper rows' own `.accessibilityAdjustableAction` role does not
         /// reliably bridge a value to XCUITest, even though its label does
-        /// (phase 33, found empirically).
+        /// (ADR-084, found empirically).
         public static let modeValue = "visualizer.overlay.mode.value"
         public static let paletteValue = "visualizer.overlay.palette.value"
     }
 
-    // MARK: - Playlist import sheet (phase 34)
+    // MARK: - Playlist import sheet (ADR-085)
 
     public enum PlaylistImport {
         public static let chooseFilesButton = "playlistImport.chooseFiles"

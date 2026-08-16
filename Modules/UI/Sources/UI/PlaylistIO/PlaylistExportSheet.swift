@@ -93,7 +93,7 @@ public struct PlaylistExportSheet: View {
 
     private func pickRoot() {
         // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
-        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        // or the audio render thread. Matches the async-panel pattern from ADR-007.
         Task { @MainActor in
             let panel = NSOpenPanel()
             panel.canChooseDirectories = true
@@ -113,7 +113,7 @@ public struct PlaylistExportSheet: View {
             save.allowedContentTypes = [type]
         }
         // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
-        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        // or the audio render thread. Matches the async-panel pattern from ADR-007.
         let saveResult = await withCheckedContinuation { cont in
             save.begin { cont.resume(returning: $0) }
         }

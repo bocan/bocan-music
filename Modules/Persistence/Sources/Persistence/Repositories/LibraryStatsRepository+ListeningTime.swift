@@ -3,7 +3,7 @@ import GRDB
 
 // MARK: - LibraryListeningTimeReport
 
-/// The time analytics for the Listening Behaviour tab (#373, phase 25-3):
+/// The time analytics for the Listening Behaviour tab (#373, ADR-076 slice 3):
 /// when listening happens, how often new artists arrive, and which artists
 /// belong to one month of the year. Every query unions local `play_history`
 /// with `imported_listens` (matched or not), so an imported decade counts.
@@ -62,7 +62,7 @@ public struct LibraryListeningTimeReport: Equatable, Sendable {
 
 // MARK: - Time analytics queries
 
-/// The time-analytics detectors (#373, phase 25-3), split from the counter
+/// The time-analytics detectors (#373, ADR-076 slice 3), split from the counter
 /// analytics so each file stays focused.
 public extension LibraryStatsRepository {
     /// Plays an artist needs before a seasonal skew is worth reporting.

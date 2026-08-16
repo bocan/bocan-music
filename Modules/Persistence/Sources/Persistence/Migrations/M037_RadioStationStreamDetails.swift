@@ -1,6 +1,6 @@
 import GRDB
 
-/// Widens the `radio_stations` machine-owned profile (phase 27-5): the
+/// Widens the `radio_stations` machine-owned profile (ADR-078 slice 5): the
 /// measured container, sample rate, and channel count from the last
 /// successful connect, so the station info sheet can answer "what is this
 /// stream, really" even offline. Nullable like the rest of the profile;

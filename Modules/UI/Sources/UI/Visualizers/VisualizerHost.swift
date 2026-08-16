@@ -30,7 +30,7 @@ public struct VisualizerHost: View {
 
     // MARK: - Frame-rate monitoring
 
-    /// Owns both the auto-simplify watchdog and (phase 33, E2E only) the
+    /// Owns both the auto-simplify watchdog and (ADR-084, E2E only) the
     /// rolling FPS fed to `VisualizerViewModel.recordLiveFrame`. Canvas mode
     /// already re-evaluates `body` every tick via `TimelineView`, unlike the
     /// stricter Metal path (see `activeContent`'s doc comment), so mutating
@@ -270,7 +270,7 @@ public struct VisualizerHost: View {
 
 /// Applies `VisualizerViewModel.currentFPS` as an accessibility value only
 /// under `e2eLiveness` — never for a real user, whose accessibility tree
-/// must not carry this internal metric (phase 33). Always applies the
+/// must not carry this internal metric (ADR-084). Always applies the
 /// modifier (an empty value reads as no value to VoiceOver) rather than
 /// branching to a differently-shaped view per condition, which resets
 /// SwiftUI's identity for the wrapped content and can silently drop

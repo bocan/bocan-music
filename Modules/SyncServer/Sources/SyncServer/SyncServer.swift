@@ -9,7 +9,7 @@ import Persistence
 /// It composes the module's internal collaborators (the `Router`, `FileServing`,
 /// `ManifestBuilder`, the pairing and trust actors) from a `Database` and a
 /// `ServerIdentity`, so callers never touch the internal HTTP types. This is a
-/// separate listener/identity/port from any future Phase 18 remote-control
+/// separate listener/identity/port from any future ADR-034 remote-control
 /// service; the two share no trust store.
 public actor SyncServer {
     private let identity: ServerIdentity
@@ -25,7 +25,7 @@ public actor SyncServer {
     /// - Parameters:
     ///   - database: the shared library database.
     ///   - identity: the server's TLS identity (injectable for tests).
-    ///   - ui: the pairing UI bridge (Settings implements it in phase 22-8).
+    ///   - ui: the pairing UI bridge (Settings implements it in ADR-068).
     ///   - downloadRoot: the podcast download root (nil uses the default).
     ///   - serverName: the advertised computer name, injected so the module does
     ///     not import AppKit (`Host.current().localizedName` from the App).
@@ -129,7 +129,7 @@ public actor SyncServer {
         await self.listener.reAdvertise()
     }
 
-    // MARK: - Pairing pass-throughs (driven by the Settings UI in phase 22-8)
+    // MARK: - Pairing pass-throughs (driven by the Settings UI in ADR-068)
 
     /// Enters the pairing window (`pm` -> 1) for the coordinator's timeout.
     public func armPairing() async {

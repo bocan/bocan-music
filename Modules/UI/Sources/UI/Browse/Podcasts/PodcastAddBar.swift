@@ -5,7 +5,7 @@ import SwiftUI
 /// The always-present search/add bar at the top of the Podcasts window.
 ///
 /// Owns the text binding; search results and the add-by-URL flow are filled in
-/// by phase 21-8 via a popover attached to this bar.
+/// by ADR-045 via a popover attached to this bar.
 struct PodcastAddBar: View {
     @ObservedObject var vm: PodcastsViewModel
 

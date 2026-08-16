@@ -38,7 +38,7 @@ public enum CollectionDetailMode: String, CaseIterable, Sendable {
 /// primitive `String` overload *does* propagate reliably (the same reason the
 /// menu's `Bool` pane-visibility mirrors work), so this wrapper stores the raw
 /// value as a `String` and projects the enum, giving the menu and the toolbars a
-/// single dependable source of truth. See `phase23-3-view-menu-destination-albums`.
+/// single dependable source of truth. See `ADR-074-view-menu-destination-albums`.
 @propertyWrapper
 public struct CollectionViewModeStorage: DynamicProperty {
     @AppStorage private var rawValue: String

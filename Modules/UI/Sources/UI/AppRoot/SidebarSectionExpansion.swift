@@ -3,7 +3,7 @@ import Foundation
 // MARK: - SidebarSectionExpansion
 
 /// Persisted expand/collapse state for every top-level sidebar section, plus
-/// per-server disclosure state for the Phase 19 Sources section. Lives in
+/// per-server disclosure state for the ADR-035 Sources section. Lives in
 /// `UIStateV2` so it survives a relaunch.
 ///
 /// All booleans default to `true`: a fresh install opens with every section
@@ -137,7 +137,7 @@ public enum SubsonicSidebarConnectionState: Sendable, Hashable {
 
 // MARK: - SubsonicConnectionObserving
 
-/// Phase 19 step 17: per-server connection-status surface used by the
+/// ADR-035 step 17: per-server connection-status surface used by the
 /// sidebar status dot and the per-view offline banner with "Retry now".
 /// Implemented by the App layer against `SubsonicConnectionMonitor`; UI
 /// consumes the protocol so the module stays decoupled from `Subsonic`.
@@ -181,7 +181,7 @@ public protocol SubsonicSidebarListing: Sendable {
 
 // MARK: - SubsonicCapabilityChangeObserving
 
-/// Phase 19 step 16: surfaces capability-change events from the Subsonic
+/// ADR-035 step 16: surfaces capability-change events from the Subsonic
 /// module to the UI layer, so the sidebar can grow new rows (Podcasts,
 /// Internet Radio, Bookmarks…) without a relaunch when a server upgrade
 /// adds support for them.

@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - LastFMExportParserTests
 
-/// The parser against the real export shape (phase 25-1): quoted fields,
+/// The parser against the real export shape (ADR-076 slice 1): quoted fields,
 /// commas inside the redundant utc_time column, blank MBIDs, and junk rows.
 @Suite("LastFMExportParser")
 struct LastFMExportParserTests {
@@ -71,7 +71,7 @@ struct LastFMExportParserTests {
 
 // MARK: - ListeningHistoryImporterTests
 
-/// End-to-end import (phase 25-1): file to stored, matched rows.
+/// End-to-end import (ADR-076 slice 1): file to stored, matched rows.
 @Suite("ListeningHistoryImporter")
 struct ListeningHistoryImporterTests {
     @Test("An export file lands stored, matched, and idempotent")

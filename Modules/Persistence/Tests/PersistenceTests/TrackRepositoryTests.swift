@@ -279,7 +279,7 @@ struct TrackRepositoryTests {
         #expect(drained?.isComplete == true)
     }
 
-    // MARK: - Provenance (phase 24-2)
+    // MARK: - Provenance (ADR-075 slice 2)
 
     /// A track eligible for provenance analysis unless a variation opts out.
     private func makeLosslessTrack(fileURL: String, mtime: Int64 = 1000) -> Track {

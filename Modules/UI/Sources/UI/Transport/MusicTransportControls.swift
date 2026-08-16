@@ -12,7 +12,7 @@ struct MusicTransportControls: View {
     @State private var radioInfo: LibraryViewModel.RadioStationInfoContext?
 
     /// Radio has no `tracks` row, so the info button switches to the station
-    /// sheet instead of the tag editor (phase 27-5).
+    /// sheet instead of the tag editor (ADR-078 slice 5).
     private var isRadio: Bool {
         self.vm.nowPlayingRadioStreamURL != nil
     }
