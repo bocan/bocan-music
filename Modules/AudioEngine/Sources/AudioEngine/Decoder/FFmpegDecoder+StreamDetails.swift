@@ -110,11 +110,26 @@ extension FFmpegDecoder {
     // MARK: - Read-loop titles
 
     /// Consumes a pending metadata-updated event, if any: clears the flag and
-    /// forwards a changed `StreamTitle` to `titleUpdates`.
+    /// forwards a changed now-playing string to `titleUpdates`.
+    ///
+    /// Two flag homes (#386): ICY updates land on the format context
+    /// (`AVFMT_EVENT_FLAG_METADATA_UPDATED`), but the Ogg demuxer publishes
+    /// each chain's vorbis comments on the STREAM — `AVStream.event_flags`
+    /// plus `AVStream.metadata` — so watching the context alone never sees an
+    /// Ogg station's song changes.
     func consumeMetadataUpdate(fmtCtx: UnsafeMutablePointer<AVFormatContext>) {
-        guard fmtCtx.pointee.event_flags & metadataUpdatedFlag != 0 else { return }
-        fmtCtx.pointee.event_flags &= ~metadataUpdatedFlag
-        self.emitTitleIfChanged(fmtCtx: fmtCtx)
+        var updated = false
+        if fmtCtx.pointee.event_flags & metadataUpdatedFlag != 0 {
+            fmtCtx.pointee.event_flags &= ~metadataUpdatedFlag
+            updated = true
+        }
+        let stream = fmtCtx.pointee.streams?[Int(self.audioStreamIndex)]
+        if let stream, stream.pointee.event_flags & metadataUpdatedFlag != 0 {
+            stream.pointee.event_flags &= ~metadataUpdatedFlag
+            updated = true
+        }
+        guard updated else { return }
+        self.emitTitleIfChanged(fmtCtx: fmtCtx, stream: stream)
     }
 
     /// Reads the refreshed metadata dictionary and yields a changed
@@ -123,13 +138,21 @@ extension FFmpegDecoder {
     /// `ARTIST`/`TITLE` for unbounded remote streams (#386) — never for
     /// bounded sources, so a local chained-Ogg file can't hijack the strip's
     /// title. Empty or repeated values are swallowed.
-    private func emitTitleIfChanged(fmtCtx: UnsafeMutablePointer<AVFormatContext>) {
+    private func emitTitleIfChanged(
+        fmtCtx: UnsafeMutablePointer<AVFormatContext>,
+        stream: UnsafeMutablePointer<AVStream>?
+    ) {
         let streamTitle = Self.dictValue(fmtCtx.pointee.metadata, key: "StreamTitle")
         var vorbisTitle: String?
         var vorbisArtist: String?
         if self.isUnboundedRemoteStream {
-            vorbisTitle = Self.dictValue(fmtCtx.pointee.metadata, key: "title")
-            vorbisArtist = Self.dictValue(fmtCtx.pointee.metadata, key: "artist")
+            // Stream-level metadata first: that is where the Ogg demuxer
+            // writes each chain's comments; context-level is the fallback.
+            let streamMeta = stream?.pointee.metadata
+            vorbisTitle = Self.dictValue(streamMeta, key: "title")
+                ?? Self.dictValue(fmtCtx.pointee.metadata, key: "title")
+            vorbisArtist = Self.dictValue(streamMeta, key: "artist")
+                ?? Self.dictValue(fmtCtx.pointee.metadata, key: "artist")
         }
         guard let composed = StreamDetails.composeNowPlayingTitle(
             streamTitle: streamTitle,
