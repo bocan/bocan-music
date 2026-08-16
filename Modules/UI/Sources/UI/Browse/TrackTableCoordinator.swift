@@ -249,6 +249,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         self.addPlaybackItems(to: menu, selected: selected, first: first, acts: acts)
         self.addLoveItem(to: menu, selected: selected, acts: acts)
         self.addRateItem(to: menu, selected: selected, acts: acts)
+        self.addShuffleItem(to: menu, selected: selected, acts: acts)
         self.addNavigationItems(to: menu, selected: selected, first: first, acts: acts)
         self.addLyricsItems(to: menu, selected: selected, first: first, acts: acts)
         self.addFileItems(to: menu, selected: selected, first: first, acts: acts)
@@ -338,8 +339,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         playlistItem.submenu = sub
         menu.addItem(playlistItem)
 
-        // Grouped under "Add to Playlist", not among the library/disk removals
-        // below. The ⌫ equivalent is display-only; the table handles the press.
+        // Grouped here, not with the removals; ⌫ is display-only (table handles it).
         if let removeFromPlaylist = acts.removeFromPlaylist {
             let rp = ActionMenuItem(L10n.string("Remove from Playlist")) { removeFromPlaylist(selected) }
             rp.isEnabled = !selected.isEmpty

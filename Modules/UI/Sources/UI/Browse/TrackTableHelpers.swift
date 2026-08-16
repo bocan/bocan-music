@@ -25,6 +25,24 @@ final class ActionMenuItem: NSMenuItem {
     }
 }
 
+// MARK: - Shuffle-exclusion menu item
+
+extension TrackTableCoordinator {
+    /// "Exclude from Shuffle" / "Include in Shuffle" toggle, love-item style:
+    /// an all-excluded selection offers include; anything else excludes all.
+    /// Lives here (not in the coordinator file) for `file_length` headroom.
+    func addShuffleItem(to menu: NSMenu, selected: [Track], acts: TrackContextMenuActions) {
+        guard !selected.isEmpty else { return }
+        let allExcluded = selected.allSatisfy(\.excludedFromShuffle)
+        let title = allExcluded ? L10n.string("Include in Shuffle") : L10n.string("Exclude from Shuffle")
+        menu.addItem(ActionMenuItem(title) {
+            for id in selected.compactMap(\.id) {
+                acts.toggleShuffle(id, !allExcluded)
+            }
+        })
+    }
+}
+
 // MARK: - ShuffleCheckCell
 
 /// `NSTableCellView` subclass for the Shuffle Exclude column.
