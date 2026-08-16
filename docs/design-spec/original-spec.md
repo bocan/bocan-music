@@ -1,6 +1,6 @@
 # Bòcan — Phased Build Plan
 
-A vibe-coded, test-driven, native macOS music player built with the latest Swift, SwiftUI, and AVFoundation. This document is structured so that each phase is small enough to fit comfortably in a single Claude Code session (or two) without overwhelming the context window. Phases are **strictly ordered by dependency** — later phases assume earlier phases are complete and tested.
+A test-driven, native macOS music player built with the latest Swift, SwiftUI, and AVFoundation. This document is structured so that each phase is small enough to fit comfortably in a single session (or two). Phases are **strictly ordered by dependency** — later phases assume earlier phases are complete and tested.
 
 ## On the Name
 
@@ -50,7 +50,7 @@ These are the non-functional requirements baked into the workflow. **Read this o
 - **Xcode 16+** for Swift Testing macro support
 - **SPM** (Swift Package Manager) for all dependencies — no CocoaPods, no Carthage
 ### Use Context7 For
-Add `use context7` to every Claude Code prompt that touches:
+Add `use context7` to every prompt that touches:
 - SwiftUI APIs (still evolving fast)
 - Swift Concurrency / Swift 6 actor model
 - AVFoundation / AVAudioEngine
@@ -856,30 +856,6 @@ Gapless playback in AVAudioEngine is achieved by **scheduling the next file's fi
 | Sparkle | Auto-updates | App |
 | google-cast-sdk | Casting (optional) | Casting module |
 
----
-
-# Appendix B — How to Drive Claude Code Through This
-
-Rough script per phase:
-
-1. Start a fresh Claude Code session for each phase (don't let context pile up)
-2. Open the relevant module folder as the working directory
-3. Paste the phase section from this doc
-4. Add: "Implement Phase N as specified. Use Context7 for all the listed lookups. Write tests as you go, don't bolt them on after. Commit frequently with conventional commit messages."
-5. Run `make test` after every meaningful change. Don't trust "it should work."
-6. When the phase is done, run `make lint && make test-coverage` and verify acceptance criteria
-7. Open a PR, let CI run, merge, tag if it's a release point
----
-
-# Appendix C — What's Deliberately Out of Scope (For Now)
-
-- iOS / iPadOS companion app — stick with macOS
-- Cloud library sync — file-system-watcher + iCloud Drive is enough for v1
-- Streaming services (Spotify, Apple Music, Tidal) — different beast entirely
-- Podcast support — different metadata model, do as a sequel
-- Internet radio — could be a small Phase 17 if you want
-- Audio analysis (key detection, BPM auto-detection) — bolt on later if you care
-- Acoustic fingerprinting (AcoustID/Chromaprint) — heavy and licence-aware
 ---
 
 **End of plan. Go forth and build.**
