@@ -216,6 +216,24 @@ actor ScanCoordinator {
             _ = try? await self.albumRepo.pruneOrphans()
         }
 
+        // ADR-087: attach sidecar CUE sheets as in-track markers once the
+        // audio is indexed. Cue files are not walker entries (the walker is
+        // audio-only); this is a cheap per-folder pass, and a folder with no
+        // cues costs one directory listing.
+        if !Task.isCancelled {
+            let markerService = CueMarkerService(
+                trackRepo: self.trackRepo,
+                markerRepo: TrackMarkerRepository(database: self.database)
+            )
+            var cueFolders: Set<URL> = []
+            for root in roots {
+                cueFolders.formUnion(Self.cueFolders(under: root.url))
+            }
+            for folder in cueFolders where !Task.isCancelled {
+                await markerService.attachMarkers(inFolder: folder)
+            }
+        }
+
         let elapsed = ContinuousClock.now - start
         self.log.debug("scan.end", [
             "inserted": inserted, "updated": updated, "removed": removed,
@@ -380,6 +398,21 @@ actor ScanCoordinator {
             ne(dbTrack.trackTotal, diskTags.trackTotal) ||
             ne(dbTrack.discNumber, diskTags.discNumber) ||
             ne(dbTrack.discTotal, diskTags.discTotal)
+    }
+
+    /// The distinct folders under `root` that contain `.cue` files, hidden
+    /// paths skipped (ADR-087's per-folder marker pass).
+    static func cueFolders(under root: URL) -> Set<URL> {
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+        var folders: Set<URL> = []
+        for case let url as URL in enumerator where url.pathExtension.lowercased() == "cue" {
+            folders.insert(url.deletingLastPathComponent())
+        }
+        return folders
     }
 
     private static func canonicalPath(_ path: String) -> String? {

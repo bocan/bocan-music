@@ -339,6 +339,22 @@ public actor LibraryScanner {
                     }
                 }
             } else {
+                if url.pathExtension.lowercased() == "cue" {
+                    // A cue appeared or changed: re-attach its folder's
+                    // markers (ADR-087). The audio around it is unchanged, so
+                    // the mtime guard below would skip everything; the marker
+                    // pass needs no track rescan at all.
+                    let service = CueMarkerService(
+                        trackRepo: trackRepo,
+                        markerRepo: TrackMarkerRepository(database: self.database)
+                    )
+                    let touched = await service.attachMarkers(inFolder: url.deletingLastPathComponent())
+                    if touched > 0 {
+                        self.log.debug("fsevents.cue_markers", ["path": url.lastPathComponent])
+                        didChange = true
+                    }
+                    continue
+                }
                 if SidecarArt.matches(url) {
                     // A cover image appeared or changed. The audio around it
                     // is unchanged (so the mtime guard below would skip it);
