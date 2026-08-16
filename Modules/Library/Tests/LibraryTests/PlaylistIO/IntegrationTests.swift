@@ -67,6 +67,91 @@ struct PlaylistIOIntegrationTests {
         #expect(matched[1] == id2)
     }
 
+    /// A temp folder holding a real 2-second MP3 (copied from the fixture
+    /// library) and a CUE sheet splitting it at 1s, so the last track's
+    /// duration must come from probing the audio file, not from an INDEX.
+    private func makeCueFolder() throws -> (cue: URL, dir: URL) {
+        let fixture = URL(filePath: #filePath)
+            .deletingLastPathComponent() // PlaylistIO/
+            .deletingLastPathComponent() // LibraryTests/
+            .appendingPathComponent(
+                "Fixtures/sample-library/Various Artists/Compilation/01 - Artist F Track.mp3"
+            )
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cue-eof-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(at: fixture, to: dir.appendingPathComponent("album.mp3"))
+        let cue = dir.appendingPathComponent("album.cue")
+        let sheet = """
+        TITLE "EOF Album"
+        FILE "album.mp3" WAVE
+          TRACK 01 AUDIO
+            TITLE "First"
+            INDEX 01 00:00:00
+          TRACK 02 AUDIO
+            TITLE "Last"
+            INDEX 01 00:01:00
+        """
+        try Data(sheet.utf8).write(to: cue)
+        return (cue, dir)
+    }
+
+    @Test("CUE import probes the last track's duration from the audio file")
+    func cueLastTrackDurationProbed() async throws {
+        let (cue, dir) = try self.makeCueFolder()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let importer = PlaylistImportService(
+            resolver: TrackResolver(trackRepo: trackRepo),
+            playlists: PlaylistService(database: db),
+            trackRepo: trackRepo,
+            radioStations: RadioStationRepository(database: db)
+        )
+        let report = try await importer.importFile(at: cue)
+        let playlistID = try #require(report.playlistID)
+        let members = try await PlaylistService(database: db).tracks(in: playlistID)
+        #expect(members.count == 2)
+
+        let first = try #require(members.first { $0.title == "First" })
+        #expect(first.duration == 1.0, "bounded track keeps its INDEX-derived length")
+
+        // The fixture MP3 is 2s long and the last track starts at 1s, so the
+        // probed remainder is ~1s. TagLib may round the total to whole
+        // seconds, so assert a range rather than an exact value.
+        let last = try #require(members.first { $0.title == "Last" })
+        #expect(last.duration > 0, "EOF track must not display as 0:00")
+        #expect(last.duration <= 2.0)
+    }
+
+    @Test("CUE re-import heals a zero duration left by earlier imports")
+    func cueReimportHealsZeroDuration() async throws {
+        let (cue, dir) = try self.makeCueFolder()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let importer = PlaylistImportService(
+            resolver: TrackResolver(trackRepo: trackRepo),
+            playlists: PlaylistService(database: db),
+            trackRepo: trackRepo,
+            radioStations: RadioStationRepository(database: db)
+        )
+
+        // First import, then zero the EOF track's duration to simulate a row
+        // written before the probe existed.
+        _ = try await importer.importFile(at: cue)
+        let audioURL = dir.appendingPathComponent("album.mp3").absoluteString
+        var stale = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=2"))
+        stale.duration = 0
+        try await trackRepo.update(stale)
+
+        _ = try await importer.importFile(at: cue)
+        let healed = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=2"))
+        #expect(healed.duration > 0, "re-import must repair the zero duration")
+    }
+
     @Test("Import + Export round-trip preserves order")
     func importExportRoundtrip() async throws {
         let db = try await makeDB()
