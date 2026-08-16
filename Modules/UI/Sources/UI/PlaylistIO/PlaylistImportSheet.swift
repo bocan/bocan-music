@@ -16,6 +16,11 @@ public struct PlaylistImportSheet: View {
     @State private var preview: [PreviewRow] = []
     @State private var isImporting = false
     @State private var errorMessage: String?
+    /// Folders the user granted through the follow-up access panel (#391).
+    /// Powerbox grants from an open panel last for the app session, so no
+    /// start/stop bracketing is needed; holding the URLs documents intent
+    /// and keeps the grant list inspectable.
+    @State private var grantedFolders: [URL] = []
 
     public init(
         isPresented: Binding<Bool>,
@@ -135,8 +140,44 @@ public struct PlaylistImportSheet: View {
             }
             guard result == .OK else { return }
             self.pickedURLs = panel.urls
+            await self.requestCueAudioAccessIfNeeded()
             await self.refreshPreview()
         }
+    }
+
+    /// A picked CUE sheet's grant covers the .cue file only — the sandbox
+    /// still can't read the sibling audio it references, so the import would
+    /// mint no bookmarks and the tracks couldn't play (#391). The prompt is
+    /// a LAST resort: audio under a library root is readable through the
+    /// root's scope and never triggers it (the common case stays silent).
+    /// Only audio outside every root asks once for folder access, aimed at
+    /// the first cue's own folder; the grant lives for the app session, so
+    /// the import's bookmark minting then makes playback durable across
+    /// relaunches.
+    @MainActor
+    private func requestCueAudioAccessIfNeeded() async {
+        var firstCue: URL?
+        var inaccessible: [URL] = []
+        for url in self.pickedURLs {
+            let blocked = await self.importer.cueAudioNeedingAccess(at: url)
+            if !blocked.isEmpty, firstCue == nil { firstCue = url }
+            inaccessible.append(contentsOf: blocked)
+        }
+        guard let firstCue, !inaccessible.isEmpty else { return }
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = firstCue.deletingLastPathComponent()
+        panel.prompt = L10n.string("Grant Access")
+        panel.message = L10n.string(
+            "Bòcan needs permission to read the audio files this CUE sheet refers to. Select the folder that contains them."
+        )
+        let result = await withCheckedContinuation { cont in
+            panel.begin { cont.resume(returning: $0) }
+        }
+        guard result == .OK, let folder = panel.url else { return }
+        self.grantedFolders.append(folder)
     }
 
     private func refreshPreview() async {

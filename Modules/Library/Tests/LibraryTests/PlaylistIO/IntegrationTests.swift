@@ -157,6 +157,32 @@ struct PlaylistIOIntegrationTests {
         #expect(first.albumArtistID == sheetArtistID)
     }
 
+    @Test("cueAudioNeedingAccess flags unreadable audio, stays quiet for readable (#391)")
+    func cueAccessProbe() async throws {
+        let (cue, dir) = try self.makeCueFolder()
+        defer {
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o644], ofItemAtPath: dir.appendingPathComponent("album.mp3").path
+            )
+            try? FileManager.default.removeItem(at: dir)
+        }
+        let db = try await makeDB()
+        let importer = self.makeCueImporter(db)
+
+        // Readable audio: no prompt warranted.
+        let quiet = await importer.cueAudioNeedingAccess(at: cue)
+        #expect(quiet.isEmpty)
+
+        // Unreadable audio (chmod 0): flagged. Root-scope coverage cannot be
+        // simulated in a non-sandboxed test process (a bookmark scope cannot
+        // defeat POSIX permissions), so the root-covered branch is exercised
+        // structurally by the sheet convention test instead.
+        let audio = dir.appendingPathComponent("album.mp3")
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: audio.path)
+        let blocked = await importer.cueAudioNeedingAccess(at: cue)
+        #expect(blocked.map(\.lastPathComponent) == ["album.mp3"])
+    }
+
     @Test("CUE re-import heals missing artist and album on existing rows (#390)")
     func cueReimportHealsMetadata() async throws {
         let (cue, dir) = try self.makeCueFolder()

@@ -52,4 +52,38 @@ struct CUETests {
         #expect(CUESheetReader.parseMSF("00:00:75") == 1000)
         #expect(CUESheetReader.parseMSF("garbage") == nil)
     }
+
+    @Test("inaccessibleAudio reports unreadable references, stays quiet for readable ones (#391)")
+    func accessProbe() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cue-access-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer {
+            // Restore permissions so the cleanup can delete the file.
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o644], ofItemAtPath: dir.appendingPathComponent("locked.flac").path
+            )
+            try? FileManager.default.removeItem(at: dir)
+        }
+        let cue = dir.appendingPathComponent("album.cue")
+        let sheet = """
+        FILE "open.flac" WAVE
+          TRACK 01 AUDIO
+            INDEX 01 00:00:00
+        FILE "locked.flac" WAVE
+          TRACK 02 AUDIO
+            INDEX 01 00:00:00
+        """
+        try Data(sheet.utf8).write(to: cue)
+        try Data([0x01]).write(to: dir.appendingPathComponent("open.flac"))
+        let locked = dir.appendingPathComponent("locked.flac")
+        try Data([0x01]).write(to: locked)
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: locked.path)
+
+        let inaccessible = CUESheetReader.inaccessibleAudio(inCueAt: cue)
+        #expect(inaccessible.map(\.lastPathComponent) == ["locked.flac"])
+
+        // Non-cue files never probe.
+        #expect(CUESheetReader.inaccessibleAudio(inCueAt: dir.appendingPathComponent("open.flac")).isEmpty)
+    }
 }

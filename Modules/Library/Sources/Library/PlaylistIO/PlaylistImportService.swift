@@ -302,6 +302,39 @@ public actor PlaylistImportService {
         }
     }
 
+    /// The audio files referenced by the CUE sheet at `cueURL` that will stay
+    /// unreadable even through a library root's scope — the only case where
+    /// the import UI genuinely has to ask the user for folder access (#391).
+    /// Root-resident audio never reaches the caller: activating the root's
+    /// bookmark scope makes it readable, and the importer's bookmark minting
+    /// uses exactly that path, so no prompt is warranted.
+    public func cueAudioNeedingAccess(at cueURL: URL) async -> [URL] {
+        let unreadable = CUESheetReader.inaccessibleAudio(inCueAt: cueURL)
+        guard !unreadable.isEmpty, let libraryRoots else { return unreadable }
+        guard let roots = try? await libraryRoots.fetchAll() else { return unreadable }
+        var blocked: [URL] = []
+        for ref in unreadable {
+            var coveredByRoot = false
+            for root in roots where !root.isInaccessible {
+                let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+                guard ref.path.hasPrefix(prefix) else { continue }
+                do {
+                    coveredByRoot = try await SecurityScope.withAccess(root.bookmark) { _ in
+                        FileManager.default.isReadableFile(atPath: ref.path)
+                    }
+                } catch {
+                    self.log.warning("cue.accessProbe.rootScopeFailed", [
+                        "root": root.path,
+                        "error": String(reflecting: error),
+                    ])
+                }
+                if coveredByRoot { break }
+            }
+            if !coveredByRoot { blocked.append(ref) }
+        }
+        return blocked
+    }
+
     /// A find-or-created artist id for `name`, memoised in `cache` so a
     /// sheet's repeated PERFORMER costs one query. Nil on empty names, a
     /// missing repository, or a lookup failure (logged; metadata enrichment

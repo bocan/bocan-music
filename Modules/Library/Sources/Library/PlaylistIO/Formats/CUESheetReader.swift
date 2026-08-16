@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 
 /// Parsed representation of a single CUE sheet.
 ///
@@ -53,6 +54,29 @@ public struct CUESheet: Sendable, Hashable {
 
 /// Reads CUE sheets.
 public enum CUESheetReader {
+    /// The audio files referenced by the CUE sheet at `url` that the process
+    /// cannot currently read (#391). Under the sandbox, an open-panel grant
+    /// covers exactly the picked file, so a cue's sibling audio is typically
+    /// unreadable until the user grants folder access; the import UI uses
+    /// this to know when to ask. An unparseable cue reports no files here —
+    /// the import itself surfaces that as a real error.
+    public static func inaccessibleAudio(inCueAt url: URL) -> [URL] {
+        guard url.pathExtension.lowercased() == "cue" else { return [] }
+        do {
+            let data = try Data(contentsOf: url)
+            let sheet = try Self.parse(data: data, sourceURL: url)
+            return sheet.files
+                .compactMap(\.absoluteURL)
+                .filter { !FileManager.default.isReadableFile(atPath: $0.path) }
+        } catch {
+            AppLogger.make(.library).debug("cue.accessProbe.unparseable", [
+                "file": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return []
+        }
+    }
+
     public static func parse(data: Data, sourceURL: URL? = nil) throws -> CUESheet {
         guard let text = String(data: data, encoding: .utf8)
             ?? String(data: data, encoding: .windowsCP1252)
