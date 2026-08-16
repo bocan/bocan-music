@@ -170,11 +170,19 @@ struct PlaylistIOIntegrationTests {
         let id1 = try await insertTrack(db, path: dir.appendingPathComponent("01 - One.mp3").path, title: "One")
         let id2 = try await insertTrack(db, path: dir.appendingPathComponent("02 - Two.mp3").path, title: "Two")
 
+        // Pre-seed phantom markers on one track (the gaps-appended parser
+        // bug minted these on real libraries): the attach must clear them.
+        let repo = TrackMarkerRepository(database: db)
+        try await repo.replaceMarkers(forTrack: id1, with: [
+            TrackMarker(trackID: id1, positionMs: 0, title: "Phantom"),
+            TrackMarker(trackID: id1, positionMs: 1000, title: "Phantom 2"),
+        ])
+
         let importer = self.makeCueImporter(db)
         let report = try await importer.importFile(at: cue)
 
-        // No markers anywhere: single-marker sets are inert by construction.
-        let repo = TrackMarkerRepository(database: db)
+        // No markers anywhere: single-marker sets are inert by construction,
+        // and stale phantom markers heal on re-attach.
         #expect(try await repo.markers(forTrack: id1).isEmpty)
         #expect(try await repo.markers(forTrack: id2).isEmpty)
 

@@ -130,14 +130,26 @@ public enum CUESheetReader {
                     sheetPerformer = val
                 }
             case "FILE":
-                if currentTrack != nil {
-                    trackBuilders.append(currentTrack!)
+                // A TRACK belongs to the FILE where its INDEX 01 occurs. In
+                // EAC "gaps appended" sheets the next track opens under the
+                // PREVIOUS file (only its INDEX 00 pregap lives there) and
+                // its INDEX 01 follows the next FILE line — so a track that
+                // has no start yet carries over instead of flushing, or a
+                // one-file-per-track manifest grows phantom pregap markers.
+                var carried: TrackBuilder?
+                if let track = currentTrack {
+                    if track.startMs == nil {
+                        carried = track
+                    } else {
+                        trackBuilders.append(track)
+                    }
                     currentTrack = nil
                 }
                 flushFile()
                 let payload = self.parseFileArgs(rest)
                 currentFilePath = payload
                 currentFileURL = M3UReader.resolveURL(rawPath: payload, baseDir: baseDir)
+                currentTrack = carried
             case "TRACK":
                 if currentTrack != nil {
                     trackBuilders.append(currentTrack!)
@@ -184,18 +196,23 @@ public enum CUESheetReader {
     }
 
     /// Build final tracks by deriving end-times from the next track's start.
+    /// Builders that never saw an INDEX 01 are dropped: a track has no
+    /// audible start, and fabricating one at 0 is what minted phantom
+    /// markers from gaps-appended pregap blocks.
     private static func finaliseTracks(_ builders: [TrackBuilder], fileEndMs: Int64?) -> [CUESheet.Track] {
-        let sorted = builders.sorted { ($0.startMs ?? 0) < ($1.startMs ?? 0) }
+        let sorted = builders
+            .compactMap { b -> (TrackBuilder, Int64)? in b.startMs.map { (b, $0) } }
+            .sorted { $0.1 < $1.1 }
         var out: [CUESheet.Track] = []
-        for (idx, b) in sorted.enumerated() {
-            let next = idx + 1 < sorted.count ? sorted[idx + 1].startMs : fileEndMs
+        for (idx, entry) in sorted.enumerated() {
+            let next = idx + 1 < sorted.count ? sorted[idx + 1].1 : fileEndMs
             out.append(CUESheet.Track(
-                number: b.number,
-                title: b.title,
-                performer: b.performer,
-                startMs: b.startMs ?? 0,
+                number: entry.0.number,
+                title: entry.0.title,
+                performer: entry.0.performer,
+                startMs: entry.1,
                 endMs: next,
-                isrc: b.isrc
+                isrc: entry.0.isrc
             ))
         }
         return out
