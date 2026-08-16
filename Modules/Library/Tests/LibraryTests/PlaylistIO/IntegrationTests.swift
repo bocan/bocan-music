@@ -83,10 +83,12 @@ struct PlaylistIOIntegrationTests {
         try FileManager.default.copyItem(at: fixture, to: dir.appendingPathComponent("album.mp3"))
         let cue = dir.appendingPathComponent("album.cue")
         let sheet = """
+        PERFORMER "Sheet Artist"
         TITLE "EOF Album"
         FILE "album.mp3" WAVE
           TRACK 01 AUDIO
             TITLE "First"
+            PERFORMER "Track Artist"
             INDEX 01 00:00:00
           TRACK 02 AUDIO
             TITLE "Last"
@@ -96,19 +98,25 @@ struct PlaylistIOIntegrationTests {
         return (cue, dir)
     }
 
+    private func makeCueImporter(_ db: Persistence.Database) -> PlaylistImportService {
+        let trackRepo = TrackRepository(database: db)
+        return PlaylistImportService(
+            resolver: TrackResolver(trackRepo: trackRepo),
+            playlists: PlaylistService(database: db),
+            trackRepo: trackRepo,
+            radioStations: RadioStationRepository(database: db),
+            artists: ArtistRepository(database: db),
+            albums: AlbumRepository(database: db)
+        )
+    }
+
     @Test("CUE import probes the last track's duration from the audio file")
     func cueLastTrackDurationProbed() async throws {
         let (cue, dir) = try self.makeCueFolder()
         defer { try? FileManager.default.removeItem(at: dir) }
 
         let db = try await makeDB()
-        let trackRepo = TrackRepository(database: db)
-        let importer = PlaylistImportService(
-            resolver: TrackResolver(trackRepo: trackRepo),
-            playlists: PlaylistService(database: db),
-            trackRepo: trackRepo,
-            radioStations: RadioStationRepository(database: db)
-        )
+        let importer = self.makeCueImporter(db)
         let report = try await importer.importFile(at: cue)
         let playlistID = try #require(report.playlistID)
         let members = try await PlaylistService(database: db).tracks(in: playlistID)
@@ -130,6 +138,48 @@ struct PlaylistIOIntegrationTests {
         for member in members {
             #expect(member.fileBookmark != nil, "virtual track should carry the audio file's bookmark")
         }
+
+        // Issue #390: PERFORMER / album TITLE become real rows. Track-level
+        // PERFORMER overrides the sheet's; tracks without one inherit it.
+        let artists = try await ArtistRepository(database: db).fetchAll()
+        let artistNames = Set(artists.map(\.name))
+        #expect(artistNames == ["Sheet Artist", "Track Artist"])
+        let sheetArtistID = artists.first { $0.name == "Sheet Artist" }?.id
+        let trackArtistID = artists.first { $0.name == "Track Artist" }?.id
+        #expect(first.artistID == trackArtistID)
+        #expect(last.artistID == sheetArtistID)
+
+        let albums = try await AlbumRepository(database: db).fetchAll()
+        #expect(albums.count == 1)
+        #expect(albums.first?.title == "EOF Album")
+        #expect(first.albumID == albums.first?.id)
+        #expect(last.albumID == albums.first?.id)
+        #expect(first.albumArtistID == sheetArtistID)
+    }
+
+    @Test("CUE re-import heals missing artist and album on existing rows (#390)")
+    func cueReimportHealsMetadata() async throws {
+        let (cue, dir) = try self.makeCueFolder()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let importer = self.makeCueImporter(db)
+
+        // First import, then strip the metadata to simulate rows written
+        // before the #390 enrichment existed.
+        _ = try await importer.importFile(at: cue)
+        let audioURL = dir.appendingPathComponent("album.mp3").absoluteString
+        var stale = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=1"))
+        stale.artistID = nil
+        stale.albumID = nil
+        stale.albumArtistID = nil
+        try await trackRepo.update(stale)
+
+        _ = try await importer.importFile(at: cue)
+        let healed = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=1"))
+        #expect(healed.artistID != nil, "re-import must repair the missing artist")
+        #expect(healed.albumID != nil, "re-import must repair the missing album")
     }
 
     @Test("CUE re-import heals a zero duration left by earlier imports")
@@ -139,12 +189,7 @@ struct PlaylistIOIntegrationTests {
 
         let db = try await makeDB()
         let trackRepo = TrackRepository(database: db)
-        let importer = PlaylistImportService(
-            resolver: TrackResolver(trackRepo: trackRepo),
-            playlists: PlaylistService(database: db),
-            trackRepo: trackRepo,
-            radioStations: RadioStationRepository(database: db)
-        )
+        let importer = self.makeCueImporter(db)
 
         // First import, then zero the EOF track's duration and drop its
         // bookmark to simulate a row written before the probe and the

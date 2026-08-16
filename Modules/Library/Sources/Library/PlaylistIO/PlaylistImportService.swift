@@ -17,6 +17,10 @@ public actor PlaylistImportService {
     /// Optional: lets CUE import mint per-file bookmarks for audio living
     /// under a library root (issue #391). Nil keeps the pre-#391 behaviour.
     private let libraryRoots: LibraryRootRepository?
+    /// Optional: let CUE import materialise PERFORMER / album TITLE metadata
+    /// as real artist/album rows (#390). Nil skips the enrichment.
+    private let artists: ArtistRepository?
+    private let albums: AlbumRepository?
     private let log = AppLogger.make(.library)
 
     public init(
@@ -24,13 +28,17 @@ public actor PlaylistImportService {
         playlists: PlaylistService,
         trackRepo: TrackRepository,
         radioStations: RadioStationRepository,
-        libraryRoots: LibraryRootRepository? = nil
+        libraryRoots: LibraryRootRepository? = nil,
+        artists: ArtistRepository? = nil,
+        albums: AlbumRepository? = nil
     ) {
         self.resolver = resolver
         self.playlists = playlists
         self.trackRepo = trackRepo
         self.radioStations = radioStations
         self.libraryRoots = libraryRoots
+        self.artists = artists
+        self.albums = albums
     }
 
     public struct ImportReport: Sendable {
@@ -294,11 +302,49 @@ public actor PlaylistImportService {
         }
     }
 
+    /// A find-or-created artist id for `name`, memoised in `cache` so a
+    /// sheet's repeated PERFORMER costs one query. Nil on empty names, a
+    /// missing repository, or a lookup failure (logged; metadata enrichment
+    /// must never sink the import).
+    private func resolveArtistID(
+        _ name: String?,
+        cache: inout [String: Int64]
+    ) async -> Int64? {
+        guard let artists, let name, !name.isEmpty else { return nil }
+        if let cached = cache[name] { return cached }
+        do {
+            guard let id = try await artists.findOrCreate(name: name).id else { return nil }
+            cache[name] = id
+            return id
+        } catch {
+            self.log.warning("cue.import.artistFailed", ["name": name, "error": String(reflecting: error)])
+            return nil
+        }
+    }
+
     /// Parse a CUE sheet and materialise each TRACK block as a virtual `Track`
     /// row in the database, then group them into a new playlist.
     private func importCUESheet(data: Data, url: URL, parentID: Int64?) async throws -> ImportReport {
         let cueSheet = try CUESheetReader.parse(data: data, sourceURL: url)
         let playlistName = cueSheet.title ?? url.deletingPathExtension().lastPathComponent
+
+        // Sheet-level metadata (#390): PERFORMER is the album artist, TITLE
+        // the album. Without them, tracks previously landed with no artist
+        // or album at all, and every scrobble / lyrics call fired with an
+        // empty artist (ListenBrainz and Last.fm reject those outright).
+        var artistIDCache: [String: Int64] = [:]
+        let albumArtistID = await self.resolveArtistID(cueSheet.performer, cache: &artistIDCache)
+        var albumID: Int64?
+        if let albums, let albumTitle = cueSheet.title, !albumTitle.isEmpty {
+            do {
+                albumID = try await albums.findOrCreate(title: albumTitle, albumArtistID: albumArtistID).id
+            } catch {
+                self.log.warning("cue.import.albumFailed", [
+                    "album": albumTitle,
+                    "error": String(reflecting: error),
+                ])
+            }
+        }
 
         var virtualTrackIDs: [Int64] = []
 
@@ -336,11 +382,16 @@ public actor PlaylistImportService {
                 // so the path component still points at the audio file for scope matching.
                 let virtualFileURL = sourceURLString + "?cue=\(cueTrack.number)"
 
-                // Skip if this virtual track was already imported — but heal a
-                // zero duration or a missing bookmark left by imports that
-                // predate the probe/minting above, so re-importing the sheet
-                // (e.g. after moving the audio into a library root) repairs
-                // the existing rows in place.
+                // Track PERFORMER overrides the sheet-level one (#390).
+                let artistID = await self.resolveArtistID(
+                    cueTrack.performer ?? cueSheet.performer,
+                    cache: &artistIDCache
+                ) ?? albumArtistID
+
+                // Skip if this virtual track was already imported — but heal
+                // gaps left by imports that predate the enrichment above
+                // (zero duration, missing bookmark, missing artist/album), so
+                // re-importing the sheet repairs the existing rows in place.
                 if var existing = try? await trackRepo.fetchOne(fileURL: virtualFileURL), let id = existing.id {
                     var healed = false
                     if existing.duration == 0, duration > 0 {
@@ -349,6 +400,15 @@ public actor PlaylistImportService {
                     }
                     if existing.fileBookmark == nil, let audioBookmark {
                         existing.fileBookmark = audioBookmark
+                        healed = true
+                    }
+                    if existing.artistID == nil, let artistID {
+                        existing.artistID = artistID
+                        healed = true
+                    }
+                    if existing.albumID == nil, let albumID {
+                        existing.albumID = albumID
+                        existing.albumArtistID = existing.albumArtistID ?? albumArtistID
                         healed = true
                     }
                     if healed {
@@ -371,6 +431,9 @@ public actor PlaylistImportService {
                     fileBookmark: audioBookmark,
                     duration: duration,
                     title: cueTrack.title,
+                    artistID: artistID,
+                    albumArtistID: albumArtistID,
+                    albumID: albumID,
                     trackNumber: cueTrack.number,
                     isrc: cueTrack.isrc,
                     startOffsetMs: startMs,
