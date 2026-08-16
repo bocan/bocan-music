@@ -4,6 +4,10 @@
     "body": "Nanosecond-anchored scheduling on the same audio node. Live albums and DJ mixes flow without that little hiccup other players sneak past you."
   },
   {
+    "title": "CUE sheets, the chapters way.",
+    "body": "Drop a cue sheet next to a single-file album rip and the track becomes chaptered: Previous and Next walk the cue points, the progress bar ticks each boundary, and the player bar names the current cue. No fake per-track entries cluttering your library."
+  },
+  {
     "title": "Plays the awkward stuff.",
     "body": "FLAC, ALAC, MP3, AAC, OGG, Opus, WavPack, Monkey's Audio, DSD, WMA, AC-3, DTS, and more. Bit-perfect output to whatever DAC you've got plugged in. See the <a href=\"/formats/\">full formats list</a>."
   },

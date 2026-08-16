@@ -36,6 +36,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 
 - Everything AVFoundation handles natively: **FLAC, ALAC, AAC, MP3, WAV, AIFF, CAF, M4A**.
 - The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD**. No plug-ins, no extra installs.
+- **CUE sheets as chapter markers.** A single-file album rip keeps its track list: Previous and Next jump between cue points, the progress bar shows a tick at each boundary, and the player bar names the current cue's title and performer. Sheets attach automatically during scans, and a Markers tab in Get Info lists every cue point.
 
 ### 📚 It respects your library
 
