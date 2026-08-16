@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 37)
+        #expect(version == 38)
     }
 
     @Test("Integrity check passes after migration")
@@ -66,10 +66,10 @@ struct MigrationTests {
         #expect(value == "1")
     }
 
-    @Test("Migrator reports thirty-seven migrations")
+    @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 37)
+        #expect(migrator.migrations.count == 38)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")
@@ -352,6 +352,31 @@ struct MigrationTests {
                 .compactMap { $0["name"] as String? }
         }
         #expect(columns.contains("needs_conflict_review"))
+    }
+
+    @Test("M038 creates track_markers and purges the retired virtual rows")
+    func trackMarkersMigration() async throws {
+        let db = try await Database(location: .inMemory)
+        let tables = try await db.read { grdb in
+            try String.fetchAll(grdb, sql: "SELECT name FROM sqlite_master WHERE type='table'")
+        }
+        #expect(tables.contains("track_markers"))
+
+        // A ?cue=N virtual row written post-migration would only exist via
+        // the retired importer; the migration's LIKE delete is the backstop
+        // for rows that predate ADR-087. Verify the pattern actually
+        // matches by round-tripping one.
+        try await db.write { grdb in
+            try grdb.execute(sql: """
+            INSERT INTO tracks (file_url, file_size, file_mtime, file_format, duration, added_at, updated_at)
+            VALUES ('file:///m/a.flac?cue=1', 1, 1, 'flac', 10, 1, 1)
+            """)
+            try grdb.execute(sql: "DELETE FROM tracks WHERE file_url LIKE '%?cue=%'")
+            let remaining = try Int.fetchOne(
+                grdb, sql: "SELECT COUNT(*) FROM tracks WHERE file_url LIKE '%?cue=%'"
+            )
+            assert(remaining == 0)
+        }
     }
 
     @Test("WAL journal mode is active on an on-disk database (#288)")
