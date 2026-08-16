@@ -181,6 +181,15 @@ public struct NowPlayingStrip: View {
                     .font(.caption)
                     .foregroundStyle(Color.textTertiary)
                     .lineLimit(1)
+            } else if let marker = self.currentMarkerText {
+                // CUE marker line (ADR-087): cue content renders verbatim,
+                // same as podcast chapter titles.
+                Text(verbatim: marker)
+                    .font(.caption)
+                    .foregroundStyle(Color.textTertiary)
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.updatesFrequently)
+                    .accessibilityIdentifier(A11y.NowPlaying.markerLine)
             }
         }
         .frame(minWidth: 120, maxWidth: 300, alignment: .leading)
@@ -210,6 +219,16 @@ public struct NowPlayingStrip: View {
     private var currentChapter: UIChapter? {
         guard self.vm.isPodcast else { return nil }
         return self.library.podcasts.nowPlayingChapters.current(at: self.vm.position)
+    }
+
+    /// "Title - Performer" for the CUE marker playback is inside (ADR-087).
+    private var currentMarkerText: String? {
+        guard let marker = self.vm.currentMarker else { return nil }
+        let parts = [marker.title, marker.performer]
+            .compactMap(\.self)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: " - ")
     }
 
     @ViewBuilder
@@ -365,6 +384,25 @@ public struct NowPlayingStrip: View {
                 Task { await self.vm.scrub(to: pos) }
             }
             .accessibilityIdentifier(A11y.NowPlaying.scrubber)
+            // CUE marker ticks (ADR-087): |------|-----|-|---- along the
+            // slider's bottom edge. Hidden below two markers (inert sets
+            // never load, but the guard keeps the rule in one place).
+            .overlay(alignment: .bottom) {
+                if self.vm.markers.count >= 2, self.vm.duration > 0 {
+                    GeometryReader { geo in
+                        ForEach(self.vm.markers) { marker in
+                            Rectangle()
+                                .fill(Color.textTertiary)
+                                .frame(width: 1, height: 4)
+                                .offset(
+                                    x: geo.size.width * min(1, Double(marker.positionMs) / 1000.0 / self.vm.duration),
+                                    y: geo.size.height - 3
+                                )
+                        }
+                    }
+                    .allowsHitTesting(false)
+                }
+            }
 
             Text(Formatters.duration(self.vm.duration))
                 .font(Typography.caption)

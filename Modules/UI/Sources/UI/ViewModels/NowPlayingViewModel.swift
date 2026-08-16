@@ -110,6 +110,17 @@ public final class NowPlayingViewModel {
     private nonisolated(unsafe) var initialItemSyncTask: Task<Void, Never>?
     private nonisolated(unsafe) var queueChangesTask: Task<Void, Never>?
     private nonisolated(unsafe) var streamTitleTask: Task<Void, Never>?
+    private nonisolated(unsafe) var markerTask: Task<Void, Never>?
+
+    /// The current track's CUE markers (ADR-087), position-sorted; empty for
+    /// tracks without them. Fed by `QueuePlayer.markerUpdates` per load.
+    public private(set) var markers: [TrackMarker] = []
+
+    /// The marker playback is currently inside, from the live position.
+    public var currentMarker: TrackMarker? {
+        self.markers.last { Double($0.positionMs) / 1000.0 <= self.position + 0.1 }
+    }
+
     /// The full `Track` record for the currently-playing item, or `nil` when idle.
     /// Populated by `setCurrentTrack(_:)` and used by `TrackInfoPanel`.
     public private(set) var currentTrack: Track?
@@ -176,6 +187,7 @@ public final class NowPlayingViewModel {
         self.initialItemSyncTask?.cancel()
         self.queueChangesTask?.cancel()
         self.streamTitleTask?.cancel()
+        self.markerTask?.cancel()
     }
 
     private func startObservingScrobbleStats(_ repo: ScrobbleQueueRepository) {
@@ -305,16 +317,18 @@ public final class NowPlayingViewModel {
         await self.setVolume(max(0.0, self.volume - 0.1))
     }
 
-    /// Skips to previous, or restarts current track if past the 3-second threshold.
+    /// Skips to previous. Delegates to `QueuePlayer.previous()`, which owns
+    /// the restart threshold AND the CUE-marker semantics (ADR-087) — a
+    /// local shortcut here would make the strip's button disagree with media
+    /// keys. Falls back to a plain restart for non-QueuePlayer engines.
     public func previous() async {
-        let pos = await self.engine.currentTime
-        if pos > 3.0 {
-            await self.scrub(to: 0)
-        } else {
-            guard let qp = self.engine as? QueuePlayer else { return }
-            do { try await qp.previous() } catch {
-                self.log.error("transport.previous.failed", ["error": String(reflecting: error)])
-            }
+        guard let qp = self.engine as? QueuePlayer else {
+            let pos = await self.engine.currentTime
+            if pos > 3.0 { await self.scrub(to: 0) }
+            return
+        }
+        do { try await qp.previous() } catch {
+            self.log.error("transport.previous.failed", ["error": String(reflecting: error)])
         }
     }
 
@@ -805,20 +819,7 @@ private extension NowPlayingViewModel {
             await qp.waitUntilActivated()
             await self?.seedDisplayFromRestoredQueue(qp)
         }
-        // Live ICY titles (ADR-078 slice 5): while a station plays, the stream
-        // title takes the title line and the station name moves to the
-        // artist line. Junk or absent titles simply never emit, so the
-        // station-name display from `applyStreamItem` stays put.
-        self.streamTitleTask = Task { [weak self] in
-            guard let self else { return }
-            for await streamTitle in qp.streamTitleUpdates {
-                guard self.nowPlayingRadioStreamURL != nil else { continue }
-                self.title = streamTitle
-                if let station = self.nowPlayingRadioStationName, !station.isEmpty {
-                    self.artist = station
-                }
-            }
-        }
+        self.startObservingStreamExtras(qp)
         // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
         self.queueChangesTask = Task { [weak self] in
             guard let self else { return }
@@ -851,6 +852,34 @@ private extension NowPlayingViewModel {
                 default:
                     break
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Stream extras (ICY titles + CUE markers)
+
+private extension NowPlayingViewModel {
+    /// Live ICY titles (ADR-078 slice 5) and CUE markers (ADR-087). While a
+    /// station plays, the stream title takes the title line and the station
+    /// name moves to the artist line; junk or absent titles never emit.
+    /// Markers arrive on every load — empty for tracks without them — so the
+    /// strip's ticks and marker line follow the current track.
+    func startObservingStreamExtras(_ qp: QueuePlayer) {
+        self.streamTitleTask = Task { [weak self] in
+            guard let self else { return }
+            for await streamTitle in qp.streamTitleUpdates {
+                guard self.nowPlayingRadioStreamURL != nil else { continue }
+                self.title = streamTitle
+                if let station = self.nowPlayingRadioStationName, !station.isEmpty {
+                    self.artist = station
+                }
+            }
+        }
+        self.markerTask = Task { [weak self] in
+            guard let self else { return }
+            for await markers in qp.markerUpdates {
+                self.markers = markers
             }
         }
     }

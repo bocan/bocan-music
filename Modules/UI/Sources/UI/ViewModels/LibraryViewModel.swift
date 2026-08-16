@@ -844,14 +844,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             playlists: playlistService,
             trackRepo: trackRepo,
             radioStations: radioStations,
-            // Lets CUE import mint per-file bookmarks for audio under a
-            // library root, so virtual tracks stay playable across relaunches.
+            // Lets the import sheet's access probe verify audio through a
+            // library root's scope, so the folder-grant prompt stays a last
+            // resort (#391).
             libraryRoots: LibraryRootRepository(database: database),
-            // Lets CUE import materialise PERFORMER / album TITLE metadata
-            // as real artist/album rows, so scrobbling and lyrics lookups
-            // stop firing with empty artists (#390).
-            artists: ArtistRepository(database: database),
-            albums: AlbumRepository(database: database)
+            // ADR-087: CUE import attaches in-track markers, never virtual
+            // tracks.
+            cueMarkers: CueMarkerService(
+                trackRepo: trackRepo,
+                markerRepo: TrackMarkerRepository(database: database)
+            )
         )
         let exporter = PlaylistExportService(database: database)
         return (importer, exporter)
