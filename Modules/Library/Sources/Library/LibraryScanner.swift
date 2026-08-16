@@ -339,6 +339,22 @@ public actor LibraryScanner {
                     }
                 }
             } else {
+                if SidecarArt.matches(url) {
+                    // A cover image appeared or changed. The audio around it
+                    // is unchanged (so the mtime guard below would skip it);
+                    // re-run one sibling through the importer, whose sidecar
+                    // fallback links the art to the folder's album (#388).
+                    if let sibling = self.audioFiles(under: url.deletingLastPathComponent()).first {
+                        do {
+                            _ = try await self.scanSingleFile(url: sibling)
+                            self.log.debug("fsevents.sidecar_art", ["path": url.lastPathComponent])
+                            didChange = true
+                        } catch {
+                            self.log.warning("fsevents.sidecar_failed", ["path": url.path, "error": "\(error)"])
+                        }
+                    }
+                    continue
+                }
                 guard TagReader.isSupported(url) else { continue }
                 guard await self.contentChanged(url: url, trackRepo: trackRepo) else { continue }
                 do {
