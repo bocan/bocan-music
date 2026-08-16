@@ -1,6 +1,7 @@
 import AppKit
 import Library
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - ArtworkEditor
 
@@ -18,6 +19,19 @@ public struct ArtworkEditor: View {
     }
 
     @State private var isTargeted = false
+
+    /// Pickable artwork containers. HEIC included: it's what Photos exports
+    /// by default on Apple platforms, so its absence broke the most common
+    /// "use this photo as cover art" flow (#389). AVIF has no UTType static
+    /// on the deployment floor, so it resolves by identifier and drops out
+    /// harmlessly where the system doesn't know it. Everything downstream
+    /// decodes via ImageIO, which handles all of these.
+    static let artworkTypes: [UTType] = {
+        var types: [UTType] = [.jpeg, .png, .webP, .gif, .heic]
+        if let avif = UTType("public.avif") { types.append(avif) }
+        return types
+    }()
+
     @State private var isPickingFile = false
 
     public var body: some View {
@@ -76,7 +90,7 @@ public struct ArtworkEditor: View {
         .padding()
         .fileImporter(
             isPresented: self.$isPickingFile,
-            allowedContentTypes: [.jpeg, .png, .webP, .gif]
+            allowedContentTypes: Self.artworkTypes
         ) { result in
             if case let .success(url) = result {
                 SecurityScope.withAccess(url) { scopedURL in

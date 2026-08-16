@@ -129,4 +129,18 @@ struct TagEditorViewModelCoverArtTests {
 
         #expect(vm.coverArtFetchVM.searchArtist == "Typed By Hand")
     }
+
+    @Test("the artwork picker accepts HEIC alongside the classic web formats (#389)")
+    @MainActor
+    func pickerAcceptsHEIC() {
+        // HEIC is what Photos exports by default on Apple platforms; its
+        // absence broke "use this photo as cover art" at the picker. AVIF
+        // rides along where the platform registers public.avif.
+        let identifiers = ArtworkEditor.artworkTypes.map(\.identifier)
+        #expect(identifiers.contains("public.heic"))
+        #expect(identifiers.contains("public.jpeg"))
+        #expect(identifiers.contains("public.png"))
+        #expect(identifiers.contains("org.webmproject.webp"))
+        #expect(identifiers.contains("com.compuserve.gif"))
+    }
 }
