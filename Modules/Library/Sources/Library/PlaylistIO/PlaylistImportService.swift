@@ -14,18 +14,23 @@ public actor PlaylistImportService {
     private let playlists: PlaylistService
     private let trackRepo: TrackRepository
     private let radioStations: RadioStationRepository
+    /// Optional: lets CUE import mint per-file bookmarks for audio living
+    /// under a library root (issue #391). Nil keeps the pre-#391 behaviour.
+    private let libraryRoots: LibraryRootRepository?
     private let log = AppLogger.make(.library)
 
     public init(
         resolver: TrackResolver,
         playlists: PlaylistService,
         trackRepo: TrackRepository,
-        radioStations: RadioStationRepository
+        radioStations: RadioStationRepository,
+        libraryRoots: LibraryRootRepository? = nil
     ) {
         self.resolver = resolver
         self.playlists = playlists
         self.trackRepo = trackRepo
         self.radioStations = radioStations
+        self.libraryRoots = libraryRoots
     }
 
     public struct ImportReport: Sendable {
@@ -229,13 +234,55 @@ public actor PlaylistImportService {
 
     // MARK: - CUE sheet import
 
+    /// A security-scoped bookmark for a CUE FILE's audio, minted while access
+    /// is still attainable: directly (in-session open-panel or drag grant,
+    /// non-sandboxed dev runs) or through the scope of a library root the
+    /// file lives under. Stored on each virtual track so playback survives a
+    /// relaunch (issue #391: without it, tracks from outside a root play only
+    /// in the importing session). Nil when no access route exists; the import
+    /// still proceeds.
+    private func mintAudioBookmark(for audioURL: URL) async -> Data? {
+        if let direct = try? audioURL.bookmarkData(options: .withSecurityScope) {
+            return direct
+        }
+        if let roots = try? await self.libraryRoots?.fetchAll() {
+            let filePath = audioURL.path
+            for root in roots where !root.isInaccessible {
+                let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+                guard filePath.hasPrefix(prefix) else { continue }
+                if let minted = try? await SecurityScope.withAccess(root.bookmark, { _ in
+                    try audioURL.bookmarkData(options: .withSecurityScope)
+                }) {
+                    return minted
+                }
+            }
+        }
+        self.log.warning("cue.import.noBookmark", [
+            "file": audioURL.lastPathComponent,
+            "hint": "audio is outside every library root; playback will not survive relaunch",
+        ])
+        return nil
+    }
+
     /// The audio file's total length minus `startMs`, in seconds, via a
-    /// TagLib read of the file's audio properties. Returns 0 when the probe
-    /// fails (file unreadable, no scope); callers treat that as "unknown".
-    private func probedRemainder(of audioURL: URL, afterMs startMs: Int64) -> TimeInterval {
+    /// TagLib read of the file's audio properties. Prefers the freshly minted
+    /// bookmark's scope; falls back to a direct read. Returns 0 when the
+    /// probe fails (file unreadable, no scope); callers treat that as
+    /// "unknown".
+    private func probedRemainder(
+        of audioURL: URL,
+        bookmark: Data?,
+        afterMs startMs: Int64
+    ) async -> TimeInterval {
         do {
-            let total = try SecurityScope.withAccess(audioURL) { scoped in
-                try TagReader().read(from: scoped).duration
+            let total: TimeInterval = if let bookmark {
+                try await SecurityScope.withAccess(bookmark) { scoped in
+                    try TagReader().read(from: scoped).duration
+                }
+            } else {
+                try SecurityScope.withAccess(audioURL) { scoped in
+                    try TagReader().read(from: scoped).duration
+                }
             }
             return max(0, total - TimeInterval(startMs) / 1000.0)
         } catch {
@@ -262,6 +309,7 @@ public actor PlaylistImportService {
             }
             let sourceURLString = audioURL.absoluteString
             let tracks = file.tracks
+            let audioBookmark = await self.mintAudioBookmark(for: audioURL)
 
             for (index, cueTrack) in tracks.enumerated() {
                 let startMs = cueTrack.startMs
@@ -281,7 +329,7 @@ public actor PlaylistImportService {
                     // past the start offset. A failed probe leaves 0; playback
                     // is unaffected either way (the engine plays to decoder
                     // EOF), this is display metadata only.
-                    self.probedRemainder(of: audioURL, afterMs: startMs)
+                    await self.probedRemainder(of: audioURL, bookmark: audioBookmark, afterMs: startMs)
                 }
 
                 // Virtual fileURL is unique per CUE track; uses a `?cue=N` suffix
@@ -289,15 +337,25 @@ public actor PlaylistImportService {
                 let virtualFileURL = sourceURLString + "?cue=\(cueTrack.number)"
 
                 // Skip if this virtual track was already imported — but heal a
-                // zero duration left by imports that predate the EOF-track
-                // probe above, so re-importing the sheet fixes the display.
+                // zero duration or a missing bookmark left by imports that
+                // predate the probe/minting above, so re-importing the sheet
+                // (e.g. after moving the audio into a library root) repairs
+                // the existing rows in place.
                 if var existing = try? await trackRepo.fetchOne(fileURL: virtualFileURL), let id = existing.id {
+                    var healed = false
                     if existing.duration == 0, duration > 0 {
                         existing.duration = duration
+                        healed = true
+                    }
+                    if existing.fileBookmark == nil, let audioBookmark {
+                        existing.fileBookmark = audioBookmark
+                        healed = true
+                    }
+                    if healed {
                         do {
                             try await self.trackRepo.update(existing)
                         } catch {
-                            self.log.warning("cue.import.durationHealFailed", [
+                            self.log.warning("cue.import.healFailed", [
                                 "track": virtualFileURL,
                                 "error": String(reflecting: error),
                             ])
@@ -310,6 +368,7 @@ public actor PlaylistImportService {
                 let now = Int64(Date().timeIntervalSince1970)
                 let track = Track(
                     fileURL: virtualFileURL,
+                    fileBookmark: audioBookmark,
                     duration: duration,
                     title: cueTrack.title,
                     trackNumber: cueTrack.number,
