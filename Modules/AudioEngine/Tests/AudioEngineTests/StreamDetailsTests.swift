@@ -93,6 +93,33 @@ struct StreamDetailsTests {
         #expect(upgraded.supportsIcyMetadata == true)
         #expect(upgraded.codec == undetected.codec, "everything else stays untouched")
     }
+
+    @Test("now-playing composition: StreamTitle wins, vorbis comments compose, empty yields nil")
+    func nowPlayingComposition() {
+        // ICY servers pre-compose "Artist - Title" into StreamTitle, so it
+        // always wins over the vorbis keys (#386).
+        #expect(StreamDetails.composeNowPlayingTitle(
+            streamTitle: "A - B", title: "X", artist: "Y"
+        ) == "A - B")
+        // Ogg streams: ARTIST + TITLE compose in the ICY display convention.
+        #expect(StreamDetails.composeNowPlayingTitle(
+            streamTitle: nil, title: "Song", artist: "Band"
+        ) == "Band - Song")
+        // A bare TITLE stands alone; an artist without a title is unusable.
+        #expect(StreamDetails.composeNowPlayingTitle(
+            streamTitle: nil, title: "Song", artist: nil
+        ) == "Song")
+        #expect(StreamDetails.composeNowPlayingTitle(
+            streamTitle: nil, title: nil, artist: "Band"
+        ) == nil)
+        // Empty strings behave like absence.
+        #expect(StreamDetails.composeNowPlayingTitle(
+            streamTitle: "", title: "", artist: ""
+        ) == nil)
+        #expect(StreamDetails.composeNowPlayingTitle(
+            streamTitle: nil, title: nil, artist: nil
+        ) == nil)
+    }
 }
 
 // MARK: - FFmpegDecoder detail capture

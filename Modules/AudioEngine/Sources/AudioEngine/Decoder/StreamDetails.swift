@@ -103,4 +103,21 @@ public extension StreamDetails {
             ?? String(data: data, encoding: .isoLatin1)
             ?? ""
     }
+
+    /// The now-playing string for a metadata update, from whichever key family
+    /// the stream speaks (#386). ICY `StreamTitle` wins (Shoutcast/Icecast
+    /// MP3/AAC; servers pre-compose "Artist - Title" there). Ogg Vorbis/Opus
+    /// streams instead carry in-band vorbis comments, so fall back to
+    /// composing `ARTIST - TITLE`, then a bare `TITLE`. Nil when nothing
+    /// usable is present; inputs are expected pre-trimmed.
+    static func composeNowPlayingTitle(
+        streamTitle: String?,
+        title: String?,
+        artist: String?
+    ) -> String? {
+        if let streamTitle, !streamTitle.isEmpty { return streamTitle }
+        guard let title, !title.isEmpty else { return nil }
+        if let artist, !artist.isEmpty { return "\(artist) - \(title)" }
+        return title
+    }
 }

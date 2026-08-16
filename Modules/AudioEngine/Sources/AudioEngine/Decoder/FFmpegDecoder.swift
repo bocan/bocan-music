@@ -99,7 +99,7 @@ public actor FFmpegDecoder: Decoder {
     /// a finite Subsonic/podcast HTTP track or local file). EOF here only
     /// happens once FFmpeg's reconnect budget is exhausted, so it must
     /// surface as a failure rather than a silent end-of-track.
-    private let isUnboundedRemoteStream: Bool
+    let isUnboundedRemoteStream: Bool // internal: title emission gates on it (#386)
 
     public var position: TimeInterval {
         self._position

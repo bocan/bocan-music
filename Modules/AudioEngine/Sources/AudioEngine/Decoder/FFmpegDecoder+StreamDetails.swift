@@ -69,6 +69,10 @@ extension FFmpegDecoder {
         fmtCtx: UnsafeMutablePointer<AVFormatContext>
     ) -> Bool {
         if av_dict_get(fmtCtx.pointee.metadata, "StreamTitle", nil, 0) != nil { return true }
+        // Ogg Vorbis/Opus streams carry titles as in-band vorbis comments;
+        // a TITLE key in the context metadata after open is the equivalent
+        // evidence for that key family (#386).
+        if av_dict_get(fmtCtx.pointee.metadata, "title", nil, 0) != nil { return true }
         let searchChildren: Int32 = 1 << 0 // AV_OPT_SEARCH_CHILDREN
         var raw: UnsafeMutablePointer<UInt8>?
         let ret = av_opt_get(UnsafeMutableRawPointer(fmtCtx), "icy_metadata_packet", searchChildren, &raw)
@@ -113,23 +117,43 @@ extension FFmpegDecoder {
         self.emitTitleIfChanged(fmtCtx: fmtCtx)
     }
 
-    /// Reads `StreamTitle` from the refreshed metadata dictionary and yields
-    /// it when it actually changed. Bytes are decoded UTF-8-first with a
-    /// Latin-1 fallback because ICY declares no charset; empty or repeated
-    /// titles are swallowed.
+    /// Reads the refreshed metadata dictionary and yields a changed
+    /// now-playing string. ICY `StreamTitle` wins; live Ogg Vorbis/Opus
+    /// streams carry in-band vorbis comments instead, so fall back to
+    /// `ARTIST`/`TITLE` for unbounded remote streams (#386) — never for
+    /// bounded sources, so a local chained-Ogg file can't hijack the strip's
+    /// title. Empty or repeated values are swallowed.
     private func emitTitleIfChanged(fmtCtx: UnsafeMutablePointer<AVFormatContext>) {
-        guard let entry = av_dict_get(fmtCtx.pointee.metadata, "StreamTitle", nil, 0),
-              let valuePtr = entry.pointee.value else { return }
+        let streamTitle = Self.dictValue(fmtCtx.pointee.metadata, key: "StreamTitle")
+        var vorbisTitle: String?
+        var vorbisArtist: String?
+        if self.isUnboundedRemoteStream {
+            vorbisTitle = Self.dictValue(fmtCtx.pointee.metadata, key: "title")
+            vorbisArtist = Self.dictValue(fmtCtx.pointee.metadata, key: "artist")
+        }
+        guard let composed = StreamDetails.composeNowPlayingTitle(
+            streamTitle: streamTitle,
+            title: vorbisTitle,
+            artist: vorbisArtist
+        ), composed != self.lastEmittedTitle else { return }
+        self.lastEmittedTitle = composed
+        self.log.debug("ffmpeg.icy.title", ["title": composed])
+        self.titleContinuation.yield(composed)
+    }
+
+    /// A trimmed, charset-tolerant value for `key` (case-insensitive; ICY
+    /// declares no charset, vorbis comments are UTF-8 — `decodeIcyText`
+    /// covers both). Nil when absent or empty.
+    private static func dictValue(_ dict: OpaquePointer?, key: String) -> String? {
+        guard let entry = av_dict_get(dict, key, nil, 0),
+              let valuePtr = entry.pointee.value else { return nil }
         var bytes: [UInt8] = []
         var cursor = valuePtr
         while cursor.pointee != 0 {
             bytes.append(UInt8(bitPattern: cursor.pointee))
             cursor = cursor.successor()
         }
-        let title = StreamDetails.decodeIcyText(bytes).trimmingCharacters(in: .whitespaces)
-        guard !title.isEmpty, title != self.lastEmittedTitle else { return }
-        self.lastEmittedTitle = title
-        self.log.debug("ffmpeg.icy.title", ["title": title])
-        self.titleContinuation.yield(title)
+        let text = StreamDetails.decodeIcyText(bytes).trimmingCharacters(in: .whitespaces)
+        return text.isEmpty ? nil : text
     }
 }
