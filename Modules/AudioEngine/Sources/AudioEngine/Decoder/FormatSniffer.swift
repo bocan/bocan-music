@@ -20,6 +20,9 @@ public enum Codec: Sendable, Equatable, Hashable {
     case ac3 // Dolby AC-3
     case dts // DTS audio
     case wma // Windows Media Audio (ASF container)
+    case aiff // AIFF and AIFF-C — AVFoundation-native
+    case musepack // Musepack SV7 ("MP+") and SV8 ("MPCK")
+    case tta // TTA True Audio
     case unknown(Data)
 }
 
@@ -101,7 +104,29 @@ private extension FormatSniffer {
         // AU/SND: ".snd" magic at offset 0
         if b.hasPrefix(".snd") { return .au }
 
-        return self.detectSyncMagicCodec(from: b) ?? self.detectDsdCodec(from: b)
+        return self.detectSyncMagicCodec(from: b)
+            ?? self.detectDsdCodec(from: b)
+            ?? self.detectNicheLosslessCodec(from: b)
+    }
+
+    /// AIFF plus the niche lossless families the scanner indexes but the
+    /// sniffer previously missed, leaving them to the last-resort FFmpeg
+    /// fallback (#387).
+    func detectNicheLosslessCodec(from b: Data) -> Codec? {
+        // AIFF / AIFF-C: IFF "FORM" chunk at offset 0 with the form type at
+        // offset 8. Other FORM types (8SVX etc.) stay unknown deliberately.
+        if b.hasPrefix("FORM"), b.count >= 12,
+           b[8 ..< 12] == Data("AIFF".utf8) || b[8 ..< 12] == Data("AIFC".utf8) {
+            return .aiff
+        }
+
+        // Musepack: "MPCK" (SV8) or "MP+" (SV7) at offset 0
+        if b.hasPrefix("MPCK") || b.hasPrefix("MP+") { return .musepack }
+
+        // TTA True Audio: "TTA1" at offset 0
+        if b.hasPrefix("TTA1") { return .tta }
+
+        return nil
     }
 
     /// Binary sync-word checks extracted to keep `detectContainerCodec` under the
