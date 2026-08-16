@@ -42,8 +42,37 @@ enum E2ESeeder {
                 where !fm.fileExists(atPath: self.toneURL(named: name, in: seed).path) {
                 try self.synthesizeTone(named: name, frequency: frequency, into: seed)
             }
+            try self.writeCueFixture(into: seed)
         } catch {
             self.log.error("e2e.seed.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// A single-file-rip fixture for the ADR-087 marker journeys: a third
+    /// tone plus a sidecar cue splitting it into three named markers at
+    /// 0 / 20 / 40 s, which the scanner attaches automatically.
+    private static func writeCueFixture(into seed: URL) throws {
+        let name = "E2E Cue Album"
+        if !FileManager.default.fileExists(atPath: self.toneURL(named: name, in: seed).path) {
+            try self.synthesizeTone(named: name, frequency: 262.0, into: seed)
+        }
+        let cue = """
+        PERFORMER "E2E Cue Artist"
+        TITLE "E2E Cue Album"
+        FILE "\(name).wav" WAVE
+          TRACK 01 AUDIO
+            TITLE "Marker One"
+            INDEX 01 00:00:00
+          TRACK 02 AUDIO
+            TITLE "Marker Two"
+            INDEX 01 00:20:00
+          TRACK 03 AUDIO
+            TITLE "Marker Three"
+            INDEX 01 00:40:00
+        """
+        let cueURL = seed.appendingPathComponent("\(name).cue")
+        if !FileManager.default.fileExists(atPath: cueURL.path) {
+            try cue.write(to: cueURL, atomically: true, encoding: .utf8)
         }
     }
 

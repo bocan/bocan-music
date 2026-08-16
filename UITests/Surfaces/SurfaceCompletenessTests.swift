@@ -31,7 +31,7 @@ final class SurfaceCompletenessTests: XCTestCase {
         "nowPlayingStrip.dsp",
         // Attached but not crawled here, with reasons (see transportSkips).
         "nowPlayingStrip.scrobblePending", "nowPlayingStrip.skipBack",
-        "nowPlayingStrip.skipForward",
+        "nowPlayingStrip.skipForward", "nowPlayingStrip.markerLine",
     ]
 
     /// Transport identifiers legitimately absent from the crawl table.
@@ -39,6 +39,7 @@ final class SurfaceCompletenessTests: XCTestCase {
         "nowPlayingStrip.scrobblePending": "only present when scrobbles are pending; the fixture queue produces none",
         "nowPlayingStrip.skipBack": "podcast-only transport control; the podcast surface (deferred) owns it",
         "nowPlayingStrip.skipForward": "podcast-only transport control; the podcast surface (deferred) owns it",
+        "nowPlayingStrip.markerLine": "present only during cue-marked playback; CueMarkerJourneyTests owns it (ADR-087)",
     ]
 
     // MARK: Cross-suite uniqueness
