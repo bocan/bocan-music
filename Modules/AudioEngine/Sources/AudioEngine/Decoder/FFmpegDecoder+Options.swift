@@ -38,6 +38,10 @@ extension FFmpegDecoder {
     /// still works.
     static func openOptions(isHTTP: Bool) -> [String: String] {
         guard isHTTP else { return [:] }
+        // FFmpeg 9 verifies TLS by default and HLS's nested segment opens
+        // don't inherit per-open TLS options, so verification must work
+        // process-wide; see TLSTrustExport (#393).
+        TLSTrustExport.ensureOnce()
         var options = ["user_agent": UserAgent.string]
         // Request ICY (Shoutcast) metadata. FFmpeg defaults this on, but the
         // 27-5 now-playing path depends on it, so state it explicitly.
@@ -51,13 +55,6 @@ extension FFmpegDecoder {
         options["reconnect_delay_max"] = "5" // cap the backoff between attempts at 5s
         options["reconnect_max_retries"] = "3" // then give up so the engine can rebuild the stream
         options["timeout"] = "15000000" // 15s with no data is a stall, not silence to wait out
-        // FFmpeg 9 turned TLS certificate verification ON by default. OpenSSL's
-        // CA bundle lives at /opt/homebrew/etc/openssl@3/cert.pem, which the
-        // app sandbox denies, so every https station failed the handshake
-        // (EIO surfaced as "Access denied"). Restore the pre-9 behaviour
-        // explicitly; radio streams carry no credentials. Proper fix: bundle
-        // a CA file and pass ca_file instead (tracked in the repo issues).
-        options["verify"] = "0"
         return options
     }
 }
