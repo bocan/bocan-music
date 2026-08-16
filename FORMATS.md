@@ -15,7 +15,7 @@ Decoding uses two back-ends:
 | Format | Extensions | Engine |
 |---|---|---|
 | WAV / RIFF PCM | `.wav` | AVFoundation |
-| AIFF / AIFF-C | `.aiff` `.aif` | FFmpeg |
+| AIFF / AIFF-C | `.aiff` `.aif` | AVFoundation, FFmpeg fallback for exotic AIFF-C compression |
 | AU / SND | `.au` `.snd` | FFmpeg |
 | Wave64 | `.w64` | FFmpeg — removes the 4 GB WAV size limit |
 | RF64 / Broadcast Wave | `.wav` `.bwf` | FFmpeg — detected by magic bytes, not extension |

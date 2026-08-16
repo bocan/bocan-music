@@ -6,7 +6,7 @@ import Foundation
 /// file extensions are never used for routing.
 public struct DecoderFactory: Sendable {
     /// AVFoundation-native codecs — no FFmpeg required.
-    static let avFoundationCodecs: Set<Codec> = [.wav, .flac, .mp3, .m4a]
+    static let avFoundationCodecs: Set<Codec> = [.wav, .flac, .mp3, .m4a, .aiff]
 
     public init() {}
 
@@ -35,11 +35,12 @@ public struct DecoderFactory: Sendable {
         case .wav, .mp3, .m4a:
             return try AVFoundationDecoder(url: url)
 
-        case .flac:
+        case .flac, .aiff:
             // AVFoundation's FLAC decoder supports up to 24-bit / 384 kHz but
             // refuses unusual high-resolution streams (e.g. 32-bit float, very
-            // large block sizes).  Fall back to FFmpeg in that case so the
-            // file plays instead of throwing `decoderFailure`.
+            // large block sizes), and its AIFF-C support stops at the common
+            // compression types. Fall back to FFmpeg in those cases so the
+            // file plays instead of throwing `decoderFailure` (#387).
             do {
                 return try AVFoundationDecoder(url: url)
             } catch let error as AudioEngineError {
@@ -52,7 +53,8 @@ public struct DecoderFactory: Sendable {
             }
 
         case .ogg, .opus, .dsf, .dff, .ape, .wavpack,
-             .mp2, .au, .wave64, .rf64, .matroska, .ac3, .dts, .wma:
+             .mp2, .au, .wave64, .rf64, .matroska, .ac3, .dts, .wma,
+             .musepack, .tta:
             return try FFmpegDecoder(url: url)
 
         case let .unknown(magic):

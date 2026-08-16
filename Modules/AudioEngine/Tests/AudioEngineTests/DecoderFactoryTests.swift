@@ -107,6 +107,56 @@ struct FormatSnifferTests {
         #expect(self.sniffer.sniff(bytes: magic) == .wavpack)
     }
 
+    @Test("AIFF magic (FORM + AIFF) → .aiff")
+    func aiffMagic() {
+        var magic = Data("FORM".utf8)
+        magic.append(Data([0x00, 0x00, 0x00, 0x00])) // chunk size
+        magic.append(Data("AIFF".utf8))
+        magic.append(Data(count: 4))
+        #expect(self.sniffer.sniff(bytes: magic) == .aiff)
+    }
+
+    @Test("AIFF-C magic (FORM + AIFC) → .aiff")
+    func aifcMagic() {
+        var magic = Data("FORM".utf8)
+        magic.append(Data([0x00, 0x00, 0x00, 0x00]))
+        magic.append(Data("AIFC".utf8))
+        magic.append(Data(count: 4))
+        #expect(self.sniffer.sniff(bytes: magic) == .aiff)
+    }
+
+    @Test("FORM with a non-audio form type → .unknown")
+    func formButNotAiff() {
+        var magic = Data("FORM".utf8)
+        magic.append(Data([0x00, 0x00, 0x00, 0x00]))
+        magic.append(Data("8SVX".utf8)) // Amiga sampled voice — not ours
+        magic.append(Data(count: 4))
+        if case .unknown = self.sniffer.sniff(bytes: magic) {} else {
+            Issue.record("a non-AIFF FORM file must stay unknown")
+        }
+    }
+
+    @Test("Musepack SV8 magic (MPCK) → .musepack")
+    func musepackSV8Magic() {
+        var magic = Data("MPCK".utf8)
+        magic.append(Data(count: 12))
+        #expect(self.sniffer.sniff(bytes: magic) == .musepack)
+    }
+
+    @Test("Musepack SV7 magic (MP+) → .musepack")
+    func musepackSV7Magic() {
+        var magic = Data("MP+".utf8)
+        magic.append(Data(count: 13))
+        #expect(self.sniffer.sniff(bytes: magic) == .musepack)
+    }
+
+    @Test("TTA magic (TTA1) → .tta")
+    func ttaMagic() {
+        var magic = Data("TTA1".utf8)
+        magic.append(Data(count: 12))
+        #expect(self.sniffer.sniff(bytes: magic) == .tta)
+    }
+
     @Test("Random bytes → .unknown")
     func unknownMagic() {
         let magic = Data([
@@ -179,6 +229,17 @@ struct DecoderFactoryTests {
     @Test("FLAC → AVFoundationDecoder")
     func flacDecodesWithAVFoundation() throws {
         let url = try fixtureURL("sine-1s-44100-24-stereo.flac")
+        let decoder = try DecoderFactory.make(for: url)
+        #expect(decoder is AVFoundationDecoder)
+    }
+
+    @Test("AIFF → AVFoundationDecoder")
+    func aiffDecodesWithAVFoundation() throws {
+        // Regression for #387: with no FORM/AIFF magic in the sniffer, AIFF
+        // sniffed as .unknown and reached FFmpeg via the last-resort
+        // fallback, making AVFoundationDecoder's documented AIFF support
+        // unreachable code.
+        let url = try fixtureURL("sine-1s-44100-16-stereo.aiff")
         let decoder = try DecoderFactory.make(for: url)
         #expect(decoder is AVFoundationDecoder)
     }
