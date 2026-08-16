@@ -843,7 +843,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             resolver: resolver,
             playlists: playlistService,
             trackRepo: trackRepo,
-            radioStations: radioStations
+            radioStations: radioStations,
+            // Lets CUE import mint per-file bookmarks for audio under a
+            // library root, so virtual tracks stay playable across relaunches.
+            libraryRoots: LibraryRootRepository(database: database)
         )
         let exporter = PlaylistExportService(database: database)
         return (importer, exporter)

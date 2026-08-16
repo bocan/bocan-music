@@ -123,6 +123,13 @@ struct PlaylistIOIntegrationTests {
         let last = try #require(members.first { $0.title == "Last" })
         #expect(last.duration > 0, "EOF track must not display as 0:00")
         #expect(last.duration <= 2.0)
+
+        // Issue #391: every virtual track carries a bookmark for the audio
+        // file, minted while import-time access is live (a direct mint always
+        // succeeds in this non-sandboxed test process).
+        for member in members {
+            #expect(member.fileBookmark != nil, "virtual track should carry the audio file's bookmark")
+        }
     }
 
     @Test("CUE re-import heals a zero duration left by earlier imports")
@@ -139,17 +146,20 @@ struct PlaylistIOIntegrationTests {
             radioStations: RadioStationRepository(database: db)
         )
 
-        // First import, then zero the EOF track's duration to simulate a row
-        // written before the probe existed.
+        // First import, then zero the EOF track's duration and drop its
+        // bookmark to simulate a row written before the probe and the
+        // issue-#391 bookmark minting existed.
         _ = try await importer.importFile(at: cue)
         let audioURL = dir.appendingPathComponent("album.mp3").absoluteString
         var stale = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=2"))
         stale.duration = 0
+        stale.fileBookmark = nil
         try await trackRepo.update(stale)
 
         _ = try await importer.importFile(at: cue)
         let healed = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=2"))
         #expect(healed.duration > 0, "re-import must repair the zero duration")
+        #expect(healed.fileBookmark != nil, "re-import must repair the missing bookmark")
     }
 
     @Test("Import + Export round-trip preserves order")
