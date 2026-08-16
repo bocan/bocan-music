@@ -94,6 +94,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-084-e2e-visualizers.md](ADR-084-e2e-visualizers.md) | E2E: visualizer smoke coverage |
 | [ADR-085-e2e-hermetic-network.md](ADR-085-e2e-hermetic-network.md) | E2E: hermetic network (loopback stubs, radio journeys) |
 | [ADR-086-e2e-nightly-pipeline.md](ADR-086-e2e-nightly-pipeline.md) | E2E: nightly pipeline, smoke subset, GPU runner |
+| [ADR-087-cue-markers.md](ADR-087-cue-markers.md) | CUE sheets as in-track markers (chapters model, supersedes virtual tracks) |
 
 ## Conventions used in every ADR
 
