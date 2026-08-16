@@ -354,28 +354,48 @@ struct MigrationTests {
         #expect(columns.contains("needs_conflict_review"))
     }
 
-    @Test("M038 creates track_markers and purges the retired virtual rows")
-    func trackMarkersMigration() async throws {
-        let db = try await Database(location: .inMemory)
-        let tables = try await db.read { grdb in
-            try String.fetchAll(grdb, sql: "SELECT name FROM sqlite_master WHERE type='table'")
-        }
-        #expect(tables.contains("track_markers"))
-
-        // A ?cue=N virtual row written post-migration would only exist via
-        // the retired importer; the migration's LIKE delete is the backstop
-        // for rows that predate ADR-087. Verify the pattern actually
-        // matches by round-tripping one.
-        try await db.write { grdb in
+    @Test("M038 purges virtual rows WITH their dependents on a populated v37 database")
+    func trackMarkersMigrationPurgesDependents() async throws {
+        // GRDB runs migrations with foreign keys disabled and validates with
+        // a full foreign_key_check afterwards — ON DELETE CASCADE never
+        // fires inside a migration. The first M038 relied on it and bricked
+        // a real library whose virtual tracks had scrobble history (the
+        // post-check refused the orphaned scrobble_queue row and the
+        // database would not open). Reproduce that world: migrate to v37,
+        // plant a virtual track with a scrobble, its submission, a playlist
+        // membership, and play history, then complete the migration.
+        var migrator = Migrator.make()
+        let dbQueue = try DatabaseQueue()
+        try migrator.migrate(dbQueue, upTo: "037_radio_station_stream_details")
+        try await dbQueue.write { grdb in
             try grdb.execute(sql: """
-            INSERT INTO tracks (file_url, file_size, file_mtime, file_format, duration, added_at, updated_at)
-            VALUES ('file:///m/a.flac?cue=1', 1, 1, 'flac', 10, 1, 1)
+            INSERT INTO tracks (id, file_url, file_size, file_mtime, file_format, duration, added_at, updated_at)
+            VALUES (7, 'file:///m/a.flac?cue=1', 1, 1, 'flac', 10, 1, 1)
             """)
-            try grdb.execute(sql: "DELETE FROM tracks WHERE file_url LIKE '%?cue=%'")
-            let remaining = try Int.fetchOne(
-                grdb, sql: "SELECT COUNT(*) FROM tracks WHERE file_url LIKE '%?cue=%'"
-            )
-            assert(remaining == 0)
+            try grdb.execute(sql: """
+            INSERT INTO scrobble_queue (id, track_id, played_at, duration_played) VALUES (9, 7, 1, 10)
+            """)
+            try grdb.execute(sql: """
+            INSERT INTO scrobble_submissions (queue_id, provider_id, status) VALUES (9, 'lastfm', 'sent')
+            """)
+            try grdb.execute(sql: "INSERT INTO playlists (id, name, created_at, updated_at) VALUES (3, 'P', 1, 1)")
+            try grdb.execute(sql: """
+            INSERT INTO playlist_tracks (playlist_id, track_id, position) VALUES (3, 7, 0)
+            """)
+            try grdb.execute(sql: """
+            INSERT INTO play_history (track_id, played_at, duration_played) VALUES (7, 1, 10)
+            """)
+        }
+
+        try migrator.migrate(dbQueue)
+
+        try await dbQueue.read { grdb in
+            let virtual = try Int.fetchOne(grdb, sql: "SELECT COUNT(*) FROM tracks WHERE file_url LIKE '%?cue=%'")
+            assert(virtual == 0)
+            let violations = try Row.fetchAll(grdb, sql: "PRAGMA foreign_key_check")
+            assert(violations.isEmpty)
+            let tables = try String.fetchAll(grdb, sql: "SELECT name FROM sqlite_master WHERE type='table'")
+            assert(tables.contains("track_markers"))
         }
     }
 
