@@ -88,6 +88,13 @@ public actor QueuePlayer: Transport {
     /// `MPNowPlayingInfoCenter` via `NowPlayingCentre.updateStream`.
     public nonisolated let streamTitleUpdates: AsyncStream<String>
     private var streamTitleContinuation: AsyncStream<String>.Continuation?
+
+    /// The current track's CUE markers (ADR-087), emitted on every load so
+    /// the strip can draw scrubber ticks and the marker line. Empty for
+    /// tracks without markers (and for radio, podcasts, and single-marker
+    /// sets, which are inert by construction).
+    public nonisolated let markerUpdates: AsyncStream<[TrackMarker]>
+    private var markerContinuation: AsyncStream<[TrackMarker]>.Continuation?
     /// Long-lived consumer of the engine's title stream; runs for the
     /// player's lifetime.
     private var titleObservationTask: Task<Void, Never>?
@@ -100,6 +107,10 @@ public actor QueuePlayer: Transport {
     // MARK: - Internal state
 
     private var currentTrack: Track?
+    /// The current track's markers (ADR-087), seconds-sorted; empty when the
+    /// track has fewer than two (marker transport and display are inert then).
+    private var currentMarkers: [TrackMarker] = []
+    private var markerRepo: TrackMarkerRepository
     private var trackRepo: TrackRepository
     private var albumRepo: AlbumRepository
     private var artistRepo: ArtistRepository
@@ -162,6 +173,7 @@ public actor QueuePlayer: Transport {
         self.artistRepo = ArtistRepository(database: database)
         self.rootRepo = LibraryRootRepository(database: database)
         self.coverArtRepo = CoverArtRepository(database: database)
+        self.markerRepo = TrackMarkerRepository(database: database)
 
         var continuation: AsyncStream<PlaybackState>.Continuation?
         self.state = AsyncStream { continuation = $0 }
@@ -186,6 +198,10 @@ public actor QueuePlayer: Transport {
         var titleContinuation: AsyncStream<String>.Continuation?
         self.streamTitleUpdates = AsyncStream { titleContinuation = $0 }
         self.streamTitleContinuation = titleContinuation
+
+        var markerCont: AsyncStream<[TrackMarker]>.Continuation?
+        self.markerUpdates = AsyncStream { markerCont = $0 }
+        self.markerContinuation = markerCont
 
         // Build sleep timer — captures engine weakly so it can set volume / stop.
         self.sleepTimer = SleepTimer(
@@ -546,8 +562,17 @@ public actor QueuePlayer: Transport {
         await self.nowPlayingCentre?.setPlaying(true)
     }
 
-    /// Advance to the next item.
+    /// Advance to the next item — or, when the current track carries CUE
+    /// markers (ADR-087), jump to the next marker first; past the last one
+    /// the queue advances as always.
     public func next() async throws {
+        if !self.currentMarkers.isEmpty {
+            let elapsed = await engine.currentTime
+            if let target = MarkerNavigation.nextTarget(markers: self.currentMarkers, elapsed: elapsed) {
+                try await self.seek(to: target)
+                return
+            }
+        }
         await self.gaplessScheduler.reset()
         await self.historyRecorder.trackSkipped(elapsed: self.engine.currentTime)
 
@@ -560,18 +585,23 @@ public actor QueuePlayer: Transport {
         try await self.loadAndPlay(item: next)
     }
 
-    /// Go back to the previous item (or start of current if < 3 s in).
+    /// Go back to the previous item (or start of current if < 3 s in). With
+    /// CUE markers (ADR-087) the same restart threshold applies at marker
+    /// granularity: restart the current marker when past it, jump to the
+    /// previous marker otherwise; a track that has only just started still
+    /// retreats to the previous queue item.
     public func previous() async throws {
         let elapsed = await engine.currentTime
-        if elapsed > 3.0 {
-            // Restart current track.
-            try await self.seek(to: 0)
-            return
+        switch MarkerNavigation.previousAction(markers: self.currentMarkers, elapsed: elapsed) {
+        case let .seek(target):
+            try await self.seek(to: target)
+
+        case .retreat:
+            await self.gaplessScheduler.reset()
+            await self.historyRecorder.trackSkipped(elapsed: elapsed)
+            guard let prev = await queue.retreat() else { return }
+            try await self.loadAndPlay(item: prev)
         }
-        await self.gaplessScheduler.reset()
-        await self.historyRecorder.trackSkipped(elapsed: elapsed)
-        guard let prev = await queue.retreat() else { return }
-        try await self.loadAndPlay(item: prev)
     }
 
     /// Toggle shuffle on/off.
@@ -738,6 +768,14 @@ public actor QueuePlayer: Transport {
         // Fetch track metadata (for NowPlaying).
         let track = try? await trackRepo.fetch(id: item.trackID)
         self.emitCurrentTrack(track)
+
+        // ADR-087: load the track's CUE markers. Fewer than two is inert
+        // (nothing to navigate, nothing to draw), normalised to empty here so
+        // every consumer shares one rule. Emitted on every load so the strip
+        // clears the previous track's ticks.
+        let fetched = await (try? self.markerRepo.markers(forTrack: item.trackID)) ?? []
+        self.currentMarkers = fetched.count >= 2 ? fetched : []
+        self.markerContinuation?.yield(self.currentMarkers)
 
         // For CUE virtual tracks the `fileURL` is a synthetic key (e.g. the
         // audio file path with a `?cue=N` suffix) — not an openable file.
