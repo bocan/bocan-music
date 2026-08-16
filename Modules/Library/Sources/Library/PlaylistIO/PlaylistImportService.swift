@@ -1,4 +1,5 @@
 import Foundation
+import Metadata
 import Observability
 import Persistence
 
@@ -228,6 +229,24 @@ public actor PlaylistImportService {
 
     // MARK: - CUE sheet import
 
+    /// The audio file's total length minus `startMs`, in seconds, via a
+    /// TagLib read of the file's audio properties. Returns 0 when the probe
+    /// fails (file unreadable, no scope); callers treat that as "unknown".
+    private func probedRemainder(of audioURL: URL, afterMs startMs: Int64) -> TimeInterval {
+        do {
+            let total = try SecurityScope.withAccess(audioURL) { scoped in
+                try TagReader().read(from: scoped).duration
+            }
+            return max(0, total - TimeInterval(startMs) / 1000.0)
+        } catch {
+            self.log.warning("cue.import.durationProbeFailed", [
+                "file": audioURL.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return 0
+        }
+    }
+
     /// Parse a CUE sheet and materialise each TRACK block as a virtual `Track`
     /// row in the database, then group them into a new playlist.
     private func importCUESheet(data: Data, url: URL, parentID: Int64?) async throws -> ImportReport {
@@ -257,15 +276,33 @@ public actor PlaylistImportService {
                 let duration: TimeInterval = if let endMs {
                     TimeInterval(endMs - startMs) / 1000.0
                 } else {
-                    0.0 // engine will play to decoder EOF
+                    // Last track: there is no following INDEX to borrow an end
+                    // from, so measure the audio file and take the remainder
+                    // past the start offset. A failed probe leaves 0; playback
+                    // is unaffected either way (the engine plays to decoder
+                    // EOF), this is display metadata only.
+                    self.probedRemainder(of: audioURL, afterMs: startMs)
                 }
 
                 // Virtual fileURL is unique per CUE track; uses a `?cue=N` suffix
                 // so the path component still points at the audio file for scope matching.
                 let virtualFileURL = sourceURLString + "?cue=\(cueTrack.number)"
 
-                // Skip if this virtual track was already imported.
-                if let existing = try? await trackRepo.fetchOne(fileURL: virtualFileURL), let id = existing.id {
+                // Skip if this virtual track was already imported — but heal a
+                // zero duration left by imports that predate the EOF-track
+                // probe above, so re-importing the sheet fixes the display.
+                if var existing = try? await trackRepo.fetchOne(fileURL: virtualFileURL), let id = existing.id {
+                    if existing.duration == 0, duration > 0 {
+                        existing.duration = duration
+                        do {
+                            try await self.trackRepo.update(existing)
+                        } catch {
+                            self.log.warning("cue.import.durationHealFailed", [
+                                "track": virtualFileURL,
+                                "error": String(reflecting: error),
+                            ])
+                        }
+                    }
                     virtualTrackIDs.append(id)
                     continue
                 }
