@@ -33,7 +33,7 @@ public struct TagEditorSheet: View {
 
             // Tab picker
             Picker(L10n.string("Tab"), selection: self.$selectedTab) {
-                ForEach(Tab.allCases) { tab in
+                ForEach(self.visibleTabs) { tab in
                     Text(tab.label).tag(tab)
                 }
             }
@@ -63,6 +63,9 @@ public struct TagEditorSheet: View {
 
                 case .advanced:
                     self.advancedTab
+
+                case .markers:
+                    self.markersTab
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -95,6 +98,12 @@ public struct TagEditorSheet: View {
     }
 
     // MARK: - Tabs
+
+    /// The Markers tab only appears when the single track has CUE markers
+    /// (ADR-087), so the segmented picker stays uncluttered for everyone else.
+    private var visibleTabs: [Tab] {
+        Tab.allCases.filter { $0 != .markers || !self.vm.markers.isEmpty }
+    }
 
     /// Banner displayed when at least one track has `needsConflictReview = true`.
     private var conflictBanner: some View {
@@ -312,7 +321,7 @@ enum TagEditorFocusField: Hashable {
 // MARK: - Tab enum
 
 private enum Tab: String, CaseIterable, Identifiable {
-    case details, artwork, lyrics, fileInfo, sorting, advanced
+    case details, artwork, lyrics, fileInfo, sorting, advanced, markers
 
     var id: String {
         self.rawValue
@@ -337,6 +346,9 @@ private enum Tab: String, CaseIterable, Identifiable {
 
         case .advanced:
             L10n.string("Advanced")
+
+        case .markers:
+            L10n.string("Markers")
         }
     }
 }

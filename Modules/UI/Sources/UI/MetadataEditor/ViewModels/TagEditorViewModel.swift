@@ -91,11 +91,8 @@ public final class TagEditorViewModel: ObservableObject {
     @Published public var rating: FieldState<Int> = .shared(nil)
     @Published public var loved: FieldState<Bool> = .shared(nil)
     @Published public var excludedFromShuffle: FieldState<Bool> = .shared(nil)
-    /// Fields the user has opted in to applying in multi-track edit mode.
-    ///
-    /// Editing a field automatically inserts its key here.  Unchecking a checkbox
-    /// removes the key so the field is omitted from the patch on Save.
-    /// In single-track mode this set is not consulted — all edits are always applied.
+    /// Fields the user opted in to applying in multi-track mode (editing a
+    /// field inserts its key; unchecking removes it). Ignored single-track.
     @Published public var enabledFields: Set<FieldKey> = []
 
     /// New art chosen by the user (file/paste/fetch/drop). Nil = no change.
@@ -144,6 +141,8 @@ public final class TagEditorViewModel: ObservableObject {
     var loadedTracksByID: [Int64: Track] = [:]
     /// The single `Track` row loaded from the DB.  `nil` in multi-track mode or before `load()`.
     @Published public private(set) var singleTrack: Track?
+    /// The single track's CUE markers (ADR-087), read-only. Empty in multi-track mode.
+    @Published public private(set) var markers: [TrackMarker] = []
 
     // MARK: - Init
 
@@ -196,6 +195,7 @@ public final class TagEditorViewModel: ObservableObject {
         }
         self.loadedTracksByID = tracksByID
         self.singleTrack = self.isSingleTrack ? tracksByID[self.trackIDs[0]] : nil
+        self.markers = self.isSingleTrack ? await self.service.markers(trackID: self.trackIDs[0]) : []
         self.populateDBFields(from: tracks)
         // Detect unresolved disk-change conflicts.
         let conflicting = tracks.compactMap { $0.needsConflictReview ? $0.id : nil }

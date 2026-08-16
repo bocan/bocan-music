@@ -161,7 +161,46 @@ extension TagEditorSheet {
         }
     }
 
+    // MARK: - Markers tab
+
+    /// Read-only list of the track's CUE markers (ADR-087). The tab itself is
+    /// only offered when markers exist, so no empty state is needed.
+    var markersTab: some View {
+        Form {
+            Section {
+                ForEach(
+                    Array(self.vm.markers.enumerated()), id: \.element.positionMs
+                ) { index, marker in
+                    LabeledContent {
+                        Text(Self.formatPosition(marker.positionMs))
+                            .monospacedDigit()
+                    } label: {
+                        Text(marker.title ?? L10n.string("Marker \(index + 1)"))
+                        if let performer = marker.performer, !performer.isEmpty {
+                            Text(performer)
+                        }
+                    }
+                }
+            } header: {
+                Text(localized: "Cue Markers")
+            } footer: {
+                Text(localized:
+                    "From this track's CUE sheet. Previous and Next jump between markers; the progress bar shows a tick at each one.")
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
     // MARK: - Formatting helpers
+
+    private static func formatPosition(_ ms: Int64) -> String {
+        let total = Int(ms / 1000)
+        if total >= 3600 {
+            return String(format: "%d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
+        }
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
 
     private static func formatDuration(_ seconds: Double) -> String {
         let total = Int(seconds)
