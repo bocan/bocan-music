@@ -56,8 +56,7 @@ public actor FFmpegDecoder: Decoder {
         }
 
         deinit {
-            // Order is not significant: the resources are independent and every
-            // free is NULL-safe, so this covers any partial-alloc state.
+            // Order not significant: every free is NULL-safe, so this covers partial-alloc state.
             av_packet_free(&packet)
             av_frame_free(&frame)
             var swr = swrCtx
@@ -72,6 +71,12 @@ public actor FFmpegDecoder: Decoder {
     // MARK: - Properties
 
     private let ctx: FFContext
+    /// Internal so the StreamDetails extension can watch this stream's
+    /// metadata events (#386); `FFContext` itself stays private.
+    var audioStreamIndex: Int32 {
+        self.ctx.streamIndex
+    }
+
     let log = AppLogger.make(.audio)
     private let url: URL
 
@@ -108,11 +113,9 @@ public actor FFmpegDecoder: Decoder {
     // MARK: - Init
 
     public init(url: URL) throws {
-        // Skip the file-exists check for HTTP / HTTPS URLs (internet radio
-        // streams). FFmpeg's `avformat_open_input` handles network
-        // protocols directly when given an absolute URL string. Local
-        // file URLs (and bare-path URLs with no scheme) still get the
-        // existence check so a missing file fails fast.
+        // HTTP(S) URLs (internet radio) skip the file-exists check:
+        // `avformat_open_input` handles network protocols directly. Local
+        // and bare-path URLs still fail fast on a missing file.
         let isHTTP = (url.scheme?.lowercased()).map { $0 == "http" || $0 == "https" } ?? false
         if !isHTTP, !FileManager.default.fileExists(atPath: url.path) {
             throw AudioEngineError.fileNotFound(url)
