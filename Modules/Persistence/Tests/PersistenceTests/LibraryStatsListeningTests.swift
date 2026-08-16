@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Persistence
 
-/// The Listening Behaviour report queries (#373, phase 25-2), in their own
+/// The Listening Behaviour report queries (#373, ADR-076 slice 2), in their own
 /// suite like the other report slices to stay within the type-length budget.
 @Suite("LibraryStatsRepository listening behaviour")
 struct LibraryStatsListeningTests {

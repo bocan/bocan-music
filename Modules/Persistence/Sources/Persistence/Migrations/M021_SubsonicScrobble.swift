@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 19 step 15 — Subsonic scrobble write-through.
+/// ADR-035 step 15 — Subsonic scrobble write-through.
 ///
 /// Adds optional `subsonic_server_id` / `subsonic_song_id` columns to
 /// `scrobble_queue` so plays originating from a Subsonic source can flow

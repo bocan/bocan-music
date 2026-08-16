@@ -46,7 +46,7 @@ make doctor
 | `make test-ui` | UI module: snapshot + view-model tests (snapshot tests run only here, not in `make test`) |
 | `make test-audio-engine` | AudioEngine SPM package tests (requires FFmpeg via Homebrew) |
 | `make test-e2e` | Whole-app E2E journeys (XCUITest; launches the app repeatedly, opt-in, excluded from `make test` and CI) |
-| `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (phase 28 journeys, menu crawl, one surface, one radio journey) |
+| `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (ADR-079 journeys, menu crawl, one surface, one radio journey) |
 | `make lint` | SwiftLint + SwiftFormat lint |
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |
@@ -125,7 +125,7 @@ any of these are absent.
 |---|---|---|---|
 | `ACOUSTID_API_KEY` | `AcoustIDAPIKey` | Track fingerprinting / AcoustID lookup | https://acoustid.org/my-applications |
 | `BOCAN_LASTFM_API_KEY` / `BOCAN_LASTFM_SHARED_SECRET` | `BocanLastFmApiKey` / `BocanLastFmSharedSecret` | Last.fm scrobbling | https://www.last.fm/api/account/create |
-| `PODCAST_INDEX_API_KEY` / `PODCAST_INDEX_API_SECRET` | `BocanPodcastIndexApiKey` / `BocanPodcastIndexApiSecret` | Podcast search via Podcast Index (phase 21-3). Without these, search falls back to iTunes-only -- still fully functional, just half the index coverage. | https://api.podcastindex.org |
+| `PODCAST_INDEX_API_KEY` / `PODCAST_INDEX_API_SECRET` | `BocanPodcastIndexApiKey` / `BocanPodcastIndexApiSecret` | Podcast search via Podcast Index (ADR-040). Without these, search falls back to iTunes-only -- still fully functional, just half the index coverage. | https://api.podcastindex.org |
 
 ## Platform support
 
@@ -135,10 +135,10 @@ any of these are absent.
 | **Architecture** | arm64 only | The bundled FFmpeg dylibs and `fpcalc` come from arm64 Homebrew (`/opt/homebrew`), whose prefix is hardcoded in the `Package.swift` build flags. A universal binary would double CI build time and require rebuilding every bundled dylib as universal, for a shrinking x86_64 user base. |
 | **Intel (x86_64)** | Not supported | If Intel support is ever wanted, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, all bundled dylibs rebuilt with `lipo`, and the hardcoded `/opt/homebrew` paths made prefix-aware. |
 
-## Phases
+## Design docs
 
-Implementation phases are documented in [`docs/design-spec/`](docs/design-spec/README.md).
-Start with `docs/design-spec/_standards.md`, then tackle one phase at a time.
+Architecture decision records are documented in [`docs/design-spec/`](docs/design-spec/README.md).
+Start with `docs/design-spec/_standards.md`, then read the ADRs relevant to the area you are changing.
 
 ## FFmpeg (AudioEngine module)
 
@@ -232,13 +232,13 @@ Or set `$SIGNING_IDENTITY` in the environment before running `make bundle-fpcalc
 
 Filter by subsystem `io.cloudcauldron.bocan` to see all Bòcan log output.
 
-## Phase 1 audit notes (audio engine)
+## ADR-002 audit notes (audio engine)
 
-A few Phase 1 implementation choices are worth flagging because they are not
+A few ADR-002 implementation choices are worth flagging because they are not
 discoverable from the spec alone:
 
-- **DSP / EQ / Limiter chain landed in Phase 1.** The original phase plan
-  scheduled these for Phase 9, but they were implemented up-front because
+- **DSP / EQ / Limiter chain landed in ADR-002.** The original plan
+  scheduled these for ADR-013, but they were implemented up-front because
   every signal chain test fixture needed a stable insertion point. The chain
   is `PlayerNode → TimePitch → GainStage → EQ → BassBoost → Crossfeed →
   StereoExpander → Limiter → Mixer → Output`; every node is always present

@@ -1,7 +1,7 @@
 import Foundation
 import Persistence
 
-// MARK: - Phase 21-8: Search seam types
+// MARK: - ADR-045: Search seam types
 
 //
 // UIPodcastSearchSource and UIPodcastSearchResult mirror the canonical types
@@ -213,7 +213,7 @@ public protocol PodcastActions: Sendable {
     func markPlayed(podcastID: Int64, guid: String) async
     func markUnplayed(podcastID: Int64, guid: String) async
     func markAllPlayed(podcastID: Int64) async
-    /// No-op when phase 21-6 downloads are not built.
+    /// No-op when ADR-043 downloads are not built.
     func download(podcastID: Int64, guid: String) async
     func removeDownload(podcastID: Int64, guid: String) async
     /// Returns [] when the episode has no chapters URL or the fetch fails.

@@ -21,7 +21,7 @@ module gate a cross-module change touches; `make lint` module-wide.
   `App/CLAUDE.md`). Check for boilerplate a helper could carry -- but the
   type-checker constraint that each window be a concrete named `View` is
   deliberate; do not fold them into closures.
-- **Commands.** After Phase 23 split `BocanCommands` into `+Tools`,
+- **Commands.** After ADR-071 split `BocanCommands` into `+Tools`,
   `+CollectionViewMenu`, look for further cohesive groups repeating
   button/keyboard-shortcut/help shapes; extract only if it removes real
   duplication, honoring the bare-literal + no-new-catalog rule for `App/`.

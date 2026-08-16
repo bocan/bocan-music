@@ -1,6 +1,6 @@
 import GRDB
 
-/// Adds `imported_listens` (phase 25-1): backfilled listening history from a
+/// Adds `imported_listens` (ADR-076 slice 1): backfilled listening history from a
 /// Last.fm export. Kept separate from `play_history` (the local, canonical
 /// per-play log) so imports never pollute local counters, stay reversible
 /// with one DELETE, and can hold scrobbles for music the library does not

@@ -5,7 +5,7 @@ import Playback
 
 // MARK: - LibraryViewModel + Radio playback
 
-/// Local radio-station playback on `LibraryViewModel` (phase 27-2). Bridges
+/// Local radio-station playback on `LibraryViewModel` (ADR-078 slice 2). Bridges
 /// catalog `RadioStation` rows into the shared `QueuePlayer` via the same
 /// `.internetRadio` `PlayableSource` path the Subsonic station rows use.
 public extension LibraryViewModel {
@@ -81,7 +81,7 @@ public extension LibraryViewModel {
         return stations[targetIndex]
     }
 
-    // MARK: - Station info (phase 27-5)
+    // MARK: - Station info (ADR-078 slice 5)
 
     /// Payload for `RadioStationInfoSheet`: the catalog row (or an ephemeral
     /// snapshot for a Subsonic server's station) plus live decoder facts.
@@ -125,7 +125,7 @@ public extension LibraryViewModel {
         )
     }
 
-    // MARK: - Profile capture (phase 27-5)
+    // MARK: - Profile capture (ADR-078 slice 5)
 
     /// Captures the station profile once playback is up: polls the transport
     /// briefly for the decoder's stream facts (the FFmpeg open happens inside
@@ -183,7 +183,7 @@ public extension QueueItem {
     /// Builds a `QueueItem` representing an internet radio station, local or
     /// Subsonic. `duration = 0` flags the item as live: no scrobble, no
     /// gapless, no scrubbing in the now-playing UI. Public for the App
-    /// layer's E2E queue seeding (phase 28).
+    /// layer's E2E queue seeding (ADR-079).
     static func makeInternetRadio(name: String, streamURL: URL, homePage: String?) -> QueueItem {
         let fmt = AudioSourceFormat(
             sampleRate: 44100,

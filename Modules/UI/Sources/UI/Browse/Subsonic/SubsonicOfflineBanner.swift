@@ -2,7 +2,7 @@ import SwiftUI
 
 // MARK: - SubsonicOfflineBanner
 
-/// Phase 19 step 17: inline banner shown above per-server Subsonic
+/// ADR-035 step 17: inline banner shown above per-server Subsonic
 /// destinations when the connection monitor reports the server is offline.
 /// The "Retry now" button asks the connection monitor to re-ping
 /// immediately so the user doesn't have to wait for the backoff schedule.

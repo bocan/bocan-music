@@ -4,7 +4,7 @@ import Foundation
 ///
 /// `init` calls `startAccessingSecurityScopedResource()`; `deinit` calls
 /// `stopAccessingSecurityScopedResource()`.  This eliminates the bare-pair
-/// pattern flagged in the Phase 3 audit (M3) and lets callers hold the scope
+/// pattern flagged in the ADR-004 audit (M3) and lets callers hold the scope
 /// for the lifetime of a `let` binding without an explicit `defer`.
 ///
 /// `URL` is `Sendable`; the class is `@unchecked Sendable` because the

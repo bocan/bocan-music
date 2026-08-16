@@ -1,88 +1,109 @@
-# Bòcan — Phase Specs
+# Bòcan Design Docs
 
-One file per phase. Point a fresh Claude Code / Copilot session at a single file and let it work. Do not skip ahead; phases are dependency-ordered.
+Architecture decision records (ADRs) for Bòcan, numbered in dependency order. Each ADR captures the design for one subsystem or feature slice: prerequisites, goals, contracts, test plan, and acceptance criteria. Later ADRs assume earlier ones are in place.
 
-## How to use
+Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind every ADR. The UI localization workflow lives in [localization.md](localization.md). Two sub-series have their own folders: [accessibility/](accessibility/) and [maintainability-audit/](maintainability-audit/).
 
-1. Open a **fresh session** per phase (keeps context lean).
-2. Tell the assistant: *"Read `docs/design-spec/phase-NN-<name>.md` and `docs/design-spec/_standards.md`. Implement exactly what is specified. Use Context7 for every listed lookup. Write tests as you go. Commit with Conventional Commits. Stop when every acceptance-criteria box is checked."*
-3. Run `make lint && make test-coverage` before declaring the phase done.
-4. Open a PR. Only move to the next phase once CI is green and the checklist is fully ticked.
+## Index
 
-## Files
+| ADR | Covers |
+|---|---|
+| [ADR-001-foundations.md](ADR-001-foundations.md) | Repo, CI, Makefile, logger, empty app |
+| [ADR-002-audio-engine.md](ADR-002-audio-engine.md) | Single-file playback, AVFoundation + FFmpeg decoders |
+| [ADR-003-persistence.md](ADR-003-persistence.md) | GRDB + schema + repositories |
+| [ADR-004-library-scanning.md](ADR-004-library-scanning.md) | Folder scan, TagLib, FSEvents |
+| [ADR-005-library-ui.md](ADR-005-library-ui.md) | 3-pane browser, Table, search |
+| [ADR-006-queue-gapless.md](ADR-006-queue-gapless.md) | Queue, gapless, MPNowPlaying |
+| [ADR-007-add-files.md](ADR-007-add-files.md) | Add Files / Add Folder import flows |
+| [ADR-008-manual-playlists.md](ADR-008-manual-playlists.md) | CRUD playlists |
+| [ADR-009-smart-playlists.md](ADR-009-smart-playlists.md) | Rule builder, SQL compiler |
+| [ADR-010-metadata-editor.md](ADR-010-metadata-editor.md) | Tag editor + cover art fetch |
+| [ADR-011-acoustid-fingerprinting.md](ADR-011-acoustid-fingerprinting.md) | AcoustID + MusicBrainz auto-tagging |
+| [ADR-012-identify-metadata-depth.md](ADR-012-identify-metadata-depth.md) | Identify flow: deeper MusicBrainz metadata, release picker |
+| [ADR-013-eq-effects.md](ADR-013-eq-effects.md) | 10-band EQ, ReplayGain, crossfeed, crossfade |
+| [ADR-014-mini-player-polish.md](ADR-014-mini-player-polish.md) | Mini player, themes, dock tile |
+| [ADR-015-lyrics.md](ADR-015-lyrics.md) | LRC + embedded lyrics |
+| [ADR-016-visualizers.md](ADR-016-visualizers.md) | FFT + Metal/Canvas visualizers |
+| [ADR-017-visualizer-foundations.md](ADR-017-visualizer-foundations.md) | Analysis v2 (centroid, flux, onsets), PaletteResolver, Drift + Thermal palettes |
+| [ADR-018-visualizer-halo.md](ADR-018-visualizer-halo.md) | Halo: radial spectrum ring, beat ripples |
+| [ADR-019-visualizer-cascade.md](ADR-019-visualizer-cascade.md) | Cascade: scrolling spectrogram waterfall |
+| [ADR-020-visualizer-starfield.md](ADR-020-visualizer-starfield.md) | Starfield: frequency-coloured warp particles (renderer superseded by ADR-027) |
+| [ADR-021-visualizer-nebula.md](ADR-021-visualizer-nebula.md) | Nebula: Metal gas clouds with moving wisps (plumbing superseded by ADR-028) |
+| [ADR-022-visualizer-metal-foundations.md](ADR-022-visualizer-metal-foundations.md) | MetalVisualizer protocol, MTKView host, shared GPU helpers |
+| [ADR-023-visualizer-metal-oscilloscope.md](ADR-023-visualizer-metal-oscilloscope.md) | Oscilloscope on Metal (first conversion, pattern-setting) |
+| [ADR-024-visualizer-metal-cascade.md](ADR-024-visualizer-metal-cascade.md) | Cascade on Metal (history ring buffer as GPU texture) |
+| [ADR-025-visualizer-metal-spectrum-bars.md](ADR-025-visualizer-metal-spectrum-bars.md) | Spectrum Bars on Metal (instanced SDF quads) |
+| [ADR-026-visualizer-metal-halo.md](ADR-026-visualizer-metal-halo.md) | Halo on Metal (CPU geometry, GPU rasterisation) |
+| [ADR-027-visualizer-metal-starfield.md](ADR-027-visualizer-metal-starfield.md) | Starfield: Metal warp field (implements ADR-020's design) |
+| [ADR-028-visualizer-metal-nebula.md](ADR-028-visualizer-metal-nebula.md) | Nebula on the ADR-022 foundations (delta over ADR-021) |
+| [ADR-029-scrobbling.md](ADR-029-scrobbling.md) | Last.fm + ListenBrainz |
+| [ADR-030-playlist-import-export.md](ADR-030-playlist-import-export.md) | M3U/M3U8/PLS/XSPF |
+| [ADR-031-casting.md](ADR-031-casting.md) | AirPlay 2 + Google Cast |
+| [ADR-032-distribution.md](ADR-032-distribution.md) | Sign, notarize, DMG, Sparkle |
+| [ADR-033-cicd-cancelled.md](ADR-033-cicd-cancelled.md) | CI/CD pipeline expansion (cancelled) |
+| [ADR-034-remote-control.md](ADR-034-remote-control.md) | Remote control server: Bonjour discovery, PIN pairing, REST/WebSocket API |
+| [ADR-035-subsonic.md](ADR-035-subsonic.md) | Subsonic / Navidrome / OpenSubsonic client: sidebar "Sources" section, federated search, streaming cache, write-through annotations |
+| [ADR-036-console.md](ADR-036-console.md) | In-app log console backed by `LogStore` |
+| [ADR-037-podcasts.md](ADR-037-podcasts.md) | Podcasts: architecture, data model, cross-ADR contract (read first) |
+| [ADR-038-podcast-persistence.md](ADR-038-podcast-persistence.md) | Podcasts: schema (3 tables), records, repositories |
+| [ADR-039-podcast-feeds.md](ADR-039-podcast-feeds.md) | Podcasts: module scaffold, feed fetch, RSS + Atom parsing |
+| [ADR-040-podcast-search.md](ADR-040-podcast-search.md) | Podcasts: Podcast Index + iTunes dual search, dedupe/merge |
+| [ADR-041-podcast-subscriptions.md](ADR-041-podcast-subscriptions.md) | Podcasts: `PodcastService` subscribe/refresh/state, artwork cache |
+| [ADR-042-podcast-playback.md](ADR-042-podcast-playback.md) | Podcasts: `PlayableSource.podcast`, resolver seam, per-episode resume |
+| [ADR-043-podcast-downloads.md](ADR-043-podcast-downloads.md) | Podcasts: episode downloads + offline |
+| [ADR-044-ui-podcasts-home.md](ADR-044-ui-podcasts-home.md) | Podcasts UI: sidebar item, subscribed grid, Add bar, UI seams |
+| [ADR-045-ui-search-detail.md](ADR-045-ui-search-detail.md) | Podcasts UI: search results (source badges), detail, Subscribe |
+| [ADR-046-ui-episodes.md](ADR-046-ui-episodes.md) | Podcasts UI: episode list (date/duration/progress), show notes |
+| [ADR-047-nowplaying-polish.md](ADR-047-nowplaying-polish.md) | Podcasts: Now Playing podcast mode, speed/skip, settings, docs |
+| [ADR-048-feedkit-upgrade.md](ADR-048-feedkit-upgrade.md) | FeedKit 9 to 10 upgrade, Sendable models |
+| [ADR-049-podcast-features.md](ADR-049-podcast-features.md) | Podcasting 2.0 feature set: contract for ADR-050 to ADR-058 |
+| [ADR-050-namespace-supplement.md](ADR-050-namespace-supplement.md) | Supplementary parser for the `podcast:` namespace |
+| [ADR-051-transcripts.md](ADR-051-transcripts.md) | Episode transcripts (viewer, download, cleanup) |
+| [ADR-052-funding.md](ADR-052-funding.md) | Podcast funding links |
+| [ADR-053-chapters.md](ADR-053-chapters.md) | Podcast chapters (list + Now Playing integration) |
+| [ADR-054-continue-listening.md](ADR-054-continue-listening.md) | Continue Listening shelf |
+| [ADR-055-unread-badges.md](ADR-055-unread-badges.md) | Unplayed-episode badges |
+| [ADR-056-opml.md](ADR-056-opml.md) | OPML subscription import/export |
+| [ADR-057-per-show-settings.md](ADR-057-per-show-settings.md) | Per-show playback + refresh settings |
+| [ADR-058-guid-identity.md](ADR-058-guid-identity.md) | Podcast GUID identity + migration |
+| [ADR-059-podcast-notes.md](ADR-059-podcast-notes.md) | Podcast follow-up notes (FeedKit scoping history) |
+| [ADR-060-phone-sync.md](ADR-060-phone-sync.md) | Phone Sync server: contract, module DAG, security model, shared fixtures (read first) |
+| [ADR-061-pairing-code.md](ADR-061-pairing-code.md) | Phone Sync: `PairingCode` + golden vectors (test-first, cross-repo proof) |
+| [ADR-062-identity-trust.md](ADR-062-identity-trust.md) | Phone Sync: `ServerIdentity` (Keychain P-256), `TrustedDevices`, migration M031 |
+| [ADR-063-http-listener.md](ADR-063-http-listener.md) | Phone Sync: HTTP/1.1 parser, `Router`, `NWListener` TLS verify block, `/v1/ping` |
+| [ADR-064-pairing-ceremony.md](ADR-064-pairing-ceremony.md) | Phone Sync: `PairingSession` state machine, `/v1/pair/*`, rate limits, `pm` hygiene |
+| [ADR-065-manifest.md](ADR-065-manifest.md) | Phone Sync: `SyncProfile`, `ManifestBuilder`, generation counter + change observer |
+| [ADR-066-file-serving.md](ADR-066-file-serving.md) | Phone Sync: file/artwork/lyrics/chapters serving, Range + If-Match, `SecurityScope` |
+| [ADR-067-lifecycle-bonjour.md](ADR-067-lifecycle-bonjour.md) | Phone Sync: `SyncServer` actor lifecycle, Bonjour advertising, app wiring, sleep/wake |
+| [ADR-068-settings-ui.md](ADR-068-settings-ui.md) | Phone Sync: Settings pane + pairing sheet, localized, snapshot-tested |
+| [ADR-069-docs-e2e.md](ADR-069-docs-e2e.md) | Phone Sync: README + website, cross-repo end-to-end, acceptance sweep |
+| [ADR-070-podcast-artwork.md](ADR-070-podcast-artwork.md) | Phone Sync: podcast artwork serving |
+| [ADR-071-collection-browsing-grids.md](ADR-071-collection-browsing-grids.md) | Collection grids: contract, shared types, mosaic engine, preference keys (read first) |
+| [ADR-072-artists-grid.md](ADR-072-artists-grid.md) | Collection grids: shared card infrastructure + Artists grid mode |
+| [ADR-073-genres-composers-grid.md](ADR-073-genres-composers-grid.md) | Collection grids: genre/composer card queries + grid modes, view-file split |
+| [ADR-074-view-menu-destination-albums.md](ADR-074-view-menu-destination-albums.md) | Collection grids: View menu, genre/composer album destinations, docs |
+| [ADR-075-transcode-detection.md](ADR-075-transcode-detection.md) | Transcode detection (audio provenance) |
+| [ADR-076-listening-behaviour.md](ADR-076-listening-behaviour.md) | Listening behaviour analytics |
+| [ADR-077-podcast-analytics.md](ADR-077-podcast-analytics.md) | Podcast analytics (Library Summary pane) |
+| [ADR-078-internet-radio.md](ADR-078-internet-radio.md) | Internet radio stations |
+| [ADR-079-e2e-foundations.md](ADR-079-e2e-foundations.md) | E2E: XCUITest foundations, fixture seeding, first journeys |
+| [ADR-080-e2e-identifier-coverage.md](ADR-080-e2e-identifier-coverage.md) | E2E: accessibility-identifier coverage sweep |
+| [ADR-081-e2e-menu-crawl.md](ADR-081-e2e-menu-crawl.md) | E2E: menu crawl + enablement matrix |
+| [ADR-082-e2e-surface-crawl.md](ADR-082-e2e-surface-crawl.md) | E2E: surface crawl (browse destinations, sheets) |
+| [ADR-083-e2e-windows-settings.md](ADR-083-e2e-windows-settings.md) | E2E: auxiliary windows + Settings panes |
+| [ADR-084-e2e-visualizers.md](ADR-084-e2e-visualizers.md) | E2E: visualizer smoke coverage |
+| [ADR-085-e2e-hermetic-network.md](ADR-085-e2e-hermetic-network.md) | E2E: hermetic network (loopback stubs, radio journeys) |
+| [ADR-086-e2e-nightly-pipeline.md](ADR-086-e2e-nightly-pipeline.md) | E2E: nightly pipeline, smoke subset, GPU runner |
 
-| Phase | File | Output |
-|---|---|---|
-| — | [_standards.md](_standards.md) | Cross-cutting rules referenced by every phase |
-| n/a | [localization.md](localization.md) | UI string-catalog workflow, conversion recipe, regression guard (#314) |
-| 0 | [phase-00-foundations.md](phase-00-foundations.md) | Repo, CI, Makefile, logger, empty app |
-| 1 | [phase-01-audio-engine.md](phase-01-audio-engine.md) | Single-file playback, AVFoundation + FFmpeg decoders |
-| 2 | [phase-02-persistence.md](phase-02-persistence.md) | GRDB + schema + repositories |
-| 3 | [phase-03-library-scanning.md](phase-03-library-scanning.md) | Folder scan, TagLib, FSEvents |
-| 4 | [phase-04-library-ui.md](phase-04-library-ui.md) | 3-pane browser, Table, search |
-| 5 | [phase-05-queue-gapless.md](phase-05-queue-gapless.md) | Queue, gapless, MPNowPlaying |
-| 6 | [phase-06-manual-playlists.md](phase-06-manual-playlists.md) | CRUD playlists |
-| 7 | [phase-07-smart-playlists.md](phase-07-smart-playlists.md) | Rule builder, SQL compiler |
-| 8 | [phase-08-metadata-editor.md](phase-08-metadata-editor.md) | Tag editor + cover art fetch |
-| 8.5 | [phase-08.5-acoustid-fingerprinting.md](phase-08.5-acoustid-fingerprinting.md) | AcoustID + MusicBrainz auto-tagging |
-| 9 | [phase-09-eq-effects.md](phase-09-eq-effects.md) | 10-band EQ, ReplayGain, crossfeed, crossfade |
-| 10 | [phase-10-mini-player-polish.md](phase-10-mini-player-polish.md) | Mini player, themes, dock tile |
-| 11 | [phase-11-lyrics.md](phase-11-lyrics.md) | LRC + embedded lyrics |
-| 12 | [phase-12-visualizers.md](phase-12-visualizers.md) | FFT + Metal/Canvas visualizers |
-| 12.1 | [phase-12.1-visualizer-foundations.md](phase-12.1-visualizer-foundations.md) | Analysis v2 (centroid, flux, onsets), PaletteResolver, Drift + Thermal palettes |
-| 12.2 | [phase-12.2-visualizer-halo.md](phase-12.2-visualizer-halo.md) | Halo: radial spectrum ring, beat ripples |
-| 12.3 | [phase-12.3-visualizer-cascade.md](phase-12.3-visualizer-cascade.md) | Cascade: scrolling spectrogram waterfall |
-| 12.4 | [phase-12.4-visualizer-starfield.md](phase-12.4-visualizer-starfield.md) | Starfield: frequency-coloured warp particles (renderer superseded by 12.11) |
-| 12.5 | [phase-12.5-visualizer-nebula.md](phase-12.5-visualizer-nebula.md) | Nebula: Metal gas clouds with moving wisps (plumbing superseded by 12.12) |
-| 12.6 | [phase-12.6-visualizer-metal-foundations.md](phase-12.6-visualizer-metal-foundations.md) | MetalVisualizer protocol, MTKView host, shared GPU helpers |
-| 12.7 | [phase-12.7-visualizer-metal-oscilloscope.md](phase-12.7-visualizer-metal-oscilloscope.md) | Oscilloscope on Metal (first conversion, pattern-setting) |
-| 12.8 | [phase-12.8-visualizer-metal-cascade.md](phase-12.8-visualizer-metal-cascade.md) | Cascade on Metal (history ring buffer as GPU texture) |
-| 12.9 | [phase-12.9-visualizer-metal-spectrum-bars.md](phase-12.9-visualizer-metal-spectrum-bars.md) | Spectrum Bars on Metal (instanced SDF quads) |
-| 12.10 | [phase-12.10-visualizer-metal-halo.md](phase-12.10-visualizer-metal-halo.md) | Halo on Metal (CPU geometry, GPU rasterisation) |
-| 12.11 | [phase-12.11-visualizer-metal-starfield.md](phase-12.11-visualizer-metal-starfield.md) | Starfield: Metal warp field (implements 12.4's design) |
-| 12.12 | [phase-12.12-visualizer-metal-nebula.md](phase-12.12-visualizer-metal-nebula.md) | Nebula on the 12.6 foundations (delta over 12.5) |
-| 13 | [phase-13-scrobbling.md](phase-13-scrobbling.md) | Last.fm + ListenBrainz |
-| 14 | [phase-14-playlist-import-export.md](phase-14-playlist-import-export.md) | M3U/M3U8/PLS/XSPF |
-| 15 | [phase-15-casting.md](phase-15-casting.md) | AirPlay 2 + Google Cast |
-| 16 | [phase-16-distribution.md](phase-16-distribution.md) | Sign, notarize, DMG, Sparkle |
-| 18 | [phase-18-remote-control.md](phase-18-remote-control.md) | Remote control server — Bonjour discovery, PIN pairing, REST/WebSocket API |
-| 19 | [phase-19-subsonic.md](phase-19-subsonic.md) | Subsonic / Navidrome / OpenSubsonic client — sidebar "Sources" section, federated search, streaming cache, write-through annotations |
-| 20 | [phase-20-console.md](phase-20-console.md) | In-app log console backed by `LogStore` |
-| 21.0 | [phase21-0-overview.md](phase21-0-overview.md) | Podcasts: architecture, data model, cross-phase contract (read first) |
-| 21.1 | [phase21-1-persistence.md](phase21-1-persistence.md) | Podcasts: schema (3 tables), records, repositories |
-| 21.2 | [phase21-2-feeds.md](phase21-2-feeds.md) | Podcasts: module scaffold, feed fetch, RSS + Atom parsing |
-| 21.3 | [phase21-3-search.md](phase21-3-search.md) | Podcasts: Podcast Index + iTunes dual search, dedupe/merge |
-| 21.4 | [phase21-4-subscriptions.md](phase21-4-subscriptions.md) | Podcasts: `PodcastService` subscribe/refresh/state, artwork cache |
-| 21.5 | [phase21-5-playback.md](phase21-5-playback.md) | Podcasts: `PlayableSource.podcast`, resolver seam, per-episode resume |
-| 21.6 | [phase21-6-downloads.md](phase21-6-downloads.md) | Podcasts: episode downloads + offline (enhancement) |
-| 21.7 | [phase21-7-ui-podcasts-home.md](phase21-7-ui-podcasts-home.md) | Podcasts UI: sidebar item, subscribed grid, Add bar, UI seams |
-| 21.8 | [phase21-8-ui-search-detail.md](phase21-8-ui-search-detail.md) | Podcasts UI: search results (source badges), detail, Subscribe |
-| 21.9 | [phase21-9-ui-episodes.md](phase21-9-ui-episodes.md) | Podcasts UI: episode list (date/duration/progress), show notes |
-| 21.10 | [phase21-10-nowplaying-polish.md](phase21-10-nowplaying-polish.md) | Podcasts: Now Playing podcast mode, speed/skip, settings, docs |
-| 22.0 | [phase22-0-overview.md](phase22-0-overview.md) | Phone Sync server: contract, module DAG, security model, shared fixtures (read first) |
-| 22.1 | [phase22-1-pairing-code.md](phase22-1-pairing-code.md) | Phone Sync: `PairingCode` + golden vectors (test-first, cross-repo proof) |
-| 22.2 | [phase22-2-identity-trust.md](phase22-2-identity-trust.md) | Phone Sync: `ServerIdentity` (Keychain P-256), `TrustedDevices`, migration M031 |
-| 22.3 | [phase22-3-http-listener.md](phase22-3-http-listener.md) | Phone Sync: HTTP/1.1 parser, `Router`, `NWListener` TLS verify block, `/v1/ping` |
-| 22.4 | [phase22-4-pairing-ceremony.md](phase22-4-pairing-ceremony.md) | Phone Sync: `PairingSession` state machine, `/v1/pair/*`, rate limits, `pm` hygiene |
-| 22.5 | [phase22-5-manifest.md](phase22-5-manifest.md) | Phone Sync: `SyncProfile`, `ManifestBuilder`, generation counter + change observer |
-| 22.6 | [phase22-6-file-serving.md](phase22-6-file-serving.md) | Phone Sync: file/artwork/lyrics/chapters serving, Range + If-Match, `SecurityScope` |
-| 22.7 | [phase22-7-lifecycle-bonjour.md](phase22-7-lifecycle-bonjour.md) | Phone Sync: `SyncServer` actor lifecycle, Bonjour advertising, app wiring, sleep/wake |
-| 22.8 | [phase22-8-settings-ui.md](phase22-8-settings-ui.md) | Phone Sync: Settings pane + pairing sheet, localized, snapshot-tested |
-| 22.9 | [phase22-9-docs-e2e.md](phase22-9-docs-e2e.md) | Phone Sync: README + website, cross-repo end-to-end, acceptance sweep |
-| 23.0 | [phase23-0-overview.md](phase23-0-overview.md) | Collection grids: contract, shared types, mosaic engine, preference keys (read first) |
-| 23.1 | [phase23-1-artists-grid.md](phase23-1-artists-grid.md) | Collection grids: shared card infrastructure + Artists grid mode |
-| 23.2 | [phase23-2-genres-composers-grid.md](phase23-2-genres-composers-grid.md) | Collection grids: genre/composer card queries + grid modes, view-file split |
-| 23.3 | [phase23-3-view-menu-destination-albums.md](phase23-3-view-menu-destination-albums.md) | Collection grids: View menu, genre/composer album destinations, docs |
+## Conventions used in every ADR
 
-## Conventions used in every phase file
-
-- **Prerequisites** — what must already exist
-- **Goal / Non-goals** — keep scope honest
-- **Implementation plan** — ordered, small, committable steps
-- **Definitions & contracts** — types/protocols/SQL the assistant should produce verbatim
-- **Context7 lookups** — drop these into prompts
-- **Dependencies** — exact SPM / Homebrew additions
-- **Test plan** — specific cases, not vibes
-- **Acceptance criteria** — checklist to tick before merging
-- **Gotchas** — the things that will bite you, named in advance
-- **Handoff** — what the next phase expects
+- **Prerequisites**: what must already exist
+- **Goal / Non-goals**: keep scope honest
+- **Implementation plan**: ordered, small, committable steps
+- **Definitions & contracts**: types/protocols/SQL to produce verbatim
+- **Context7 lookups**: current-docs references for each dependency
+- **Dependencies**: exact SPM / Homebrew additions
+- **Test plan**: specific cases, not vibes
+- **Acceptance criteria**: checklist to tick before merging
+- **Gotchas**: the things that will bite, named in advance
+- **Handoff**: what the next ADR expects

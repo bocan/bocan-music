@@ -3,7 +3,7 @@ import GRDB
 
 // MARK: - LibraryListeningReport
 
-/// The counter analytics for the Listening Behaviour tab (#373, phase 25-2).
+/// The counter analytics for the Listening Behaviour tab (#373, ADR-076 slice 2).
 ///
 /// "Lifetime" figures combine local plays with matched imported listens;
 /// `play_history`'s counting rule (a play means more than half consumed)
@@ -76,7 +76,7 @@ public struct LibraryListeningReport: Equatable, Sendable {
 
 // MARK: - Listening behaviour queries
 
-/// The Listening Behaviour detectors (#373, phase 25-2), split from the other
+/// The Listening Behaviour detectors (#373, ADR-076 slice 2), split from the other
 /// report slices so each file stays focused.
 public extension LibraryStatsRepository {
     /// Skips needed before a track can be a delete candidate at all.

@@ -82,7 +82,7 @@ public actor SubsonicScrobbleProvider: ScrobbleProvider {
 
     public func love(track _: TrackIdentity, loved _: Bool) async throws {
         // No-op — Subsonic "star" is handled write-through via
-        // `SubsonicAnnotations` (Phase 19 step 14), not through this provider.
+        // `SubsonicAnnotations` (ADR-035 step 14), not through this provider.
     }
 
     public func isAuthenticated() async -> Bool {

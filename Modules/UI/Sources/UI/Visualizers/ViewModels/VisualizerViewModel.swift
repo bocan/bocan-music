@@ -63,7 +63,7 @@ public final class VisualizerViewModel: ObservableObject {
         set { self.sensitivityRaw = Double(max(0.1, min(3.0, newValue))) }
     }
 
-    // MARK: - Liveness (phase 33, E2E only)
+    // MARK: - Liveness (ADR-084, E2E only)
 
     /// True only under `BOCAN_E2E_RUN`, injected at construction (`Modules/UI`
     /// cannot see `E2EEnvironment`; `App/` reads it once and passes a plain

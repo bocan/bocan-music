@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 import Observability
 
-/// Typed access to `radio_stations`, the local internet radio catalog (phase 27).
+/// Typed access to `radio_stations`, the local internet radio catalog (ADR-078).
 ///
 /// Writes come from three places: the add/edit sheet (`insert` / `update` /
 /// `delete`), playlist import (`upsert`, which never clobbers user edits), and

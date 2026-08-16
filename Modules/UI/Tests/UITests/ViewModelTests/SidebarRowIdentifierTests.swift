@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - SidebarRowIdentifierTests
 
-/// Regression (phase 30 invocation pass): the tag-selected sidebar
+/// Regression (ADR-081 invocation pass): the tag-selected sidebar
 /// destination rows were absent from the accessibility tree entirely, so
 /// VoiceOver could not reach them and the E2E menu crawl could not click
 /// them. The `sidebarRow` builder must attach a stable `A11y` identifier.

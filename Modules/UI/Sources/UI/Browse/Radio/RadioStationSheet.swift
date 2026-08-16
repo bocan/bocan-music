@@ -22,7 +22,7 @@ enum RadioStationSheetMode: Identifiable {
 
 // MARK: - RadioStationSheet
 
-/// Add / edit form for a radio station (phase 27-3). Pasting a playlist URL
+/// Add / edit form for a radio station (ADR-078 slice 3). Pasting a playlist URL
 /// (`.pls` / `.m3u` / `.m3u8`) into the add form switches the sheet to a
 /// found-stations list so the whole dial can be added in one go; an HLS or
 /// otherwise-unparseable body keeps the pasted URL as the stream itself.

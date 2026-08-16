@@ -1,7 +1,7 @@
 import Foundation
 
-/// Feed URL canonicalization. Single source of truth used by search dedupe (phase 21-3)
-/// and subscription uniqueness (phase 21-4).
+/// Feed URL canonicalization. Single source of truth used by search dedupe (ADR-040)
+/// and subscription uniqueness (ADR-041).
 ///
 /// Rules per the overview contract:
 ///   1. Lowercase scheme and host.

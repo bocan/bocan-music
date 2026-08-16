@@ -48,10 +48,10 @@ Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scro
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID + MusicBrainz lookup. |
 | `Podcasts` | FeedKit-based RSS/Atom feed refresh, Podcast Index + iTunes search, subscriptions, episode downloads and retention, Podcasting 2.0 extras (chapters, transcripts, persons, podroll). |
-| `SyncServer` | Phone Sync (phase 22): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and, in later slices, the Bonjour-advertised mutual-TLS server that serves a manifest + files read-only to a paired phone. Separate identity/port from any Phase 18 remote control. |
+| `SyncServer` | Phone Sync (ADR-060 to ADR-070): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and, in later slices, the Bonjour-advertised mutual-TLS server that serves a manifest + files read-only to a paired phone. Separate identity/port from any ADR-034 remote control. |
 | `UI` | All SwiftUI views, view models (`LibraryViewModel` is the spine), settings, mini player, snapshot tests. Only module that imports AppKit. |
 
-Cross-cutting standards live in `docs/design-spec/_standards.md` — read this if you're about to add anything substantial. Implementation phases live alongside as `phase-NN-*.md`.
+Cross-cutting standards live in `docs/design-spec/_standards.md` — read this if you're about to add anything substantial. Architecture decision records live alongside as `ADR-NNN-*.md`.
 
 ## Things easy to get wrong
 
@@ -84,6 +84,6 @@ Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): �
 ## When in doubt
 
 - `docs/design-spec/_standards.md` — the engineering charter, binding on all new code.
-- `docs/design-spec/phase-NN-*.md` — historical context for major subsystems; the phase number often hints at why a particular boundary exists.
+- `docs/design-spec/ADR-NNN-*.md` — historical context for major subsystems; the ADR number often hints at why a particular boundary exists.
 - `DEVELOPMENT.md` — environment setup, FFmpeg / fpcalc details, secrets layout.
 - `CONTRIBUTING.md` — commit / PR conventions.

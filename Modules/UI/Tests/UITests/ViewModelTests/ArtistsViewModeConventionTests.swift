@@ -3,7 +3,7 @@ import Testing
 
 // MARK: - ArtistsViewModeConventionTests
 
-/// Source-convention checks for the Artists List / Grid toggle (phase 23-1).
+/// Source-convention checks for the Artists List / Grid toggle (ADR-072).
 /// These facts (an `@AppStorage` key, a segmented `Picker`, the grid open path)
 /// can't be exercised host-less, so they're asserted against the source text,
 /// following the established `#filePath` convention.
@@ -33,7 +33,7 @@ struct ArtistsViewModeConventionTests {
         // The wrapper stores the raw String, not the enum, so a write from the
         // "View as" menu reliably redraws this separate instance. A refactor back
         // to a RawRepresentable @AppStorage reintroduces the cross-instance
-        // stale-view bug (phase 23-3); this pins the fix.
+        // stale-view bug (ADR-074); this pins the fix.
         let source = try self.browseSource("CollectionViewMode.swift")
         #expect(
             source.contains("@AppStorage private var rawValue: String"),

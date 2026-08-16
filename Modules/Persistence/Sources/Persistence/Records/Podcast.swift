@@ -23,7 +23,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var artworkURL: String?
     public var artworkPath: String?
     /// SHA-256 of the cached artwork file at `artworkPath`, set when the art is
-    /// cached. Phone Sync advertises it and serves the file by it (phase 22-10).
+    /// cached. Phone Sync advertises it and serves the file by it (ADR-070).
     public var artworkHash: String?
     public var link: String?
     public var language: String?

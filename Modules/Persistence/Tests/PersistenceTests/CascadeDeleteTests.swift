@@ -76,7 +76,7 @@ struct CascadeDeleteTests {
         var track = self.makeTrack()
         track.albumID = albumID
         let trackID = try await trackRepo.insert(track)
-        // Phase-2 audit #2: dropping the album must cascade album_id → NULL
+        // ADR-003 audit #2: dropping the album must cascade album_id → NULL
         // via SQLite's ON DELETE SET NULL action; the track itself survives.
         try await db.write { grdb in
             _ = try Album.deleteOne(grdb, key: albumID)

@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicArtistsViewModel
 
-/// Drives the per-server Artists destination (Phase 19 step 10).
+/// Drives the per-server Artists destination (ADR-035 step 10).
 ///
 /// `getArtists` returns the index pre-sectioned by leading letter; no paging
 /// is exposed by the API, so we render the full result. Servers with very

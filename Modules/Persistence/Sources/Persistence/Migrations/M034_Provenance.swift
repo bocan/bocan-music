@@ -1,6 +1,6 @@
 import GRDB
 
-/// Adds the transcode-detection verdict columns to `tracks` (phase 24-2):
+/// Adds the transcode-detection verdict columns to `tracks` (ADR-075 slice 2):
 /// `provenance_suspected` (bool), `provenance_confidence` (0...1),
 /// `provenance_shelf_hz` (the detected spectral-shelf edge), and
 /// `provenance_analysed_at` (epoch seconds). Columns rather than a side

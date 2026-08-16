@@ -2,7 +2,7 @@ import Foundation
 import Persistence
 
 /// Builds the `/v1/ping` and `/v1/manifest` routes, wired to the live
-/// `sync_meta` server id and generation. Phase 22-7 assembles these with the
+/// `sync_meta` server id and generation. ADR-067 assembles these with the
 /// pairing and file routes into the running server.
 enum ManifestRoutes {
     static func routes(

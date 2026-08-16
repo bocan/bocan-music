@@ -53,7 +53,7 @@ public actor LibraryScanner {
 
         // Read-only scope: scanning + FSEvents watching never write to the root.
         // Per-file write scope is requested separately via the per-file bookmark
-        // created by `ScanCoordinator` (see Phase 8 / EditTransaction).
+        // created by `ScanCoordinator` (see ADR-010 / EditTransaction).
         let bookmark = try url.bookmarkData(
             options: [.withSecurityScope, .securityScopeAllowOnlyReadAccess],
             includingResourceValuesForKeys: nil,

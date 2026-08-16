@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - StreamDetails
 
-/// Everything the open decoder knows about its source (phase 27-5): measured
+/// Everything the open decoder knows about its source (ADR-078 slice 5): measured
 /// facts from the demuxer and codec, plus the ICY response headers for
 /// network streams. Captured once at open time; a stream reconnect rebuilds
 /// the decoder and re-captures.

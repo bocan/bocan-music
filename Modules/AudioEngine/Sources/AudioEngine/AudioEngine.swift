@@ -86,7 +86,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     public nonisolated let state: AsyncStream<PlaybackState>
 
-    // MARK: - Stream titles (phase 27-5, logic in AudioEngine+StreamDetails)
+    // MARK: - Stream titles (ADR-078 slice 5, logic in AudioEngine+StreamDetails)
 
     /// ICY now-playing titles from the live decoder. Long-lived: survives
     /// track loads and stream reconnects. Local files never emit.

@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - PodcastFundingConventionTests
 
-/// Source-convention guards for the Phase 21-12-c funding affordance: the view
+/// Source-convention guards for the ADR-052 funding affordance: the view
 /// cannot be exercised host-less, so we assert the gating, confirmation, and
 /// verbatim-label facts by reading the source.
 @Suite("Podcast Funding Convention")

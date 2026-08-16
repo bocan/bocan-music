@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - PaletteResolverTests
 
-/// Guards the shared palette mapping introduced in phase 12.1: legacy-palette
+/// Guards the shared palette mapping introduced in ADR-017: legacy-palette
 /// parity, Drift determinism, and the Thermal heat ramp.
 ///
 /// These resolve `Color` → `NSColor` to read components, so they run under the

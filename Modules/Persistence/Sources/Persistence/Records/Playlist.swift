@@ -22,7 +22,7 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// service layer.
     public var isSmart: Bool
 
-    /// JSON-encoded smart-playlist criteria (Phase 7 compiler reads this).
+    /// JSON-encoded smart-playlist criteria (ADR-009 compiler reads this).
     public var smartCriteria: String?
 
     /// User-defined display order.
@@ -46,7 +46,7 @@ public struct Playlist: Codable, FetchableRecord, MutablePersistableRecord, Send
     /// Optional accent colour as a `"#RRGGBB"` hex string.
     public var accentColor: String?
 
-    /// JSON-encoded `LimitSort` for smart playlists (Phase 7). `nil` for manual/folder rows.
+    /// JSON-encoded `LimitSort` for smart playlists (ADR-009). `nil` for manual/folder rows.
     public var smartLimitSort: String?
 
     /// Key used to identify a built-in smart preset so it is not re-created on relaunch.

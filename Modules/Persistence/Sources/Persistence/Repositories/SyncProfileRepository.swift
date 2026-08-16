@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// Access to the `sync_profile` singleton (Phone Sync, phase 22). Stores the
+/// Access to the `sync_profile` singleton (Phone Sync, ADR-060). Stores the
 /// encoded profile as an opaque JSON blob; the `SyncServer` module owns the
 /// `SyncProfile` type and its encoding, so this layer stays free of an upward
 /// dependency.

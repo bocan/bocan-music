@@ -28,12 +28,12 @@ public extension LibraryViewModel {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        // Phase 5.5 audit L1: spell out exactly what the panel accepts so users
+        // ADR-007 audit L1: spell out exactly what the panel accepts so users
         // aren't left wondering why "Open" became "Add" or what the file
         // filter does on the sibling files panel.
         panel.message = L10n.string("Choose one or more folders containing music to add to your library.")
         panel.prompt = L10n.string("Add")
-        // Phase 5.5 audit L2: use non-blocking `begin(completionHandler:)`
+        // ADR-007 audit L2: use non-blocking `begin(completionHandler:)`
         // instead of `runModal()` so the modal run loop doesn't starve the
         // audio render callback on slower machines.
         let response = await Self.runOpenPanelAsync(panel)
@@ -52,12 +52,12 @@ public extension LibraryViewModel {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = true
         panel.allowedContentTypes = Self.supportedAudioTypes
-        // Phase 5.5 audit L1: explicitly list the accepted formats so the
+        // ADR-007 audit L1: explicitly list the accepted formats so the
         // greyed-out non-audio files in the panel don't look like a bug.
         panel.message =
             L10n.string("Choose audio files (FLAC, MP3, ALAC, AAC, OGG, Opus, APE, DSD, WAV, AIFF) to add to your library.")
         panel.prompt = L10n.string("Add")
-        // Phase 5.5 audit L2: non-blocking begin() — see `addFolderByPicker`.
+        // ADR-007 audit L2: non-blocking begin() — see `addFolderByPicker`.
         let response = await Self.runOpenPanelAsync(panel)
         guard response == .OK else { return }
         // Add each file directly — the sandbox grants access to the selected URLs,
@@ -168,7 +168,7 @@ public extension LibraryViewModel {
         self.scanCurrentPath = ""
     }
 
-    // MARK: - Scan progress coalescing (Phase 5.5 audit L2)
+    // MARK: - Scan progress coalescing (ADR-007 audit L2)
 
     /// Starts the 4 Hz flush loop that copies `pendingScan*` mirror state into
     /// the `@Published` scan counters. Called from `triggerScan(mode:)` at
@@ -221,7 +221,7 @@ public extension LibraryViewModel {
         UTType("public.aiff-audio") ?? .audio,
     ]
 
-    /// Public so the App layer's E2E fixture seeding (phase 28) can add a
+    /// Public so the App layer's E2E fixture seeding (ADR-079) can add a
     /// library root without driving `NSOpenPanel`; the pickers above route
     /// through here too.
     func addURLs(_ urls: [URL]) async {
@@ -241,7 +241,7 @@ public extension LibraryViewModel {
         self.triggerScan(mode: .quick)
     }
 
-    /// Phase 3 audit M2: re-scan all library roots in either Quick or Full mode.
+    /// ADR-004 audit M2: re-scan all library roots in either Quick or Full mode.
     /// Exposed for the File-menu "Quick Rescan" / "Full Rescan" commands.
     func rescanLibrary(mode: ScanMode) {
         self.triggerScan(mode: mode)
@@ -260,7 +260,7 @@ public extension LibraryViewModel {
         self.scanUpdated = 0
         self.scanCurrentPath = ""
         self.scanSummary = nil
-        // Phase 5.5 audit L2: reset the coalesced mirror state and start the
+        // ADR-007 audit L2: reset the coalesced mirror state and start the
         // 4 Hz flush loop before kicking off the scan stream.
         self.pendingScanWalked = 0
         self.pendingScanInserted = 0
@@ -300,7 +300,7 @@ public extension LibraryViewModel {
             break
 
         case let .walking(path, walked):
-            // Phase 5.5 audit L2: write to the pending mirror only; the 4 Hz
+            // ADR-007 audit L2: write to the pending mirror only; the 4 Hz
             // flush loop publishes these to SwiftUI to avoid 100k+
             // objectWillChange ticks during a 50k-file scan.
             self.pendingScanCurrentPath = URL(fileURLWithPath: path).lastPathComponent
@@ -388,7 +388,7 @@ public extension LibraryViewModel {
 
     /// Re-scans a single file to refresh its tags.
     ///
-    /// Phase 5.5 audit M2: surfaces feedback. On success, shows an inline
+    /// ADR-007 audit M2: surfaces feedback. On success, shows an inline
     /// toast ("Re-scanned «Title»") for 2s. On failure, populates
     /// `rescanErrorMessage` so RootView can present a dedicated error sheet
     /// distinct from the playback-error alert.

@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - UIStateV2Tests
 
-/// Phase 19 step 9: regression coverage for the persisted UI state and the
+/// ADR-035 step 9: regression coverage for the persisted UI state and the
 /// new `SidebarSectionExpansion` field. The decoder must remain
 /// forward-compatible with older blobs that pre-date the field.
 @Suite("UIStateV2 + SidebarSectionExpansion")

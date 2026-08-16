@@ -2,7 +2,7 @@ import GRDB
 
 /// Migration 027: per-show podcast settings on the `podcasts` table.
 ///
-/// Four nullable columns (see `docs/design-spec/phase21-12-h-per-show-settings.md`):
+/// Four nullable columns (see `docs/design-spec/ADR-057-per-show-settings.md`):
 /// - `playback_speed`  REAL    -- user override; nil = use the app default rate.
 /// - `episode_sort`    TEXT    -- 'newest' | 'oldest'; nil = derive from show_type.
 /// - `retention_limit` INTEGER -- keep newest N content rows; nil = keep all.

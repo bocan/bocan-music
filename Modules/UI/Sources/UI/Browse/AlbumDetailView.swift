@@ -77,7 +77,7 @@ public struct AlbumDetailView: View {
                         .foregroundStyle(Color.textSecondary)
                 }
 
-                // Play / Shuffle buttons (Phase 4 audit H4).
+                // Play / Shuffle buttons (ADR-005 audit H4).
                 HStack(spacing: 8) {
                     Button {
                         Task {

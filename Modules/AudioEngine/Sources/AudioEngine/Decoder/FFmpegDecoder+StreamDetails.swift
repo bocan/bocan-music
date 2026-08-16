@@ -1,7 +1,7 @@
 import CFFmpeg
 import Foundation
 
-// MARK: - FFmpegDecoder stream details + ICY titles (phase 27-5)
+// MARK: - FFmpegDecoder stream details + ICY titles (ADR-078 slice 5)
 
 /// `AVFMT_EVENT_FLAG_METADATA_UPDATED` — the demuxer refreshed
 /// `AVFormatContext.metadata` (ICY StreamTitle for radio). A C #define the

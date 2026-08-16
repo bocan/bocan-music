@@ -23,7 +23,7 @@ Prereq: Sessions 1 to 7. Gate: `make test-ui`, `make test-coverage`,
   leaf views. Measure and extract the ones with 3+ copies.
 - **Manual vs smart playlist detail.** `PlaylistDetailView` vs
   `SmartPlaylistDetailView` -- normalized-diff for shared header/subtitle/track
-  rendering. The Phase 23 mosaic generator is already shared; confirm the
+  rendering. The ADR-071 mosaic generator is already shared; confirm the
   headers do not re-implement it.
 - **Playlist rows.** `PlaylistRow`, `PlaylistFolderRow`, smart-playlist rows --
   parallel row types; share the config-free parts.

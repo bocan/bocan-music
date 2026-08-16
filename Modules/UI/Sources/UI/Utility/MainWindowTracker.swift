@@ -117,7 +117,7 @@ final class WindowMenuExcludeView: NSView {
 
 // MARK: - SidebarWidthAutosave
 
-/// Phase 4 audit H2: persists the sidebar divider position so it survives
+/// ADR-005 audit H2: persists the sidebar divider position so it survives
 /// app relaunches, and reports width changes back to `LibraryViewModel` so
 /// we can also persist via the `ui.state.v2` settings key (cross-machine
 /// profile portability).

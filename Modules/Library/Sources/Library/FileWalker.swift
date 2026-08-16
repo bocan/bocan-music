@@ -20,7 +20,7 @@ public enum FileWalker {
     ///   - rootURL: Directory or single file to walk.
     ///   - supportedExtensions: Lower-case file extensions to emit.
     ///   - iCloudDownload: When `true`, request download of any iCloud
-    ///     placeholders encountered. Phase 3 audit H7.
+    ///     placeholders encountered. ADR-004 audit H7.
     public static func walk(
         _ rootURL: URL,
         supportedExtensions: Set<String>,

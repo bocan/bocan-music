@@ -4,7 +4,7 @@ import Testing
 @testable import Persistence
 @testable import Playback
 
-// MARK: - Radio queue restore (phase 27 regression)
+// MARK: - Radio queue restore (ADR-078 regression)
 
 /// Restoring a persisted queue whose current item is a live radio stream must
 /// not pre-load or seek it. The original bug: launch restore seeked the live

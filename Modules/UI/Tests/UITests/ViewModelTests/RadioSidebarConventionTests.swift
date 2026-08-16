@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - RadioSidebarConventionTests
 
-/// Guards the structural facts of the phase 27-3 Radio sidebar integration.
+/// Guards the structural facts of the ADR-078 slice 3 Radio sidebar integration.
 /// These are source-convention tests: they read the view source files directly
 /// and assert that the required wiring is present, since the view internals
 /// cannot be exercised host-less.
@@ -84,7 +84,7 @@ struct RadioSidebarConventionTests {
         )
     }
 
-    // MARK: - Now Playing strip (phase 27-5)
+    // MARK: - Now Playing strip (ADR-078 slice 5)
 
     @Test("the strip's info button presents the station sheet for radio")
     func stripInfoButtonHandlesRadio() throws {

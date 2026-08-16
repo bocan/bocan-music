@@ -157,11 +157,11 @@ public struct AlbumsGridView: View {
     @ObservedObject public var vm: AlbumsViewModel
     public var library: LibraryViewModel
     /// Optional navigation title override. Defaults to "Albums"; the filtered
-    /// genre/composer album destinations pass the collection name (phase 23-3).
+    /// genre/composer album destinations pass the collection name (ADR-074).
     private let titleOverride: String?
-    /// Phase 4 audit L3: Cmd-click multi-select for albums.
+    /// ADR-005 audit L3: Cmd-click multi-select for albums.
     @State private var selection: Set<Int64> = []
-    /// Phase 5: keyboard focus — which album cell has keyboard focus.
+    /// ADR-006: keyboard focus — which album cell has keyboard focus.
     @FocusState private var focusedAlbumID: Int64?
     /// Tracks the number of columns in the adaptive grid for arrow-key navigation.
     @State private var gridColumnCount = 3
@@ -404,7 +404,7 @@ public struct AlbumsGridView: View {
         }
 
         Divider()
-        // Phase 4 audit L8: wire Get Info now that Phase 8 has shipped.
+        // ADR-005 audit L8: wire Get Info now that ADR-010 has shipped.
         Button(L10n.string("Get Info (\(ids.count) Albums)")) {
             Task { await self.openInspector(forAlbumIDs: ids) }
         }

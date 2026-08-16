@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - UnreadBadgeConventionTests
 
-/// Source-convention guards for the Phase 21-12-f unread badge and grid menu:
+/// Source-convention guards for the ADR-055 unread badge and grid menu:
 /// the views cannot be exercised host-less, so we assert their structure by
 /// reading source (the overlay placement, the non-zero gate, the a11y label,
 /// the verbatim numeral, and the Mark-all menu wiring).

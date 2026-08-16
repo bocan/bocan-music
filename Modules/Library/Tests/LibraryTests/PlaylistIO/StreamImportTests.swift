@@ -3,7 +3,7 @@ import Testing
 @testable import Library
 @testable import Persistence
 
-// MARK: - Stream-entry import tests (phase 27-4, issue #376)
+// MARK: - Stream-entry import tests (ADR-078 slice 4, issue #376)
 
 /// A playlist of internet radio streams must import as radio stations, not as
 /// an empty playlist of 26 misses.

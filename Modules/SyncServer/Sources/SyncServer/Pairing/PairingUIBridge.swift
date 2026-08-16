@@ -1,7 +1,7 @@
 import Foundation
 
 /// The UI seam the pairing ceremony drives. Implemented by the settings pairing
-/// sheet (phase 22-8); a test double drives the ceremony tests. This is the only
+/// sheet (ADR-068); a test double drives the ceremony tests. This is the only
 /// UI dependency the coordinator has.
 public protocol PairingUIBridge: Sendable {
     /// Show the six-digit code on the Mac. Called when a phone starts pairing.

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Persistence
 
-/// The time-analytics queries (#373, phase 25-3). Expected buckets are
+/// The time-analytics queries (#373, ADR-076 slice 3). Expected buckets are
 /// computed with `Calendar.current`, which shares the system time zone with
 /// SQLite's `localtime` modifier, so these tests hold in any zone.
 @Suite("LibraryStatsRepository listening time")

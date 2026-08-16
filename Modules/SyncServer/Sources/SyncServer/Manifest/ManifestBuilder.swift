@@ -9,7 +9,7 @@ import Podcasts
 /// Builds the Phone Sync manifest (sync-protocol.md section 7) from the library.
 ///
 /// The Mac schema does not match the wire shape one-to-one; this builder owns the
-/// impedance handling documented in phase 22-5:
+/// impedance handling documented in ADR-065:
 /// - `relPath` is derived from `tracks.file_url` relative to a library root (there
 ///   is no stored relative path and no root foreign key; roots are matched by
 ///   path prefix);
@@ -21,7 +21,7 @@ import Podcasts
 /// - artist/album names are resolved from their id tables;
 /// - ReplayGain is emitted only when a track gain is present.
 ///
-/// Podcasts are added in phase 22-5C.
+/// Podcasts are added in ADR-065C.
 public struct ManifestBuilder: Sendable {
     private let trackRepository: TrackRepository
     private let albumRepository: AlbumRepository

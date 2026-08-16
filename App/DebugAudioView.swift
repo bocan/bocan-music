@@ -3,7 +3,7 @@
     import AudioEngine
     import SwiftUI
 
-    /// Phase 1 audit #14: debug-only manual playback harness.
+    /// ADR-002 audit #14: debug-only manual playback harness.
     ///
     /// Exposes a minimal SwiftUI surface to drive the `AudioEngine` directly,
     /// without going through the queue, library, or playback view models.  Used

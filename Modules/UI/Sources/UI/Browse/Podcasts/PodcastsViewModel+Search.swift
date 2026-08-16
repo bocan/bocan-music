@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - PodcastsViewModel + Search (Phase 21-8)
+// MARK: - PodcastsViewModel + Search (ADR-045)
 
 /// Search, add-by-URL, and detail-sheet actions for the podcast discovery bar.
 public extension PodcastsViewModel {

@@ -34,7 +34,7 @@ public final class PodcastsViewModel: ObservableObject {
     /// Persisted in UserDefaults under ``sortOrderKey``.
     @Published public private(set) var sortOrder: PodcastSortOrder
 
-    // MARK: - Phase 21-8: search + detail state
+    // MARK: - ADR-045: search + detail state
 
     @Published public internal(set) var searchResults: [UIPodcastSearchResult] = []
     @Published public internal(set) var searchState: PodcastSearchState = .idle

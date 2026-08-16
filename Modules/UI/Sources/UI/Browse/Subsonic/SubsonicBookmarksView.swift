@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicBookmarksViewModel
 
-/// Drives the per-server Bookmarks destination (Phase 19 step 11).
+/// Drives the per-server Bookmarks destination (ADR-035 step 11).
 ///
 /// Capability-gated by `SubsonicCapabilities.supportsBookmarks`. Each
 /// bookmark wraps a `Song`, so double-tapping plays from the bookmarked

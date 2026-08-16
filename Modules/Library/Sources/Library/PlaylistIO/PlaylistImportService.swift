@@ -6,7 +6,7 @@ import Persistence
 /// Imports a parsed `PlaylistPayload` into the library, materialising a real
 /// playlist row plus track membership for every resolved entry.
 ///
-/// Stream entries (http/https, phase 27-4) never reach the track resolver:
+/// Stream entries (http/https, ADR-078 slice 4) never reach the track resolver:
 /// they are partitioned out first and upserted into the radio station catalog,
 /// so issue #376's all-stream M3U yields stations instead of an empty playlist.
 public actor PlaylistImportService {
@@ -109,7 +109,7 @@ public actor PlaylistImportService {
         )
     }
 
-    // MARK: - Stream partition (phase 27-4)
+    // MARK: - Stream partition (ADR-078 slice 4)
 
     /// Splits entries into local-file candidates and http(s) stream entries.
     /// The format readers deliberately leave remote URLs out of `absoluteURL`,

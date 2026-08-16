@@ -44,11 +44,11 @@ struct TagWriterTests {
         defer { try? FileManager.default.removeItem(at: tmp) }
 
         var tags = try TagReader().read(from: tmp)
-        tags.artist = "Test Artist Phase8"
+        tags.artist = "Test Artist ADR-010"
         try TagWriter().write(tags, to: tmp)
 
         let reread = try TagReader().read(from: tmp)
-        #expect(reread.artist == "Test Artist Phase8")
+        #expect(reread.artist == "Test Artist ADR-010")
     }
 
     @Test func writeAndReadBackGenre_mp3() throws {
@@ -111,7 +111,7 @@ struct TagWriterTests {
         #expect(reread.bpm == 128)
     }
 
-    // MARK: - MusicBrainz IDs + ISRC round-trip (Phase 8.6)
+    // MARK: - MusicBrainz IDs + ISRC round-trip (ADR-012)
 
     private func assertMusicBrainzRoundTrip(fixture: String) throws {
         let tmp = try tempCopy(of: fixture)

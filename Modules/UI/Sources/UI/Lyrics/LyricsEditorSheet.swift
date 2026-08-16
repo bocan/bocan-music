@@ -6,7 +6,7 @@ import SwiftUI
 /// A sheet that lets the user paste, edit, and save lyrics for the current track.
 ///
 /// - `⌘T` inserts a LRC timestamp at the cursor from `currentPosition`.
-/// - "Save" always writes to the DB; embedding into the file requires Phase 8.
+/// - "Save" always writes to the DB; embedding into the file requires ADR-010.
 public struct LyricsEditorSheet: View {
     // MARK: - Dependencies
 

@@ -22,7 +22,7 @@ public final class EngineGraph: @unchecked Sendable {
 
     public let engine: AVAudioEngine
     public let playerNode: AVAudioPlayerNode
-    /// The full DSP processing chain (Phase 9).
+    /// The full DSP processing chain (ADR-013).
     public let dsp: DSPChain
     let mixer: AVAudioMixerNode
 

@@ -1,7 +1,7 @@
 import Foundation
 import Persistence
 
-/// Parses the official Last.fm listening-history export (phase 25-1).
+/// Parses the official Last.fm listening-history export (ADR-076 slice 1).
 ///
 /// The shape: one header row naming the columns (`uts`, `utc_time`, `artist`,
 /// `artist_mbid`, `album`, `album_mbid`, `track`, `track_mbid`), then one

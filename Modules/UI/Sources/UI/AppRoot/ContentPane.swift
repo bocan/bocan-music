@@ -16,7 +16,7 @@ public struct ContentPane: View {
     @ObservedObject private var sidebar: PlaylistSidebarViewModel
 
     /// Per-section Songs / Albums choice for the genre and composer
-    /// destinations, default Songs (phase 23-3). Read here (not observed on the
+    /// destinations, default Songs (ADR-074). Read here (not observed on the
     /// VM) so the destination switches live when the View menu or the toolbar
     /// toggle writes the key.
     @AppStorage("genres.detailMode") private var genreDetailMode: CollectionDetailMode = .songs
@@ -48,7 +48,7 @@ public struct ContentPane: View {
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                // Phase 19 step 17: per-server offline banner with "Retry now".
+                // ADR-035 step 17: per-server offline banner with "Retry now".
                 if let serverID = self.vm.selectedDestination.subsonicServerID,
                    let state = self.vm.subsonicConnectionStates[serverID],
                    state.isOffline {

@@ -1,4 +1,4 @@
-# Phase 24 Maintainability Audit -- Close-out
+# Maintainability Audit -- Close-out
 
 A ten-session, bottom-up sweep of the whole codebase for duplication worth
 sharing. The deliverable was never "fewer lines at any cost" -- it was a

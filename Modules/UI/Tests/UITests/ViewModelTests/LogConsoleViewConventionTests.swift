@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - LogConsoleViewConventionTests
 
-/// Source-convention checks for `LogConsoleView` and `LogConsoleRow` (#phase-20).
+/// Source-convention checks for `LogConsoleView` and `LogConsoleRow` (#ADR-036).
 ///
 /// These tests read the Swift source files directly and assert that structural
 /// invariants — lifecycle hooks, accessibility, tail-scroll wiring — are present.

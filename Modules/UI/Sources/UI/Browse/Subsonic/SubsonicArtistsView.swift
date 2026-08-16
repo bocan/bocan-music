@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - SubsonicArtistsView
 
-/// Per-server Artists destination (Phase 19 step 10).
+/// Per-server Artists destination (ADR-035 step 10).
 ///
 /// The un-filtered list is rendered as one `Section` per index bucket
 /// returned by `getArtists` (Subsonic returns the full index in one call —

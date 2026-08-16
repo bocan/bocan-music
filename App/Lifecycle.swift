@@ -9,7 +9,7 @@ import Playback
 /// A `DispatchSemaphore` blocks termination briefly while the async save
 /// completes; the 2-second timeout prevents a hang on slow devices.  Vacuum
 /// runs only when the freelist exceeds the threshold defined inside
-/// `Database.vacuum()` (Phase 2 audit #5 / #17).
+/// `Database.vacuum()` (ADR-003 audit #5 / #17).
 func registerTerminationObserver(player: QueuePlayer, database: Database) {
     NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification,

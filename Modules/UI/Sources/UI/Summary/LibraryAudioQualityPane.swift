@@ -62,7 +62,7 @@ struct LibraryAudioQualityPane: View {
         .formStyle(.grouped)
     }
 
-    /// The Transcode Detection section (phases 24-3 and 24-4): an always
+    /// The Transcode Detection section (ADR-075 slice 3 and ADR-075 slice 4): an always
     /// present Analyse Now trigger (or the live batch progress while a run is
     /// underway), and the suspected-transcode offender list once at least one
     /// track holds a verdict. The word is always "suspected"; the footer
@@ -111,7 +111,7 @@ struct LibraryAudioQualityPane: View {
     }
 
     /// Live progress for the Tools menu's "Analyse Provenance" batch
-    /// (phase 24-3), with Cancel while running and Dismiss once complete.
+    /// (ADR-075 slice 3), with Cancel while running and Dismiss once complete.
     @ViewBuilder
     private func provenanceProgressRows(_ progress: ProvenanceBatchProgress) -> some View {
         if progress.isComplete {
@@ -145,7 +145,7 @@ struct LibraryAudioQualityPane: View {
         }
     }
 
-    /// The offenders (phase 24-4): highest confidence first, collapsed by
+    /// The offenders (ADR-075 slice 4): highest confidence first, collapsed by
     /// default, each row navigating to its album. A clean run gets a plain
     /// all-clear instead of an empty disclosure group.
     @ViewBuilder
@@ -324,7 +324,7 @@ struct LibraryAudioQualityPane: View {
         return progress.failed > 0 ? L10n.string("\(base), \(progress.failed) failed") : base
     }
 
-    /// The phase 24-4 offender detail: "87% confident · shelf at 16 kHz".
+    /// The ADR-075 slice 4 offender detail: "87% confident · shelf at 16 kHz".
     private static func suspectDetail(_ track: LibraryAudioQualityReport.SuspectedTranscodeTrack) -> String {
         let confidence = track.confidence.formatted(.percent.precision(.fractionLength(0)))
         guard let shelfHz = track.shelfFrequencyHz else {

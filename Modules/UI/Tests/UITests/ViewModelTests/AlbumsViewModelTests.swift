@@ -142,7 +142,7 @@ struct AlbumsViewModelTests {
         #expect(second.sortOrder == .yearNewest)
     }
 
-    // MARK: - Keyboard focus (Accessibility Phase 5)
+    // MARK: - Keyboard focus (Accessibility ADR-006)
 
     @Test("Persisted albums have non-nil IDs for FocusState tracking")
     func albumsHaveNonNilIDsForFocusState() async throws {

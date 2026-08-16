@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// Phase 3 migration: adds `user_edited` flag to tracks, creates `library_roots` table.
+/// ADR-004 migration: adds `user_edited` flag to tracks, creates `library_roots` table.
 ///
 /// `library_roots` records the folders the user has authorised for scanning,
 /// together with a security-scoped bookmark so the Library module can re-open

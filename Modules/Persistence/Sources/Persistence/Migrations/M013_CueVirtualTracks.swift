@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 14 migration: adds offset columns to support CUE-sheet virtual tracks.
+/// ADR-030 migration: adds offset columns to support CUE-sheet virtual tracks.
 ///
 /// `start_offset_ms` and `end_offset_ms` are non-negative integers measured in
 /// milliseconds from the start of the source file. When both are NULL the

@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicInternetRadioViewModel
 
-/// Drives the per-server Internet Radio destination (Phase 19 step 11).
+/// Drives the per-server Internet Radio destination (ADR-035 step 11).
 ///
 /// Capability-gated by `SubsonicCapabilities.supportsInternetRadio`.
 @MainActor

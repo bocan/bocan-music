@@ -125,7 +125,7 @@ actor TrackImporter {
         // Fetch existing to preserve play stats and user_edited flag
         let existing = try await trackRepo.fetchOne(fileURL: fileURLString)
 
-        // Provenance verdicts (phase 24) describe the audio bytes, so they
+        // Provenance verdicts (ADR-075) describe the audio bytes, so they
         // survive rescans of an unchanged file and are nulled the moment the
         // file itself changed. In-app tag edits stamp file_mtime after the
         // rewrite (EditTransaction), so those keep their verdicts too.

@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - LibraryViewModelToastTests
 
-/// Phase 5.5 audit M2 regression coverage for the toast surface added on
+/// ADR-007 audit M2 regression coverage for the toast surface added on
 /// ``LibraryViewModel``. The full rescan-success integration path requires a
 /// real ``LibraryScanner`` and is exercised in the snapshot tests; here we
 /// pin down the toast contract itself so future refactors can't quietly

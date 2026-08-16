@@ -302,7 +302,7 @@ public actor PodcastService {
         }
     }
 
-    /// One-shot Phone Sync backfill (phase 22-10): hashes cached show art that
+    /// One-shot Phone Sync backfill (ADR-070): hashes cached show art that
     /// predates the `artwork_hash` column so existing subscriptions advertise
     /// artwork on the next sync. Call once at startup; cheap when there is
     /// nothing to do.
@@ -498,7 +498,7 @@ public actor PodcastService {
             throw PodcastsError.notFound(feedURL: feedURL)
         }
 
-        // Return the downloaded file URL when available (phase 21-6 populates this).
+        // Return the downloaded file URL when available (ADR-043 populates this).
         // State, not the file, is the source of truth for the badge, but verify the
         // file actually exists: a user may have cleared Application Support out of
         // band. If the state says downloaded but the file is gone, reset state to
@@ -733,7 +733,7 @@ public struct RefreshOutcome: Sendable {
     public var newEpisodeCount: Int
     public var totalEpisodeCount: Int
     /// Guids of episodes that did not exist before this refresh. Drives
-    /// auto-download (phase 21-6); unordered, the caller orders by publish date.
+    /// auto-download (ADR-043); unordered, the caller orders by publish date.
     public var newEpisodeGUIDs: [String]
 
     public init(

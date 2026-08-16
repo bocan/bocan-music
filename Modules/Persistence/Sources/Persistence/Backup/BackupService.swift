@@ -42,7 +42,7 @@ public struct BackupService: Sendable {
             // raw `GRDB.Database` from a queue's `read` closure — that
             // closure releases the connection back to the pool on return,
             // so by the time `sourceDB.backup(to:)` ran the destination
-            // handle had become invalid (Phase 2 audit #6).
+            // handle had become invalid (ADR-003 audit #6).
             let destQueue = try DatabaseQueue(path: destinationURL.path)
             try await self.database.backup(to: destQueue)
             self.log.debug("backup.end", ["destination": destinationURL.path])

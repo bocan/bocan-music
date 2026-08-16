@@ -46,7 +46,7 @@ public actor PodcastArtworkCache {
     /// Downloads `url` (if not already cached) to a local file under the cache
     /// root and writes its path plus its SHA-256 into the podcast row via
     /// `repo`. The hash is what Phone Sync advertises in the manifest and
-    /// resolves in `GET /v1/artwork/{hash}` (phase 22-10). Best-effort; logs
+    /// resolves in `GET /v1/artwork/{hash}` (ADR-070). Best-effort; logs
     /// and returns `nil` on failure.
     @discardableResult
     public func cachePodcastArt(

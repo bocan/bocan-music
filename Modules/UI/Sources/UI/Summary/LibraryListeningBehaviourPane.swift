@@ -5,7 +5,7 @@ import SwiftUI
 // MARK: - LibraryListeningBehaviourPane
 
 /// The Library Summary window's Listening Behaviour tab (#373): the
-/// imported-history ledger (phase 25-1) and the counter analytics built on
+/// imported-history ledger (ADR-076 slice 1) and the counter analytics built on
 /// it (25-2): utilisation and the Gini coefficient, the skip-rate delete
 /// candidates, dormant favourites, and abandoned albums. Heatmaps and
 /// discovery charts follow in 25-3.
@@ -144,7 +144,7 @@ struct LibraryListeningBehaviourPane: View {
         .foregroundStyle(Color.textTertiary)
     }
 
-    // MARK: - Analytics sections (phase 25-2)
+    // MARK: - Analytics sections (ADR-076 slice 2)
 
     private func utilisationSection(_ report: LibraryListeningReport) -> some View {
         Section {
@@ -248,7 +248,7 @@ struct LibraryListeningBehaviourPane: View {
         }
     }
 
-    // MARK: - Time sections (phase 25-3)
+    // MARK: - Time sections (ADR-076 slice 3)
 
     private func whenYouListenSection(_ time: LibraryListeningTimeReport) -> some View {
         Section {

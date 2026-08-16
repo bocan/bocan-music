@@ -2,7 +2,7 @@ import Foundation
 import Observability
 import Persistence
 
-/// Imports a Last.fm export end to end (phase 25-1): parse, idempotent batch
+/// Imports a Last.fm export end to end (ADR-076 slice 1): parse, idempotent batch
 /// insert, one re-match pass, and a summary for the completion toast. Local
 /// counters are never touched; see `ListenImportRepository`.
 public struct ListeningHistoryImporter: Sendable {

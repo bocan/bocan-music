@@ -1,6 +1,6 @@
 import Foundation
 
-/// Phase 1 audit #19/#20/#21 + #6/#8: anti-pop fades and default-output-device
+/// ADR-002 audit #19/#20/#21 + #6/#8: anti-pop fades and default-output-device
 /// wiring, factored out of `AudioEngine.swift` to keep that file under the
 /// SwiftLint length cap.
 ///

@@ -8,7 +8,7 @@ import SwiftUI
 ///
 /// Drive `currentLineIndex` from ``LyricsViewModel/positionDidChange(_:)`` on
 /// every engine position tick; the view scrolls only when the index changes to
-/// avoid jitter (see *Gotchas* in `phase-11-lyrics.md`).
+/// avoid jitter (see *Gotchas* in `ADR-015-lyrics.md`).
 ///
 /// Pass a non-empty `searchText` to filter visible lines in both unsynced and
 /// synced modes.  An empty string (the default) shows all content.

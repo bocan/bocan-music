@@ -18,9 +18,9 @@ actor CoverArtCache {
     private let repo: CoverArtRepository
     private let log = AppLogger.make(.library)
 
-    /// Phase 3 audit H5: cap cache art at 4096 px on the longest side.
+    /// ADR-004 audit H5: cap cache art at 4096 px on the longest side.
     /// Originals are preserved separately for the metadata editor's
-    /// "Show original" affordance (Phase 8).
+    /// "Show original" affordance (ADR-010).
     private let maxLongestSide = 4096
 
     /// Soft cap on the total on-disk cover-art cache (working art + originals).

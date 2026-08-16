@@ -6,7 +6,7 @@ import Persistence
 // MARK: - ProvenanceBatchProgress
 
 /// Progress snapshot for a running or completed transcode-detection batch
-/// (phase 24-3).
+/// (ADR-075 slice 3).
 public struct ProvenanceBatchProgress: Equatable, Sendable {
     /// Files processed so far, including failures.
     public let done: Int
@@ -28,7 +28,7 @@ public struct ProvenanceBatchProgress: Equatable, Sendable {
     }
 }
 
-// MARK: - Provenance batch (phase 24-3)
+// MARK: - Provenance batch (ADR-075 slice 3)
 
 /// The transcode-detection batch job: sequential decode-and-score over every
 /// lossless track still needing a verdict, following the Compute Missing

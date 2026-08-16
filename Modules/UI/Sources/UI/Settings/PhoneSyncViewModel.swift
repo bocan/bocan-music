@@ -20,7 +20,7 @@ public enum PairingSheetState: Equatable, Sendable {
 
 // MARK: - PhoneSyncViewModel
 
-/// State-store for Settings -> Phone Sync (phase 22-8). Wraps the
+/// State-store for Settings -> Phone Sync (ADR-068). Wraps the
 /// `PhoneSyncControlling` seam (implemented by the App over `SyncServer`) and
 /// is itself the pairing-ceremony receiver, driving the sheet through its
 /// states. All mutation is async and best-effort.

@@ -122,7 +122,7 @@ public struct PlaylistImportSheet: View {
 
     private func pickFiles() {
         // Use begin(completionHandler:) — non-blocking, never stalls the main run loop
-        // or the audio render thread. Matches the async-panel pattern from Phase 5.5.
+        // or the audio render thread. Matches the async-panel pattern from ADR-007.
         Task { @MainActor in
             let panel = NSOpenPanel()
             panel.allowsMultipleSelection = true

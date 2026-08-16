@@ -37,7 +37,7 @@ public protocol Transport: Sendable {
 
     /// Stream facts for the currently audible source, when it is decoded by
     /// FFmpeg (network streams, exotic formats); nil otherwise. Defaulted so
-    /// simple conformers need not care (phase 27-5).
+    /// simple conformers need not care (ADR-078 slice 5).
     var currentStreamDetails: StreamDetails? { get async }
 }
 

@@ -8,7 +8,7 @@ import Persistence
 /// Codable column identifier used to persist table sort state.
 ///
 /// `KeyPathComparator<Track>` is not `Codable`, so we store this enum
-/// and reconstruct the comparator on load. See gotchas in phase-04.
+/// and reconstruct the comparator on load. See gotchas in ADR-005.
 public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
     case title
     case artist

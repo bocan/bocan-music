@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 19 — Subsonic / Navidrome / OpenSubsonic client.
+/// ADR-035 — Subsonic / Navidrome / OpenSubsonic client.
 ///
 /// 1. Creates `subsonic_servers` — one row per configured remote server.
 /// 2. Creates `subsonic_metadata_cache` — ephemeral metadata snapshots keyed

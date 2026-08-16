@@ -3,7 +3,7 @@ import GRDB
 
 /// Access to the `sync_meta` singleton: the stable per-Mac `server_id` and the
 /// monotonic `generation` counter the phone polls via `/v1/ping` (Phone Sync,
-/// phase 22). The row is created lazily on first access.
+/// ADR-060). The row is created lazily on first access.
 public struct SyncMetaRepository: Sendable {
     private let database: Database
 

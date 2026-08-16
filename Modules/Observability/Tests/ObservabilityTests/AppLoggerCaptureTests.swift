@@ -1,7 +1,7 @@
 import Testing
 @testable import Observability
 
-/// Tests for the AppLogger -> LogStore tee introduced in Phase 20 step 4.
+/// Tests for the AppLogger -> LogStore tee introduced in ADR-036 step 4.
 ///
 /// Each test injects an isolated `LogStore` instance so concurrent test suites
 /// cannot pollute each other via `LogStore.shared`.

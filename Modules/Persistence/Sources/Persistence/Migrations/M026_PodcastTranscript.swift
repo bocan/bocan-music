@@ -5,7 +5,7 @@ import GRDB
 /// Stores fetched transcript bodies in full so the viewer works offline. It is a
 /// re-fetchable cache keyed by the stable `(podcast_id, guid)` identity, cleaned
 /// 30 days after the episode is played (see `TranscriptRepository`). See
-/// `docs/design-spec/phase21-12-b-transcripts.md`.
+/// `docs/design-spec/ADR-051-transcripts.md`.
 ///
 /// `ON DELETE CASCADE` mirrors the other podcast tables, so unsubscribing drops
 /// the cache. No index beyond the PK: lookups and the cleanup join are both by

@@ -175,7 +175,7 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
     /// Whether the track is excluded from shuffle.
     public var excludedFromShuffle: Bool
 
-    // MARK: - Phase-2 additions
+    // MARK: - ADR-003 additions
 
     /// Total seconds of audio played (for scrobbling heuristics).
     public var playDurationTotal: Double
@@ -377,7 +377,7 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
 
     // MARK: - Provenance
 
-    /// Nulls all four provenance columns (phase 24). The scanner calls this
+    /// Nulls all four provenance columns (ADR-075). The scanner calls this
     /// whenever the file's bytes changed, so a replaced file is never judged
     /// by its predecessor's spectrum.
     public mutating func clearProvenance() {

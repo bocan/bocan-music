@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicPlaylistsViewModel
 
-/// Drives the per-server Playlists destination (Phase 19 step 11).
+/// Drives the per-server Playlists destination (ADR-035 step 11).
 ///
 /// Subsonic's `getPlaylists` returns the full listing in one shot, so there
 /// is no paging. A pull-to-refresh is wired via the toolbar.

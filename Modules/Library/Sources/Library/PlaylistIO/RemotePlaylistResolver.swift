@@ -3,7 +3,7 @@ import Observability
 
 // MARK: - RemotePlaylistResolution
 
-/// What a fetched playlist URL turned out to contain (phase 27-3).
+/// What a fetched playlist URL turned out to contain (ADR-078 slice 3).
 public enum RemotePlaylistResolution: Equatable, Sendable {
     /// The body parsed as a station list: one entry per http(s) stream URL,
     /// carrying the playlist's title hint when it had one.
@@ -32,7 +32,7 @@ public struct RemotePlaylistStation: Equatable, Sendable {
 // MARK: - RemotePlaylistResolver
 
 /// Resolves a pasted playlist URL (`.pls` / `.m3u` / `.m3u8`) into radio
-/// stations (phase 27-3): fetch, sniff, parse with the phase 14 readers.
+/// stations (ADR-078 slice 3): fetch, sniff, parse with the ADR-030 readers.
 ///
 /// Callers gate the fetch on `looksLikePlaylist(_:)` first: blindly GETting a
 /// pasted URL would download an infinite live stream just to sniff it.

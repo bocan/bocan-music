@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - PerShowSettingsConventionTests
 
-/// Tests for the Phase 21-12-h per-show settings: the pure rate resolver and a
+/// Tests for the ADR-057 per-show settings: the pure rate resolver and a
 /// source-convention check on the settings sheet (which cannot run host-less).
 @Suite("Per-Show Settings")
 struct PerShowSettingsConventionTests {

@@ -18,7 +18,7 @@ import Observability
 /// not sample-accurate (~10 ms scheduling jitter on the render thread). This is
 /// perceptually transparent for crossfade transitions. No compensation is applied.
 ///
-/// **When `durationSeconds = 0`:** the code path is identical to Phase 5's hard
+/// **When `durationSeconds = 0`:** the code path is identical to ADR-006's hard
 /// handoff — no ramps, no performance difference.
 ///
 /// **`crossfadeAlbumGapless = true`:** crossing album boundaries uses crossfade;

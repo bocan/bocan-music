@@ -6,7 +6,7 @@ import SwiftUI
 
 // MARK: - SubsonicStarredViewModel
 
-/// Drives the per-server Starred destination (Phase 19 step 11).
+/// Drives the per-server Starred destination (ADR-035 step 11).
 ///
 /// Wraps `getStarred2`, exposing the song subset for playback. Starred
 /// artists/albums are surfaced as section counts only; drill-down would

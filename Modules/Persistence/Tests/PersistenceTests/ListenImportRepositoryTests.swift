@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Persistence
 
-/// The backfilled listening-history store (phase 25-1): idempotent inserts,
+/// The backfilled listening-history store (ADR-076 slice 1): idempotent inserts,
 /// the re-match pass, local-overlap dedupe, and the one-statement undo.
 @Suite("ListenImportRepository")
 struct ListenImportRepositoryTests {

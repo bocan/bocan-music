@@ -5,7 +5,7 @@ import Observability
 import Persistence
 import UniformTypeIdentifiers
 
-// MARK: - Listening-history import (phase 25-1)
+// MARK: - Listening-history import (ADR-076 slice 1)
 
 /// The Last.fm export import: file picker, one-shot run with a summary
 /// toast, the re-match pass, and the one-statement undo. Imported plays

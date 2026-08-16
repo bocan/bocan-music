@@ -6,7 +6,7 @@ import os
 /// Owns the `NWListener` for the Phone Sync server: builds the mutual-TLS
 /// parameters from the `ServerIdentity`, accepts connections, and hands each to
 /// an `HttpConnection`. The full server lifecycle (Bonjour, pairing-mode toggle,
-/// sleep/wake) is assembled in phase 22-7; this type is the transport core it
+/// sleep/wake) is assembled in ADR-067; this type is the transport core it
 /// composes.
 public actor SyncListener {
     /// The Bonjour service type for Phone Sync (sync-protocol.md section 1).

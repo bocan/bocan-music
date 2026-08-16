@@ -1,6 +1,6 @@
 import GRDB
 
-/// Adds `radio_stations` (phase 27-1): the local, user-curated internet radio
+/// Adds `radio_stations` (ADR-078 slice 1): the local, user-curated internet radio
 /// station catalog. `stream_url` is UNIQUE because it is the catalog's
 /// identity key: importing the same playlist twice must be idempotent (27-4
 /// inserts through it and skips rows that already exist). The nullable

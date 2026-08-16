@@ -9,9 +9,9 @@ import SwiftSonic
 /// lists into the shared `QueuePlayer` via `.subsonic` `PlayableSource` items.
 public extension LibraryViewModel {
     /// Plays a list of Subsonic songs by enqueuing them as `.subsonic`
-    /// `PlayableSource` items (Phase 19 step 10).
+    /// `PlayableSource` items (ADR-035 step 10).
     ///
-    /// The `AudioEngine` stream cache (Phase 19 step 6) resolves each
+    /// The `AudioEngine` stream cache (ADR-035 step 6) resolves each
     /// `.subsonic` source to a local playable URL on demand.
     func play(subsonicSongs songs: [Song], serverID: UUID, startingAt index: Int = 0) async {
         guard let qp = self.queuePlayer else {

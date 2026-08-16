@@ -1,6 +1,6 @@
 import GRDB
 
-/// Phase 9 migration: per-track and per-album DSP preset assignments.
+/// ADR-013 migration: per-track and per-album DSP preset assignments.
 ///
 /// These tables let users pin a specific EQ preset (and optional effect values) to an
 /// individual track or album. Rows are optional; absence means "use global setting".

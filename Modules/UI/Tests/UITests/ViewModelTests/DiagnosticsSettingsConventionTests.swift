@@ -3,7 +3,7 @@ import Testing
 
 // MARK: - DiagnosticsSettingsConventionTests
 
-/// Source-convention checks for `DiagnosticsSettingsView` Log Console hooks (#phase-20, step 8).
+/// Source-convention checks for `DiagnosticsSettingsView` Log Console hooks (#ADR-036, step 8).
 ///
 /// These tests read the Swift source file directly and assert that the structural
 /// invariants introduced in step 8 are present: the Open Log Console button, the

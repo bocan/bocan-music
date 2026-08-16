@@ -3,7 +3,7 @@ import Persistence
 
 // MARK: - UI-facing Phone Sync types
 
-/// UI-local mirror of the sync profile selection (phase 22-5's `SyncProfile`).
+/// UI-local mirror of the sync profile selection (ADR-065's `SyncProfile`).
 /// Kept here so `UI` stays independent of the `SyncServer` module; the App
 /// controller translates to and from the real `SyncProfile`.
 public struct PhoneSyncProfile: Equatable, Sendable {

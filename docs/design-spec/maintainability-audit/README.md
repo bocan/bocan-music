@@ -1,7 +1,7 @@
-# Phase 24: Maintainability Audit
+# Maintainability Audit
 
 A cross-cutting, bottom-up sweep of the whole codebase for **duplication that
-should be parameterized or shared**. Unlike phases 0 to 23, this ships no
+should be parameterized or shared**. Unlike ADR-001 to ADR-074, this ships no
 features. It reads existing code, finds functions and blocks that are *mostly*
 the same, and compresses the ones where compression is a genuine win, leaving a
 recorded decision for the ones where it isn't.
@@ -10,8 +10,8 @@ This directory is the charter (this file), a running [findings ledger](findings-
 and ten session files sized to roughly one working session each. Read this file
 once; each session file is deliberately thin and leans on the method here.
 
-> This is an audit, not an engineering phase, so the format is different from
-> the `phase-NN-*.md` specs. There is no "acceptance criteria" for a feature.
+> This is an audit, not an engineering ADR, so the format is different from
+> the `ADR-NNN-*.md` specs. There is no "acceptance criteria" for a feature.
 > The deliverable is: a smaller, less-repetitive codebase where it helped, and a
 > ledger entry for every candidate considered, including the ones left alone.
 
@@ -24,10 +24,10 @@ It rarely breaks anything at runtime. It taxes *maintainability*: when a
 behavior must change, it now lives in N places, and the one that gets missed
 becomes a bug.
 
-The Phase 23 close-out already found and fixed several instances (four copied
+The ADR-071 close-out already found and fixed several instances (four copied
 segmented pickers, three copied `writePNG` helpers, a duplicated list row). It
 also found one where consolidation was the *wrong* call (a generic that folded
-two views into a 14-field config bag). Both outcomes are the point: this phase
+two views into a 14-field config bag). Both outcomes are the point: this audit
 systematizes the search **and** the judgment.
 
 ## Non-goals
@@ -80,7 +80,7 @@ surface is in the ledger.
 
 ## The decision rubric: consolidate or leave?
 
-This is the heart of the phase. Finding duplication is easy; deciding what to do
+This is the heart of the audit. Finding duplication is easy; deciding what to do
 about it is the skill. For every cluster of similar code, walk this in order.
 
 **Step 1 - Count and measure.** How many copies? How many lines each? Use the
@@ -178,7 +178,7 @@ Concrete commands. None of these decide anything; they surface candidates for
 the rubric.
 
 - **Normalized diff (find near-twins):** strip the naming that differs, then
-  diff. This is how Phase 23 found that two 187-line views were 85% identical:
+  diff. This is how ADR-071 found that two 187-line views were 85% identical:
   ```sh
   sed -E 's/[Gg]enre/X/g; s/[Cc]omposer/X/g' A.swift > /tmp/a
   sed -E 's/[Gg]enre/X/g; s/[Cc]omposer/X/g' B.swift > /tmp/b

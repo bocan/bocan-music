@@ -2,7 +2,7 @@ import Foundation
 import GRDB
 import Observability
 
-/// Store for backfilled listening history (phase 25-1): idempotent bulk
+/// Store for backfilled listening history (ADR-076 slice 1): idempotent bulk
 /// insert, the library re-match pass, and honest coverage counts.
 ///
 /// Imports never touch `play_history` or the per-track counters, so local

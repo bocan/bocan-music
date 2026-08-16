@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - AlbumRepositoryCollectionCardsTests
 
-/// Tests for the collection-card cover query (Artists grid, phase 23-1).
+/// Tests for the collection-card cover query (Artists grid, ADR-072).
 ///
 /// Covers are keyed on the *track* artist so they match the album set counted
 /// by `ArtistRepository.fetchAlbumCounts` (compilation appearances included).

@@ -113,7 +113,7 @@ struct PodcastsGridView: View {
             }
             // Marks every episode played, clearing the unread badge via the
             // state observation. This stamps completed_at, which starts the
-            // 30-day transcript cleanup clock (phase 21-12-b) for each episode.
+            // 30-day transcript cleanup clock (ADR-051) for each episode.
             Button(L10n.string("Mark All as Played")) {
                 Task { await self.library.podcastActions?.markAllPlayed(podcastID: id) }
             }

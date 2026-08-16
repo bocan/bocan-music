@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - PodcastShowView
 
-/// Full episode list for a subscribed show, built in phase 21-9.
+/// Full episode list for a subscribed show, built in ADR-046.
 public struct PodcastShowView: View {
     @ObservedObject public var vm: PodcastsViewModel
     public var library: LibraryViewModel

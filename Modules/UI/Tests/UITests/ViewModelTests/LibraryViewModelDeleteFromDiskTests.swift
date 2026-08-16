@@ -28,7 +28,7 @@ private final class MockTrackFileDeleter: TrackFileDeleter, @unchecked Sendable 
 
 // MARK: - Tests
 
-/// Phase 5.5 audit M3 regression coverage: trashing must surface its failure
+/// ADR-007 audit M3 regression coverage: trashing must surface its failure
 /// to the caller so a secondary "Delete Permanently" confirmation can be
 /// offered, and the DB row must only be soft-deleted after the file actually
 /// leaves disk.

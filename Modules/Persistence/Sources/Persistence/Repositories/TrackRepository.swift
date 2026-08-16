@@ -22,7 +22,7 @@ public struct TrackRepository: Sendable {
 
     /// Computes the canonical album-track sort key from disc/track numbers.
     ///
-    /// Phase 2 spec: `printf('%02d.%04d', disc_number, track_number)` — stable
+    /// ADR-003 spec: `printf('%02d.%04d', disc_number, track_number)` — stable
     /// lexicographic ordering across all albums.  Treats nil values as 0 so a
     /// track with no track number still sorts ahead of `01.0001`.
     private static func computedSortKey(for track: Track) -> String {
@@ -88,7 +88,7 @@ public struct TrackRepository: Sendable {
 
     /// Inserts or replaces `track` keyed on `file_url`.
     ///
-    /// Returns the `id` of the inserted or updated row (used by Phase 3 scanning).
+    /// Returns the `id` of the inserted or updated row (used by ADR-004 scanning).
     @discardableResult
     public func upsert(_ track: Track) async throws -> Int64 {
         let normalised = track.fileURL.precomposedStringWithCanonicalMapping

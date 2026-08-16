@@ -208,7 +208,7 @@ public actor FSWatcher {
     // MARK: - Callback bridge
 
     func handleEvents(paths: [String], flags: [FSEventStreamEventFlags]) {
-        // Detect rename-flagged events. Phase-3 audit H2: log them so a future
+        // Detect rename-flagged events. ADR-004 audit H2: log them so a future
         // change-detector pass can reconcile via `URLResourceValues.fileResourceIdentifier`.
         // Today the importer treats renamed files as new imports; the original row
         // is reaped on the next full scan.

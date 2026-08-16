@@ -4,7 +4,7 @@ import SwiftSonic
 
 // MARK: - SubsonicBrowseDataSource
 
-/// Narrow protocol the Phase 19 step 10 per-server browse view-models depend
+/// Narrow protocol the ADR-035 step 10 per-server browse view-models depend
 /// on. Lets tests substitute a deterministic in-memory stub for the real
 /// `SubsonicService` actor without standing up a SwiftSonic client.
 public protocol SubsonicBrowseDataSource: Sendable {
@@ -26,7 +26,7 @@ public protocol SubsonicBrowseDataSource: Sendable {
     func getArtist(serverID: UUID, id: String) async throws -> ArtistID3
     func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3
 
-    // Phase 19 step 11 — optional per-server destinations.
+    // ADR-035 step 11 — optional per-server destinations.
     func getPlaylists(serverID: UUID) async throws -> [Playlist]
     func getPlaylist(serverID: UUID, id: String) async throws -> PlaylistWithSongs
     func getStarred2(serverID: UUID) async throws -> Starred2
@@ -34,7 +34,7 @@ public protocol SubsonicBrowseDataSource: Sendable {
     func getInternetRadioStations(serverID: UUID) async throws -> [InternetRadioStation]
     func getBookmarks(serverID: UUID) async throws -> [Bookmark]
 
-    /// Phase 19 step 13 — federated search.
+    /// ADR-035 step 13 — federated search.
     func search3(
         serverID: UUID,
         query: String,

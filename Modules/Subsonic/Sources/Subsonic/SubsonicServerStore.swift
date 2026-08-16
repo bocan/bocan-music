@@ -109,7 +109,7 @@ public actor SubsonicServerStore {
     }
 
     /// Persists a fresh capability snapshot for a server without rewriting the
-    /// full record. Used by the capability refresh path (Phase 19 step 16).
+    /// full record. Used by the capability refresh path (ADR-035 step 16).
     public func updateCapabilities(
         serverID: UUID,
         capabilitiesJSON: Data?,

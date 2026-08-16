@@ -1,12 +1,12 @@
 import Foundation
 
-/// Builders for the Phone Sync endpoints. Each phase-22 slice adds its routes
+/// Builders for the Phone Sync endpoints. Each ADR-060 slice adds its routes
 /// here; this slice provides `/v1/ping`, the only endpoint available to any
 /// handshaked peer (pairing or paired).
 enum SyncRoutes {
     /// `GET /v1/ping` -> `{ protocolVersion, serverId, generation }`
     /// (sync-protocol.md section 6). `serverId` and `generation` are injected;
-    /// phase 22-5 wires them to the `sync_meta` store.
+    /// ADR-065 wires them to the `sync_meta` store.
     static func ping(
         serverId: @escaping @Sendable () async -> String,
         generation: @escaping @Sendable () async -> Int

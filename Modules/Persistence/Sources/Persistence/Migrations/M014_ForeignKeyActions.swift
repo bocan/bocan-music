@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// Phase 2 audit fix: adds `ON DELETE SET NULL` to the soft FK references on
+/// ADR-003 audit fix: adds `ON DELETE SET NULL` to the soft FK references on
 /// `tracks` and `albums`, and propagates artist/album renames into the
 /// denormalised `tracks_fts.artist_name` / `tracks_fts.album_title` columns.
 ///
@@ -184,7 +184,7 @@ enum M014ForeignKeyActions {
                 INSERT INTO artists_fts(rowid, name, sort_name)
                 VALUES(NEW.id, COALESCE(NEW.name, ''), COALESCE(NEW.sort_name, ''));
 
-                -- Phase-2 audit #3: rebuild denormalised tracks_fts rows for
+                -- ADR-003 audit #3: rebuild denormalised tracks_fts rows for
                 -- every track that references this artist.  Without this,
                 -- renaming "Boards of Canada" → "BoC" would leave the old
                 -- name searchable for the affected tracks until each row

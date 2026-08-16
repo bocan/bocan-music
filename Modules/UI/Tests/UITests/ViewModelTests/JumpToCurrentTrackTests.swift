@@ -4,7 +4,7 @@ import Testing
 
 // MARK: - JumpToCurrentTrackTests
 
-/// Regression (phase 30 invocation pass): "Jump to Current Track" from
+/// Regression (ADR-081 invocation pass): "Jump to Current Track" from
 /// the Albums grid silently did nothing. The guard checked only whether
 /// `tracks.rows` contained the playing row, but the shared tracks model
 /// keeps the previous list's rows while grids and self-loading

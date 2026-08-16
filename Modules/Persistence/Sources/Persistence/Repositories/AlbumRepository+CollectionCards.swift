@@ -93,7 +93,7 @@ public extension AlbumRepository {
 
     /// Albums having at least one non-disabled track in `genre`, distinct and
     /// ordered by title. Tracks with a NULL `album_id` contribute no album (the
-    /// join drops them). Backs the genre destination's Albums mode (phase 23-3).
+    /// join drops them). Backs the genre destination's Albums mode (ADR-074).
     func fetchAll(genre: String) async throws -> [Album] {
         try await self.database.read { db in
             try Self.albums(in: db, column: .genre, value: genre)

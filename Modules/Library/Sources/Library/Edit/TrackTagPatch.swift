@@ -41,7 +41,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
     /// `syncedLyrics` to avoid conflicting writes.
     public var syncedLyrics: String??
 
-    // MARK: - MusicBrainz identifiers (Phase 8.6)
+    // MARK: - MusicBrainz identifiers (ADR-012)
 
     public var musicbrainzTrackID: String??
     public var musicbrainzRecordingID: String??
@@ -66,7 +66,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
     public var loved: Bool?
     public var excludedFromShuffle: Bool?
 
-    // MARK: - ReplayGain (Phase 9 hook)
+    // MARK: - ReplayGain (ADR-013 hook)
 
     public var replaygainTrackGain: Double??
     public var replaygainTrackPeak: Double??

@@ -123,7 +123,7 @@ public struct AdvancedSettingsView: View {
                 .accessibilityIdentifier(A11y.SettingsIDs.revealDatabase)
 
                 Button(L10n.string("Rebuild Full-Text Search Index")) {
-                    // Phase 11 will implement this
+                    // ADR-015 will implement this
                 }
                 .disabled(true)
                 .help(L10n.string("Not yet available"))
@@ -174,7 +174,7 @@ public struct AdvancedSettingsView: View {
         panel.nameFieldStringValue = "BocanDiagnostics.zip"
         panel.begin { response in
             guard response == .OK else { return }
-            // Stub: Phase 12 will implement full bundle export
+            // Stub: ADR-016 will implement full bundle export
         }
     }
 }

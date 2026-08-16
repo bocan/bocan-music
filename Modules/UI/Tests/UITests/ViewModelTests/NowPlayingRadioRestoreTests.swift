@@ -7,7 +7,7 @@ import Testing
 
 // MARK: - NowPlayingRadioRestoreTests
 
-/// Regression (phase 28 flag, fixed in phase 30): a restored queue whose
+/// Regression (ADR-079 flag, fixed in ADR-081): a restored queue whose
 /// current item is a live stream is never engine-preloaded, so no
 /// current-track change emits at launch and the now-playing display sat
 /// on "Not playing" forever, with everything keyed off it (the strip,

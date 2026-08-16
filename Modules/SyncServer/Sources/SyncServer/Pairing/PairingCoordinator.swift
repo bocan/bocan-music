@@ -65,7 +65,7 @@ public actor PairingCoordinator {
         self.armedDeadline != nil
     }
 
-    /// Registers an observer notified whenever pairing mode toggles (phase 22-7
+    /// Registers an observer notified whenever pairing mode toggles (ADR-067
     /// updates the Bonjour TXT record from it). Fires immediately with the
     /// current state.
     public func observePairingMode(_ observer: @escaping @Sendable (Bool) -> Void) {

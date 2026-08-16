@@ -19,7 +19,7 @@ Prereq: Sessions 1 to 6 (dedup against the UI spine's shared surface). Gate:
   `SubsonicStarredView`, `SubsonicBookmarksView`, ... are a large parallel-view
   family, each with load + empty + list + toolbar. Normalized-diff several; this
   is the biggest single dedup opportunity in the module. Apply the coupling and
-  config-bag tests hard -- the Phase 23 lesson (a generic engine was *rejected*
+  config-bag tests hard -- the ADR-071 lesson (a generic engine was *rejected*
   for the genre/composer twins) applies directly. Prefer sharing config-free
   leaves (rows, empty states, load helpers) over one mega-generic browse view.
 - **The track table stack.** `TrackTable`, `TrackTable+ColSpecs`, `+Helpers`,
@@ -30,7 +30,7 @@ Prereq: Sessions 1 to 6 (dedup against the UI spine's shared surface). Gate:
   `AlbumsGridView` vs `SubsonicAlbumsView` -- do local and remote variants share
   cell/row rendering, or hand-roll near-identical cells? Share the cell, keep the
   data source distinct.
-- **Album/artist cells.** After Phase 23, confirm `CollectionCard` and the album
+- **Album/artist cells.** After ADR-071, confirm `CollectionCard` and the album
   cells are not shadowed by older inline cell copies.
 - **Empty/loading/error states.** Verify Browse uses the `Common` states
   (Session 6) rather than bespoke ones.

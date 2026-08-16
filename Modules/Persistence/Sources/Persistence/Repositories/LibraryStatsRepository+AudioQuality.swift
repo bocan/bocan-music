@@ -39,7 +39,7 @@ public struct LibraryAudioQualityReport: Equatable, Sendable {
     }
 
     /// A lossless-claiming track whose spectrum was flagged as a suspected
-    /// lossy transcode (phase 24). Suspected, never accused: the confidence
+    /// lossy transcode (ADR-075). Suspected, never accused: the confidence
     /// and shelf edge explain the reading, the UI copy carries the caveats.
     public struct SuspectedTranscodeTrack: Equatable, Sendable, Identifiable {
         public let id: Int64
@@ -286,7 +286,7 @@ private extension LibraryStatsRepository {
         let suspectedTotal: Int
     }
 
-    /// Transcode-detection coverage over enabled lossless tracks (phase 24):
+    /// Transcode-detection coverage over enabled lossless tracks (ADR-075):
     /// only lossless files are ever analysed, so they are the denominator.
     static func provenanceCounts(_ db: GRDB.Database) throws -> ProvenanceCounts {
         let row = try Row.fetchOne(db, sql: """

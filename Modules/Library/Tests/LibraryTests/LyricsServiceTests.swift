@@ -208,7 +208,7 @@ struct LyricsServiceTests {
     }
 }
 
-// MARK: - Embed + sidecar (Phase 11 fileURL bugfix)
+// MARK: - Embed + sidecar (ADR-015 fileURL bugfix)
 
 extension LyricsServiceTests {
     /// Copies a real MP3 from the sample-library fixture to a temp path and

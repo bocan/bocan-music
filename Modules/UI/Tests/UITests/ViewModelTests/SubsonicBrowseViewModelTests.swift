@@ -95,7 +95,7 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
         AlbumID3(id: id, name: "Stub", songCount: 0, duration: 0)
     }
 
-    // MARK: Phase 19 step 11 — optional destinations
+    // MARK: ADR-035 step 11 — optional destinations
 
     var playlistsList: [Playlist] = []
     var playlistDetailValue: PlaylistWithSongs?
@@ -171,7 +171,7 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
         return self.bookmarksList
     }
 
-    // MARK: Phase 19 step 13 — federated search
+    // MARK: ADR-035 step 13 — federated search
 
     var searchResult: SearchResult3 = makeSearchResult()
     var searchDelay: Duration?

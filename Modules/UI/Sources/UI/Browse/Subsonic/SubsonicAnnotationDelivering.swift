@@ -18,7 +18,7 @@ public struct SubsonicAnnotationFailure: Sendable, Equatable {
 
 // MARK: - SubsonicAnnotationDelivering
 
-/// Narrow protocol the Phase 19 step 14 annotation coordinator depends on.
+/// Narrow protocol the ADR-035 step 14 annotation coordinator depends on.
 /// Lets tests substitute a deterministic in-memory stub for the real
 /// `SubsonicAnnotations` actor.
 public protocol SubsonicAnnotationDelivering: Sendable {

@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Persistence
 
-/// The podcast accounting queries (#373, phase 26-1), in their own suite
+/// The podcast accounting queries (#373, ADR-077 slice 1), in their own suite
 /// like the other report slices.
 @Suite("LibraryStatsRepository podcasts")
 struct LibraryStatsPodcastTests {

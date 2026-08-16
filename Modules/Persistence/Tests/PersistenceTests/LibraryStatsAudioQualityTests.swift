@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import Persistence
 
-/// The Audio Quality report queries (#373, phase 24), split from the summary
+/// The Audio Quality report queries (#373, ADR-075), split from the summary
 /// and hygiene suite so each test file stays within the type-length budget.
 @Suite("LibraryStatsRepository audio quality")
 struct LibraryStatsAudioQualityTests {

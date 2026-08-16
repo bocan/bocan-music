@@ -1,7 +1,7 @@
 import Foundation
 import GRDB
 
-/// Phase 6 migration: adds `kind` and `accent_color` columns to `playlists`.
+/// ADR-008 migration: adds `kind` and `accent_color` columns to `playlists`.
 ///
 /// `kind` supersedes the legacy `is_smart` flag: it can be `'manual'`,
 /// `'smart'`, or `'folder'`. Existing rows are back-filled:

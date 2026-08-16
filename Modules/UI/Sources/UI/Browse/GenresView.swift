@@ -16,8 +16,8 @@ public struct GenresView: View {
     /// Persisted list sort order; defaults to song count (the historical order).
     @AppStorage("genres.sortOrder") private var sortOrder: GenreSortOrder = .songCount
     /// Persisted List vs Grid mode; defaults to List so the view is unchanged
-    /// until the user opts in (phase 23-2). String-backed so the "View as" menu's
-    /// writes reliably redraw this listing (phase 23-3).
+    /// until the user opts in (ADR-073). String-backed so the "View as" menu's
+    /// writes reliably redraw this listing (ADR-074).
     @CollectionViewModeStorage("genres.viewMode") private var viewMode
 
     public init(library: LibraryViewModel) {

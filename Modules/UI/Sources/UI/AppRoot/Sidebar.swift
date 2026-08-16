@@ -103,7 +103,7 @@ public struct Sidebar: View {
                         .overlay(TrackDropTarget { ids in
                             Task { await self.vm.addToQueue(trackIDs: ids) }
                         })
-                        // Phase 5 audit L4: announce that this row is also a drop
+                        // ADR-006 audit L4: announce that this row is also a drop
                         // target for tracks dragged from the library.
                         .accessibilityHint(
                             L10n.string("Shows the playback queue. Drop tracks here to add them to the end of the queue.")
@@ -196,7 +196,7 @@ public struct Sidebar: View {
             // Without an explicit identifier the tag-selected List rows do
             // not surface as addressable accessibility elements at all
             // (they were absent from the AX tree, so VoiceOver and the E2E
-            // menu crawl alike could not reach them). Phase 30.
+            // menu crawl alike could not reach them). ADR-081.
             .accessibilityIdentifier(Self.rowIdentifier(for: dest))
     }
 

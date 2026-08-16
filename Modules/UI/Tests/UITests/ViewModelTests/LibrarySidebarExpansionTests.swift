@@ -5,7 +5,7 @@ import Testing
 
 // MARK: - LibrarySidebarExpansionTests
 
-/// Phase 19 step 9: `LibraryViewModel.sectionExpansion` survives a
+/// ADR-035 step 9: `LibraryViewModel.sectionExpansion` survives a
 /// `saveUIState` / `restoreUIState` round-trip through the settings table.
 @Suite("LibraryViewModel Sidebar Expansion")
 @MainActor

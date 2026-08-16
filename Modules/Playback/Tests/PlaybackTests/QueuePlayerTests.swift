@@ -127,7 +127,7 @@ struct QueuePlayerTests {
         #expect(flag == true)
     }
 
-    @Test("handleTrackEnded honours stop-after-current over repeat-one (Phase 5 audit M4)")
+    @Test("handleTrackEnded honours stop-after-current over repeat-one (ADR-006 audit M4)")
     func stopAfterCurrentBeatsRepeatOne() async throws {
         let engine = AudioEngine()
         let db = try await Database(location: .inMemory)

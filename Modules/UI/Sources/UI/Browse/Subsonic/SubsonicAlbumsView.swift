@@ -4,7 +4,7 @@ import SwiftUI
 
 // MARK: - SubsonicAlbumsView
 
-/// Per-server Albums destination (Phase 19 step 10). Paged grid fetched via
+/// Per-server Albums destination (ADR-035 step 10). Paged grid fetched via
 /// `getAlbumList2`. When the global search field has text, the same grid
 /// renders multi-source search results aggregated across every enabled
 /// Subsonic server, with each cell decorated with a small source pill.
