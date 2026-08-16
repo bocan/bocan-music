@@ -297,6 +297,9 @@ public enum A11y {
         public static let prev = "nowPlayingStrip.prev"
         public static let next = "nowPlayingStrip.next"
         public static let scrubber = "nowPlayingStrip.scrubber"
+        /// The CUE marker line under the title/artist (ADR-087); present only
+        /// while playing inside a marker of a multi-marker track.
+        public static let markerLine = "nowPlayingStrip.markerLine"
         public static let volume = "nowPlayingStrip.volume"
         public static let volumeSlider = "nowPlayingStrip.volume"
         public static let muteButton = "nowPlayingStrip.mute"
