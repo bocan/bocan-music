@@ -260,7 +260,11 @@ public final class PodcastsViewModel: ObservableObject {
         guard !stale.isEmpty else { return }
         self.log.debug("podcasts.artwork.stale", ["count": stale.count])
         let actions = self.actions
-        Task.detached(priority: .background) {
+        // .utility, not .background: each refresh writes the database, and a
+        // .background thread holding a GRDB pool connection while a
+        // user-initiated read waits on the pool semaphore (no priority
+        // inheritance) trips Xcode's priority-inversion diagnostic.
+        Task.detached(priority: .utility) {
             for podcast in stale {
                 guard let id = podcast.id else { continue }
                 try? await actions?.refresh(podcastID: id)

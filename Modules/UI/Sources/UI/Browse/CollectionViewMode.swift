@@ -53,9 +53,13 @@ public struct CollectionViewModeStorage: DynamicProperty {
     }
 
     public var projectedValue: Binding<CollectionViewMode> {
-        Binding(
-            get: { CollectionViewMode(rawValue: self.rawValue) ?? .list },
-            set: { self.rawValue = $0.rawValue }
+        // Capture the String binding, not self: Binding's get/set closures
+        // are @Sendable, and this property-wrapper struct is not Sendable
+        // (Binding<String> is), so a self capture trips strict concurrency.
+        let raw = self.$rawValue
+        return Binding(
+            get: { CollectionViewMode(rawValue: raw.wrappedValue) ?? .list },
+            set: { raw.wrappedValue = $0.rawValue }
         )
     }
 }
