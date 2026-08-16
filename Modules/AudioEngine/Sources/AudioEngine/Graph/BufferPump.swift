@@ -80,8 +80,8 @@ actor BufferPump {
     /// the pump is throttling itself to playback speed.  Reported at pump.stop/eof.
     private var throttleCount = 0
 
-    /// When non-nil, the pump stops after this many output frames have been
-    /// scheduled.  Used to enforce the `endOffsetMs` of a CUE virtual track
+    /// When non-nil, the pump stops after this many decoder-native frames have
+    /// been read.  Used to enforce the `endOffsetMs` of a CUE virtual track
     /// without relying on the underlying decoder reaching true EOF.
     private let maxFrames: AVAudioFrameCount?
 
@@ -98,7 +98,12 @@ actor BufferPump {
         self.outputFormat = outputFormat
         self.availableSlots = BufferPump.windowSize
         self.id = String(UUID().uuidString.prefix(4))
-        self.maxFrames = maxDuration.map { AVAudioFrameCount($0 * outputFormat.sampleRate) }
+        // The budget counts decoder-native frames: the feed loop compares it
+        // against framesRead BEFORE resampling. Computing it from the output
+        // rate overshot a CUE boundary by the rate ratio (a 44.1k file on a
+        // 48k device played ~8.8% past the segment end, audibly bleeding the
+        // next track's opening before the end signal fired).
+        self.maxFrames = maxDuration.map { AVAudioFrameCount($0 * decoder.sourceFormat.sampleRate) }
         if decoder.sourceFormat.sampleRate != outputFormat.sampleRate {
             self.converter = try FormatConverter(sourceFormat: decoder.sourceFormat, targetFormat: outputFormat)
             self.pumpFormat = decoder.sourceFormat
