@@ -53,6 +53,39 @@ struct CUETests {
         #expect(CUESheetReader.parseMSF("garbage") == nil)
     }
 
+    @Test("EAC gaps-appended sheets assign each TRACK to the FILE of its INDEX 01")
+    func gapsAppendedManifest() throws {
+        // The next track opens under the PREVIOUS file: only its INDEX 00
+        // pregap lives there, and its INDEX 01 follows the next FILE line.
+        // Each FILE must end up with exactly its own track, or a
+        // one-file-per-track manifest grows phantom pregap markers
+        // (observed live: markers=2 on real per-track album files).
+        let sheet = """
+        TITLE "Gaps Appended"
+        FILE "01 - One.flac" WAVE
+          TRACK 01 AUDIO
+            TITLE "One"
+            INDEX 01 00:00:00
+          TRACK 02 AUDIO
+            TITLE "Two"
+            INDEX 00 03:40:00
+        FILE "02 - Two.flac" WAVE
+            INDEX 01 00:00:00
+          TRACK 03 AUDIO
+            TITLE "Three"
+            INDEX 00 03:10:00
+        FILE "03 - Three.flac" WAVE
+            INDEX 01 00:00:00
+        """
+        let parsed = try CUESheetReader.parse(data: Data(sheet.utf8))
+        #expect(parsed.files.count == 3)
+        #expect(parsed.files.map(\.tracks.count) == [1, 1, 1])
+        #expect(parsed.files[0].tracks.first?.title == "One")
+        #expect(parsed.files[1].tracks.first?.title == "Two")
+        #expect(parsed.files[1].tracks.first?.startMs == 0)
+        #expect(parsed.files[2].tracks.first?.title == "Three")
+    }
+
     @Test("inaccessibleAudio reports unreadable references, stays quiet for readable ones (#391)")
     func accessProbe() throws {
         let dir = FileManager.default.temporaryDirectory

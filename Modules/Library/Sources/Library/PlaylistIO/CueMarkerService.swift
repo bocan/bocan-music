@@ -82,7 +82,13 @@ public struct CueMarkerService: Sendable {
                 continue
             }
             // Inert below two markers: nothing to navigate, nothing to show.
-            guard file.tracks.count >= 2 else { continue }
+            // Also HEAL: clear markers a past attach left on this track (the
+            // gaps-appended parser bug minted phantom pregap markers on
+            // manifest-cue files), or they would linger forever.
+            guard file.tracks.count >= 2 else {
+                await self.clearMarkers(forAudioAt: audioURL)
+                continue
+            }
             let canonical = audioURL.absoluteString.precomposedStringWithCanonicalMapping
             guard let track = try? await self.trackRepo.fetchOne(fileURL: canonical),
                   let trackID = track.id else {
@@ -115,6 +121,25 @@ public struct CueMarkerService: Sendable {
             }
         }
         return touched
+    }
+
+    /// Deletes any markers on the track backing `audioURL`. Read-first so
+    /// the common case (no markers) costs no write.
+    private func clearMarkers(forAudioAt audioURL: URL) async {
+        let canonical = audioURL.absoluteString.precomposedStringWithCanonicalMapping
+        guard let track = try? await self.trackRepo.fetchOne(fileURL: canonical),
+              let trackID = track.id,
+              let existing = try? await self.markerRepo.markers(forTrack: trackID),
+              !existing.isEmpty else { return }
+        do {
+            try await self.markerRepo.replaceMarkers(forTrack: trackID, with: [])
+            self.log.debug("cue.markers.cleared", ["audio": audioURL.lastPathComponent])
+        } catch {
+            self.log.warning("cue.markers.clearFailed", [
+                "audio": audioURL.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+        }
     }
 
     /// Whether every FILE target of the cue at `url` exists on disk.
