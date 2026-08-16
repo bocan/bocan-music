@@ -846,7 +846,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             radioStations: radioStations,
             // Lets CUE import mint per-file bookmarks for audio under a
             // library root, so virtual tracks stay playable across relaunches.
-            libraryRoots: LibraryRootRepository(database: database)
+            libraryRoots: LibraryRootRepository(database: database),
+            // Lets CUE import materialise PERFORMER / album TITLE metadata
+            // as real artist/album rows, so scrobbling and lyrics lookups
+            // stop firing with empty artists (#390).
+            artists: ArtistRepository(database: database),
+            albums: AlbumRepository(database: database)
         )
         let exporter = PlaylistExportService(database: database)
         return (importer, exporter)
