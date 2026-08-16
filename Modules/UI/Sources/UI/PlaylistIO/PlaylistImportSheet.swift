@@ -77,7 +77,7 @@ public struct PlaylistImportSheet: View {
             Image(systemName: "square.and.arrow.down")
                 .font(.system(size: 36))
                 .foregroundStyle(.secondary)
-            Text(localized: "Pick one or more playlist files (.m3u, .m3u8, .pls, .xspf).")
+            Text(localized: "Pick one or more playlist files (.m3u, .m3u8, .pls, .xspf, .cue).")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }

@@ -14976,12 +14976,12 @@
         }
       }
     },
-    "Pick one or more playlist files (.m3u, .m3u8, .pls, .xspf)." : {
+    "Pick one or more playlist files (.m3u, .m3u8, .pls, .xspf, .cue)." : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ƥíçķ óñé óŕ ḿóŕé ƥĺáýĺíšţ ƒíĺéš (.ḿ3ú, .ḿ3ú8, .ƥĺš, .xšƥƒ). one two three four"
+            "value" : "Ƥíçķ óñé óŕ ḿóŕé ƥĺáýĺíšţ ƒíĺéš (.ḿ3ú, .ḿ3ú8, .ƥĺš, .xšƥƒ, .çúé). one two three four five"
           }
         }
       }
