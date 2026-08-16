@@ -20,7 +20,9 @@ public struct ExtractedCoverArt: Sendable {
     /// Embedded art larger than this is unusual and expensive to hash synchronously.
     static let maxHashBytes = 50 * 1024 * 1024 // 50 MB
 
-    init(data: Data, mimeType: String, pictureType: Int) {
+    /// Public so higher modules can ingest non-embedded art (sidecar files)
+    /// through the same hash-addressed pipeline (#388).
+    public init(data: Data, mimeType: String, pictureType: Int) {
         self.data = data
         self.mimeType = mimeType
         self.pictureType = pictureType

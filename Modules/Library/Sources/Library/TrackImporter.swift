@@ -81,8 +81,15 @@ actor TrackImporter {
             albumArtistID: albumArtistID
         )
 
-        // Cover art
-        let coverArt = try await coverArtCache.persist(tags.coverArt)
+        // Cover art. Embedded art always wins; when the file carries none and
+        // the album has no art yet, fall back to a sidecar image in the
+        // track's folder (cover.jpg / folder.png / …, #388). The album-art
+        // guard doubles as a memo: once the first artless track links the
+        // sidecar, later tracks in the folder skip the directory listing.
+        var coverArt = try await coverArtCache.persist(tags.coverArt)
+        if coverArt == nil, album.coverArtHash == nil {
+            coverArt = await self.persistSidecarArt(besideTrackAt: url)
+        }
 
         // Link cover art to the album. We always write if the album is
         // missing the link (hash or path) so previously-unlinked albums heal
@@ -228,6 +235,34 @@ actor TrackImporter {
     }
 
     // MARK: - Helpers
+
+    /// Ingests a sidecar cover image from the track's folder through the
+    /// hash-addressed cache, so dedup and eviction apply exactly as for
+    /// embedded art (#388). Never throws: a broken sidecar must not sink the
+    /// track import, so failures log and return nil.
+    private func persistSidecarArt(besideTrackAt url: URL) async -> (hash: String, path: String)? {
+        let directory = url.deletingLastPathComponent()
+        guard let artURL = SidecarArt.findURL(inDirectory: directory) else { return nil }
+        do {
+            let data = try Data(contentsOf: artURL)
+            let art = ExtractedCoverArt(
+                data: data,
+                mimeType: SidecarArt.mimeType(forExtension: artURL.pathExtension),
+                pictureType: 3 // front cover
+            )
+            let persisted = try await self.coverArtCache.persist([art])
+            if persisted != nil {
+                self.log.debug("cover_art.sidecar", ["file": artURL.lastPathComponent])
+            }
+            return persisted
+        } catch {
+            self.log.warning("cover_art.sidecar_failed", [
+                "file": artURL.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
 
     private func isLossless(format: String) -> Bool {
         ["flac", "wav", "aiff", "aif", "alac", "wv", "ape", "dsf", "dff"].contains(format)
