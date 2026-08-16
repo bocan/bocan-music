@@ -105,56 +105,83 @@ struct PlaylistIOIntegrationTests {
             playlists: PlaylistService(database: db),
             trackRepo: trackRepo,
             radioStations: RadioStationRepository(database: db),
-            artists: ArtistRepository(database: db),
-            albums: AlbumRepository(database: db)
+            cueMarkers: CueMarkerService(
+                trackRepo: trackRepo,
+                markerRepo: TrackMarkerRepository(database: db)
+            )
         )
     }
 
-    @Test("CUE import probes the last track's duration from the audio file")
-    func cueLastTrackDurationProbed() async throws {
+    @Test("CUE import attaches markers to the indexed track and resolves a playlist (ADR-087)")
+    func cueImportAttachesMarkers() async throws {
         let (cue, dir) = try self.makeCueFolder()
         defer { try? FileManager.default.removeItem(at: dir) }
 
         let db = try await makeDB()
+        let audioPath = dir.appendingPathComponent("album.mp3").path
+        let trackID = try await insertTrack(db, path: audioPath, title: "Album", artist: "Sheet Artist")
+
         let importer = self.makeCueImporter(db)
         let report = try await importer.importFile(at: cue)
+
+        // Markers: two cue TRACKs on one FILE, chapters-model attach.
+        let markers = try await TrackMarkerRepository(database: db).markers(forTrack: trackID)
+        #expect(markers.count == 2)
+        #expect(markers[0].title == "First")
+        #expect(markers[0].positionMs == 0)
+        #expect(markers[0].performer == "Track Artist")
+        #expect(markers[1].title == "Last")
+        #expect(markers[1].positionMs == 1000)
+        #expect(markers[1].performer == "Sheet Artist", "sheet PERFORMER is the fallback")
+
+        // Playlist: the FILE entry resolves to the real track; no virtual rows.
         let playlistID = try #require(report.playlistID)
         let members = try await PlaylistService(database: db).tracks(in: playlistID)
-        #expect(members.count == 2)
+        #expect(members.compactMap(\.id) == [trackID])
+        let virtual = try await TrackRepository(database: db)
+            .fetchOne(fileURL: URL(fileURLWithPath: audioPath).absoluteString + "?cue=1")
+        #expect(virtual == nil, "the virtual-track model is retired")
+    }
 
-        let first = try #require(members.first { $0.title == "First" })
-        #expect(first.duration == 1.0, "bounded track keeps its INDEX-derived length")
-
-        // The fixture MP3 is 2s long and the last track starts at 1s, so the
-        // probed remainder is ~1s. TagLib may round the total to whole
-        // seconds, so assert a range rather than an exact value.
-        let last = try #require(members.first { $0.title == "Last" })
-        #expect(last.duration > 0, "EOF track must not display as 0:00")
-        #expect(last.duration <= 2.0)
-
-        // Issue #391: every virtual track carries a bookmark for the audio
-        // file, minted while import-time access is live (a direct mint always
-        // succeeds in this non-sandboxed test process).
-        for member in members {
-            #expect(member.fileBookmark != nil, "virtual track should carry the audio file's bookmark")
+    @Test("a one-FILE-per-track manifest cue attaches no markers (ADR-087 inertness)")
+    func manifestCueIsInert() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cue-manifest-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        for name in ["01 - One.mp3", "02 - Two.mp3"] {
+            try Data([0x01]).write(to: dir.appendingPathComponent(name))
         }
+        let sheet = """
+        TITLE "Manifest Album"
+        FILE "01 - One.mp3" WAVE
+          TRACK 01 AUDIO
+            TITLE "One"
+            INDEX 01 00:00:00
+        FILE "02 - Two.mp3" WAVE
+          TRACK 02 AUDIO
+            TITLE "Two"
+            INDEX 01 00:00:00
+        """
+        let cue = dir.appendingPathComponent("manifest.cue")
+        try Data(sheet.utf8).write(to: cue)
 
-        // Issue #390: PERFORMER / album TITLE become real rows. Track-level
-        // PERFORMER overrides the sheet's; tracks without one inherit it.
-        let artists = try await ArtistRepository(database: db).fetchAll()
-        let artistNames = Set(artists.map(\.name))
-        #expect(artistNames == ["Sheet Artist", "Track Artist"])
-        let sheetArtistID = artists.first { $0.name == "Sheet Artist" }?.id
-        let trackArtistID = artists.first { $0.name == "Track Artist" }?.id
-        #expect(first.artistID == trackArtistID)
-        #expect(last.artistID == sheetArtistID)
+        let db = try await makeDB()
+        let id1 = try await insertTrack(db, path: dir.appendingPathComponent("01 - One.mp3").path, title: "One")
+        let id2 = try await insertTrack(db, path: dir.appendingPathComponent("02 - Two.mp3").path, title: "Two")
 
-        let albums = try await AlbumRepository(database: db).fetchAll()
-        #expect(albums.count == 1)
-        #expect(albums.first?.title == "EOF Album")
-        #expect(first.albumID == albums.first?.id)
-        #expect(last.albumID == albums.first?.id)
-        #expect(first.albumArtistID == sheetArtistID)
+        let importer = self.makeCueImporter(db)
+        let report = try await importer.importFile(at: cue)
+
+        // No markers anywhere: single-marker sets are inert by construction.
+        let repo = TrackMarkerRepository(database: db)
+        #expect(try await repo.markers(forTrack: id1).isEmpty)
+        #expect(try await repo.markers(forTrack: id2).isEmpty)
+
+        // The playlist still resolves both real tracks in sheet order.
+        let playlistID = try #require(report.playlistID)
+        let members = try await PlaylistService(database: db).tracks(in: playlistID)
+        #expect(members.compactMap(\.id) == [id1, id2])
     }
 
     @Test("cueAudioNeedingAccess flags unreadable audio, stays quiet for readable (#391)")
@@ -181,56 +208,6 @@ struct PlaylistIOIntegrationTests {
         try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: audio.path)
         let blocked = await importer.cueAudioNeedingAccess(at: cue)
         #expect(blocked.map(\.lastPathComponent) == ["album.mp3"])
-    }
-
-    @Test("CUE re-import heals missing artist and album on existing rows (#390)")
-    func cueReimportHealsMetadata() async throws {
-        let (cue, dir) = try self.makeCueFolder()
-        defer { try? FileManager.default.removeItem(at: dir) }
-
-        let db = try await makeDB()
-        let trackRepo = TrackRepository(database: db)
-        let importer = self.makeCueImporter(db)
-
-        // First import, then strip the metadata to simulate rows written
-        // before the #390 enrichment existed.
-        _ = try await importer.importFile(at: cue)
-        let audioURL = dir.appendingPathComponent("album.mp3").absoluteString
-        var stale = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=1"))
-        stale.artistID = nil
-        stale.albumID = nil
-        stale.albumArtistID = nil
-        try await trackRepo.update(stale)
-
-        _ = try await importer.importFile(at: cue)
-        let healed = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=1"))
-        #expect(healed.artistID != nil, "re-import must repair the missing artist")
-        #expect(healed.albumID != nil, "re-import must repair the missing album")
-    }
-
-    @Test("CUE re-import heals a zero duration left by earlier imports")
-    func cueReimportHealsZeroDuration() async throws {
-        let (cue, dir) = try self.makeCueFolder()
-        defer { try? FileManager.default.removeItem(at: dir) }
-
-        let db = try await makeDB()
-        let trackRepo = TrackRepository(database: db)
-        let importer = self.makeCueImporter(db)
-
-        // First import, then zero the EOF track's duration and drop its
-        // bookmark to simulate a row written before the probe and the
-        // issue-#391 bookmark minting existed.
-        _ = try await importer.importFile(at: cue)
-        let audioURL = dir.appendingPathComponent("album.mp3").absoluteString
-        var stale = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=2"))
-        stale.duration = 0
-        stale.fileBookmark = nil
-        try await trackRepo.update(stale)
-
-        _ = try await importer.importFile(at: cue)
-        let healed = try #require(try await trackRepo.fetchOne(fileURL: audioURL + "?cue=2"))
-        #expect(healed.duration > 0, "re-import must repair the zero duration")
-        #expect(healed.fileBookmark != nil, "re-import must repair the missing bookmark")
     }
 
     @Test("Import + Export round-trip preserves order")

@@ -17,10 +17,9 @@ public actor PlaylistImportService {
     /// Optional: lets CUE import mint per-file bookmarks for audio living
     /// under a library root (issue #391). Nil keeps the pre-#391 behaviour.
     private let libraryRoots: LibraryRootRepository?
-    /// Optional: let CUE import materialise PERFORMER / album TITLE metadata
-    /// as real artist/album rows (#390). Nil skips the enrichment.
-    private let artists: ArtistRepository?
-    private let albums: AlbumRepository?
+    /// Optional: lets CUE import attach in-track markers (ADR-087). Nil
+    /// skips the attach; the resolver playlist still imports.
+    private let cueMarkers: CueMarkerService?
     private let log = AppLogger.make(.library)
 
     public init(
@@ -29,16 +28,14 @@ public actor PlaylistImportService {
         trackRepo: TrackRepository,
         radioStations: RadioStationRepository,
         libraryRoots: LibraryRootRepository? = nil,
-        artists: ArtistRepository? = nil,
-        albums: AlbumRepository? = nil
+        cueMarkers: CueMarkerService? = nil
     ) {
         self.resolver = resolver
         self.playlists = playlists
         self.trackRepo = trackRepo
         self.radioStations = radioStations
         self.libraryRoots = libraryRoots
-        self.artists = artists
-        self.albums = albums
+        self.cueMarkers = cueMarkers
     }
 
     public struct ImportReport: Sendable {
@@ -215,8 +212,13 @@ public actor PlaylistImportService {
             case .xspf:
                 return try await self.resolvePreview(XSPFReader.parse(data: data, sourceURL: url))
             case .cue:
+                // ADR-087: cue FILE entries resolve against indexed tracks
+                // like any playlist; the markers themselves have no preview.
                 let cueSheet = try CUESheetReader.parse(data: data, sourceURL: url)
-                return (matched: cueSheet.files.flatMap(\.tracks).count, missed: 0, stations: 0)
+                let entries = cueSheet.files.map {
+                    PlaylistPayload.Entry(path: $0.path, absoluteURL: $0.absoluteURL)
+                }
+                return await self.resolvePreview(PlaylistPayload(name: url.lastPathComponent, entries: entries))
             case .itunesXML:
                 // iTunes import is not yet wired; show neutral counts.
                 return (matched: 0, missed: 0, stations: 0)
@@ -242,72 +244,12 @@ public actor PlaylistImportService {
 
     // MARK: - CUE sheet import
 
-    /// A security-scoped bookmark for a CUE FILE's audio, minted while access
-    /// is still attainable: directly (in-session open-panel or drag grant,
-    /// non-sandboxed dev runs) or through the scope of a library root the
-    /// file lives under. Stored on each virtual track so playback survives a
-    /// relaunch (issue #391: without it, tracks from outside a root play only
-    /// in the importing session). Nil when no access route exists; the import
-    /// still proceeds.
-    private func mintAudioBookmark(for audioURL: URL) async -> Data? {
-        if let direct = try? audioURL.bookmarkData(options: .withSecurityScope) {
-            return direct
-        }
-        if let roots = try? await self.libraryRoots?.fetchAll() {
-            let filePath = audioURL.path
-            for root in roots where !root.isInaccessible {
-                let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
-                guard filePath.hasPrefix(prefix) else { continue }
-                if let minted = try? await SecurityScope.withAccess(root.bookmark, { _ in
-                    try audioURL.bookmarkData(options: .withSecurityScope)
-                }) {
-                    return minted
-                }
-            }
-        }
-        self.log.warning("cue.import.noBookmark", [
-            "file": audioURL.lastPathComponent,
-            "hint": "audio is outside every library root; playback will not survive relaunch",
-        ])
-        return nil
-    }
-
-    /// The audio file's total length minus `startMs`, in seconds, via a
-    /// TagLib read of the file's audio properties. Prefers the freshly minted
-    /// bookmark's scope; falls back to a direct read. Returns 0 when the
-    /// probe fails (file unreadable, no scope); callers treat that as
-    /// "unknown".
-    private func probedRemainder(
-        of audioURL: URL,
-        bookmark: Data?,
-        afterMs startMs: Int64
-    ) async -> TimeInterval {
-        do {
-            let total: TimeInterval = if let bookmark {
-                try await SecurityScope.withAccess(bookmark) { scoped in
-                    try TagReader().read(from: scoped).duration
-                }
-            } else {
-                try SecurityScope.withAccess(audioURL) { scoped in
-                    try TagReader().read(from: scoped).duration
-                }
-            }
-            return max(0, total - TimeInterval(startMs) / 1000.0)
-        } catch {
-            self.log.warning("cue.import.durationProbeFailed", [
-                "file": audioURL.lastPathComponent,
-                "error": String(reflecting: error),
-            ])
-            return 0
-        }
-    }
-
     /// The audio files referenced by the CUE sheet at `cueURL` that will stay
     /// unreadable even through a library root's scope — the only case where
     /// the import UI genuinely has to ask the user for folder access (#391).
     /// Root-resident audio never reaches the caller: activating the root's
-    /// bookmark scope makes it readable, and the importer's bookmark minting
-    /// uses exactly that path, so no prompt is warranted.
+    /// bookmark scope makes it readable, and the marker attach checks
+    /// existence through exactly that access, so no prompt is warranted.
     public func cueAudioNeedingAccess(at cueURL: URL) async -> [URL] {
         let unreadable = CUESheetReader.inaccessibleAudio(inCueAt: cueURL)
         guard !unreadable.isEmpty, let libraryRoots else { return unreadable }
@@ -335,169 +277,26 @@ public actor PlaylistImportService {
         return blocked
     }
 
-    /// A find-or-created artist id for `name`, memoised in `cache` so a
-    /// sheet's repeated PERFORMER costs one query. Nil on empty names, a
-    /// missing repository, or a lookup failure (logged; metadata enrichment
-    /// must never sink the import).
-    private func resolveArtistID(
-        _ name: String?,
-        cache: inout [String: Int64]
-    ) async -> Int64? {
-        guard let artists, let name, !name.isEmpty else { return nil }
-        if let cached = cache[name] { return cached }
-        do {
-            guard let id = try await artists.findOrCreate(name: name).id else { return nil }
-            cache[name] = id
-            return id
-        } catch {
-            self.log.warning("cue.import.artistFailed", ["name": name, "error": String(reflecting: error)])
-            return nil
-        }
-    }
-
-    /// Parse a CUE sheet and materialise each TRACK block as a virtual `Track`
-    /// row in the database, then group them into a new playlist.
+    /// Imports a CUE sheet per ADR-087: attach in-track markers to the
+    /// indexed tracks its FILE entries reference (the chapters model), then
+    /// create an ordinary playlist of the real tracks those entries resolve
+    /// to — the same TrackResolver path m3u uses, misses counted
+    /// identically. Never creates virtual tracks.
     private func importCUESheet(data: Data, url: URL, parentID: Int64?) async throws -> ImportReport {
         let cueSheet = try CUESheetReader.parse(data: data, sourceURL: url)
         let playlistName = cueSheet.title ?? url.deletingPathExtension().lastPathComponent
 
-        // Sheet-level metadata (#390): PERFORMER is the album artist, TITLE
-        // the album. Without them, tracks previously landed with no artist
-        // or album at all, and every scrobble / lyrics call fired with an
-        // empty artist (ListenBrainz and Last.fm reject those outright).
-        var artistIDCache: [String: Int64] = [:]
-        let albumArtistID = await self.resolveArtistID(cueSheet.performer, cache: &artistIDCache)
-        var albumID: Int64?
-        if let albums, let albumTitle = cueSheet.title, !albumTitle.isEmpty {
-            do {
-                albumID = try await albums.findOrCreate(title: albumTitle, albumArtistID: albumArtistID).id
-            } catch {
-                self.log.warning("cue.import.albumFailed", [
-                    "album": albumTitle,
-                    "error": String(reflecting: error),
-                ])
-            }
+        if let cueMarkers {
+            var claimed: Set<Int64> = []
+            await cueMarkers.attachMarkers(fromCueAt: url, claimed: &claimed)
         }
 
-        var virtualTrackIDs: [Int64] = []
-
-        for file in cueSheet.files {
-            guard let audioURL = file.absoluteURL else {
-                self.log.warning("cue.import.noAudioURL", ["cueFile": url.lastPathComponent, "path": file.path])
-                continue
-            }
-            let sourceURLString = audioURL.absoluteString
-            let tracks = file.tracks
-            let audioBookmark = await self.mintAudioBookmark(for: audioURL)
-
-            for (index, cueTrack) in tracks.enumerated() {
-                let startMs = cueTrack.startMs
-                let endMs: Int64? = if let explicit = cueTrack.endMs {
-                    explicit
-                } else if index + 1 < tracks.count {
-                    tracks[index + 1].startMs
-                } else {
-                    nil // last track — play to EOF
-                }
-
-                let duration: TimeInterval = if let endMs {
-                    TimeInterval(endMs - startMs) / 1000.0
-                } else {
-                    // Last track: there is no following INDEX to borrow an end
-                    // from, so measure the audio file and take the remainder
-                    // past the start offset. A failed probe leaves 0; playback
-                    // is unaffected either way (the engine plays to decoder
-                    // EOF), this is display metadata only.
-                    await self.probedRemainder(of: audioURL, bookmark: audioBookmark, afterMs: startMs)
-                }
-
-                // Virtual fileURL is unique per CUE track; uses a `?cue=N` suffix
-                // so the path component still points at the audio file for scope matching.
-                let virtualFileURL = sourceURLString + "?cue=\(cueTrack.number)"
-
-                // Track PERFORMER overrides the sheet-level one (#390).
-                let artistID = await self.resolveArtistID(
-                    cueTrack.performer ?? cueSheet.performer,
-                    cache: &artistIDCache
-                ) ?? albumArtistID
-
-                // Skip if this virtual track was already imported — but heal
-                // gaps left by imports that predate the enrichment above
-                // (zero duration, missing bookmark, missing artist/album), so
-                // re-importing the sheet repairs the existing rows in place.
-                if var existing = try? await trackRepo.fetchOne(fileURL: virtualFileURL), let id = existing.id {
-                    var healed = false
-                    if existing.duration == 0, duration > 0 {
-                        existing.duration = duration
-                        healed = true
-                    }
-                    if existing.fileBookmark == nil, let audioBookmark {
-                        existing.fileBookmark = audioBookmark
-                        healed = true
-                    }
-                    if existing.artistID == nil, let artistID {
-                        existing.artistID = artistID
-                        healed = true
-                    }
-                    if existing.albumID == nil, let albumID {
-                        existing.albumID = albumID
-                        existing.albumArtistID = existing.albumArtistID ?? albumArtistID
-                        healed = true
-                    }
-                    if healed {
-                        do {
-                            try await self.trackRepo.update(existing)
-                        } catch {
-                            self.log.warning("cue.import.healFailed", [
-                                "track": virtualFileURL,
-                                "error": String(reflecting: error),
-                            ])
-                        }
-                    }
-                    virtualTrackIDs.append(id)
-                    continue
-                }
-
-                let now = Int64(Date().timeIntervalSince1970)
-                let track = Track(
-                    fileURL: virtualFileURL,
-                    fileBookmark: audioBookmark,
-                    duration: duration,
-                    title: cueTrack.title,
-                    artistID: artistID,
-                    albumArtistID: albumArtistID,
-                    albumID: albumID,
-                    trackNumber: cueTrack.number,
-                    isrc: cueTrack.isrc,
-                    startOffsetMs: startMs,
-                    endOffsetMs: endMs,
-                    sourceFileURL: sourceURLString,
-                    addedAt: now,
-                    updatedAt: now
-                )
-                let id = try await trackRepo.insert(track)
-                virtualTrackIDs.append(id)
-            }
+        let entries = cueSheet.files.map {
+            PlaylistPayload.Entry(path: $0.path, absoluteURL: $0.absoluteURL)
         }
-
-        let playlist = try await playlists.create(name: playlistName, parentID: parentID)
-        guard let pid = playlist.id else {
-            throw PlaylistIOError.lookupFailed(reason: "Created CUE playlist has no id")
-        }
-        if !virtualTrackIDs.isEmpty {
-            try await self.playlists.addTracks(virtualTrackIDs, to: pid, at: nil)
-        }
-
-        self.log.info("cue.import", [
-            "playlistID": pid,
-            "name": playlistName,
-            "tracks": virtualTrackIDs.count,
-        ])
-
-        let resolution = Resolution(
-            matches: virtualTrackIDs.enumerated().map { Resolution.Match(entryIndex: $0.offset, trackID: $0.element) },
-            misses: []
+        return try await self.importPayload(
+            PlaylistPayload(name: playlistName, entries: entries),
+            parentID: parentID
         )
-        return ImportReport(playlistID: pid, payloadName: playlistName, resolution: resolution)
     }
 }
