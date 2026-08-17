@@ -267,6 +267,7 @@ public enum A11y {
         public static let rgPreamp = "settings.replayGain.preamp"
 
         // Scrobbling
+        public static let scrobbleConnect = "settings.scrobble.connect"
         public static let scrobbleDisconnect = "settings.scrobble.disconnect"
         public static let recentScrobbles = "settings.scrobble.recent"
 
