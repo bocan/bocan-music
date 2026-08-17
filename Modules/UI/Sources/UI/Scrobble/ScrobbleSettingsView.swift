@@ -134,6 +134,7 @@ public struct ScrobbleSettingsView: View {
             } else {
                 Button(L10n.string("Connect…"), action: connectAction)
                     .help(L10n.string("Connect your \(status.displayName) account"))
+                    .accessibilityIdentifier(A11y.SettingsIDs.scrobbleConnect)
             }
         }
     }
