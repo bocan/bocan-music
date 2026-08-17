@@ -19,8 +19,10 @@
 #   5. Commits only if CHANGELOG.md (and nothing else) changed.
 #   6. Pushes to GitHub ONLY — origin's pushurls fan out to Tangled and
 #      Codeberg, which reject this GitHub-only branch.
-#   7. Returns you to main; if anything is uncommitted or unpushed it
-#      stays put and tells you, so nothing is ever lost silently.
+#   7. Returns you to main and deletes the local branch copy, so a stale
+#      fossil can never survive into the next cycle. If anything is
+#      uncommitted or unpushed it stays put (keeping the branch) and
+#      tells you, so nothing is ever lost silently.
 #
 # The note lands in CHANGELOG.md via the PR merge; the release workflow
 # then applies that section to the GitHub release body and the Sparkle
@@ -67,7 +69,8 @@ cleanup() {
         return 0
     fi
     git switch -q main
-    echo "✓ Back on main."
+    git branch -q -D "$BRANCH"
+    echo "✓ Back on main; local $BRANCH deleted (the bot recreates it each cycle)."
 }
 trap cleanup EXIT
 
