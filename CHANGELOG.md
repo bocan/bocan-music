@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.8.0](https://github.com/bocan/bocan-music/compare/v2.7.0...v2.8.0) (2026-08-17)
 
+CUE sheets: I've refactored how these work. CUE sheets (files) are a bit of a
+legacy thing.  The original idea is that if someone rips an entire CD to a
+single file, it can have a CUE sheet that lets you play the individual tracks
+within it. In practice, people just use them as playlists because single file
+rips are rare these days. So what I've done is this:
+
+- If you manually import a cue file, it treats it as a playlist.
+- If you add a queue file into your library tree as a file along with the music
+  files, it tries to detect if it's a _true_ cue sheet. If it is indeed a multi
+  track file, it creates "markers" in the now playing bar and you can move forward
+  and backwards through the tracks like any other.  If it's just a playlist
+  pretending to be a cue sheet, it ignores it.
+- Added a tab to the Track Info page that shows any real cues.
+
+Internet radio and streaming:
+
+- Fixed Now-playing titles for Ogg Vorbis/Opus stations (#386)
+- The TLS saga (#393): FFmpeg 9 turned certificate verification on, which the
+  sandbox broke. The proper fix exports the macOS system trust store to a PEM in
+  the app container so every stream, HLS included, verifies against real roots.
+- Format sniffing for AIFF, Musepack, and TTA magic numbers (#387).
+
+Artwork
+
+- Sidecar cover art (cover.jpg, folder.png and friends) is picked up during
+  scans (#388) if there is no embedded art in the tags.
+- HEIC and AVIF are accepted in the artwork picker and mime map (#389).
+
+UI and window polish
+
+- The visualizer pane no longer bleeds into the toolbar.
+- Tabs have been disabled. They didn't work anyway and much work needs to be
+  done to make them useful.
+- Back/Forward hover text mentions the bracket shortcuts.
+- The Help shortcut tables were corrected and completed with a new Mouse Buttons
+  page (including the Logitech notes). Thanks to @go1968 for the assistance in
+  testing that! I have one ordered for home.
+- Added the Exclude from Shuffle to the Song context menu.
+
+Housekeeping
+
+- Documentation cleanup and standardization across the ADRs.
 
 ### Added
 
