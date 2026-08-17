@@ -34,7 +34,7 @@ jobs:
       # release body becomes the changelog section verbatim, which is also
       # what the Sparkle update prompt shows via releaseNotesLink. The
       # title is normalised to the bare version while we are here.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: ${{ steps.release.outputs.release_created }}
 
       - name: Sync release notes from CHANGELOG
