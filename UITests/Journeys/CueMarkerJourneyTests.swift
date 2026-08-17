@@ -32,7 +32,9 @@ final class CueMarkerJourneyTests: XCTestCase {
     }
 
     func testMarkersNavigateWithinTheTrackThenAdvance() {
-        let app = self.session.launch()
+        // The cue fixture is opt-in: the rest of the suite is calibrated to
+        // the two-tone world, so only this journey grows the third album.
+        let app = self.session.launch(environment: ["BOCAN_E2E_CUE_FIXTURE": "1"])
         defer { app.terminate() }
         let inv = MenuInvoker(app: app)
 

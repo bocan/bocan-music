@@ -86,6 +86,14 @@ enum E2EEnvironment {
         self.isActive ? "io.cloudcauldron.bocan.scrobble.e2e" : Credentials.defaultService
     }
 
+    /// When set, `E2ESeeder` adds the ADR-087 cue fixture (a third tone plus
+    /// a sidecar cue sheet) to the seed library. Opt-in per journey: the rest
+    /// of the suite is calibrated to the two-tone world (selection counts,
+    /// queue lengths), so only the marker journey requests it.
+    static var cueFixtureRequested: Bool {
+        self.isActive && ProcessInfo.processInfo.environment["BOCAN_E2E_CUE_FIXTURE"] != nil
+    }
+
     /// When set, the launch seeds the playback queue with a single internet
     /// radio item pointing at this URL (the harness's stalling listener),
     /// so a relaunch exercises the persisted-radio-queue restore path (the
