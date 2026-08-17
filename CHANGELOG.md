@@ -5,6 +5,89 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0](https://github.com/bocan/bocan-music/compare/v2.7.0...v2.8.0) (2026-08-17)
+
+CUE sheets: I've refactored how these work. CUE sheets (files) are a bit of a
+legacy thing.  The original idea is that if someone rips an entire CD to a
+single file, it can have a CUE sheet that lets you play the individual tracks
+within it. In practice, people just use them as playlists because single file
+rips are rare these days. So what I've done is this:
+
+- If you manually import a cue file, it treats it as a playlist.
+- If you add a queue file into your library tree as a file along with the music
+  files, it tries to detect if it's a _true_ cue sheet. If it is indeed a multi
+  track file, it creates "markers" in the now playing bar and you can move forward
+  and backwards through the tracks like any other.  If it's just a playlist
+  pretending to be a cue sheet, it ignores it.
+- Added a tab to the Track Info page that shows any real cues.
+
+Internet radio and streaming:
+
+- Fixed Now-playing titles for Ogg Vorbis/Opus stations (#386)
+- The TLS saga (#393): FFmpeg 9 turned certificate verification on, which the
+  sandbox broke. The proper fix exports the macOS system trust store to a PEM in
+  the app container so every stream, HLS included, verifies against real roots.
+- Format sniffing for AIFF, Musepack, and TTA magic numbers (#387).
+
+Artwork
+
+- Sidecar cover art (cover.jpg, folder.png and friends) is picked up during
+  scans (#388) if there is no embedded art in the tags.
+- HEIC and AVIF are accepted in the artwork picker and mime map (#389).
+
+UI and window polish
+
+- The visualizer pane no longer bleeds into the toolbar.
+- Tabs have been disabled. They didn't work anyway and much work needs to be
+  done to make them useful.
+- Back/Forward hover text mentions the bracket shortcuts.
+- The Help shortcut tables were corrected and completed with a new Mouse Buttons
+  page (including the Logitech notes). Thanks to @go1968 for the assistance in
+  testing that! I have one ordered for home.
+- Added the Exclude from Shuffle to the Song context menu.
+
+Housekeeping
+
+- Documentation cleanup and standardization across the ADRs.
+
+### Added
+
+* **audio:** now-playing titles for Ogg Vorbis/Opus radio streams ([d85df4c](https://github.com/bocan/bocan-music/commit/d85df4c1b57bb01d820a86e686a59c87afa7840b))
+* **e2e:** CUE marker journey and fixture (ADR-087) ([6942ed8](https://github.com/bocan/bocan-music/commit/6942ed8c2b8a99edaa9559d36ded424b94ac082f))
+* **library:** attach CUE sheets as in-track markers (ADR-087) ([f957f99](https://github.com/bocan/bocan-music/commit/f957f99df0620effb98e59c1eb26bcb951fae016))
+* **library:** pick up external sidecar cover art during scans ([#388](https://github.com/bocan/bocan-music/issues/388)) ([0d78bf2](https://github.com/bocan/bocan-music/commit/0d78bf2fcc3c76669e0b797ad5f793f1025c9390))
+* **persistence:** track_markers table, record, and repository (ADR-087) ([adbe3e1](https://github.com/bocan/bocan-music/commit/adbe3e1a35e92fd2ba7407eba19058719579f1a4))
+* **playback:** marker-aware transport (ADR-087) ([30c0ec3](https://github.com/bocan/bocan-music/commit/30c0ec35bc8be9b622e5db40917fd4fe7b46f0d9))
+* **ui:** marker line and scrubber ticks in the player bar (ADR-087) ([2b2d51c](https://github.com/bocan/bocan-music/commit/2b2d51c08c2c95aee7a7de85c70dbd2413b3176f))
+* **ui:** shuffle-exclusion toggle in the track context menu ([10285e1](https://github.com/bocan/bocan-music/commit/10285e1944b2c17500181ae9ae7ae548f34cab0a))
+* **ui:** surface CUE markers in Get Info and the track info panel ([cfad7d8](https://github.com/bocan/bocan-music/commit/cfad7d8afa935e63fa9627f47e11b14999ecf445))
+
+
+### Fixed
+
+* **app:** disable native window tabbing ([855c438](https://github.com/bocan/bocan-music/commit/855c43878c4ab6e67cde6a575599719b93612f0c))
+* **app:** strip auto-injected Window-menu items from secondary windows ([322edc8](https://github.com/bocan/bocan-music/commit/322edc8f32bf40ccd4f497e199b4022c20b702af))
+* **audio:** compute the CUE segment frame budget in the decoder's rate ([dad305f](https://github.com/bocan/bocan-music/commit/dad305f1f09c1334381f4634f30b2db37effaa14))
+* **audio:** disable FFmpeg TLS verification broken by the sandbox ([adbb63a](https://github.com/bocan/bocan-music/commit/adbb63a4e74d2ce70fb8a59621b40ce7063f4955))
+* **audio:** read Ogg titles from stream-level metadata ([#386](https://github.com/bocan/bocan-music/issues/386)) ([ba8259a](https://github.com/bocan/bocan-music/commit/ba8259aa657ee282948e1241629d39fe696fd6f8))
+* **audio:** sniff AIFF, Musepack, and TTA magics ([#387](https://github.com/bocan/bocan-music/issues/387)) ([7203bec](https://github.com/bocan/bocan-music/commit/7203bec92d213c5d3a51e3c4013190af6ecccd8a))
+* **audio:** verify TLS against exported system roots ([#393](https://github.com/bocan/bocan-music/issues/393)) ([c799792](https://github.com/bocan/bocan-music/commit/c7997928b2dccf16ab3f0a2832dfec795ff1a8b5))
+* **library:** assign CUE TRACKs to the FILE of their INDEX 01 ([9795c7e](https://github.com/bocan/bocan-music/commit/9795c7efe54cd20f31c772259bfc5187254384c0))
+* **library:** materialise CUE PERFORMER and album metadata ([#390](https://github.com/bocan/bocan-music/issues/390)) ([641c781](https://github.com/bocan/bocan-music/commit/641c781034dcca7b60ef83e9476a9637ed274447))
+* **library:** mint security-scope bookmarks for CUE audio at import ([#391](https://github.com/bocan/bocan-music/issues/391)) ([75f5e9c](https://github.com/bocan/bocan-music/commit/75f5e9cb9b2149830e8894e107e609d2fea15ff6))
+* **library:** probe the last CUE track's real duration instead of storing 0 ([612afeb](https://github.com/bocan/bocan-music/commit/612afeb4df610376faf91848e04fcbebe3550cc3))
+* **library:** run the cue pass after a dropped folder's audio imports ([4f58480](https://github.com/bocan/bocan-music/commit/4f58480fd3ffe1c9fa35dac318da53fb07e52aa4))
+* **persistence:** delete virtual-row dependents explicitly in M038 ([140559e](https://github.com/bocan/bocan-music/commit/140559e34db5402ec121efda79022150fce18c7a))
+* **ui:** accept HEIC/AVIF artwork in the picker and the mime map ([#389](https://github.com/bocan/bocan-music/issues/389)) ([5319369](https://github.com/bocan/bocan-music/commit/5319369d3fbd30bfb2c8860f6d1f4bde0717dcb8))
+* **ui:** ask for folder access only when a CUE's audio is truly unreachable ([#391](https://github.com/bocan/bocan-music/issues/391)) ([f8a3c78](https://github.com/bocan/bocan-music/commit/f8a3c78847a54d9de60e63a5ecc648d60525fc90))
+* **ui:** drop locale grouping separators from smart playlist integer fields ([8b7a611](https://github.com/bocan/bocan-music/commit/8b7a611b3a7163375e6ca7123d1b83194beea79b))
+* **ui:** guard EditMenuRouting against a nil NSApp ([abbd587](https://github.com/bocan/bocan-music/commit/abbd587a6bd68bd4c71194bac004d3cfd6a972ec))
+* **ui:** identify the scrobble provider Connect button ([da5699d](https://github.com/bocan/bocan-music/commit/da5699dcf1db435d4fd36b094203cd335ebf7177))
+* **ui:** mention .cue in the playlist import sheet copy ([bf792af](https://github.com/bocan/bocan-music/commit/bf792afdea607ecbbd345f12ce091fe728b3f62b))
+* **ui:** resolve Sendable capture and QoS inversion diagnostics ([1f8bf77](https://github.com/bocan/bocan-music/commit/1f8bf779d321170510599d9c8d2910581bf88a5c))
+* **ui:** show the bracket shortcuts in Back and Forward hover text ([174fec2](https://github.com/bocan/bocan-music/commit/174fec22fd4a31e6b97933ce5420a45bfe578b51))
+* **ui:** stop the visualizer pane background bleeding into the toolbar ([91b6986](https://github.com/bocan/bocan-music/commit/91b69868020fd65ffb701d9ea9bcc47c68e002da))
+
 ## [2.7.0](https://github.com/bocan/bocan-music/compare/v2.6.2...v2.7.0) (2026-08-15)
 
 The only user-visible change in this release is that now next/previous buttons move forward and backwards through the station lists. Behind the scenes, a lot of work went into making the E2E test suite more robust and comprehensive, including a new loopback fixture server for podcasts and ICY radio streams. The E2E suite now covers almost every surface of the app. In the process of building the E2E coverage, a few minor bugs were found and fixed, including a couple of gaps in queue restoration that could cause playback to stop unexpectedly.
