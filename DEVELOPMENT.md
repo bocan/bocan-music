@@ -51,6 +51,7 @@ make doctor
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |
 | `make pseudolocale` | Regenerate the en-XA pseudolocale in the UI String Catalog |
+| `make release-note` | Add a human note to the pending release PR's changelog. Never touch `release-please--branches--main` by hand: the bot force-recreates it every cycle, so a plain `git switch` lands on a stale local copy and `git pull` produces conflicts in every bot-owned file. The script force-resets onto the remote branch, opens `$EDITOR` on `CHANGELOG.md`, commits only that file, pushes to GitHub only (the Tangled/Codeberg mirrors reject this branch), and returns you to main |
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
 | `make generate` | Regenerate Xcode project from `project.yml` |
