@@ -305,6 +305,10 @@ format:
 pseudolocale:
 	python3 Scripts/gen-pseudolocale.py
 
+## release-note: Add a human note to the pending release PR's changelog (guarded flow)
+release-note:
+	@Scripts/release-note.sh
+
 ## format-check: Run SwiftFormat in lint mode (CI)
 format-check:
 	swiftformat --lint .
