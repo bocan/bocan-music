@@ -124,22 +124,49 @@ final class SettingsCrawlTests: XCTestCase {
             row.click()
             return
         }
-        let goingDown = row.frame.midY >= app.windows.firstMatch.frame.midY
-        // A large step: `anchor` itself can scroll out of view (and so stop
-        // taking further scroll gestures) after only a couple of small
-        // steps, particularly on a long jump like Diagnostics back up to
-        // Appearance, which spans nearly the whole sidebar. A big single
-        // gesture crosses that distance before the anchor goes stale.
-        let deltaY: CGFloat = goingDown ? -300 : 300
-        var attempts = 0
-        while !row.isHittable, attempts < 10 {
-            anchor.scroll(byDeltaX: 0, deltaY: deltaY)
-            attempts += 1
+        // Keyboard-walk the selection: AppKit auto-scrolls it, the same
+        // mechanism the identifier audit crawls every pane with. Wheel
+        // synthesis was retired here after it no-opped wholesale on macOS
+        // 26.6. A clipped row's AX frame is only an estimate (observed: a
+        // row clipped ABOVE reporting a frame that read as below, marching
+        // the old walk the wrong way to park at the list's end), so the
+        // frame gives a first guess only — if the row never surfaces, walk
+        // back the other way across the whole sidebar.
+        let guessDown = row.frame.midY >= anchor.frame.midY
+        let sidebar = app.outlines
+            .containing(NSPredicate(format: "identifier == %@", row.identifier))
+            .firstMatch
+        for (down, steps) in [(guessDown, 16), (!guessDown, 32)] where !row.isHittable {
+            self.walkSelection(toward: row, sidebar: sidebar, app: app, down: down, steps: steps)
         }
         if row.isHittable {
             row.click()
         } else {
             row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        }
+    }
+
+    /// Arrow-walks the sidebar selection until `row` is hittable or `steps`
+    /// keys have been sent. A newly selected pane can steal keyboard focus
+    /// from the sidebar (Advanced does), so the selected row is re-clicked
+    /// before each key to hand focus back without moving the selection.
+    private static func walkSelection(
+        toward row: XCUIElement,
+        sidebar: XCUIElement,
+        app: XCUIApplication,
+        down: Bool,
+        steps: Int
+    ) {
+        let key: XCUIKeyboardKey = down ? .downArrow : .upArrow
+        var sent = 0
+        while !row.isHittable, sent < steps {
+            let selected = sidebar.outlineRows
+                .matching(NSPredicate(format: "selected == 1")).firstMatch
+            if selected.exists {
+                selected.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            }
+            app.typeKey(key, modifierFlags: [])
+            sent += 1
         }
     }
 

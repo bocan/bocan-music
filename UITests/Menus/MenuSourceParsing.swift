@@ -133,7 +133,12 @@ enum MenuSourceParsing {
     static func helpBookTableRows() throws -> [(action: String, display: String)] {
         let html = try String(contentsOf: self.helpBookURL, encoding: .utf8)
         return html.matches(of: /<tr><td>([^<]+)<\/td><td>([^<]+)<\/td><\/tr>/)
-            .map { (action: String($0.1), display: String($0.2)) }
+            .map { (action: Self.unescape(String($0.1)), display: Self.unescape(String($0.2))) }
+    }
+
+    /// The entities the help book's hand-written table actually uses.
+    private static func unescape(_ html: String) -> String {
+        html.replacingOccurrences(of: "&amp;", with: "&")
     }
 
     /// Every shortcut-looking token anywhere in the help book, prose

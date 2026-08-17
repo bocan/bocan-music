@@ -94,20 +94,18 @@ struct E2ESession {
         //   starting, which otherwise raises a modal macOS "find devices on
         //   your local network" permission dialog that blocks every UI
         //   interaction underneath it.
-        // - `-lyrics.paneVisible NO` / `-visualizer.paneVisible NO`: an
-        //   earlier, unrelated test (e.g. a menu crawl toggling "Show
-        //   Lyrics") leaves its pane open in the real, un-isolated
-        //   `UserDefaults.standard` these view models read directly — the
-        //   next run then launches with a stale pane already showing
-        //   (phase 33 found this via the visualizer suite: a prior lyrics
-        //   toggle from an earlier test made a fresh launch open Lyrics
-        //   instead of nothing).
+        //
+        // The lyrics/visualizer pane keys are NOT pinned here, deliberately:
+        // an argument-domain pin shadows every later read, so an in-test
+        // "Show Lyrics" could never flip the menu to "Hide Lyrics" (the
+        // BocanCommands label re-reads the shadowed key). The stale-pane
+        // leak the pins once fixed (phase 33) is handled app-side instead:
+        // `E2ESeeder` deletes both keys from the shared standard defaults
+        // on every E2E launch.
         app.launchArguments = [
             "-ApplePersistenceIgnoreState", "YES",
             "-ui.windowMode.miniPlayerOpen", "NO",
             "-sync.enabled", "NO",
-            "-lyrics.paneVisible", "NO",
-            "-visualizer.paneVisible", "NO",
         ] + arguments
         app.launch()
         return app

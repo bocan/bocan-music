@@ -37,6 +37,9 @@ struct MenuItemSpec {
     /// Action name of this item's row in the help book's Keyboard
     /// Shortcuts table, where it has one.
     var helpBookRow: String?
+    /// Literal shortcut text expected in that row when it aggregates more
+    /// than one shortcut ("⌘1–⌘5") and so cannot parse as the item's own.
+    var helpBookDisplay: String?
     /// Apple- or SwiftUI-owned: structure is asserted, but enablement and
     /// invocation passes leave it alone.
     var system = false
@@ -60,6 +63,7 @@ struct MenuItemSpec {
         key: String? = nil,
         binding: String? = nil,
         row: String? = nil,
+        rowDisplay: String? = nil,
         conditional: String? = nil,
         enablement: [MenuState: Bool] = [:],
         submenu: [MenuItemSpec] = []
@@ -69,6 +73,7 @@ struct MenuItemSpec {
             shortcut: key.map { MenuShortcut.fromDisplay($0)! },
             binding: binding,
             helpBookRow: row,
+            helpBookDisplay: rowDisplay,
             conditional: conditional,
             enablement: enablement,
             submenu: submenu
@@ -121,7 +126,7 @@ enum MenuManifest {
         ]),
         MenuSpec(title: "File", items: [
             .own("New Playlist…", key: "⇧⌘N", binding: "newPlaylist", row: "New Playlist"),
-            .own("New Smart Playlist…", key: "⌥⌘N", binding: "newSmartPlaylist"),
+            .own("New Smart Playlist…", key: "⌥⌘N", binding: "newSmartPlaylist", row: "New Smart Playlist"),
             .own("New Playlist Folder…"),
             .own(
                 "Add Folder to Library…",
@@ -129,13 +134,13 @@ enum MenuManifest {
                 binding: "addFolder",
                 row: "Add Folder to Library"
             ),
-            .own("Add Files to Library…", key: "⌘O", binding: "addFiles"),
+            .own("Add Files to Library…", key: "⌘O", binding: "addFiles", row: "Add Files to Library"),
             .own("Music Sources…"),
             // Disabled only while a scan runs; fresh-launch assertion
             // doubles as the "scan settled" gate (the matrix retries).
-            .own("Quick Rescan Library", key: "⌥⌘R", enablement: [.freshLaunch: true]),
-            .own("Full Rescan Library", key: "⌥⇧⌘R", enablement: [.freshLaunch: true]),
-            .own("Import Playlist…", key: "⌥⇧⌘O"),
+            .own("Quick Rescan Library", key: "⌥⌘R", row: "Quick Rescan Library", enablement: [.freshLaunch: true]),
+            .own("Full Rescan Library", key: "⌥⇧⌘R", row: "Full Rescan Library", enablement: [.freshLaunch: true]),
+            .own("Import Playlist…", key: "⌥⇧⌘O", row: "Import Playlist"),
             .sys("Close"),
             .sys("Close All"),
         ]),
@@ -153,15 +158,15 @@ enum MenuManifest {
             .sys("Emoji & Symbols"),
         ]),
         MenuSpec(title: "View", items: [
-            .sys("Show Tab Bar", "Hide Tab Bar"),
-            .sys("Show All Tabs", "Exit Tab Overview"),
+            // No tab-bar items: native window tabbing is disabled
+            // (NSWindow.allowsAutomaticWindowTabbing), so macOS injects none.
             .sys("Show Sidebar", "Hide Sidebar"),
             .own("Show Lyrics", "Hide Lyrics", key: "⌥⌘L", row: "Show Lyrics"),
-            .own("Show Visualizer", "Hide Visualizer", key: "⇧⌘V"),
-            .own("Open Fullscreen Visualizer", key: "⇧⌘F"),
+            .own("Show Visualizer", "Hide Visualizer", key: "⇧⌘V", row: "Show Visualizer"),
+            .own("Open Fullscreen Visualizer", key: "⇧⌘F", row: "Open Fullscreen Visualizer"),
             .own("Toggle Miniplayer", key: "⌥⌘M", row: "Toggle Miniplayer"),
-            .own("Show Recent Scrobbles", key: "⌥⇧⌘S"),
-            .own("Equaliser & DSP…", key: "⌥⌘E", binding: "showEQPanel"),
+            .own("Show Recent Scrobbles", key: "⌥⇧⌘S", row: "Show Recent Scrobbles"),
+            .own("Equaliser & DSP…", key: "⌥⌘E", binding: "showEQPanel", row: "Equaliser & DSP"),
             // The "View as" inline picker renders as a header row plus two
             // radio items at menu level. The options are only meaningful on
             // the Artists/Genres/Composers listings; the fresh launch shows
@@ -191,17 +196,19 @@ enum MenuManifest {
                 "Restart Track",
                 key: "⌥⌘←",
                 binding: "restartTrack",
+                row: "Restart Track",
                 enablement: [.freshLaunch: false, .trackPlaying: true]
             ),
             .own("Mute", "Unmute", key: "⌥⌘Z", binding: "mute", row: "Mute / Unmute"),
-            .own("Increase Volume", key: "⌘↑", binding: "increaseVolume"),
-            .own("Decrease Volume", key: "⌘↓", binding: "decreaseVolume"),
+            .own("Increase Volume", key: "⌘↑", binding: "increaseVolume", row: "Increase Volume"),
+            .own("Decrease Volume", key: "⌘↓", binding: "decreaseVolume", row: "Decrease Volume"),
             .own("Toggle Shuffle", key: "⇧⌘S", binding: "toggleShuffle", row: "Toggle Shuffle"),
             .own("Cycle Repeat", key: "⇧⌘E", binding: "cycleRepeat", row: "Cycle Repeat"),
             .own(
                 "Toggle Stop After Current",
                 key: "⌥⌘.",
                 binding: "stopAfterCurrent",
+                row: "Stop After Current",
                 enablement: [.freshLaunch: false, .trackPlaying: true]
             ),
             // A restored radio queue is still a queue: it must be
@@ -211,6 +218,7 @@ enum MenuManifest {
                 "Clear Queue",
                 key: "⇧⌘⌫",
                 binding: "clearQueue",
+                row: "Clear Queue",
                 enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: true]
             ),
             .own("Show Up Next", key: "⌥⌘U", binding: "showUpNext", row: "Show Up Next"),
@@ -223,9 +231,9 @@ enum MenuManifest {
                 .own("1.5×"),
                 .own("2×"),
             ]),
-            .own("Increase Speed", key: "⌥⌘↑", binding: "increaseSpeed"),
-            .own("Decrease Speed", key: "⌥⌘↓", binding: "decreaseSpeed"),
-            .own("Reset Speed to 1×", key: "⌥⌘0", binding: "resetSpeed"),
+            .own("Increase Speed", key: "⌥⌘↑", binding: "increaseSpeed", row: "Increase Speed"),
+            .own("Decrease Speed", key: "⌥⌘↓", binding: "decreaseSpeed", row: "Decrease Speed"),
+            .own("Reset Speed to 1×", key: "⌥⌘0", binding: "resetSpeed", row: "Reset Speed"),
             .own("Sleep Timer", submenu: [
                 // NowPlayingViewModel.sleepPresets labels.
                 .own("Off"),
@@ -248,12 +256,14 @@ enum MenuManifest {
                 "Go to Current Album",
                 key: "⌥⌘A",
                 binding: "goToCurrentAlbum",
+                row: "Go to Current Album",
                 enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: false]
             ),
             .own(
                 "Go to Current Artist",
                 key: "⌥⌘G",
                 binding: "goToCurrentArtist",
+                row: "Go to Current Artist",
                 enablement: [.freshLaunch: false, .trackPlaying: true, .radioCurrent: false]
             ),
         ]),
@@ -269,12 +279,14 @@ enum MenuManifest {
                 "Play Next",
                 key: "⇧⌘↩",
                 binding: "playNext",
+                row: "Play Selection Next",
                 enablement: [.freshLaunch: false, .trackSelected: true]
             ),
             .own(
                 "Add to Queue",
                 key: "⇧⌘Q",
                 binding: "addToQueue",
+                row: "Add Selection to Queue",
                 enablement: [.freshLaunch: false, .trackSelected: true]
             ),
             .own("Play Album", enablement: [.freshLaunch: false, .trackSelected: true]),
@@ -292,6 +304,7 @@ enum MenuManifest {
             .own(
                 "Identify Track…",
                 key: "⌥⌘I",
+                row: "Identify Track",
                 enablement: [.freshLaunch: false, .trackSelected: true]
             ),
             .own(
@@ -311,8 +324,17 @@ enum MenuManifest {
             // SwiftUI leaves a `.disabled` Menu parent enabled and greys
             // its children instead, so the matrix rows sit on the children.
             .own("Rate", submenu: [
-                .own("None", key: "⌘0", enablement: [.freshLaunch: false, .trackSelected: true]),
-                .own("★", key: "⌘1", binding: "rate1", enablement: [.freshLaunch: false, .trackSelected: true]),
+                .own("None", key: "⌘0", row: "Clear Rating", enablement: [.freshLaunch: false, .trackSelected: true]),
+                // The one help row covers all five star items ("⌘1–⌘5");
+                // the first star claims it with the literal display text.
+                .own(
+                    "★",
+                    key: "⌘1",
+                    binding: "rate1",
+                    row: "Rate 1–5 Stars",
+                    rowDisplay: "⌘1–⌘5",
+                    enablement: [.freshLaunch: false, .trackSelected: true]
+                ),
                 .own("★★", key: "⌘2", binding: "rate2"),
                 .own("★★★", key: "⌘3", binding: "rate3"),
                 .own("★★★★", key: "⌘4", binding: "rate4"),
@@ -326,12 +348,14 @@ enum MenuManifest {
                 "Select All",
                 key: "⌘A",
                 binding: "selectAll",
+                row: "Select All",
                 enablement: [.freshLaunch: true]
             ),
             .own(
                 "Deselect All",
                 key: "⇧⌘A",
                 binding: "deselectAll",
+                row: "Deselect All",
                 enablement: [.freshLaunch: false, .trackSelected: true]
             ),
             .own(
@@ -362,10 +386,17 @@ enum MenuManifest {
         // open-window items; contents are machine- and state-dependent.
         MenuSpec(title: "Window", crawlContents: false),
         MenuSpec(title: "Help", items: [
-            .own("Bòcan Music Help", key: "⌘?"),
+            .own("Bòcan Music Help", key: "⌘?", row: "Bòcan Music Help"),
             .own("Notices & Licences…"),
             .own("Log Console", key: "⇧⌘L", row: "Log Console"),
         ]),
+    ]
+
+    /// Help book Keyboard Shortcuts rows with no menu item to claim them:
+    /// toolbar-only shortcuts, verified literally against the table.
+    static let helpOnlyRows: [(action: String, display: String)] = [
+        ("Back", "⌘["),
+        ("Forward", "⌘]"),
     ]
 
     /// Launch-argument defaults overrides that make the menu tree

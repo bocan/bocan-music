@@ -94,9 +94,20 @@ final class ShortcutParityTests: XCTestCase {
                 .compactMap { item in item.helpBookRow.map { ($0, item) } }
         )
 
+        let helpOnly = Dictionary(uniqueKeysWithValues: MenuManifest.helpOnlyRows)
         for (action, display) in rows {
+            if let literal = helpOnly[action] {
+                XCTAssertEqual(display, literal, "help-only row \(action)")
+                continue
+            }
             guard let item = byRow[action] else {
                 XCTFail("help book row \"\(action)\" is not claimed by any manifest item")
+                continue
+            }
+            // An aggregated row ("⌘1–⌘5") declares its literal display text;
+            // a normal row must parse to the item's exact shortcut.
+            if let literal = item.helpBookDisplay {
+                XCTAssertEqual(display, literal, "help book row \(action)")
                 continue
             }
             XCTAssertEqual(
@@ -110,6 +121,12 @@ final class ShortcutParityTests: XCTestCase {
             XCTAssertTrue(
                 tableActions.contains(action),
                 "\(item.canonicalTitle): manifest expects help book row \"\(action)\", table has none"
+            )
+        }
+        for (action, _) in MenuManifest.helpOnlyRows {
+            XCTAssertTrue(
+                tableActions.contains(action),
+                "manifest expects help-only row \"\(action)\", table has none"
             )
         }
     }

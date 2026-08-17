@@ -21,6 +21,14 @@ enum E2ESeeder {
     static func prepareHomeIfRequested() {
         guard let home = E2EEnvironment.home,
               let seed = E2EEnvironment.seedDirectory else { return }
+        // Deterministic pane state: these keys live in the real, un-isolated
+        // `UserDefaults.standard` the pane view models read directly, so a
+        // prior run's "Show Lyrics" toggle would otherwise leak into this
+        // launch. Reset (not argument-domain pin: pinning shadows every
+        // later read, freezing the menu's live Show/Hide labels).
+        for key in ["lyrics.paneVisible", "visualizer.paneVisible"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
         let fm = FileManager.default
         do {
             let root = E2EEnvironment.runsRoot
@@ -42,7 +50,9 @@ enum E2ESeeder {
                 where !fm.fileExists(atPath: self.toneURL(named: name, in: seed).path) {
                 try self.synthesizeTone(named: name, frequency: frequency, into: seed)
             }
-            try self.writeCueFixture(into: seed)
+            if E2EEnvironment.cueFixtureRequested {
+                try self.writeCueFixture(into: seed)
+            }
         } catch {
             self.log.error("e2e.seed.failed", ["error": String(reflecting: error)])
         }
