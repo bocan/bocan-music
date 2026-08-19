@@ -46,6 +46,15 @@ struct ContinueListeningRailConventionTests {
         #expect(size <= 45, "rail art must be at most 0.25x the 180 pt grid art")
     }
 
+    @Test("card context menu offers both mark actions and Go to Show")
+    func cardContextMenu() throws {
+        let source = try self.source("Sources/UI/Browse/Podcasts/ContinueListeningRail.swift")
+        #expect(source.contains(".contextMenu { self.cardMenu(item) }"))
+        #expect(source.contains("markPlayed(podcastID: item.podcastID, guid: item.guid)"))
+        #expect(source.contains("markUnplayed(podcastID: item.podcastID, guid: item.guid)"))
+        #expect(source.contains("openShow(item.podcastID)"))
+    }
+
     @Test("progress bar is omitted for unknown or zero durations")
     func progressGuard() throws {
         let source = try self.source("Sources/UI/Browse/Podcasts/ContinueListeningRail.swift")

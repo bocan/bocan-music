@@ -35,12 +35,30 @@ struct ContinueListeningRail: View {
                             .onTapGesture {
                                 Task { await self.vm.resume(item) }
                             }
+                            .contextMenu { self.cardMenu(item) }
                     }
                 }
                 .padding(.horizontal, 16)
             }
         }
         .padding(.vertical, 10)
+    }
+
+    /// Card context menu: both mark actions remove the card (either way the
+    /// state leaves `inProgress`, and the observation re-emits on the write);
+    /// Played also clears it from the unread counts, Unplayed keeps it there.
+    @ViewBuilder
+    private func cardMenu(_ item: ContinueListeningItem) -> some View {
+        Button(L10n.string("Mark as Played")) {
+            Task { await self.vm.actions?.markPlayed(podcastID: item.podcastID, guid: item.guid) }
+        }
+        Button(L10n.string("Mark as Unplayed")) {
+            Task { await self.vm.actions?.markUnplayed(podcastID: item.podcastID, guid: item.guid) }
+        }
+        Divider()
+        Button(L10n.string("Go to Show")) {
+            self.vm.openShow(item.podcastID)
+        }
     }
 }
 
