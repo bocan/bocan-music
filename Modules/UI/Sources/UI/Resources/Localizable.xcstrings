@@ -9948,6 +9948,16 @@
         }
       }
     },
+    "Go to Show" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĝó ţó Šĥóŵ one"
+          }
+        }
+      }
+    },
     "Go to Website" : {
       "localizations" : {
         "en-XA" : {
