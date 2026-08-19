@@ -11,6 +11,10 @@ public final class PodcastsViewModel: ObservableObject {
     // MARK: - Published state
 
     @Published public private(set) var subscribed: [Podcast] = []
+    /// Continue Listening rail contents (ADR-054): started-not-finished
+    /// episodes across all shows, newest activity first. Empty hides the rail.
+    /// `internal(set)` so the extension file can assign from its observation.
+    @Published public internal(set) var continueListening: [ContinueListeningItem] = []
     @Published public private(set) var podcastEpisodeCounts: [Int64: Int] = [:]
     /// Unread (not-yet-played) counts keyed by podcast ID; absent/zero means no badge.
     /// Kept live by `unplayedCountsTask` so a mark-played write clears the badge.
@@ -75,6 +79,7 @@ public final class PodcastsViewModel: ObservableObject {
     private nonisolated(unsafe) var subscribedTask: Task<Void, Never>?
     private nonisolated(unsafe) var episodesTask: Task<Void, Never>?
     private nonisolated(unsafe) var unplayedCountsTask: Task<Void, Never>?
+    nonisolated(unsafe) var continueListeningTask: Task<Void, Never>?
     nonisolated(unsafe) var detailTask: Task<Void, Never>?
 
     // MARK: - Init
@@ -101,6 +106,7 @@ public final class PodcastsViewModel: ObservableObject {
         subscribedTask?.cancel()
         episodesTask?.cancel()
         unplayedCountsTask?.cancel()
+        continueListeningTask?.cancel()
         detailTask?.cancel()
     }
 
@@ -221,8 +227,12 @@ public final class PodcastsViewModel: ObservableObject {
         self.isLoading = false
         self.startObserveSubscribed(library: library)
         self.startObserveUnplayedCounts(library: library)
+        self.startObserveContinueListening(library: library)
         self.healMissingArtwork()
     }
+
+    // startObserveContinueListening / resume live in
+    // PodcastsViewModel+ContinueListening.swift (file_length headroom).
 
     /// Keeps `podcastUnplayedCounts` live off the state-table observation, so a
     /// mark-played (or mark-all) write clears the badge with no manual refresh.

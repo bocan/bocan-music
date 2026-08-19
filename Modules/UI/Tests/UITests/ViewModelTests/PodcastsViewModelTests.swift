@@ -56,6 +56,16 @@ private final class StubPodcastLibrary: PodcastLibraryDataSource, @unchecked Sen
     func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error> {
         AsyncThrowingStream { _ in }
     }
+
+    var continueListeningValue: [ContinueListeningItem] = []
+
+    func continueListening() async throws -> [ContinueListeningItem] {
+        self.continueListeningValue
+    }
+
+    func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error> {
+        AsyncThrowingStream { _ in }
+    }
 }
 
 /// In-process stub for `PodcastActions`. Records calls; no-ops for everything.
@@ -259,6 +269,14 @@ struct PodcastsViewModelTests {
             }
 
             func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error> {
+                AsyncThrowingStream { _ in }
+            }
+
+            func continueListening() async throws -> [ContinueListeningItem] {
+                []
+            }
+
+            func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error> {
                 AsyncThrowingStream { _ in }
             }
         }

@@ -399,6 +399,16 @@ public actor PodcastService {
         await self.stateRepo.observeUnplayedCounts()
     }
 
+    /// In-progress episodes across all subscribed shows, newest first (ADR-054).
+    public func continueListening() async throws -> [ContinueListeningItem] {
+        try await self.stateRepo.continueListening()
+    }
+
+    /// Live Continue Listening rail; re-emits on any state/content/show change.
+    public func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error> {
+        await self.stateRepo.observeContinueListening()
+    }
+
     // MARK: - OPML import / export
 
     /// Imports an OPML subscription list: parse, dedupe (intra-file and against

@@ -5910,6 +5910,16 @@
         }
       }
     },
+    "Continue Listening" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóñţíñúé Ĺíšţéñíñĝ one two"
+          }
+        }
+      }
+    },
     "Contrast Audit" : {
       "comment" : "A title for the Contrast Audit view.",
       "extractionState" : "stale",
@@ -7859,6 +7869,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đóúƀĺé-ţáƥ ţó ƥĺáý ƒŕóḿ ţĥíš íţéḿ. Úšé ţĥé çóñţéxţ ḿéñú ţó ŕéóŕđéŕ, ĵúḿƥ ţó áĺƀúḿ óŕ áŕţíšţ, óŕ ŕéḿóvé ƒŕóḿ ţĥé qúéúé. one two three four five six seven eight"
+          }
+        }
+      }
+    },
+    "Double-tap to resume episode" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóúƀĺé-ţáƥ ţó ŕéšúḿé éƥíšóđé one two three"
           }
         }
       }
@@ -17475,6 +17495,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŕéšúḿé one"
+          }
+        }
+      }
+    },
+    "Resume %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéšúḿé %@ one"
           }
         }
       }

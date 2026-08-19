@@ -190,6 +190,70 @@ public struct EpisodeStateRepository: Sendable {
         await self.database.observe { db in try Self.decodeUnplayedCounts(db) }
     }
 
+    // MARK: - Continue Listening (ADR-054)
+
+    /// The rail cap: a glance, not a backlog.
+    public static let continueListeningLimit = 25
+
+    /// In-progress episodes of subscribed shows, newest activity first. The
+    /// INNER JOIN to content is deliberate: a state row whose episode dropped
+    /// out of the feed has nothing to render or resume. `guid ASC` is a stable
+    /// tiebreak for equal `last_played_at`, or the rail order flickers
+    /// between emissions.
+    private static let continueListeningSQL = """
+    SELECT s.podcast_id, s.guid, s.play_position, s.last_played_at,
+           e.title AS episode_title, e.duration,
+           COALESCE(e.artwork_path, p.artwork_path) AS artwork_path,
+           COALESCE(e.artwork_url,  p.artwork_url)  AS artwork_url,
+           p.title AS show_title
+    FROM podcast_episode_state s
+    JOIN podcast_episodes e ON e.podcast_id = s.podcast_id AND e.guid = s.guid
+    JOIN podcasts          p ON p.id = s.podcast_id
+    WHERE s.play_state = 'inProgress' AND p.subscribed = 1
+    ORDER BY s.last_played_at DESC, s.guid ASC
+    LIMIT ?
+    """
+
+    private static func decodeContinueListening(
+        _ db: GRDB.Database,
+        limit: Int
+    ) throws -> [ContinueListeningItem] {
+        try Row.fetchAll(db, sql: self.continueListeningSQL, arguments: [limit])
+            .map { row in
+                ContinueListeningItem(
+                    podcastID: row["podcast_id"],
+                    guid: row["guid"],
+                    showTitle: row["show_title"],
+                    episodeTitle: row["episode_title"],
+                    artworkPath: row["artwork_path"],
+                    artworkURL: row["artwork_url"],
+                    playPosition: row["play_position"],
+                    duration: row["duration"],
+                    lastPlayedAt: row["last_played_at"]
+                )
+            }
+    }
+
+    /// One-shot fetch of the Continue Listening rail contents.
+    public func continueListening(
+        limit: Int = Self.continueListeningLimit
+    ) async throws -> [ContinueListeningItem] {
+        try await self.database.read { db in
+            try Self.decodeContinueListening(db, limit: limit)
+        }
+    }
+
+    /// Streams the rail contents, emitting immediately and again on any change
+    /// to the three joined tables — so a position write, mark-played,
+    /// unsubscribe, or feed prune all re-emit.
+    public func observeContinueListening(
+        limit: Int = Self.continueListeningLimit
+    ) async -> AsyncThrowingStream<[ContinueListeningItem], Error> {
+        await self.database.observe { db in
+            try Self.decodeContinueListening(db, limit: limit)
+        }
+    }
+
     /// Updates the download state, path, and byte count.
     public func setDownloadState(
         podcastID: Int64,
