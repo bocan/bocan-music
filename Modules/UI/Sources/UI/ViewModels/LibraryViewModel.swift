@@ -137,13 +137,22 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     @Published public private(set) var canGoBack = false
     @Published public private(set) var canGoForward = false
-    private var backStack: [SidebarDestination] = []
-    private var forwardStack: [SidebarDestination] = []
+    /// One history entry: the destination plus the search query that was
+    /// active there, so back/forward restores the filter the user left
+    /// behind (drilling into a detail page clears the query; without the
+    /// capture, Esc-out of an album always landed on the unfiltered grid).
+    struct HistoryEntry {
+        let destination: SidebarDestination
+        let searchQuery: String
+    }
+
+    private var backStack: [HistoryEntry] = []
+    private var forwardStack: [HistoryEntry] = []
     private static let historyLimit = 50
-    /// The most recent history entry, for Esc drill-out's plausible-container
-    /// check (#378) without widening `backStack` itself.
+    /// The most recent history destination, for Esc drill-out's
+    /// plausible-container check (#378).
     var lastHistoryEntry: SidebarDestination? {
-        self.backStack.last
+        self.backStack.last?.destination
     }
 
     // MARK: - Scroll restoration
@@ -967,7 +976,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.log.info("nav.select", ["destination": String(describing: destination)])
 
         if addToHistory, destination != self.selectedDestination {
-            self.backStack.append(self.selectedDestination)
+            // Capture the query alongside the destination (before the clear
+            // below) so back/forward can restore the filter that was active.
+            self.backStack.append(HistoryEntry(
+                destination: self.selectedDestination, searchQuery: self.searchQuery
+            ))
             if self.backStack.count > Self.historyLimit { self.backStack.removeFirst() }
             self.forwardStack.removeAll()
             self.canGoBack = true
@@ -1000,23 +1013,38 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    /// Navigates to the previous destination in history.
+    /// Navigates to the previous destination in history, restoring the
+    /// search query that was active there — so Esc-ing out of an album found
+    /// via type-to-search lands back on the still-filtered grid with the
+    /// typed text intact. Restored BEFORE the destination loads, or the grid
+    /// would flash unfiltered and re-filter on the query debounce.
     public func goBack() async {
         guard let previous = self.backStack.popLast() else { return }
-        self.forwardStack.append(self.selectedDestination)
+        self.forwardStack.append(HistoryEntry(
+            destination: self.selectedDestination, searchQuery: self.searchQuery
+        ))
         self.canGoBack = !self.backStack.isEmpty
         self.canGoForward = true
-        await self.selectDestination(previous, addToHistory: false)
+        if self.searchQuery != previous.searchQuery {
+            self.searchQuery = previous.searchQuery
+        }
+        await self.selectDestination(previous.destination, addToHistory: false)
     }
 
-    /// Navigates to the next destination in history.
+    /// Navigates to the next destination in history, restoring its search
+    /// query symmetrically with ``goBack()``.
     public func goForward() async {
         guard let next = self.forwardStack.popLast() else { return }
-        self.backStack.append(self.selectedDestination)
+        self.backStack.append(HistoryEntry(
+            destination: self.selectedDestination, searchQuery: self.searchQuery
+        ))
         if self.backStack.count > Self.historyLimit { self.backStack.removeFirst() }
         self.canGoBack = true
         self.canGoForward = !self.forwardStack.isEmpty
-        await self.selectDestination(next, addToHistory: false)
+        if self.searchQuery != next.searchQuery {
+            self.searchQuery = next.searchQuery
+        }
+        await self.selectDestination(next.destination, addToHistory: false)
     }
 
     /// Plays `track` immediately, replacing the queue with the full current track
