@@ -53,6 +53,12 @@ public final class BackupSettingsViewModel {
     /// Non-nil when the most recent manual local backup attempt failed.
     public var localErrorMessage: String?
 
+    /// `true` while a Rebuild Full-Text Search Index run is in progress.
+    public var isRebuildingFTS = false
+
+    /// Result line of the most recent FTS rebuild (success or failure).
+    public var ftsRebuildMessage: String?
+
     // MARK: - Private
 
     private let database: Database
@@ -183,6 +189,29 @@ public final class BackupSettingsViewModel {
             } catch {
                 self.log.error("backup.setLocalKeepCount.failed", ["error": String(reflecting: error)])
             }
+        }
+    }
+}
+
+// MARK: - Database maintenance (Settings > Advanced)
+
+/// The Advanced pane's repair surface. Lives on this view model because it
+/// already owns the pane's `Database` handle; same file so the private
+/// property stays private.
+public extension BackupSettingsViewModel {
+    /// Runs the FTS rebuild and publishes a localized result line for the
+    /// pane. Guarded against double-starts from a re-clicked button.
+    func rebuildFTS() async {
+        guard !self.isRebuildingFTS else { return }
+        self.isRebuildingFTS = true
+        self.ftsRebuildMessage = nil
+        defer { self.isRebuildingFTS = false }
+        do {
+            let counts = try await MaintenanceRepository(database: self.database).rebuildFTSIndexes()
+            self.ftsRebuildMessage = L10n.string("Search index rebuilt: \(counts.total) entries.")
+        } catch {
+            self.log.error("maintenance.ftsRebuild.failed", ["error": String(reflecting: error)])
+            self.ftsRebuildMessage = L10n.string("Could not rebuild the search index.")
         }
     }
 }

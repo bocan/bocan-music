@@ -1,11 +1,14 @@
 import AppKit
+import Observability
 import SwiftUI
+import UniformTypeIdentifiers
 
 // MARK: - AdvancedSettingsView
 
 public struct AdvancedSettingsView: View {
     @AppStorage("advanced.logLevel") private var logLevel = "info"
     @State private var showResetConfirm = false
+    @State private var exportStatusMessage: String?
     @Bindable private var backupVM: BackupSettingsViewModel
 
     public init(backupVM: BackupSettingsViewModel) {
@@ -122,12 +125,29 @@ public struct AdvancedSettingsView: View {
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.revealDatabase)
 
-                Button(L10n.string("Rebuild Full-Text Search Index")) {
-                    // ADR-015 will implement this
+                Button {
+                    Task { await self.backupVM.rebuildFTS() }
+                } label: {
+                    if self.backupVM.isRebuildingFTS {
+                        HStack(spacing: 6) {
+                            ProgressView().controlSize(.small)
+                            Text(localized: "Rebuilding…")
+                        }
+                    } else {
+                        Text(localized: "Rebuild Full-Text Search Index")
+                    }
                 }
-                .disabled(true)
-                .help(L10n.string("Not yet available"))
+                .disabled(self.backupVM.isRebuildingFTS)
+                .help(L10n.string(
+                    "Repopulates the search index from the library tables. Use if search results look wrong or incomplete."
+                ))
                 .accessibilityIdentifier(A11y.SettingsIDs.rebuildFTS)
+
+                if let message = self.backupVM.ftsRebuildMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section(L10n.string("Reset")) {
@@ -150,7 +170,16 @@ public struct AdvancedSettingsView: View {
                 Button(L10n.string("Export Diagnostics…")) {
                     self.exportDiagnostics()
                 }
+                .help(L10n.string(
+                    "Saves a zip of the session log, crash and diagnostic reports, and version info to attach to a bug report."
+                ))
                 .accessibilityIdentifier(A11y.SettingsIDs.exportDiagnostics)
+
+                if let message = self.exportStatusMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .formStyle(.grouped)
@@ -172,9 +201,32 @@ public struct AdvancedSettingsView: View {
     private func exportDiagnostics() {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = "BocanDiagnostics.zip"
+        panel.allowedContentTypes = [.zip]
         panel.begin { response in
-            guard response == .OK else { return }
-            // Stub: ADR-016 will implement full bundle export
+            guard response == .OK, let destination = panel.url else { return }
+            let info = Bundle.main.infoDictionary
+            let version = info?["CFBundleShortVersionString"] as? String ?? "unknown"
+            let build = info?["CFBundleVersion"] as? String ?? "?"
+            let inputs = DiagnosticsExporter.Inputs(
+                logs: LogStore.shared.snapshot(),
+                reportsDirectory: MetricKitListener.reportsDirectory,
+                appVersion: "\(version) (\(build))",
+                osVersion: ProcessInfo.processInfo.operatingSystemVersionString
+            )
+            // The exporter is synchronous file work; keep the UI responsive.
+            Task.detached(priority: .utility) {
+                let result: String
+                do {
+                    try DiagnosticsExporter.export(inputs, to: destination)
+                    result = L10n.string("Diagnostics exported to \(destination.lastPathComponent).")
+                } catch {
+                    AppLogger.make(.ui).error(
+                        "diagnostics.export.failed", ["error": String(reflecting: error)]
+                    )
+                    result = L10n.string("Could not export diagnostics.")
+                }
+                await MainActor.run { self.exportStatusMessage = result }
+            }
         }
     }
 }
