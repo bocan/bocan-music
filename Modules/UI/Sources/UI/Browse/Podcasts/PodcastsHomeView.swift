@@ -42,7 +42,15 @@ public struct PodcastsHomeView: View {
                     if self.vm.subscribed.isEmpty {
                         PodcastsEmptyState()
                     } else {
-                        PodcastsGridView(vm: self.vm, library: self.library)
+                        VStack(spacing: 0) {
+                            // Structural empty handling (ADR-054): when the rail
+                            // array is empty, it and its divider leave the tree.
+                            if !self.vm.continueListening.isEmpty {
+                                ContinueListeningRail(vm: self.vm)
+                                Divider()
+                            }
+                            PodcastsGridView(vm: self.vm, library: self.library)
+                        }
                     }
                 } else {
                     PodcastSearchResultsView(vm: self.vm)

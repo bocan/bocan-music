@@ -182,6 +182,10 @@ public protocol PodcastLibraryDataSource: Sendable {
     func unplayedCounts() async throws -> [Int64: Int]
     /// Live unread counts; re-emits after any play-state write so badges self-clear.
     func observeUnplayedCounts() async -> AsyncThrowingStream<[Int64: Int], Error>
+    /// In-progress episodes across all subscribed shows, newest first (ADR-054).
+    func continueListening() async throws -> [ContinueListeningItem]
+    /// Live Continue Listening rail; re-emits on any state/content/show change.
+    func observeContinueListening() async -> AsyncThrowingStream<[ContinueListeningItem], Error>
 }
 
 // MARK: - PodcastActions
