@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.9.0](https://github.com/bocan/bocan-music/compare/v2.8.0...v2.9.0) (2026-08-22)
 
+Just a small one. The main fix is that history entries now carry the search query that was active alongside the destination. Drilling into a detail page still clears the search (the album page stays clean), but Esc / the mouse back button / the toolbar arrows restore the query the user left behind.
+
+Also, the podcasts home view now has a Continue Listening rail, and the "Rebuild Full-Text Search Index" and "Export Diagnostics" buttons in Settings -> Advanced now work.
 
 ### Added
 
