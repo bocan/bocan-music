@@ -5,6 +5,16 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0](https://github.com/bocan/bocan-music/compare/v2.8.0...v2.9.0) (2026-08-22)
+
+
+### Added
+
+* **podcasts:** context menu on Continue Listening cards ([53f9b5e](https://github.com/bocan/bocan-music/commit/53f9b5e6a82febdee86a6d8e4001912b931101ea))
+* **podcasts:** Continue Listening rail on the Podcasts home view ([969348b](https://github.com/bocan/bocan-music/commit/969348b8b01bdc89a9313e11f7ece4a296e489cc))
+* **ui:** back/forward restores the search filter left at each view ([2893376](https://github.com/bocan/bocan-music/commit/2893376712973b8daada5ac07a6c1098e43e5fba))
+* **ui:** make the Advanced pane's two stub buttons real ([0d65cb1](https://github.com/bocan/bocan-music/commit/0d65cb127a3a083cb889d8c0e29797a4d49f696b))
+
 ## [2.8.0](https://github.com/bocan/bocan-music/compare/v2.7.0...v2.8.0) (2026-08-17)
 
 CUE sheets: I've refactored how these work. CUE sheets (files) are a bit of a
