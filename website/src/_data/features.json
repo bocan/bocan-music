@@ -17,7 +17,7 @@
   },
   {
     "title": "Tags it knows; tags you don't.",
-    "body": "AcoustID fingerprinting hands you MusicBrainz IDs for that 64 kbps Limp Bizkit b-side from 2003 your friend insists is yours. Pick the exact release you own, then write Picard-compatible IDs, ISRC and totals back to the file."
+    "body": "AcoustID fingerprinting hands you MusicBrainz IDs for that 64 kbps Limp Bizkit b-side from 2003 your friend insists is yours. Pick the exact release you own, then write Picard-compatible IDs, ISRC and totals back to the file. Artwork lands as JPEG, PNG, HEIC, or AVIF, and sidecar covers (cover.jpg and friends) are picked up straight from the folder."
   },
   {
     "title": "Mini-player that doesn't lie.",
@@ -70,6 +70,10 @@
   {
     "title": "Browse the way you think.",
     "body": "Sort Albums, Artists, Genres, Composers, and Podcasts by name or by the count that matters: songs, albums, year, unplayed episodes. Flip Artists, Genres, and Composers between a list and a grid of cover-art cards, and browse any genre or composer by its albums. Filter Artists down to album artists only, and a thousand one-song guest credits get out of your way. Double-click any album cover and it just plays; single click opens it. Start typing anywhere and the first letter lands in the search box, query already underway. Your choices stick across launches, and every list remembers its place: scroll halfway down, open an album, hit back, and you land exactly where you left off."
+  },
+  {
+    "title": "Back means back.",
+    "body": "Toolbar chevrons, ⌘[ and ⌘], mouse thumb buttons, and Esc all walk your browse history like a browser. Coming back restores your scroll position and your search filter, so stepping out of an album lands you exactly where you were, still filtered, text intact."
   },
   {
     "title": "A library that audits itself.",
