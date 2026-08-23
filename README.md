@@ -43,7 +43,8 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Folder-based, non-destructive.** Point it at your music directory and it indexes without touching a single file.
 - **Live FSEvents watcher** picks up new or changed files automatically; **mtime + fingerprint deduplication** keeps your library clean.
 - **AcoustID fingerprinting** against MusicBrainz. Identify any track, preview every proposed tag change side-by-side with what you have now, tick the fields you want to update, and apply. Pick the exact release you own (original pressing, reissue, territory variant) from everything MusicBrainz knows, and optionally write the deep identifiers too: ISRC, track totals, and Picard-compatible MusicBrainz IDs.
-- **In-app tag editor** with multi-track batch editing, embedded cover-art drag-and-drop, and undo.
+- **In-app tag editor** with multi-track batch editing, embedded cover-art drag-and-drop, and undo. Artwork comes in as JPEG, PNG, HEIC, or AVIF, and scans automatically pick up sidecar art (cover.jpg, folder.png, and friends) sitting next to the music.
+- **Exclude from Shuffle** as a first-class flag: set it from the track list's checkbox column, the right-click menu, or the tag editor, and rain sounds, comedy skits, and hour-long DJ mixes stop ambushing your shuffle. Smart Playlists can filter on it too.
 
 ### 🎨 It's a pleasure to use
 
@@ -53,6 +54,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **Sortable playlists**: click a column header to sort a playlist for browsing. Your hand-arranged order is kept underneath, and a "Playlist Order" button returns to it (drag-to-reorder pauses while a column sort is active, so the saved order is never scrambled).
 - **Import / export** M3U, PLS, and XSPF playlists, with fuzzy track matching on import.
 - **Real-time visualisers**: spectrum bars, oscilloscope, Halo (a breathing spectrum ring with beat ripples), Cascade (a scrolling spectrogram waterfall), Starfield (a frequency-coloured warp field that stretches into streaks on the beat), and Nebula (a luminous gas cloud whose churn, drifting wisps, and pressure waves all follow the music), dockable or full-screen with `⌘⇧F`. All six are GPU-rendered with Metal, which moves the drawing off the CPU and onto per-pixel shaders: they stay smooth at full-screen and native Retina resolution, and can sustain effects a CPU renderer could not (Nebula's churning gas is a live shader simulation, not a looping texture). They ship with six colour palettes, including a music-steered Drift and a magnitude-to-heat Thermal ramp. Hover any visualizer to switch the mode or palette in place with the on-screen steppers.
+- **Navigate like a browser**: toolbar back/forward chevrons, `⌘[` and `⌘]`, the thumb buttons on a multi-button mouse, and Esc to climb out of any drill-down all walk your browse history. Coming back restores what you left: your scroll position *and* your search filter, so typing "ulr" over the album grid, opening an album, and backing out lands you on the still-filtered grid with the text intact.
 - **Mini Player** in four layouts (Strip, Compact, Square, Visualizer) with always-on-top mode.
 - **Mac-native feel**: gentle trackpad haptics when you love, rate, seek, or release the volume slider, and a soft window cross-fade when swapping between the Mini Player and the main window. The system Now Playing controls (Control Center and the media-key overlay) show the current track with its album artwork. Respects Reduce Motion and the system trackpad haptics setting.
 - **[Last.fm](https://www.last.fm), [ListenBrainz](https://listenbrainz.org), and [Rocksky](https://rocksky.app/)** scrobbling, offline-resilient with Keychain auth and a dead-letter queue.
@@ -95,7 +97,8 @@ I've tried hard to ensure Bòcan is fully navigable without a mouse or a screen:
 - **Swift 6 strict concurrency** : `@MainActor` isolation, `Sendable` everywhere it matters, zero data races by design.
 - **Twelve clean SPM modules** with no upward imports and their own test suites.
 - **80% line-coverage gate** in CI; the build fails if coverage drops.
-- **GRDB 7** with typed repositories, FTS5 full-text search, and `ValueObservation`-based reactive streams.
+- **GRDB 7** with typed repositories, FTS5 full-text search, and `ValueObservation`-based reactive streams. Settings > Advanced can rebuild the search index in place if it ever drifts.
+- **One-click support bundles**: Export Diagnostics zips the session log, crash reports, and version info into a single file you can attach to a bug report.
 - **XcodeGen** project generation : no hand-edited `.pbxproj` files in the repo.
 - **CodeQL, SwiftLint, SwiftFormat, and Dependabot** on every pull request.
 
