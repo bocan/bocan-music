@@ -5,6 +5,45 @@
 >
 > Read `docs/design-spec/_standards.md` first.
 
+## Amendment (2026-08-24): SyncServer now exists
+
+This spec predates Phone Sync. `Modules/SyncServer` (ADR-060 through ADR-070)
+has since shipped and contains a working, tested version of most of the
+infrastructure this document specs from scratch:
+
+- An `NWListener`-owning actor (`SyncListener`) with TLS, Bonjour advertisement
+  (including the macOS 15 workaround where a throwaway `NWBrowser` is needed to
+  raise the Local Network permission prompt for a sandboxed advertiser).
+- A minimal HTTP/1.1 stack: `HttpRequestParser`, `HttpResponse`, a template
+  `Router` with per-route auth tiers, and gzip encoding.
+- Self-signed P-256 identity generation and login-Keychain persistence
+  (`SelfSignedCert`, `ServerIdentity`, `ServerFingerprint`), with the
+  fingerprint published in the Bonjour TXT record exactly as the "Security
+  model" section below describes.
+
+If this ADR is ever implemented, do **not** build `TLSIdentity`,
+`RequestRouter`, or the request parsing in the "Outcome shape" from scratch.
+Extract SyncServer's transport core into a shared lower-level helper (or have
+`Modules/Remote` depend on those types directly) and build only the
+remote-control-specific parts on top. Per ADR-060, the two servers still stay
+fully separate at runtime:
+
+- Separate listener and port; separate Bonjour service type
+  (`_bocan-remote._tcp.` here vs `_bocansync._tcp` for sync).
+- Separate TLS identity and Keychain items; a fingerprint rotation on one must
+  never affect the other's pinning.
+- Separate trust stores and auth models: sync authenticates devices with mutual
+  TLS client certificates, remote control uses server-only TLS plus per-client
+  bearer tokens (the shared `TLSOptions` machinery needs a server-only variant,
+  since `SyncListener` currently requests a client certificate at handshake).
+- Disjoint capability surfaces: the remote-control listener must never gain
+  file-serving routes, and SyncServer must never gain mutation routes.
+
+Two details below are superseded by what shipped: identity generation should be
+P-256 (drop the RSA-2048 alternative) to match `SelfSignedCert`, and the
+WebSocket layer remains genuinely new work, as SyncServer has no WebSocket
+support to reuse.
+
 ## Goal
 
 Turn Bòcan into a controllable player that companion apps (iOS, iPadOS, Android)
