@@ -9,21 +9,45 @@ import SwiftUI
 /// read-only original never needed: add, edit, and delete.
 public struct RadioView: View {
     public let library: LibraryViewModel
+    /// The toolbar search query, passed as a value so a keystroke re-renders
+    /// this view without it observing the whole library view model.
+    public let searchQuery: String
 
     @StateObject private var vm: RadioViewModel
     @State private var infoContext: LibraryViewModel.RadioStationInfoContext?
     @State private var sheetMode: RadioStationSheetMode?
     @State private var stationToDelete: RadioStation?
 
-    public init(library: LibraryViewModel) {
+    public init(library: LibraryViewModel, searchQuery: String) {
         self.library = library
+        self.searchQuery = searchQuery
         self._vm = StateObject(wrappedValue: RadioViewModel(repository: library.radioStations))
+    }
+
+    /// The stations surviving the active search filter: matched on name,
+    /// stream URL, and home page, since a station is often best remembered
+    /// by its host.
+    private var visibleStations: [RadioStation] {
+        let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return self.vm.stations }
+        return self.vm.stations.filter { station in
+            station.name.localizedCaseInsensitiveContains(query)
+                || station.streamURL.localizedCaseInsensitiveContains(query)
+                || (station.homePageURL?.localizedCaseInsensitiveContains(query) ?? false)
+        }
     }
 
     public var body: some View {
         Group {
             if self.vm.stations.isEmpty {
                 self.emptyState
+            } else if self.visibleStations.isEmpty {
+                let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
+                EmptyState(
+                    symbol: "magnifyingglass",
+                    title: L10n.string("No Results"),
+                    message: L10n.string("No stations match \u{201C}\(query)\u{201D}.")
+                )
             } else {
                 self.stationList
             }
@@ -95,7 +119,7 @@ public struct RadioView: View {
             get: { self.vm.selectedStationID },
             set: { self.vm.selectedStationID = $0 }
         )) {
-            ForEach(self.vm.stations) { station in
+            ForEach(self.visibleStations) { station in
                 RadioStationRow(
                     station: station,
                     onPlay: { self.play(station) },

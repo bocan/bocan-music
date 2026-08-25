@@ -15,6 +15,9 @@ import SwiftUI
 /// one row of text more than a section header.
 struct ContinueListeningRail: View {
     @ObservedObject var vm: PodcastsViewModel
+    /// The cards to show: `vm.continueListening`, already run through the home
+    /// view's search filter so the rail obeys the toolbar query too.
+    let items: [ContinueListeningItem]
 
     /// Card artwork side; ~0.25x of `Theme.albumGridMinWidth` grid art.
     private static let artSize: CGFloat = 44
@@ -28,7 +31,7 @@ struct ContinueListeningRail: View {
                 .padding(.horizontal, 16)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    ForEach(self.vm.continueListening) { item in
+                    ForEach(self.items) { item in
                         ContinueListeningCard(item: item, artSize: Self.artSize)
                             .frame(width: Self.cardWidth)
                             .contentShape(Rectangle())

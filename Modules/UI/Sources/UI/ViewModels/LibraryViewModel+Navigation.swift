@@ -174,7 +174,10 @@ extension LibraryViewModel {
     /// when it is a plausible container of the current drill-down (an album
     /// opened from its artist returns to that artist, popping history so
     /// mouse-forward still returns to the album), and falls back to the
-    /// structural parent otherwise. Returns false at section roots so the
+    /// structural parent otherwise. At a section root with an active search,
+    /// Esc clears the filter instead — the field's own Esc handling only
+    /// works while it has focus, and a filter you can't dismiss reads as
+    /// broken. Returns false only when there is nothing left to peel, so the
     /// caller can pass the event through.
     @discardableResult
     public func drillOutToParent() -> Bool {
@@ -183,8 +186,12 @@ extension LibraryViewModel {
             Task { await self.goBack() }
             return true
         }
-        guard let parent = Self.parentDestination(of: current) else { return false }
-        Task { await self.selectDestination(parent) }
+        if let parent = Self.parentDestination(of: current) {
+            Task { await self.selectDestination(parent) }
+            return true
+        }
+        guard !self.searchQuery.isEmpty else { return false }
+        self.searchQuery = ""
         return true
     }
 

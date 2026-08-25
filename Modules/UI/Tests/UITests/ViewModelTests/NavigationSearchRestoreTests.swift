@@ -73,6 +73,29 @@ struct NavigationSearchRestoreTests {
     }
 
     @MainActor
+    @Test("drilling into a genre, composer, or podcast show clears the query")
+    func collectionDrillInsClear() async throws {
+        let vm = try await self.makeVM()
+
+        await vm.selectDestination(.genres)
+        vm.searchQuery = "rock"
+        await vm.selectDestination(.genre("Post-Rock"))
+        #expect(vm.searchQuery.isEmpty, "a genre page must not inherit the list filter")
+        await vm.goBack()
+        #expect(vm.searchQuery == "rock")
+
+        await vm.selectDestination(.composers)
+        vm.searchQuery = "arvo"
+        await vm.selectDestination(.composer("Arvo Pärt"))
+        #expect(vm.searchQuery.isEmpty)
+
+        await vm.selectDestination(.podcasts)
+        vm.searchQuery = "atp"
+        await vm.selectDestination(.podcastShow(7))
+        #expect(vm.searchQuery.isEmpty, "the show's own name must not carry in as an episode filter")
+    }
+
+    @MainActor
     @Test("back from an unfiltered browse restores an empty query")
     func emptyQueryRestores() async throws {
         let vm = try await self.makeVM()

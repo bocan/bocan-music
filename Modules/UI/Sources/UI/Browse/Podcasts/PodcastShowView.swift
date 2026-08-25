@@ -9,15 +9,20 @@ public struct PodcastShowView: View {
     @ObservedObject public var vm: PodcastsViewModel
     public var library: LibraryViewModel
     public var podcastID: Int64
+    /// The toolbar search query, passed as a value so a keystroke re-renders
+    /// this view without it observing the whole library view model. Cleared
+    /// on drill-in, so it only carries what the user types while here.
+    public var searchQuery: String
 
     @State private var showingUnsubscribeConfirm = false
     @State private var pendingFunding: FundingLink?
     @State private var showingSettings = false
 
-    public init(vm: PodcastsViewModel, library: LibraryViewModel, podcastID: Int64) {
+    public init(vm: PodcastsViewModel, library: LibraryViewModel, podcastID: Int64, searchQuery: String) {
         self.vm = vm
         self.library = library
         self.podcastID = podcastID
+        self.searchQuery = searchQuery
     }
 
     public var body: some View {
@@ -28,7 +33,7 @@ public struct PodcastShowView: View {
                     .padding(.vertical, 8)
                 Divider()
             }
-            EpisodeList(vm: self.vm, library: self.library)
+            EpisodeList(vm: self.vm, library: self.library, searchQuery: self.searchQuery)
         }
         .task { await self.vm.loadShow(self.podcastID) }
         .navigationTitle(self.vm.currentShow?.title ?? L10n.string("Podcast"))

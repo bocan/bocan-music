@@ -6,6 +6,9 @@ import SwiftUI
 /// Lists all genres in the library.  Selecting a genre pushes a track list.
 public struct GenresView: View {
     public var library: LibraryViewModel
+    /// The toolbar search query, passed as a value so a keystroke re-renders
+    /// this view without it observing the whole library view model.
+    public var searchQuery: String
 
     @State private var genres: [String] = []
     @State private var trackCounts: [String: Int] = [:]
@@ -20,8 +23,16 @@ public struct GenresView: View {
     /// writes reliably redraw this listing (ADR-074).
     @CollectionViewModeStorage("genres.viewMode") private var viewMode
 
-    public init(library: LibraryViewModel) {
+    public init(library: LibraryViewModel, searchQuery: String) {
         self.library = library
+        self.searchQuery = searchQuery
+    }
+
+    /// The genres surviving the active search filter, in display order.
+    private var visibleGenres: [String] {
+        let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return self.genres }
+        return self.genres.filter { $0.localizedCaseInsensitiveContains(query) }
     }
 
     public var body: some View {
@@ -34,6 +45,13 @@ public struct GenresView: View {
                     symbol: "tag",
                     title: L10n.string("No Genres"),
                     message: L10n.string("No genre tags found in your library.")
+                )
+            } else if self.visibleGenres.isEmpty {
+                let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
+                EmptyState(
+                    symbol: "magnifyingglass",
+                    title: L10n.string("No Results"),
+                    message: L10n.string("No genres match \u{201C}\(query)\u{201D}.")
                 )
             } else if self.viewMode == .grid {
                 self.genreGrid
@@ -70,7 +88,7 @@ public struct GenresView: View {
     /// uses so the SortMenu reorders both modes identically.
     private var genreGrid: some View {
         CollectionCardGrid(
-            models: self.genres.map { name in
+            models: self.visibleGenres.map { name in
                 let data = self.cardData[name]
                 return CollectionCardModel(
                     id: name,
@@ -116,7 +134,7 @@ public struct GenresView: View {
     }
 
     private var genreListContent: some View {
-        List(self.genres, id: \.self) { genre in
+        List(self.visibleGenres, id: \.self) { genre in
             CollectionListRow(name: genre, symbol: "tag.fill", songCount: self.trackCounts[genre])
                 .contentShape(Rectangle())
                 .onTapGesture {

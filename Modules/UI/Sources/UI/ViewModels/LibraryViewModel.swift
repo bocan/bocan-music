@@ -987,12 +987,15 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.canGoForward = false
         }
 
-        // Clear search when drilling into a detail page (album or artist —
-        // local or Subsonic — and other concrete destinations).
+        // Clear search when drilling into a detail page (album, artist, genre,
+        // composer, podcast show — local or Subsonic — and other concrete
+        // destinations). Without this, opening a show from a filtered grid
+        // would carry the show's own name in as an episode filter.
         // For top-level browse views (songs/albums/artists/etc) keep the active
         // query so the new view shows filtered results immediately.
         switch destination {
         case .album, .artist, .playlist, .smartPlaylist, .folder,
+             .genre, .composer, .podcastShow,
              .subsonicAlbum, .subsonicArtist:
             self.searchQuery = ""
 

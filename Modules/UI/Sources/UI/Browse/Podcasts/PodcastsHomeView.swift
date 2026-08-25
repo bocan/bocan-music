@@ -1,4 +1,5 @@
 import AppKit
+import Persistence
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -12,6 +13,11 @@ import UniformTypeIdentifiers
 public struct PodcastsHomeView: View {
     @ObservedObject public var vm: PodcastsViewModel
     public var library: LibraryViewModel
+    /// The toolbar search query, passed as a value so a keystroke re-renders
+    /// this view without it observing the whole library view model. Filters
+    /// what the user already has (shows and the Continue Listening rail);
+    /// the Add bar below searches the directories for new shows.
+    public var searchQuery: String
 
     /// Identifiable wrapper so the import sheet is driven by `.sheet(item:)`: the
     /// content is built with the URL present from the first frame, so the sheet
@@ -28,9 +34,34 @@ public struct PodcastsHomeView: View {
     @State private var importFile: OPMLImportFile?
     @State private var showingMarkAllConfirm = false
 
-    public init(vm: PodcastsViewModel, library: LibraryViewModel) {
+    public init(vm: PodcastsViewModel, library: LibraryViewModel, searchQuery: String) {
         self.vm = vm
         self.library = library
+        self.searchQuery = searchQuery
+    }
+
+    private var trimmedQuery: String {
+        self.searchQuery.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Subscribed shows surviving the search filter, matched on title and author.
+    private var visibleShows: [Podcast] {
+        let query = self.trimmedQuery
+        guard !query.isEmpty else { return self.vm.subscribed }
+        return self.vm.subscribed.filter { show in
+            show.title.localizedCaseInsensitiveContains(query)
+                || (show.author?.localizedCaseInsensitiveContains(query) ?? false)
+        }
+    }
+
+    /// Rail items surviving the search filter, matched on episode and show title.
+    private var visibleContinueListening: [ContinueListeningItem] {
+        let query = self.trimmedQuery
+        guard !query.isEmpty else { return self.vm.continueListening }
+        return self.vm.continueListening.filter { item in
+            item.episodeTitle.localizedCaseInsensitiveContains(query)
+                || item.showTitle.localizedCaseInsensitiveContains(query)
+        }
     }
 
     public var body: some View {
@@ -41,15 +72,21 @@ public struct PodcastsHomeView: View {
                 if self.vm.searchState == .idle {
                     if self.vm.subscribed.isEmpty {
                         PodcastsEmptyState()
+                    } else if self.visibleShows.isEmpty, self.visibleContinueListening.isEmpty {
+                        EmptyState(
+                            symbol: "magnifyingglass",
+                            title: L10n.string("No Results"),
+                            message: L10n.string("No podcasts match \u{201C}\(self.trimmedQuery)\u{201D}.")
+                        )
                     } else {
                         VStack(spacing: 0) {
                             // Structural empty handling (ADR-054): when the rail
                             // array is empty, it and its divider leave the tree.
-                            if !self.vm.continueListening.isEmpty {
-                                ContinueListeningRail(vm: self.vm)
+                            if !self.visibleContinueListening.isEmpty {
+                                ContinueListeningRail(vm: self.vm, items: self.visibleContinueListening)
                                 Divider()
                             }
-                            PodcastsGridView(vm: self.vm, library: self.library)
+                            PodcastsGridView(vm: self.vm, library: self.library, shows: self.visibleShows)
                         }
                     }
                 } else {
