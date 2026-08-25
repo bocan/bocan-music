@@ -73,7 +73,7 @@
   },
   {
     "title": "Back means back.",
-    "body": "Toolbar chevrons, ⌘[ and ⌘], mouse thumb buttons, and Esc all walk your browse history like a browser. Coming back restores your scroll position and your search filter, so stepping out of an album lands you exactly where you were, still filtered, text intact. And with nothing left to step out of, Esc clears the filter itself."
+    "body": "Toolbar chevrons, ⌘[ and ⌘], mouse thumb buttons, and Esc all walk your browse history like a browser. Coming back restores your scroll position and your search filter, so stepping out of an album lands you exactly where you were, still filtered, text intact. And with nothing left to step out of, Esc clears the filter itself and drops you back where you were before you started typing."
   },
   {
     "title": "A library that audits itself.",

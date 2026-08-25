@@ -72,10 +72,10 @@ public struct ContentPane: View {
             )
 
         case .albums:
-            AlbumsGridView(vm: self.vm.albums, library: self.vm)
+            AlbumsGridView(vm: self.vm.albums, library: self.vm, searchQuery: self.vm.searchQuery)
 
         case .artists:
-            ArtistsView(vm: self.vm.artists, library: self.vm)
+            ArtistsView(vm: self.vm.artists, library: self.vm, searchQuery: self.vm.searchQuery)
 
         case .genres:
             GenresView(library: self.vm, searchQuery: self.vm.searchQuery)

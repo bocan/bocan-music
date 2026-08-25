@@ -62,7 +62,7 @@ struct ArtistsViewModeConventionTests {
             "grid content must be gated on the persisted view mode"
         )
         #expect(
-            source.contains("ArtistsGridContent(vm: self.vm, library: self.library)"),
+            source.contains("ArtistsGridContent(vm: self.vm, library: self.library, searchQuery: self.searchQuery)"),
             "grid mode must render ArtistsGridContent"
         )
     }

@@ -13,6 +13,9 @@ import SwiftUI
 struct ArtistsGridContent: View {
     @ObservedObject var vm: ArtistsViewModel
     var library: LibraryViewModel
+    /// The toolbar search query, passed as a value so the grid's pre-search
+    /// scroll anchor sees every transition (#399).
+    var searchQuery: String
 
     var body: some View {
         CollectionCardGrid(
@@ -24,7 +27,8 @@ struct ArtistsGridContent: View {
             scrollOffset: Binding(
                 get: { self.vm.gridScrollOffset },
                 set: { self.vm.gridScrollOffset = $0 }
-            )
+            ),
+            searchQuery: self.searchQuery
         )
     }
 

@@ -108,7 +108,8 @@ public struct GenresView: View {
             scrollOffset: Binding(
                 get: { self.library.genreGridScrollOffset },
                 set: { self.library.genreGridScrollOffset = $0 }
-            )
+            ),
+            searchQuery: self.searchQuery
         )
     }
 

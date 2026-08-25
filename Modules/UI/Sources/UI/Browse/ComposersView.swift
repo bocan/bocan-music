@@ -108,7 +108,8 @@ public struct ComposersView: View {
             scrollOffset: Binding(
                 get: { self.library.composerGridScrollOffset },
                 set: { self.library.composerGridScrollOffset = $0 }
-            )
+            ),
+            searchQuery: self.searchQuery
         )
     }
 

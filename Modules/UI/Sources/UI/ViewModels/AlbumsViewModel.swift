@@ -18,6 +18,12 @@ public final class AlbumsViewModel: ObservableObject {
     /// `var`, not `@Published`: it must not trigger a re-render.
     public var gridScrollOffset: Double = 0
 
+    /// Where the user was in the full gallery when the current search began,
+    /// so clearing the query lands back there (#399). Lives here rather than
+    /// in view `@State` so it survives a drill-in/back round trip mid-search.
+    /// Plain `var` for the same no-re-render reason as `gridScrollOffset`.
+    public var preSearchScrollOffset: Double?
+
     /// Maps artist ID → artist name, loaded alongside albums.
     @Published public private(set) var artistNames: [Int64: String] = [:]
 
