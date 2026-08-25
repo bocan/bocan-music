@@ -311,6 +311,9 @@ public struct ArtistDetailView: View {
 public struct ArtistsView: View {
     @ObservedObject public var vm: ArtistsViewModel
     public var library: LibraryViewModel
+    /// The toolbar search query, passed as a value so every keystroke reaches
+    /// the grid's pre-search scroll anchor (#399).
+    public var searchQuery: String
 
     /// List vs grid, persisted per section; defaults to `.list` so today's
     /// behaviour is unchanged until the user opts into the grid (ADR-072).
@@ -318,9 +321,10 @@ public struct ArtistsView: View {
     /// reliably redraw this listing; see that wrapper's note (ADR-074).
     @CollectionViewModeStorage("artists.viewMode") private var viewMode
 
-    public init(vm: ArtistsViewModel, library: LibraryViewModel) {
+    public init(vm: ArtistsViewModel, library: LibraryViewModel, searchQuery: String) {
         self.vm = vm
         self.library = library
+        self.searchQuery = searchQuery
     }
 
     public var body: some View {
@@ -360,7 +364,7 @@ public struct ArtistsView: View {
                     }
                 }
             } else if self.viewMode == .grid {
-                ArtistsGridContent(vm: self.vm, library: self.library)
+                ArtistsGridContent(vm: self.vm, library: self.library, searchQuery: self.searchQuery)
             } else {
                 self.artistList
             }

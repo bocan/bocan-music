@@ -159,6 +159,10 @@ public struct AlbumsGridView: View {
     /// Optional navigation title override. Defaults to "Albums"; the filtered
     /// genre/composer album destinations pass the collection name (ADR-074).
     private let titleOverride: String?
+    /// The toolbar search query, passed as a value so every keystroke reaches
+    /// the pre-search scroll anchor (#399). The genre/composer album grids
+    /// keep the default: their query is cleared on drill-in.
+    private let searchQuery: String
     /// ADR-005 audit L3: Cmd-click multi-select for albums.
     @State private var selection: Set<Int64> = []
     /// ADR-006: keyboard focus — which album cell has keyboard focus.
@@ -174,10 +178,11 @@ public struct AlbumsGridView: View {
     /// Scales the minimum album cell width proportionally to the user's text size setting.
     @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
 
-    public init(vm: AlbumsViewModel, library: LibraryViewModel, title: String? = nil) {
+    public init(vm: AlbumsViewModel, library: LibraryViewModel, title: String? = nil, searchQuery: String = "") {
         self.vm = vm
         self.library = library
         self.titleOverride = title
+        self.searchQuery = searchQuery
     }
 
     private var columns: [GridItem] {
@@ -216,6 +221,31 @@ public struct AlbumsGridView: View {
             ToolbarItem(placement: .primaryAction) {
                 self.sortMenu
             }
+        }
+        // On the body root, not the grid, so a clear that happens while the
+        // "No Results" state is showing (grid unmounted) still restores.
+        .onChange(of: self.searchQuery) { old, new in
+            self.handleSearchTransition(old: old, new: new)
+        }
+    }
+
+    /// A search beginning snapshots where the user was in the full gallery and
+    /// shows the filtered results from the top; the query clearing in place
+    /// (Esc, backspace, the field's clear button) hands the snapshot to the
+    /// #349 restore path, which lands the reloaded full gallery back on it
+    /// (#399). The anchor lives on the view model, so the round trip of
+    /// drilling into a filtered result and Esc-ing all the way out still ends
+    /// where the search began.
+    private func handleSearchTransition(old: String, new: String) {
+        let wasActive = !old.trimmingCharacters(in: .whitespaces).isEmpty
+        let isActive = !new.trimmingCharacters(in: .whitespaces).isEmpty
+        if !wasActive, isActive {
+            self.vm.preSearchScrollOffset = Double(self.liveScrollOffset)
+            self.vm.gridScrollOffset = 0
+            self.scrollPosition.scrollTo(edge: .top)
+        } else if wasActive, !isActive {
+            self.vm.gridScrollOffset = self.vm.preSearchScrollOffset ?? 0
+            self.vm.preSearchScrollOffset = nil
         }
     }
 
@@ -323,9 +353,13 @@ public struct AlbumsGridView: View {
             }
             // Restore the saved offset when the grid (re)appears. .scrollPosition
             // applies it once the content has laid out, so it survives the reload
-            // on the way back; also re-apply when the list reloads.
+            // on the way back; also re-apply when the list reloads — unless the
+            // reload is filtered results, which read from the top (#399).
             .onAppear { self.restoreScrollOffset() }
-            .onChange(of: self.vm.albums.map(\.id)) { _, _ in self.restoreScrollOffset() }
+            .onChange(of: self.vm.albums.map(\.id)) { _, _ in
+                guard self.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                self.restoreScrollOffset()
+            }
         }
     }
 

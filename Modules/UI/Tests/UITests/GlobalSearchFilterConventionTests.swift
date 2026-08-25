@@ -82,3 +82,71 @@ struct GlobalSearchFilterConventionTests {
         }
     }
 }
+
+// MARK: - PreSearchScrollAnchorConventionTests
+
+/// Clearing a search in place returns the gallery to where the user was when
+/// the search began, instead of the top (#399). Scroll behaviour cannot be
+/// exercised host-less, so these pin the structural wiring: the transitions
+/// are detected, the anchor is snapshotted and consumed, and filtered reloads
+/// never re-apply the drill-in offset.
+@Suite("Pre-search scroll anchor source conventions")
+struct PreSearchScrollAnchorConventionTests {
+    private func source(_ relativePath: String) throws -> String {
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent(relativePath)
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    @Test("the albums grid snapshots on search begin and hands back on clear")
+    func albumsGridAnchor() throws {
+        let source = try self.source("Sources/UI/Browse/AlbumsGridView.swift")
+        #expect(source.contains("self.vm.preSearchScrollOffset = Double(self.liveScrollOffset)"))
+        #expect(source.contains("self.vm.gridScrollOffset = self.vm.preSearchScrollOffset ?? 0"))
+        #expect(
+            source.contains(".onChange(of: self.searchQuery)"),
+            "the transition hook must watch the query, so Esc, backspace, and the clear button all restore"
+        )
+    }
+
+    @Test("the albums anchor lives on the view model, surviving drill-in and back")
+    func anchorSurvivesRemount() throws {
+        let source = try self.source("Sources/UI/ViewModels/AlbumsViewModel.swift")
+        #expect(
+            source.contains("public var preSearchScrollOffset: Double?"),
+            "view @State would be lost when a drill-in unmounts the grid mid-search"
+        )
+    }
+
+    @Test("the card grid owns the same transition for Artists, Genres, and Composers")
+    func cardGridAnchor() throws {
+        let grid = try self.source("Sources/UI/Components/CollectionCardGrid.swift")
+        #expect(grid.contains("self.preSearchOffset = Double(self.liveScrollOffset)"))
+        #expect(grid.contains("self.scrollOffset = anchor"))
+        for caller in [
+            "Sources/UI/Browse/GenresView.swift",
+            "Sources/UI/Browse/ComposersView.swift",
+            "Sources/UI/Browse/ArtistsGridContent.swift",
+        ] {
+            let source = try self.source(caller)
+            #expect(
+                source.contains("searchQuery: self.searchQuery"),
+                "\(caller) must thread the live query into CollectionCardGrid"
+            )
+        }
+    }
+
+    @Test("filtered reloads never re-apply the drill-in scroll offset")
+    func filteredReloadsReadFromTop() throws {
+        let albums = try self.source("Sources/UI/Browse/AlbumsGridView.swift")
+        let albumsGuard = try #require(albums.range(of:
+            "guard self.searchQuery.trimmingCharacters(in: .whitespaces).isEmpty else { return }"))
+        let albumsRestore = try #require(albums.range(of: "self.restoreScrollOffset()", range: albumsGuard.upperBound ..< albums.endIndex))
+        #expect(albumsGuard.upperBound <= albumsRestore.lowerBound)
+        let grid = try self.source("Sources/UI/Components/CollectionCardGrid.swift")
+        #expect(grid.contains("guard self.trimmedQuery.isEmpty else { return }"))
+    }
+}
