@@ -10,6 +10,9 @@ import SwiftUI
 struct PodcastsGridView: View {
     @ObservedObject var vm: PodcastsViewModel
     var library: LibraryViewModel
+    /// The cells to show: `vm.subscribed`, already run through the home view's
+    /// search filter so the grid obeys the toolbar query.
+    var shows: [Podcast]
 
     @ScaledMetric(relativeTo: .body) private var scaledMinWidth = Theme.albumGridMinWidth
 
@@ -36,7 +39,7 @@ struct PodcastsGridView: View {
     var body: some View {
         ScrollView {
             LazyVGrid(columns: self.columns, spacing: Theme.albumGridSpacing) {
-                ForEach(self.vm.subscribed, id: \.feedURL) { podcast in
+                ForEach(self.shows, id: \.feedURL) { podcast in
                     PodcastCell(
                         podcast: podcast,
                         episodeCount: podcast.id.flatMap { self.vm.podcastEpisodeCounts[$0] },

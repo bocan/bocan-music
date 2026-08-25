@@ -78,10 +78,10 @@ public struct ContentPane: View {
             ArtistsView(vm: self.vm.artists, library: self.vm)
 
         case .genres:
-            GenresView(library: self.vm)
+            GenresView(library: self.vm, searchQuery: self.vm.searchQuery)
 
         case .composers:
-            ComposersView(library: self.vm)
+            ComposersView(library: self.vm, searchQuery: self.vm.searchQuery)
 
         case .recentlyAdded, .recentlyPlayed, .mostPlayed:
             SmartFolderView(vm: self.vm.tracks, library: self.vm, destination: self.vm.selectedDestination)
@@ -335,13 +335,18 @@ public struct ContentPane: View {
             }
 
         case .podcasts:
-            PodcastsHomeView(vm: self.vm.podcasts, library: self.vm)
+            PodcastsHomeView(vm: self.vm.podcasts, library: self.vm, searchQuery: self.vm.searchQuery)
 
         case let .podcastShow(id):
-            PodcastShowView(vm: self.vm.podcasts, library: self.vm, podcastID: id)
+            PodcastShowView(
+                vm: self.vm.podcasts,
+                library: self.vm,
+                podcastID: id,
+                searchQuery: self.vm.searchQuery
+            )
 
         case .radio:
-            RadioView(library: self.vm)
+            RadioView(library: self.vm, searchQuery: self.vm.searchQuery)
         }
     }
 

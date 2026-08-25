@@ -22,7 +22,7 @@ extension UISnapshotTests {
         @Test("RadioView empty state light mode")
         func emptyStateLight() async throws {
             let libVM = try await makeLibVM()
-            let view = RadioView(library: libVM)
+            let view = RadioView(library: libVM, searchQuery: "")
                 .frame(width: 700, height: 480)
             assertSnapshot(
                 of: host(view, size: self.size),
@@ -34,7 +34,7 @@ extension UISnapshotTests {
         @Test("RadioView empty state dark mode")
         func emptyStateDark() async throws {
             let libVM = try await makeLibVM()
-            let view = RadioView(library: libVM)
+            let view = RadioView(library: libVM, searchQuery: "")
                 .frame(width: 700, height: 480)
                 .colorScheme(.dark)
             assertSnapshot(

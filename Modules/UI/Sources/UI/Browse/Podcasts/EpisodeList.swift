@@ -8,6 +8,9 @@ struct EpisodeList: View {
     @ObservedObject var vm: PodcastsViewModel
     /// Used to open podroll recommendations from the show notes sheet.
     var library: LibraryViewModel
+    /// The toolbar search query. Applied alongside the local filter field so
+    /// type-to-search filters episodes here like everywhere else.
+    var searchQuery: String
 
     @State private var selection = Set<EpisodeListItem.ID>()
     @State private var filterText = ""
@@ -15,9 +18,12 @@ struct EpisodeList: View {
     @State private var showingTranscript = false
 
     private var filtered: [EpisodeListItem] {
-        guard !self.filterText.isEmpty else { return self.vm.episodes }
-        return self.vm.episodes.filter {
-            $0.episode.title.localizedCaseInsensitiveContains(self.filterText)
+        let global = self.searchQuery.trimmingCharacters(in: .whitespaces)
+        guard !self.filterText.isEmpty || !global.isEmpty else { return self.vm.episodes }
+        return self.vm.episodes.filter { item in
+            let title = item.episode.title
+            return (self.filterText.isEmpty || title.localizedCaseInsensitiveContains(self.filterText))
+                && (global.isEmpty || title.localizedCaseInsensitiveContains(global))
         }
     }
 

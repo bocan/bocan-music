@@ -41,12 +41,14 @@ struct NavigationInputBackground: View {
 /// - **Esc** (`keyDown`, key code 53) backs out of a drill-down to its
 ///   structural parent, deliberately *not* history-back: history can cross
 ///   sidebar sections, and Esc teleporting the user around would feel broken.
+///   At a section root it clears an active search filter instead, so Esc
+///   always peels one layer regardless of where keyboard focus sits.
 ///
 /// Guards keep every other interaction intact: only the window hosting this
 /// view reacts; sheets, popovers, and other windows keep their own handling;
 /// Esc passes through while a text view has focus (search exit, rename
 /// cancel), in full screen (so fullscreen-exit still works), and whenever
-/// there is no drill-down to leave.
+/// there is no drill-down to leave and no filter to clear.
 struct NavigationInputMonitor: NSViewRepresentable {
     enum HistoryDirection {
         case back

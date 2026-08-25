@@ -23,9 +23,18 @@ struct ContinueListeningRailConventionTests {
     @Test("home view mounts the rail gated on a non-empty check")
     func homeViewGatesRail() throws {
         let source = try self.source("Sources/UI/Browse/Podcasts/PodcastsHomeView.swift")
-        let gate = try #require(source.range(of: "!self.vm.continueListening.isEmpty"))
+        let gate = try #require(source.range(of: "!self.visibleContinueListening.isEmpty"))
         let mount = try #require(source.range(of: "ContinueListeningRail(vm:"))
         #expect(gate.lowerBound < mount.lowerBound, "the empty rail must leave the tree entirely")
+    }
+
+    @Test("rail cards obey the toolbar search filter")
+    func railObeysSearchFilter() throws {
+        let home = try self.source("Sources/UI/Browse/Podcasts/PodcastsHomeView.swift")
+        #expect(home.contains("item.episodeTitle.localizedCaseInsensitiveContains(query)"))
+        #expect(home.contains("item.showTitle.localizedCaseInsensitiveContains(query)"))
+        let rail = try self.source("Sources/UI/Browse/Podcasts/ContinueListeningRail.swift")
+        #expect(rail.contains("ForEach(self.items)"), "the rail must render the filtered items, not the raw VM array")
     }
 
     @Test("rail scrolls horizontally and routes taps to resume")

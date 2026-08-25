@@ -27,7 +27,7 @@ extension UISnapshotTests {
         func emptyStateLight() async throws {
             let libVM = try await makeLibVM()
             let vm = self.makeVM()
-            let view = PodcastsHomeView(vm: vm, library: libVM)
+            let view = PodcastsHomeView(vm: vm, library: libVM, searchQuery: "")
                 .frame(width: 700, height: 480)
             assertSnapshot(
                 of: host(view, size: self.size),
@@ -40,7 +40,7 @@ extension UISnapshotTests {
         func emptyStateDark() async throws {
             let libVM = try await makeLibVM()
             let vm = self.makeVM()
-            let view = PodcastsHomeView(vm: vm, library: libVM)
+            let view = PodcastsHomeView(vm: vm, library: libVM, searchQuery: "")
                 .frame(width: 700, height: 480)
                 .colorScheme(.dark)
             assertSnapshot(

@@ -6,6 +6,9 @@ import SwiftUI
 /// Lists all composers in the library.  Selecting one pushes a track list.
 public struct ComposersView: View {
     public var library: LibraryViewModel
+    /// The toolbar search query, passed as a value so a keystroke re-renders
+    /// this view without it observing the whole library view model.
+    public var searchQuery: String
 
     @State private var composers: [String] = []
     @State private var trackCounts: [String: Int] = [:]
@@ -20,8 +23,16 @@ public struct ComposersView: View {
     /// writes reliably redraw this listing (ADR-074).
     @CollectionViewModeStorage("composers.viewMode") private var viewMode
 
-    public init(library: LibraryViewModel) {
+    public init(library: LibraryViewModel, searchQuery: String) {
         self.library = library
+        self.searchQuery = searchQuery
+    }
+
+    /// The composers surviving the active search filter, in display order.
+    private var visibleComposers: [String] {
+        let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return self.composers }
+        return self.composers.filter { $0.localizedCaseInsensitiveContains(query) }
     }
 
     public var body: some View {
@@ -34,6 +45,13 @@ public struct ComposersView: View {
                     symbol: "music.note.list",
                     title: L10n.string("No Composers"),
                     message: L10n.string("No composer tags found in your library.")
+                )
+            } else if self.visibleComposers.isEmpty {
+                let query = self.searchQuery.trimmingCharacters(in: .whitespaces)
+                EmptyState(
+                    symbol: "magnifyingglass",
+                    title: L10n.string("No Results"),
+                    message: L10n.string("No composers match \u{201C}\(query)\u{201D}.")
                 )
             } else if self.viewMode == .grid {
                 self.composerGrid
@@ -70,7 +88,7 @@ public struct ComposersView: View {
     /// list uses so the SortMenu reorders both modes identically.
     private var composerGrid: some View {
         CollectionCardGrid(
-            models: self.composers.map { name in
+            models: self.visibleComposers.map { name in
                 let data = self.cardData[name]
                 return CollectionCardModel(
                     id: name,
@@ -116,7 +134,7 @@ public struct ComposersView: View {
     }
 
     private var composerListContent: some View {
-        List(self.composers, id: \.self) { composer in
+        List(self.visibleComposers, id: \.self) { composer in
             CollectionListRow(name: composer, symbol: "music.note.list", songCount: self.trackCounts[composer])
                 .contentShape(Rectangle())
                 .onTapGesture {

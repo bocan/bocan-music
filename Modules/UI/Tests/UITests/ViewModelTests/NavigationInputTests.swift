@@ -150,6 +150,34 @@ struct NavigationInputTests {
         )
     }
 
+    @Test("Esc at a section root clears an active search, then passes through")
+    @MainActor
+    func rootEscClearsSearch() async throws {
+        let vm = try await self.makeVM()
+        await vm.selectDestination(.songs)
+        vm.searchQuery = "ulrich"
+
+        #expect(vm.drillOutToParent(), "the filter is the last layer to peel")
+        #expect(vm.searchQuery.isEmpty)
+
+        #expect(!vm.drillOutToParent(), "nothing left: the event must pass through")
+    }
+
+    @Test("Esc from a drill-down prefers navigation over clearing the query")
+    @MainActor
+    func drillOutWinsOverClear() async throws {
+        let vm = try await self.makeVM()
+        await vm.selectDestination(.albums)
+        await vm.selectDestination(.album(7))
+        vm.searchQuery = "typed inside the detail"
+
+        #expect(vm.drillOutToParent())
+        #expect(
+            try await self.awaitDestination(.albums, on: vm),
+            "a drill-down must navigate out first, not silently eat the query"
+        )
+    }
+
     // MARK: - Wiring
 
     @Test("RootView attaches the navigation input monitor")
