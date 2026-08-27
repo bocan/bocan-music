@@ -5,6 +5,24 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0](https://github.com/bocan/bocan-music/compare/v2.9.0...v2.10.0) (2026-08-27)
+
+Search works everywhere now as you'd expect it to. Until now, the search box only did anything in Songs, Albums, and Artists. Type in Genres, Composers, Radio, or Podcasts and it just sat there, dead. Now it filters every view it appears in: genre and composer lists, radio stations (by name or stream address), your podcast shows, the Continue Listening rail, and even the episode list inside a show. If nothing matches, you get a proper "no results" message instead of a mysteriously empty screen.
+
+Escape always does something sensible too. Esc now peels back one layer at a time, wherever your keyboard focus happens to be: inside an album, it steps you back out; on a filtered view, it clears the search. Previously Esc would only clear a search if the search box itself still had focus, which felt broken the moment you clicked anywhere else.
+
+And the rest. Updated docs, a security-scanner bump, and a sad note: in the README.md, we've marked Robert Kaye, founder of MusicBrainz and one of the giants Bòcan stands on, as "the late" in our credits as he passed earlier this year. His work powers the app's tagging, lookup, and scrobbling to this day.
+
+### Added
+
+* **ui:** make the toolbar search filter every browse view ([e171fff](https://github.com/bocan/bocan-music/commit/e171fffebb3a8a32b84fa8dbe6f5cc0da3f73407))
+* **ui:** restore the pre-search scroll position when a search clears ([9762dac](https://github.com/bocan/bocan-music/commit/9762dace8462452780c6e635d0292be36784ea3b))
+
+
+### Fixed
+
+* **tooling:** release-note cleanup no longer strands you on the bot branch ([3da96e4](https://github.com/bocan/bocan-music/commit/3da96e438fda86e555ae674dbd22a274d0e83e0b))
+
 ## [2.9.0](https://github.com/bocan/bocan-music/compare/v2.8.0...v2.9.0) (2026-08-22)
 
 Just a small one. The main fix is that history entries now carry the search query that was active alongside the destination. Drilling into a detail page still clears the search (the album page stays clean), but Esc / the mouse back button / the toolbar arrows restore the query the user left behind.
