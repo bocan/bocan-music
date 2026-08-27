@@ -5,6 +5,19 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0](https://github.com/bocan/bocan-music/compare/v2.9.0...v2.10.0) (2026-08-27)
+
+
+### Added
+
+* **ui:** make the toolbar search filter every browse view ([e171fff](https://github.com/bocan/bocan-music/commit/e171fffebb3a8a32b84fa8dbe6f5cc0da3f73407))
+* **ui:** restore the pre-search scroll position when a search clears ([9762dac](https://github.com/bocan/bocan-music/commit/9762dace8462452780c6e635d0292be36784ea3b))
+
+
+### Fixed
+
+* **tooling:** release-note cleanup no longer strands you on the bot branch ([3da96e4](https://github.com/bocan/bocan-music/commit/3da96e438fda86e555ae674dbd22a274d0e83e0b))
+
 ## [2.9.0](https://github.com/bocan/bocan-music/compare/v2.8.0...v2.9.0) (2026-08-22)
 
 Just a small one. The main fix is that history entries now carry the search query that was active alongside the destination. Drilling into a detail page still clears the search (the album page stays clean), but Esc / the mouse back button / the toolbar arrows restore the query the user left behind.
