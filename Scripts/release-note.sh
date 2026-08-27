@@ -92,9 +92,14 @@ git commit -m "chore: release notes"
 
 # --- Push to GitHub only -----------------------------------------------------
 git push "$GITHUB_URL" "$BRANCH"
+# Pushing by URL does not move the origin/$BRANCH tracking ref, and the
+# cleanup trap's unpushed-commit check reads that ref — without this fetch
+# it sees the just-pushed commit as unpushed and strands you on the branch.
+git fetch origin "$BRANCH" --quiet
 
 echo "✓ Note pushed to the release PR."
 if command -v gh >/dev/null 2>&1; then
-    gh pr list --head "$BRANCH" --json url --jq '.[0].url' 2>/dev/null || true
+    # GH_PAGER=cat: gh pages through less on a TTY, which clears the screen.
+    GH_PAGER=cat gh pr list --head "$BRANCH" --json url --jq '.[0].url' 2>/dev/null || true
 fi
 echo "Merge the PR when ready; the release workflow carries these notes into the GitHub release and the Sparkle prompt."
