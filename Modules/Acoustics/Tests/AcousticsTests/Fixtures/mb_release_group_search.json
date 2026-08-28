@@ -1,0 +1,51 @@
+{
+ "created": "2026-08-28T00:00:00.000Z",
+ "count": 2,
+ "offset": 0,
+ "release-groups": [
+  {
+   "id": "b84ee12a-09ef-3ab4-9d94-2c7e3a3ec1b0",
+   "score": 100,
+   "title": "Abbey Road",
+   "primary-type": "Album",
+   "first-release-date": "1969-09-26",
+   "artist-credit": [
+    {
+     "name": "The Beatles",
+     "artist": {
+      "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+      "name": "The Beatles",
+      "sort-name": "Beatles, The"
+     }
+    }
+   ],
+   "releases": [
+    {
+     "id": "d6010be3-98f8-422c-a6c9-787e2e491e58",
+     "title": "Abbey Road"
+    }
+   ]
+  },
+  {
+   "id": "4e2b2b6b-0000-4000-8000-000000000002",
+   "score": 61,
+   "title": "Abbey Road (Super Deluxe)",
+   "primary-type": "Album",
+   "secondary-types": [
+    "Compilation"
+   ],
+   "first-release-date": "2019-09-27",
+   "artist-credit": [
+    {
+     "name": "The Beatles",
+     "artist": {
+      "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+      "name": "The Beatles",
+      "sort-name": "Beatles, The"
+     }
+    }
+   ],
+   "releases": []
+  }
+ ]
+}

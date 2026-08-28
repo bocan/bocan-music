@@ -45,13 +45,13 @@ public actor FingerprintService {
         acoustIDAPIKey: String,
         userAgent: String = UserAgent.string
     ) {
-        // Single shared rate-limiter instances — one per service.
+        // AcoustID gets its own budget; MusicBrainz shares the process-wide
+        // 1 req/s limiter with cover-art search and Deep Dive (#412).
         let acoustIDLimiter = Acoustics.RateLimiter(maxRequests: 3, per: 1.0)
-        let mbLimiter = Acoustics.RateLimiter(maxRequests: 1, per: 1.0)
 
         self.fingerprinter = Fingerprinter(fpcalcURL: fpcalcURL)
         self.acoustidClient = AcoustIDClient(apiKey: acoustIDAPIKey, rateLimiter: acoustIDLimiter)
-        self.mbClient = Acoustics.MusicBrainzClient(userAgent: userAgent, rateLimiter: mbLimiter)
+        self.mbClient = Acoustics.MusicBrainzClient(userAgent: userAgent)
         self.store = FingerprintStore(database: database)
     }
 

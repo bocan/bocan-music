@@ -1,0 +1,112 @@
+{
+ "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+ "name": "The Beatles",
+ "sort-name": "Beatles, The",
+ "disambiguation": "",
+ "type": "Group",
+ "country": "GB",
+ "life-span": {
+  "begin": "1957-03",
+  "end": "1970-04-10",
+  "ended": true
+ },
+ "aliases": [],
+ "relations": [
+  {
+   "type": "wikidata",
+   "direction": "forward",
+   "url": {
+    "id": "u1",
+    "resource": "https://www.wikidata.org/wiki/Q1299"
+   }
+  },
+  {
+   "type": "discogs",
+   "direction": "forward",
+   "url": {
+    "id": "u2",
+    "resource": "https://www.discogs.com/artist/82730"
+   }
+  },
+  {
+   "type": "official homepage",
+   "direction": "forward",
+   "url": {
+    "id": "u3",
+    "resource": "https://www.thebeatles.com/"
+   }
+  },
+  {
+   "type": "member of band",
+   "direction": "backward",
+   "begin": "1960-08",
+   "end": "1970-04-10",
+   "ended": true,
+   "attributes": [
+    "bass",
+    "lead vocals"
+   ],
+   "artist": {
+    "id": "ba550d0e-adac-4864-b88b-407cab5e76af",
+    "name": "Paul McCartney"
+   }
+  },
+  {
+   "type": "member of band",
+   "direction": "backward",
+   "begin": "1957-03",
+   "end": "1970-04-10",
+   "ended": true,
+   "attributes": [
+    "guitar",
+    "lead vocals"
+   ],
+   "artist": {
+    "id": "4d5447d7-c61c-4120-ba1b-d7f471d385b9",
+    "name": "John Lennon"
+   }
+  },
+  {
+   "type": "member of band",
+   "direction": "backward",
+   "begin": "1962-08",
+   "end": "1970-04-10",
+   "ended": true,
+   "attributes": [
+    "drums"
+   ],
+   "artist": {
+    "id": "300c4c73-33ac-4255-9d57-4e32627f5e13",
+    "name": "Ringo Starr"
+   }
+  },
+  {
+   "type": "member of band",
+   "direction": "backward",
+   "begin": "1958-02",
+   "end": "1970-04-10",
+   "ended": true,
+   "attributes": [
+    "guitar"
+   ],
+   "artist": {
+    "id": "42a8f507-8412-4611-854f-926571049fa0",
+    "name": "George Harrison"
+   }
+  },
+  {
+   "type": "member of band",
+   "direction": "backward",
+   "begin": "1960-08",
+   "end": "1962-08",
+   "ended": true,
+   "attributes": [
+    "drums"
+   ],
+   "artist": {
+    "id": "f3bd7f47-5bd1-4d4e-8b33-1d4c8d2e6a2f",
+    "name": "Pete Best"
+   }
+  }
+ ]
+}

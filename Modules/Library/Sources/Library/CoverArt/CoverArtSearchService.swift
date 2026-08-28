@@ -1,10 +1,11 @@
+import Acoustics
 import Foundation
 import Observability
 import Persistence
 
 // MARK: - CoverArtSearchService
 
-/// Combines `MusicBrainzClient` + `CoverArtArchiveClient` into a single
+/// Combines the shared `Acoustics.MusicBrainzClient` (#412) + `CoverArtArchiveClient` into a single
 /// search → candidates flow.
 ///
 /// Strategy:
@@ -68,7 +69,7 @@ public actor CoverArtSearchService: CoverArtFetcher {
                         id: group.id + (img.id ?? ""),
                         releaseGroupID: group.id,
                         releaseID: nil,
-                        title: group.title,
+                        title: group.title ?? "",
                         artist: group.artistName,
                         year: group.year,
                         thumbnailURL: thumbURL,

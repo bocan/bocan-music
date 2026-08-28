@@ -1,3 +1,4 @@
+import Acoustics
 import Foundation
 import Observability
 
@@ -29,7 +30,7 @@ public actor CoverArtArchiveClient {
 
     /// Fetches the cover-art index for a release-group MBID.
     public func index(releaseGroupID mbid: String) async throws -> CAAIndex? {
-        await self.limiter.wait()
+        try await self.limiter.wait()
         let url = Self.baseURL
             .appendingPathComponent("release-group")
             .appendingPathComponent(mbid)
@@ -38,7 +39,7 @@ public actor CoverArtArchiveClient {
 
     /// Fetches the cover-art index for a release MBID.
     public func index(releaseID mbid: String) async throws -> CAAIndex? {
-        await self.limiter.wait()
+        try await self.limiter.wait()
         let url = Self.baseURL
             .appendingPathComponent("release")
             .appendingPathComponent(mbid)
@@ -50,7 +51,7 @@ public actor CoverArtArchiveClient {
     /// CAA's JSON API returns `http://` image URLs despite the service supporting HTTPS.
     /// We upgrade to `https://` unconditionally so ATS doesn't block the request.
     public func download(imageURL: URL) async throws -> Data {
-        await self.limiter.wait()
+        try await self.limiter.wait()
         let secureURL = Self.upgradeToHTTPS(imageURL)
         self.log.debug("caa.download", ["url": secureURL.path])
         let (data, _) = try await self.session.data(from: secureURL)

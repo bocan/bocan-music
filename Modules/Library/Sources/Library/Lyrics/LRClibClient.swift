@@ -1,3 +1,4 @@
+import Acoustics
 import Foundation
 import Metadata
 import Observability
@@ -59,7 +60,7 @@ public actor LRClibClient: LRClibClientProtocol {
         album: String?,
         duration: TimeInterval
     ) async throws -> LyricsDocument? {
-        await self.limiter.wait()
+        try await self.limiter.wait()
 
         var components = URLComponents(url: Self.baseURL.appendingPathComponent("get"), resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = [
@@ -84,7 +85,7 @@ public actor LRClibClient: LRClibClientProtocol {
         title: String?,
         album: String?
     ) async throws -> [LyricsDocument] {
-        await self.limiter.wait()
+        try await self.limiter.wait()
 
         var components = URLComponents(url: Self.baseURL.appendingPathComponent("search"), resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = []

@@ -1,0 +1,33 @@
+{
+ "created": "2026-08-28T00:00:00.000Z",
+ "count": 3,
+ "offset": 0,
+ "artists": [
+  {
+   "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+   "type": "Group",
+   "score": 100,
+   "name": "The Beatles",
+   "sort-name": "Beatles, The",
+   "country": "GB",
+   "disambiguation": ""
+  },
+  {
+   "id": "1bfe7f41-0000-4000-8000-000000000003",
+   "type": "Group",
+   "score": 72,
+   "name": "The Beatles Revival Band",
+   "sort-name": "Beatles Revival Band, The",
+   "country": "DE"
+  },
+  {
+   "id": "2c3d4e5f-0000-4000-8000-000000000004",
+   "type": "Person",
+   "score": 40,
+   "name": "John Williams",
+   "sort-name": "Williams, John",
+   "disambiguation": "film composer",
+   "country": "US"
+  }
+ ]
+}

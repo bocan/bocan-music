@@ -1,3 +1,4 @@
+import Acoustics
 import CryptoKit
 import Foundation
 import Library
@@ -101,7 +102,7 @@ public final class BatchCoverArtViewModel: ObservableObject, Identifiable {
             for album in missing {
                 try Task.checkCancellation()
                 self.currentAlbumTitle = album.title
-                await self.rateLimiter.wait()
+                try await self.rateLimiter.wait()
                 try Task.checkCancellation()
                 await self.processAlbum(album)
                 self.processed += 1

@@ -1,0 +1,21 @@
+{
+ "type": "standard",
+ "title": "The Beatles",
+ "thumbnail": {
+  "source": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Beatles_ad_1965_just_the_beatles_crop.jpg/320px-Beatles_ad_1965_just_the_beatles_crop.jpg",
+  "width": 320,
+  "height": 214
+ },
+ "lang": "en",
+ "dir": "ltr",
+ "timestamp": "2026-08-01T00:00:00Z",
+ "content_urls": {
+  "desktop": {
+   "page": "https://en.wikipedia.org/wiki/The_Beatles"
+  },
+  "mobile": {
+   "page": "https://en.m.wikipedia.org/wiki/The_Beatles"
+  }
+ },
+ "extract": "The Beatles were an English rock band formed in Liverpool in 1960. The core lineup of the band comprised John Lennon, Paul McCartney, George Harrison and Ringo Starr."
+}
