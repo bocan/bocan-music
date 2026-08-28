@@ -10,14 +10,12 @@ struct PodcastRepositoryTests {
 
     private func sample(
         feedURL: String = "https://example.test/feed.rss",
-        title: String = "Test Show",
-        sortIndex: Int = 0
+        title: String = "Test Show"
     ) -> Podcast {
         Podcast(
             feedURL: feedURL,
             title: title,
             author: "Test Author",
-            sortIndex: sortIndex,
             addedAt: 1_700_000_000
         )
     }
@@ -134,17 +132,6 @@ struct PodcastRepositoryTests {
         #expect(result == nil)
     }
 
-    @Test("setSortIndex updates only sort_index")
-    func setSortIndex() async throws {
-        let db = try await makeDB()
-        let repo = PodcastRepository(database: db)
-        let id = try await repo.insert(self.sample(sortIndex: 0))
-        try await repo.setSortIndex(id: id, sortIndex: 42)
-        let fetched = try await repo.fetch(id: id)
-        #expect(fetched.sortIndex == 42)
-        #expect(fetched.title == "Test Show")
-    }
-
     // MARK: - upsertByFeedURL
 
     @Test("upsertByFeedURL inserts when feed is new")
@@ -163,9 +150,7 @@ struct PodcastRepositoryTests {
 
         // Insert original row with user-owned fields.
         var original = self.sample()
-        original.subscribed = true
         original.autoDownload = true
-        original.sortIndex = 5
         original.addedAt = 1_700_000_000
         let id = try await repo.upsertByFeedURL(original)
 
@@ -173,9 +158,7 @@ struct PodcastRepositoryTests {
         var refreshed = self.sample()
         refreshed.title = "Updated Show Title"
         refreshed.author = "New Author"
-        refreshed.subscribed = false // incoming value; must be ignored
         refreshed.autoDownload = false // incoming value; must be ignored
-        refreshed.sortIndex = 99 // incoming value; must be ignored
         refreshed.addedAt = 1_999_999_999 // incoming value; must be ignored
 
         let id2 = try await repo.upsertByFeedURL(refreshed)
@@ -186,9 +169,7 @@ struct PodcastRepositoryTests {
         #expect(fetched.title == "Updated Show Title")
         #expect(fetched.author == "New Author")
         // Identity fields preserved:
-        #expect(fetched.subscribed == true)
         #expect(fetched.autoDownload == true)
-        #expect(fetched.sortIndex == 5)
         #expect(fetched.addedAt == 1_700_000_000)
     }
 
@@ -252,30 +233,15 @@ struct PodcastRepositoryTests {
 
     // MARK: - fetchAllSubscribed
 
-    @Test("fetchAllSubscribed orders by sort_index then title")
+    @Test("fetchAllSubscribed orders by title (#416)")
     func fetchAllSubscribedOrdering() async throws {
         let db = try await makeDB()
         let repo = PodcastRepository(database: db)
-        try await repo.insert(self.sample(feedURL: "https://b.test/feed", title: "B Show", sortIndex: 2))
-        try await repo.insert(self.sample(feedURL: "https://a.test/feed", title: "A Show", sortIndex: 1))
-        try await repo.insert(self.sample(feedURL: "https://c.test/feed", title: "C Show", sortIndex: 2))
+        try await repo.insert(self.sample(feedURL: "https://b.test/feed", title: "B Show"))
+        try await repo.insert(self.sample(feedURL: "https://a.test/feed", title: "A Show"))
+        try await repo.insert(self.sample(feedURL: "https://c.test/feed", title: "C Show"))
         let all = try await repo.fetchAllSubscribed()
         #expect(all.map(\.title) == ["A Show", "B Show", "C Show"])
-    }
-
-    @Test("fetchAllSubscribed excludes unsubscribed rows")
-    func fetchAllSubscribedFilters() async throws {
-        let db = try await makeDB()
-        let repo = PodcastRepository(database: db)
-        var subscribed = self.sample(feedURL: "https://sub.test/feed", title: "Subscribed")
-        subscribed.subscribed = true
-        var unsubscribed = self.sample(feedURL: "https://unsub.test/feed", title: "Unsubscribed")
-        unsubscribed.subscribed = false
-        try await repo.insert(subscribed)
-        try await repo.insert(unsubscribed)
-        let all = try await repo.fetchAllSubscribed()
-        #expect(all.count == 1)
-        #expect(all.first?.title == "Subscribed")
     }
 
     // MARK: - fetchStale

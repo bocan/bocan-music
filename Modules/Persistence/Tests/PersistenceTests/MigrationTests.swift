@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 49)
+        #expect(version == 50)
     }
 
     @Test("Integrity check passes after migration")
@@ -69,7 +69,7 @@ struct MigrationTests {
     @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 49)
+        #expect(migrator.migrations.count == 50)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")
@@ -327,6 +327,16 @@ struct MigrationTests {
         let db = try await Database(location: .inMemory)
         let requests = try await PendingMaintenanceRepository(database: db).requests(task: PendingMaintenance.Task.fullRescan)
         #expect(requests.map(\.requestedBy) == ["045_pending_maintenance", "046_release_type_rescan", "047_release_type_junk_rescan"])
+    }
+
+    @Test("M050 drops podcasts.subscribed and sort_index (#416)")
+    func podcastSubscribedSortIndexDropped() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(podcasts)").compactMap { $0["name"] as String? }
+        }
+        #expect(!columns.contains("subscribed"))
+        #expect(!columns.contains("sort_index"))
     }
 
     @Test("M049 leaves track_dsp_assignments with the eq_preset_id column only (#418)")

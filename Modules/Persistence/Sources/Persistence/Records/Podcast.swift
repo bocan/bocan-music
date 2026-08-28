@@ -5,7 +5,7 @@ import GRDB
 ///
 /// Content fields (title, author, artwork, etc.) come from the feed and may be updated
 /// on every refresh. Identity / user-owned fields (`id`, `addedAt`, `subscribed`,
-/// `autoDownload`, `sortIndex`, `playbackSpeed`, `episodeSort`, `retentionLimit`) are
+/// `autoDownload`, `playbackSpeed`, `episodeSort`, `retentionLimit`) are
 /// preserved across refreshes by `PodcastRepository.upsertByFeedURL`. `showType` is
 /// feed-derived and refreshes from the parse like the other content fields.
 public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePersistableRecord, Sendable {
@@ -44,9 +44,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
     public var httpLastModified: String?
     public var lastRefreshedAt: Double?
     public var lastRefreshError: String?
-    public var subscribed: Bool
     public var autoDownload: Bool
-    public var sortIndex: Int
     /// Per-show playback rate override (user-owned); nil = use the app default.
     public var playbackSpeed: Double?
     /// Per-show episode sort override (user-owned): "newest" | "oldest"; nil = derive from `showType`.
@@ -101,9 +99,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         httpLastModified: String? = nil,
         lastRefreshedAt: Double? = nil,
         lastRefreshError: String? = nil,
-        subscribed: Bool = true,
         autoDownload: Bool = false,
-        sortIndex: Int = 0,
         playbackSpeed: Double? = nil,
         episodeSort: String? = nil,
         retentionLimit: Int? = nil,
@@ -136,9 +132,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         self.httpLastModified = httpLastModified
         self.lastRefreshedAt = lastRefreshedAt
         self.lastRefreshError = lastRefreshError
-        self.subscribed = subscribed
         self.autoDownload = autoDownload
-        self.sortIndex = sortIndex
         self.playbackSpeed = playbackSpeed
         self.episodeSort = episodeSort
         self.retentionLimit = retentionLimit
@@ -183,9 +177,7 @@ public struct Podcast: Codable, Equatable, Hashable, FetchableRecord, MutablePer
         case httpLastModified = "http_last_modified"
         case lastRefreshedAt = "last_refreshed_at"
         case lastRefreshError = "last_refresh_error"
-        case subscribed
         case autoDownload = "auto_download"
-        case sortIndex = "sort_index"
         case playbackSpeed = "playback_speed"
         case episodeSort = "episode_sort"
         case retentionLimit = "retention_limit"

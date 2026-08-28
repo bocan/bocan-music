@@ -103,7 +103,7 @@ public struct RefreshOutcome: Sendable {
 6. Return the podcast id.
 
 `subscribe` is idempotent: subscribing to an already-subscribed feed refreshes it
-and flips `subscribed = 1` (covers the "re-subscribe after unsubscribe" case).
+and flips `subscribed = 1` (covers the "re-subscribe after unsubscribe" case). *Superseded: unsubscribe hard-deletes the row, so the column could never be false and was dropped in M050 (#416); a row is a subscription.*
 
 ### `refresh`
 

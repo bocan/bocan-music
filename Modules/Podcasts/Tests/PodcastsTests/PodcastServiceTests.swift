@@ -195,7 +195,6 @@ struct PodcastServiceTests {
         let repo = PodcastRepository(database: bed.db)
         let podcast = try await repo.fetch(id: podcastID)
         #expect(podcast.title == "Full Feature Podcast")
-        #expect(podcast.subscribed == true)
 
         let epRepo = EpisodeRepository(database: bed.db)
         let episodes = try await epRepo.fetchForPodcast(podcastID: podcastID)
@@ -694,7 +693,6 @@ struct PodcastServiceTests {
             feedURL: "https://example.com/feed.rss",
             title: "Test",
             explicit: false,
-            subscribed: true,
             addedAt: fixedNow.timeIntervalSince1970
         )
         let podcastID = try await repo.insert(testPodcast)

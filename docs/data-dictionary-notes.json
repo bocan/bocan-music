@@ -108,14 +108,6 @@
     "traces": "ADR-040:305, ADR-041:95, #409",
     "note": "Same path as itunes_collection_id. Candidate key for the feed-moved case (ADR-058) and for an 'Open in Podcast Index' link; no reader yet."
   },
-  "podcasts.subscribed": {
-    "traces": "ADR-041:58, #416",
-    "note": "Always 1: unsubscribe hard-deletes the row, so the three subscribed == true filters are no-ops."
-  },
-  "podcasts.sort_index": {
-    "traces": "ADR-044:225, #416",
-    "note": "PodcastService.reorder exists; no UI calls it."
-  },
   "podcasts.persons_json": {
     "traces": "M028, CHANGELOG 'podcast:person'",
     "note": "Show-level credits; written via GRDB record encoding, so it works."

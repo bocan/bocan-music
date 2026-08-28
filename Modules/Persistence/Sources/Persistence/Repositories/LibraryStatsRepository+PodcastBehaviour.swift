@@ -98,7 +98,7 @@ private extension LibraryStatsRepository {
                    AVG(CASE WHEN state.play_state = 'inProgress' AND state.play_position > 0
                             THEN state.play_position END) AS abandon_seconds
             FROM podcast_episode_state AS state
-            JOIN podcasts ON podcasts.id = state.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = state.podcast_id
             GROUP BY podcasts.id
             HAVING played + stalled >= ?
             ORDER BY CAST(played AS REAL) / (played + stalled) ASC, podcasts.title ASC
@@ -128,7 +128,7 @@ private extension LibraryStatsRepository {
                    AVG(episodes.duration) AS mean_duration,
                    COUNT(*) AS episode_count
             FROM podcast_episodes AS episodes
-            JOIN podcasts ON podcasts.id = episodes.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = episodes.podcast_id
             WHERE episodes.published_at IS NOT NULL
               AND episodes.duration IS NOT NULL AND episodes.duration > 0
             GROUP BY podcasts.id, year
@@ -177,7 +177,7 @@ private extension LibraryStatsRepository {
                    MIN(COALESCE(state.completed_at, state.last_played_at),
                        COALESCE(state.last_played_at, state.completed_at)) - episodes.published_at AS gap
             FROM podcast_episode_state AS state
-            JOIN podcasts ON podcasts.id = state.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = state.podcast_id
             JOIN podcast_episodes AS episodes
                 ON episodes.podcast_id = state.podcast_id AND episodes.guid = state.guid
             WHERE state.play_state IN ('played', 'inProgress')

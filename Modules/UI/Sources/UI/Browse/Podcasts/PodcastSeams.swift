@@ -215,7 +215,6 @@ public protocol PodcastActions: Sendable {
     func unsubscribe(podcastID: Int64) async throws
     func refresh(podcastID: Int64) async throws
     func refreshAll() async
-    func reorder(podcastIDs: [Int64]) async throws
     func setAutoDownload(_ on: Bool, podcastID: Int64) async throws
     /// Per-show playback-speed override (nil = use the app default).
     func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws

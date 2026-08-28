@@ -11,11 +11,11 @@ struct LibraryStatsPodcastTests {
     }
 
     @discardableResult
-    private func seedShow(_ db: Database, title: String, subscribed: Bool = true) async throws -> Int64 {
+    private func seedShow(_ db: Database, title: String) async throws -> Int64 {
         try await db.write { db in
             try db.execute(
-                sql: "INSERT INTO podcasts (feed_url, title, subscribed, added_at) VALUES (?, ?, ?, 0)",
-                arguments: ["https://example.com/\(title).xml", title, subscribed]
+                sql: "INSERT INTO podcasts (feed_url, title, added_at) VALUES (?, ?, 0)",
+                arguments: ["https://example.com/\(title).xml", title]
             )
             return db.lastInsertedRowID
         }
@@ -90,10 +90,6 @@ struct LibraryStatsPodcastTests {
                 arguments: [show]
             )
         }
-        // Unsubscribed shows contribute nothing.
-        let gone = try await seedShow(db, title: "Gone", subscribed: false)
-        try await self.seedEpisode(db, showID: gone, guid: "g1", spec: .init(duration: 9999))
-
         let report = try await LibraryStatsRepository(database: db).fetchPodcastReport()
         #expect(report.subscribedShowCount == 1)
         #expect(report.backlogSeconds == 3600 + 1800 + 600)
@@ -135,8 +131,6 @@ struct LibraryStatsPodcastTests {
         let alive = try await seedShow(db, title: "Alive")
         try await self.seedEpisode(db, showID: alive, guid: "old", spec: .init(publishedAt: now - 200 * 86400))
         try await self.seedEpisode(db, showID: alive, guid: "new", spec: .init(publishedAt: now - 5 * 86400))
-        let unsubscribed = try await seedShow(db, title: "Left Behind", subscribed: false)
-        try await self.seedEpisode(db, showID: unsubscribed, guid: "old", spec: .init(publishedAt: now - 400 * 86400))
 
         let report = try await LibraryStatsRepository(database: db).fetchPodcastReport()
         #expect(report.deadFeedCount == 1)

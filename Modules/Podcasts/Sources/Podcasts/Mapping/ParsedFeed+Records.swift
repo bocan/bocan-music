@@ -41,7 +41,6 @@ extension ParsedFeed {
             httpLastModified: lastModified,
             lastRefreshedAt: ts,
             lastRefreshError: nil,
-            subscribed: true,
             showType: self.showType,
             personsJSON: PodcastPerson.encodeList(self.persons),
             podrollJSON: PodcastPodrollItem.encodeList(self.podroll),

@@ -47,10 +47,6 @@ struct AppPodcastActions: PodcastActions {
         await self.service.refreshAllStale()
     }
 
-    func reorder(podcastIDs: [Int64]) async throws {
-        try await self.service.reorder(podcastIDs: podcastIDs)
-    }
-
     func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {
         try await self.service.setAutoDownload(on, podcastID: podcastID)
     }

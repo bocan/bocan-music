@@ -415,7 +415,7 @@ content; do localize every surrounding label.
 - **Episode / Item**: one entry in the feed. A `podcast_episodes` row.
 - **Enclosure**: the audio file URL attached to an episode.
 - **GUID**: the feed item's stable identifier; the join key for state.
-- **Subscription**: a `podcasts` row with `subscribed = 1`.
+- **Subscription**: a `podcasts` row (the `subscribed` flag was dropped in M050, #416; unsubscribe deletes the row).
 - **Podcast Index**: <https://podcastindex.org>, an open podcast directory with a
   keyed JSON API.
 - **iTunes Search**: Apple's keyless podcast search/lookup JSON API at
