@@ -289,8 +289,8 @@ Record: `ScrobbleQueueItem.swift`
 | `subsonic_song_id` | TEXT | PlayEvent.swift, PlayableSource.swift, ScrobbleQueueRepository.swift, ScrobbleQueueWorker.swift, ScrobbleService.swift | SubsonicScrobbleProvider.swift | M021 |  |
 | `payload_title` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only snapshot; local plays join tracks/albums at submit time. |
 | `payload_artist` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only, see payload_title. |
-| `payload_album` | TEXT | ScrobbleQueueRepository.swift |  | M021, #408 | Subsonic-only; never set because QueuePlayer.notifyHistoryStart hardcodes album nil (#408). |
-| `payload_album_artist` | TEXT | ScrobbleQueueRepository.swift |  | M021, #408 | See payload_album. |
+| `payload_album` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029, #408 | Subsonic-only snapshot (local plays join albums at submit time). Carried from QueueItem.albumName via QueuePlayer.subsonicPlayContext since #408; was hardcoded nil before. |
+| `payload_album_artist` | TEXT | ScrobbleQueueRepository.swift |  | M021, ADR-029, #408 | Subsonic-only. Still nil: the Subsonic Child a queue item is built from has no album-artist field, and the track artist would be wrong for compilations. |
 | `payload_duration` | REAL | ScrobbleQueueRepository.swift |  | M021, ADR-029 | Subsonic-only, see payload_title. |
 
 ## `scrobble_submissions`

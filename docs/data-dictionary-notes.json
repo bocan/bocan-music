@@ -101,12 +101,12 @@
     "note": "Subsonic-only, see payload_title."
   },
   "scrobble_queue.payload_album": {
-    "traces": "M021, #408",
-    "note": "Subsonic-only; never set because QueuePlayer.notifyHistoryStart hardcodes album nil (#408)."
+    "traces": "M021, ADR-029, #408",
+    "note": "Subsonic-only snapshot (local plays join albums at submit time). Carried from QueueItem.albumName via QueuePlayer.subsonicPlayContext since #408; was hardcoded nil before."
   },
   "scrobble_queue.payload_album_artist": {
-    "traces": "M021, #408",
-    "note": "See payload_album."
+    "traces": "M021, ADR-029, #408",
+    "note": "Subsonic-only. Still nil: the Subsonic Child a queue item is built from has no album-artist field, and the track artist would be wrong for compilations."
   },
   "scrobble_queue.payload_duration": {
     "traces": "M021, ADR-029",
