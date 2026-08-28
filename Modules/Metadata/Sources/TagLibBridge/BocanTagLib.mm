@@ -12,12 +12,46 @@
 #include <tstring.h>
 #include <tstringlist.h>
 
+// Format-specific AudioProperties subclasses that expose bitsPerSample().
+#include <aiffproperties.h>
+#include <apeproperties.h>
+#include <dsdiffproperties.h>
+#include <dsfproperties.h>
+#include <flacproperties.h>
+#include <mp4properties.h>
+#include <trueaudioproperties.h>
+#include <wavpackproperties.h>
+#include <wavproperties.h>
+
 #include <cmath>
 #include <exception>
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Bit depth for formats whose AudioProperties subclass carries it.
+///
+/// The base `TagLib::AudioProperties` has no bitsPerSample(), so this
+/// tries each lossless / PCM subclass in turn. Lossy formats (MP3, AAC,
+/// Vorbis, Opus) have no meaningful bit depth and return 0 ("unknown");
+/// MP4 is gated on the ALAC codec for the same reason, since the AAC
+/// sample entry nominally claims 16 bits.
+static int bitsPerSample(const TagLib::AudioProperties *ap) {
+    if (!ap) return 0;
+    if (auto *p = dynamic_cast<const TagLib::FLAC::Properties *>(ap))       return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::RIFF::WAV::Properties *>(ap))  return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::RIFF::AIFF::Properties *>(ap)) return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::APE::Properties *>(ap))        return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::WavPack::Properties *>(ap))    return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::TrueAudio::Properties *>(ap))  return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::DSF::Properties *>(ap))        return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::DSDIFF::Properties *>(ap))     return p->bitsPerSample();
+    if (auto *p = dynamic_cast<const TagLib::MP4::Properties *>(ap)) {
+        return p->codec() == TagLib::MP4::Properties::ALAC ? p->bitsPerSample() : 0;
+    }
+    return 0;
+}
 
 static NSString *_Nullable tagStringToNS(const TagLib::String &s) {
     if (s.isEmpty()) return nil;
@@ -299,11 +333,15 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
         tags.sampleRate = ap->sampleRate();
         tags.bitrate    = ap->bitrate();
         tags.channels   = ap->channels();
-        // bitDepth: not on AudioProperties base, but many subclasses have it.
-        // We attempt a cast to a type that might have it; fall back to 0.
-        // (Doing it via properties() is safer and format-agnostic.)
-        NSString *bdStr = firstValue(props, "BITSPERSAMPLE");
-        tags.bitDepth = bdStr ? (NSInteger)bdStr.integerValue : 0;
+        // bitDepth lives on the format-specific subclasses, not the base
+        // class (issue #405). Fall back to a BITSPERSAMPLE tag, which a few
+        // taggers write, only when the container gave us nothing.
+        NSInteger depth = bitsPerSample(ap);
+        if (depth <= 0) {
+            NSString *bdStr = firstValue(props, "BITSPERSAMPLE");
+            depth = bdStr ? (NSInteger)bdStr.integerValue : 0;
+        }
+        tags.bitDepth = depth > 0 ? depth : 0;
     }
 
     return tags;

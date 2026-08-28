@@ -162,6 +162,52 @@ struct TrackImporterTests {
         #expect(updated.title == "User's title")
     }
 
+    @Test("user_edited = true still refreshes audio properties from the file (#405)")
+    func userEditedRefreshesAudioProperties() async throws {
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let url = URL(fileURLWithPath: "/tmp/edited-audio.flac")
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: trackRepo,
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+
+        // First import: probed before the bit-depth fix, so no bit depth.
+        var before = self.makeTags(title: "Original")
+        before.sampleRate = 44100
+        before.bitDepth = nil
+        let id = try await importer.importTrack(
+            url: url, bookmark: nil, tags: before, fileMtime: 1000, fileSize: 100
+        )
+        var track = try await trackRepo.fetch(id: id)
+        track.userEdited = true
+        track.title = "User's title"
+        try await trackRepo.update(track)
+
+        // Full rescan of the unchanged file now yields a bit depth.
+        var after = self.makeTags(title: "Disk Title")
+        after.sampleRate = 96000
+        after.bitDepth = 24
+        after.bitrate = 2304
+        after.channels = 2
+        after.duration = 181.5
+        _ = try await importer.importTrack(
+            url: url, bookmark: nil, tags: after, fileMtime: 1000, fileSize: 100
+        )
+
+        let updated = try await trackRepo.fetch(id: id)
+        #expect(updated.title == "User's title")
+        #expect(updated.bitDepth == 24)
+        #expect(updated.sampleRate == 96000)
+        #expect(updated.bitrate == 2304)
+        #expect(updated.channelCount == 2)
+        #expect(updated.duration == 181.5)
+        #expect(updated.userEdited)
+    }
+
     @Test("embedded cover art is linked to the album")
     func coverArtLinkedToAlbum() async throws {
         let db = try await makeDB()

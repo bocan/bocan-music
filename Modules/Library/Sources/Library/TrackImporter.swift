@@ -140,11 +140,19 @@ actor TrackImporter {
 
         // If the user has manually edited tags, skip overwriting them
         if let ex = existing, ex.userEdited {
-            // Still update file-level fields
+            // Still update file-level fields, including the audio
+            // properties: those come from the container, not from tags, so
+            // a user edit never owns them and a full rescan must be able to
+            // backfill them (#405).
             var updated = ex
             updated.fileSize = fileSize
             updated.fileMtime = fileMtime
             updated.fileBookmark = bookmark
+            updated.duration = tags.duration
+            updated.sampleRate = tags.sampleRate
+            updated.bitDepth = tags.bitDepth
+            updated.bitrate = tags.bitrate
+            updated.channelCount = tags.channels
             updated.updatedAt = now
             updated.disabled = false
             if !audioUnchanged {

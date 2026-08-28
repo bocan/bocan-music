@@ -59,6 +59,31 @@ struct TagReaderTests {
         #expect(tags.duration > 0)
     }
 
+    // MARK: - Bit depth (#405)
+
+    @Test("bit depth is read from FLAC stream info")
+    func bitDepthFLAC() throws {
+        let url = try Fixtures.url(named: "sine-1s-44100-24-stereo.flac")
+        let tags = try reader.read(from: url)
+        #expect(tags.bitDepth == 24)
+    }
+
+    @Test("bit depth is read from WAV format chunk")
+    func bitDepthWAV() throws {
+        let url = try Fixtures.url(named: "sine-1s-44100-16-stereo.wav")
+        let tags = try reader.read(from: url)
+        #expect(tags.bitDepth == 16)
+    }
+
+    @Test("lossy formats report no bit depth", arguments: [
+        "sine-1s-48000-stereo.ogg", "sample.mp3", "sample-aac.m4a",
+    ])
+    func bitDepthLossyIsNil(fixture: String) throws {
+        let url = try Fixtures.url(named: fixture)
+        let tags = try reader.read(from: url)
+        #expect(tags.bitDepth == nil)
+    }
+
     @Test("corrupt MP3 throws MetadataError")
     func corruptMP3Throws() throws {
         let url = try Fixtures.url(named: "corrupt.mp3")
