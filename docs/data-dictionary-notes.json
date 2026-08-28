@@ -46,7 +46,7 @@
   },
   "artists.musicbrainz_artist_id": {
     "traces": "#399, #413",
-    "note": "Never written: bridge does not read MUSICBRAINZ_ARTISTID and findOrCreate takes a name only. Needed by Deep Dive."
+    "note": "Filled once via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); first-seen wins, never overwritten (a conflict is the shared-name problem, #401). M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive."
   },
   "artists.disambiguation": {
     "traces": "ADR-003:103, #401",
@@ -151,5 +151,9 @@
   "track_dsp_assignments.stereo_width": {
     "traces": "ADR-013:118, #418",
     "note": "DDL only; grep matches the global DSP state, not this column."
+  },
+  "tracks.musicbrainz_artist_id": {
+    "traces": "#399, #413",
+    "note": "Picard MUSICBRAINZ_ARTISTID (first value) via the bridge, TrackImporter, TrackTagPatch / EditTransaction / BackupRing. Read by the tag editor's Identifiers section (Artist MBID row). Added in M043."
   }
 }

@@ -269,6 +269,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     // track-in-release MBID.
     tags.musicbrainzRecordingID   = firstValue(props, "MUSICBRAINZ_TRACKID");
     tags.musicbrainzTrackID       = firstValue(props, "MUSICBRAINZ_RELEASETRACKID");
+    tags.musicbrainzArtistID      = firstValue(props, "MUSICBRAINZ_ARTISTID");
     tags.musicbrainzAlbumArtistID = firstValue(props, "MUSICBRAINZ_ALBUMARTISTID");
     tags.musicbrainzReleaseID     = firstValue(props, "MUSICBRAINZ_ALBUMID");
     tags.musicbrainzReleaseGroupID = firstValue(props, "MUSICBRAINZ_RELEASEGROUPID");
@@ -474,6 +475,7 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     // MUSICBRAINZ_TRACKID carries the recording MBID.
     setProp("MUSICBRAINZ_TRACKID",        tags.musicbrainzRecordingID);
     setProp("MUSICBRAINZ_RELEASETRACKID", tags.musicbrainzTrackID);
+    setProp("MUSICBRAINZ_ARTISTID",       tags.musicbrainzArtistID);
     setProp("MUSICBRAINZ_ALBUMARTISTID",  tags.musicbrainzAlbumArtistID);
     setProp("MUSICBRAINZ_ALBUMID",        tags.musicbrainzReleaseID);
     setProp("MUSICBRAINZ_RELEASEGROUPID", tags.musicbrainzReleaseGroupID);

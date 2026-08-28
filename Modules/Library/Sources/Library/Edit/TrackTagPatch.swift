@@ -47,6 +47,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
     public var musicbrainzRecordingID: String??
     public var musicbrainzReleaseID: String??
     public var musicbrainzReleaseGroupID: String??
+    public var musicbrainzArtistID: String??
     public var musicbrainzAlbumArtistID: String??
 
     // MARK: - Sort tags
@@ -97,6 +98,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         musicbrainzRecordingID: String?? = nil,
         musicbrainzReleaseID: String?? = nil,
         musicbrainzReleaseGroupID: String?? = nil,
+        musicbrainzArtistID: String?? = nil,
         musicbrainzAlbumArtistID: String?? = nil,
         sortArtist: String?? = nil,
         sortAlbumArtist: String?? = nil,
@@ -131,6 +133,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         self.musicbrainzRecordingID = musicbrainzRecordingID
         self.musicbrainzReleaseID = musicbrainzReleaseID
         self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
+        self.musicbrainzArtistID = musicbrainzArtistID
         self.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         self.sortArtist = sortArtist
         self.sortAlbumArtist = sortAlbumArtist
@@ -156,6 +159,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
             self.isrc == nil && self.lyrics == nil && self.syncedLyrics == nil &&
             self.musicbrainzTrackID == nil && self.musicbrainzRecordingID == nil &&
             self.musicbrainzReleaseID == nil && self.musicbrainzReleaseGroupID == nil &&
+            self.musicbrainzArtistID == nil &&
             self.musicbrainzAlbumArtistID == nil &&
             self.sortArtist == nil &&
             self.sortAlbumArtist == nil && self.sortAlbum == nil && self.coverArt == nil &&
@@ -191,6 +195,7 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         if let v = musicbrainzRecordingID { out.musicbrainzRecordingID = v }
         if let v = musicbrainzReleaseID { out.musicbrainzReleaseID = v }
         if let v = musicbrainzReleaseGroupID { out.musicbrainzReleaseGroupID = v }
+        if let v = musicbrainzArtistID { out.musicbrainzArtistID = v }
         if let v = musicbrainzAlbumArtistID { out.musicbrainzAlbumArtistID = v }
         if let v = rating { out.rating = v ?? 0 }
         if let v = loved { out.loved = v }

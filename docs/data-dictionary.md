@@ -52,7 +52,7 @@ Record: `Artist.swift`
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `name` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `sort_name` | TEXT | ArtistRepository.swift, EditTransaction.swift, MaintenanceRepository.swift, TrackImporter.swift | ArtistsViewModel.swift | ADR-003:155, #400 | ARTISTSORT / ALBUMARTISTSORT via ArtistRepository.findOrCreate(name:sortName:) from TrackImporter and EditTransaction; tags win, else derived by Artist.derivedSortName (English articles only); NULL when neither applies. M041 backfilled the derivation. Read by fetchAll (COALESCE ordering), ArtistsViewModel, artists_fts. |
-| `musicbrainz_artist_id` | TEXT |  |  | #399, #413 | Never written: bridge does not read MUSICBRAINZ_ARTISTID and findOrCreate takes a name only. Needed by Deep Dive. |
+| `musicbrainz_artist_id` | TEXT | ArtistRepository.swift, BackupRing.swift, EditTransaction.swift, TagReader.swift, TagWriter.swift (+3) | TagEditorViewModel+Identifiers.swift | #399, #413 | Filled once via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); first-seen wins, never overwritten (a conflict is the shared-name problem, #401). M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive. |
 | `disambiguation` | TEXT | n/a (common identifier, see notes) | n/a | ADR-003:103, #401 | No writer, reader, or source; needs a MusicBrainz artist lookup. |
 
 ## `cover_art`

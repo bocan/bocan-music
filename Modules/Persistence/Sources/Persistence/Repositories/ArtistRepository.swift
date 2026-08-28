@@ -63,12 +63,26 @@ public struct ArtistRepository: Sendable {
     /// artist-level editor); with no tag, a NULL `sort_name` is filled with
     /// `Artist.derivedSortName(from:)` so "The Beatles" files under B (#400).
     ///
+    /// `musicbrainzID` fills a NULL `musicbrainz_artist_id` and is otherwise
+    /// left alone: MBIDs are stable identifiers, so first-seen wins, and a
+    /// later disagreement means two artists share a name (the disambiguation
+    /// problem, #401), not that the stored value went stale (#399).
+    ///
     /// This is idempotent: concurrent calls with the same name return the same row.
-    public func findOrCreate(name: String, sortName: String? = nil) async throws -> Artist {
+    public func findOrCreate(
+        name: String,
+        sortName: String? = nil,
+        musicbrainzID: String? = nil
+    ) async throws -> Artist {
         try await self.database.write { db in
             let taggedSort = sortName.flatMap { $0.isEmpty ? nil : $0 }
+            let taggedMBID = musicbrainzID.flatMap { $0.isEmpty ? nil : $0 }
             if var existing = try Artist.filter(Column("name") == name).fetchOne(db) {
                 var changed = false
+                if existing.musicbrainzArtistID == nil, let taggedMBID {
+                    existing.musicbrainzArtistID = taggedMBID
+                    changed = true
+                }
                 if let taggedSort, existing.sortName != taggedSort {
                     existing.sortName = taggedSort
                     changed = true
@@ -80,7 +94,11 @@ public struct ArtistRepository: Sendable {
                 if changed { try existing.update(db) }
                 return existing
             }
-            var artist = Artist(name: name, sortName: taggedSort ?? Artist.derivedSortName(from: name))
+            var artist = Artist(
+                name: name,
+                sortName: taggedSort ?? Artist.derivedSortName(from: name),
+                musicbrainzArtistID: taggedMBID
+            )
             try artist.insert(db)
             return artist
         }

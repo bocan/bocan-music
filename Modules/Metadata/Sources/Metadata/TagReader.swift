@@ -85,6 +85,7 @@ public struct TagReader: Sendable {
         tags.isrc = raw.isrc.map { String($0) }
         tags.musicbrainzTrackID = raw.musicbrainzTrackID.map { String($0) }
         tags.musicbrainzRecordingID = raw.musicbrainzRecordingID.map { String($0) }
+        tags.musicbrainzArtistID = raw.musicbrainzArtistID.map { String($0) }
         tags.musicbrainzAlbumArtistID = raw.musicbrainzAlbumArtistID.map { String($0) }
         tags.musicbrainzReleaseID = raw.musicbrainzReleaseID.map { String($0) }
         tags.musicbrainzReleaseGroupID = raw.musicbrainzReleaseGroupID.map { String($0) }

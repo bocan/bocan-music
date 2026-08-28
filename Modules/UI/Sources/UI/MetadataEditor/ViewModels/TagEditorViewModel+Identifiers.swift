@@ -21,6 +21,12 @@ public extension TagEditorViewModel {
         Self.identifierDisplay(self.loadedTracksByID.values.map(\.musicbrainzReleaseID))
     }
 
+    /// MusicBrainz track-artist ID (`MUSICBRAINZ_ARTISTID`, stored per track
+    /// since M043). `"Various"` across a multi-artist selection.
+    var artistMBIDDisplay: String {
+        Self.identifierDisplay(self.loadedTracksByID.values.map(\.musicbrainzArtistID))
+    }
+
     /// Reduce a per-track identifier column to a single display string.
     /// Treats empty strings as missing so a tag that's present but blank
     /// doesn't trigger `"Various"` against rows where the column is nil.

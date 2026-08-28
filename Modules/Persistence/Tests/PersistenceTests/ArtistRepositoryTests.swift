@@ -97,6 +97,23 @@ struct ArtistRepositoryTests {
         #expect(cream.sortName == nil)
     }
 
+    @Test("findOrCreate fills a NULL MusicBrainz ID once and never overwrites it (#399)")
+    func findOrCreateMusicBrainzID() async throws {
+        let db = try await makeDB()
+        let repo = ArtistRepository(database: db)
+        var beatles = try await repo.findOrCreate(name: "The Beatles")
+        #expect(beatles.musicbrainzArtistID == nil)
+        beatles = try await repo.findOrCreate(name: "The Beatles", musicbrainzID: "mbid-1")
+        #expect(beatles.musicbrainzArtistID == "mbid-1")
+        beatles = try await repo.findOrCreate(name: "The Beatles", musicbrainzID: "mbid-2")
+        #expect(beatles.musicbrainzArtistID == "mbid-1")
+        beatles = try await repo.findOrCreate(name: "The Beatles", musicbrainzID: "")
+        #expect(beatles.musicbrainzArtistID == "mbid-1")
+        #expect(try await repo.fetch(id: #require(beatles.id)).musicbrainzArtistID == "mbid-1")
+        let fresh = try await repo.findOrCreate(name: "Cream", musicbrainzID: "mbid-cream")
+        #expect(fresh.musicbrainzArtistID == "mbid-cream")
+    }
+
     @Test("fetchAll orders by sort name with display-name fallback")
     func fetchAllOrdersBySortName() async throws {
         let db = try await makeDB()

@@ -113,6 +113,7 @@ public struct TagWriter: Sendable {
         boc.isrc = tags.isrc
         boc.musicbrainzTrackID = tags.musicbrainzTrackID
         boc.musicbrainzRecordingID = tags.musicbrainzRecordingID
+        boc.musicbrainzArtistID = tags.musicbrainzArtistID
         boc.musicbrainzAlbumArtistID = tags.musicbrainzAlbumArtistID
         boc.musicbrainzReleaseID = tags.musicbrainzReleaseID
         boc.musicbrainzReleaseGroupID = tags.musicbrainzReleaseGroupID

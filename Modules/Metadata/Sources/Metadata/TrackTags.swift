@@ -40,6 +40,8 @@ public struct TrackTags: Sendable {
 
     public var musicbrainzTrackID: String?
     public var musicbrainzRecordingID: String?
+    /// MusicBrainz track-artist identifier (`MUSICBRAINZ_ARTISTID`, first value when multi-valued).
+    public var musicbrainzArtistID: String?
     public var musicbrainzAlbumArtistID: String?
     public var musicbrainzReleaseID: String?
     public var musicbrainzReleaseGroupID: String?
@@ -93,6 +95,7 @@ public struct TrackTags: Sendable {
         isrc: String? = nil,
         musicbrainzTrackID: String? = nil,
         musicbrainzRecordingID: String? = nil,
+        musicbrainzArtistID: String? = nil,
         musicbrainzAlbumArtistID: String? = nil,
         musicbrainzReleaseID: String? = nil,
         musicbrainzReleaseGroupID: String? = nil,
@@ -128,6 +131,7 @@ public struct TrackTags: Sendable {
         self.isrc = isrc
         self.musicbrainzTrackID = musicbrainzTrackID
         self.musicbrainzRecordingID = musicbrainzRecordingID
+        self.musicbrainzArtistID = musicbrainzArtistID
         self.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         self.musicbrainzReleaseID = musicbrainzReleaseID
         self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID

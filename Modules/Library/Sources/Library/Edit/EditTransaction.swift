@@ -334,7 +334,11 @@ actor EditTransaction {
             // Resolve track-artist FK.
             let artistName: String = if let patched = patch.artist { patched ?? "Unknown Artist" }
             else { currentTrackArtist?.name ?? "Unknown Artist" }
-            let artist = try await self.artistRepo.findOrCreate(name: artistName, sortName: patch.sortArtist ?? nil)
+            let artist = try await self.artistRepo.findOrCreate(
+                name: artistName,
+                sortName: patch.sortArtist ?? nil,
+                musicbrainzID: patch.musicbrainzArtistID ?? nil
+            )
             updated.artistID = artist.id
 
             // Resolve album-artist (may differ from track artist).
@@ -342,7 +346,11 @@ actor EditTransaction {
             else { currentAlbumArtist?.name ?? artistName }
             let albumArtist = albumArtistName == artistName
                 ? artist
-                : try await self.artistRepo.findOrCreate(name: albumArtistName, sortName: patch.sortAlbumArtist ?? nil)
+                : try await self.artistRepo.findOrCreate(
+                    name: albumArtistName,
+                    sortName: patch.sortAlbumArtist ?? nil,
+                    musicbrainzID: patch.musicbrainzAlbumArtistID ?? nil
+                )
 
             // Resolve album FK.
             let albumTitle: String = if let patched = patch.album { patched ?? "Unknown Album" }
@@ -382,6 +390,7 @@ actor EditTransaction {
         if let v = patch.musicbrainzRecordingID { tags.musicbrainzRecordingID = v }
         if let v = patch.musicbrainzReleaseID { tags.musicbrainzReleaseID = v }
         if let v = patch.musicbrainzReleaseGroupID { tags.musicbrainzReleaseGroupID = v }
+        if let v = patch.musicbrainzArtistID { tags.musicbrainzArtistID = v }
         if let v = patch.musicbrainzAlbumArtistID { tags.musicbrainzAlbumArtistID = v }
         if let v = patch.lyrics { tags.lyrics = v }
         // syncedLyrics writes to the same audio-file tag as plain lyrics;
