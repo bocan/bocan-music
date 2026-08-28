@@ -59,6 +59,13 @@ struct TagReaderTests {
         #expect(tags.duration > 0)
     }
 
+    @Test("a bare KEY Vorbis comment is read as the musical key (#407)")
+    func bareKeyComment() throws {
+        let url = try Fixtures.url(named: "sine-1s-key-am.flac")
+        let tags = try reader.read(from: url)
+        #expect(tags.key == "Am")
+    }
+
     // MARK: - Bit depth (#405)
 
     @Test("bit depth is read from FLAC stream info")

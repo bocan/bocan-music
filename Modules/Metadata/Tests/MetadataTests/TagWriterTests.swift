@@ -133,6 +133,26 @@ struct TagWriterTests {
         #expect(reread.extendedTags["RELEASETYPE"]?.first == "EP")
     }
 
+    @Test("the key is written back under the file's existing name, KEY or INITIALKEY (#407)")
+    func keyWrittenUnderExistingName() throws {
+        let bare = try tempCopy(of: "sine-1s-key-am.flac")
+        defer { try? FileManager.default.removeItem(at: bare) }
+        var tags = try TagReader().read(from: bare)
+        tags.key = "Bm"
+        try TagWriter().write(tags, to: bare)
+        let reread = try TagReader().read(from: bare)
+        #expect(reread.key == "Bm")
+        #expect(reread.extendedTags["KEY"] == ["Bm"])
+        #expect(reread.extendedTags["INITIALKEY"] == nil)
+
+        let plain = try tempCopy(of: "sample.mp3")
+        defer { try? FileManager.default.removeItem(at: plain) }
+        var mp3 = try TagReader().read(from: plain)
+        mp3.key = "F#m"
+        try TagWriter().write(mp3, to: plain)
+        #expect(try TagReader().read(from: plain).key == "F#m")
+    }
+
     @Test func writeAndReadBackComposer_mp3() throws {
         let tmp = try tempCopy(of: "sample.mp3")
         defer { try? FileManager.default.removeItem(at: tmp) }

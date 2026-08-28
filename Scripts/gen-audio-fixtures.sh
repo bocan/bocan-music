@@ -40,6 +40,12 @@ make_fixture "sine-1s-44100-24-stereo.flac" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
     -ac 2 -ar 44100 -sample_fmt s32 -c:a flac "sine-1s-44100-24-stereo.flac" -y -loglevel error
 
+# 1 second FLAC carrying a bare KEY Vorbis comment (Picard / Mixed In Key
+# style; TagLib does not alias it to INITIALKEY). Issue #407.
+make_fixture "sine-1s-key-am.flac" \
+    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
+    -ac 2 -ar 44100 -sample_fmt s16 -c:a flac -metadata KEY=Am "sine-1s-key-am.flac" -y -loglevel error
+
 # 3 seconds, 440 Hz sine, 44100 Hz, CBR MP3 (128k)
 make_fixture "sample.mp3" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=3" \
