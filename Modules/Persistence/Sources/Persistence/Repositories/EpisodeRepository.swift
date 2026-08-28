@@ -158,8 +158,8 @@ public struct EpisodeRepository: Sendable {
                 (podcast_id, guid, title, subtitle, description_html, audio_url,
                  audio_mime, audio_byte_length, duration, published_at, season,
                  episode_number, episode_type, artwork_url, artwork_path,
-                 chapters_url, transcript_url, link, explicit, added_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 chapters_url, transcript_url, link, explicit, persons_json, added_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(podcast_id, guid) DO UPDATE SET
                 title             = excluded.title,
                 subtitle          = excluded.subtitle,
@@ -177,7 +177,8 @@ public struct EpisodeRepository: Sendable {
                 chapters_url      = excluded.chapters_url,
                 transcript_url    = excluded.transcript_url,
                 link              = excluded.link,
-                explicit          = excluded.explicit
+                explicit          = excluded.explicit,
+                persons_json      = excluded.persons_json
             RETURNING id
             """,
             arguments: [
@@ -186,7 +187,8 @@ public struct EpisodeRepository: Sendable {
                 episode.audioByteLength, episode.duration, episode.publishedAt,
                 episode.season, episode.episodeNumber, episode.episodeType,
                 episode.artworkURL, episode.artworkPath, episode.chaptersURL,
-                episode.transcriptURL, episode.link, episode.explicit, episode.addedAt,
+                episode.transcriptURL, episode.link, episode.explicit, episode.personsJSON,
+                episode.addedAt,
             ]
         )
         return id ?? 0

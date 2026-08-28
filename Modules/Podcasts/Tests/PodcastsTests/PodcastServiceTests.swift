@@ -308,6 +308,27 @@ struct PodcastServiceTests {
 
     // MARK: refresh - new episode
 
+    @Test("subscribe stores item-level podcast:person credits on the episode row (#411)")
+    func subscribeStoresEpisodePersons() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-podcast-namespace.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+
+        let episodes = try await EpisodeRepository(database: bed.db).fetchForPodcast(podcastID: podcastID)
+        let ep1 = try #require(episodes.first { $0.guid == "guid-ep1" })
+        #expect(ep1.persons.map(\.name) == ["Alice Brown"])
+        #expect(ep1.persons.first?.role == "guest")
+        #expect(ep1.persons.first?.imageURL == "https://example.com/alice.jpg")
+
+        // An item with no podcast:person keeps NULL so the UI falls back to the show's hosts.
+        let ep2 = try #require(episodes.first { $0.guid == "guid-ep2" })
+        #expect(ep2.personsJSON == nil)
+        #expect(ep2.persons.isEmpty)
+    }
+
     @Test("refresh with extra episode produces newEpisodeCount == 1")
     func refreshNewEpisode() async throws {
         let bed = try await makeBed()

@@ -105,6 +105,82 @@ struct EpisodeRepositoryTests {
         #expect(episodes.first?.duration == 7200)
     }
 
+    @Test("upsert writes and updates persons_json (#411)")
+    func upsertRoundTripsPersons() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeRepository(database: db)
+
+        var episode = self.sampleEpisode(podcastID: podcastID)
+        episode.personsJSON = PodcastPerson.encodeList([
+            PodcastPerson(name: "Alice Brown", role: "guest", imageURL: "https://example.com/alice.jpg"),
+        ])
+        try await repo.upsert(episode)
+
+        var stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        #expect(stored.persons.map(\.name) == ["Alice Brown"])
+        #expect(stored.persons.first?.role == "guest")
+
+        // A refresh that carries a different credit list replaces it.
+        episode.personsJSON = PodcastPerson.encodeList([PodcastPerson(name: "Bob Green", role: "host")])
+        try await repo.upsert(episode)
+        stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        #expect(stored.persons.map(\.name) == ["Bob Green"])
+    }
+
+    /// Guard against the next hand-written column list dropping a field: set
+    /// every content property, upsert, fetch, and compare field by field.
+    @Test("every content property survives the hand-written upsert")
+    func upsertCarriesEveryContentColumn() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeRepository(database: db)
+
+        var full = PodcastEpisode(
+            podcastID: podcastID,
+            guid: "ep-full",
+            title: "Full",
+            audioURL: "https://cdn.example.test/full.mp3",
+            addedAt: 1_700_000_000
+        )
+        full.subtitle = "Sub"
+        full.descriptionHTML = "<p>Body</p>"
+        full.audioMIME = "audio/mpeg"
+        full.audioByteLength = 12345
+        full.duration = 99
+        full.publishedAt = 1_700_000_001
+        full.season = 2
+        full.episodeNumber = 7
+        full.episodeType = "bonus"
+        full.artworkURL = "https://cdn.example.test/full.jpg"
+        full.artworkPath = "/tmp/full.jpg"
+        full.chaptersURL = "https://cdn.example.test/full.chapters.json"
+        full.transcriptURL = "https://cdn.example.test/full.vtt"
+        full.link = "https://example.test/full"
+        full.explicit = true
+        full.personsJSON = PodcastPerson.encodeList([PodcastPerson(name: "Carol")])
+        try await repo.upsert(full)
+
+        let stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        #expect(stored.subtitle == full.subtitle)
+        #expect(stored.descriptionHTML == full.descriptionHTML)
+        #expect(stored.audioMIME == full.audioMIME)
+        #expect(stored.audioByteLength == full.audioByteLength)
+        #expect(stored.duration == full.duration)
+        #expect(stored.publishedAt == full.publishedAt)
+        #expect(stored.season == full.season)
+        #expect(stored.episodeNumber == full.episodeNumber)
+        #expect(stored.episodeType == full.episodeType)
+        #expect(stored.artworkURL == full.artworkURL)
+        #expect(stored.artworkPath == full.artworkPath)
+        #expect(stored.chaptersURL == full.chaptersURL)
+        #expect(stored.transcriptURL == full.transcriptURL)
+        #expect(stored.link == full.link)
+        #expect(stored.explicit == full.explicit)
+        #expect(stored.persons.map(\.name) == ["Carol"])
+        #expect(stored.addedAt == full.addedAt)
+    }
+
     @Test("upsert preserves added_at on update")
     func upsertPreservesAddedAt() async throws {
         let db = try await makeDB()
