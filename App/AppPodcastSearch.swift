@@ -59,15 +59,7 @@ struct AppPodcastSearch: PodcastSearchProviding {
         let categories = Self.resolveCategories(enriched: enriched, parsed: parsed)
         let sources = Self.mergeSources(enriched: enriched)
 
-        let episodes = Array(parsed.episodes.prefix(25).map { ep in
-            PodcastDetailEpisode(
-                guid: ep.guid,
-                title: ep.title,
-                publishedAt: ep.publishedAt,
-                duration: ep.duration,
-                descriptionHTML: ep.descriptionHTML
-            )
-        })
+        let episodes = Self.episodePreview(parsed.episodes)
 
         return PodcastDetail(
             feedURL: enriched?.feedURL ?? feedURL,
@@ -81,11 +73,26 @@ struct AppPodcastSearch: PodcastSearchProviding {
             episodePreview: episodes,
             alreadySubscribed: existing != nil,
             podcastID: existing.flatMap(\.id),
-            persons: parsed.persons
+            persons: parsed.persons,
+            podcastIndexID: enriched?.podcastIndexID,
+            itunesCollectionID: enriched?.itunesCollectionID
         )
     }
 
     // MARK: - Mapping helpers
+
+    /// Newest 25 parsed episodes as detail-sheet preview rows.
+    private static func episodePreview(_ episodes: [ParsedEpisode]) -> [PodcastDetailEpisode] {
+        Array(episodes.prefix(25).map { ep in
+            PodcastDetailEpisode(
+                guid: ep.guid,
+                title: ep.title,
+                publishedAt: ep.publishedAt,
+                duration: ep.duration,
+                descriptionHTML: ep.descriptionHTML
+            )
+        })
+    }
 
     private static func map(_ r: PodcastSearchResult) -> UIPodcastSearchResult {
         UIPodcastSearchResult(

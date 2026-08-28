@@ -27,8 +27,12 @@ struct AppPodcastActions: PodcastActions {
     let player: QueuePlayer
     let downloads: EpisodeDownloadManager?
 
-    func subscribe(feedURL: URL) async throws -> Int64 {
-        try await self.service.subscribe(feedURL: feedURL)
+    func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
+        try await self.service.subscribe(
+            feedURL: feedURL,
+            podcastIndexID: podcastIndexID,
+            itunesCollectionID: itunesCollectionID
+        )
     }
 
     func unsubscribe(podcastID: Int64) async throws {

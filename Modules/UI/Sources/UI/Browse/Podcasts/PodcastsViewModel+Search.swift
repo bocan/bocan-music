@@ -123,7 +123,11 @@ public extension PodcastsViewModel {
     func subscribe(fromDetail detail: PodcastDetail) async {
         self.subscribeError = nil
         do {
-            let newID = try await self.actions?.subscribe(feedURL: detail.feedURL)
+            let newID = try await self.actions?.subscribe(
+                feedURL: detail.feedURL,
+                podcastIndexID: detail.podcastIndexID,
+                itunesCollectionID: detail.itunesCollectionID
+            )
             if var updated = self.currentDetail, updated.feedURL == detail.feedURL {
                 updated.alreadySubscribed = true
                 updated.podcastID = newID

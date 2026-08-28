@@ -244,13 +244,65 @@ struct PodcastsViewModelSearchTests {
 
     // MARK: - subscribe
 
+    @Test("subscribe passes the detail's directory IDs through the seam (#409)")
+    func subscribeCarriesDirectoryIDs() async throws {
+        let feedURL = try #require(URL(string: "https://example.com/feed"))
+        let detail = PodcastDetail(feedURL: feedURL, title: "Show", podcastIndexID: 42, itunesCollectionID: 9999)
+        let stub = StubSearchProvider(detail: detail)
+
+        final class Captured: @unchecked Sendable {
+            var ids: (Int?, Int?)?
+        }
+
+        let captured = Captured()
+        struct StubActions: PodcastActions, @unchecked Sendable {
+            let captured: Captured
+
+            func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
+                self.captured.ids = (podcastIndexID, itunesCollectionID)
+                return 42
+            }
+
+            func unsubscribe(podcastID: Int64) async throws {}
+            func refresh(podcastID: Int64) async throws {}
+            func refreshAll() async {}
+            func reorder(podcastIDs: [Int64]) async throws {}
+            func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
+            func play(episode: EpisodeListItem, podcast: Podcast) async {}
+            func markPlayed(podcastID: Int64, guid: String) async {}
+            func markUnplayed(podcastID: Int64, guid: String) async {}
+            func markAllPlayed(podcastID: Int64) async {}
+            func download(podcastID: Int64, guid: String) async {}
+            func removeDownload(podcastID: Int64, guid: String) async {}
+            func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
+                []
+            }
+
+            func importOPML(data: Data, progress: @escaping @Sendable (Int, Int) -> Void) async throws -> UIOPMLImportSummary {
+                UIOPMLImportSummary()
+            }
+
+            func exportOPML() async throws -> Data {
+                Data()
+            }
+
+            func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {}
+            func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {}
+            func setRetentionLimit(_ limit: Int?, podcastID: Int64) async throws {}
+        }
+        let vm = PodcastsViewModel(library: nil, actions: StubActions(captured: captured), searchProvider: stub)
+        await vm.subscribe(fromDetail: detail)
+        #expect(captured.ids?.0 == 42)
+        #expect(captured.ids?.1 == 9999)
+    }
+
     @Test("subscribe flips alreadySubscribed on the current detail")
     func subscribeFlipsFlag() async throws {
         let feedURL = try #require(URL(string: "https://example.com/feed"))
         let stub = StubSearchProvider(detail: PodcastDetail(feedURL: feedURL, title: "Show"))
 
         struct StubActions: PodcastActions, @unchecked Sendable {
-            func subscribe(feedURL: URL) async throws -> Int64 {
+            func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
                 42
             }
 

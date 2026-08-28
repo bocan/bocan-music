@@ -90,6 +90,10 @@ public struct PodcastDetail: Sendable, Hashable {
     public var podcastID: Int64?
     /// Show-level Podcasting 2.0 `podcast:person` credits parsed from the feed.
     public var persons: [PodcastPerson]
+    /// Directory identifiers from the search result the detail was opened
+    /// from, carried through to `subscribe` so they land on the row (#409).
+    public var podcastIndexID: Int?
+    public var itunesCollectionID: Int?
 
     public init(
         feedURL: URL,
@@ -103,7 +107,9 @@ public struct PodcastDetail: Sendable, Hashable {
         episodePreview: [PodcastDetailEpisode] = [],
         alreadySubscribed: Bool = false,
         podcastID: Int64? = nil,
-        persons: [PodcastPerson] = []
+        persons: [PodcastPerson] = [],
+        podcastIndexID: Int? = nil,
+        itunesCollectionID: Int? = nil
     ) {
         self.feedURL = feedURL
         self.title = title
@@ -117,6 +123,8 @@ public struct PodcastDetail: Sendable, Hashable {
         self.alreadySubscribed = alreadySubscribed
         self.podcastID = podcastID
         self.persons = persons
+        self.podcastIndexID = podcastIndexID
+        self.itunesCollectionID = itunesCollectionID
     }
 }
 
@@ -200,7 +208,10 @@ public protocol PodcastLibraryDataSource: Sendable {
 /// and the `QueuePlayer` (also in Playback) -- two lower modules UI must not
 /// see together.
 public protocol PodcastActions: Sendable {
-    @discardableResult func subscribe(feedURL: URL) async throws -> Int64
+    /// Subscribes to `feedURL`. The directory IDs come from the search result
+    /// the user subscribed from and are stored on the row (#409); pass nil for
+    /// a URL typed by hand.
+    @discardableResult func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64
     func unsubscribe(podcastID: Int64) async throws
     func refresh(podcastID: Int64) async throws
     func refreshAll() async
@@ -308,4 +319,13 @@ public extension [UIChapter] {
 /// throw to its empty/disabled state (no transcript, or the fetch failed).
 public protocol PodcastTranscriptProviding: Sendable {
     func transcript(podcastID: Int64, guid: String) async throws -> PodcastTranscript
+}
+
+/// Convenience overloads for `PodcastActions` callers without directory IDs.
+public extension PodcastActions {
+    /// Subscribe with no directory identifiers (hand-typed or OPML feed URLs).
+    @discardableResult
+    func subscribe(feedURL: URL) async throws -> Int64 {
+        try await self.subscribe(feedURL: feedURL, podcastIndexID: nil, itunesCollectionID: nil)
+    }
 }
