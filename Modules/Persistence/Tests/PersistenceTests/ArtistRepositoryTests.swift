@@ -51,6 +51,63 @@ struct ArtistRepositoryTests {
         }
     }
 
+    // MARK: - Sort names (#400)
+
+    @Test("derivedSortName moves a leading English article", arguments: [
+        ("The Beatles", "Beatles, The"),
+        ("A Tribe Called Quest", "Tribe Called Quest, A"),
+        ("An Emotional Fish", "Emotional Fish, An"),
+        ("the the", "the, the"),
+    ])
+    func derivedSortName(name: String, expected: String) {
+        #expect(Artist.derivedSortName(from: name) == expected)
+    }
+
+    @Test("derivedSortName leaves names without an article alone", arguments: [
+        "Beatles", "Los Lobos", "La Roux", "Theatre of Hate", "The", "A", "",
+    ])
+    func derivedSortNameNil(name: String) {
+        #expect(Artist.derivedSortName(from: name) == nil)
+    }
+
+    @Test("findOrCreate stores the tag sort name, derives one without it, and lets a tag replace the derivation")
+    func findOrCreateSortName() async throws {
+        let db = try await makeDB()
+        let repo = ArtistRepository(database: db)
+
+        // No tag: derived.
+        var beatles = try await repo.findOrCreate(name: "The Beatles")
+        #expect(beatles.sortName == "Beatles, The")
+
+        // A later file with a tag overrides the derivation.
+        beatles = try await repo.findOrCreate(name: "The Beatles", sortName: "Beatles")
+        #expect(beatles.sortName == "Beatles")
+        #expect(try await repo.fetch(id: #require(beatles.id)).sortName == "Beatles")
+
+        // A file without a tag does not clobber a stored one.
+        beatles = try await repo.findOrCreate(name: "The Beatles")
+        #expect(beatles.sortName == "Beatles")
+
+        // Tag on first sight wins over the derivation.
+        let quest = try await repo.findOrCreate(name: "A Tribe Called Quest", sortName: "Tribe Called Quest")
+        #expect(quest.sortName == "Tribe Called Quest")
+
+        // No article, no tag: stays NULL.
+        let cream = try await repo.findOrCreate(name: "Cream")
+        #expect(cream.sortName == nil)
+    }
+
+    @Test("fetchAll orders by sort name with display-name fallback")
+    func fetchAllOrdersBySortName() async throws {
+        let db = try await makeDB()
+        let repo = ArtistRepository(database: db)
+        for name in ["The Who", "Cream", "The Beatles", "abba", "Zappa"] {
+            _ = try await repo.findOrCreate(name: name)
+        }
+        let names = try await repo.fetchAll().map(\.name)
+        #expect(names == ["abba", "The Beatles", "Cream", "The Who", "Zappa"])
+    }
+
     @Test("fetchAlbumArtistIDs includes artists credited as an album artist")
     func includesAlbumArtists() async throws {
         let db = try await makeDB()

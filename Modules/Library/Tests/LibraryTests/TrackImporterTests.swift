@@ -162,6 +162,37 @@ struct TrackImporterTests {
         #expect(updated.title == "User's title")
     }
 
+    @Test("ARTISTSORT and ALBUMARTISTSORT reach the artist rows (#400)")
+    func sortNamesReachArtistRows() async throws {
+        let db = try await makeDB()
+        let artistRepo = ArtistRepository(database: db)
+        let importer = TrackImporter(
+            artistRepo: artistRepo,
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+        var tags = self.makeTags(title: "Something")
+        tags.artist = "The Beatles"
+        tags.sortArtist = "Beatles, The"
+        tags.albumArtist = "Various Artists"
+        tags.sortAlbumArtist = "Various"
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/sort.flac"), bookmark: nil, tags: tags, fileMtime: 1, fileSize: 1
+        )
+        #expect(try await artistRepo.fetchOne(name: "The Beatles")?.sortName == "Beatles, The")
+        #expect(try await artistRepo.fetchOne(name: "Various Artists")?.sortName == "Various")
+
+        // Untagged file: derived.
+        var untagged = self.makeTags(title: "Baba")
+        untagged.artist = "The Who"
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/who.flac"), bookmark: nil, tags: untagged, fileMtime: 1, fileSize: 1
+        )
+        #expect(try await artistRepo.fetchOne(name: "The Who")?.sortName == "Who, The")
+    }
+
     @Test("tag totals roll up to the album row (#404)")
     func totalsRollUpToAlbum() async throws {
         let db = try await makeDB()

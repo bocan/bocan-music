@@ -330,7 +330,7 @@ actor EditTransaction {
             // Resolve track-artist FK.
             let artistName: String = if let patched = patch.artist { patched ?? "Unknown Artist" }
             else { currentTrackArtist?.name ?? "Unknown Artist" }
-            let artist = try await self.artistRepo.findOrCreate(name: artistName)
+            let artist = try await self.artistRepo.findOrCreate(name: artistName, sortName: patch.sortArtist ?? nil)
             updated.artistID = artist.id
 
             // Resolve album-artist (may differ from track artist).
@@ -338,7 +338,7 @@ actor EditTransaction {
             else { currentAlbumArtist?.name ?? artistName }
             let albumArtist = albumArtistName == artistName
                 ? artist
-                : try await self.artistRepo.findOrCreate(name: albumArtistName)
+                : try await self.artistRepo.findOrCreate(name: albumArtistName, sortName: patch.sortAlbumArtist ?? nil)
 
             // Resolve album FK.
             let albumTitle: String = if let patched = patch.album { patched ?? "Unknown Album" }

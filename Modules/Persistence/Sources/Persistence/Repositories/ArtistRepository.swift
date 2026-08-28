@@ -55,24 +55,45 @@ public struct ArtistRepository: Sendable {
         }
     }
 
-    /// Returns the artist matching `name`, inserting a new row if none exists.
+    /// Returns the artist matching `name`, inserting a new row if none exists,
+    /// and fills in entity-level columns the caller learned from tags.
+    ///
+    /// `sortName` is the file's ARTISTSORT / ALBUMARTISTSORT. A tag value always
+    /// wins over what is stored (tags are the source of truth and there is no
+    /// artist-level editor); with no tag, a NULL `sort_name` is filled with
+    /// `Artist.derivedSortName(from:)` so "The Beatles" files under B (#400).
     ///
     /// This is idempotent: concurrent calls with the same name return the same row.
-    public func findOrCreate(name: String) async throws -> Artist {
+    public func findOrCreate(name: String, sortName: String? = nil) async throws -> Artist {
         try await self.database.write { db in
-            if let existing = try Artist.filter(Column("name") == name).fetchOne(db) {
+            let taggedSort = sortName.flatMap { $0.isEmpty ? nil : $0 }
+            if var existing = try Artist.filter(Column("name") == name).fetchOne(db) {
+                var changed = false
+                if let taggedSort, existing.sortName != taggedSort {
+                    existing.sortName = taggedSort
+                    changed = true
+                } else if taggedSort == nil, existing.sortName == nil,
+                          let derived = Artist.derivedSortName(from: name) {
+                    existing.sortName = derived
+                    changed = true
+                }
+                if changed { try existing.update(db) }
                 return existing
             }
-            var artist = Artist(name: name)
+            var artist = Artist(name: name, sortName: taggedSort ?? Artist.derivedSortName(from: name))
             try artist.insert(db)
             return artist
         }
     }
 
-    /// Fetches all artists, alphabetically.
+    /// Fetches all artists in sort-name order, falling back to the display
+    /// name for rows with no sort name.
     public func fetchAll() async throws -> [Artist] {
         try await self.database.read { db in
-            try Artist.order(Column("sort_name"), Column("name")).fetchAll(db)
+            try Artist.fetchAll(
+                db,
+                sql: "SELECT * FROM artists ORDER BY COALESCE(sort_name, name) COLLATE NOCASE, name COLLATE NOCASE"
+            )
         }
     }
 

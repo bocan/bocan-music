@@ -42,7 +42,7 @@
   },
   "artists.sort_name": {
     "traces": "ADR-003:155, #400",
-    "note": "Never written: ARTISTSORT is read into TrackTags and dropped at ArtistRepository.findOrCreate(name:). Artist sort degrades to display name."
+    "note": "ARTISTSORT / ALBUMARTISTSORT via ArtistRepository.findOrCreate(name:sortName:) from TrackImporter and EditTransaction; tags win, else derived by Artist.derivedSortName (English articles only); NULL when neither applies. M041 backfilled the derivation. Read by fetchAll (COALESCE ordering), ArtistsViewModel, artists_fts."
   },
   "artists.musicbrainz_artist_id": {
     "traces": "#399, #413",
