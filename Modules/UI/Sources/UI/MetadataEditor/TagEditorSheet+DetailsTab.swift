@@ -135,6 +135,7 @@ extension TagEditorSheet {
             Section(L10n.string("Identifiers")) {
                 ReadOnlyIDRow(label: L10n.string("Recording MBID"), value: self.vm.recordingMBIDDisplay)
                 ReadOnlyIDRow(label: L10n.string("Album MBID"), value: self.vm.releaseMBIDDisplay)
+                ReadOnlyIDRow(label: L10n.string("Artist MBID"), value: self.vm.artistMBIDDisplay)
             }
 
             Section(L10n.string("Rating")) {

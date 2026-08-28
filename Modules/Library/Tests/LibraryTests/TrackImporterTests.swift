@@ -162,6 +162,31 @@ struct TrackImporterTests {
         #expect(updated.title == "User's title")
     }
 
+    @Test("track and album-artist MBIDs reach the track and artist rows (#399)")
+    func artistMBIDsReachRows() async throws {
+        let db = try await makeDB()
+        let artistRepo = ArtistRepository(database: db)
+        let trackRepo = TrackRepository(database: db)
+        let importer = TrackImporter(
+            artistRepo: artistRepo,
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: trackRepo,
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+        var tags = self.makeTags(title: "Feat")
+        tags.artist = "Guest"
+        tags.musicbrainzArtistID = "mbid-guest"
+        tags.albumArtist = "Headliner"
+        tags.musicbrainzAlbumArtistID = "mbid-headliner"
+        let id = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/feat.flac"), bookmark: nil, tags: tags, fileMtime: 1, fileSize: 1
+        )
+        #expect(try await trackRepo.fetch(id: id).musicbrainzArtistID == "mbid-guest")
+        #expect(try await artistRepo.fetchOne(name: "Guest")?.musicbrainzArtistID == "mbid-guest")
+        #expect(try await artistRepo.fetchOne(name: "Headliner")?.musicbrainzArtistID == "mbid-headliner")
+    }
+
     @Test("MusicBrainz release IDs roll up to the album row (#402)")
     func musicBrainzIDsRollUpToAlbum() async throws {
         let db = try await makeDB()

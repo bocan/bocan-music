@@ -53,6 +53,7 @@ NS_ASSUME_NONNULL_BEGIN
 // MusicBrainz
 @property (nonatomic, copy, nullable) NSString *musicbrainzTrackID;
 @property (nonatomic, copy, nullable) NSString *musicbrainzRecordingID;
+@property (nonatomic, copy, nullable) NSString *musicbrainzArtistID;
 @property (nonatomic, copy, nullable) NSString *musicbrainzAlbumArtistID;
 @property (nonatomic, copy, nullable) NSString *musicbrainzReleaseID;
 @property (nonatomic, copy, nullable) NSString *musicbrainzReleaseGroupID;

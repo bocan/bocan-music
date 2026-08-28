@@ -108,6 +108,19 @@ struct TagWriterTests {
         #expect(reread.discTotal == 2)
     }
 
+    @Test("MUSICBRAINZ_ARTISTID round-trips (#399)", arguments: ["sample.mp3", "sine-1s-44100-24-stereo.flac"])
+    func writeAndReadBackArtistMBID(fixture: String) throws {
+        let tmp = try tempCopy(of: fixture)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        var tags = try TagReader().read(from: tmp)
+        tags.musicbrainzArtistID = "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d"
+        tags.musicbrainzAlbumArtistID = "89ad4ac3-39f7-470e-963a-56509c546377"
+        try TagWriter().write(tags, to: tmp)
+        let reread = try TagReader().read(from: tmp)
+        #expect(reread.musicbrainzArtistID == "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d")
+        #expect(reread.musicbrainzAlbumArtistID == "89ad4ac3-39f7-470e-963a-56509c546377")
+    }
+
     @Test func writeAndReadBackComposer_mp3() throws {
         let tmp = try tempCopy(of: "sample.mp3")
         defer { try? FileManager.default.removeItem(at: tmp) }

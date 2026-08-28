@@ -117,6 +117,9 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
     /// AcoustID lookup result identifier (added in M009).
     public var acoustidID: String?
 
+    /// MusicBrainz track-artist identifier (added in M043, issue #399).
+    public var musicbrainzArtistID: String?
+
     /// MusicBrainz album-artist identifier (added in M002).
     public var musicbrainzAlbumArtistID: String?
 
@@ -268,6 +271,7 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
         musicbrainzRecordingID: String? = nil,
         acoustidFingerprint: String? = nil,
         acoustidID: String? = nil,
+        musicbrainzArtistID: String? = nil,
         musicbrainzAlbumArtistID: String? = nil,
         musicbrainzReleaseID: String? = nil,
         musicbrainzReleaseGroupID: String? = nil,
@@ -332,6 +336,7 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
         self.musicbrainzRecordingID = musicbrainzRecordingID
         self.acoustidFingerprint = acoustidFingerprint
         self.acoustidID = acoustidID
+        self.musicbrainzArtistID = musicbrainzArtistID
         self.musicbrainzAlbumArtistID = musicbrainzAlbumArtistID
         self.musicbrainzReleaseID = musicbrainzReleaseID
         self.musicbrainzReleaseGroupID = musicbrainzReleaseGroupID
@@ -431,6 +436,7 @@ public struct Track: Codable, Equatable, FetchableRecord, MutablePersistableReco
         case musicbrainzRecordingID = "musicbrainz_recording_id"
         case acoustidFingerprint = "acoustid_fingerprint"
         case acoustidID = "acoustid_id"
+        case musicbrainzArtistID = "musicbrainz_artist_id"
         case musicbrainzAlbumArtistID = "musicbrainz_album_artist_id"
         case musicbrainzReleaseID = "musicbrainz_release_id"
         case musicbrainzReleaseGroupID = "musicbrainz_release_group_id"
