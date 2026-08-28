@@ -51,7 +51,7 @@ Record: `Artist.swift`
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `name` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `sort_name` | TEXT | ArtistRepository.swift, MaintenanceRepository.swift | ArtistsViewModel.swift | ADR-003:155, #400 | Never written: ARTISTSORT is read into TrackTags and dropped at ArtistRepository.findOrCreate(name:). Artist sort degrades to display name. |
+| `sort_name` | TEXT | ArtistRepository.swift, EditTransaction.swift, MaintenanceRepository.swift, TrackImporter.swift | ArtistsViewModel.swift | ADR-003:155, #400 | ARTISTSORT / ALBUMARTISTSORT via ArtistRepository.findOrCreate(name:sortName:) from TrackImporter and EditTransaction; tags win, else derived by Artist.derivedSortName (English articles only); NULL when neither applies. M041 backfilled the derivation. Read by fetchAll (COALESCE ordering), ArtistsViewModel, artists_fts. |
 | `musicbrainz_artist_id` | TEXT |  |  | #399, #413 | Never written: bridge does not read MUSICBRAINZ_ARTISTID and findOrCreate takes a name only. Needed by Deep Dive. |
 | `disambiguation` | TEXT | n/a (common identifier, see notes) | n/a | ADR-003:103, #401 | No writer, reader, or source; needs a MusicBrainz artist lookup. |
 

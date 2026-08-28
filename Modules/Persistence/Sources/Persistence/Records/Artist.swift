@@ -61,3 +61,26 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
         case disambiguation
     }
 }
+
+// MARK: - Sort-name derivation
+
+/// Fallback sort-name rules used when a file carries no ARTISTSORT tag.
+public extension Artist {
+    /// Leading articles moved to the end when no ARTISTSORT tag exists.
+    ///
+    /// English only on purpose: "La Roux" and "Los Lobos" are names, and every
+    /// tagger (Picard, iTunes) writes an explicit sort tag when it disagrees.
+    static let leadingArticles: [String] = ["the", "a", "an"]
+
+    /// A sort name derived from `name` ("The Beatles" to "Beatles, The"), or
+    /// nil when there is no leading article, so the row stays NULL and
+    /// ordering falls back to the display name.
+    static func derivedSortName(from name: String) -> String? {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard let space = trimmed.firstIndex(of: " ") else { return nil }
+        let article = trimmed[..<space]
+        let rest = trimmed[trimmed.index(after: space)...].trimmingCharacters(in: .whitespaces)
+        guard !rest.isEmpty, self.leadingArticles.contains(article.lowercased()) else { return nil }
+        return "\(rest), \(article)"
+    }
+}

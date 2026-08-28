@@ -52,7 +52,7 @@ actor TrackImporter {
         let artistValues = tags.extendedTags["ARTIST"] ?? []
         let primaryArtist = artistValues.first ?? tags.artist ?? "Unknown Artist"
         let artistName = primaryArtist
-        let artist = try await artistRepo.findOrCreate(name: artistName)
+        let artist = try await artistRepo.findOrCreate(name: artistName, sortName: tags.sortArtist)
 
         // Album artist (may differ from track artist). Prefer an explicit
         // ALBUMARTIST tag. With none, fall back to the track artist — EXCEPT
@@ -66,7 +66,7 @@ actor TrackImporter {
         if let explicitAlbumArtist {
             let albumArtist = explicitAlbumArtist == artistName
                 ? artist
-                : try await self.artistRepo.findOrCreate(name: explicitAlbumArtist)
+                : try await self.artistRepo.findOrCreate(name: explicitAlbumArtist, sortName: tags.sortAlbumArtist)
             albumArtistID = albumArtist.id
         } else if tags.isCompilation {
             albumArtistID = nil // Various Artists
