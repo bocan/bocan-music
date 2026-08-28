@@ -906,20 +906,29 @@ public actor QueuePlayer: Transport {
         // Podcasts are not music tracks and never scrobble to Last.fm /
         // ListenBrainz. Skip the recorder so no scrobble is ever enqueued.
         if case .podcast = item.playableSource { return }
-        if case let .subsonic(serverID, songID) = item.playableSource {
-            let context = SubsonicPlayContext(
-                serverID: serverID,
-                songID: songID,
-                title: item.title ?? "",
-                artist: item.artistName ?? "",
-                albumArtist: nil,
-                album: nil,
-                duration: item.duration
-            )
+        if let context = Self.subsonicPlayContext(for: item) {
             await self.historyRecorder.trackDidStart(subsonic: context)
         } else {
             await self.historyRecorder.trackDidStart(trackID: item.trackID, duration: item.duration)
         }
+    }
+
+    /// The scrobble payload for a Subsonic queue item, or nil for any other
+    /// source. Carries the album so Last.fm / ListenBrainz receive it (#408).
+    /// The album artist stays nil: the Subsonic `Child` a queue item is built
+    /// from has no album-artist field, and guessing the track artist would be
+    /// wrong for compilations.
+    static func subsonicPlayContext(for item: QueueItem) -> SubsonicPlayContext? {
+        guard case let .subsonic(serverID, songID) = item.playableSource else { return nil }
+        return SubsonicPlayContext(
+            serverID: serverID,
+            songID: songID,
+            title: item.title ?? "",
+            artist: item.artistName ?? "",
+            albumArtist: nil,
+            album: item.albumName,
+            duration: item.duration
+        )
     }
 
     // MARK: Engine state subscription
