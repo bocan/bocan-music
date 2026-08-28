@@ -81,6 +81,32 @@ struct PodcastRepositoryTests {
         #expect(try await repo.fetch(id: id2).personsJSON == nil)
     }
 
+    @Test("upsertByFeedURL keeps directory IDs across a refresh that carries none (#409)")
+    func upsertPreservesDirectoryIDs() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        var first = self.sample()
+        first.podcastIndexID = 42
+        first.itunesCollectionID = 9999
+        let id = try await repo.upsertByFeedURL(first)
+
+        // A refresh re-parses the feed and knows nothing about the directories.
+        var refreshed = self.sample()
+        refreshed.title = "Refreshed"
+        _ = try await repo.upsertByFeedURL(refreshed)
+        let stored = try await repo.fetch(id: id)
+        #expect(stored.title == "Refreshed")
+        #expect(stored.podcastIndexID == 42)
+        #expect(stored.itunesCollectionID == 9999)
+
+        // A later subscribe with better IDs may update them.
+        var better = self.sample()
+        better.podcastIndexID = 43
+        _ = try await repo.upsertByFeedURL(better)
+        #expect(try await repo.fetch(id: id).podcastIndexID == 43)
+        #expect(try await repo.fetch(id: id).itunesCollectionID == 9999)
+    }
+
     @Test("fetch throws notFound for missing id")
     func fetchMissing() async throws {
         let db = try await makeDB()

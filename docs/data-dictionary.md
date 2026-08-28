@@ -231,8 +231,8 @@ Record: `Podcast.swift`
 | `owner_email` | TEXT | FeedParser.swift, ParsedFeed+Records.swift, ParsedFeed.swift |  | M023 |  |
 | `copyright` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `funding_url` | TEXT | FeedParser.swift, ParsedFeed+Records.swift, ParsedFeed.swift, PodcastNamespaceSupplement.swift | PodcastShowView.swift | M023 |  |
-| `itunes_collection_id` | INTEGER | ITunesSearchClient.swift, ParsedFeed+Records.swift, PodcastSeams.swift, PodcastSearchResult.swift, PodcastSearchService.swift |  | ADR-040:305, ADR-041:95, #409 | Dropped at the UI subscribe seam and wiped by upsertByFeedURL on refresh. No reader. |
-| `podcast_index_id` | INTEGER | ITunesSearchClient.swift, ParsedFeed+Records.swift, PodcastIndexClient.swift, PodcastSeams.swift, PodcastSearchResult.swift (+1) |  | ADR-040:305, ADR-041:95, #409 | See itunes_collection_id. |
+| `itunes_collection_id` | INTEGER | ITunesSearchClient.swift, ParsedFeed+Records.swift, PodcastRepository.swift, PodcastSeams.swift, PodcastSearchResult.swift (+3) |  | ADR-040:305, ADR-041:95, #409 | From the search result via PodcastDetail, the PodcastActions seam (subscribe(feedURL:podcastIndexID:itunesCollectionID:)), PodcastService, ParsedFeed.toPodcast(hints:); preserved by upsertByFeedURL across refreshes since #409. NULL for hand-typed or OPML feeds. No reader yet. |
+| `podcast_index_id` | INTEGER | ITunesSearchClient.swift, ParsedFeed+Records.swift, PodcastIndexClient.swift, PodcastRepository.swift, PodcastSeams.swift (+4) |  | ADR-040:305, ADR-041:95, #409 | Same path as itunes_collection_id. Candidate key for the feed-moved case (ADR-058) and for an 'Open in Podcast Index' link; no reader yet. |
 | `http_etag` | TEXT | ParsedFeed+Records.swift | PodcastService.swift | M023 |  |
 | `http_last_modified` | TEXT | ParsedFeed+Records.swift | PodcastService.swift | M023 |  |
 | `last_refreshed_at` | REAL | ParsedFeed+Records.swift, PodcastService.swift | PodcastRepository.swift | M023 |  |

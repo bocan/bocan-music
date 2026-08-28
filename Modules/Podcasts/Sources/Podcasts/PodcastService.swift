@@ -81,7 +81,23 @@ public actor PodcastService {
     /// Idempotent on feed URL (upsert). Re-subscribing an already-subscribed feed
     /// refreshes its content and keeps all user-owned fields intact. Returns the
     /// podcast row id. Artwork caching is fire-and-forget (detached task).
+    /// `subscribe(feedURL:indexHints:)` for callers that hold only the
+    /// directory identifiers (the UI seam), not a full search result (#409).
     @discardableResult
+    public func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
+        guard podcastIndexID != nil || itunesCollectionID != nil else {
+            return try await self.subscribe(feedURL: feedURL)
+        }
+        let hints = PodcastSearchResult(
+            canonicalFeedKey: feedURL.absoluteString,
+            feedURL: feedURL,
+            title: "",
+            podcastIndexID: podcastIndexID,
+            itunesCollectionID: itunesCollectionID
+        )
+        return try await self.subscribe(feedURL: feedURL, indexHints: hints)
+    }
+
     public func subscribe(feedURL: URL, indexHints: PodcastSearchResult? = nil) async throws -> Int64 {
         guard let stored = FeedURL.normalizedStorageURL(feedURL) else {
             throw PodcastsError.invalidFeedURL(feedURL.absoluteString)

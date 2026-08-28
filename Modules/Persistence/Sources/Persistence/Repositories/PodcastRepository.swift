@@ -75,6 +75,10 @@ public struct PodcastRepository: Sendable {
                 // keep the existing ones or a content refresh wipes the cover image.
                 updated.artworkPath = existing.artworkPath
                 updated.artworkHash = existing.artworkHash
+                // Directory identifiers arrive only at subscribe time (from the
+                // search result); a refresh parse never carries them (#409).
+                updated.podcastIndexID = podcast.podcastIndexID ?? existing.podcastIndexID
+                updated.itunesCollectionID = podcast.itunesCollectionID ?? existing.itunesCollectionID
                 try updated.update(db)
                 return existing.id ?? 0
             } else {

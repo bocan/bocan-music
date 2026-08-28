@@ -74,7 +74,7 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     var refreshAllCallCount = 0
 
     @discardableResult
-    func subscribe(feedURL: URL) async throws -> Int64 {
+    func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
         1
     }
 
@@ -115,7 +115,7 @@ private final class RecordingPodcastActions: PodcastActions, @unchecked Sendable
     }
 
     @discardableResult
-    func subscribe(feedURL: URL) async throws -> Int64 {
+    func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
         0
     }
 
@@ -323,7 +323,7 @@ struct PodcastsViewModelTests {
     @Test("importOPML / exportOPML delegate to the actions seam")
     func opmlDelegatesToActions() async throws {
         struct OPMLStub: PodcastActions, @unchecked Sendable {
-            @discardableResult func subscribe(feedURL: URL) async throws -> Int64 {
+            @discardableResult func subscribe(feedURL: URL, podcastIndexID: Int?, itunesCollectionID: Int?) async throws -> Int64 {
                 1
             }
 

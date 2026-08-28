@@ -223,6 +223,25 @@ struct PodcastServiceTests {
         #expect(episodes.count == 2)
     }
 
+    @Test("directory IDs survive a refresh and the plain-ID subscribe overload stores them (#409)")
+    func directoryIDsSurviveRefresh() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(
+            feedURL: testFeedURL, podcastIndexID: 42, itunesCollectionID: 9999
+        )
+        let repo = PodcastRepository(database: bed.db)
+        #expect(try await repo.fetch(id: podcastID).podcastIndexID == 42)
+
+        _ = try await bed.service.refresh(podcastID: podcastID)
+        let after = try await repo.fetch(id: podcastID)
+        #expect(after.podcastIndexID == 42)
+        #expect(after.itunesCollectionID == 9999)
+    }
+
     @Test("index hints land in itunes_collection_id and podcast_index_id")
     func indexHintsStored() async throws {
         let bed = try await makeBed()

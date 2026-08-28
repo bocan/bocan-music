@@ -114,11 +114,11 @@
   },
   "podcasts.itunes_collection_id": {
     "traces": "ADR-040:305, ADR-041:95, #409",
-    "note": "Dropped at the UI subscribe seam and wiped by upsertByFeedURL on refresh. No reader."
+    "note": "From the search result via PodcastDetail, the PodcastActions seam (subscribe(feedURL:podcastIndexID:itunesCollectionID:)), PodcastService, ParsedFeed.toPodcast(hints:); preserved by upsertByFeedURL across refreshes since #409. NULL for hand-typed or OPML feeds. No reader yet."
   },
   "podcasts.podcast_index_id": {
     "traces": "ADR-040:305, ADR-041:95, #409",
-    "note": "See itunes_collection_id."
+    "note": "Same path as itunes_collection_id. Candidate key for the feed-moved case (ADR-058) and for an 'Open in Podcast Index' link; no reader yet."
   },
   "podcasts.subscribed": {
     "traces": "ADR-041:58, #416",
