@@ -201,25 +201,30 @@ public struct ArtistRepository: Sendable {
         }
     }
 
-    /// Stores what a MusicBrainz lookup returned and stamps `fetched_at`.
-    /// `sortName` is applied only when the row has none (tags and the
-    /// derivation win over MusicBrainz's sort name); an empty
-    /// `disambiguation` is stored as NULL.
-    public func setEnrichment(id: Int64, disambiguation: String?, sortName: String?, fetchedAt: Int64) async throws {
+    /// Stores what a MusicBrainz lookup returned and stamps `fetched_at` on
+    /// every row carrying that MBID: "feat." credits give one MusicBrainz
+    /// artist many artist rows (20 for one act in a real library), and one
+    /// lookup answers for all of them. `sortName` is applied only when a row
+    /// has none (tags and the derivation win over MusicBrainz's sort name);
+    /// an empty `disambiguation` is stored as NULL. Returns the rows stamped.
+    @discardableResult
+    public func setEnrichment(mbid: String, disambiguation: String?, sortName: String?, fetchedAt: Int64) async throws -> Int {
         let cleaned = disambiguation.flatMap { $0.isEmpty ? nil : $0 }
-        try await self.database.write { db in
+        let changed: Int = try await self.database.write { db in
             try db.execute(
                 sql: """
                 UPDATE artists
                    SET disambiguation = ?,
                        sort_name = COALESCE(sort_name, ?),
                        musicbrainz_fetched_at = ?
-                 WHERE id = ?
+                 WHERE musicbrainz_artist_id = ?
                 """,
-                arguments: [cleaned, sortName, fetchedAt, id]
+                arguments: [cleaned, sortName, fetchedAt, mbid]
             )
+            return db.changesCount
         }
-        self.log.debug("artist.enriched", ["id": id, "disambiguation": cleaned as Any])
+        self.log.debug("artist.enriched", ["mbid": mbid, "rows": changed, "disambiguation": cleaned ?? ""])
+        return changed
     }
 
     // MARK: - Search

@@ -136,8 +136,10 @@ public actor ArtistEnrichmentService {
     private func enrich(id: Int64, mbid: String) async -> Outcome {
         do {
             let detail = try await self.client.fetchArtist(mbid: mbid)
+            // One lookup stamps every row with this MBID, so the "feat." variants
+            // of the same act drop out of the queue without their own request.
             try await self.artists.setEnrichment(
-                id: id,
+                mbid: mbid,
                 disambiguation: detail.disambiguation,
                 sortName: detail.sortName,
                 fetchedAt: Int64(self.now().timeIntervalSince1970)
@@ -152,7 +154,7 @@ public actor ArtistEnrichmentService {
             // row is not retried every launch, keep whatever it already had.
             self.log.warning("artist.enrich.unresolved", ["id": id, "mbid": mbid])
             try? await self.artists.setEnrichment(
-                id: id,
+                mbid: mbid,
                 disambiguation: nil,
                 sortName: nil,
                 fetchedAt: Int64(self.now().timeIntervalSince1970)
