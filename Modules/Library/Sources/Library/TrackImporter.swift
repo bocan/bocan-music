@@ -224,6 +224,15 @@ actor TrackImporter {
         let id = try await trackRepo.upsert(track_)
         track_.id = id
 
+        // Roll tag-supplied totals up to the album row once this track's
+        // values are persisted; skipped when the album already agrees, which
+        // is every track after the first on a rescan (#404).
+        if let albumID = album.id,
+           tags.trackTotal != nil || tags.discTotal != nil,
+           album.totalTracks != tags.trackTotal || album.totalDiscs != tags.discTotal {
+            try await self.albumRepo.recomputeTotals(albumID: albumID)
+        }
+
         // Persist lyrics if present
         if let lyricsText = tags.lyrics, !lyricsText.isEmpty {
             let doc = LRCParser.parseDocument(lyricsText)

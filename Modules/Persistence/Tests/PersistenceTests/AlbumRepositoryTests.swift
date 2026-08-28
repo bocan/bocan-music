@@ -25,6 +25,47 @@ struct AlbumRepositoryTests {
         #expect(fetched.title == "Test Album")
     }
 
+    @Test("recomputeTotals takes the max tag total and stays NULL without one (#404)")
+    func recomputeTotals() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let tracks = TrackRepository(database: db)
+        let album = try await repo.findOrCreate(title: "Double", albumArtistID: nil)
+        let albumID = try #require(album.id)
+
+        func track(_ n: Int, total: Int?, disc: Int?, discTotal: Int?) -> Track {
+            let now = Int64(Date().timeIntervalSince1970)
+            var t = Track(
+                fileURL: "file:///tmp/double-\(n).flac",
+                fileSize: 1,
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 1,
+                title: "T\(n)",
+                addedAt: now,
+                updatedAt: now
+            )
+            t.albumID = albumID
+            t.trackNumber = n
+            t.trackTotal = total
+            t.discNumber = disc
+            t.discTotal = discTotal
+            return t
+        }
+        _ = try await tracks.upsert(track(1, total: nil, disc: nil, discTotal: nil))
+        try await repo.recomputeTotals(albumID: albumID)
+        var stored = try await repo.fetch(id: albumID)
+        #expect(stored.totalTracks == nil)
+        #expect(stored.totalDiscs == nil)
+
+        _ = try await tracks.upsert(track(2, total: 10, disc: 1, discTotal: 2))
+        _ = try await tracks.upsert(track(3, total: 12, disc: 2, discTotal: 2))
+        try await repo.recomputeTotals(albumID: albumID)
+        stored = try await repo.fetch(id: albumID)
+        #expect(stored.totalTracks == 12)
+        #expect(stored.totalDiscs == 2)
+    }
+
     @Test("findOrCreate returns existing album on second call")
     func findOrCreateIdempotent() async throws {
         let db = try await makeDatabase()

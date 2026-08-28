@@ -87,6 +87,27 @@ struct TagWriterTests {
         #expect(reread.trackNumber == 7)
     }
 
+    @Test("track and disc totals survive the n/N round trip (#404)", arguments: ["sample.mp3", "sample-aac.m4a"])
+    func writeAndReadBackTotals(fixture: String) throws {
+        let tmp = try tempCopy(of: fixture)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        var tags = try TagReader().read(from: tmp)
+        tags.trackNumber = 5
+        tags.trackTotal = 12
+        tags.discNumber = 1
+        tags.discTotal = 2
+        try TagWriter().write(tags, to: tmp)
+
+        // ID3v2 stores these as TRCK "5/12" / TPOS "1/2" and MP4 as trkn / disk
+        // pairs; TagLib surfaces both as a combined TRACKNUMBER / DISCNUMBER.
+        let reread = try TagReader().read(from: tmp)
+        #expect(reread.trackNumber == 5)
+        #expect(reread.trackTotal == 12)
+        #expect(reread.discNumber == 1)
+        #expect(reread.discTotal == 2)
+    }
+
     @Test func writeAndReadBackComposer_mp3() throws {
         let tmp = try tempCopy(of: "sample.mp3")
         defer { try? FileManager.default.removeItem(at: tmp) }

@@ -162,6 +162,40 @@ struct TrackImporterTests {
         #expect(updated.title == "User's title")
     }
 
+    @Test("tag totals roll up to the album row (#404)")
+    func totalsRollUpToAlbum() async throws {
+        let db = try await makeDB()
+        let albumRepo = AlbumRepository(database: db)
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: albumRepo,
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+        var first = self.makeTags(title: "One")
+        first.trackNumber = 1
+        first.trackTotal = 12
+        first.discNumber = 1
+        first.discTotal = 2
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/one.flac"), bookmark: nil, tags: first, fileMtime: 1, fileSize: 1
+        )
+        var album = try #require(try await albumRepo.fetchAll().first)
+        #expect(album.totalTracks == 12)
+        #expect(album.totalDiscs == 2)
+
+        // A later track without totals does not clear them.
+        var second = self.makeTags(title: "Two")
+        second.trackNumber = 2
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/two.flac"), bookmark: nil, tags: second, fileMtime: 1, fileSize: 1
+        )
+        album = try #require(try await albumRepo.fetchAll().first)
+        #expect(album.totalTracks == 12)
+        #expect(album.totalDiscs == 2)
+    }
+
     @Test("user_edited = true still refreshes audio properties from the file (#405)")
     func userEditedRefreshesAudioProperties() async throws {
         let db = try await makeDB()
