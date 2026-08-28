@@ -62,6 +62,38 @@ struct LyricsServiceTests {
         #expect(text.contains("Hello"))
     }
 
+    @Test("user sync offset is saved, read back, and folded into the document (#415)")
+    func userOffsetRoundTrip() async throws {
+        let db = try await makeDB()
+        let service = self.makeService(db: db)
+        let trackID = try await seedTrack(db: db)
+        let doc = LRCParser.parseDocument("[00:10.00]Line one\n[00:20.00]Line two")
+        try await service.setLyrics(doc, for: trackID)
+        #expect(try await service.userOffsetMS(for: trackID) == 0)
+
+        try await service.setUserOffset(350, for: trackID)
+        #expect(try await service.userOffsetMS(for: trackID) == 350)
+        #expect(try await LyricsRepository(database: db).fetch(trackID: trackID)?.offsetMS == 350)
+        if case let .synced(_, offsetMS)? = try await service.lyrics(for: trackID) {
+            #expect(offsetMS == 350)
+        } else {
+            Issue.record("expected a synced document")
+        }
+
+        // Re-saving the lyrics text keeps the user's adjustment instead of
+        // overwriting it with the document's own [offset:] value.
+        let edited = LRCParser.parseDocument("[offset:+100]\n[00:10.00]Line one edited")
+        try await service.setLyrics(edited, for: trackID)
+        #expect(try await service.userOffsetMS(for: trackID) == 350)
+        if case let .synced(_, offsetMS)? = try await service.lyrics(for: trackID) {
+            #expect(offsetMS == 450, "tag offset from the text plus the stored user adjustment")
+        }
+
+        // No row: no-op, no throw.
+        try await service.setUserOffset(100, for: trackID + 999)
+        #expect(try await service.userOffsetMS(for: trackID + 999) == 0)
+    }
+
     @Test("setLyrics with nil deletes existing row")
     func deletesLyrics() async throws {
         let db = try await makeDB()

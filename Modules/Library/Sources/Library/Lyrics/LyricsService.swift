@@ -117,12 +117,17 @@ public actor LyricsService {
             _ = lines // silence unused warning
         }
 
+        // `lyrics.offset_ms` holds the user's per-track sync adjustment (#415),
+        // not the LRC's own [offset:] tag: that tag lives in the text and is
+        // re-applied on every parse, so copying `doc.offsetMS` here would
+        // double-count it. Keep whatever adjustment the row already has.
+        let existingOffset = try await self.lyricsRepo.fetch(trackID: trackID)?.offsetMS ?? 0
         let record = Lyrics(
             trackID: trackID,
             lyricsText: rawText,
             isSynced: isSynced,
             source: source,
-            offsetMS: doc.offsetMS
+            offsetMS: existingOffset
         )
         try await self.lyricsRepo.save(record)
 
@@ -135,6 +140,29 @@ public actor LyricsService {
             // survive the embed.
             try await self.lyricsRepo.save(record)
         }
+    }
+
+    // MARK: - Sync offset (#415)
+
+    /// The user's saved sync adjustment for `trackID` in milliseconds (0 when
+    /// none, or when the track has no lyrics row).
+    public func userOffsetMS(for trackID: Int64) async throws -> Int {
+        try await self.lyricsRepo.fetch(trackID: trackID)?.offsetMS ?? 0
+    }
+
+    /// Saves the user's sync adjustment for `trackID`. A positive value means
+    /// the lyrics run ahead of the audio by that many milliseconds (LRC
+    /// convention, see M011). No-op when the track has no lyrics row, since
+    /// there is nothing to adjust.
+    public func setUserOffset(_ offsetMS: Int, for trackID: Int64) async throws {
+        guard var row = try await lyricsRepo.fetch(trackID: trackID) else {
+            self.log.warning("lyrics.offset.no_row", ["track": trackID])
+            return
+        }
+        guard row.offsetMS != offsetMS else { return }
+        row.offsetMS = offsetMS
+        try await self.lyricsRepo.save(row)
+        self.log.debug("lyrics.offset.saved", ["track": trackID, "ms": offsetMS])
     }
 
     /// Unconditionally fetches lyrics from LRClib for `trackID`, replacing any

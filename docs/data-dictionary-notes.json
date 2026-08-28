@@ -90,7 +90,7 @@
   },
   "lyrics.offset_ms": {
     "traces": "ADR-015:85, #415",
-    "note": "Read on load, never written: the sync-offset slider is session-only."
+    "note": "The user's per-track sync adjustment (LRC convention: positive = lyrics ahead). Written by LyricsService.setUserOffset from LyricsViewModel.commitOffset (debounced slider, popover dismiss); preserved by setLyrics; folded into the document by LyricsService.parse. Not the LRC [offset:] tag, which stays in the text."
   },
   "scrobble_queue.payload_title": {
     "traces": "M021, ADR-029",

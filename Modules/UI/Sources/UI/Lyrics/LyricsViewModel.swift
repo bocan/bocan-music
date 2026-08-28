@@ -31,8 +31,15 @@ public final class LyricsViewModel: ObservableObject {
     /// Display font size bucket for the lyrics pane.
     @AppStorage("lyrics.fontSize") public var fontSizeKey: LyricsFontSize = .medium
 
-    /// Per-track playback offset (in milliseconds) on top of any embedded `[offset:]` tag.
-    @Published public var userOffsetMS = 0
+    /// Per-track sync adjustment in milliseconds, on top of any embedded
+    /// `[offset:]` tag. Loaded from `lyrics.offset_ms` on track change and
+    /// saved back (debounced, and on popover dismiss) via `commitOffset()`.
+    @Published public var userOffsetMS = 0 {
+        didSet {
+            guard self.userOffsetMS != oldValue, self.userOffsetMS != self.persistedOffsetMS else { return }
+            self.scheduleOffsetCommit()
+        }
+    }
 
     /// `true` while an auto-fetch or force-fetch is in progress.
     @Published public private(set) var isFetching = false
@@ -67,7 +74,13 @@ public final class LyricsViewModel: ObservableObject {
 
     private var observeTask: Task<Void, Never>?
     private var positionTask: Task<Void, Never>?
+    private var offsetLoadTask: Task<Void, Never>?
+    private var offsetCommitTask: Task<Void, Never>?
     private var currentTrackID: Int64?
+    /// The offset currently stored in the database for `currentTrackID`. The
+    /// observed document already has this folded in (LyricsService.parse), so
+    /// position maths applies only the unsaved delta.
+    private var persistedOffsetMS = 0
     /// Stores the now-playing track ID when the editor is temporarily overridden
     /// to show a non-playing track via `openEditor(for:)`.
     private var nowPlayingTrackID: Int64?
@@ -113,13 +126,33 @@ public final class LyricsViewModel: ObservableObject {
         self.document = nil
         self.documentSource = nil
         self.currentLineIndex = nil
+        self.offsetCommitTask?.cancel()
+        self.offsetLoadTask?.cancel()
+        self.persistedOffsetMS = 0
         self.userOffsetMS = 0
         self.observeTask?.cancel()
         self.positionTask?.cancel()
 
         guard let trackID else { return }
         self.startObserving(trackID: trackID)
+        self.loadOffset(trackID: trackID)
         self.fetchIfMissing()
+    }
+
+    /// Persists the slider value for the current track. Called on popover
+    /// dismiss and by the debounce; harmless when nothing changed.
+    public func commitOffset() {
+        self.offsetCommitTask?.cancel()
+        guard let trackID = currentTrackID, self.userOffsetMS != self.persistedOffsetMS else { return }
+        let value = self.userOffsetMS
+        self.persistedOffsetMS = value
+        Task { [service, log] in
+            do {
+                try await service.setUserOffset(value, for: trackID)
+            } catch {
+                log.error("lyrics.offset.save_failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 
     /// Updates `currentLineIndex` from the engine's playback position.
@@ -129,7 +162,9 @@ public final class LyricsViewModel: ObservableObject {
             return
         }
 
-        let adjusted = position - TimeInterval(offsetMS + self.userOffsetMS) / 1000.0
+        // `offsetMS` already includes the persisted adjustment; add only what
+        // the slider has changed since the last save.
+        let adjusted = position - TimeInterval(offsetMS + (self.userOffsetMS - self.persistedOffsetMS)) / 1000.0
         let idx = lines.lastIndex { $0.start <= adjusted }
         if idx != self.currentLineIndex {
             self.currentLineIndex = idx
@@ -282,6 +317,27 @@ public final class LyricsViewModel: ObservableObject {
     }
 
     // MARK: - Private
+
+    private func loadOffset(trackID: Int64) {
+        self.offsetLoadTask = Task { [weak self] in
+            guard let self else { return }
+            let stored = await (try? self.service.userOffsetMS(for: trackID)) ?? 0
+            await MainActor.run {
+                guard self.currentTrackID == trackID, !Task.isCancelled else { return }
+                self.persistedOffsetMS = stored
+                self.userOffsetMS = stored
+            }
+        }
+    }
+
+    private func scheduleOffsetCommit() {
+        self.offsetCommitTask?.cancel()
+        self.offsetCommitTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { self?.commitOffset() }
+        }
+    }
 
     private func startObserving(trackID: Int64) {
         self.observeTask = Task { [weak self] in
