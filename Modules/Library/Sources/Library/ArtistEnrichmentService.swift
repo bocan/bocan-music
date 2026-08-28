@@ -78,6 +78,10 @@ public actor ArtistEnrichmentService {
             self.log.info("artist.enrich.pass.start", ["pending": pending])
             var cursor: Int64 = 0
             var consecutiveBackoffs = 0
+            // MBIDs already resolved this pass: a batch read before the first
+            // row was stamped still lists its "feat." siblings, and they
+            // must not spend another limiter slot (even a cached one).
+            var resolved: Set<String> = []
             while true {
                 try Task.checkCancellation()
                 let batch = try await self.artists.fetchNeedingEnrichment(limit: self.batchSize)
@@ -86,13 +90,19 @@ public actor ArtistEnrichmentService {
                 batchLoop: for artist in batch {
                     try Task.checkCancellation()
                     guard let id = artist.id, let mbid = artist.musicbrainzArtistID else { continue }
+                    if resolved.contains(mbid) {
+                        cursor = max(cursor, id)
+                        continue
+                    }
                     switch await self.enrich(id: id, mbid: mbid) {
                     case .stamped:
                         stamped += 1
                         consecutiveBackoffs = 0
                         cursor = max(cursor, id)
+                        resolved.insert(mbid)
                     case .skipped:
                         cursor = max(cursor, id)
+                        resolved.insert(mbid)
                     case .abort:
                         // Retry this artist after a growing pause; give up on
                         // the pass after a run of failures. Leaving the loop
