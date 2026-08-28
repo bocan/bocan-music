@@ -6,7 +6,7 @@
   },
   "tracks.key": {
     "traces": "#407",
-    "note": "Musical key from INITIALKEY. Fully wired but empty in a library tagged without a key detector; no smart-playlist field yet."
+    "note": "Musical key from INITIALKEY (ID3 TKEY, MP4 atom via TagLib) or a bare KEY Vorbis comment; written back under whichever name the file uses. Legitimately NULL in a library tagged without a key detector (0 files carried either tag on 2026-08-28). No smart-playlist field."
   },
   "tracks.musicbrainz_album_artist_id": {
     "traces": "ADR-012:68, #399",

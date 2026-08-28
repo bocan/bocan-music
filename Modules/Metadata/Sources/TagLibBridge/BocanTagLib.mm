@@ -239,7 +239,11 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     tags.sortAlbumArtist = firstValue(props, "ALBUMARTISTSORT");
     tags.sortAlbum      = firstValue(props, "ALBUMSORT");
     tags.lyrics         = firstValue(props, "LYRICS");
+    // Musical key: TagLib maps ID3 TKEY and the MP4 atom to INITIALKEY, but a
+    // bare KEY Vorbis comment (Picard, Mixed In Key on FLAC / Ogg) is passed
+    // through as-is (issue #407).
     tags.key            = firstValue(props, "INITIALKEY");
+    if (!tags.key) tags.key = firstValue(props, "KEY");
     tags.isrc           = firstValue(props, "ISRC");
     // MusicBrainz release-group primary type (issue #403). Picard writes
     // RELEASETYPE multi-valued with the primary type first and secondaries
@@ -457,7 +461,12 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     setProp("ALBUMARTISTSORT",  tags.sortAlbumArtist);
     setProp("ALBUMSORT",        tags.sortAlbum);
     setProp("LYRICS",           tags.lyrics);
-    setProp("INITIALKEY",       tags.key);
+    // Write the key back under whichever name the file already uses so a
+    // Vorbis file tagged with KEY does not grow a duplicate INITIALKEY.
+    {
+        BOOL usesBareKey = props.contains("KEY") && !props.contains("INITIALKEY");
+        setProp(usesBareKey ? "KEY" : "INITIALKEY", tags.key);
+    }
     setProp("ISRC",             tags.isrc);
     // RELEASETYPE: replace only the primary (first) value so Picard's
     // secondary types stay; never erase the key from a single nil field.

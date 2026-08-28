@@ -424,7 +424,7 @@ Record: `Track.swift`
 | `genre` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `composer` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `bpm` | REAL | n/a (common identifier, see notes) | n/a | M001 |  |
-| `key` | TEXT | n/a (common identifier, see notes) | n/a | #407 | Musical key from INITIALKEY. Fully wired but empty in a library tagged without a key detector; no smart-playlist field yet. |
+| `key` | TEXT | n/a (common identifier, see notes) | n/a | #407 | Musical key from INITIALKEY (ID3 TKEY, MP4 atom via TagLib) or a bare KEY Vorbis comment; written back under whichever name the file uses. Legitimately NULL in a library tagged without a key detector (0 files carried either tag on 2026-08-28). No smart-playlist field. |
 | `isrc` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `musicbrainz_track_id` | TEXT | BackupRing.swift, EditTransaction.swift, TagReader.swift, TagWriter.swift, TrackImporter.swift (+2) | ListenImportRepository.swift | M001 |  |
 | `musicbrainz_recording_id` | TEXT | BackupRing.swift, EditTransaction.swift, IdentifyTrackViewModel.swift, TagReader.swift, TagWriter.swift (+3) | ScrobbleQueueRepository.swift, TagEditorViewModel+Identifiers.swift, TrackRow.swift | M001 |  |
