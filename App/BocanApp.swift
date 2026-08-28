@@ -567,6 +567,10 @@ struct AppGraph {
     /// Backfills `tracks.content_hash` (the Phone Sync manifest `sha256`) in
     /// the background. Retained here because its observation holds it weakly.
     let contentHashService: ContentHashService
+    /// Fills `artists.disambiguation` from MusicBrainz in the background (#401).
+    /// Retained here for the same reason: a local would deallocate the moment
+    /// `buildGraph` returned and the pass would silently never run.
+    let artistEnrichmentService: ArtistEnrichmentService
 }
 
 // MARK: - AppModel
@@ -963,7 +967,8 @@ extension BocanApp {
             logConsoleViewModel: LogConsoleViewModel(),
             syncServer: syncServer,
             phoneSyncSettingsViewModel: phoneSyncViewModel,
-            contentHashService: contentHashService
+            contentHashService: contentHashService,
+            artistEnrichmentService: artistEnrichment
         )
     }
 
