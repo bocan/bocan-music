@@ -24,6 +24,9 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
     /// MusicBrainz disambiguation string (e.g. `"guitarist"` vs `"composer"`).
     public var disambiguation: String?
 
+    /// Unix seconds of the last MusicBrainz artist lookup (#401); NULL = never.
+    public var musicbrainzFetchedAt: Int64?
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -33,13 +36,15 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
         name: String,
         sortName: String? = nil,
         musicbrainzArtistID: String? = nil,
-        disambiguation: String? = nil
+        disambiguation: String? = nil,
+        musicbrainzFetchedAt: Int64? = nil
     ) {
         self.id = id
         self.name = name
         self.sortName = sortName
         self.musicbrainzArtistID = musicbrainzArtistID
         self.disambiguation = disambiguation
+        self.musicbrainzFetchedAt = musicbrainzFetchedAt
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -59,6 +64,7 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
         case sortName = "sort_name"
         case musicbrainzArtistID = "musicbrainz_artist_id"
         case disambiguation
+        case musicbrainzFetchedAt = "musicbrainz_fetched_at"
     }
 }
 

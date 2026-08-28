@@ -114,6 +114,35 @@ struct ArtistRepositoryTests {
         #expect(fresh.musicbrainzArtistID == "mbid-cream")
     }
 
+    @Test("enrichment queue lists MBID artists once, and setEnrichment fills without clobbering (#401)")
+    func enrichmentQueue() async throws {
+        let db = try await makeDB()
+        let repo = ArtistRepository(database: db)
+        let tagged = try await repo.findOrCreate(name: "The Kestrels", sortName: "Kestrels, The", musicbrainzID: "mb-1")
+        let bare = try await repo.findOrCreate(name: "Solo One", musicbrainzID: "mb-2")
+        _ = try await repo.findOrCreate(name: "No MBID")
+
+        #expect(try await repo.countNeedingEnrichment() == 2)
+        #expect(try await repo.fetchNeedingEnrichment(limit: 10).map(\.name) == ["The Kestrels", "Solo One"])
+        #expect(try await repo.fetchNeedingEnrichment(limit: 1).map(\.name) == ["The Kestrels"])
+
+        try await repo.setEnrichment(
+            id: #require(tagged.id),
+            disambiguation: "UK folk band",
+            sortName: "Kestrels, The (MB)",
+            fetchedAt: 100
+        )
+        try await repo.setEnrichment(id: #require(bare.id), disambiguation: "", sortName: "One, Solo", fetchedAt: 100)
+        let first = try await repo.fetch(id: #require(tagged.id))
+        #expect(first.disambiguation == "UK folk band")
+        #expect(first.sortName == "Kestrels, The", "an existing sort name is kept")
+        #expect(first.musicbrainzFetchedAt == 100)
+        let second = try await repo.fetch(id: #require(bare.id))
+        #expect(second.disambiguation == nil, "empty disambiguation stored as NULL")
+        #expect(second.sortName == "One, Solo", "MusicBrainz fills a missing sort name")
+        #expect(try await repo.countNeedingEnrichment() == 0)
+    }
+
     @Test("fetchAll orders by sort name with display-name fallback")
     func fetchAllOrdersBySortName() async throws {
         let db = try await makeDB()

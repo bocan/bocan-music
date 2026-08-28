@@ -177,6 +177,51 @@ public struct ArtistRepository: Sendable {
         }
     }
 
+    // MARK: - MusicBrainz enrichment (#401)
+
+    /// Artists with an MBID that have never been looked up, oldest id first.
+    public func fetchNeedingEnrichment(limit: Int) async throws -> [Artist] {
+        try await self.database.read { db in
+            try Artist
+                .filter(Column("musicbrainz_artist_id") != nil)
+                .filter(Column("musicbrainz_fetched_at") == nil)
+                .order(Column("id"))
+                .limit(limit)
+                .fetchAll(db)
+        }
+    }
+
+    /// How many artists still await a MusicBrainz lookup.
+    public func countNeedingEnrichment() async throws -> Int {
+        try await self.database.read { db in
+            try Artist
+                .filter(Column("musicbrainz_artist_id") != nil)
+                .filter(Column("musicbrainz_fetched_at") == nil)
+                .fetchCount(db)
+        }
+    }
+
+    /// Stores what a MusicBrainz lookup returned and stamps `fetched_at`.
+    /// `sortName` is applied only when the row has none (tags and the
+    /// derivation win over MusicBrainz's sort name); an empty
+    /// `disambiguation` is stored as NULL.
+    public func setEnrichment(id: Int64, disambiguation: String?, sortName: String?, fetchedAt: Int64) async throws {
+        let cleaned = disambiguation.flatMap { $0.isEmpty ? nil : $0 }
+        try await self.database.write { db in
+            try db.execute(
+                sql: """
+                UPDATE artists
+                   SET disambiguation = ?,
+                       sort_name = COALESCE(sort_name, ?),
+                       musicbrainz_fetched_at = ?
+                 WHERE id = ?
+                """,
+                arguments: [cleaned, sortName, fetchedAt, id]
+            )
+        }
+        self.log.debug("artist.enriched", ["id": id, "disambiguation": cleaned as Any])
+    }
+
     // MARK: - Search
 
     /// Full-text search across artist name field.

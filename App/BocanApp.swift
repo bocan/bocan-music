@@ -743,6 +743,15 @@ extension BocanApp {
             await contentHashService.start()
         }
 
+        // Fills artists.disambiguation (and a missing sort name) from the
+        // MusicBrainz artist entity, one lookup per artist ever, through the
+        // shared 1 req/s limiter. Starts well after launch so scanning and
+        // hashing settle first (#401).
+        let artistEnrichment = ArtistEnrichmentService(artists: ArtistRepository(database: db))
+        Task.detached(priority: .background) {
+            await artistEnrichment.start()
+        }
+
         let podcastActions = AppPodcastActions(
             service: podcastService,
             player: qp,
