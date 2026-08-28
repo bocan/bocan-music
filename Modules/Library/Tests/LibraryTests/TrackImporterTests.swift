@@ -596,6 +596,62 @@ struct TrackImporterTests {
 
     // MARK: - Provenance carry-over (ADR-075 slice 2)
 
+    @Test("re-importing keeps AcoustID, skip-after, computed ReplayGain and the content hash (#423)")
+    func reimportPreservesComputedAndUserState() async throws {
+        let db = try await makeDB()
+        let trackRepo = TrackRepository(database: db)
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            trackRepo: trackRepo,
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+        let url = URL(fileURLWithPath: "/tmp/state.flac")
+        let id = try await importer.importTrack(
+            url: url, bookmark: nil, tags: self.makeTags(title: "State"), fileMtime: 1000, fileSize: 100
+        )
+
+        // State the app or the user set after import; none of it lives in tags.
+        var row = try await trackRepo.fetch(id: id)
+        row.acoustidFingerprint = "AQADtEmSJ"
+        row.acoustidID = "acoustid-1"
+        row.skipAfterSeconds = 42
+        row.replaygainTrackGain = -6.5
+        row.replaygainTrackPeak = 0.98
+        row.contentHash = "sha-1"
+        try await trackRepo.update(row)
+
+        // Full rescan of the unchanged file: tags carry no ReplayGain.
+        _ = try await importer.importTrack(
+            url: url, bookmark: nil, tags: self.makeTags(title: "State"), fileMtime: 1000, fileSize: 100
+        )
+        row = try await trackRepo.fetch(id: id)
+        #expect(row.acoustidFingerprint == "AQADtEmSJ")
+        #expect(row.acoustidID == "acoustid-1")
+        #expect(row.skipAfterSeconds == 42)
+        #expect(row.replaygainTrackGain == -6.5)
+        #expect(row.replaygainTrackPeak == 0.98)
+        #expect(row.contentHash == "sha-1")
+
+        // A tag value wins over the computed one.
+        var tagged = self.makeTags(title: "State")
+        tagged.replayGain = ReplayGain(trackGain: -3.0)
+        _ = try await importer.importTrack(url: url, bookmark: nil, tags: tagged, fileMtime: 1000, fileSize: 100)
+        row = try await trackRepo.fetch(id: id)
+        #expect(row.replaygainTrackGain == -3.0)
+        #expect(row.replaygainTrackPeak == 0.98, "peak had no tag, computed value stays")
+
+        // The file changed on disk: the content hash is stale, everything else survives.
+        _ = try await importer.importTrack(
+            url: url, bookmark: nil, tags: self.makeTags(title: "State"), fileMtime: 2000, fileSize: 120
+        )
+        row = try await trackRepo.fetch(id: id)
+        #expect(row.contentHash == nil)
+        #expect(row.acoustidID == "acoustid-1")
+        #expect(row.skipAfterSeconds == 42)
+    }
+
     @Test("re-importing an unchanged file keeps its provenance verdict")
     func provenanceSurvivesUnchangedReimport() async throws {
         let db = try await makeDB()

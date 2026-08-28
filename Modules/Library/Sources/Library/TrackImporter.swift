@@ -226,8 +226,26 @@ actor TrackImporter {
             updatedAt: now
         )
 
+        // App-computed and user-owned state must survive a rescan (#423);
+        // none of it comes from tags. AcoustID results identify the
+        // recording, which a retag or re-encode does not change; skip-after
+        // is a user setting; ReplayGain keeps the computed value unless the
+        // file now carries a tag. Assigned after construction because the
+        // initializer call is already at the type checker's limit.
+        if let existing {
+            track_.acoustidFingerprint = existing.acoustidFingerprint
+            track_.acoustidID = existing.acoustidID
+            track_.skipAfterSeconds = existing.skipAfterSeconds
+            track_.replaygainTrackGain = tags.replayGain.trackGain ?? existing.replaygainTrackGain
+            track_.replaygainTrackPeak = tags.replayGain.trackPeak ?? existing.replaygainTrackPeak
+            track_.replaygainAlbumGain = tags.replayGain.albumGain ?? existing.replaygainAlbumGain
+            track_.replaygainAlbumPeak = tags.replayGain.albumPeak ?? existing.replaygainAlbumPeak
+        }
         if audioUnchanged, let existing {
             track_.carryProvenance(from: existing)
+            // The sync content hash (ETag) is valid exactly as long as the
+            // bytes are; a changed file must re-hash (#423).
+            track_.contentHash = existing.contentHash
         }
 
         let id = try await trackRepo.upsert(track_)
