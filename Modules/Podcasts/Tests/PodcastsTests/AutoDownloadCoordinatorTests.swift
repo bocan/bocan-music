@@ -41,7 +41,6 @@ private func makeAutoBed(autoDownload: Bool, maxConcurrent: Int = 2) async throw
     let podcastID = try await podcastRepo.insert(Podcast(
         feedURL: "https://example.com/feed.rss",
         title: "Show",
-        subscribed: true,
         autoDownload: autoDownload,
         addedAt: 1_700_000_000
     ))

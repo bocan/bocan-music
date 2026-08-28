@@ -209,7 +209,7 @@ public struct EpisodeStateRepository: Sendable {
     FROM podcast_episode_state s
     JOIN podcast_episodes e ON e.podcast_id = s.podcast_id AND e.guid = s.guid
     JOIN podcasts          p ON p.id = s.podcast_id
-    WHERE s.play_state = 'inProgress' AND p.subscribed = 1
+    WHERE s.play_state = 'inProgress'
     ORDER BY s.last_played_at DESC, s.guid ASC
     LIMIT ?
     """

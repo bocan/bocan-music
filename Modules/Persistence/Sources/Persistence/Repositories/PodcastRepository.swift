@@ -5,7 +5,7 @@ import Observability
 /// Read/write access to the `podcasts` table.
 ///
 /// `upsertByFeedURL` is the canonical write path during subscribe/refresh: it preserves
-/// user-owned fields (`id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`,
+/// user-owned fields (`id`, `addedAt`, `autoDownload`,
 /// `playbackSpeed`, `episodeSort`, `retentionLimit`) while updating all feed-derived
 /// content columns (including the feed-derived `showType`).
 public struct PodcastRepository: Sendable {
@@ -47,7 +47,7 @@ public struct PodcastRepository: Sendable {
     ///
     /// When the feed already exists the following fields are preserved from the existing
     /// row and are NOT replaced with the incoming values:
-    /// `id`, `addedAt`, `subscribed`, `autoDownload`, `sortIndex`, `playbackSpeed`,
+    /// `id`, `addedAt`, `autoDownload`, `playbackSpeed`,
     /// `episodeSort`, `retentionLimit`, `artworkPath`, `artworkHash`.
     /// `artworkPath` / `artworkHash` describe the locally cached cover-art file (not feed
     /// content); the parsed record never carries them, so preserving them stops a refresh
@@ -63,9 +63,7 @@ public struct PodcastRepository: Sendable {
                 var updated = podcast
                 updated.id = existing.id
                 updated.addedAt = existing.addedAt
-                updated.subscribed = existing.subscribed
                 updated.autoDownload = existing.autoDownload
-                updated.sortIndex = existing.sortIndex
                 // Per-show overrides are user-owned; preserve them. `showType` is
                 // feed-derived and intentionally NOT preserved (refreshes from the parse).
                 updated.playbackSpeed = existing.playbackSpeed
@@ -97,16 +95,6 @@ public struct PodcastRepository: Sendable {
             try db.execute(sql: "DELETE FROM podcasts WHERE id = ?", arguments: [id])
         }
         self.log.info("podcast.delete", ["id": id])
-    }
-
-    /// Updates only the `sort_index` column for a podcast.
-    public func setSortIndex(id: Int64, sortIndex: Int) async throws {
-        try await self.database.write { db in
-            try db.execute(
-                sql: "UPDATE podcasts SET sort_index = ? WHERE id = ?",
-                arguments: [sortIndex, id]
-            )
-        }
     }
 
     /// Sets the per-show playback-speed override (nil = use the app default).
@@ -198,13 +186,11 @@ public struct PodcastRepository: Sendable {
         }
     }
 
-    /// Returns all subscribed podcasts ordered by `sort_index` then `title`.
+    /// Returns every subscription ordered by `title`. (A row is a subscription:
+    /// unsubscribe deletes it, #416.)
     public func fetchAllSubscribed() async throws -> [Podcast] {
         try await self.database.read { db in
-            try Podcast
-                .filter(Column("subscribed") == true)
-                .order(Column("sort_index"), Column("title"))
-                .fetchAll(db)
+            try Podcast.order(Column("title")).fetchAll(db)
         }
     }
 
@@ -213,8 +199,7 @@ public struct PodcastRepository: Sendable {
     public func fetchStale(olderThan interval: TimeInterval, now: Double) async throws -> [Podcast] {
         let cutoff = now - interval
         return try await self.database.read { db in
-            let condition = Column("subscribed") == true
-                && (Column("last_refreshed_at") == nil || Column("last_refreshed_at") < cutoff)
+            let condition = Column("last_refreshed_at") == nil || Column("last_refreshed_at") < cutoff
             return try Podcast.filter(condition).fetchAll(db)
         }
     }
@@ -225,10 +210,7 @@ public struct PodcastRepository: Sendable {
     /// again on every insert, update, or delete to the `podcasts` table.
     public func observeSubscribed() async -> AsyncThrowingStream<[Podcast], Error> {
         await self.database.observe { db in
-            try Podcast
-                .filter(Column("subscribed") == true)
-                .order(Column("sort_index"), Column("title"))
-                .fetchAll(db)
+            try Podcast.order(Column("title")).fetchAll(db)
         }
     }
 }

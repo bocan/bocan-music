@@ -12,14 +12,12 @@ struct ContinueListeningTests {
         in db: Database,
         feedURL: String = "https://example.test/feed.rss",
         title: String = "Test Show",
-        artworkPath: String? = "/art/show.jpg",
-        subscribed: Bool = true
+        artworkPath: String? = "/art/show.jpg"
     ) async throws -> Int64 {
         try await PodcastRepository(database: db).insert(Podcast(
             feedURL: feedURL,
             title: title,
             artworkPath: artworkPath,
-            subscribed: subscribed,
             addedAt: 1_700_000_000
         ))
     }
@@ -114,19 +112,13 @@ struct ContinueListeningTests {
         #expect(guids == ["in-progress"])
     }
 
-    @Test("excludes orphaned state and unsubscribed shows")
-    func excludesOrphansAndUnsubscribed() async throws {
+    @Test("excludes orphaned state")
+    func excludesOrphans() async throws {
         let db = try await makeDB()
         let subscribed = try await insertPodcast(in: db)
-        let unsubscribed = try await insertPodcast(
-            in: db, feedURL: "https://gone.test/rss", title: "Gone", subscribed: false
-        )
         let repo = EpisodeStateRepository(database: db)
         // Orphaned: a state row with no matching content row (pruned episode).
         try await repo.savePosition(podcastID: subscribed, guid: "pruned", position: 5, now: 1_700_002_000)
-        // Unsubscribed show with a real in-progress episode.
-        try await self.insertEpisode(in: db, podcastID: unsubscribed, guid: "u-ep")
-        try await repo.savePosition(podcastID: unsubscribed, guid: "u-ep", position: 5, now: 1_700_003_000)
         // The one item that should survive.
         try await self.insertEpisode(in: db, podcastID: subscribed, guid: "keeper")
         try await repo.savePosition(podcastID: subscribed, guid: "keeper", position: 5, now: 1_700_001_000)

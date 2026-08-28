@@ -80,7 +80,7 @@ public extension LibraryStatsRepository {
                 sql: """
                 SELECT state.podcast_id AS pid, state.guid AS guid
                 FROM podcast_episode_state AS state
-                JOIN podcasts ON podcasts.id = state.podcast_id AND podcasts.subscribed = 1
+                JOIN podcasts ON podcasts.id = state.podcast_id
                 WHERE state.play_state = 'played'
                   AND state.download_state = 'downloaded'
                   AND state.download_path IS NOT NULL
@@ -126,7 +126,7 @@ public extension LibraryStatsRepository {
 
 private extension LibraryStatsRepository {
     static func subscribedShowCount(_ db: GRDB.Database) throws -> Int {
-        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM podcasts WHERE subscribed = 1") ?? 0
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM podcasts") ?? 0
     }
 
     /// Unplayed episodes at full duration, in-progress at the remainder.
@@ -141,7 +141,7 @@ private extension LibraryStatsRepository {
                     ELSE COALESCE(episodes.duration, 0)
                 END), 0)
             FROM podcast_episodes AS episodes
-            JOIN podcasts ON podcasts.id = episodes.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = episodes.podcast_id
             LEFT JOIN podcast_episode_state AS state
                 ON state.podcast_id = episodes.podcast_id AND state.guid = episodes.guid
         """) ?? 0
@@ -157,7 +157,7 @@ private extension LibraryStatsRepository {
                 CASE WHEN state.play_state = 'played' THEN COALESCE(episodes.duration, 0)
                      ELSE COALESCE(state.play_position, 0) END), 0)
             FROM podcast_episode_state AS state
-            JOIN podcasts ON podcasts.id = state.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = state.podcast_id
             JOIN podcast_episodes AS episodes
                 ON episodes.podcast_id = state.podcast_id AND episodes.guid = state.guid
             WHERE state.play_state IN ('played', 'inProgress')
@@ -179,7 +179,6 @@ private extension LibraryStatsRepository {
                    MAX(episodes.published_at) AS latest
             FROM podcasts
             JOIN podcast_episodes AS episodes ON episodes.podcast_id = podcasts.id
-            WHERE podcasts.subscribed = 1
             GROUP BY podcasts.id
             HAVING latest IS NOT NULL AND latest < ?
             ORDER BY latest ASC
@@ -206,7 +205,7 @@ private extension LibraryStatsRepository {
                    COUNT(*) AS cnt,
                    COALESCE(SUM(state.download_bytes), 0) AS bytes
             FROM podcast_episode_state AS state
-            JOIN podcasts ON podcasts.id = state.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = state.podcast_id
             WHERE state.download_state = 'downloaded' AND state.play_state = 'unplayed'
             GROUP BY podcasts.id
             ORDER BY bytes DESC, podcasts.title ASC
@@ -228,7 +227,7 @@ private extension LibraryStatsRepository {
             sql: """
             SELECT COUNT(*) AS cnt, COALESCE(SUM(state.download_bytes), 0) AS bytes
             FROM podcast_episode_state AS state
-            JOIN podcasts ON podcasts.id = state.podcast_id AND podcasts.subscribed = 1
+            JOIN podcasts ON podcasts.id = state.podcast_id
             WHERE state.play_state = 'played'
               AND state.download_state = 'downloaded'
               AND state.download_path IS NOT NULL

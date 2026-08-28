@@ -208,13 +208,6 @@ public actor PodcastService {
         try await self.podcastRepo.setRetentionLimit(limit, id: podcastID)
     }
 
-    /// Persists a user-defined sort order by writing `sort_index = position`.
-    public func reorder(podcastIDs: [Int64]) async throws {
-        for (index, id) in podcastIDs.enumerated() {
-            try await self.podcastRepo.setSortIndex(id: id, sortIndex: index)
-        }
-    }
-
     // MARK: - Refresh
 
     /// Conditional GET; on 304 just stamps `last_refreshed_at`; on 200 upserts

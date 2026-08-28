@@ -266,7 +266,6 @@ struct PodcastsViewModelSearchTests {
             func unsubscribe(podcastID: Int64) async throws {}
             func refresh(podcastID: Int64) async throws {}
             func refreshAll() async {}
-            func reorder(podcastIDs: [Int64]) async throws {}
             func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
             func play(episode: EpisodeListItem, podcast: Podcast) async {}
             func markPlayed(podcastID: Int64, guid: String) async {}
@@ -309,7 +308,6 @@ struct PodcastsViewModelSearchTests {
             func unsubscribe(podcastID: Int64) async throws {}
             func refresh(podcastID: Int64) async throws {}
             func refreshAll() async {}
-            func reorder(podcastIDs: [Int64]) async throws {}
             func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
             func play(episode: EpisodeListItem, podcast: Podcast) async {}
             func markPlayed(podcastID: Int64, guid: String) async {}

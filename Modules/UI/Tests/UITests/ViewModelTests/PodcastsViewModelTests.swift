@@ -81,7 +81,6 @@ private struct StubPodcastActions: PodcastActions, @unchecked Sendable {
     func unsubscribe(podcastID: Int64) async throws {}
     func refresh(podcastID: Int64) async throws {}
     func refreshAll() async {}
-    func reorder(podcastIDs: [Int64]) async throws {}
     func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
     func play(episode: EpisodeListItem, podcast: Podcast) async {}
     func markPlayed(podcastID: Int64, guid: String) async {}
@@ -122,7 +121,6 @@ private final class RecordingPodcastActions: PodcastActions, @unchecked Sendable
     func unsubscribe(podcastID: Int64) async throws {}
     func refresh(podcastID: Int64) async throws {}
     func refreshAll() async {}
-    func reorder(podcastIDs: [Int64]) async throws {}
     func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
     func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async throws {}
     func setEpisodeSort(_ sort: String?, podcastID: Int64) async throws {}
@@ -330,7 +328,6 @@ struct PodcastsViewModelTests {
             func unsubscribe(podcastID: Int64) async throws {}
             func refresh(podcastID: Int64) async throws {}
             func refreshAll() async {}
-            func reorder(podcastIDs: [Int64]) async throws {}
             func setAutoDownload(_ on: Bool, podcastID: Int64) async throws {}
             func play(episode: EpisodeListItem, podcast: Podcast) async {}
             func markPlayed(podcastID: Int64, guid: String) async {}

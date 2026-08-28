@@ -223,7 +223,7 @@ private struct PodcastCell: View {
 Context menu on a cell: **Refresh**, **Mark all as played**, **Settings…** (auto
 download toggle), **Unsubscribe…** (confirm, with the data-loss wording from
 ADR-041's unsubscribe decision). Drag-to-reorder maps to
-`actions.reorder(podcastIDs:)` (optional; can be a later polish).
+`actions.reorder(podcastIDs:)` (optional; can be a later polish). *Not built: `sort_index`, `reorder` and the seam method were removed in M050 (#416); shows order by title. Re-add with its own column if drag-to-reorder is ever wanted.*
 
 ## ContentPane routing
 
