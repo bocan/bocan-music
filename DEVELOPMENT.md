@@ -105,6 +105,21 @@ The `BocanTests` Xcode target runs in a **standalone** process (no host app, `TE
 | `BocanTests` (Xcode) | `make test` | View model tests, Observability tests, App source-convention tests |
 | `UI` package | `make test-ui` | View model tests + snapshot tests |
 
+### Test fixtures
+
+Audio fixtures are **checked in**, never generated at test time (see `CLAUDE.md`): tests read them from `Bundle.module`, so CI and `make test-*` never invoke ffmpeg and results do not depend on which encoders a machine has. Each fixture set has a generator script so the binaries stay reproducible; run one only when you need to change a fixture, delete the affected files first (the scripts skip files that already exist), then commit the output.
+
+| Script | Produces | Used by |
+|--------|----------|---------|
+| `Scripts/gen-audio-fixtures.sh` | Single-file format samples in `Modules/Metadata/Tests/MetadataTests/Fixtures/` (16 and 24 bit, lossy, a `KEY` comment) | `TagReader` / `TagWriter` tests |
+| `Scripts/gen-library-fixtures.sh` | `Modules/Library/Tests/LibraryTests/Fixtures/sample-library/`, an untagged multi-artist tree with edge cases (hidden file, corrupt file, unicode name) | scan lifecycle and count tests |
+| `Scripts/gen-picard-fixtures.sh` | `Modules/Library/Tests/LibraryTests/Fixtures/picard-library/`, a Picard-tagged tree: MusicBrainz ids, sort tags, release types, totals in both `TRACKTOTAL` and `n/N` form, 16 and 24 bit, embedded and sidecar art, an album mixed from two release ids | `PicardLibraryScanTests` (row assertions) and `ColumnPopulationGuardTests` |
+
+Two things about the Picard set:
+
+- ffmpeg cannot write the iTunes freeform atoms TagLib reads, so the M4A's MusicBrainz ids and release type are written with Bòcan's own `TagWriter` by `PicardFixtureFinisherTests` in the Metadata package. It is skipped unless `BOCAN_FINISH_PICARD_FIXTURE=1`; run `cd Modules/Metadata && BOCAN_FINISH_PICARD_FIXTURE=1 swift test --filter PicardFixtureFinisherTests` after regenerating the M4A.
+- `ColumnPopulationGuardTests` scans that set and requires every column of `tracks`, `albums`, `artists` and `cover_art` to be populated (non-NULL, non-DEFAULT) on at least one row, or to appear in its allow-list with a reason. A stale allowance fails too. When you add a column, either give the fixture a tag the importer turns into it, or add a justified line to the allow-list; this is the CI side of the schema-discipline rule in `CLAUDE.md`.
+
 ## Secrets (for release builds)
 
 The following secrets are required in GitHub Actions for the release workflow.
