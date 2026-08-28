@@ -79,6 +79,7 @@ Modules/UI/Sources/UI/PlaylistIO/
    - Single `FILE` declaration with audio filename.
    - N `TRACK` blocks each with `INDEX 01 mm:ss:ff` (frames at 75fps).
    - Bòcan represents this by treating the audio file as one physical file and creating **virtual tracks** with `start_offset` / `end_offset` columns on `tracks` (add via migration M005 if not present). The `Decoder` must honour start/end when requested.
+   - **Superseded by ADR-087.** Virtual tracks were never shipped in this form; CUE points are markers on the referenced track (`track_markers`, M038) and the M013 columns were dropped in M044 (#406).
    - Reader returns `[CUESheetTrack]`; importer creates virtual tracks in the DB.
 
 7. **`ITunesLibraryReader`** — parses the `Library.xml` plist format:
@@ -181,7 +182,7 @@ None new.
   - Exact match path hits.
   - Missing file + matching metadata (by artist+title+duration) hits with a lower-confidence marker.
   - Nothing matches → unresolved list populated.
-- CUE import creates virtual tracks; playback respects `start_offset/end_offset`.
+- CUE import creates virtual tracks; playback respects `start_offset/end_offset`. (Superseded by ADR-087: CUE import creates markers, not tracks.)
 - iTunes import merges play counts where a match exists (configurable); never duplicates files.
 - UI: import review sheet lets me fix an unresolved entry; final playlist has the fix.
 - Drag-drop: dropping two `.m3u8` files creates two playlists in a folder.

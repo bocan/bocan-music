@@ -104,31 +104,6 @@ struct ManifestBuilderTests {
         #expect(try await self.build(fixture).tracks.isEmpty)
     }
 
-    @Test("a CUE clip resolves its parent and duplicates its file identity")
-    func clipResolution() async throws {
-        let fixture = try await self.makeFixture()
-        try await self.seedRoot(fixture)
-        let sourceURL = self.fileURL("/Music/Album/full.mp3")
-        let sourceId = try await fixture.tracks.insert(Track(
-            fileURL: sourceURL, fileSize: 9_200_000, fileFormat: "mp3", duration: 356,
-            title: "Full", contentHash: "aa03", addedAt: 0, updatedAt: 0
-        ))
-        _ = try await fixture.tracks.insert(Track(
-            fileURL: self.fileURL("/Music/Album/full.mp3#clip"), fileFormat: "mp3", duration: 60,
-            title: "Intro", contentHash: "ignored",
-            startOffsetMs: 0, endOffsetMs: 60000, sourceFileURL: sourceURL, addedAt: 0, updatedAt: 0
-        ))
-
-        let manifest = try await self.build(fixture)
-        let clip = try #require(manifest.tracks.first { $0.clip != nil })
-        #expect(clip.clip == ManifestClip(sourceTrackId: sourceId, startMs: 0, endMs: 60000))
-        #expect(clip.sha256 == "aa03") // source's
-        #expect(clip.size == 9_200_000) // source's
-        #expect(clip.relPath == "Album/full.mp3") // source's
-        #expect(clip.durationMs == 60000) // the clip's own duration
-        #expect(clip.title == "Intro") // the clip's own metadata
-    }
-
     @Test("replay gain is emitted only when a track gain is present")
     func replayGainNullability() async throws {
         let fixture = try await self.makeFixture()

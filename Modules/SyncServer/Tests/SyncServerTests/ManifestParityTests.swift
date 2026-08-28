@@ -63,16 +63,6 @@ struct ManifestParityTests {
             replaygainTrackGain: -6.2, replaygainTrackPeak: 0.91,
             rating: 60, contentHash: sha103, addedAt: 0, updatedAt: 0
         ))
-        _ = try await tracks.insert(Track(
-            id: 104, fileURL: URL(fileURLWithPath: "/Music/Slowdive/Souvlaki/04 Souvlaki Space Station.mp3#intro").absoluteString,
-            fileFormat: "mp3", duration: 60,
-            sampleRate: 44100, bitrate: 320, channelCount: 2, isLossless: false,
-            title: "Souvlaki Space Station (Intro)", artistID: 8, albumArtistID: 8, albumID: 56,
-            trackNumber: 5, year: 1993, genre: "Shoegaze",
-            contentHash: "ignored",
-            startOffsetMs: 0, endOffsetMs: 60000, sourceFileURL: mp3URL,
-            addedAt: 0, updatedAt: 0
-        ))
         // An untagged file: only the id/file core, per the contract's
         // field-optionality rules. Every metadata key must end up omitted.
         _ = try await tracks.insert(Track(
@@ -88,9 +78,13 @@ struct ManifestParityTests {
             serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
         )
 
+        // The golden keeps a clip track (id 104) because the wire contract
+        // still allows `clip`; the Mac stopped emitting clips with M044 (#406),
+        // so parity covers every non-clip golden track.
         let golden = try ManifestDTOTests.loadGolden()
-        #expect(built.tracks.count == golden.tracks.count)
-        for goldenTrack in golden.tracks {
+        let goldenWholeFile = golden.tracks.filter { $0.clip == nil }
+        #expect(built.tracks.count == goldenWholeFile.count)
+        for goldenTrack in goldenWholeFile {
             let builtTrack = try #require(built.tracks.first { $0.id == goldenTrack.id })
             #expect(self.normalized(builtTrack) == self.normalized(goldenTrack))
         }

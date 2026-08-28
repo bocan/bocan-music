@@ -777,16 +777,7 @@ public actor QueuePlayer: Transport {
         self.currentMarkers = fetched.count >= 2 ? fetched : []
         self.markerContinuation?.yield(self.currentMarkers)
 
-        // For CUE virtual tracks the `fileURL` is a synthetic key (e.g. the
-        // audio file path with a `?cue=N` suffix) — not an openable file.
-        // Load the underlying physical file instead.
-        let engineLoadURL: URL = if let sourceURLString = item.sourceFileURL, let sourceURL = URL(string: sourceURLString) {
-            sourceURL
-        } else {
-            url
-        }
-
-        try await self.engine.load(engineLoadURL)
+        try await self.engine.load(url)
         // Release whichever scope was started — AVAudioFile already holds an open
         // file descriptor so the scope is no longer needed.
         if resolvedFromPerFileBookmark {
@@ -796,18 +787,6 @@ public actor QueuePlayer: Transport {
         // waiting for the function to return (matches the pre-RAII timing).
         withExtendedLifetime(rootScope) {}
         rootScope = nil
-
-        // If this is a CUE virtual track, seek to the segment start and clamp duration.
-        if let startMs = item.startOffsetMs {
-            let startSec = TimeInterval(startMs) / 1000.0
-            let endSec = item.endOffsetMs.map { TimeInterval($0) / 1000.0 }
-            try await self.engine.setSegment(start: startSec, end: endSec)
-            self.log.debug("queueplayer.cue.segment", [
-                "trackID": item.trackID,
-                "startSec": startSec,
-                "endSec": endSec as Any,
-            ])
-        }
 
         // Per-episode podcast resume: seek to the saved position for this
         // episode before playback begins. This is authoritative for a podcast
@@ -1186,11 +1165,6 @@ public actor QueuePlayer: Transport {
     private func resolveNextGaplessItem() async -> (item: QueueItem, forceGapless: Bool)? {
         guard await !self.queue.stopAfterCurrent else { return nil }
         guard let item = await queue.peekNext() else { return nil }
-
-        // CUE virtual tracks require segment-offset handling that the gapless
-        // path doesn't support. Fall back to normal stop/load/play transition.
-        if item.isCUETrack { return nil }
-        if await self.queue.currentItem?.isCUETrack == true { return nil }
 
         // Determine whether the next item's album has `force_gapless` set and
         // the current item belongs to the same album.

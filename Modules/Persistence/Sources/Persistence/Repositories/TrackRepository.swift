@@ -257,12 +257,10 @@ public struct TrackRepository: Sendable {
         try self.hashableTracks.fetchCount(db)
     }
 
-    /// Tracks eligible for content hashing: enabled, whole-file (CUE clips
-    /// share their parent's bytes and hash), with a bookmark to read through.
+    /// Tracks eligible for content hashing: enabled, with a bookmark to read through.
     private static var hashableTracks: QueryInterfaceRequest<Track> {
         Track
             .filter(Column("disabled") == false)
-            .filter(Column("source_file_url") == nil)
             .filter(Column("file_bookmark") != nil)
     }
 

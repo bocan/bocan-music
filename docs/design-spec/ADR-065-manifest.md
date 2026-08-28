@@ -38,7 +38,7 @@ the places a naive implementation gets it wrong:
    path cannot be formed safely, is **excluded** from the manifest (log
    `op.skipped`).
 
-2. **CUE clips key off a URL, not a track id.** The Mac has no `sourceTrackId`.
+2. **CUE clips key off a URL, not a track id.** *Superseded by ADR-087 and M044 (#406): the Mac no longer has virtual tracks and never emits `clip`; the wire field stays optional and reserved so the phone's decoder is unchanged. The paragraph below is kept for the history of the wire shape.* The Mac has no `sourceTrackId`.
    `tracks` stores `start_offset_ms`, `end_offset_ms`, and
    `source_file_url: String?` (migration `M013_CueVirtualTracks`). The wire
    `clip` DTO is `{ sourceTrackId, startMs, endMs }`. To emit it: look up the
@@ -206,8 +206,8 @@ manifest; honour `Accept-Encoding: gzip` by gzipping the response body (still se
 ## Tests
 
 - **`ManifestBuilderTests`** with fixture in-memory `Database`s: profile filtering
-  (selecting a playlist drops out-of-profile smart-list members); clip tracks
-  resolve `source_file_url` to the parent id and duplicate its bytes; a null
+  (selecting a playlist drops out-of-profile smart-list members); clips are no
+  longer built (parity covers the golden's non-clip tracks); a null
   `content_hash` track is excluded (with a skip count); `relPath` derivation and
   sanitization; lyricsHash computed and stable; podcast state snapshot; ReplayGain
   emitted only when present.
@@ -232,7 +232,7 @@ manifest; honour `Accept-Encoding: gzip` by gzipping the response body (still se
       (structural compare); the Android `SyncApplier` accepts it unmodified
       (verified in ADR-069).
 - [x] Every impedance mismatch above has a passing test (relPath, clip via
-      source_file_url, null-hash exclusion, computed lyricsHash, name joins,
+      source_file_url (retired with M044), null-hash exclusion, computed lyricsHash, name joins,
       ReplayGain nullability).
 - [x] Profile filtering: selected playlists drop out-of-profile smart members;
       podcasts included only when the profile opts in and only downloaded

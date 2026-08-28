@@ -62,7 +62,6 @@ private extension TrackRepository {
         Track
             .filter(Column("disabled") == false)
             .filter(Column("is_lossless") == true)
-            .filter(Column("source_file_url") == nil)
             .filter(Column("file_bookmark") != nil)
             .filter(Column("provenance_analysed_at") == nil || Column("provenance_analysed_at") < Column("file_mtime"))
     }
