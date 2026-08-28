@@ -139,6 +139,11 @@ targets:
       - path: Modules/Observability/Tests/ObservabilityTests
       - path: Modules/UI/Tests/UITests/ViewModelTests
       - path: App/SingleInstance.swift # compile directly so tests can verify constants
+      # The UI-to-module adapters, compiled directly so the seam tests can
+      # drive them against real services (#422).
+      - path: App/AppPodcastActions.swift
+      - path: App/AppPodcastSearch.swift
+      - path: App/AppPodcastResolver.swift
       - path: Tests/AppTests
     settings:
       base:
@@ -150,6 +155,7 @@ targets:
       - package: Persistence
       - package: AudioEngine
       - package: Playback
+      - package: Podcasts
       - package: UI
 
   BocanUITests:

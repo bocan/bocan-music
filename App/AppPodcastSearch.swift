@@ -74,8 +74,8 @@ struct AppPodcastSearch: PodcastSearchProviding {
             alreadySubscribed: existing != nil,
             podcastID: existing.flatMap(\.id),
             persons: parsed.persons,
-            podcastIndexID: enriched?.podcastIndexID,
-            itunesCollectionID: enriched?.itunesCollectionID
+            podcastIndexID: enriched?.podcastIndexID ?? hint?.podcastIndexID,
+            itunesCollectionID: enriched?.itunesCollectionID ?? hint?.itunesCollectionID
         )
     }
 
