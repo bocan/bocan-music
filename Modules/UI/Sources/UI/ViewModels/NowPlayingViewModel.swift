@@ -652,6 +652,23 @@ private extension NowPlayingViewModel {
         self.positionTask = nil
     }
 
+    /// Prefers the episode's own cached art over the show's; with `retry`,
+    /// looks again after a short delay for art still being fetched.
+    private func applyEpisodeArtwork(podcastID: Int64, guid: String, retry: Bool) async {
+        let repo = EpisodeRepository(database: self.database)
+        let episode = try? await repo.fetchByGUID(podcastID: podcastID, guid: guid)
+        if let path = episode?.artworkPath {
+            self.artwork = await ArtworkLoader.shared.image(at: path)
+            return
+        }
+        guard retry, episode?.artworkURL != nil else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard let self, self.podcastGUID == guid else { return }
+            await self.applyEpisodeArtwork(podcastID: podcastID, guid: guid, retry: false)
+        }
+    }
+
     /// Fills podcast-specific now-playing state when the current queue item is a podcast episode.
     func applyPodcastItem(feedURL: URL, episodeGUID: String) async {
         self.isPodcast = true
@@ -664,6 +681,12 @@ private extension NowPlayingViewModel {
         self.podcastID = podcast?.id
         if let path = podcast?.artworkPath {
             self.artwork = await ArtworkLoader.shared.image(at: path)
+        }
+        // Episode art overrides the show's when the feed supplies it (ADR-047,
+        // #410). It is cached lazily when playback resolves the episode, so on
+        // a first play it may land a moment after this runs: re-check once.
+        if let podcastID = podcast?.id {
+            await self.applyEpisodeArtwork(podcastID: podcastID, guid: episodeGUID, retry: true)
         }
         if let qp = self.engine as? QueuePlayer {
             let back = UserDefaults.standard.double(forKey: "podcasts.skipBackInterval")

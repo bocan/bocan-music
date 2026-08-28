@@ -121,8 +121,8 @@
     "note": "Show-level credits; written via GRDB record encoding, so it works."
   },
   "podcast_episodes.artwork_path": {
-    "traces": "ADR-041:100, ADR-070:42, #410",
-    "note": "cacheEpisodeArt has no callers; upsertOne would overwrite it with NULL on refresh."
+    "traces": "ADR-041:100, ADR-047:43, ADR-070:42, #410",
+    "note": "Local path of the episode's own itunes:image, cached lazily by PodcastService when playback resolves the episode (not for every episode on refresh); upsertOne keeps it across refreshes. Read by Continue Listening (COALESCE with show art) and Now Playing (episode art overrides show art). Not in the sync manifest (ADR-070)."
   },
   "podcast_episodes.persons_json": {
     "traces": "M028, #411",

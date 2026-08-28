@@ -211,8 +211,8 @@ Record: `PodcastEpisode.swift`
 | `season` | INTEGER | n/a (common identifier, see notes) | n/a | M023 |  |
 | `episode_number` | INTEGER | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift |  | M023 |  |
 | `episode_type` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift |  | M023 |  |
-| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService.swift | M023 |  |
-| `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService.swift, PodcastsGridView.swift (+1) | ADR-041:100, ADR-070:42, #410 | cacheEpisodeArt has no callers; upsertOne would overwrite it with NULL on refresh. |
+| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | NowPlayingViewModel.swift, PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService.swift | M023 |  |
+| `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService.swift, PodcastsGridView.swift (+1) | ADR-041:100, ADR-047:43, ADR-070:42, #410 | Local path of the episode's own itunes:image, cached lazily by PodcastService when playback resolves the episode (not for every episode on refresh); upsertOne keeps it across refreshes. Read by Continue Listening (COALESCE with show art) and Now Playing (episode art overrides show art). Not in the sync manifest (ADR-070). |
 | `chapters_url` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift, PodcastService.swift | EpisodeList.swift, ManifestBuilder.swift, ShowNotesView.swift | M023 |  |
 | `transcript_url` | TEXT | EpisodeRepository.swift, FeedParser.swift, ParsedEpisode.swift, ParsedFeed+Records.swift, PodcastService.swift (+1) | EpisodeList.swift | M023 |  |
 | `link` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
@@ -231,7 +231,7 @@ Record: `Podcast.swift`
 | `title` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `author` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `description` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
-| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService.swift | M023 |  |
+| `artwork_url` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, FeedParser.swift, ITunesSearchClient.swift, ParsedEpisode.swift (+8) | NowPlayingViewModel.swift, PodcastDetailView.swift, PodcastRepository.swift, PodcastSearchResultsView.swift, PodcastService.swift | M023 |  |
 | `artwork_path` | TEXT | EpisodeRepository.swift, EpisodeStateRepository.swift, NowPlayingViewModel.swift, PodcastArtworkCache.swift, PodcastRepository.swift | ContinueListeningRail.swift, FileServing.swift, ManifestBuilder.swift, PodcastService.swift, PodcastsGridView.swift (+1) | M023 |  |
 | `link` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
 | `language` | TEXT | n/a (common identifier, see notes) | n/a | M023 |  |
