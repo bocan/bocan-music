@@ -68,8 +68,14 @@ actor CoverArtCache {
 
     /// Persists `arts` to disk (if absent) and to the DB.
     ///
+    /// `source` records provenance in `cover_art.source` (`embedded`, `sidecar`,
+    /// `user`; the MusicBrainz batch tool writes `musicbrainz` itself), so the
+    /// hygiene pane and the batch tool can tell a 200 px embedded thumbnail from
+    /// art the user chose (#417). An existing row keeps its own value and only
+    /// has NULL metadata filled in (see `CoverArtRepository.save`).
+    ///
     /// Returns the hash and file-system path of the first art item, or `nil` when `arts` is empty.
-    func persist(_ arts: [ExtractedCoverArt]) async throws -> (hash: String, path: String)? {
+    func persist(_ arts: [ExtractedCoverArt], source: String) async throws -> (hash: String, path: String)? {
         guard !arts.isEmpty else { return nil }
         var first: (hash: String, path: String)?
         for art in arts {
@@ -115,7 +121,9 @@ actor CoverArtCache {
                 path: fileURL.path,
                 width: resized.pixelSize.map { Int($0.width) },
                 height: resized.pixelSize.map { Int($0.height) },
-                format: art.fileExtension == "jpg" ? "jpeg" : art.fileExtension
+                format: art.fileExtension == "jpg" ? "jpeg" : art.fileExtension,
+                byteSize: resized.data.count,
+                source: source
             )
             try await self.repo.save(record)
             if first == nil { first = (hash: hash, path: fileURL.path) }

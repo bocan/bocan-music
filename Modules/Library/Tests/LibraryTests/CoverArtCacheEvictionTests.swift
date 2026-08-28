@@ -51,11 +51,11 @@ struct CoverArtCacheEvictionTests {
 
         // Persist three distinct arts oldest-first, with gaps so their file
         // modification times (the LRU key) are strictly ordered.
-        let first = try #require(try await cache.persist([art(fill: 1, bytes: artBytes)]))
+        let first = try #require(try await cache.persist([art(fill: 1, bytes: artBytes)], source: "embedded"))
         try await Task.sleep(nanoseconds: 25_000_000)
-        let second = try #require(try await cache.persist([art(fill: 2, bytes: artBytes)]))
+        let second = try #require(try await cache.persist([art(fill: 2, bytes: artBytes)], source: "embedded"))
         try await Task.sleep(nanoseconds: 25_000_000)
-        let third = try #require(try await cache.persist([art(fill: 3, bytes: artBytes)]))
+        let third = try #require(try await cache.persist([art(fill: 3, bytes: artBytes)], source: "embedded"))
 
         let fm = FileManager.default
         // Oldest art evicted from disk and DB; the FK is ON DELETE SET NULL so
@@ -89,7 +89,7 @@ struct CoverArtCacheEvictionTests {
 
         var paths: [String] = []
         for fill: UInt8 in 1 ... 4 {
-            let result = try #require(try await cache.persist([art(fill: fill, bytes: 50000)]))
+            let result = try #require(try await cache.persist([art(fill: fill, bytes: 50000)], source: "embedded"))
             paths.append(result.path)
         }
 

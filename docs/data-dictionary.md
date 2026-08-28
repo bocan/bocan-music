@@ -63,11 +63,11 @@ Record: `CoverArt.swift`
 |---|---|---|---|---|---|
 | `hash` (pk) | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
 | `path` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `width` | INTEGER | n/a (common identifier, see notes) | n/a | ADR-003:111, ADR-004:81, #417 | Set by CoverArtCache.persist since 2026-04 only; save() ignores existing hashes so older rows stay NULL. |
+| `width` | INTEGER | n/a (common identifier, see notes) | n/a | ADR-003:111, ADR-004:81, #417 | Pixel width from CGImageSource in CoverArtCache.persist; CoverArtRepository.save fills NULL on an existing hash so a full rescan backfills old rows. Read by the hygiene 'Albums With Low-Resolution Artwork' line (< 500 px longest side). |
 | `height` | INTEGER | n/a (common identifier, see notes) | n/a | ADR-003:111, ADR-004:81, #417 | See width. |
 | `format` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `byte_size` | INTEGER | BatchCoverArtViewModel.swift |  | ADR-003:114, #417 | Only the MusicBrainz batch tool sets it. |
-| `source` | TEXT | n/a (common identifier, see notes) | n/a | ADR-003:116, #417 | Vocabulary embedded|sidecar|musicbrainz|user; only 'musicbrainz' is ever written. |
+| `byte_size` | INTEGER | BatchCoverArtViewModel.swift, CoverArtCache.swift, CoverArtRepository.swift |  | ADR-003:114, #417 | Size of the cached (possibly downsampled) file, set by persist and the MusicBrainz batch tool; NULL rows heal on rescan. |
+| `source` | TEXT | n/a (common identifier, see notes) | n/a | ADR-003:116, #417 | embedded (importer), sidecar (cover.jpg pickup), user (editor art drop), musicbrainz (batch tool). First-seen wins per hash; never overwritten. |
 
 ## `imported_listens`
 

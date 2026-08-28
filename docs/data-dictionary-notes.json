@@ -74,7 +74,7 @@
   },
   "cover_art.width": {
     "traces": "ADR-003:111, ADR-004:81, #417",
-    "note": "Set by CoverArtCache.persist since 2026-04 only; save() ignores existing hashes so older rows stay NULL."
+    "note": "Pixel width from CGImageSource in CoverArtCache.persist; CoverArtRepository.save fills NULL on an existing hash so a full rescan backfills old rows. Read by the hygiene 'Albums With Low-Resolution Artwork' line (< 500 px longest side)."
   },
   "cover_art.height": {
     "traces": "ADR-003:111, ADR-004:81, #417",
@@ -82,11 +82,11 @@
   },
   "cover_art.byte_size": {
     "traces": "ADR-003:114, #417",
-    "note": "Only the MusicBrainz batch tool sets it."
+    "note": "Size of the cached (possibly downsampled) file, set by persist and the MusicBrainz batch tool; NULL rows heal on rescan."
   },
   "cover_art.source": {
     "traces": "ADR-003:116, #417",
-    "note": "Vocabulary embedded|sidecar|musicbrainz|user; only 'musicbrainz' is ever written."
+    "note": "embedded (importer), sidecar (cover.jpg pickup), user (editor art drop), musicbrainz (batch tool). First-seen wins per hash; never overwritten."
   },
   "lyrics.offset_ms": {
     "traces": "ADR-015:85, #415",

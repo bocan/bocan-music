@@ -3355,6 +3355,16 @@
         }
       }
     },
+    "Albums With Low-Resolution Artwork" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áĺƀúḿš Ŵíţĥ Ĺóŵ-Ŕéšóĺúţíóñ Áŕţŵóŕķ one two three"
+          }
+        }
+      }
+    },
     "Albums with at least %lld tracks. Watch the average climb when the CD arrives, then fall again." : {
       "localizations" : {
         "en-XA" : {
@@ -6814,6 +6824,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çóvéŕ áŕţ íš šţóŕéđ íñ Ɓòçáñ'š çáçĥé óñĺý áñđ ŵóñ'ţ ƀé víšíƀĺé íñ óţĥéŕ áƥƥš. one two three four five"
+          }
+        }
+      }
+    },
+    "Cover art smaller than 500 pixels on its longest side. Art with unknown dimensions is not counted." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóvéŕ áŕţ šḿáĺĺéŕ ţĥáñ 500 ƥíxéĺš óñ íţš ĺóñĝéšţ šíđé. Áŕţ ŵíţĥ úñķñóŵñ đíḿéñšíóñš íš ñóţ çóúñţéđ. one two three four five six seven"
           }
         }
       }
