@@ -254,6 +254,9 @@ public struct LyricsPane: View {
         .popover(isPresented: self.$showOffsetPopover, arrowEdge: .bottom) {
             self.offsetPopover
         }
+        .onChange(of: self.showOffsetPopover) { _, shown in
+            if !shown { self.vm.commitOffset() }
+        }
     }
 
     private var offsetPopover: some View {

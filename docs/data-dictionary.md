@@ -106,7 +106,7 @@ Record: `Lyrics.swift`
 | `lyrics_text` | TEXT | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | FieldDefinitions.swift, MetadataEditService.swift | M001 |  |
 | `is_synced` | BOOLEAN | EditTransaction.swift, LyricsService.swift, TrackImporter.swift | LyricsPane.swift, TrackTagPatch.swift | M001 |  |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | M001 |  |
-| `offset_ms` | INTEGER | LRCParser.swift, LyricsDocument.swift, LyricsService.swift | LyricsViewModel.swift | ADR-015:85, #415 | Read on load, never written: the sync-offset slider is session-only. |
+| `offset_ms` | INTEGER | LRCParser.swift, LyricsDocument.swift, LyricsService.swift | LyricsViewModel.swift | ADR-015:85, #415 | The user's per-track sync adjustment (LRC convention: positive = lyrics ahead). Written by LyricsService.setUserOffset from LyricsViewModel.commitOffset (debounced slider, popover dismiss); preserved by setLyrics; folded into the document by LyricsService.parse. Not the LRC [offset:] tag, which stays in the text. |
 
 ## `play_history`
 
