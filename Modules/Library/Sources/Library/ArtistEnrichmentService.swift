@@ -34,14 +34,16 @@ public actor ArtistEnrichmentService {
     }
 
     /// Starts one pass after `delay` (so launch work settles first). A pass
-    /// already underway is left alone.
+    /// already underway is left alone. The task captures `self` strongly on
+    /// purpose: a fire-and-forget background pass must keep its actor alive
+    /// until it ends; `stop()` cancels it.
     public func start(after delay: Duration = .seconds(45)) {
         guard self.runningPass == nil else { return }
-        self.runningPass = Task(priority: .utility) { [weak self] in
+        self.runningPass = Task(priority: .utility) {
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
-            await self?.enrichOnce()
-            await self?.passFinished()
+            await self.enrichOnce()
+            await self.passFinished()
         }
     }
 
