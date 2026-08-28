@@ -90,7 +90,9 @@ struct TagReaderTests {
         (["ELEAS", "album", "compilation"], "album"),
         (["compilation", "album"], "album"),
         (["OURCE", "live"], "live"),
-        (["mixtape"], "mixtape"),
+        (["ELEAS"], nil),
+        (["mixtape"], nil),
+        (["mixtape/street"], "mixtape/street"),
         ([" ", ""], nil),
         ([], nil),
     ] as [([String], String?)])
