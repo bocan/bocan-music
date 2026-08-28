@@ -83,7 +83,6 @@ public struct TagReader: Sendable {
         tags.bpm = raw.bpm > 0 ? raw.bpm : nil
         tags.key = raw.key.map { String($0) }
         tags.isrc = raw.isrc.map { String($0) }
-        tags.releaseType = raw.releaseType.map { String($0).lowercased() }
         tags.musicbrainzTrackID = raw.musicbrainzTrackID.map { String($0) }
         tags.musicbrainzRecordingID = raw.musicbrainzRecordingID.map { String($0) }
         tags.musicbrainzArtistID = raw.musicbrainzArtistID.map { String($0) }
@@ -101,6 +100,13 @@ public struct TagReader: Sendable {
             ext[String(key)] = values.map { String($0) }
         }
         tags.extendedTags = ext
+
+        // Release type needs the full multi-valued list, so it is derived
+        // after extendedTags: prefer a known MusicBrainz type anywhere in the
+        // list over a junk first value (see TrackTags.primaryReleaseType).
+        let releaseTypeValues = tags.extendedTags["RELEASETYPE"] ?? tags.extendedTags["MUSICBRAINZ_ALBUMTYPE"]
+            ?? raw.releaseType.map { [String($0)] } ?? []
+        tags.releaseType = TrackTags.primaryReleaseType(from: releaseTypeValues)
         tags.duration = raw.duration
         tags.sampleRate = raw.sampleRate > 0 ? Int(raw.sampleRate) : nil
         tags.bitrate = raw.bitrate > 0 ? Int(raw.bitrate) : nil

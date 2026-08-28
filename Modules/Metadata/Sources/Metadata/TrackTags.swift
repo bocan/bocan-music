@@ -149,3 +149,29 @@ public struct TrackTags: Sendable {
         self.bitDepth = bitDepth
     }
 }
+
+// MARK: - Release type selection
+
+public extension TrackTags {
+    /// MusicBrainz release-group primary types, in preference order.
+    static let primaryReleaseTypes: [String] = ["album", "single", "ep", "broadcast", "other"]
+
+    /// MusicBrainz secondary types, accepted when no primary type is present.
+    static let secondaryReleaseTypes: [String] = [
+        "compilation", "soundtrack", "spokenword", "interview", "audiobook", "audio drama",
+        "live", "remix", "dj-mix", "mixtape/street", "demo", "field recording",
+    ]
+
+    /// Picks the release type from a multi-valued RELEASETYPE list.
+    ///
+    /// Picard writes the primary type first, but some taggers prepend junk
+    /// (a real library had `["ELEAS", "album", "compilation"]` on 81 files),
+    /// so prefer a known primary type anywhere in the list, then a known
+    /// secondary, and only then the first value (#403).
+    static func primaryReleaseType(from values: [String]) -> String? {
+        let lowered = values.map { $0.trimmingCharacters(in: .whitespaces).lowercased() }.filter { !$0.isEmpty }
+        if let primary = lowered.first(where: { self.primaryReleaseTypes.contains($0) }) { return primary }
+        if let secondary = lowered.first(where: { self.secondaryReleaseTypes.contains($0) }) { return secondary }
+        return lowered.first
+    }
+}

@@ -81,6 +81,7 @@ public struct Migrator {
         M044DropCueVirtualTrackColumns.register(in: &dm)
         M045PendingMaintenance.register(in: &dm)
         M046ReleaseTypeRescan.register(in: &dm)
+        M047ReleaseTypeJunkRescan.register(in: &dm)
     }
 
     // MARK: - Migration
