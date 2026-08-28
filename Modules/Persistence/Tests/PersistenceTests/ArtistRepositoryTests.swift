@@ -126,13 +126,14 @@ struct ArtistRepositoryTests {
         #expect(try await repo.fetchNeedingEnrichment(limit: 10).map(\.name) == ["The Kestrels", "Solo One"])
         #expect(try await repo.fetchNeedingEnrichment(limit: 1).map(\.name) == ["The Kestrels"])
 
-        try await repo.setEnrichment(
-            id: #require(tagged.id),
-            disambiguation: "UK folk band",
-            sortName: "Kestrels, The (MB)",
-            fetchedAt: 100
+        #expect(try await repo
+            .setEnrichment(mbid: "mb-1", disambiguation: "UK folk band", sortName: "Kestrels, The (MB)", fetchedAt: 100) == 1)
+        _ = try await repo.findOrCreate(name: "Solo One feat. Guest", musicbrainzID: "mb-2")
+        #expect(
+            try await repo.setEnrichment(mbid: "mb-2", disambiguation: "", sortName: "One, Solo", fetchedAt: 100) == 2,
+            "every row sharing the MBID is stamped"
         )
-        try await repo.setEnrichment(id: #require(bare.id), disambiguation: "", sortName: "One, Solo", fetchedAt: 100)
+        #expect(try await repo.fetchOne(name: "Solo One feat. Guest")?.musicbrainzFetchedAt == 100)
         let first = try await repo.fetch(id: #require(tagged.id))
         #expect(first.disambiguation == "UK folk band")
         #expect(first.sortName == "Kestrels, The", "an existing sort name is kept")
