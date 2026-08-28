@@ -116,6 +116,20 @@ struct AlbumRepositoryTests {
         #expect(stored.musicbrainzReleaseGroupID == "rg-1")
     }
 
+    @Test("M048 vocabulary list matches TrackTags so junk types are cleared (#403)")
+    func releaseTypeVocabularyClearsJunk() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let junk = try await repo.findOrCreate(title: "Junk", albumArtistID: nil)
+        let fine = try await repo.findOrCreate(title: "Fine", albumArtistID: nil)
+        try await repo.setReleaseType(albumID: #require(junk.id), releaseType: "eleas")
+        try await repo.setReleaseType(albumID: #require(fine.id), releaseType: "compilation")
+        // Re-run the migration body against the populated table.
+        try await db.write { try M048ReleaseTypeVocabulary.apply($0) }
+        #expect(try await repo.fetch(id: #require(junk.id)).releaseType == nil)
+        #expect(try await repo.fetch(id: #require(fine.id)).releaseType == "compilation")
+    }
+
     @Test("findOrCreate returns existing album on second call")
     func findOrCreateIdempotent() async throws {
         let db = try await makeDatabase()

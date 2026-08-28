@@ -82,6 +82,7 @@ public struct Migrator {
         M045PendingMaintenance.register(in: &dm)
         M046ReleaseTypeRescan.register(in: &dm)
         M047ReleaseTypeJunkRescan.register(in: &dm)
+        M048ReleaseTypeVocabulary.register(in: &dm)
     }
 
     // MARK: - Migration

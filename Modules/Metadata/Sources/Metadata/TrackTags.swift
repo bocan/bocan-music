@@ -164,14 +164,15 @@ public extension TrackTags {
 
     /// Picks the release type from a multi-valued RELEASETYPE list.
     ///
-    /// Picard writes the primary type first, but some taggers prepend junk
-    /// (a real library had `["ELEAS", "album", "compilation"]` on 81 files),
-    /// so prefer a known primary type anywhere in the list, then a known
-    /// secondary, and only then the first value (#403).
+    /// Picard writes the primary type first, but some taggers write junk
+    /// (a real library had `["ELEAS", "album", "compilation"]` on 81 files
+    /// and `["ELEAS"]` alone on 76 more), so prefer a known primary type
+    /// anywhere in the list, then a known secondary, and otherwise nil: the
+    /// MusicBrainz vocabulary is closed, so an unknown value is never a type
+    /// worth storing (#403).
     static func primaryReleaseType(from values: [String]) -> String? {
         let lowered = values.map { $0.trimmingCharacters(in: .whitespaces).lowercased() }.filter { !$0.isEmpty }
         if let primary = lowered.first(where: { self.primaryReleaseTypes.contains($0) }) { return primary }
-        if let secondary = lowered.first(where: { self.secondaryReleaseTypes.contains($0) }) { return secondary }
-        return lowered.first
+        return lowered.first(where: { self.secondaryReleaseTypes.contains($0) })
     }
 }
