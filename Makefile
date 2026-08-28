@@ -317,12 +317,11 @@ audit-db:
 	python3 Scripts/audit-db-xref.py "$$tmp" Modules --show-files || true; \
 	rm -rf "$$(dirname "$$tmp")"
 
-## data-dictionary: Regenerate docs/data-dictionary.md from a copy of the real library plus docs/data-dictionary-notes.json (DB=path to override)
+## data-dictionary: Regenerate docs/data-dictionary.md from a freshly migrated schema plus docs/data-dictionary-notes.json (DB=path to use a real library instead)
 data-dictionary:
-	@src="$${DB:-$$HOME/Library/Containers/io.cloudcauldron.bocan/Data/Library/Application Support/Bocan/library.sqlite}"; \
-	if [ ! -f "$$src" ]; then echo "data-dictionary: no database at $$src (set DB=/path/to/library.sqlite)"; exit 1; fi; \
-	tmp="$$(mktemp -d)/library.sqlite"; \
-	sqlite3 "$$src" ".backup '$$tmp'" || exit 1; \
+	@tmp="$$(mktemp -d)/schema.sqlite"; \
+	if [ -n "$$DB" ]; then sqlite3 "$$DB" ".backup '$$tmp'" || exit 1; \
+	else swift run --package-path Modules/Persistence -c release bocan-schema "$$tmp" 2>&1 | tail -1 || exit 1; fi; \
 	python3 Scripts/gen-data-dictionary.py "$$tmp"; \
 	rm -rf "$$(dirname "$$tmp")"
 
