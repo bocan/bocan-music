@@ -19,6 +19,7 @@ public actor LibraryScanner {
 
     private let database: Database
     private let rootRepo: LibraryRootRepository
+    private let maintenanceRepo: PendingMaintenanceRepository
     private let coordinator: ScanCoordinator
     private var fsWatcher: FSWatcher?
     private var isScanning = false
@@ -39,6 +40,7 @@ public actor LibraryScanner {
         self.database = database
         self.rootRepo = LibraryRootRepository(database: database)
         self.coordinator = ScanCoordinator(database: database)
+        self.maintenanceRepo = PendingMaintenanceRepository(database: database)
     }
 
     // MARK: - Root management
@@ -187,12 +189,45 @@ public actor LibraryScanner {
                     return
                 }
 
-                await self.coordinator.scan(roots: resolved, mode: mode) { event in
+                // A migration may have asked for a full re-read (#425). Honour it
+                // on any scan, silently, and clear the request only when that
+                // full scan finishes, so a cancelled or crashed scan runs again.
+                let effectiveMode = await self.effectiveScanMode(requested: mode)
+                let finished = FinishedFlag()
+                await self.coordinator.scan(roots: resolved, mode: effectiveMode) { event in
+                    if case .finished = event { finished.mark() }
                     continuation.yield(event)
+                }
+                if effectiveMode == .full, finished.isSet, !Task.isCancelled {
+                    await self.clearFullRescanRequest()
                 }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    // MARK: - Pending maintenance (#425)
+
+    /// `.full` when a `full_rescan` request is outstanding, else `requested`.
+    private func effectiveScanMode(requested: ScanMode) async -> ScanMode {
+        guard requested == .quick else { return requested }
+        do {
+            if try await self.maintenanceRepo.hasRequest(task: PendingMaintenance.Task.fullRescan) {
+                self.log.info("scan.mode.upgraded", ["reason": "pending full_rescan request"])
+                return .full
+            }
+        } catch {
+            self.log.warning("scan.maintenance.read_failed", ["error": String(reflecting: error)])
+        }
+        return requested
+    }
+
+    private func clearFullRescanRequest() async {
+        do {
+            try await self.maintenanceRepo.clear(task: PendingMaintenance.Task.fullRescan)
+        } catch {
+            self.log.warning("scan.maintenance.clear_failed", ["error": String(reflecting: error)])
         }
     }
 
@@ -435,5 +470,20 @@ public actor LibraryScanner {
             results.append(fileURL)
         }
         return results
+    }
+}
+
+/// A tiny thread-safe flag for the scan progress closure, which is
+/// `@Sendable` and synchronous.
+private final class FinishedFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+
+    var isSet: Bool {
+        self.lock.withLock { self.value }
+    }
+
+    func mark() {
+        self.lock.withLock { self.value = true }
     }
 }

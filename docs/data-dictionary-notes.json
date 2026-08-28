@@ -163,5 +163,17 @@
   "tracks.content_hash": {
     "traces": "ADR-065, #423",
     "note": "Sync ETag from ContentHashService; kept on rescan while file_mtime is unchanged, cleared when the file changed (same rule as provenance)."
+  },
+  "pending_maintenance.task": {
+    "traces": "#425",
+    "note": "One-time housekeeping request left by a migration inside its own transaction (only 'full_rescan' so far). Read by LibraryScanner.scan, which upgrades a quick scan to full and clears the rows when that scan finishes."
+  },
+  "pending_maintenance.requested_by": {
+    "traces": "#425",
+    "note": "Migration name that asked; part of the primary key so repeated requests collapse."
+  },
+  "pending_maintenance.requested_at": {
+    "traces": "#425",
+    "note": "Unix seconds, set by the migration (strftime('%s','now')) or PendingMaintenanceRepository.request."
   }
 }
