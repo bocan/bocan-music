@@ -17,6 +17,56 @@ struct EpisodeStateRepositoryTests {
         ))
     }
 
+    // MARK: - Round trip across the hand-written upserts (#421)
+
+    @Test("each upsert path touches only its own columns; the others survive")
+    func upsertPathsPreserveEachOther() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeStateRepository(database: db)
+
+        try await repo.setDownloadState(
+            podcastID: podcastID,
+            guid: "ep",
+            state: .downloaded,
+            path: "/dl/ep.mp3",
+            bytes: 12345,
+            hash: "sha-ep"
+        )
+        try await repo.savePosition(podcastID: podcastID, guid: "ep", position: 42.5, now: 1_700_000_100)
+        var row = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep"))
+        #expect(row.playPosition == 42.5)
+        #expect(row.playState == .inProgress)
+        #expect(row.lastPlayedAt == 1_700_000_100)
+        #expect(row.downloadState == .downloaded, "savePosition must not reset download columns")
+        #expect(row.downloadPath == "/dl/ep.mp3")
+        #expect(row.downloadBytes == 12345)
+        #expect(row.contentHash == "sha-ep")
+
+        try await repo.markPlayed(podcastID: podcastID, guid: "ep", now: 1_700_000_200)
+        row = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep"))
+        #expect(row.playState == .played)
+        #expect(row.playPosition == 0)
+        #expect(row.completedAt == 1_700_000_200)
+        #expect(row.downloadPath == "/dl/ep.mp3", "markPlayed must not reset download columns")
+        #expect(row.contentHash == "sha-ep")
+
+        try await repo.markUnplayed(podcastID: podcastID, guid: "ep")
+        row = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep"))
+        #expect(row.playState == .unplayed)
+        #expect(row.completedAt == nil)
+        #expect(row.downloadState == .downloaded, "markUnplayed must not reset download columns")
+
+        try await repo.savePosition(podcastID: podcastID, guid: "ep", position: 7, now: 1_700_000_300)
+        try await repo.setDownloadState(podcastID: podcastID, guid: "ep", state: .none, path: nil, bytes: nil, hash: nil)
+        row = try #require(try await repo.fetch(podcastID: podcastID, guid: "ep"))
+        #expect(row.downloadState == .none)
+        #expect(row.downloadPath == nil)
+        #expect(row.playPosition == 7, "setDownloadState must not reset play columns")
+        #expect(row.playState == .inProgress)
+        #expect(row.lastPlayedAt == 1_700_000_300)
+    }
+
     // MARK: - savePosition
 
     @Test("savePosition creates state row on first call")
