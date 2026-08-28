@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 48)
+        #expect(version == 49)
     }
 
     @Test("Integrity check passes after migration")
@@ -69,7 +69,7 @@ struct MigrationTests {
     @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 48)
+        #expect(migrator.migrations.count == 49)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")
@@ -327,6 +327,16 @@ struct MigrationTests {
         let db = try await Database(location: .inMemory)
         let requests = try await PendingMaintenanceRepository(database: db).requests(task: PendingMaintenance.Task.fullRescan)
         #expect(requests.map(\.requestedBy) == ["045_pending_maintenance", "046_release_type_rescan", "047_release_type_junk_rescan"])
+    }
+
+    @Test("M049 leaves track_dsp_assignments with the eq_preset_id column only (#418)")
+    func trackDSPEffectColumnsDropped() async throws {
+        let db = try await Database(location: .inMemory)
+        let columns = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA table_info(track_dsp_assignments)")
+                .compactMap { $0["name"] as String? }
+        }
+        #expect(columns == ["track_id", "eq_preset_id"])
     }
 
     @Test("M044 drops the CUE virtual-track columns M013 added (#406)")

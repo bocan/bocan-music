@@ -115,9 +115,9 @@ All nodes exist in the graph at all times; each can be bypassed without rebuildi
       CREATE TABLE track_dsp_assignments (
           track_id INTEGER REFERENCES tracks(id) ON DELETE CASCADE,
           eq_preset_id TEXT,
-          bass_boost_db REAL,
-          crossfeed_amount REAL,
-          stereo_width REAL,
+          bass_boost_db REAL,      -- never written; dropped in M049 (#418)
+          crossfeed_amount REAL,   -- never written; dropped in M049 (#418)
+          stereo_width REAL,       -- never written; dropped in M049 (#418)
           PRIMARY KEY (track_id)
       );
       CREATE TABLE album_dsp_assignments (
