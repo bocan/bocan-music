@@ -66,6 +66,56 @@ struct AlbumRepositoryTests {
         #expect(stored.totalDiscs == 2)
     }
 
+    @Test("recomputeMusicBrainzIDs: release only when all tracks agree, release group by majority (#402)")
+    func recomputeMusicBrainzIDs() async throws {
+        let db = try await makeDatabase()
+        let repo = AlbumRepository(database: db)
+        let tracks = TrackRepository(database: db)
+        let album = try await repo.findOrCreate(title: "Mixed", albumArtistID: nil)
+        let albumID = try #require(album.id)
+
+        func track(_ n: Int, release: String?, group: String?) -> Track {
+            let now = Int64(Date().timeIntervalSince1970)
+            var t = Track(
+                fileURL: "file:///tmp/mixed-\(n).flac",
+                fileSize: 1,
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 1,
+                title: "T\(n)",
+                addedAt: now,
+                updatedAt: now
+            )
+            t.albumID = albumID
+            t.musicbrainzReleaseID = release
+            t.musicbrainzReleaseGroupID = group
+            return t
+        }
+
+        // No tagged tracks: stays NULL.
+        _ = try await tracks.upsert(track(1, release: nil, group: nil))
+        try await repo.recomputeMusicBrainzIDs(albumID: albumID)
+        var stored = try await repo.fetch(id: albumID)
+        #expect(stored.musicbrainzReleaseID == nil)
+        #expect(stored.musicbrainzReleaseGroupID == nil)
+
+        // Every tagged track agrees: both filled.
+        _ = try await tracks.upsert(track(2, release: "rel-A", group: "rg-1"))
+        _ = try await tracks.upsert(track(3, release: "rel-A", group: "rg-1"))
+        try await repo.recomputeMusicBrainzIDs(albumID: albumID)
+        stored = try await repo.fetch(id: albumID)
+        #expect(stored.musicbrainzReleaseID == "rel-A")
+        #expect(stored.musicbrainzReleaseGroupID == "rg-1")
+
+        // A track from another pressing: release NULL, group by majority.
+        _ = try await tracks.upsert(track(4, release: "rel-B", group: "rg-1"))
+        _ = try await tracks.upsert(track(5, release: "rel-B", group: "rg-2"))
+        try await repo.recomputeMusicBrainzIDs(albumID: albumID)
+        stored = try await repo.fetch(id: albumID)
+        #expect(stored.musicbrainzReleaseID == nil)
+        #expect(stored.musicbrainzReleaseGroupID == "rg-1")
+    }
+
     @Test("findOrCreate returns existing album on second call")
     func findOrCreateIdempotent() async throws {
         let db = try await makeDatabase()

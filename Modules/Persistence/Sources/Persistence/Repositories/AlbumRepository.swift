@@ -79,6 +79,41 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.recomputeTotals", ["id": albumID])
     }
 
+    /// SQL that rolls the per-track MusicBrainz IDs up to one album row.
+    ///
+    /// Release group: the most common non-empty value across the album's
+    /// tracks (ties broken by value for determinism). Release: the single
+    /// value when every tagged track agrees, otherwise NULL, because an album
+    /// assembled from two pressings has no one release and the hygiene pane
+    /// should say so rather than pick one (issue #402). Shared with M042.
+    static let musicBrainzRollupSQL = """
+    UPDATE albums SET
+        musicbrainz_release_group_id = (
+            SELECT musicbrainz_release_group_id FROM tracks
+            WHERE album_id = albums.id
+              AND musicbrainz_release_group_id IS NOT NULL AND musicbrainz_release_group_id <> ''
+            GROUP BY musicbrainz_release_group_id
+            ORDER BY COUNT(*) DESC, musicbrainz_release_group_id
+            LIMIT 1
+        ),
+        musicbrainz_release_id = (
+            SELECT CASE WHEN COUNT(DISTINCT musicbrainz_release_id) = 1
+                        THEN MIN(musicbrainz_release_id) END
+            FROM tracks
+            WHERE album_id = albums.id
+              AND musicbrainz_release_id IS NOT NULL AND musicbrainz_release_id <> ''
+        )
+    """
+
+    /// Rolls `musicbrainz_release_id` / `musicbrainz_release_group_id` up from
+    /// the album's tracks; see `musicBrainzRollupSQL` for the rule.
+    public func recomputeMusicBrainzIDs(albumID: Int64) async throws {
+        try await self.database.write { db in
+            try db.execute(sql: Self.musicBrainzRollupSQL + " WHERE id = ?", arguments: [albumID])
+        }
+        self.log.debug("album.recomputeMusicBrainzIDs", ["id": albumID])
+    }
+
     /// Sets the `year` column for an album.
     ///
     /// Used by the importer to propagate the release year from track tags to the

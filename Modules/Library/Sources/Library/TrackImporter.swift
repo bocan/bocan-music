@@ -232,6 +232,15 @@ actor TrackImporter {
            album.totalTracks != tags.trackTotal || album.totalDiscs != tags.discTotal {
             try await self.albumRepo.recomputeTotals(albumID: albumID)
         }
+        // Same for the MusicBrainz release / release-group IDs (#402). An album
+        // built from mixed pressings keeps a NULL release ID by design, so
+        // each of its tagged tracks re-runs the (cheap) rollup on rescan.
+        if let albumID = album.id,
+           tags.musicbrainzReleaseID != nil || tags.musicbrainzReleaseGroupID != nil,
+           album.musicbrainzReleaseID != tags.musicbrainzReleaseID
+           || album.musicbrainzReleaseGroupID != tags.musicbrainzReleaseGroupID {
+            try await self.albumRepo.recomputeMusicBrainzIDs(albumID: albumID)
+        }
 
         // Persist lyrics if present
         if let lyricsText = tags.lyrics, !lyricsText.isEmpty {

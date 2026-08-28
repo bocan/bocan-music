@@ -69,6 +69,7 @@ public struct Migrator {
         M039PodcastForceReparsePersons.register(in: &dm)
         M040AlbumTotalsBackfill.register(in: &dm)
         M041ArtistSortNameBackfill.register(in: &dm)
+        M042AlbumMusicBrainzBackfill.register(in: &dm)
         return Self(inner: dm)
     }
 
