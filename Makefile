@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -304,6 +304,18 @@ format:
 ## pseudolocale: Regenerate the en-XA pseudolocale in the UI String Catalog
 pseudolocale:
 	python3 Scripts/gen-pseudolocale.py
+
+## audit-db: Report dead / default-only / sparse columns in a library DB and columns no Swift code references (DB=path to override)
+audit-db:
+	@src="$${DB:-$$HOME/Library/Containers/io.cloudcauldron.bocan/Data/Library/Application Support/Bocan/library.sqlite}"; \
+	if [ ! -f "$$src" ]; then echo "audit-db: no database at $$src (set DB=/path/to/library.sqlite)"; exit 1; fi; \
+	tmp="$$(mktemp -d)/library.sqlite"; \
+	sqlite3 "$$src" ".backup '$$tmp'" || exit 1; \
+	echo "==> column population ($$src)"; \
+	python3 Scripts/audit-db-schema.py "$$tmp" --treat-empty-as-null; \
+	echo; echo "==> columns with no Swift reference outside migrations and tests"; \
+	python3 Scripts/audit-db-xref.py "$$tmp" Modules --show-files || true; \
+	rm -rf "$$(dirname "$$tmp")"
 
 ## release-note: Add a human note to the pending release PR's changelog (guarded flow)
 release-note:
