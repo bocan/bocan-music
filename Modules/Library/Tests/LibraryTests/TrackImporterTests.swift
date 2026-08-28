@@ -187,6 +187,31 @@ struct TrackImporterTests {
         #expect(try await artistRepo.fetchOne(name: "Headliner")?.musicbrainzArtistID == "mbid-headliner")
     }
 
+    @Test("release type from tags reaches the album row (#403)")
+    func releaseTypeReachesAlbum() async throws {
+        let db = try await makeDB()
+        let albumRepo = AlbumRepository(database: db)
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: albumRepo,
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+        var tags = self.makeTags(title: "Lead")
+        tags.releaseType = "ep"
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/ep.flac"), bookmark: nil, tags: tags, fileMtime: 1, fileSize: 1
+        )
+        #expect(try await albumRepo.fetchAll().first?.releaseType == "ep")
+
+        // A track without the tag leaves it alone.
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/ep2.flac"), bookmark: nil, tags: self.makeTags(title: "B-side"), fileMtime: 1, fileSize: 1
+        )
+        #expect(try await albumRepo.fetchAll().first?.releaseType == "ep")
+    }
+
     @Test("MusicBrainz release IDs roll up to the album row (#402)")
     func musicBrainzIDsRollUpToAlbum() async throws {
         let db = try await makeDB()

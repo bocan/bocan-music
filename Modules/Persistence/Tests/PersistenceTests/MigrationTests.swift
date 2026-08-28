@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 45)
+        #expect(version == 46)
     }
 
     @Test("Integrity check passes after migration")
@@ -69,7 +69,7 @@ struct MigrationTests {
     @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 45)
+        #expect(migrator.migrations.count == 46)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")
@@ -326,7 +326,7 @@ struct MigrationTests {
     func pendingMaintenanceSelfRequest() async throws {
         let db = try await Database(location: .inMemory)
         let requests = try await PendingMaintenanceRepository(database: db).requests(task: PendingMaintenance.Task.fullRescan)
-        #expect(requests.map(\.requestedBy) == ["045_pending_maintenance"])
+        #expect(requests.map(\.requestedBy) == ["045_pending_maintenance", "046_release_type_rescan"])
     }
 
     @Test("M044 drops the CUE virtual-track columns M013 added (#406)")

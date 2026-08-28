@@ -71,10 +71,22 @@ public struct AlbumDetailView: View {
                     .accessibilityLabel(L10n.string("Artist: \(self.artistName)"))
                 }
 
-                if let total = album?.totalTracks {
-                    Text(localized: "\(total) songs")
-                        .font(Typography.footnote)
-                        .foregroundStyle(Color.textSecondary)
+                HStack(spacing: 8) {
+                    // Release kind from the tags (#403); plain albums carry no badge.
+                    if let kind = album?.releaseType, kind != "album" {
+                        Text(ReleaseKindLabel.string(for: kind))
+                            .font(Typography.footnote.weight(.semibold))
+                            .foregroundStyle(Color.textSecondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.bgTertiary, in: Capsule())
+                            .accessibilityLabel(L10n.string("Release kind: \(ReleaseKindLabel.string(for: kind))"))
+                    }
+                    if let total = album?.totalTracks {
+                        Text(localized: "\(total) songs")
+                            .font(Typography.footnote)
+                            .foregroundStyle(Color.textSecondary)
+                    }
                 }
 
                 // Play / Shuffle buttons (ADR-005 audit H4).

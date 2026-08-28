@@ -49,6 +49,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) double bpm;
 @property (nonatomic, copy, nullable) NSString *key;
 @property (nonatomic, copy, nullable) NSString *isrc;
+@property (nonatomic, copy, nullable) NSString *releaseType;   // RELEASETYPE primary value, e.g. "album", "ep"
 
 // MusicBrainz
 @property (nonatomic, copy, nullable) NSString *musicbrainzTrackID;

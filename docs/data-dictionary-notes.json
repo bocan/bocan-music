@@ -50,7 +50,7 @@
   },
   "albums.release_type": {
     "traces": "ADR-003:101, #403",
-    "note": "Never written; bridge does not read RELEASETYPE."
+    "note": "MusicBrainz primary type (album, single, ep, broadcast, other; lowercased) from the first RELEASETYPE value via TrackTags.releaseType and AlbumRepository.setReleaseType in TrackImporter; the full multi-valued list stays in tracks.extended_tags. Read by the AlbumDetailView kind badge (hidden for plain albums). M046 requests the backfill rescan."
   },
   "albums.total_tracks": {
     "traces": "ADR-003:100, #404",

@@ -111,6 +111,7 @@ public struct TagWriter: Sendable {
         boc.bpm = tags.bpm ?? 0
         boc.key = tags.key
         boc.isrc = tags.isrc
+        boc.releaseType = tags.releaseType
         boc.musicbrainzTrackID = tags.musicbrainzTrackID
         boc.musicbrainzRecordingID = tags.musicbrainzRecordingID
         boc.musicbrainzArtistID = tags.musicbrainzArtistID

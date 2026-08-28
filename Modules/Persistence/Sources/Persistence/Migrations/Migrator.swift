@@ -57,6 +57,13 @@ public struct Migrator {
         M027PodcastPerShowSettings.register(in: &dm)
         M028PodcastPersons.register(in: &dm)
         M029PodcastPodroll.register(in: &dm)
+        Self.registerPhaseThreeOnwards(in: &dm)
+        return Self(inner: dm)
+    }
+
+    /// Migrations from the podcast era onwards (M030+), split out to keep
+    /// `make()` under the function-length limit.
+    private static func registerPhaseThreeOnwards(in dm: inout DatabaseMigrator) {
         M030PodcastForceReparse.register(in: &dm)
         M031PhoneSync.register(in: &dm)
         M032PodcastEpisodeContentHash.register(in: &dm)
@@ -73,7 +80,7 @@ public struct Migrator {
         M043ArtistMusicBrainzID.register(in: &dm)
         M044DropCueVirtualTrackColumns.register(in: &dm)
         M045PendingMaintenance.register(in: &dm)
-        return Self(inner: dm)
+        M046ReleaseTypeRescan.register(in: &dm)
     }
 
     // MARK: - Migration
