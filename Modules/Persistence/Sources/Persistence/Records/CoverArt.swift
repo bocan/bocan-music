@@ -5,7 +5,7 @@ import GRDB
 /// Stored once by SHA-256 hash; `albums.cover_art_hash` and
 /// `tracks.cover_art_hash` reference this table.
 /// Deletion must be reference-counted in `CoverArtRepository`.
-public struct CoverArt: Codable, FetchableRecord, PersistableRecord, Sendable {
+public struct CoverArt: Codable, Equatable, FetchableRecord, PersistableRecord, Sendable {
     // MARK: - Table
 
     /// The database table name.

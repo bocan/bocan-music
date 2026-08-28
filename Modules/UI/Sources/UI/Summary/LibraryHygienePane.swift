@@ -83,6 +83,11 @@ struct LibraryHygienePane: View {
                 L10n.string("Albums Missing MusicBrainz ID"),
                 value: L10n.string("\(report.albumsMissingMusicBrainzID) of \(report.albumCount)")
             )
+            LabeledContent(
+                L10n.string("Albums With Low-Resolution Artwork"),
+                value: L10n.string("\(report.albumsLowResolutionArt) of \(report.albumCount)")
+            )
+            .help(L10n.string("Cover art smaller than 500 pixels on its longest side. Art with unknown dimensions is not counted."))
         }
     }
 

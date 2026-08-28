@@ -66,6 +66,12 @@ public struct LibraryHygieneReport: Equatable, Sendable {
     public let albumsMissingArtwork: Int
     public let albumsMissingYear: Int
     public let albumsMissingMusicBrainzID: Int
+    /// Albums whose art is smaller than `lowResolutionArtEdge` on its longest
+    /// side. Art with unknown dimensions is not counted. Advisory: not part of
+    /// `isClean`, since old rips legitimately carry small thumbnails.
+    public let albumsLowResolutionArt: Int
+    /// Longest-side pixel size below which cover art counts as low resolution.
+    public static let lowResolutionArtEdge = 500
 
     public let trackGapAlbumCount: Int
     public let trackGapAlbums: [TrackGapAlbum]
@@ -108,6 +114,7 @@ public extension LibraryStatsRepository {
                 albumsMissingArtwork: completeness.noArt,
                 albumsMissingYear: completeness.noYear,
                 albumsMissingMusicBrainzID: completeness.noMBID,
+                albumsLowResolutionArt: completeness.lowResArt,
                 trackGapAlbumCount: gaps.total,
                 trackGapAlbums: gaps.examples,
                 suspiciousYearCount: years.total,
@@ -131,25 +138,33 @@ private extension LibraryStatsRepository {
         let noArt: Int
         let noYear: Int
         let noMBID: Int
+        let lowResArt: Int
     }
 
     static func completeness(_ db: GRDB.Database) throws -> CompletenessCounts {
-        let row = try Row.fetchOne(db, sql: """
+        let sql = """
             SELECT COUNT(*) AS total,
                    COALESCE(SUM(cover_art_hash IS NULL AND cover_art_path IS NULL), 0) AS no_art,
                    COALESCE(SUM(year IS NULL), 0) AS no_year,
-                   COALESCE(SUM(musicbrainz_release_group_id IS NULL AND musicbrainz_release_id IS NULL), 0) AS no_mbid
+                   COALESCE(SUM(musicbrainz_release_group_id IS NULL AND musicbrainz_release_id IS NULL), 0) AS no_mbid,
+                   COALESCE(SUM(
+                       cover_art.width IS NOT NULL AND cover_art.height IS NOT NULL
+                       AND MAX(cover_art.width, cover_art.height) < ?
+                   ), 0) AS low_res_art
             FROM albums
+            LEFT JOIN cover_art ON cover_art.hash = albums.cover_art_hash
             WHERE EXISTS (
                 SELECT 1 FROM tracks
                 WHERE tracks.album_id = albums.id AND tracks.disabled = 0
             )
-        """)
+        """
+        let row = try Row.fetchOne(db, sql: sql, arguments: [LibraryHygieneReport.lowResolutionArtEdge])
         return CompletenessCounts(
             total: row?["total"] ?? 0,
             noArt: row?["no_art"] ?? 0,
             noYear: row?["no_year"] ?? 0,
-            noMBID: row?["no_mbid"] ?? 0
+            noMBID: row?["no_mbid"] ?? 0,
+            lowResArt: row?["low_res_art"] ?? 0
         )
     }
 

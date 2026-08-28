@@ -94,7 +94,7 @@ actor TrackImporter {
         // track's folder (cover.jpg / folder.png / …, #388). The album-art
         // guard doubles as a memo: once the first artless track links the
         // sidecar, later tracks in the folder skip the directory listing.
-        var coverArt = try await coverArtCache.persist(tags.coverArt)
+        var coverArt = try await coverArtCache.persist(tags.coverArt, source: "embedded")
         if coverArt == nil, album.coverArtHash == nil {
             coverArt = await self.persistSidecarArt(besideTrackAt: url)
         }
@@ -285,7 +285,7 @@ actor TrackImporter {
                 mimeType: SidecarArt.mimeType(forExtension: artURL.pathExtension),
                 pictureType: 3 // front cover
             )
-            let persisted = try await self.coverArtCache.persist([art])
+            let persisted = try await self.coverArtCache.persist([art], source: "sidecar")
             if persisted != nil {
                 self.log.debug("cover_art.sidecar", ["file": artURL.lastPathComponent])
             }

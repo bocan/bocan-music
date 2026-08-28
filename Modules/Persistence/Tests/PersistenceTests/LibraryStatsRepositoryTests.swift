@@ -258,6 +258,21 @@ struct LibraryStatsRepositoryTests {
         #expect(report.splitAlbums.first?.primaryAlbumID == substantialID)
     }
 
+    @Test("fetchHygiene counts low-resolution art and ignores unknown dimensions (#417)")
+    func hygieneLowResolutionArt() async throws {
+        let db = try await makeDB()
+        try await self.seedHygieneAlbum(db, title: "Thumb", artistName: "A", trackNumbers: [1], coverArtHash: "small")
+        try await self.seedHygieneAlbum(db, title: "Proper", artistName: "B", trackNumbers: [1], coverArtHash: "big")
+        try await self.seedHygieneAlbum(db, title: "Unknown", artistName: "C", trackNumbers: [1], coverArtHash: "unk")
+        try await db.write { db in
+            try db.execute(sql: "UPDATE cover_art SET width = 300, height = 300 WHERE hash = 'small'")
+            try db.execute(sql: "UPDATE cover_art SET width = 1400, height = 1400 WHERE hash = 'big'")
+        }
+        let report = try await LibraryStatsRepository(database: db).fetchHygiene()
+        #expect(report.albumCount == 3)
+        #expect(report.albumsLowResolutionArt == 1)
+    }
+
     @Test("fetchHygiene counts completeness gaps and missing files")
     func hygieneCompletenessAndMissingFiles() async throws {
         let db = try await makeDB()

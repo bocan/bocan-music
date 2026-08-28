@@ -20,13 +20,29 @@ public struct CoverArtRepository: Sendable {
 
     // MARK: - Write
 
-    /// Saves `art` by hash.  If an identical hash already exists, returns the stored path.
+    /// Saves `art` by hash.  If an identical hash already exists, returns the
+    /// stored path, filling in any NULL `width` / `height` / `byte_size` /
+    /// `source` from `art` so rows persisted before those were recorded heal
+    /// on the next rescan (#417). Non-NULL values are never overwritten.
     ///
     /// Returns the canonical path that callers should reference.
     @discardableResult
     public func save(_ art: CoverArt) async throws -> String {
         try await self.database.write { db in
-            if let existing = try CoverArt.fetchOne(db, key: art.hash) {
+            if var existing = try CoverArt.fetchOne(db, key: art.hash) {
+                let filled = CoverArt(
+                    hash: existing.hash,
+                    path: existing.path,
+                    width: existing.width ?? art.width,
+                    height: existing.height ?? art.height,
+                    format: existing.format ?? art.format,
+                    byteSize: existing.byteSize ?? art.byteSize,
+                    source: existing.source ?? art.source
+                )
+                if filled != existing {
+                    existing = filled
+                    try existing.update(db)
+                }
                 return existing.path
             }
             try art.save(db)

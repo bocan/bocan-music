@@ -180,7 +180,7 @@ actor EditTransaction {
             RawCoverArt(data: artData, mimeType: Self.mimeType(for: artData), pictureType: 3),
         ])
         // persist() is idempotent (content-hash keyed); reuse from step 7 is free.
-        guard let persisted = try? await self.coverArtCache.persist(extracted) else { return }
+        guard let persisted = try? await self.coverArtCache.persist(extracted, source: "user") else { return }
 
         var touchedByAlbum: [Int64: Int] = [:]
         for track in updates {
@@ -298,7 +298,7 @@ actor EditTransaction {
                 let extracted = CoverArtExtractor.extract(from: [
                     RawCoverArt(data: artData, mimeType: Self.mimeType(for: artData), pictureType: 3),
                 ])
-                if let persisted = try await self.coverArtCache.persist(extracted) {
+                if let persisted = try await self.coverArtCache.persist(extracted, source: "user") {
                     coverArtHash = persisted.hash
                 }
             } else {
