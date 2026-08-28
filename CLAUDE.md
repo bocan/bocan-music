@@ -79,7 +79,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 
 - A migration may only add a column or table if the same phase also adds code that WRITES it, code that READS it, and a test asserting real (non-null, non-default) values land in it.
 - No speculative fields "for later". If a future phase needs a column, that phase adds the migration.
-- Maintain `docs/data-dictionary.md`: every column lists "written by", "read by", and the spec requirement it traces to. A blank cell fails the phase. (The file does not exist yet; the first schema-touching phase after issue #414 creates it from the current schema.)
+- Maintain `docs/data-dictionary.md`: every column lists "written by", "read by", and the spec requirement it traces to. A blank cell fails the phase. The tables are generated (`make data-dictionary`); the reviewed content goes in `docs/data-dictionary-notes.json`, keyed `table.column`, and a new column is not done until it has a `traces` entry there.
 - Definition of Done includes: `make audit-db` passes without significant findings (see DEVELOPMENT.md; it audits a copy of the real library, so run it against your own).
 
 ## Commits
