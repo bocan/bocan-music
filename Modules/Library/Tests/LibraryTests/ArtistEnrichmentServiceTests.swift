@@ -84,6 +84,29 @@ struct ArtistEnrichmentServiceTests {
         #expect(http.requests == before)
     }
 
+    @Test("siblings sharing an MBID inside one batch cost no extra request")
+    func siblingsInOneBatch() async throws {
+        let db = try await Database(location: .inMemory)
+        let repo = ArtistRepository(database: db)
+        for name in ["Santana", "Santana feat. Rob Thomas", "Santana feat. Everlast", "Santana & Michelle Branch"] {
+            _ = try await repo.findOrCreate(name: name, musicbrainzID: "mb-santana")
+        }
+        let http = ArtistStubHTTP()
+        http.artists["mb-santana"] = ("Santana", "Santana", "US Latin rock band")
+        let client = MusicBrainzClient(
+            userAgent: "Bocan/test ( https://bocan.app )",
+            rateLimiter: RateLimiter(maxRequests: 1000, per: 1.0),
+            httpClient: http
+        )
+        // Batch size larger than the family, so all four rows arrive together.
+        let service = ArtistEnrichmentService(
+            artists: repo, client: client, batchSize: 10, pacing: .zero, backoff: .milliseconds(1), maxBackoffs: 1
+        )
+        #expect(await service.enrichOnce() == 1)
+        #expect(http.requests == 1)
+        #expect(try await repo.countNeedingEnrichment() == 0)
+    }
+
     @Test("a transient 503 is retried after a backoff and the pass carries on")
     func transientRateLimitRetried() async throws {
         let db = try await Database(location: .inMemory)
