@@ -30,6 +30,17 @@
 // Helpers
 // ---------------------------------------------------------------------------
 
+/// The "N" of an "n/N" track or disc string, or nil when there is no slash
+/// or nothing numeric follows it.
+static NSString *totalAfterSlash(NSString *value) {
+    if (!value) return nil;
+    NSRange slash = [value rangeOfString:@"/"];
+    if (slash.location == NSNotFound) return nil;
+    NSString *rest = [[value substringFromIndex:slash.location + 1]
+        stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+    return rest.integerValue > 0 ? rest : nil;
+}
+
 /// Bit depth for formats whose AudioProperties subclass carries it.
 ///
 /// The base `TagLib::AudioProperties` has no bitsPerSample(), so this
@@ -235,15 +246,21 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     NSString *bpmStr = firstValue(props, "BPM");
     tags.bpm = bpmStr ? bpmStr.doubleValue : 0.0;
 
-    // Track / disc totals (may appear as "N/M" in trackNumber or as separate tags)
+    // Track / disc totals. Vorbis-family tags carry them as separate keys;
+    // ID3v2 TRCK / TPOS and MP4 trkn / disk surface in the PropertyMap as a
+    // combined "n/N" TRACKNUMBER / DISCNUMBER, so fall back to the part after
+    // the slash (issue #404). integerValue stops at the slash, so the number
+    // half is unaffected either way.
     NSString *trackTotalStr = firstValue(props, "TRACKTOTAL");
     if (!trackTotalStr) trackTotalStr = firstValue(props, "TOTALTRACKS");
+    if (!trackTotalStr) trackTotalStr = totalAfterSlash(firstValue(props, "TRACKNUMBER"));
     tags.trackTotal = trackTotalStr ? (NSInteger)trackTotalStr.integerValue : 0;
 
     NSString *discNumberStr = firstValue(props, "DISCNUMBER");
     tags.discNumber = discNumberStr ? (NSInteger)discNumberStr.integerValue : 0;
     NSString *discTotalStr  = firstValue(props, "DISCTOTAL");
     if (!discTotalStr) discTotalStr = firstValue(props, "TOTALDISCS");
+    if (!discTotalStr) discTotalStr = totalAfterSlash(discNumberStr);
     tags.discTotal  = discTotalStr  ? (NSInteger)discTotalStr.integerValue  : 0;
 
     // MusicBrainz. Key naming follows the Picard convention and is deliberately

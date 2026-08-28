@@ -58,6 +58,27 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.cover_art", ["id": albumID, "hash": hash])
     }
 
+    /// Rolls `total_tracks` / `total_discs` up from the album's tracks.
+    ///
+    /// Takes the maximum tag-supplied total across the tracks; a track whose
+    /// tags carry no total contributes nothing, and an album with no totals at
+    /// all stays NULL rather than guessing from the highest track number, which
+    /// would hide missing tracks (issue #404).
+    public func recomputeTotals(albumID: Int64) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: """
+                UPDATE albums SET
+                    total_tracks = (SELECT MAX(track_total) FROM tracks WHERE album_id = albums.id),
+                    total_discs  = (SELECT MAX(disc_total)  FROM tracks WHERE album_id = albums.id)
+                WHERE id = ?
+                """,
+                arguments: [albumID]
+            )
+        }
+        self.log.debug("album.recomputeTotals", ["id": albumID])
+    }
+
     /// Sets the `year` column for an album.
     ///
     /// Used by the importer to propagate the release year from track tags to the

@@ -151,6 +151,16 @@ actor EditTransaction {
             }
         }
 
+        // Roll totals up to every album touched when the edit changed a
+        // total or moved tracks between albums (#404).
+        if !successfulUpdates.isEmpty,
+           patch.trackTotal != nil || patch.discTotal != nil || patch.album != nil || patch.albumArtist != nil {
+            let albumIDs = Set(successfulUpdates.compactMap(\.track.albumID))
+            for albumID in albumIDs {
+                try await self.albumRepo.recomputeTotals(albumID: albumID)
+            }
+        }
+
         if !errors.isEmpty {
             throw EditError.partial(errors)
         }

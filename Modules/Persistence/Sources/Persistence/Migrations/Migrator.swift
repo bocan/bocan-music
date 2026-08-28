@@ -67,6 +67,7 @@ public struct Migrator {
         M037RadioStationStreamDetails.register(in: &dm)
         M038TrackMarkers.register(in: &dm)
         M039PodcastForceReparsePersons.register(in: &dm)
+        M040AlbumTotalsBackfill.register(in: &dm)
         return Self(inner: dm)
     }
 
