@@ -75,6 +75,13 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - No `print`, no raw `os_log`, no `try?` without an `else { log.warning }` companion, no `fatalError` outside `#if DEBUG` or truly-unreachable `default:`.
 - **Tests must not hit the network.** Stub via `URLProtocol` or a protocol-based HTTP client mock. Fixtures live in `Tests/Fixtures/` at repo root and are checked-in, not generated at test time.
 
+## Schema discipline
+
+- A migration may only add a column or table if the same phase also adds code that WRITES it, code that READS it, and a test asserting real (non-null, non-default) values land in it.
+- No speculative fields "for later". If a future phase needs a column, that phase adds the migration.
+- Maintain `docs/data-dictionary.md`: every column lists "written by", "read by", and the spec requirement it traces to. A blank cell fails the phase. (The file does not exist yet; the first schema-touching phase after issue #414 creates it from the current schema.)
+- Definition of Done includes: `make audit-db` passes without significant findings (see DEVELOPMENT.md; it audits a copy of the real library, so run it against your own).
+
 ## Commits
 
 Document new features in README.md and in the repo's /website pages. NEVER use em dashes (—) in commit messages or markdown, or the website.
