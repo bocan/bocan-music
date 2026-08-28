@@ -13,8 +13,8 @@ import Podcasts
 /// - `relPath` is derived from `tracks.file_url` relative to a library root (there
 ///   is no stored relative path and no root foreign key; roots are matched by
 ///   path prefix);
-/// - CUE virtual tracks key off `source_file_url`, not a track id, so a clip
-///   resolves its parent by file URL and duplicates the parent's file identity;
+/// - the wire `clip` field is never emitted: the virtual-track CUE design was
+///   superseded by in-track markers (ADR-087) and its columns dropped (M044);
 /// - a track with no `content_hash` cannot be served and is excluded;
 /// - `lyricsHash` is computed from the assembled lyrics document (there is no
 ///   stored hash);
@@ -67,14 +67,12 @@ public struct ManifestBuilder: Sendable {
 
         let artistName = Dictionary(uniqueKeysWithValues: artists.compactMap { artist in artist.id.map { ($0, artist.name) } })
         let albumTitle = Dictionary(uniqueKeysWithValues: albums.compactMap { album in album.id.map { ($0, album.title) } })
-        let trackByFileURL = Dictionary(allTracks.map { ($0.fileURL, $0) }, uniquingKeysWith: { first, _ in first })
 
         let profileTrackIds = try await self.inProfileTrackIds(profile: profile, allTracks: allTracks, playlists: playlists)
 
         var manifestTracks = self.buildTracks(
             allTracks: allTracks,
             profileTrackIds: profileTrackIds,
-            trackByFileURL: trackByFileURL,
             roots: roots,
             artistName: artistName,
             albumTitle: albumTitle
@@ -201,7 +199,6 @@ public struct ManifestBuilder: Sendable {
     private func buildTracks(
         allTracks: [Track],
         profileTrackIds: Set<Int64>,
-        trackByFileURL: [String: Track],
         roots: [LibraryRoot],
         artistName: [Int64: String],
         albumTitle: [Int64: String]
@@ -212,11 +209,9 @@ public struct ManifestBuilder: Sendable {
             .sorted { ($0.id ?? 0) < ($1.id ?? 0) }
 
         var result: [ManifestTrack] = []
-        var includedIds: Set<Int64> = []
         var skipped = 0
 
-        // Pass 1: whole-file tracks (so clips can reference them).
-        for track in candidates where track.sourceFileURL == nil {
+        for track in candidates {
             guard let id = track.id else { continue }
             guard let hash = track.contentHash else { skipped += 1
                 continue
@@ -228,27 +223,6 @@ public struct ManifestBuilder: Sendable {
                 track, id: id, relPath: relPath, size: track.fileSize, sha256: hash,
                 format: track.fileFormat, clip: nil, artistName: artistName, albumTitle: albumTitle
             ))
-            includedIds.insert(id)
-        }
-
-        // Pass 2: CUE virtual tracks, which duplicate their parent's file identity.
-        for track in candidates where track.sourceFileURL != nil {
-            guard let id = track.id, let sourceURL = track.sourceFileURL else { continue }
-            guard
-                let source = trackByFileURL[sourceURL],
-                let sourceId = source.id,
-                includedIds.contains(sourceId),
-                let hash = source.contentHash,
-                let relPath = Self.relPath(for: source.fileURL, roots: roots) else {
-                skipped += 1
-                continue
-            }
-            let clip = ManifestClip(sourceTrackId: sourceId, startMs: track.startOffsetMs ?? 0, endMs: track.endOffsetMs ?? 0)
-            result.append(self.makeTrack(
-                track, id: id, relPath: relPath, size: source.fileSize, sha256: hash,
-                format: source.fileFormat, clip: clip, artistName: artistName, albumTitle: albumTitle
-            ))
-            includedIds.insert(id)
         }
 
         if skipped > 0 {

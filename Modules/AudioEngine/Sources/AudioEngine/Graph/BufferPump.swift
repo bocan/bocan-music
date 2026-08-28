@@ -81,8 +81,9 @@ actor BufferPump {
     private var throttleCount = 0
 
     /// When non-nil, the pump stops after this many decoder-native frames have
-    /// been read.  Used to enforce the `endOffsetMs` of a CUE virtual track
-    /// without relying on the underlying decoder reaching true EOF.
+    /// been read.  Enforces the end of an `AudioEngine.setSegment` segment
+    /// without relying on the underlying decoder reaching true EOF (kept per
+    /// ADR-087 as a primitive; no caller since the virtual-track columns went).
     private let maxFrames: AVAudioFrameCount?
 
     // MARK: - Init

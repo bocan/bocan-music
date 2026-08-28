@@ -49,6 +49,9 @@ struct ManifestTrack: Codable, Equatable {
     var replayGain: ManifestReplayGain?
     var artworkHash: String?
     var lyricsHash: String?
+    /// Reserved by the wire contract; the Mac never emits it since ADR-087
+    /// replaced CUE virtual tracks with in-track markers (#406). Kept so the
+    /// contract and the phone's decoder are unchanged.
     var clip: ManifestClip?
 }
 

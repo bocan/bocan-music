@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 43)
+        #expect(version == 44)
     }
 
     @Test("Integrity check passes after migration")
@@ -69,7 +69,7 @@ struct MigrationTests {
     @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 43)
+        #expect(migrator.migrations.count == 44)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")
@@ -322,16 +322,20 @@ struct MigrationTests {
         #expect(columns.contains("smart_random_seed"))
     }
 
-    @Test("Tracks table has CUE virtual-track columns after M013")
-    func cueVirtualTrackColumns() async throws {
+    @Test("M044 drops the CUE virtual-track columns M013 added (#406)")
+    func cueVirtualTrackColumnsDropped() async throws {
         let db = try await Database(location: .inMemory)
         let columns = try await db.read { grdb in
             try Row.fetchAll(grdb, sql: "PRAGMA table_info(tracks)")
                 .compactMap { $0["name"] as String? }
         }
-        #expect(columns.contains("start_offset_ms"))
-        #expect(columns.contains("end_offset_ms"))
-        #expect(columns.contains("source_file_url"))
+        #expect(!columns.contains("start_offset_ms"))
+        #expect(!columns.contains("end_offset_ms"))
+        #expect(!columns.contains("source_file_url"))
+        let indexes = try await db.read { grdb in
+            try Row.fetchAll(grdb, sql: "PRAGMA index_list(tracks)").compactMap { $0["name"] as String? }
+        }
+        #expect(!indexes.contains("idx_tracks_source_file_url"))
     }
 
     @Test("Tracks table has extended_tags column after M015")

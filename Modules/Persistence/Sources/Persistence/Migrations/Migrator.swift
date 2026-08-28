@@ -71,6 +71,7 @@ public struct Migrator {
         M041ArtistSortNameBackfill.register(in: &dm)
         M042AlbumMusicBrainzBackfill.register(in: &dm)
         M043ArtistMusicBrainzID.register(in: &dm)
+        M044DropCueVirtualTrackColumns.register(in: &dm)
         return Self(inner: dm)
     }
 

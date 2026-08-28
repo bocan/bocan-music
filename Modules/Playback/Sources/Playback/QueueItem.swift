@@ -121,18 +121,6 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
     public let albumID: Int64?
     public let artistID: Int64?
 
-    // MARK: - CUE / segment offsets
-
-    /// Start position within the source audio file (milliseconds).
-    /// Non-nil only for virtual tracks derived from a CUE sheet.
-    public let startOffsetMs: Int64?
-    /// End position within the source audio file (milliseconds).
-    /// Non-nil only for virtual tracks derived from a CUE sheet that are not the last track.
-    public let endOffsetMs: Int64?
-    /// The underlying physical audio file URL string for CUE virtual tracks.
-    /// `nil` for ordinary tracks (where `fileURL` is already the playable file).
-    public let sourceFileURL: String?
-
     // MARK: - Init
 
     public init(
@@ -153,9 +141,6 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         lastPlayedAt: Int64? = nil,
         albumID: Int64? = nil,
         artistID: Int64? = nil,
-        startOffsetMs: Int64? = nil,
-        endOffsetMs: Int64? = nil,
-        sourceFileURL: String? = nil,
         playableSource: PlayableSource? = nil
     ) {
         self.id = id
@@ -175,9 +160,6 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
         self.lastPlayedAt = lastPlayedAt
         self.albumID = albumID
         self.artistID = artistID
-        self.startOffsetMs = startOffsetMs
-        self.endOffsetMs = endOffsetMs
-        self.sourceFileURL = sourceFileURL
         self.playableSource = playableSource ?? .localBookmark(bookmark?.data ?? Data())
     }
 
@@ -196,12 +178,6 @@ public struct QueueItem: Sendable, Identifiable, Hashable, Codable {
             )
         }
         return url
-    }
-
-    /// `true` when this item is a virtual CUE-derived track that requires
-    /// segment-offset handling during playback.
-    public var isCUETrack: Bool {
-        self.startOffsetMs != nil
     }
 
     // MARK: - Hashable / Equatable (identity only)
@@ -243,10 +219,7 @@ public extension QueueItem {
             excludedFromShuffle: track.excludedFromShuffle,
             lastPlayedAt: track.lastPlayedAt,
             albumID: track.albumID,
-            artistID: track.artistID,
-            startOffsetMs: track.startOffsetMs,
-            endOffsetMs: track.endOffsetMs,
-            sourceFileURL: track.sourceFileURL
+            artistID: track.artistID
         )
     }
 }

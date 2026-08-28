@@ -208,11 +208,6 @@ struct TrackRepositoryTests {
         disabled.disabled = true
         _ = try await repo.insert(disabled)
 
-        var clip = self.makeTrack(fileURL: "file:///tmp/rip.cue#1")
-        clip.fileBookmark = Data([4])
-        clip.sourceFileURL = "file:///tmp/rip.flac"
-        _ = try await repo.insert(clip)
-
         // No bookmark: cannot be read, so not a candidate.
         _ = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/nobookmark.flac"))
 
@@ -259,10 +254,6 @@ struct TrackRepositoryTests {
         disabled.fileBookmark = Data([3])
         disabled.disabled = true
         _ = try await repo.insert(disabled)
-        var clip = self.makeTrack(fileURL: "file:///tmp/rip.cue#1")
-        clip.fileBookmark = Data([4])
-        clip.sourceFileURL = "file:///tmp/rip.flac"
-        _ = try await repo.insert(clip)
         _ = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/nobookmark.flac"))
 
         let stream = await repo.observeContentHashProgress()
@@ -309,10 +300,6 @@ struct TrackRepositoryTests {
         var disabled = self.makeLosslessTrack(fileURL: "file:///tmp/d.flac")
         disabled.disabled = true
         _ = try await repo.insert(disabled)
-
-        var clip = self.makeLosslessTrack(fileURL: "file:///tmp/rip.cue#1")
-        clip.sourceFileURL = "file:///tmp/rip.flac"
-        _ = try await repo.insert(clip)
 
         var analysed = self.makeLosslessTrack(fileURL: "file:///tmp/e.flac", mtime: 1000)
         analysed.provenanceAnalysedAt = 2000

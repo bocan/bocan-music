@@ -8,18 +8,6 @@
     "traces": "#407",
     "note": "Musical key from INITIALKEY. Fully wired but empty in a library tagged without a key detector; no smart-playlist field yet."
   },
-  "tracks.start_offset_ms": {
-    "traces": "M013, superseded by ADR-087, #406",
-    "note": "CUE virtual-track design retired; no writer since M038 deleted virtual rows. To be dropped."
-  },
-  "tracks.end_offset_ms": {
-    "traces": "M013, superseded by ADR-087, #406",
-    "note": "See start_offset_ms."
-  },
-  "tracks.source_file_url": {
-    "traces": "M013, superseded by ADR-087, #406",
-    "note": "Pointed a virtual ?cue=N row at its real file. Every row's file_url is now the real file. To be dropped."
-  },
   "tracks.musicbrainz_album_artist_id": {
     "traces": "ADR-012:68, #399",
     "note": "Album-artist MBID per track (Picard MUSICBRAINZ_ALBUMARTISTID). The identify UI labels this 'Artist MBID'. Track-artist MBID has no column yet (#399)."

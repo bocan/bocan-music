@@ -170,25 +170,6 @@ struct QueueItemAPITests {
         #expect(throws: (any Error).self) { _ = try q.resolvedURL() }
     }
 
-    @Test("isCUETrack reflects startOffsetMs presence")
-    func isCUETrack() {
-        let cue = QueueItem(
-            trackID: 3,
-            bookmark: nil,
-            fileURL: "file:///x",
-            duration: 10,
-            sourceFormat: AudioSourceFormat(
-                sampleRate: 44100, bitDepth: 16, channelCount: 2,
-                isInterleaved: false, codec: "flac"
-            ),
-            startOffsetMs: 0,
-            endOffsetMs: 5000
-        )
-        #expect(cue.isCUETrack)
-        let plain = item(4)
-        #expect(!plain.isCUETrack)
-    }
-
     @Test("Equatable + Hashable use id only")
     func equatableHashable() {
         let a = item(1)
