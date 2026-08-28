@@ -31,6 +31,46 @@ struct TranscriptRepositoryTests {
         )
     }
 
+    @Test("every column round-trips through the hand-written upsert and an update replaces all of them (#421)")
+    func upsertCarriesEveryColumn() async throws {
+        let db = try await makeDB()
+        let podcastID = try await makePodcast(db)
+        let repo = TranscriptRepository(database: db)
+        let first = PodcastTranscript(
+            podcastID: podcastID,
+            guid: "g",
+            content: "1\n00:00:00,000 --> 00:00:01,000\nHi",
+            format: .srt,
+            language: "cy",
+            sourceURL: "https://example.test/g.srt",
+            fetchedAt: 1
+        )
+        try await repo.upsert(first)
+        var stored = try #require(try await repo.fetch(podcastID: podcastID, guid: "g"))
+        #expect(stored.content == first.content)
+        #expect(stored.format == .srt)
+        #expect(stored.language == "cy")
+        #expect(stored.sourceURL == first.sourceURL)
+        #expect(stored.fetchedAt == 1)
+
+        let second = PodcastTranscript(
+            podcastID: podcastID,
+            guid: "g",
+            content: "{\"segments\":[]}",
+            format: .json,
+            language: nil,
+            sourceURL: "https://example.test/g.json",
+            fetchedAt: 2
+        )
+        try await repo.upsert(second)
+        stored = try #require(try await repo.fetch(podcastID: podcastID, guid: "g"))
+        #expect(stored.content == second.content)
+        #expect(stored.format == .json)
+        #expect(stored.language == nil, "an explicit nil replaces the old language")
+        #expect(stored.sourceURL == second.sourceURL)
+        #expect(stored.fetchedAt == 2)
+    }
+
     @Test("fetch returns nil on a miss")
     func fetchMiss() async throws {
         let db = try await makeDB()

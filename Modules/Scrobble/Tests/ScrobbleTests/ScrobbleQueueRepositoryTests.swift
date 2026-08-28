@@ -32,6 +32,29 @@ struct ScrobbleQueueRepositoryTests {
         #expect(pending.first?.title == "Song")
     }
 
+    @Test("enqueueSubsonic lands every payload column and fetchPending reads them back (#421, #408)")
+    func enqueueSubsonicCarriesPayload() async throws {
+        let db = try await self.makeDB()
+        let repo = ScrobbleQueueRepository(database: db)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let server = UUID()
+        let qid = try #require(try await repo.enqueueSubsonic(
+            serverID: server, songID: "song-9", playedAt: now, durationPlayed: 180,
+            title: "Blue in Green", artist: "Miles Davis", album: "Kind of Blue", albumArtist: "Miles Davis",
+            duration: 337, providerIDs: ["lastfm"]
+        ))
+        #expect(qid > 0)
+        // fetchPending reads the denormalised payload columns straight off the row.
+        let pending = try #require(try await repo.fetchPending(providerID: "lastfm", now: now).first)
+        #expect(pending.title == "Blue in Green")
+        #expect(pending.artist == "Miles Davis")
+        #expect(pending.album == "Kind of Blue")
+        #expect(pending.albumArtist == "Miles Davis")
+        #expect(pending.duration == 337)
+        #expect(pending.subsonicServerID == server)
+        #expect(pending.subsonicSongID == "song-9")
+    }
+
     @Test("enqueue is idempotent on (track_id, played_at)")
     func enqueueIdempotent() async throws {
         let db = try await self.makeDB()
