@@ -85,6 +85,7 @@ public struct Migrator {
         M048ReleaseTypeVocabulary.register(in: &dm)
         M049DropTrackDSPEffectColumns.register(in: &dm)
         M050DropPodcastSubscribedSortIndex.register(in: &dm)
+        M051ArtistMusicBrainzFetchedAt.register(in: &dm)
     }
 
     // MARK: - Migration

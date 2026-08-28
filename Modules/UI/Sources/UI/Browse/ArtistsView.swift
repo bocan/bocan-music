@@ -103,6 +103,15 @@ public struct ArtistDetailView: View {
                     .font(Typography.largeTitle)
                     .foregroundStyle(Color.textPrimary)
 
+                // MusicBrainz disambiguation ("film composer", "UK rock band"),
+                // filled by the enrichment job (#401). Content, not UI copy.
+                if let disambiguation = artist.disambiguation, !disambiguation.isEmpty {
+                    Text(verbatim: disambiguation)
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.textSecondary)
+                        .accessibilityLabel(L10n.string("Disambiguation: \(disambiguation)"))
+                }
+
                 HStack(spacing: 8) {
                     if !self.albums.isEmpty {
                         Text(localized: "\(self.albums.count) albums")

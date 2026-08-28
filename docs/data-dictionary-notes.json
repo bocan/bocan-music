@@ -37,8 +37,8 @@
     "note": "Filled once via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); first-seen wins, never overwritten (a conflict is the shared-name problem, #401). M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive."
   },
   "artists.disambiguation": {
-    "traces": "ADR-003:103, #401",
-    "note": "No writer, reader, or source; needs a MusicBrainz artist lookup."
+    "traces": "ADR-003:103, #401, #413",
+    "note": "MusicBrainz disambiguation from ArtistEnrichmentService (one artist lookup each, background, shared 1 req/s limiter), NULL when MusicBrainz has none. Read by the artist page header subtitle and reusable by Deep Dive."
   },
   "albums.musicbrainz_release_id": {
     "traces": "ADR-003:102, #402",
@@ -159,5 +159,9 @@
   "track_dsp_assignments.eq_preset_id": {
     "traces": "ADR-013, #418",
     "note": "Per-track EQ preset override (EQPreset.id or NULL = global). The effect columns M010 sketched next to it were dropped in M049; per-track effects were never built."
+  },
+  "artists.musicbrainz_fetched_at": {
+    "traces": "#401",
+    "note": "Unix seconds of the last MusicBrainz artist lookup; NULL = never. Set by ArtistRepository.setEnrichment (including on a 404, so a stale MBID is not retried every launch); read by fetchNeedingEnrichment."
   }
 }

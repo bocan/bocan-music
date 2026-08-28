@@ -146,7 +146,8 @@ struct ColumnPopulationGuardTests {
     /// with the reason. Adding a column to one of the guarded tables without
     /// either a writer the scan exercises or a line here fails the build.
     private static let allowed: [String: String] = [
-        "artists.disambiguation": "needs the MusicBrainz artist lookup (#401)",
+        "artists.disambiguation": "MusicBrainz enrichment job, network (#401)",
+        "artists.musicbrainz_fetched_at": "MusicBrainz enrichment job, network (#401)",
         "tracks.key": "fixture has no musical-key tag (#407)",
         "tracks.acoustid_fingerprint": "identify flow, network",
         "tracks.acoustid_id": "identify flow, network",

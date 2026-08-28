@@ -7560,6 +7560,16 @@
         }
       }
     },
+    "Disambiguation: %@" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đíšáḿƀíĝúáţíóñ: %@ one two"
+          }
+        }
+      }
+    },
     "Disc" : {
       "localizations" : {
         "en-XA" : {
