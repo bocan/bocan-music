@@ -155,5 +155,25 @@
   "tracks.musicbrainz_artist_id": {
     "traces": "#399, #413",
     "note": "Picard MUSICBRAINZ_ARTISTID (first value) via the bridge, TrackImporter, TrackTagPatch / EditTransaction / BackupRing. Read by the tag editor's Identifiers section (Artist MBID row). Added in M043."
+  },
+  "tracks.skip_after_seconds": {
+    "traces": "#423",
+    "note": "User setting (LibraryViewModel); preserved across rescans by TrackImporter since #423."
+  },
+  "tracks.acoustid_id": {
+    "traces": "ADR-011, #423",
+    "note": "Identify result; preserved across rescans since #423 (a retag or re-encode does not change the recording)."
+  },
+  "tracks.acoustid_fingerprint": {
+    "traces": "ADR-011, #423",
+    "note": "See acoustid_id."
+  },
+  "tracks.replaygain_track_gain": {
+    "traces": "ADR-013, #423",
+    "note": "From tags when present, else the app-computed value, which TrackImporter now keeps on rescan (#423). A full rescan on 2026-08-28 wiped 13,000 computed values before the fix."
+  },
+  "tracks.content_hash": {
+    "traces": "ADR-065, #423",
+    "note": "Sync ETag from ContentHashService; kept on rescan while file_mtime is unchanged, cleared when the file changed (same rule as provenance)."
   }
 }
