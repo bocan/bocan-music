@@ -7,16 +7,21 @@ import Persistence
 /// MusicBrainz artist entity, one lookup per artist, ever (issue #401).
 ///
 /// Runs as a single background pass over artists with an MBID and no
-/// `musicbrainz_fetched_at`, through the app-wide 1 request/second limiter,
-/// so a large library takes a while but never competes with identify or
-/// cover-art search for the budget. A rate-limit or network error ends the
-/// pass and leaves the remaining rows unstamped for the next launch; a
-/// definite MusicBrainz "no" (a stale or bad MBID) stamps the row so it is
-/// not retried forever.
+/// `musicbrainz_fetched_at`, through the app-wide 1 request/second limiter
+/// and paced a little slower than it (`pacing`), so identify and cover-art
+/// search keep headroom and network jitter cannot land two requests inside
+/// one second on MusicBrainz's clock. A 503 or network error backs off
+/// (doubling from `backoff`, up to `maxBackoffs` in a row) and retries the
+/// same artist; only a run of failures pauses the pass, leaving the rest
+/// unstamped for the next launch. A definite MusicBrainz "no" (a stale or
+/// bad MBID) stamps the row so it is not retried forever.
 public actor ArtistEnrichmentService {
     private let artists: ArtistRepository
     private let client: MusicBrainzClient
     private let batchSize: Int
+    private let pacing: Duration
+    private let backoff: Duration
+    private let maxBackoffs: Int
     private let now: @Sendable () -> Date
     private let log = AppLogger.make(.library)
     private var runningPass: Task<Void, Never>?
@@ -25,11 +30,17 @@ public actor ArtistEnrichmentService {
         artists: ArtistRepository,
         client: MusicBrainzClient = MusicBrainzClient(),
         batchSize: Int = 50,
+        pacing: Duration = .milliseconds(1500),
+        backoff: Duration = .seconds(15),
+        maxBackoffs: Int = 5,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.artists = artists
         self.client = client
         self.batchSize = batchSize
+        self.pacing = pacing
+        self.backoff = backoff
+        self.maxBackoffs = maxBackoffs
         self.now = now
     }
 
@@ -66,20 +77,35 @@ public actor ArtistEnrichmentService {
             guard pending > 0 else { return 0 }
             self.log.info("artist.enrich.pass.start", ["pending": pending])
             var cursor: Int64 = 0
+            var consecutiveBackoffs = 0
             while true {
                 try Task.checkCancellation()
                 let batch = try await self.artists.fetchNeedingEnrichment(limit: self.batchSize)
                     .filter { ($0.id ?? 0) > cursor }
                 guard !batch.isEmpty else { break }
-                for artist in batch {
+                batchLoop: for artist in batch {
                     try Task.checkCancellation()
                     guard let id = artist.id, let mbid = artist.musicbrainzArtistID else { continue }
-                    cursor = max(cursor, id)
                     switch await self.enrich(id: id, mbid: mbid) {
-                    case .stamped: stamped += 1
-                    case .skipped: continue
-                    case .abort: throw PassAborted()
+                    case .stamped:
+                        stamped += 1
+                        consecutiveBackoffs = 0
+                        cursor = max(cursor, id)
+                    case .skipped:
+                        cursor = max(cursor, id)
+                    case .abort:
+                        // Retry this artist after a growing pause; give up on
+                        // the pass after a run of failures. Leaving the loop
+                        // re-reads the batch from just before this artist.
+                        consecutiveBackoffs += 1
+                        guard consecutiveBackoffs <= self.maxBackoffs else { throw PassAborted() }
+                        let wait = self.backoff * (1 << (consecutiveBackoffs - 1))
+                        self.log.info("artist.enrich.backoff", ["attempt": consecutiveBackoffs, "seconds": wait.seconds])
+                        try await Task.sleep(for: wait)
+                        cursor = id - 1
+                        break batchLoop
                     }
+                    try await Task.sleep(for: self.pacing)
                 }
             }
         } catch is CancellationError {
@@ -136,5 +162,11 @@ public actor ArtistEnrichmentService {
             self.log.warning("artist.enrich.failed", ["id": id, "error": String(reflecting: error)])
             return .skipped
         }
+    }
+}
+
+private extension Duration {
+    var seconds: Double {
+        Double(self.components.seconds) + Double(self.components.attoseconds) / 1e18
     }
 }

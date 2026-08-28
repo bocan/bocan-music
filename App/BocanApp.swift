@@ -571,6 +571,9 @@ struct AppGraph {
     /// Retained here for the same reason: a local would deallocate the moment
     /// `buildGraph` returned and the pass would silently never run.
     let artistEnrichmentService: ArtistEnrichmentService
+    /// Periodic podcast feed refresh. Its loop captures the service, not
+    /// itself, so it kept running unretained; stored so it can be stopped.
+    let feedRefreshScheduler: FeedRefreshScheduler
 }
 
 // MARK: - AppModel
@@ -968,7 +971,8 @@ extension BocanApp {
             syncServer: syncServer,
             phoneSyncSettingsViewModel: phoneSyncViewModel,
             contentHashService: contentHashService,
-            artistEnrichmentService: artistEnrichment
+            artistEnrichmentService: artistEnrichment,
+            feedRefreshScheduler: feedRefreshScheduler
         )
     }
 

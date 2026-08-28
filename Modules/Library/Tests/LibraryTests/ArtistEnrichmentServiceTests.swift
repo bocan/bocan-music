@@ -8,7 +8,10 @@ import Testing
 /// configurable MBID answers 503 to simulate the rate limit.
 private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
     var artists: [String: (name: String, sortName: String, disambiguation: String)] = [:]
+    /// MBIDs that answer 503; each hit decrements `rateLimitHits`, and the
+    /// limit lifts when it reaches zero (nil = limited forever).
     var rateLimited: Set<String> = []
+    var rateLimitHits: Int?
     private(set) var requests = 0
 
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
@@ -18,7 +21,14 @@ private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
         func response(_ status: Int) -> HTTPURLResponse {
             HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!
         }
-        if self.rateLimited.contains(mbid) { return (Data(), response(503)) }
+        if self.rateLimited.contains(mbid) {
+            if let hits = self.rateLimitHits {
+                self.rateLimitHits = hits - 1
+                if hits <= 0 { self.rateLimited.remove(mbid) } else { return (Data(), response(503)) }
+            } else {
+                return (Data(), response(503))
+            }
+        }
         guard let artist = self.artists[mbid] else { return (Data(), response(404)) }
         let json: [String: Any] = [
             "id": mbid, "name": artist.name, "sort-name": artist.sortName,
@@ -38,6 +48,7 @@ struct ArtistEnrichmentServiceTests {
         )
         return ArtistEnrichmentService(
             artists: ArtistRepository(database: db), client: client, batchSize: 2,
+            pacing: .zero, backoff: .milliseconds(1), maxBackoffs: 3,
             now: { Date(timeIntervalSince1970: 1_720_000_000) }
         )
     }
@@ -70,7 +81,23 @@ struct ArtistEnrichmentServiceTests {
         #expect(http.requests == before)
     }
 
-    @Test("a 404 stamps the row so a stale MBID is not retried; a 503 pauses the pass unstamped")
+    @Test("a transient 503 is retried after a backoff and the pass carries on")
+    func transientRateLimitRetried() async throws {
+        let db = try await Database(location: .inMemory)
+        let repo = ArtistRepository(database: db)
+        _ = try await repo.findOrCreate(name: "Limited", musicbrainzID: "mb-limited")
+        _ = try await repo.findOrCreate(name: "Later", musicbrainzID: "mb-later")
+        let http = ArtistStubHTTP()
+        http.rateLimited = ["mb-limited"]
+        http.rateLimitHits = 2
+        http.artists["mb-limited"] = ("Limited", "Limited", "after backoff")
+        http.artists["mb-later"] = ("Later", "Later", "x")
+        #expect(await self.makeService(db, http: http).enrichOnce() == 2)
+        #expect(try await repo.fetchOne(name: "Limited")?.disambiguation == "after backoff")
+        #expect(try await repo.fetchOne(name: "Later")?.disambiguation == "x")
+    }
+
+    @Test("a 404 stamps the row so a stale MBID is not retried; a persistent 503 pauses the pass unstamped")
     func errorsHandled() async throws {
         let db = try await Database(location: .inMemory)
         let repo = ArtistRepository(database: db)
