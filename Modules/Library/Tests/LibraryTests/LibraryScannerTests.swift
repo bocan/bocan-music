@@ -120,6 +120,37 @@ struct LibraryScannerTests {
         #expect(hasFinished)
     }
 
+    @Test("a pending full_rescan request upgrades a quick scan to full and is cleared when it finishes (#425)")
+    func pendingRequestUpgradesQuickScan() async throws {
+        let db = try await makeDB()
+        let scanner = LibraryScanner(database: db)
+        let maintenance = PendingMaintenanceRepository(database: db)
+        try await scanner.addRoot(sampleLibraryURL)
+
+        // First full scan populates; M045's own request is consumed by it.
+        for await _ in await scanner.scan(mode: .full) {}
+        #expect(try await maintenance.hasRequest(task: PendingMaintenance.Task.fullRescan) == false)
+
+        // A plain quick scan of an unchanged library skips everything.
+        var quick: ScanProgress.Summary?
+        for await event in await scanner.scan(mode: .quick) {
+            if case let .finished(summary) = event { quick = summary }
+        }
+        let skippedWhenQuick = try #require(quick).skipped
+        #expect(skippedWhenQuick > 0)
+
+        // With a request outstanding, the same quick scan re-reads every file.
+        try await maintenance.request(task: PendingMaintenance.Task.fullRescan, requestedBy: "test")
+        var upgraded: ScanProgress.Summary?
+        for await event in await scanner.scan(mode: .quick) {
+            if case let .finished(summary) = event { upgraded = summary }
+        }
+        let result = try #require(upgraded)
+        #expect(result.skipped == 0)
+        #expect(result.updated == skippedWhenQuick)
+        #expect(try await maintenance.hasRequest(task: PendingMaintenance.Task.fullRescan) == false)
+    }
+
     @Test("full scan inserts audio files into database")
     func scanInsertsAudioFiles() async throws {
         let db = try await makeDB()
