@@ -84,6 +84,20 @@ struct TagReaderTests {
         #expect(tags.bitDepth == nil)
     }
 
+    @Test("primaryReleaseType prefers a known type over junk first values (#403)", arguments: [
+        (["album"], "album"),
+        (["Album", "Compilation"], "album"),
+        (["ELEAS", "album", "compilation"], "album"),
+        (["compilation", "album"], "album"),
+        (["OURCE", "live"], "live"),
+        (["mixtape"], "mixtape"),
+        ([" ", ""], nil),
+        ([], nil),
+    ] as [([String], String?)])
+    func primaryReleaseType(values: [String], expected: String?) {
+        #expect(TrackTags.primaryReleaseType(from: values) == expected)
+    }
+
     @Test("corrupt MP3 throws MetadataError")
     func corruptMP3Throws() throws {
         let url = try Fixtures.url(named: "corrupt.mp3")
