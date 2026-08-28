@@ -39,8 +39,10 @@ hash, was fixed separately.)
 
 ## Non-goals
 
-- No per-episode artwork. Episodes reuse their show's art in v1, matching the
-  current phone UI. `ManifestEpisode` gains no artwork field.
+- No per-episode artwork in the manifest. Episodes reuse their show's art on
+  the phone in v1, matching the current phone UI. `ManifestEpisode` gains no
+  artwork field. (Since #410 the Mac caches an episode's own art lazily on
+  first play for Now Playing and Continue Listening; the wire is unchanged.)
 - No proxying of the remote `artwork_url`. The phone speaks TLS only to the paired
   Mac and never fetches third-party image hosts; art must come through
   `/v1/artwork/{hash}`.

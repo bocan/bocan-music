@@ -181,6 +181,28 @@ struct EpisodeRepositoryTests {
         #expect(stored.addedAt == full.addedAt)
     }
 
+    @Test("a refresh upsert keeps a cached artwork_path; an explicit path replaces it (#410)")
+    func upsertKeepsCachedArtworkPath() async throws {
+        let db = try await makeDB()
+        let podcastID = try await insertPodcast(in: db)
+        let repo = EpisodeRepository(database: db)
+        var cached = self.sampleEpisode(podcastID: podcastID)
+        cached.artworkPath = "/art/ep-001.jpg"
+        try await repo.upsert(cached)
+
+        // A feed refresh carries no local path.
+        try await repo.upsert(self.sampleEpisode(podcastID: podcastID, title: "Refreshed"))
+        var stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        #expect(stored.title == "Refreshed")
+        #expect(stored.artworkPath == "/art/ep-001.jpg")
+
+        var moved = self.sampleEpisode(podcastID: podcastID)
+        moved.artworkPath = "/art/ep-001-v2.jpg"
+        try await repo.upsert(moved)
+        stored = try #require(try await repo.fetchForPodcast(podcastID: podcastID).first)
+        #expect(stored.artworkPath == "/art/ep-001-v2.jpg")
+    }
+
     @Test("upsert preserves added_at on update")
     func upsertPreservesAddedAt() async throws {
         let db = try await makeDB()

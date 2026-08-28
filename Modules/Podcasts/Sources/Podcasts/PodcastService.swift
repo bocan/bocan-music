@@ -145,6 +145,34 @@ public actor PodcastService {
         return podcastID
     }
 
+    // MARK: - Episode artwork (#410)
+
+    /// Caches the episode's own `itunes:image` (when the feed supplied one)
+    /// and records the local path on the row. Returns the cached path, the
+    /// already-cached path when the file still exists, or nil when the
+    /// episode has no art of its own (callers fall back to the show's).
+    @discardableResult
+    public func cacheEpisodeArtworkIfNeeded(podcastID: Int64, guid: String) async -> String? {
+        guard let episode = try? await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid) else { return nil }
+        return await self.cacheEpisodeArtworkIfNeeded(episode: episode, podcastID: podcastID)
+    }
+
+    private func cacheEpisodeArtworkIfNeeded(episode: PodcastEpisode, podcastID: Int64) async -> String? {
+        if let path = episode.artworkPath, FileManager.default.fileExists(atPath: path) { return path }
+        guard let episodeID = episode.id, let urlString = episode.artworkURL, let url = URL(string: urlString) else {
+            return nil
+        }
+        return await self.artwork.cacheEpisodeArt(episodeID: episodeID, podcastID: podcastID, url: url, repo: self.episodeRepo)
+    }
+
+    private func kickEpisodeArtwork(episode: PodcastEpisode, podcastID: Int64) {
+        guard episode.artworkURL != nil else { return }
+        if let path = episode.artworkPath, FileManager.default.fileExists(atPath: path) { return }
+        Task.detached(priority: .background) { [self] in
+            await self.cacheEpisodeArtworkIfNeeded(episode: episode, podcastID: podcastID)
+        }
+    }
+
     /// Removes a podcast and all its episodes and state (hard delete / cascade).
     /// Evicts cached artwork. Invalidates the id cache entry.
     public func unsubscribe(podcastID: Int64) async throws {
@@ -523,6 +551,10 @@ public actor PodcastService {
         ) else {
             throw PodcastsError.notFound(feedURL: feedURL)
         }
+
+        // Episode-level art is fetched lazily, the first time an episode is
+        // played, rather than for every episode of every feed (#410).
+        self.kickEpisodeArtwork(episode: episode, podcastID: podcastID)
 
         // Return the downloaded file URL when available (ADR-043 populates this).
         // State, not the file, is the source of truth for the badge, but verify the

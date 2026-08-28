@@ -597,6 +597,36 @@ struct PodcastServiceTests {
         #expect(state?.downloadState == EpisodeDownloadState.none)
     }
 
+    // MARK: episode artwork (#410)
+
+    @Test("episode art is cached on demand, recorded on the row, and survives a refresh")
+    func episodeArtworkCachedOnDemand() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.artMock.handler = { request in
+            (Data([0xFF, 0xD8, 0xFF, 0xE0]), HTTPURLResponse(
+                url: request.url ?? testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil
+            )!)
+        }
+        bed.feedMock.handler = { _ in
+            (rssData, HTTPURLResponse(url: testFeedURL, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let podcastID = try await bed.service.subscribe(feedURL: testFeedURL)
+        let episodes = EpisodeRepository(database: bed.db)
+        let before = try #require(try await episodes.fetchByGUID(podcastID: podcastID, guid: ep1GUID))
+        #expect(before.artworkURL == "https://example.com/ep1-art.jpg")
+        #expect(before.artworkPath == nil)
+
+        let path = try #require(await bed.service.cacheEpisodeArtworkIfNeeded(podcastID: podcastID, guid: ep1GUID))
+        #expect(FileManager.default.fileExists(atPath: path))
+        #expect(try await episodes.fetchByGUID(podcastID: podcastID, guid: ep1GUID)?.artworkPath == path)
+
+        // Second call is a cache hit; a refresh does not wipe the path.
+        #expect(await bed.service.cacheEpisodeArtworkIfNeeded(podcastID: podcastID, guid: ep1GUID) == path)
+        _ = try await bed.service.refresh(podcastID: podcastID)
+        #expect(try await episodes.fetchByGUID(podcastID: podcastID, guid: ep1GUID)?.artworkPath == path)
+    }
+
     // MARK: unsubscribe
 
     @Test("unsubscribe removes the podcast row and evicts the artwork directory")

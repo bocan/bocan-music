@@ -173,7 +173,7 @@ public struct EpisodeRepository: Sendable {
                 episode_number    = excluded.episode_number,
                 episode_type      = excluded.episode_type,
                 artwork_url       = excluded.artwork_url,
-                artwork_path      = excluded.artwork_path,
+                artwork_path      = COALESCE(excluded.artwork_path, podcast_episodes.artwork_path),
                 chapters_url      = excluded.chapters_url,
                 transcript_url    = excluded.transcript_url,
                 link              = excluded.link,
