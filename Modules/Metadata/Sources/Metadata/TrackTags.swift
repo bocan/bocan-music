@@ -35,6 +35,8 @@ public struct TrackTags: Sendable {
     public var bpm: Double?
     public var key: String?
     public var isrc: String?
+    /// MusicBrainz release-group primary type from RELEASETYPE (`album`, `single`, `ep`, ...), lowercased.
+    public var releaseType: String?
 
     // MARK: - MusicBrainz identifiers
 
@@ -93,6 +95,7 @@ public struct TrackTags: Sendable {
         bpm: Double? = nil,
         key: String? = nil,
         isrc: String? = nil,
+        releaseType: String? = nil,
         musicbrainzTrackID: String? = nil,
         musicbrainzRecordingID: String? = nil,
         musicbrainzArtistID: String? = nil,
@@ -129,6 +132,7 @@ public struct TrackTags: Sendable {
         self.bpm = bpm
         self.key = key
         self.isrc = isrc
+        self.releaseType = releaseType
         self.musicbrainzTrackID = musicbrainzTrackID
         self.musicbrainzRecordingID = musicbrainzRecordingID
         self.musicbrainzArtistID = musicbrainzArtistID

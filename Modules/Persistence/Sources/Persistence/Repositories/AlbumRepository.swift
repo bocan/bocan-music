@@ -114,6 +114,19 @@ public struct AlbumRepository: Sendable {
         self.log.debug("album.recomputeMusicBrainzIDs", ["id": albumID])
     }
 
+    /// Sets the `release_type` column (MusicBrainz primary type, lowercased:
+    /// album, single, ep, broadcast, other; or a secondary such as
+    /// compilation, live, soundtrack when a tagger put it first). Issue #403.
+    public func setReleaseType(albumID: Int64, releaseType: String?) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE albums SET release_type = ? WHERE id = ?",
+                arguments: [releaseType, albumID]
+            )
+        }
+        self.log.debug("album.setReleaseType", ["id": albumID, "type": releaseType as Any])
+    }
+
     /// Sets the `year` column for an album.
     ///
     /// Used by the importer to propagate the release year from track tags to the

@@ -241,6 +241,12 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     tags.lyrics         = firstValue(props, "LYRICS");
     tags.key            = firstValue(props, "INITIALKEY");
     tags.isrc           = firstValue(props, "ISRC");
+    // MusicBrainz release-group primary type (issue #403). Picard writes
+    // RELEASETYPE multi-valued with the primary type first and secondaries
+    // (compilation, live, ...) after; TagLib maps the ID3 TXXX and MP4 atoms
+    // to the same key. The full list survives in extendedTags.
+    tags.releaseType    = firstValue(props, "RELEASETYPE");
+    if (!tags.releaseType) tags.releaseType = firstValue(props, "MUSICBRAINZ_ALBUMTYPE");
 
     // BPM
     NSString *bpmStr = firstValue(props, "BPM");
@@ -453,6 +459,19 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
     setProp("LYRICS",           tags.lyrics);
     setProp("INITIALKEY",       tags.key);
     setProp("ISRC",             tags.isrc);
+    // RELEASETYPE: replace only the primary (first) value so Picard's
+    // secondary types stay; never erase the key from a single nil field.
+    if (tags.releaseType.length > 0) {
+        TagLib::String key("RELEASETYPE");
+        TagLib::StringList list = props.contains(key) ? props[key] : TagLib::StringList();
+        TagLib::String primary(tags.releaseType.UTF8String, TagLib::String::UTF8);
+        if (list.isEmpty()) {
+            list.append(primary);
+        } else {
+            list[0] = primary;
+        }
+        props[key] = list;
+    }
 
     if (tags.bpm > 0) {
         NSString *bpmStr = [NSString stringWithFormat:@"%.0f", tags.bpm];

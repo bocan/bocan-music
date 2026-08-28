@@ -121,6 +121,13 @@ actor TrackImporter {
             try await self.albumRepo.setYear(albumID: albumID, year: trackYear)
         }
 
+        // Same for the MusicBrainz release type (#403): last tagged track
+        // wins, which only matters for an album mixed from differently typed
+        // releases.
+        if let kind = tags.releaseType, !kind.isEmpty, album.releaseType != kind, let albumID = album.id {
+            try await self.albumRepo.setReleaseType(albumID: albumID, releaseType: kind)
+        }
+
         // Normalised file URL string
         let fileURLString = url.absoluteString
             .precomposedStringWithCanonicalMapping
