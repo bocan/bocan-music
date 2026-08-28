@@ -151,13 +151,17 @@ actor EditTransaction {
             }
         }
 
-        // Roll totals up to every album touched when the edit changed a
-        // total or moved tracks between albums (#404).
-        if !successfulUpdates.isEmpty,
-           patch.trackTotal != nil || patch.discTotal != nil || patch.album != nil || patch.albumArtist != nil {
+        // Roll totals (#404) and MusicBrainz IDs (#402) up to every album
+        // touched when the edit changed one of them or moved tracks between
+        // albums. The identify flow lands here too via MetadataEditService.
+        let regrouped = patch.album != nil || patch.albumArtist != nil
+        let totalsChanged = patch.trackTotal != nil || patch.discTotal != nil
+        let mbidsChanged = patch.musicbrainzReleaseID != nil || patch.musicbrainzReleaseGroupID != nil
+        if !successfulUpdates.isEmpty, regrouped || totalsChanged || mbidsChanged {
             let albumIDs = Set(successfulUpdates.compactMap(\.track.albumID))
             for albumID in albumIDs {
-                try await self.albumRepo.recomputeTotals(albumID: albumID)
+                if regrouped || totalsChanged { try await self.albumRepo.recomputeTotals(albumID: albumID) }
+                if regrouped || mbidsChanged { try await self.albumRepo.recomputeMusicBrainzIDs(albumID: albumID) }
             }
         }
 

@@ -162,6 +162,39 @@ struct TrackImporterTests {
         #expect(updated.title == "User's title")
     }
 
+    @Test("MusicBrainz release IDs roll up to the album row (#402)")
+    func musicBrainzIDsRollUpToAlbum() async throws {
+        let db = try await makeDB()
+        let albumRepo = AlbumRepository(database: db)
+        let importer = TrackImporter(
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: albumRepo,
+            trackRepo: TrackRepository(database: db),
+            lyricsRepo: LyricsRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db)
+        )
+        var tags = self.makeTags(title: "One")
+        tags.musicbrainzReleaseID = "rel-A"
+        tags.musicbrainzReleaseGroupID = "rg-1"
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/mb-one.flac"), bookmark: nil, tags: tags, fileMtime: 1, fileSize: 1
+        )
+        var album = try #require(try await albumRepo.fetchAll().first)
+        #expect(album.musicbrainzReleaseID == "rel-A")
+        #expect(album.musicbrainzReleaseGroupID == "rg-1")
+
+        // A second pressing of the same release group clears the release ID only.
+        var other = self.makeTags(title: "Two")
+        other.musicbrainzReleaseID = "rel-B"
+        other.musicbrainzReleaseGroupID = "rg-1"
+        _ = try await importer.importTrack(
+            url: URL(fileURLWithPath: "/tmp/mb-two.flac"), bookmark: nil, tags: other, fileMtime: 1, fileSize: 1
+        )
+        album = try #require(try await albumRepo.fetchAll().first)
+        #expect(album.musicbrainzReleaseID == nil)
+        #expect(album.musicbrainzReleaseGroupID == "rg-1")
+    }
+
     @Test("ARTISTSORT and ALBUMARTISTSORT reach the artist rows (#400)")
     func sortNamesReachArtistRows() async throws {
         let db = try await makeDB()

@@ -138,7 +138,7 @@ private extension LibraryStatsRepository {
             SELECT COUNT(*) AS total,
                    COALESCE(SUM(cover_art_hash IS NULL AND cover_art_path IS NULL), 0) AS no_art,
                    COALESCE(SUM(year IS NULL), 0) AS no_year,
-                   COALESCE(SUM(musicbrainz_release_id IS NULL), 0) AS no_mbid
+                   COALESCE(SUM(musicbrainz_release_group_id IS NULL AND musicbrainz_release_id IS NULL), 0) AS no_mbid
             FROM albums
             WHERE EXISTS (
                 SELECT 1 FROM tracks

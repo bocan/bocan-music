@@ -54,11 +54,11 @@
   },
   "albums.musicbrainz_release_id": {
     "traces": "ADR-003:102, #402",
-    "note": "Never written. LibraryStatsRepository+Hygiene reads it, so 'Albums Missing MusicBrainz ID' reports every album."
+    "note": "Rolled up by AlbumRepository.recomputeMusicBrainzIDs (TrackImporter, EditTransaction, M042): the single value when every tagged track agrees, NULL for mixed pressings. Hygiene counts an album as missing an MBID only when this and the release group are both NULL."
   },
   "albums.musicbrainz_release_group_id": {
     "traces": "ADR-003:102, #402",
-    "note": "Never written; rollup rule needed because 17 albums have mixed release groups across tracks."
+    "note": "Most common non-empty value across the album's tracks, same rollup path. Preferred key for 'same album, different pressing'."
   },
   "albums.release_type": {
     "traces": "ADR-003:101, #403",
