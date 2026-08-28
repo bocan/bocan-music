@@ -9,6 +9,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Persistence", targets: ["Persistence"]),
+        .executable(name: "bocan-schema", targets: ["BocanSchema"]),
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.11.1"),
@@ -21,6 +22,13 @@ let package = Package(
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "Observability", package: "Observability"),
             ],
+            swiftSettings: [
+                .enableExperimentalFeature("StrictConcurrency"),
+            ]
+        ),
+        .executableTarget(
+            name: "BocanSchema",
+            dependencies: ["Persistence"],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
             ]
