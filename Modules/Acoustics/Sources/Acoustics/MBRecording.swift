@@ -41,6 +41,13 @@ public struct MBArtistCredit: Decodable, Sendable {
 public struct MBArtist: Decodable, Sendable {
     public let id: String
     public let name: String
+    public let sortName: String?
+    public let disambiguation: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, disambiguation
+        case sortName = "sort-name"
+    }
 }
 
 public struct MBRelease: Decodable, Sendable {
@@ -110,18 +117,37 @@ public struct MBMedium: Decodable, Sendable {
     }
 }
 
-/// Release-group summary attached to each release (`inc=release-groups`).
+/// A release group: attached to each release in recording lookups
+/// (`inc=release-groups`), and the unit of search and browse results.
+/// Everything beyond `id` is optional because the three endpoints return
+/// different subsets.
 public struct MBReleaseGroup: Decodable, Sendable {
     public let id: String
+    public let title: String?
     /// "Album", "Single", "EP", …
     public let primaryType: String?
     /// e.g. ["Compilation"], ["Live"], ["Soundtrack"] — empty/absent for straight albums.
     public let secondaryTypes: [String]?
+    /// ISO 8601 partial date, e.g. "1969-09-26" or "1969".
+    public let firstReleaseDate: String?
+    public let artistCredit: [MBArtistCredit]?
+    public let releases: [MBRelease]?
 
     enum CodingKeys: String, CodingKey {
-        case id
+        case id, title, releases
         case primaryType = "primary-type"
         case secondaryTypes = "secondary-types"
+        case firstReleaseDate = "first-release-date"
+        case artistCredit = "artist-credit"
+    }
+
+    public var artistName: String {
+        self.artistCredit?.map { ($0.name ?? $0.artist?.name ?? "") + ($0.joinphrase ?? "") }.joined() ?? ""
+    }
+
+    public var year: Int? {
+        guard let d = self.firstReleaseDate, d.count >= 4 else { return nil }
+        return Int(d.prefix(4))
     }
 }
 

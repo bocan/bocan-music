@@ -1,20 +1,22 @@
 import Foundation
 import Observability
 
-// MARK: - MusicBrainzClient (Acoustics)
+// MARK: - MusicBrainzClient
 
-/// HTTP client for MusicBrainz recording lookups.
+/// The one HTTP client for the MusicBrainz Web Service 2 (issue #412).
 ///
-/// Fetches full recording metadata — artist credits, release list, genre tags —
-/// by MBID. Rate-limited to 1 request/second per MusicBrainz policy.
-///
-/// This client is distinct from the one in the Library module (which handles
-/// release-group searches for cover art). This one is solely for recording lookups
-/// during acoustic identification.
+/// Every MusicBrainz call in the app goes through an instance of this actor
+/// and, by default, through `sharedRateLimiter`, so the 1 request/second
+/// policy the `User-Agent` string commits us to holds across identify,
+/// cover-art search and Deep Dive at once. Tests inject a permissive limiter
+/// and a stub `HTTPClient`.
 public actor MusicBrainzClient {
     // MARK: - Constants
 
-    private static let baseURL = "https://musicbrainz.org/ws/2/recording/"
+    private static let baseURL = URL(string: "https://musicbrainz.org/ws/2/")!
+
+    /// Process-wide 1 req/s budget shared by every MusicBrainz caller.
+    public static let sharedRateLimiter = RateLimiter(maxRequests: 1, per: 1.0)
 
     // MARK: - Dependencies
 
@@ -27,11 +29,10 @@ public actor MusicBrainzClient {
 
     /// - Parameters:
     ///   - userAgent: Must follow MusicBrainz policy: `AppName/Version ( contact-url )`.
-    ///   - rateLimiter: Shared rate-limiter (1 req/s). **Must** be the same instance
-    ///     across all MusicBrainz call sites — sharing is enforced by `FingerprintService`.
+    ///   - rateLimiter: Defaults to `sharedRateLimiter`; pass another only in tests.
     public init(
-        userAgent: String,
-        rateLimiter: RateLimiter,
+        userAgent: String = UserAgent.string,
+        rateLimiter: RateLimiter = MusicBrainzClient.sharedRateLimiter,
         httpClient: (any HTTPClient)? = nil
     ) {
         self.userAgent = userAgent
@@ -39,34 +40,101 @@ public actor MusicBrainzClient {
         self.httpClient = httpClient ?? URLSession.shared
     }
 
-    // MARK: - Public API
+    // MARK: - Recordings
 
-    /// Fetches a full recording by MusicBrainz recording MBID.
+    /// Fetches a full recording by MBID: releases (with release-groups and
+    /// media), artists, tags and ISRCs in one request. Never page or fan out
+    /// per release; the 1 req/s budget is shared with every other call site.
     ///
-    /// Includes releases (with their release-groups and media), artists, tags, and
-    /// ISRCs. One request, bigger response — never page or fan out per release; the
-    /// 1 req/s budget is shared with every other MusicBrainz call site.
-    ///
-    /// Note: `labels` is NOT a valid inc parameter on the recording resource (the
-    /// API rejects the whole request), which is why candidates carry no label data.
-    /// Label/catalog-number would need a per-release lookup (`/release/<id>?inc=labels`).
+    /// `labels` is not a valid inc on the recording resource, so candidates
+    /// carry no label data; that needs `/release/<id>?inc=labels`.
     public func fetchRecording(mbid: String) async throws -> MBRecording {
+        try await self.get(
+            "recording/\(mbid)",
+            query: ["inc": "releases+release-groups+artists+tags+isrcs+media"],
+            as: MBRecording.self,
+            op: "mb.recording.fetch",
+            context: mbid
+        )
+    }
+
+    // MARK: - Release groups
+
+    /// Searches release-groups matching `artist` + `album` (cover-art lookup).
+    public func searchReleaseGroups(artist: String, album: String, limit: Int = 10) async throws -> [MBReleaseGroup] {
+        let query = "artist:\"\(artist.mbEscaped)\" AND releasegroup:\"\(album.mbEscaped)\""
+        return try await self.get(
+            "release-group",
+            query: ["query": query, "limit": String(limit)],
+            as: MBReleaseGroupSearchResponse.self,
+            op: "mb.release-group.search",
+            context: album
+        ).releaseGroups
+    }
+
+    /// Browses an artist's release groups (their discography); page with `offset`.
+    public func browseReleaseGroups(artistMBID: String, limit: Int = 100, offset: Int = 0) async throws -> MBReleaseGroupBrowse {
+        try await self.get(
+            "release-group",
+            query: ["artist": artistMBID, "limit": String(limit), "offset": String(offset), "inc": "artist-credits"],
+            as: MBReleaseGroupBrowse.self,
+            op: "mb.release-group.browse",
+            context: artistMBID
+        )
+    }
+
+    // MARK: - Artists
+
+    /// Fetches an artist with its URL relations (Wikidata, Discogs, homepage)
+    /// and artist relations (band members with dates), for Deep Dive.
+    public func fetchArtist(mbid: String) async throws -> MBArtistDetail {
+        try await self.get(
+            "artist/\(mbid)",
+            query: ["inc": "url-rels+artist-rels+aliases"],
+            as: MBArtistDetail.self,
+            op: "mb.artist.fetch",
+            context: mbid
+        )
+    }
+
+    /// Searches artists by name, best score first, for guessing an MBID the
+    /// tags did not supply.
+    public func searchArtists(name: String, limit: Int = 10) async throws -> [MBArtistSearchResult] {
+        try await self.get(
+            "artist",
+            query: ["query": "artist:\"\(name.mbEscaped)\"", "limit": String(limit)],
+            as: MBArtistSearchResponse.self,
+            op: "mb.artist.search",
+            context: name
+        ).artists
+    }
+
+    // MARK: - Transport
+
+    private func get<T: Decodable>(
+        _ path: String,
+        query: [String: String],
+        as type: T.Type,
+        op: String,
+        context: String
+    ) async throws -> T {
         try await self.rateLimiter.wait()
-        // The slot may have been granted after this job was cancelled (or the
-        // job may have been cancelled while waiting in line). Bail before
-        // firing the request so a cancelled fetch never hits the network. See #273.
+        // The slot may have been granted after this job was cancelled; never
+        // fire a request for a cancelled fetch (#273).
         try Task.checkCancellation()
 
-        let urlString = Self.baseURL + mbid + "?inc=releases+release-groups+artists+tags+isrcs+media&fmt=json"
-        guard let url = URL(string: urlString) else {
-            throw AcousticsError.invalidResponse(reason: "Invalid MBID: \(mbid)")
+        var comps = URLComponents(url: Self.baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        var items = query.sorted { $0.key < $1.key }.map { URLQueryItem(name: $0.key, value: $0.value) }
+        items.append(URLQueryItem(name: "fmt", value: "json"))
+        comps?.queryItems = items
+        guard let url = comps?.url else {
+            throw AcousticsError.invalidResponse(reason: "Invalid MusicBrainz request: \(path)")
         }
 
         var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 15)
         request.setValue(self.userAgent, forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        self.log.debug("mb.recording.fetch", ["mbid": mbid])
+        self.log.debug(op, ["context": context])
 
         let (data, response): (Data, URLResponse)
         do {
@@ -74,21 +142,29 @@ public actor MusicBrainzClient {
         } catch {
             throw AcousticsError.networkError(underlying: error)
         }
-
         if let http = response as? HTTPURLResponse {
             if http.statusCode == 503 {
                 // MusicBrainz uses 503 for rate-limit errors, not 429.
                 throw AcousticsError.rateLimitExceeded
             }
             guard (200 ..< 300).contains(http.statusCode) else {
-                throw AcousticsError.invalidResponse(reason: "HTTP \(http.statusCode) for MBID \(mbid)")
+                throw AcousticsError.invalidResponse(reason: "HTTP \(http.statusCode) for \(op) \(context)")
             }
         }
-
         do {
-            return try JSONDecoder().decode(MBRecording.self, from: data)
+            return try JSONDecoder().decode(T.self, from: data)
         } catch {
-            throw AcousticsError.invalidResponse(reason: "MBRecording decode failed: \(error)")
+            throw AcousticsError.invalidResponse(reason: "\(T.self) decode failed: \(error)")
         }
+    }
+}
+
+// MARK: - Lucene escaping
+
+extension String {
+    /// Escapes the characters that would otherwise be read as Lucene syntax
+    /// inside a quoted MusicBrainz search term.
+    var mbEscaped: String {
+        self.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
     }
 }

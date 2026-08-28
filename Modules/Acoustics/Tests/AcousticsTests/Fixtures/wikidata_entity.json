@@ -1,0 +1,18 @@
+{
+ "entities": {
+  "Q1299": {
+   "type": "item",
+   "id": "Q1299",
+   "sitelinks": {
+    "enwiki": {
+     "site": "enwiki",
+     "title": "The Beatles"
+    },
+    "dewiki": {
+     "site": "dewiki",
+     "title": "The Beatles"
+    }
+   }
+  }
+ }
+}

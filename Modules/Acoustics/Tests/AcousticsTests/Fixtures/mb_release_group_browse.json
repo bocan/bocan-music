@@ -1,0 +1,53 @@
+{
+ "release-group-count": 3,
+ "release-group-offset": 0,
+ "release-groups": [
+  {
+   "id": "9162580e-5df4-32de-80cc-f45a8d8a9b22",
+   "title": "Please Please Me",
+   "primary-type": "Album",
+   "secondary-types": [],
+   "first-release-date": "1963-03-22",
+   "artist-credit": [
+    {
+     "name": "The Beatles",
+     "artist": {
+      "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+      "name": "The Beatles"
+     }
+    }
+   ]
+  },
+  {
+   "id": "e3f9ab55-0000-4000-8000-000000000005",
+   "title": "Love Me Do",
+   "primary-type": "Single",
+   "secondary-types": [],
+   "first-release-date": "1962-10-05",
+   "artist-credit": [
+    {
+     "name": "The Beatles",
+     "artist": {
+      "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+      "name": "The Beatles"
+     }
+    }
+   ]
+  },
+  {
+   "id": "b84ee12a-09ef-3ab4-9d94-2c7e3a3ec1b0",
+   "title": "Abbey Road",
+   "primary-type": "Album",
+   "first-release-date": "1969-09-26",
+   "artist-credit": [
+    {
+     "name": "The Beatles",
+     "artist": {
+      "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+      "name": "The Beatles"
+     }
+    }
+   ]
+  }
+ ]
+}
