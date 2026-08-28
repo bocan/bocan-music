@@ -83,6 +83,7 @@ public struct Migrator {
         M046ReleaseTypeRescan.register(in: &dm)
         M047ReleaseTypeJunkRescan.register(in: &dm)
         M048ReleaseTypeVocabulary.register(in: &dm)
+        M049DropTrackDSPEffectColumns.register(in: &dm)
     }
 
     // MARK: - Migration

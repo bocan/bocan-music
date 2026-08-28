@@ -128,18 +128,6 @@
     "traces": "M028, #411",
     "note": "Was omitted from EpisodeRepository.upsertOne until #411; M039 forces a re-parse to backfill."
   },
-  "track_dsp_assignments.bass_boost_db": {
-    "traces": "ADR-013:118, #418",
-    "note": "DDL only; repository handles eq_preset_id alone."
-  },
-  "track_dsp_assignments.crossfeed_amount": {
-    "traces": "ADR-013:118, #418",
-    "note": "DDL only; grep matches the global DSP state, not this column."
-  },
-  "track_dsp_assignments.stereo_width": {
-    "traces": "ADR-013:118, #418",
-    "note": "DDL only; grep matches the global DSP state, not this column."
-  },
   "tracks.musicbrainz_artist_id": {
     "traces": "#399, #413",
     "note": "Picard MUSICBRAINZ_ARTISTID (first value) via the bridge, TrackImporter, TrackTagPatch / EditTransaction / BackupRing. Read by the tag editor's Identifiers section (Artist MBID row). Added in M043."
@@ -175,5 +163,9 @@
   "pending_maintenance.requested_at": {
     "traces": "#425",
     "note": "Unix seconds, set by the migration (strftime('%s','now')) or PendingMaintenanceRepository.request."
+  },
+  "track_dsp_assignments.eq_preset_id": {
+    "traces": "ADR-013, #418",
+    "note": "Per-track EQ preset override (EQPreset.id or NULL = global). The effect columns M010 sketched next to it were dropped in M049; per-track effects were never built."
   }
 }
