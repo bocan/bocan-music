@@ -43,8 +43,9 @@ public struct ArtistReport: Codable, Sendable, Equatable {
 
     public let artistID: Int64
     public let mbid: String
-    /// True when the MBID came from a name search rather than the tags.
-    public let mbidGuessed: Bool
+    /// True when the MBID came from a name search rather than the tags and
+    /// the user has not confirmed it (`DeepDiveService.confirmArtistMBID`).
+    public var mbidGuessed: Bool
     public let name: String
     public let sortName: String?
     public let disambiguation: String?

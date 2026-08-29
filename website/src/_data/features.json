@@ -21,7 +21,7 @@
   },
   {
     "title": "Deep Dive on any artist, album or track.",
-    "body": "Get Info grows a Deep Dive tab: the artist's bio from Wikipedia, members past and present with their years and instruments, a discography with the albums you own ticked; an album's label, catalogue number, format and the releases around it; a track's writers, ISRC, first release and every release it appears on. Cached for a week, readable offline, built on MusicBrainz."
+    "body": "Get Info grows a Deep Dive tab: the artist's bio from Wikipedia, members past and present with their years and instruments, a discography with the albums you own ticked; an album's label, catalogue number, format and the releases around it; a track's writers, ISRC, first release and every release it appears on. Untagged artists are matched by name and confirmed with one click. Cached for a week, readable offline, built on MusicBrainz."
   },
   {
     "title": "Mini-player that doesn't lie.",

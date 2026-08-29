@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 51)
+        #expect(version == 52)
     }
 
     @Test("Integrity check passes after migration")
@@ -69,7 +69,7 @@ struct MigrationTests {
     @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 51)
+        #expect(migrator.migrations.count == 52)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")
@@ -206,6 +206,25 @@ struct MigrationTests {
                 )
             }
         }
+    }
+
+    @Test("M052 marks every existing artist id as tagged and leaves id-less rows NULL (#413)")
+    func m052BackfillsIDSource() throws {
+        let queue = try DatabaseQueue()
+        var migrator = Migrator.make()
+        try migrator.migrate(queue, upTo: "051_artist_musicbrainz_fetched_at")
+        try queue.write { db in
+            try db.execute(sql: "INSERT INTO artists (name, musicbrainz_artist_id) VALUES ('Tagged', 'mbid-1'), ('Bare', NULL)")
+        }
+
+        try migrator.migrate(queue)
+
+        let sources = try queue.read { db in
+            try Row.fetchAll(db, sql: "SELECT name, musicbrainz_id_source AS s FROM artists ORDER BY name")
+                .map { ($0["name"] as String, $0["s"] as String?) }
+        }
+        #expect(sources.map(\.0) == ["Bare", "Tagged"])
+        #expect(sources.map(\.1) == [nil, "tag"])
     }
 
     @Test("M030 clears HTTP validators so the next refresh re-parses every feed")

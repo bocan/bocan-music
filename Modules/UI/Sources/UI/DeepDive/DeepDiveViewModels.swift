@@ -9,38 +9,118 @@ import Persistence
 public enum DeepDiveState<Report: Sendable & Equatable>: Equatable {
     case idle
     case loading
+    /// MusicBrainz answered "slow down"; waiting before attempt `attempt` of `of`.
+    case retrying(attempt: Int, of: Int)
     case loaded(Report)
     case failed(DeepDiveError)
 }
 
-// MARK: - Artist
+// MARK: - Retry policy
 
+/// What a Deep Dive does when MusicBrainz answers 503 "slow down": wait
+/// 1.5 s, 3 s, then 10 s between fresh attempts before giving up.
+public enum DeepDiveRetry {
+    /// Waits between attempts, in order; the count is the number of retries.
+    public static let delays: [Duration] = [.seconds(1.5), .seconds(3), .seconds(10)]
+
+    /// Runs `attempt`; on `DeepDiveError.rateLimited` waits each delay in
+    /// turn (reporting the upcoming attempt number to `onRetry`) and tries
+    /// again. The last failure propagates; cancellation stops the wait.
+    @MainActor
+    static func run<R: Sendable>(
+        delays: [Duration],
+        onRetry: (Int) -> Void,
+        attempt: () async throws -> R
+    ) async throws -> R {
+        var used = 0
+        while true {
+            do {
+                return try await attempt()
+            } catch DeepDiveError.rateLimited where used < delays.count {
+                onRetry(used + 1)
+                try await Task.sleep(for: delays[used])
+                used += 1
+            }
+        }
+    }
+}
+
+// MARK: - Base view model
+
+/// Drives one report: load with retry, expose the state, swap in a report.
+/// The three concrete models below only differ in which service call they
+/// wrap.
 @MainActor
-public final class DeepDiveArtistViewModel: ObservableObject {
-    @Published public private(set) var state: DeepDiveState<ArtistReport> = .idle
-    private let service: DeepDiveService
-    private let artistID: Int64
-    private var task: Task<Void, Never>?
-    private let log = AppLogger.make(.ui)
+public class DeepDiveReportViewModel<Report: Sendable & Equatable>: ObservableObject {
+    @Published public private(set) var state: DeepDiveState<Report> = .idle
 
-    public init(service: DeepDiveService, artistID: Int64) {
-        self.service = service
-        self.artistID = artistID
+    private let fetch: @Sendable (_ forceRefresh: Bool) async throws -> Report
+    private let delays: [Duration]
+    private let category: String
+    private var task: Task<Void, Never>?
+    let log = AppLogger.make(.ui)
+
+    init(
+        category: String,
+        delays: [Duration] = DeepDiveRetry.delays,
+        fetch: @escaping @Sendable (_ forceRefresh: Bool) async throws -> Report
+    ) {
+        self.category = category
+        self.delays = delays
+        self.fetch = fetch
     }
 
     public func load(forceRefresh: Bool = false) {
         self.task?.cancel()
         self.state = .loading
-        self.task = Task { [service, artistID] in
+        self.task = Task { [fetch, delays] in
             do {
-                let report = try await service.artistReport(artistID: artistID, forceRefresh: forceRefresh)
+                let report = try await DeepDiveRetry.run(
+                    delays: delays,
+                    onRetry: { self.state = .retrying(attempt: $0, of: delays.count) },
+                    attempt: { try await fetch(forceRefresh) }
+                )
                 guard !Task.isCancelled else { return }
                 self.state = .loaded(report)
+            } catch is CancellationError {
+                return
             } catch let error as DeepDiveError {
+                guard !Task.isCancelled else { return }
                 self.state = .failed(error)
             } catch {
-                self.log.error("deepdive.artist.failed", ["error": String(reflecting: error)])
+                guard !Task.isCancelled else { return }
+                self.log.error("deepdive.\(self.category).failed", ["error": String(reflecting: error)])
                 self.state = .failed(.notFound)
+            }
+        }
+    }
+
+    /// Shows `report` without fetching: a confirmed report, or a test fixture.
+    func show(_ report: Report) {
+        self.task?.cancel()
+        self.state = .loaded(report)
+    }
+}
+
+// MARK: - Artist
+
+@MainActor
+public final class DeepDiveArtistViewModel: DeepDiveReportViewModel<ArtistReport> {
+    private let service: DeepDiveService
+
+    public init(service: DeepDiveService, artistID: Int64, delays: [Duration] = DeepDiveRetry.delays) {
+        self.service = service
+        super.init(category: "artist", delays: delays) { try await service.artistReport(artistID: artistID, forceRefresh: $0) }
+    }
+
+    /// Persists the guessed id shown in the loaded report (#413).
+    public func confirmMBID() {
+        guard case let .loaded(report) = self.state, report.mbidGuessed else { return }
+        Task { [service] in
+            do {
+                try await self.show(service.confirmArtistMBID(report: report))
+            } catch {
+                self.log.error("deepdive.artist.confirm.failed", ["error": String(reflecting: error)])
             }
         }
     }
@@ -49,149 +129,17 @@ public final class DeepDiveArtistViewModel: ObservableObject {
 // MARK: - Track
 
 @MainActor
-public final class DeepDiveTrackViewModel: ObservableObject {
-    @Published public private(set) var state: DeepDiveState<TrackReport> = .idle
-    private let service: DeepDiveService
-    private let trackID: Int64
-    private var task: Task<Void, Never>?
-    private let log = AppLogger.make(.ui)
-
-    public init(service: DeepDiveService, trackID: Int64) {
-        self.service = service
-        self.trackID = trackID
-    }
-
-    public func load(forceRefresh: Bool = false) {
-        self.task?.cancel()
-        self.state = .loading
-        self.task = Task { [service, trackID] in
-            do {
-                let report = try await service.trackReport(trackID: trackID, forceRefresh: forceRefresh)
-                guard !Task.isCancelled else { return }
-                self.state = .loaded(report)
-            } catch let error as DeepDiveError {
-                self.state = .failed(error)
-            } catch {
-                self.log.error("deepdive.track.failed", ["error": String(reflecting: error)])
-                self.state = .failed(.notFound)
-            }
-        }
+public final class DeepDiveTrackViewModel: DeepDiveReportViewModel<TrackReport> {
+    public init(service: DeepDiveService, trackID: Int64, delays: [Duration] = DeepDiveRetry.delays) {
+        super.init(category: "track", delays: delays) { try await service.trackReport(trackID: trackID, forceRefresh: $0) }
     }
 }
 
 // MARK: - Album
 
 @MainActor
-public final class DeepDiveAlbumViewModel: ObservableObject {
-    @Published public private(set) var state: DeepDiveState<AlbumReport> = .idle
-    private let service: DeepDiveService
-    private let albumID: Int64
-    private var task: Task<Void, Never>?
-    private let log = AppLogger.make(.ui)
-
-    public init(service: DeepDiveService, albumID: Int64) {
-        self.service = service
-        self.albumID = albumID
-    }
-
-    public func load(forceRefresh: Bool = false) {
-        self.task?.cancel()
-        self.state = .loading
-        self.task = Task { [service, albumID] in
-            do {
-                let report = try await service.albumReport(albumID: albumID, forceRefresh: forceRefresh)
-                guard !Task.isCancelled else { return }
-                self.state = .loaded(report)
-            } catch let error as DeepDiveError {
-                self.state = .failed(error)
-            } catch {
-                self.log.error("deepdive.album.failed", ["error": String(reflecting: error)])
-                self.state = .failed(.notFound)
-            }
-        }
-    }
-}
-
-// MARK: - Shared formatting
-
-enum DeepDiveFormat {
-    /// "1957" from "1957-03", "1969-09-26" from itself; nil stays nil.
-    static func year(_ partialDate: String?) -> String? {
-        guard let partialDate, partialDate.count >= 4 else { return nil }
-        return String(partialDate.prefix(4))
-    }
-
-    /// "1960 to 1970", "1960 to present", or nil.
-    static func span(begin: String?, end: String?, ended: Bool) -> String? {
-        let from = self.year(begin)
-        let until = self.year(end)
-        switch (from, until, ended) {
-        case (nil, nil, _):
-            return nil
-
-        case let (from?, until?, _):
-            return L10n.string("\(from) to \(until)")
-
-        case let (from?, nil, false):
-            return L10n.string("\(from) to present")
-
-        case let (from?, nil, true):
-            return from
-
-        case let (nil, until?, _):
-            return L10n.string("until \(until)")
-        }
-    }
-
-    static func errorMessage(_ error: DeepDiveError) -> String {
-        switch error {
-        case .noIdentifier:
-            L10n.string("No MusicBrainz identifier for this item, and no confident match by name.")
-
-        case .offline:
-            L10n.string("MusicBrainz could not be reached and nothing is cached yet.")
-
-        case .rateLimited:
-            L10n.string("MusicBrainz asked us to slow down. Try again in a moment.")
-
-        case .notFound:
-            L10n.string("MusicBrainz has no record for this identifier.")
-        }
-    }
-
-    static func linkLabel(_ type: String) -> String {
-        switch type {
-        case "wikidata":
-            L10n.string("Wikidata")
-
-        case "wikipedia":
-            L10n.string("Wikipedia")
-
-        case "discogs":
-            L10n.string("Discogs")
-
-        case "official homepage":
-            L10n.string("Official site")
-
-        case "bandcamp":
-            L10n.string("Bandcamp")
-
-        case "allmusic":
-            L10n.string("AllMusic")
-
-        case "last.fm":
-            L10n.string("Last.fm")
-
-        case "youtube":
-            L10n.string("YouTube")
-
-        default:
-            type.capitalized
-        }
-    }
-
-    static func releaseKind(_ primary: String?, secondary: [String]) -> String {
-        let all = [primary].compactMap(\.self) + secondary
-        return all.map { ReleaseKindLabel.string(for: $0.lowercased()) }.joined(separator: " · ")
+public final class DeepDiveAlbumViewModel: DeepDiveReportViewModel<AlbumReport> {
+    public init(service: DeepDiveService, albumID: Int64, delays: [Duration] = DeepDiveRetry.delays) {
+        super.init(category: "album", delays: delays) { try await service.albumReport(albumID: albumID, forceRefresh: $0) }
     }
 }

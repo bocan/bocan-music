@@ -146,6 +146,30 @@ struct DeepDiveServiceTests {
         )
     }
 
+    @Test("confirming a guess persists the id as a search match and unflags the cached report")
+    func confirmGuess() async throws {
+        let bed = try await makeBed()
+        let repo = ArtistRepository(database: bed.db)
+        let artist = try await repo.findOrCreate(name: "The Beatles")
+        let id = try #require(artist.id)
+        let guessed = try await bed.service.artistReport(artistID: id)
+        #expect(guessed.mbidGuessed)
+
+        let confirmed = try await bed.service.confirmArtistMBID(report: guessed)
+        #expect(!confirmed.mbidGuessed)
+        let row = try await repo.fetch(id: id)
+        #expect(row.musicbrainzArtistID == beatlesMBID)
+        #expect(row.musicbrainzIDSource == "search")
+        #expect(row.sortName == "Beatles, The")
+        #expect(row.musicbrainzFetchedAt == 1_720_000_000)
+
+        // The next report comes from the stored id and the cache, unflagged, without a search.
+        let requestsBefore = bed.http.requests.count
+        let again = try await bed.service.artistReport(artistID: id)
+        #expect(!again.mbidGuessed)
+        #expect(bed.http.requests.count == requestsBefore)
+    }
+
     @Test("a stale cached report is served when offline, and offline with no cache throws")
     func staleIfOffline() async throws {
         let bed = try await makeBed(ttl: 0)

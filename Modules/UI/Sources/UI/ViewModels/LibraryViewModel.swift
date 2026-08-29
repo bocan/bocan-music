@@ -103,6 +103,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             if UserDefaults.standard.bool(forKey: "library.collectionListingActive") != isListing {
                 UserDefaults.standard.set(isListing, forKey: "library.collectionListingActive")
             }
+            // Same rule for Track > Get Info, which opens the artist's Get
+            // Info when an artist page is showing and no track is selected (#413).
+            let isArtistPage = if case .artist = self.selectedDestination { true } else { false }
+            if UserDefaults.standard.bool(forKey: "library.artistPageActive") != isArtistPage {
+                UserDefaults.standard.set(isArtistPage, forKey: "library.artistPageActive")
+            }
         }
     }
 
@@ -955,9 +961,15 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     }
 
     /// Opens the tag editor for whatever is currently selected in the track table.
+    /// Get Info (⌘I): the selected tracks, or the artist whose page is
+    /// showing when nothing is selected (#413).
     public func showTagEditorForCurrentSelection() {
         let ids = self.tracks.selection.compactMap(\.self)
-        guard !ids.isEmpty else { return }
+        guard !ids.isEmpty else {
+            if case let .artist(id) = self.selectedDestination { self.showArtistInfo(id: id) }
+            return
+        }
+        self.tagEditorAlbumID = nil
         self.tagEditorTrackIDs = ids
     }
 

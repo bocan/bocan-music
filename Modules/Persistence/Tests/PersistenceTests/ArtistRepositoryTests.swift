@@ -112,6 +112,8 @@ struct ArtistRepositoryTests {
         #expect(try await repo.fetch(id: #require(beatles.id)).musicbrainzArtistID == "mbid-1")
         let fresh = try await repo.findOrCreate(name: "Cream", musicbrainzID: "mbid-cream")
         #expect(fresh.musicbrainzArtistID == "mbid-cream")
+        #expect(fresh.musicbrainzIDSource == "tag")
+        #expect(beatles.musicbrainzIDSource == "tag")
     }
 
     @Test("enrichment queue lists MBID artists once, and setEnrichment fills without clobbering (#401)")
@@ -202,5 +204,38 @@ struct ArtistRepositoryTests {
 
         let ids = try await ArtistRepository(database: db).fetchAlbumArtistIDs()
         #expect(ids.isEmpty)
+    }
+
+    @Test("a confirmed search id is stored with its source and yields to the next tagged id (#413)")
+    func confirmedSearchIDYieldsToTag() async throws {
+        let db = try await makeDB()
+        let repo = ArtistRepository(database: db)
+        var band = try await repo.findOrCreate(name: "The Kestrels")
+        #expect(band.musicbrainzArtistID == nil)
+        #expect(band.musicbrainzIDSource == nil)
+        let id = try #require(band.id)
+
+        #expect(try await repo.setMusicBrainzID(id: id, mbid: "guess-1", source: .search) == 1)
+        band = try await repo.fetch(id: id)
+        #expect(band.musicbrainzArtistID == "guess-1")
+        #expect(band.musicbrainzIDSource == "search")
+
+        // An untagged rescan leaves the confirmation alone.
+        band = try await repo.findOrCreate(name: "The Kestrels")
+        #expect(band.musicbrainzArtistID == "guess-1")
+        #expect(band.musicbrainzIDSource == "search")
+
+        // A tagged id (a Picard pass) replaces the guess.
+        band = try await repo.findOrCreate(name: "The Kestrels", musicbrainzID: "tagged-1")
+        #expect(band.musicbrainzArtistID == "tagged-1")
+        #expect(band.musicbrainzIDSource == "tag")
+        band = try await repo.fetch(id: id)
+        #expect(band.musicbrainzArtistID == "tagged-1")
+        #expect(band.musicbrainzIDSource == "tag")
+
+        // Once tagged, a different tagged id no longer wins (first-seen rule).
+        band = try await repo.findOrCreate(name: "The Kestrels", musicbrainzID: "tagged-2")
+        #expect(band.musicbrainzArtistID == "tagged-1")
+        #expect(try await repo.setMusicBrainzID(id: 9999, mbid: "x", source: .search) == 0)
     }
 }

@@ -61,7 +61,7 @@ extension BocanCommands {
                 self.vm.showTagEditorForCurrentSelection()
             }
             .keyboardShortcut(KeyBindings.getInfo)
-            .disabled(!self.hasSelection)
+            .disabled(!self.hasSelection && !self.artistPageActive)
 
             Button("Identify Track\u{2026}") {
                 self.vm.showIdentifyTrackForCurrentSelection()

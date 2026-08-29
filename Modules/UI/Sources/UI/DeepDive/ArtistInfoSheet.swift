@@ -87,6 +87,10 @@ public struct ArtistInfoSheet: View {
         }
         .frame(minWidth: 640, idealWidth: 760, minHeight: 520, idealHeight: 640)
         .task { await self.loadInfo() }
+        .onChange(of: self.deepDive.state) { _, state in
+            // A confirmed match writes the row; the Info tab shows the stored id.
+            if case .loaded = state { Task { await self.loadInfo() } }
+        }
     }
 
     private var infoTab: some View {
