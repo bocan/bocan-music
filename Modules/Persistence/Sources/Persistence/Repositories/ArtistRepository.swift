@@ -79,8 +79,12 @@ public struct ArtistRepository: Sendable {
             let taggedMBID = musicbrainzID.flatMap { $0.isEmpty ? nil : $0 }
             if var existing = try Artist.filter(Column("name") == name).fetchOne(db) {
                 var changed = false
-                if existing.musicbrainzArtistID == nil, let taggedMBID {
+                // First tagged id wins; a confirmed guess (#413) yields to any tagged id.
+                if let taggedMBID,
+                   existing.musicbrainzArtistID == nil || existing.musicbrainzIDSource != Artist.MBIDSource.tag.rawValue,
+                   existing.musicbrainzArtistID != taggedMBID || existing.musicbrainzIDSource != Artist.MBIDSource.tag.rawValue {
                     existing.musicbrainzArtistID = taggedMBID
+                    existing.musicbrainzIDSource = Artist.MBIDSource.tag.rawValue
                     changed = true
                 }
                 if let taggedSort, existing.sortName != taggedSort {
@@ -97,10 +101,24 @@ public struct ArtistRepository: Sendable {
             var artist = Artist(
                 name: name,
                 sortName: taggedSort ?? Artist.derivedSortName(from: name),
-                musicbrainzArtistID: taggedMBID
+                musicbrainzArtistID: taggedMBID,
+                musicbrainzIDSource: taggedMBID == nil ? nil : Artist.MBIDSource.tag.rawValue
             )
             try artist.insert(db)
             return artist
+        }
+    }
+
+    /// Stores a MusicBrainz id the user confirmed (#413) with its provenance.
+    /// Returns the number of rows changed (0 when the row is gone).
+    @discardableResult
+    public func setMusicBrainzID(id: Int64, mbid: String, source: Artist.MBIDSource) async throws -> Int {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "UPDATE artists SET musicbrainz_artist_id = ?, musicbrainz_id_source = ? WHERE id = ?",
+                arguments: [mbid, source.rawValue, id]
+            )
+            return db.changesCount
         }
     }
 

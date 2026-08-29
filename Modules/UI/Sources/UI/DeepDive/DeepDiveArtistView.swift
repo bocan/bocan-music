@@ -11,8 +11,10 @@ struct DeepDiveArtistView: View {
         Group {
             switch self.vm.state {
             case .idle, .loading:
-                ProgressView(L10n.string("Asking MusicBrainz…"))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                DeepDiveProgressView(retry: nil)
+
+            case let .retrying(attempt, total):
+                DeepDiveProgressView(retry: (attempt, total))
 
             case let .failed(error):
                 DeepDiveErrorView(message: DeepDiveFormat.errorMessage(error)) { self.vm.load(forceRefresh: true) }
@@ -80,9 +82,14 @@ struct DeepDiveArtistView: View {
     private func detailsSection(_ report: ArtistReport) -> some View {
         Section(L10n.string("Details")) {
             if report.mbidGuessed {
-                Label(L10n.string("Matched by name; the tags carry no MusicBrainz id."), systemImage: "questionmark.circle")
-                    .font(Typography.caption)
-                    .foregroundStyle(Color.warningTint)
+                HStack {
+                    Label(L10n.string("Matched by name; the tags carry no MusicBrainz id."), systemImage: "questionmark.circle")
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.warningTint)
+                    Spacer()
+                    Button(L10n.string("Use This Match")) { self.vm.confirmMBID() }
+                        .help(L10n.string("Store this MusicBrainz id for the artist; a tagged id from a later scan replaces it"))
+                }
             }
             if let type = report.type {
                 LabeledContent(L10n.string("Type"), value: type)
@@ -181,6 +188,28 @@ struct DeepDiveFooter: View {
                     .help(self.helpText)
             }
         }
+    }
+}
+
+// MARK: - DeepDiveProgressView
+
+/// The spinner while a report loads, with the retry countdown when
+/// MusicBrainz has asked us to slow down.
+struct DeepDiveProgressView: View {
+    /// (attempt, total) while waiting to retry; nil on the first attempt.
+    let retry: (Int, Int)?
+
+    var body: some View {
+        VStack(spacing: 8) {
+            ProgressView(L10n.string("Asking MusicBrainz…"))
+            if let (attempt, total) = self.retry {
+                Text(L10n.string("MusicBrainz asked us to slow down. Retrying (\(attempt) of \(total))…"))
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.textSecondary)
+                    .accessibilityLabel(L10n.string("Retrying, attempt \(attempt) of \(total)"))
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

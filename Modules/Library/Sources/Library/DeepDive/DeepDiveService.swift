@@ -58,6 +58,23 @@ public actor DeepDiveService {
         }
     }
 
+    /// Persists a guessed artist id the user has accepted, marked `search`
+    /// so a tagged id from a later scan replaces it. Stamps the enrichment
+    /// columns from the report and returns the report unflagged.
+    public func confirmArtistMBID(report: ArtistReport) async throws -> ArtistReport {
+        let changed = try await self.artists.setMusicBrainzID(id: report.artistID, mbid: report.mbid, source: .search)
+        guard changed == 1 else { throw DeepDiveError.notFound }
+        _ = try await self.artists.setEnrichment(
+            mbid: report.mbid, disambiguation: report.disambiguation, sortName: report.sortName,
+            fetchedAt: Int64(self.now().timeIntervalSince1970)
+        )
+        self.log.info("deepdive.artist.confirmed", ["artistID": report.artistID, "mbid": report.mbid])
+        var confirmed = report
+        confirmed.mbidGuessed = false
+        await self.cache.store(confirmed, key: "artist-\(report.mbid)")
+        return confirmed
+    }
+
     private func resolveArtistMBID(_ artist: Artist) async throws -> (String, Bool) {
         if let mbid = artist.musicbrainzArtistID { return (mbid, false) }
         let results = try await self.mapErrors { try await self.musicBrainz.searchArtists(name: artist.name, limit: 5) }

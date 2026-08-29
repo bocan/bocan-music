@@ -34,7 +34,7 @@
   },
   "artists.musicbrainz_artist_id": {
     "traces": "#399, #413",
-    "note": "Filled once via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); first-seen wins, never overwritten (a conflict is the shared-name problem, #401). M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive."
+    "note": "Filled via ArtistRepository.findOrCreate(name:sortName:musicbrainzID:) from the track-artist MBID (track artist) or album-artist MBID (album artist); the first tagged id wins and is never overwritten by another tag (a conflict is the shared-name problem, #401), but a tagged id replaces a confirmed Deep Dive guess (see musicbrainz_id_source). Also written by setMusicBrainzID when the user confirms a name match. M043 backfilled album artists from tracks.musicbrainz_album_artist_id; track-only artists fill on the next full rescan. Needed by Deep Dive."
   },
   "artists.disambiguation": {
     "traces": "ADR-003:103, #401, #413",
@@ -159,6 +159,10 @@
   "track_dsp_assignments.eq_preset_id": {
     "traces": "ADR-013, #418",
     "note": "Per-track EQ preset override (EQPreset.id or NULL = global). The effect columns M010 sketched next to it were dropped in M049; per-track effects were never built."
+  },
+  "artists.musicbrainz_id_source": {
+    "traces": "#413",
+    "note": "Provenance of musicbrainz_artist_id: 'tag' (scanner, ArtistRepository.findOrCreate; M052 backfilled every existing id) or 'search' (a Deep Dive name match the user confirmed, ArtistRepository.setMusicBrainzID via DeepDiveService.confirmArtistMBID). Read by findOrCreate so a tagged id replaces a 'search' one on the next scan. NULL only while the id is NULL."
   },
   "artists.musicbrainz_fetched_at": {
     "traces": "#401",

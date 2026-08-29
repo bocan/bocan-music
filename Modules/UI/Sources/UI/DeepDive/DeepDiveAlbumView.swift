@@ -11,8 +11,10 @@ struct DeepDiveAlbumView: View {
         Group {
             switch self.vm.state {
             case .idle, .loading:
-                ProgressView(L10n.string("Asking MusicBrainz…"))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                DeepDiveProgressView(retry: nil)
+
+            case let .retrying(attempt, total):
+                DeepDiveProgressView(retry: (attempt, total))
 
             case let .failed(error):
                 DeepDiveErrorView(message: DeepDiveFormat.errorMessage(error)) { self.vm.load(forceRefresh: true) }

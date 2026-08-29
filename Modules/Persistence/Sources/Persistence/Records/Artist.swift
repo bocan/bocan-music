@@ -27,6 +27,19 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
     /// Unix seconds of the last MusicBrainz artist lookup (#401); NULL = never.
     public var musicbrainzFetchedAt: Int64?
 
+    /// Where `musicbrainzArtistID` came from (#413); a raw `MBIDSource`.
+    /// NULL only while the id is NULL.
+    public var musicbrainzIDSource: String?
+
+    /// Provenance of a MusicBrainz artist id. A `tag` id always overwrites a
+    /// `search` one on the next scan, so a wrong confirmation is self-healing.
+    public enum MBIDSource: String, Sendable {
+        /// Read from the files by the scanner.
+        case tag
+        /// A Deep Dive name match the user confirmed.
+        case search
+    }
+
     // MARK: - Init
 
     // swiftlint:disable function_default_parameter_at_end
@@ -37,7 +50,8 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
         sortName: String? = nil,
         musicbrainzArtistID: String? = nil,
         disambiguation: String? = nil,
-        musicbrainzFetchedAt: Int64? = nil
+        musicbrainzFetchedAt: Int64? = nil,
+        musicbrainzIDSource: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -45,6 +59,7 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
         self.musicbrainzArtistID = musicbrainzArtistID
         self.disambiguation = disambiguation
         self.musicbrainzFetchedAt = musicbrainzFetchedAt
+        self.musicbrainzIDSource = musicbrainzIDSource
     }
 
     // swiftlint:enable function_default_parameter_at_end
@@ -65,6 +80,7 @@ public struct Artist: Codable, FetchableRecord, MutablePersistableRecord, Sendab
         case musicbrainzArtistID = "musicbrainz_artist_id"
         case disambiguation
         case musicbrainzFetchedAt = "musicbrainz_fetched_at"
+        case musicbrainzIDSource = "musicbrainz_id_source"
     }
 }
 

@@ -30,6 +30,9 @@ struct BocanCommands: Commands {
     /// Mirrors "the active destination is a collection listing"
     /// (`LibraryViewModel.selectedDestination` didSet), same rebuild rule.
     @AppStorage("library.collectionListingActive") private var collectionListingActive = false
+    /// Mirrors `LibraryViewModel.selectedDestination` being an artist page
+    /// (its didSet), so Track > Get Info stays live for the artist sheet (#413).
+    @AppStorage("library.artistPageActive") var artistPageActive = false
     /// In-app Reduce Motion toggle, mirrored so menu-driven pane changes can match
     /// the toolbar buttons' animation behaviour (issue #312).
     @AppStorage("appearance.reduceMotion") private var appReduceMotion = false
