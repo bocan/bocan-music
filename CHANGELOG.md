@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.11.0](https://github.com/bocan/bocan-music/compare/v2.10.0...v2.11.0) (2026-08-29)
 
+Deep Dive (off by default)
+
+"Get Info" on any artist, album or song now has a Deep Dive tab: a short, readable report built from MusicBrainz and Wikipedia. For an artist you get a bio, current and past members with their years and instruments, and a full discography with the releases you already own ticked. For an album: label, catalogue number, format, country, release date, barcode, and the artist's other releases from around the same time. For a song: who wrote it, its ISRC, when it was first released, every release it appears on, and a link to its AcoustID. Artists finally have a Get Info of their own (right-click any artist, or press ⌘I on an artist page), with an Info tab alongside the report. Reports are cached on your Mac for a week, so reopening one is instant and they still work offline.
+
+It is deliverately off unless you turn it on, in Settings > Library.
+
+Bòcan promises that, out of the box, the only thing it ever talks to is the update-checking feed, and Deep Dive can't work without asking MusicBrainz and Wikipedia about the music you own. Turning it on sends MusicBrainz identifiers (or an artist's name, for files that carry none) to those two sites, and starts a slow, one-off pass that looks up each artist in your library on MusicBrainz, one request every second and a half, to fill in sort names and "which Nirvana?" disambiguations. A quiet progress line above the library shows how far that has got. My 15000 tracks took about an hour and a half.
+
+The Deep Dive tab explains all this and links to the switch while it's off, and nothing is sent until you flip it. The [privacy page](https://bocan.app/privacy/) has been updated to say exactly that.
+
+If an artist's files carry no MusicBrainz id, Deep Dive matches by name and tells you so; one click keeps that match, and a properly tagged file will override it later. If MusicBrainz asks us to slow down, the report quietly retries three times before giving up.
+
+Your library, tidied underneath
+
+A long audit of the database turned up a lot of information that was being read from your files and then dropped on the floor. It is now kept: artist sort names (so The Beatles file under B), MusicBrainz ids for artists, albums and songs, album release types (album, single, EP, live, compilation), track and disc totals per album, cover-art dimensions and where the art came from, the musical key of a track, podcast guests and credits, and your lyrics sync offset. A full rescan no longer wipes things Bòcan itself worked out, like ReplayGain and skip counts, and a couple of updates will ask for a one-time silent rescan to fill the new fields in. A few columns that nothing ever used have been removed.
+
+Fixes
+
+- Right-click a song and choose Get Info (or Play, Love, Rate…) without selecting it first: it now acts on the song you clicked instead of doing nothing or acting on an old selection.
+- Podcast episode artwork now shows in Now Playing.
+- Subsonic scrobbles now include the album.
+- Podcast subscriptions keep their directory ids across refreshes.
 
 ### Added
 
