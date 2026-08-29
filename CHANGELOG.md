@@ -5,6 +5,51 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0](https://github.com/bocan/bocan-music/compare/v2.10.0...v2.11.0) (2026-08-29)
+
+
+### Added
+
+* **library:** fill artist disambiguation from MusicBrainz in the background ([42c2644](https://github.com/bocan/bocan-music/commit/42c264453646bda90fbbb82ff38af4bda8e3470c)), closes [#401](https://github.com/bocan/bocan-music/issues/401)
+* **library:** migrations can request a one-time silent full rescan ([6dd5d96](https://github.com/bocan/bocan-music/commit/6dd5d96264b5425afe06eb693446a140dda6155c)), closes [#425](https://github.com/bocan/bocan-music/issues/425)
+* **library:** store the MusicBrainz release type on albums ([eead339](https://github.com/bocan/bocan-music/commit/eead3392d70f1a7ea3ea2de21924b92ba92f52f4)), closes [#403](https://github.com/bocan/bocan-music/issues/403)
+* **library:** store track-artist MusicBrainz IDs on tracks and artists ([c0145dd](https://github.com/bocan/bocan-music/commit/c0145dd507f7777050a3abf94269c9b5b170b484)), closes [#399](https://github.com/bocan/bocan-music/issues/399)
+* **podcasts:** cache episode artwork on first play and show it in Now Playing ([b4b06a2](https://github.com/bocan/bocan-music/commit/b4b06a2a1e505e14216f0873dd750d967cdc3c65)), closes [#410](https://github.com/bocan/bocan-music/issues/410)
+* **tooling:** add make audit-db for data-level schema audits ([52dbfb9](https://github.com/bocan/bocan-music/commit/52dbfb9a577a8728aff74b8e986cd7a3b7177d1a))
+* **ui:** album Deep Dive, works and AcoustID on tracks, tab placed after Details ([c5d0118](https://github.com/bocan/bocan-music/commit/c5d0118cc384fec6de152daf261116fccce6d318)), closes [#413](https://github.com/bocan/bocan-music/issues/413)
+* **ui:** Deep Dive for artists and tracks, and Get Info for artists ([522f04a](https://github.com/bocan/bocan-music/commit/522f04a366712797655aaca9aaa456186f4e4d42))
+* **ui:** Deep Dive retries a rate limit, confirms a guessed artist id, and answers ⌘I on an artist page ([cbcf649](https://github.com/bocan/bocan-music/commit/cbcf649a00bc422778062f6b0d15ee15e1fca70e)), closes [#413](https://github.com/bocan/bocan-music/issues/413)
+* **ui:** put Deep Dive behind a setting, off by default ([6bf7c6a](https://github.com/bocan/bocan-music/commit/6bf7c6af603f8f3faa8d4d6cc19722426482fcf7))
+* **ui:** show the MusicBrainz artist lookup progress in the scan banner area ([97de309](https://github.com/bocan/bocan-music/commit/97de3096441354b96ad943167cee408a7a158dc5))
+
+
+### Fixed
+
+* **app:** retain ArtistEnrichmentService so its launch pass actually runs ([7578aa3](https://github.com/bocan/bocan-music/commit/7578aa3f45021b3e025743b94d29ef953678ae70)), closes [#401](https://github.com/bocan/bocan-music/issues/401)
+* **library:** keep app-computed and user state across a full rescan ([3aee0fb](https://github.com/bocan/bocan-music/commit/3aee0fb0135b36da68d169dedf1ef2824505a8a3)), closes [#423](https://github.com/bocan/bocan-music/issues/423)
+* **library:** pace artist enrichment and back off on 503 instead of parking ([218779b](https://github.com/bocan/bocan-music/commit/218779b1b46444e53ef152ea7632dfdfd519f23a)), closes [#401](https://github.com/bocan/bocan-music/issues/401)
+* **library:** record cover-art dimensions, size, and provenance ([3ffa86c](https://github.com/bocan/bocan-music/commit/3ffa86cbbcf3a5e73d561bd19bce09a95af4eaa1)), closes [#417](https://github.com/bocan/bocan-music/issues/417)
+* **library:** roll MusicBrainz release IDs up to the album row ([5dd36c6](https://github.com/bocan/bocan-music/commit/5dd36c6360fc7c3c8933c1d024acab5de5ca735b)), closes [#402](https://github.com/bocan/bocan-music/issues/402)
+* **library:** roll track and disc totals up to the album row ([dae4e45](https://github.com/bocan/bocan-music/commit/dae4e45866338f340d72d1ad9561723eda99017e)), closes [#404](https://github.com/bocan/bocan-music/issues/404)
+* **library:** store artist sort names so 'The Beatles' files under B ([ea5deee](https://github.com/bocan/bocan-music/commit/ea5deeef211c6c771a3f8906144f46449d188ff4)), closes [#400](https://github.com/bocan/bocan-music/issues/400)
+* **lyrics:** persist the sync-offset slider per track ([ff4df24](https://github.com/bocan/bocan-music/commit/ff4df245ad10300e1770575a1fb8bb0bbab2afca)), closes [#415](https://github.com/bocan/bocan-music/issues/415)
+* **metadata:** prefer a known MusicBrainz release type over junk first values ([0f899a2](https://github.com/bocan/bocan-music/commit/0f899a2d9e757e55329fc443a43ecc2d1a34340f)), closes [#403](https://github.com/bocan/bocan-music/issues/403)
+* **metadata:** read a bare KEY Vorbis comment as the musical key ([f0c68ac](https://github.com/bocan/bocan-music/commit/f0c68acd13d092291ea6015c4b16d4a54afd1b90)), closes [#407](https://github.com/bocan/bocan-music/issues/407)
+* **metadata:** read bit depth from the container instead of a phantom tag ([001bcf2](https://github.com/bocan/bocan-music/commit/001bcf2692ad299371bfb94127b964ac998bd4ec)), closes [#405](https://github.com/bocan/bocan-music/issues/405)
+* **metadata:** unknown release types resolve to nil, and M048 clears stored junk ([ad2904a](https://github.com/bocan/bocan-music/commit/ad2904a22a0bbe6a183c757e012b2c1f6b05ce8b)), closes [#403](https://github.com/bocan/bocan-music/issues/403)
+* **playback:** send the album with Subsonic scrobbles ([a815124](https://github.com/bocan/bocan-music/commit/a815124d645e5d5468b590c57c607394c6f68c17)), closes [#408](https://github.com/bocan/bocan-music/issues/408)
+* **podcasts:** carry directory IDs through subscribe and keep them across refreshes ([4a15ffd](https://github.com/bocan/bocan-music/commit/4a15ffda43677628f38f20d2030a389b07663aa6)), closes [#409](https://github.com/bocan/bocan-music/issues/409)
+* **podcasts:** persist episode-level podcast:person credits ([678ff0a](https://github.com/bocan/bocan-music/commit/678ff0a81557f5b81ca08ab9c001a8b25268972c)), closes [#411](https://github.com/bocan/bocan-music/issues/411)
+* **ui:** let NSTableView set clickedRow before the track context menu is built ([cb2bcd9](https://github.com/bocan/bocan-music/commit/cb2bcd9cc3b64450377454ae5b34b210cf6ade7c))
+* **ui:** track context menu acts on the right-clicked row when nothing was selected ([9487596](https://github.com/bocan/bocan-music/commit/948759621b68b3b8fcc919dc8df5078e8b733f6c))
+
+
+### Changed
+
+* **acoustics:** one MusicBrainz client, one shared limiter, artist and Wikipedia endpoints ([a031700](https://github.com/bocan/bocan-music/commit/a031700957fe64ba9fdd3714d1b83ca674137795)), closes [#412](https://github.com/bocan/bocan-music/issues/412)
+* **library:** one MusicBrainz lookup per artist MBID, not per artist row ([5c5acfe](https://github.com/bocan/bocan-music/commit/5c5acfebde4407935defec95d9885232985147d6)), closes [#401](https://github.com/bocan/bocan-music/issues/401)
+* **library:** skip MBIDs already resolved within an enrichment batch ([b8ec952](https://github.com/bocan/bocan-music/commit/b8ec95220e3bba2e785b45623334bcd4a9987d90)), closes [#401](https://github.com/bocan/bocan-music/issues/401)
+
 ## [2.10.0](https://github.com/bocan/bocan-music/compare/v2.9.0...v2.10.0) (2026-08-27)
 
 Search works everywhere now as you'd expect it to. Until now, the search box only did anything in Songs, Albums, and Artists. Type in Genres, Composers, Radio, or Podcasts and it just sat there, dead. Now it filters every view it appears in: genre and composer lists, radio stations (by name or stream address), your podcast shows, the Continue Listening rail, and even the episode list inside a show. If nothing matches, you get a proper "no results" message instead of a mysteriously empty screen.
