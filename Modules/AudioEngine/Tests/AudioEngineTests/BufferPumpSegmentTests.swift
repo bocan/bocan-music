@@ -37,6 +37,22 @@ private final class CountingDecoder: Decoder, @unchecked Sendable {
     func close() async {}
 }
 
+// MARK: - Flag
+
+/// A lock-guarded bool the pump's completion closure can set from any thread.
+private final class Flag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+
+    var isSet: Bool {
+        self.lock.withLock { self.value }
+    }
+
+    func set() {
+        self.lock.withLock { self.value = true }
+    }
+}
+
 // MARK: - BufferPumpSegmentTests
 
 @Suite("BufferPump CUE segment boundary")
@@ -65,9 +81,20 @@ struct BufferPumpSegmentTests {
             maxDuration: 0.6
         )
 
+        // Wait for the boundary rather than a fixed pause: a fixed 300 ms was
+        // not always enough on a loaded CI runner and failed with zero
+        // confirmations. The reads are bounded by the segment budget, so
+        // waiting longer cannot change the count, only the flake.
+        let ended = Flag()
         await confirmation("segment end fires") { confirmed in
-            await pump.start { confirmed() }
-            try? await Task.sleep(for: .milliseconds(300))
+            await pump.start {
+                ended.set()
+                confirmed()
+            }
+            let deadline = ContinuousClock.now + .seconds(5)
+            while !ended.isSet, ContinuousClock.now < deadline {
+                try? await Task.sleep(for: .milliseconds(10))
+            }
         }
         await pump.stop()
 
