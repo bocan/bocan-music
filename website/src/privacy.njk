@@ -28,7 +28,8 @@ permalink: /privacy/
   <ul>
     <li><strong>Scrobbling</strong> to <a href="https://www.last.fm" rel="external noopener">Last.fm</a>, <a href="https://listenbrainz.org" rel="external noopener">ListenBrainz</a>, or <a href="https://rocksky.app" rel="external noopener">Rocksky</a>. Off by default. Per-account, with credentials you supply, sent only to the service you authorised.</li>
     <li><strong>AcoustID lookups</strong> to <a href="https://acoustid.org" rel="external noopener">AcoustID</a>, when you ask it to identify a track. Sends an audio fingerprint (not the audio) plus the track's existing tags.</li>
-    <li><strong>Lyrics fetches</strong> to <a href="https://www.last.fm" rel="external noopener">Last.fm</a> when you toggle the lyrics pane and the file has none. Sends artist + title.</li>
+    <li><strong>Lyrics fetches</strong> to <a href="https://lrclib.net" rel="external noopener">LRCLIB</a> when you toggle the lyrics pane and the file has none. Sends artist, title, album and duration.</li>
+    <li><strong>Deep Dive</strong> (Settings &gt; Library, off by default). When on, opening the Deep Dive tab under Get Info sends a MusicBrainz identifier, or an artist's name when the files carry none, to <a href="https://musicbrainz.org" rel="external noopener">MusicBrainz</a>, and a Wikidata id to <a href="https://en.wikipedia.org" rel="external noopener">Wikipedia</a> for the bio. Turning it on also starts a slow one-off pass that looks up each artist in your library on MusicBrainz (one request every 1.5 s) to fill in names and disambiguations; a progress line above the library shows it running. Reports are cached on your Mac for a week. Turn it off and nothing further is sent.</li>
     <li><strong>MusicBrainz cover art</strong>. Sends an MBID, gets back an image.</li>
     <li><strong>Crash reports</strong> via MetricKit. Off by default. Each report is shown to you in full before sending; you decide. We never auto-submit.</li>
   </ul>

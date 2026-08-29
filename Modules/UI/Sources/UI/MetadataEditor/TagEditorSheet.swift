@@ -8,6 +8,7 @@ import SwiftUI
 /// Open via `⌘I` / "Get Info" context menu.  Multi-track mode activates
 /// automatically when `vm.trackIDs` has more than one item.
 public struct TagEditorSheet: View {
+    @AppStorage(DeepDiveSetting.key) var deepDiveEnabled = false
     @ObservedObject public var vm: TagEditorViewModel
     @Binding public var isPresented: Bool
 

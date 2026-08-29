@@ -8,6 +8,7 @@ public struct LibrarySettingsView: View {
     @AppStorage("library.watchForChanges") private var watchForChanges = true
     @AppStorage("library.quickScanByDefault") private var quickScan = false
     @AppStorage("metadata.embedCoverArt") private var embedCoverArt = false
+    @AppStorage(DeepDiveSetting.key) private var deepDiveEnabled = false
 
     public init() {}
 
@@ -36,6 +37,17 @@ public struct LibrarySettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section(L10n.string("Deep Dive")) {
+                Toggle(L10n.string("Enable Deep Dive"), isOn: self.$deepDiveEnabled)
+                    .accessibilityIdentifier(A11y.SettingsIDs.deepDive)
+                Text(self.deepDiveDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(self.deepDivePrivacyNote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section {
@@ -118,6 +130,17 @@ public struct LibrarySettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle(L10n.string("Library"))
+    }
+
+    private var deepDiveDescription: String {
+        L10n.string("Adds a Deep Dive tab to Get Info for artists, albums and songs.")
+            + " " + L10n.string("It uses MusicBrainz and Wikipedia lookups to enrich your library.")
+    }
+
+    private var deepDivePrivacyNote: String {
+        L10n.string("When on, Bòcan sends MusicBrainz identifiers (or an artist's name) to MusicBrainz and Wikipedia.")
+            + " " + L10n.string("It also slowly looks up each artist in your library on MusicBrainz, once.")
+            + " " + L10n.string("Off by default; nothing is sent while it is off.")
     }
 
     /// Help copy for the embed toggle. Two full-sentence keys joined in code;

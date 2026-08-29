@@ -19,6 +19,7 @@ public struct ArtistInfoRequest: Identifiable, Equatable, Sendable {
 /// Dive tab built from MusicBrainz and Wikipedia.
 public struct ArtistInfoSheet: View {
     @ObservedObject private var library: LibraryViewModel
+    @AppStorage(DeepDiveSetting.key) private var deepDiveEnabled = false
 
     @StateObject private var deepDive: DeepDiveArtistViewModel
 
@@ -73,7 +74,11 @@ public struct ArtistInfoSheet: View {
                 self.infoTab
 
             case .deepDive:
-                DeepDiveArtistView(vm: self.deepDive)
+                if self.deepDiveEnabled {
+                    DeepDiveArtistView(vm: self.deepDive)
+                } else {
+                    DeepDiveDisabledView()
+                }
             }
 
             Divider()
