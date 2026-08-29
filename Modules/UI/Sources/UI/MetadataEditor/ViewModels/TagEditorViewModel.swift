@@ -146,21 +146,26 @@ public final class TagEditorViewModel: ObservableObject {
 
     // MARK: - Init
 
-    /// The Deep Dive tab's model; nil in multi-track mode or when no
-    /// `DeepDiveService` was supplied (#413).
+    /// The Deep Dive tab's models (#413): the album report when the editor was
+    /// opened for an album, else the recording report for a single track;
+    /// both nil in plain multi-track mode or without a `DeepDiveService`.
     public let deepDiveTrackVM: DeepDiveTrackViewModel?
+    public let deepDiveAlbumVM: DeepDiveAlbumViewModel?
 
     public init(
         service: MetadataEditService,
         trackIDs: [Int64],
         fetcher: any CoverArtFetcher = CoverArtSearchService(),
-        deepDive: DeepDiveService? = nil
+        deepDive: DeepDiveService? = nil,
+        albumID: Int64? = nil
     ) {
         self.service = service
         self.trackIDs = trackIDs
         self.isSingleTrack = trackIDs.count == 1
         self.coverArtFetchVM = CoverArtFetchViewModel(fetcher: fetcher)
-        self.deepDiveTrackVM = deepDive.flatMap { trackIDs.count == 1 ? DeepDiveTrackViewModel(service: $0, trackID: trackIDs[0]) : nil }
+        let deepDiveModels = Self.deepDiveModels(service: deepDive, trackIDs: trackIDs, albumID: albumID)
+        self.deepDiveAlbumVM = deepDiveModels.album
+        self.deepDiveTrackVM = deepDiveModels.track
     }
 
     // MARK: - Load
@@ -484,13 +489,5 @@ public final class TagEditorViewModel: ObservableObject {
         guard self.isSingleTrack || self.enabledFields.contains(key) else { return nil }
         if case let .edited(val) = state { return val }
         return nil
-    }
-}
-
-// MARK: - String extension
-
-private extension String {
-    var nilIfEmpty: String? {
-        self.isEmpty ? nil : self
     }
 }

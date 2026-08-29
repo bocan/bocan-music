@@ -29,8 +29,16 @@ struct DeepDiveTrackView: View {
     private func report(_ report: TrackReport) -> some View {
         Form {
             self.recordingSection(report)
+            if !report.works.isEmpty {
+                self.worksSection(report.works)
+            }
             if !report.appearances.isEmpty {
                 self.appearancesSection(report.appearances)
+            }
+            if let acoustID = report.acoustIDURL {
+                Section(L10n.string("Links")) {
+                    Link(L10n.string("AcoustID"), destination: acoustID)
+                }
             }
             DeepDiveFooter(fetchedAt: report.fetchedAt, helpText: L10n.string("Fetch the report again from MusicBrainz")) {
                 self.vm.load(forceRefresh: true)
@@ -57,6 +65,27 @@ struct DeepDiveTrackView: View {
             }
             ReadOnlyIDRow(label: L10n.string("Recording MBID"), value: report.recordingMBID)
         }
+    }
+
+    private func worksSection(_ works: [TrackReport.Work]) -> some View {
+        Section(L10n.string("Written by")) {
+            ForEach(works, id: \.mbid) { work in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: work.title)
+                    Text(verbatim: Self.credits(work))
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.textSecondary)
+                }
+            }
+        }
+    }
+
+    private static func credits(_ work: TrackReport.Work) -> String {
+        var parts: [String] = []
+        if !work.composers.isEmpty { parts.append(L10n.string("Composer: \(work.composers.joined(separator: ", "))")) }
+        if !work.lyricists.isEmpty { parts.append(L10n.string("Lyricist: \(work.lyricists.joined(separator: ", "))")) }
+        if !work.writers.isEmpty { parts.append(L10n.string("Writer: \(work.writers.joined(separator: ", "))")) }
+        return parts.isEmpty ? L10n.string("No writer credits on MusicBrainz") : parts.joined(separator: " · ")
     }
 
     private func appearancesSection(_ appearances: [TrackReport.Appearance]) -> some View {

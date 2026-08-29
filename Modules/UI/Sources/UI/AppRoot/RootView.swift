@@ -308,11 +308,8 @@ public struct BocanRootView: View {
                 }
             }
             .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.18), value: self.vm.toast)
-            .onChange(of: self.vm.tagEditorTrackIDs) { _, ids in
-                guard let ids, !ids.isEmpty, let svc = self.vm.metadataEditService else { self.tagEditorVM = nil
-                    return
-                }
-                self.tagEditorVM = TagEditorViewModel(service: svc, trackIDs: ids, deepDive: self.vm.deepDiveService)
+            .onChange(of: self.vm.tagEditorTrackIDs) { _, _ in
+                self.tagEditorVM = self.vm.makeTagEditorViewModel()
             }
             .sheet(isPresented: self.tagEditorBinding) {
                 if let tagVM = self.tagEditorVM {

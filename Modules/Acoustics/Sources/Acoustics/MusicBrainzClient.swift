@@ -51,9 +51,48 @@ public actor MusicBrainzClient {
     public func fetchRecording(mbid: String) async throws -> MBRecording {
         try await self.get(
             "recording/\(mbid)",
-            query: ["inc": "releases+release-groups+artists+tags+isrcs+media"],
+            query: ["inc": "releases+release-groups+artists+tags+isrcs+media+work-rels"],
             as: MBRecording.self,
             op: "mb.recording.fetch",
+            context: mbid
+        )
+    }
+
+    // MARK: - Releases
+
+    /// Fetches one release with its labels, media and release group, for the
+    /// album Deep Dive (#413).
+    public func fetchRelease(mbid: String) async throws -> MBRelease {
+        try await self.get(
+            "release/\(mbid)",
+            query: ["inc": "labels+media+release-groups+artist-credits"],
+            as: MBRelease.self,
+            op: "mb.release.fetch",
+            context: mbid
+        )
+    }
+
+    /// Fetches a release group with its releases, to pick a representative
+    /// release when an album carries only a release-group id.
+    public func fetchReleaseGroup(mbid: String) async throws -> MBReleaseGroup {
+        try await self.get(
+            "release-group/\(mbid)",
+            query: ["inc": "releases+artist-credits"],
+            as: MBReleaseGroup.self,
+            op: "mb.release-group.fetch",
+            context: mbid
+        )
+    }
+
+    // MARK: - Works
+
+    /// Fetches a work with its writer relations (composer, lyricist).
+    public func fetchWork(mbid: String) async throws -> MBWork {
+        try await self.get(
+            "work/\(mbid)",
+            query: ["inc": "artist-rels"],
+            as: MBWork.self,
+            op: "mb.work.fetch",
             context: mbid
         )
     }

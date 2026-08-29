@@ -41,8 +41,23 @@ private let browseJSON = """
 private let wikidataJSON = #"{"entities":{"Q1299":{"id":"Q1299","sitelinks":{"enwiki":{"site":"enwiki","title":"The Beatles"}}}}}"#
 private let summaryJSON = #"{"title":"The Beatles","extract":"The Beatles were an English rock band formed in Liverpool in 1960.","content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/The_Beatles"}}}"#
 private let searchJSON = #"{"artists":[{"id":"b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d","name":"The Beatles","score":100,"type":"Group"}]}"#
+private let releaseJSON = """
+{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","barcode":"077774644624",
+ "artist-credit":[{"name":"The Beatles","artist":{"id":"\(beatlesMBID)","name":"The Beatles"}}],
+ "label-info":[{"catalog-number":"PCS 7088","label":{"id":"l1","name":"Apple Records"}}],
+ "media":[{"position":1,"format":"12\\" Vinyl","track-count":17}],
+ "release-group":{"id":"rg-abbey","title":"Abbey Road","primary-type":"Album","first-release-date":"1969-09-26"}}
+"""
+private let groupLookupJSON = """
+{"id":"rg-abbey","title":"Abbey Road","primary-type":"Album","first-release-date":"1969-09-26",
+ "releases":[{"id":"rel-2019","title":"Abbey Road (Anniversary)","date":"2019-09-27","status":"Official"},
+             {"id":"rel-a","title":"Abbey Road","date":"1969-09-26","status":"Official"},
+             {"id":"rel-boot","title":"Abbey Road","date":"1969","status":"Bootleg"}]}
+"""
+private let workJSON = #"{"id":"w-1","title":"Come Together","relations":[{"type":"composer","artist":{"id":"a-l","name":"John Lennon"}},{"type":"composer","artist":{"id":"a-m","name":"Paul McCartney"}},{"type":"lyricist","artist":{"id":"a-l","name":"John Lennon"}}]}"#
 private let recordingJSON = """
 {"id":"rec-1","title":"Come Together","length":259000,"isrcs":["GBAYE0601690"],
+ "relations":[{"type":"performance","direction":"forward","work":{"id":"w-1","title":"Come Together"}}],
  "artist-credit":[{"name":"The Beatles","artist":{"id":"\(beatlesMBID)","name":"The Beatles"}}],
  "tags":[{"name":"rock","count":9},{"name":"pop","count":3}],
  "releases":[{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","release-group":{"id":"rg-abbey","primary-type":"Album"}},
@@ -64,6 +79,9 @@ private func makeBed(ttl: TimeInterval = 3600) async throws -> Bed {
         ("/ws/2/artist?", searchJSON),
         ("/ws/2/release-group?artist=", browseJSON),
         ("/ws/2/recording/rec-1", recordingJSON),
+        ("/ws/2/release/rel-a?", releaseJSON),
+        ("/ws/2/release-group/rg-abbey?", groupLookupJSON),
+        ("/ws/2/work/w-1?", workJSON),
         ("Special:EntityData/Q1299.json", wikidataJSON),
         ("page/summary/The_Beatles", summaryJSON),
     ]
@@ -174,5 +192,65 @@ struct DeepDiveServiceTests {
         #expect(report.tags == ["rock", "pop"])
         #expect(report.appearances.map(\.releaseTitle) == ["Abbey Road", "1967-1970"])
         #expect(report.appearances.last?.secondaryTypes == ["Compilation"])
+        #expect(report.works.map(\.title) == ["Come Together"])
+        #expect(report.works.first?.composers == ["John Lennon", "Paul McCartney"])
+        #expect(report.works.first?.lyricists == ["John Lennon"])
+        #expect(report.acoustIDURL == nil)
+    }
+
+    @Test("album report reads the release, counts owned tracks, and lists the artist's nearby releases")
+    func albumReport() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let albums = AlbumRepository(database: bed.db)
+        let abbey = try await albums.findOrCreate(title: "Abbey Road", albumArtistID: artist.id)
+        _ = try await albums.findOrCreate(title: "Please Please Me", albumArtistID: artist.id)
+        let tracks = TrackRepository(database: bed.db)
+        let now = Int64(Date().timeIntervalSince1970)
+        for n in 1 ... 3 {
+            var track = Track(
+                fileURL: "file:///tmp/ar-\(n).flac",
+                fileSize: 1,
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 1,
+                title: "T\(n)",
+                addedAt: now,
+                updatedAt: now
+            )
+            track.albumID = abbey.id
+            track.musicbrainzReleaseID = "rel-a"
+            _ = try await tracks.upsert(track)
+        }
+        try await albums.recomputeMusicBrainzIDs(albumID: #require(abbey.id))
+
+        let report = try await bed.service.albumReport(albumID: #require(abbey.id))
+        #expect(report.title == "Abbey Road")
+        #expect(report.releaseMBID == "rel-a")
+        #expect(report.releaseChosen == false)
+        #expect(report.labels == [AlbumReport.Label(name: "Apple Records", catalogNumber: "PCS 7088")])
+        #expect(report.formats == ["12\" Vinyl"])
+        #expect(report.trackCount == 17)
+        #expect(report.ownedTrackCount == 3)
+        #expect(report.country == "GB")
+        #expect(report.barcode == "077774644624")
+        #expect(report.coverArtArchiveURL.absoluteString == "https://coverartarchive.org/release/rel-a")
+        // Browse fixture: Please Please Me 1963, Love Me Do 1962, Abbey Road 1969 (self, excluded). Within two years of 1969: none of
+        // those.
+        #expect(report.nearby.isEmpty)
+    }
+
+    @Test("an album with only a release-group id gets the earliest official release chosen")
+    func albumReportFromGroup() async throws {
+        let bed = try await makeBed()
+        let albums = AlbumRepository(database: bed.db)
+        let album = try await albums.findOrCreate(title: "Abbey Road", albumArtistID: nil)
+        try await bed.db.write { db in
+            try db.execute(sql: "UPDATE albums SET musicbrainz_release_group_id = 'rg-abbey' WHERE id = ?", arguments: [album.id!])
+        }
+        let report = try await bed.service.albumReport(albumID: #require(album.id))
+        #expect(report.releaseChosen)
+        #expect(report.releaseMBID == "rel-a", "earliest official, not the 2019 reissue or the bootleg")
+        #expect(bed.http.requests.contains { $0.contains("/ws/2/release-group/rg-abbey?") })
     }
 }

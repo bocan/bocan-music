@@ -60,6 +60,49 @@ public struct ArtistReport: Codable, Sendable, Equatable {
     public let fetchedAt: Date
 }
 
+/// A concise release report for an album.
+public struct AlbumReport: Codable, Sendable, Equatable {
+    public struct Label: Codable, Sendable, Equatable {
+        public let name: String
+        public let catalogNumber: String?
+    }
+
+    public struct Nearby: Codable, Sendable, Equatable {
+        public let title: String
+        public let mbid: String
+        public let primaryType: String?
+        public let year: Int?
+        public let owned: Bool
+    }
+
+    public let albumID: Int64
+    public let title: String
+    public let artistName: String
+    public let releaseMBID: String
+    public let releaseGroupMBID: String?
+    /// True when the album carried only a release-group id and a
+    /// representative release was chosen (earliest official).
+    public let releaseChosen: Bool
+    public let primaryType: String?
+    public let secondaryTypes: [String]
+    public let date: String?
+    public let country: String?
+    public let status: String?
+    public let barcode: String?
+    public let labels: [Label]
+    /// Medium formats in order, e.g. ["CD", "CD"] or ["12\" Vinyl"].
+    public let formats: [String]
+    /// Track count across all media on the release.
+    public let trackCount: Int?
+    /// Enabled tracks of this album in the library.
+    public let ownedTrackCount: Int
+    public let coverArtArchiveURL: URL
+    public let musicBrainzURL: URL
+    /// The artist's other release groups within two years of this one.
+    public let nearby: [Nearby]
+    public let fetchedAt: Date
+}
+
 /// A concise recording report for a track.
 public struct TrackReport: Codable, Sendable, Equatable {
     public struct Appearance: Codable, Sendable, Equatable {
@@ -70,6 +113,14 @@ public struct TrackReport: Codable, Sendable, Equatable {
         public let status: String?
         public let primaryType: String?
         public let secondaryTypes: [String]
+    }
+
+    public struct Work: Codable, Sendable, Equatable {
+        public let title: String
+        public let mbid: String
+        public let composers: [String]
+        public let lyricists: [String]
+        public let writers: [String]
     }
 
     public let trackID: Int64
@@ -83,6 +134,10 @@ public struct TrackReport: Codable, Sendable, Equatable {
     /// Top genre tags by vote, most voted first.
     public let tags: [String]
     public let appearances: [Appearance]
+    /// Works the recording performs, with writers (at most the first two are looked up).
+    public let works: [Work]
+    /// `https://acoustid.org/track/<id>` when the track has been identified.
+    public let acoustIDURL: URL?
     public let fetchedAt: Date
 }
 

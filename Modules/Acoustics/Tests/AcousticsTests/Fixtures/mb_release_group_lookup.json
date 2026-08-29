@@ -1,0 +1,29 @@
+{
+ "id": "b84ee12a-09ef-3ab4-9d94-2c7e3a3ec1b0",
+ "title": "Abbey Road",
+ "primary-type": "Album",
+ "first-release-date": "1969-09-26",
+ "releases": [
+  {
+   "id": "rel-2019",
+   "title": "Abbey Road (Anniversary)",
+   "date": "2019-09-27",
+   "country": "XW",
+   "status": "Official"
+  },
+  {
+   "id": "d6010be3-98f8-422c-a6c9-787e2e491e58",
+   "title": "Abbey Road",
+   "date": "1969-09-26",
+   "country": "GB",
+   "status": "Official"
+  },
+  {
+   "id": "rel-boot",
+   "title": "Abbey Road",
+   "date": "1969",
+   "country": "XE",
+   "status": "Bootleg"
+  }
+ ]
+}

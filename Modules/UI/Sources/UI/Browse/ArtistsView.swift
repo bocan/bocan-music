@@ -281,7 +281,7 @@ public struct ArtistDetailView: View {
         let repo = TrackRepository(database: self.library.database)
         guard let tracks = try? await repo.fetchAll(albumID: id) else { return }
         await MainActor.run {
-            self.library.showTagEditor(tracks: tracks)
+            self.library.showTagEditor(tracks: tracks, albumID: id)
         }
     }
 
