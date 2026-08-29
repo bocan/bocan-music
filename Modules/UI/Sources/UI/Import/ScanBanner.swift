@@ -1,4 +1,5 @@
 import Library
+import Persistence
 import SwiftUI
 
 // MARK: - ScanBanner
@@ -33,10 +34,13 @@ public struct ScanBanner: View {
                 self.scanningBanner
             } else if self.vm.scanSummary != nil {
                 self.summaryBanner
+            } else if let progress = self.vm.enrichmentProgress, !progress.isComplete {
+                self.enrichmentBanner(progress)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: self.vm.isScanning)
         .animation(.easeInOut(duration: 0.25), value: self.vm.scanSummary != nil)
+        .animation(.easeInOut(duration: 0.25), value: self.vm.enrichmentProgress?.isComplete)
         .onChange(of: self.vm.scanSummary != nil) { _, summaryVisible in
             if summaryVisible {
                 self.scheduleDismiss()
@@ -115,6 +119,44 @@ public struct ScanBanner: View {
         .padding(.vertical, 8)
         .background(self.bannerBackground)
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    // MARK: - Enrichment banner
+
+    /// The one-off MusicBrainz artist lookup pass (#401) runs at one request
+    /// every 1.5 s, so a large library takes an hour or more; without this
+    /// line nothing showed it was happening.
+    private func enrichmentBanner(_ progress: ArtistEnrichmentProgress) -> some View {
+        HStack(spacing: 10) {
+            ProgressView(value: Double(progress.fetched), total: Double(max(progress.total, 1)))
+                .progressViewStyle(.linear)
+                .frame(width: 120)
+                .accessibilityHidden(true)
+
+            Text(self.enrichmentText(progress))
+                .font(Typography.caption)
+                .foregroundStyle(Color.textSecondary)
+                .lineLimit(1)
+                .help(self.enrichmentHelp)
+                .accessibilityIdentifier(A11y.ScanBanner.enrichmentProgress)
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .background(self.bannerBackground)
+        .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    private var enrichmentHelp: String {
+        L10n.string("Bòcan looks up each artist on MusicBrainz once, slowly, to respect its rate limit.")
+            + " " + L10n.string("Everything else keeps working meanwhile.")
+    }
+
+    private func enrichmentText(_ progress: ArtistEnrichmentProgress) -> String {
+        let fetched = progress.fetched.formatted(IntegerFormatStyle<Int>.number)
+        let total = progress.total.formatted(IntegerFormatStyle<Int>.number)
+        return L10n.string("Looking up artists on MusicBrainz: \(fetched) of \(total)")
     }
 
     // MARK: - Helpers

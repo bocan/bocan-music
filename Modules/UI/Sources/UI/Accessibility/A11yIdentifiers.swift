@@ -109,6 +109,7 @@ public enum A11y {
 
     public enum ScanBanner {
         public static let dismissButton = "scanBanner.dismiss"
+        public static let enrichmentProgress = "scanBanner.enrichmentProgress"
     }
 
     // MARK: - Podcasts browse

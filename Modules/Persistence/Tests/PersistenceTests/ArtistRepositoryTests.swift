@@ -238,4 +238,27 @@ struct ArtistRepositoryTests {
         #expect(band.musicbrainzArtistID == "tagged-1")
         #expect(try await repo.setMusicBrainzID(id: 9999, mbid: "x", source: .search) == 0)
     }
+
+    @Test("observeEnrichmentProgress counts artists with an id and follows each stamp")
+    func observeEnrichmentProgress() async throws {
+        let db = try await makeDB()
+        let repo = ArtistRepository(database: db)
+        _ = try await repo.findOrCreate(name: "Tagged", musicbrainzID: "mbid-1")
+        _ = try await repo.findOrCreate(name: "Also Tagged", musicbrainzID: "mbid-2")
+        _ = try await repo.findOrCreate(name: "Bare")
+
+        let stream = await repo.observeEnrichmentProgress()
+        var iterator = stream.makeAsyncIterator()
+        let initial = try await iterator.next()
+        #expect(initial == ArtistEnrichmentProgress(fetched: 0, total: 2))
+        #expect(initial?.remaining == 2)
+        #expect(initial?.isComplete == false)
+
+        try await repo.setEnrichment(mbid: "mbid-1", disambiguation: "band", sortName: nil, fetchedAt: 100)
+        #expect(try await iterator.next() == ArtistEnrichmentProgress(fetched: 1, total: 2))
+        try await repo.setEnrichment(mbid: "mbid-2", disambiguation: nil, sortName: nil, fetchedAt: 101)
+        let done = try await iterator.next()
+        #expect(done == ArtistEnrichmentProgress(fetched: 2, total: 2))
+        #expect(done?.isComplete == true)
+    }
 }
