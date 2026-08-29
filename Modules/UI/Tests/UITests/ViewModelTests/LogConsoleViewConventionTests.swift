@@ -56,6 +56,13 @@ struct LogConsoleViewConventionTests {
         )
     }
 
+    @Test("tail-scroll is keyed on the newest entry id, which keeps changing at capacity")
+    func tailScrollKeyedOnNewestID() throws {
+        let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
+        #expect(source.contains(".onChange(of: self.vm.visible.last?.id)"))
+        #expect(!source.contains(".onChange(of: self.vm.visible.count)"), "count is pinned once the mirror is full")
+    }
+
     @Test("LogConsoleView calls scrollTo when tailing")
     func viewHasScrollTo() throws {
         let source = try self.sourceContents(at: "Console/LogConsoleView.swift")
