@@ -209,6 +209,18 @@ public struct ArtistRepository: Sendable {
         }
     }
 
+    /// Observes enrichment progress (looked up vs. all artists with an id) for
+    /// the scan banner. Emits on subscribe and whenever either count changes.
+    public func observeEnrichmentProgress() async -> AsyncThrowingStream<ArtistEnrichmentProgress, Error> {
+        await self.database.observe { db in
+            let withID = Artist.filter(Column("musicbrainz_artist_id") != nil)
+            return try ArtistEnrichmentProgress(
+                fetched: withID.filter(Column("musicbrainz_fetched_at") != nil).fetchCount(db),
+                total: withID.fetchCount(db)
+            )
+        }
+    }
+
     /// How many artists still await a MusicBrainz lookup.
     public func countNeedingEnrichment() async throws -> Int {
         try await self.database.read { db in

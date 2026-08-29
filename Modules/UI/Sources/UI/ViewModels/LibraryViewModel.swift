@@ -397,6 +397,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// the active track changes. Keeps the Songs table's Plays / Date Played
     /// columns live when a play is counted mid-playback.
     private var nowPlayingStatsTask: Task<Void, Never>?
+    /// MusicBrainz artist lookup progress for the scan banner (#401); nil
+    /// until the first count, then live from the database.
+    @Published public private(set) var enrichmentProgress: ArtistEnrichmentProgress?
+    private var enrichmentProgressTask: Task<Void, Never>?
     private var selectedDestinationCancellable: AnyCancellable?
     /// The manual playlist whose membership is currently driving the queue.
     /// `nil` when the queue was populated from any other source (Songs, Albums, etc.).
@@ -557,6 +561,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.observeSubsonicConnectionChanges()
         self.observeQueueSchemaWarnings()
         self.observeNowPlayingTrackStats()
+        self.observeEnrichmentProgress()
     }
 
     /// Keeps the now-playing track's row in the Songs table current.
@@ -567,6 +572,21 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// it changes, so that bump is reflected in the Plays / Date Played columns
     /// live, instead of only after navigating away and back.  Tracks not present
     /// in the current destination are simply skipped by `updateRows(for:)`.
+    /// Follows the artist lookup pass so the scan banner can show how far it has got.
+    private func observeEnrichmentProgress() {
+        let repo = self.artistRepo
+        self.enrichmentProgressTask = Task { [weak self] in
+            do {
+                for try await progress in await repo.observeEnrichmentProgress() {
+                    guard let self else { return }
+                    if self.enrichmentProgress != progress { self.enrichmentProgress = progress }
+                }
+            } catch {
+                self?.log.warning("artist.enrich.observe.failed", ["error": String(reflecting: error)])
+            }
+        }
+    }
+
     private func observeNowPlayingTrackStats() {
         withObservationTracking {
             _ = self.nowPlaying.nowPlayingTrackID
