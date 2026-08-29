@@ -70,6 +70,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The release PR must be merged before this workflow runs: it is what
+      # writes the version's CHANGELOG section (the release notes and the
+      # Sparkle prompt) and bumps the manifest. v2.11.0 was dispatched with
+      # the PR still open and shipped an empty notes template; refuse that.
+      - name: Require the merged release PR
+        run: |
+          VERSION="${MARKETING_VERSION#v}"
+          MANIFEST=$(python3 -c 'import json; print(json.load(open(".release-please-manifest.json"))["."])')
+          if [[ "$MANIFEST" != "$VERSION" ]]; then
+            echo "::error::.release-please-manifest.json says ${MANIFEST}, not ${VERSION}. Merge the release-please PR for ${VERSION} first, then run this workflow."
+            exit 1
+          fi
+          if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [${VERSION}]' section. Merge the release-please PR for ${VERSION} first, then run this workflow."
+            exit 1
+          fi
+          echo "Release PR for ${VERSION} is merged: manifest and CHANGELOG agree."
+
       - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode_26.5.app
 
@@ -323,8 +341,8 @@ jobs:
         run: |
           chmod +x Scripts/release-notes.sh
           NOTES_FILE=$(mktemp)
-          Scripts/release-notes.sh "${MARKETING_VERSION#v}" > "$NOTES_FILE" || \
-            echo "_See commit history for changes._" > "$NOTES_FILE"
+          # No fallback: a missing section fails the release (see the script).
+          Scripts/release-notes.sh "${MARKETING_VERSION#v}" > "$NOTES_FILE"
           {
             echo "notes_path=$NOTES_FILE"
           } >> "$GITHUB_OUTPUT"
