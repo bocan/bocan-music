@@ -1,105 +1,105 @@
 {
-  "originHash": "457918add2c3454e399324c94d2bbe3dcb90204e2fdfb194b31b3d0d9c1539fb",
-  "pins": [
+  "originHash" : "cc0c2dab133abfc9b62dbe02b1ab2c39e3617e19d42c0ea9a57f676991df3228",
+  "pins" : [
     {
-      "identity": "feedkit",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/nmdias/FeedKit.git",
-      "state": {
-        "revision": "e55b2cafaf67370092c91193cfb8a8b008e05888",
-        "version": "10.4.0"
+      "identity" : "feedkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nmdias/FeedKit.git",
+      "state" : {
+        "revision" : "fbae69b140f6fc429cdbd3d9b06007f71f4ec1e8",
+        "version" : "10.5.0"
       }
     },
     {
-      "identity": "grdb.swift",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/groue/GRDB.swift.git",
-      "state": {
-        "revision": "b83108d10f42680d78f23fe4d4d80fc88dab3212",
-        "version": "7.11.1"
+      "identity" : "grdb.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/groue/GRDB.swift.git",
+      "state" : {
+        "revision" : "b83108d10f42680d78f23fe4d4d80fc88dab3212",
+        "version" : "7.11.1"
       }
     },
     {
-      "identity": "sparkle",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/sparkle-project/Sparkle",
-      "state": {
-        "revision": "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
-        "version": "2.9.6"
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle",
+      "state" : {
+        "revision" : "ac2def288cbff5cfc7df3ffef6abdf45b72bcb0a",
+        "version" : "2.9.6"
       }
     },
     {
-      "identity": "swift-asn1",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/apple/swift-asn1.git",
-      "state": {
-        "revision": "a9a5efd40eaf558a2bcd48d64b1d1646be686008",
-        "version": "1.7.1"
+      "identity" : "swift-asn1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-asn1.git",
+      "state" : {
+        "revision" : "a9a5efd40eaf558a2bcd48d64b1d1646be686008",
+        "version" : "1.7.1"
       }
     },
     {
-      "identity": "swift-certificates",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/apple/swift-certificates.git",
-      "state": {
-        "revision": "449dbbecd0f31e82b510ada227ca152caa8b5e98",
-        "version": "1.19.4"
+      "identity" : "swift-certificates",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-certificates.git",
+      "state" : {
+        "revision" : "449dbbecd0f31e82b510ada227ca152caa8b5e98",
+        "version" : "1.19.4"
       }
     },
     {
-      "identity": "swift-crypto",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/apple/swift-crypto.git",
-      "state": {
-        "revision": "47d3869a7291f085c1fb9fb1e6d3b97a793f45c6",
-        "version": "4.5.1"
+      "identity" : "swift-crypto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-crypto.git",
+      "state" : {
+        "revision" : "47d3869a7291f085c1fb9fb1e6d3b97a793f45c6",
+        "version" : "4.5.1"
       }
     },
     {
-      "identity": "swift-custom-dump",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/pointfreeco/swift-custom-dump",
-      "state": {
-        "revision": "e9c34fd54ece006b491a0e6d23fe9a6024b9a828",
-        "version": "1.7.0"
+      "identity" : "swift-custom-dump",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-custom-dump",
+      "state" : {
+        "revision" : "4fb9e7cbb4b8f5a7354005db39447f570d6b3e19",
+        "version" : "1.7.3"
       }
     },
     {
-      "identity": "swift-snapshot-testing",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/pointfreeco/swift-snapshot-testing",
-      "state": {
-        "revision": "59a99c458de4d2dee580529b61b4f78dca7b7fa6",
-        "version": "1.19.4"
+      "identity" : "swift-snapshot-testing",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
+      "state" : {
+        "revision" : "59a99c458de4d2dee580529b61b4f78dca7b7fa6",
+        "version" : "1.19.4"
       }
     },
     {
-      "identity": "swift-syntax",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/swiftlang/swift-syntax",
-      "state": {
-        "revision": "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
-        "version": "603.0.2"
+      "identity" : "swift-syntax",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-syntax",
+      "state" : {
+        "revision" : "79e4b74a295b6eb74a8b585e3a39d29e70c1dbd1",
+        "version" : "603.0.2"
       }
     },
     {
-      "identity": "swiftsonic",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/MathieuDubart/swiftsonic.git",
-      "state": {
-        "revision": "9ba4b2eb7fcc841a6a6887c96929565b66f8fa90",
-        "version": "0.9.0"
+      "identity" : "swiftsonic",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/MathieuDubart/swiftsonic.git",
+      "state" : {
+        "revision" : "9ba4b2eb7fcc841a6a6887c96929565b66f8fa90",
+        "version" : "0.9.0"
       }
     },
     {
-      "identity": "xctest-dynamic-overlay",
-      "kind": "remoteSourceControl",
-      "location": "https://github.com/pointfreeco/xctest-dynamic-overlay",
-      "state": {
-        "revision": "8f6abcf4c8950e2679d5b2fee4ca284fd7c34886",
-        "version": "1.11.0"
+      "identity" : "xctest-dynamic-overlay",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pointfreeco/xctest-dynamic-overlay",
+      "state" : {
+        "revision" : "d9308ad679143c26a30dec52daefe82f54af2b82",
+        "version" : "1.13.1"
       }
     }
   ],
-  "version": 3
+  "version" : 3
 }
