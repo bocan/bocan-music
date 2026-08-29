@@ -13,10 +13,17 @@ public struct MBRecording: Decodable, Sendable {
     public let tags: [MBTag]?
     /// ISRCs registered for this recording (usually 0 or 1; remasters can carry several).
     public let isrcs: [String]?
+    /// `inc=work-rels`: the works this recording performs.
+    public let relations: [MBRelation]?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, length, releases, tags, isrcs
+        case id, title, length, releases, tags, isrcs, relations
         case artistCredit = "artist-credit"
+    }
+
+    /// Works performed by this recording ("performance" relations).
+    public var works: [MBWorkRef] {
+        (self.relations ?? []).filter { $0.type == "performance" }.compactMap(\.work)
     }
 
     /// Primary artist display name built from credit list.
@@ -65,9 +72,10 @@ public struct MBRelease: Decodable, Sendable {
     public let labelInfo: [MBLabelInfo]?
     public let media: [MBMedium]?
     public let releaseGroup: MBReleaseGroup?
+    public let barcode: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, date, status, country, media
+        case id, title, date, status, country, media, barcode
         case artistCredit = "artist-credit"
         case labelInfo = "label-info"
         case releaseGroup = "release-group"

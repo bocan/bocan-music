@@ -113,7 +113,7 @@ public struct TagEditorSheet: View {
                 !self.vm.markers.isEmpty
 
             case .deepDive:
-                self.vm.deepDiveTrackVM != nil
+                self.vm.deepDiveTrackVM != nil || self.vm.deepDiveAlbumVM != nil
 
             default:
                 true
@@ -337,7 +337,8 @@ enum TagEditorFocusField: Hashable {
 // MARK: - Tab enum
 
 private enum Tab: String, CaseIterable, Identifiable {
-    case details, artwork, lyrics, fileInfo, sorting, advanced, markers, deepDive
+    /// Deep Dive sits between Details and Artwork (#413).
+    case details, deepDive, artwork, lyrics, fileInfo, sorting, advanced, markers
 
     var id: String {
         self.rawValue

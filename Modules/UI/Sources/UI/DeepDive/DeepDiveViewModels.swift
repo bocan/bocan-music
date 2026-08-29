@@ -79,6 +79,39 @@ public final class DeepDiveTrackViewModel: ObservableObject {
     }
 }
 
+// MARK: - Album
+
+@MainActor
+public final class DeepDiveAlbumViewModel: ObservableObject {
+    @Published public private(set) var state: DeepDiveState<AlbumReport> = .idle
+    private let service: DeepDiveService
+    private let albumID: Int64
+    private var task: Task<Void, Never>?
+    private let log = AppLogger.make(.ui)
+
+    public init(service: DeepDiveService, albumID: Int64) {
+        self.service = service
+        self.albumID = albumID
+    }
+
+    public func load(forceRefresh: Bool = false) {
+        self.task?.cancel()
+        self.state = .loading
+        self.task = Task { [service, albumID] in
+            do {
+                let report = try await service.albumReport(albumID: albumID, forceRefresh: forceRefresh)
+                guard !Task.isCancelled else { return }
+                self.state = .loaded(report)
+            } catch let error as DeepDiveError {
+                self.state = .failed(error)
+            } catch {
+                self.log.error("deepdive.album.failed", ["error": String(reflecting: error)])
+                self.state = .failed(.notFound)
+            }
+        }
+    }
+}
+
 // MARK: - Shared formatting
 
 enum DeepDiveFormat {

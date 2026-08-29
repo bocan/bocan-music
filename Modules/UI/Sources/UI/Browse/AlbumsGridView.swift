@@ -465,7 +465,7 @@ public struct AlbumsGridView: View {
             }
         }
         await MainActor.run {
-            self.library.showTagEditor(tracks: collected)
+            self.library.showTagEditor(tracks: collected, albumID: ids.count == 1 ? ids.first : nil)
         }
     }
 }

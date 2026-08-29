@@ -135,6 +135,92 @@ public actor DeepDiveService {
         return (Set(mine.compactMap(\.musicbrainzReleaseGroupID)), Set(mine.map { $0.title.lowercased() }))
     }
 
+    // MARK: - Album
+
+    /// The release report for an album. Uses the album's release id, or picks
+    /// the earliest official release of its release group.
+    public func albumReport(albumID: Int64, forceRefresh: Bool = false) async throws -> AlbumReport {
+        let album = try await self.albums.fetch(id: albumID)
+        let key = "album-\(albumID)"
+        let cached: (value: AlbumReport, fresh: Bool)? = await self.cache.load(AlbumReport.self, key: key)
+        if let cached, cached.fresh, !forceRefresh { return cached.value }
+        do {
+            let report = try await self.buildAlbumReport(album)
+            await self.cache.store(report, key: key)
+            return report
+        } catch let error as DeepDiveError where error == .offline || error == .rateLimited {
+            if let cached { return cached.value }
+            throw error
+        }
+    }
+
+    private func buildAlbumReport(_ album: Album) async throws -> AlbumReport {
+        var releaseChosen = false
+        var releaseID = album.musicbrainzReleaseID
+        if releaseID == nil, let groupID = album.musicbrainzReleaseGroupID {
+            let group = try await self.mapErrors { try await self.musicBrainz.fetchReleaseGroup(mbid: groupID) }
+            releaseID = Self.representativeRelease(group.releases ?? [])?.id
+            releaseChosen = releaseID != nil
+        }
+        guard let releaseID else { throw DeepDiveError.noIdentifier }
+        let release = try await self.mapErrors { try await self.musicBrainz.fetchRelease(mbid: releaseID) }
+
+        var artist: Artist?
+        if let artistID = album.albumArtistID {
+            artist = try? await self.artists.fetch(id: artistID)
+        }
+        let nearby = await self.nearbyReleases(of: release, album: album, artist: artist)
+
+        let ownedTracks = try await self.tracks.count(albumID: album.id ?? 0)
+        let media = release.media ?? []
+        return AlbumReport(
+            albumID: album.id ?? 0,
+            title: release.title,
+            artistName: release.albumArtistName ?? artist?.name ?? "",
+            releaseMBID: release.id,
+            releaseGroupMBID: release.releaseGroup?.id ?? album.musicbrainzReleaseGroupID,
+            releaseChosen: releaseChosen,
+            primaryType: release.releaseGroup?.primaryType,
+            secondaryTypes: release.releaseGroup?.secondaryTypes ?? [],
+            date: release.date,
+            country: release.country,
+            status: release.status,
+            barcode: release.barcode,
+            labels: (release.labelInfo ?? []).compactMap { info in
+                info.label.map { AlbumReport.Label(name: $0.name, catalogNumber: info.catalogNumber) }
+            },
+            formats: media.compactMap(\.format),
+            trackCount: media.isEmpty ? nil : media.compactMap(\.trackCount).reduce(0, +),
+            ownedTrackCount: ownedTracks,
+            coverArtArchiveURL: URL(string: "https://coverartarchive.org/release/\(release.id)")!,
+            musicBrainzURL: URL(string: "https://musicbrainz.org/release/\(release.id)")!,
+            nearby: nearby,
+            fetchedAt: self.now()
+        )
+    }
+
+    /// The artist's other release groups within two years of `release`.
+    private func nearbyReleases(of release: MBRelease, album: Album, artist: Artist?) async -> [AlbumReport.Nearby] {
+        guard let artist, let artistMBID = artist.musicbrainzArtistID, let year = release.year ?? album.year else { return [] }
+        guard let owned = try? await self.ownedReleaseKeys(artistID: artist.id ?? 0),
+              let groups = try? await self
+              .mapErrors({ try await self.musicBrainz.browseReleaseGroups(artistMBID: artistMBID, limit: 100) }) else { return [] }
+        var nearby: [AlbumReport.Nearby] = []
+        for group in groups.releaseGroups {
+            guard group.id != release.releaseGroup?.id, let groupYear = group.year, abs(groupYear - year) <= 2 else { continue }
+            let title = group.title ?? ""
+            let isOwned = owned.groupIDs.contains(group.id) || owned.titles.contains(title.lowercased())
+            nearby.append(AlbumReport.Nearby(title: title, mbid: group.id, primaryType: group.primaryType, year: groupYear, owned: isOwned))
+        }
+        return nearby.sorted { ($0.year ?? 0, $0.title) < ($1.year ?? 0, $1.title) }
+    }
+
+    /// Earliest official release, else earliest of any status.
+    static func representativeRelease(_ releases: [MBRelease]) -> MBRelease? {
+        let sorted = releases.sorted { ($0.date ?? "9999") < ($1.date ?? "9999") }
+        return sorted.first { $0.status == "Official" } ?? sorted.first
+    }
+
     // MARK: - Track
 
     /// The recording report for a track. Requires a recording MBID on the row.
@@ -146,6 +232,16 @@ public actor DeepDiveService {
         if let cached, cached.fresh, !forceRefresh { return cached.value }
         do {
             let recording = try await self.mapErrors { try await self.musicBrainz.fetchRecording(mbid: mbid) }
+            // At most two work lookups: enough for a song and its medley partner.
+            var works: [TrackReport.Work] = []
+            for ref in recording.works.prefix(2) {
+                if let work = try? await self.mapErrors({ try await self.musicBrainz.fetchWork(mbid: ref.id) }) {
+                    works.append(TrackReport.Work(
+                        title: work.title ?? ref.title ?? "", mbid: work.id,
+                        composers: work.composers, lyricists: work.lyricists, writers: work.writers
+                    ))
+                }
+            }
             let appearances = (recording.releases ?? []).map { release in
                 TrackReport.Appearance(
                     releaseTitle: release.title, releaseMBID: release.id, year: release.year,
@@ -163,6 +259,8 @@ public actor DeepDiveService {
                 firstReleaseYear: appearances.compactMap(\.year).min(),
                 tags: (recording.tags ?? []).sorted { $0.count > $1.count }.prefix(5).map(\.name),
                 appearances: appearances,
+                works: works,
+                acoustIDURL: track.acoustidID.flatMap { URL(string: "https://acoustid.org/track/\($0)") },
                 fetchedAt: self.now()
             )
             await self.cache.store(report, key: key)

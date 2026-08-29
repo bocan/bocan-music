@@ -70,6 +70,42 @@ public struct MBRelation: Decodable, Sendable {
     public let attributes: [String]?
     public let artist: MBArtist?
     public let url: MBRelationURL?
+    public let work: MBWorkRef?
+}
+
+/// A work referenced from a recording's `performance` relation.
+public struct MBWorkRef: Decodable, Sendable {
+    public let id: String
+    public let title: String?
+}
+
+// MARK: - Work lookup (`GET /ws/2/work/<mbid>?inc=artist-rels`)
+
+/// A work with its writer relations, for the track Deep Dive (#413).
+public struct MBWork: Decodable, Sendable {
+    public let id: String
+    public let title: String?
+    public let type: String?
+    public let relations: [MBRelation]?
+
+    /// Names of artists related as `composer`.
+    public var composers: [String] {
+        self.names(ofType: "composer")
+    }
+
+    /// Names of artists related as `lyricist`.
+    public var lyricists: [String] {
+        self.names(ofType: "lyricist")
+    }
+
+    /// Names of artists related as `writer` (used when composer / lyricist are not split).
+    public var writers: [String] {
+        self.names(ofType: "writer")
+    }
+
+    private func names(ofType type: String) -> [String] {
+        (self.relations ?? []).filter { $0.type == type }.compactMap { $0.artist?.name }
+    }
 }
 
 public struct MBRelationURL: Decodable, Sendable {

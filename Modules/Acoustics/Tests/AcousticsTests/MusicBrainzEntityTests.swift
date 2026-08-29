@@ -77,6 +77,37 @@ struct MusicBrainzEntityTests {
         #expect(url.contains("inc=artist-credits"))
     }
 
+    @Test("fetchRelease decodes labels, media, barcode and release group")
+    func releaseLookup() async throws {
+        let mock = MockHTTPClient()
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/mb_release_lookup.json")
+        let release = try await self.makeClient(mock).fetchRelease(mbid: "d6010be3-98f8-422c-a6c9-787e2e491e58")
+        #expect(release.labelInfo?.first?.label?.name == "Apple Records")
+        #expect(release.labelInfo?.first?.catalogNumber == "PCS 7088")
+        #expect(release.media?.first?.format == "12\" Vinyl")
+        #expect(release.media?.first?.trackCount == 17)
+        #expect(release.barcode == "077774644624")
+        #expect(release.releaseGroup?.primaryType == "Album")
+        let url = try #require(mock.lastRequest?.url?.absoluteString.removingPercentEncoding)
+        #expect(url.contains("/ws/2/release/d6010be3-98f8-422c-a6c9-787e2e491e58?"))
+        #expect(url.contains("inc=labels+media+release-groups+artist-credits"))
+    }
+
+    @Test("fetchReleaseGroup lists its releases; fetchWork exposes composers and lyricists")
+    func releaseGroupAndWork() async throws {
+        let mock = MockHTTPClient()
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/mb_release_group_lookup.json")
+        let group = try await self.makeClient(mock).fetchReleaseGroup(mbid: "b84ee12a-09ef-3ab4-9d94-2c7e3a3ec1b0")
+        #expect(group.releases?.count == 3)
+        #expect(group.releases?.map(\.status) == ["Official", "Official", "Bootleg"])
+
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/mb_work_lookup.json")
+        let work = try await self.makeClient(mock).fetchWork(mbid: "w-1")
+        #expect(work.title == "Come Together")
+        #expect(work.composers == ["John Lennon", "Paul McCartney"])
+        #expect(work.lyricists == ["John Lennon"])
+    }
+
     @Test("503 maps to rateLimitExceeded and other errors to invalidResponse")
     func errors() async throws {
         let mock = MockHTTPClient()

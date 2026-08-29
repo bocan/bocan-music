@@ -184,6 +184,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Non-nil when the tag editor sheet should be presented.
     @Published public var tagEditorTrackIDs: [Int64]?
+    /// Set with `tagEditorTrackIDs` when Get Info was opened for one album,
+    /// so the editor can show the album Deep Dive (#413).
+    public private(set) var tagEditorAlbumID: Int64?
     /// The artist whose Get Info sheet is open (#413).
     @Published public var artistInfo: ArtistInfoRequest?
     /// `true` when at least one track is selected in the current track table.
@@ -874,11 +877,20 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     // MARK: - Tag editor
 
-    /// Opens the tag editor sheet for the given tracks.
-    public func showTagEditor(tracks: [Track]) {
+    /// Opens the tag editor sheet for the given tracks. Pass `albumID` when
+    /// they are exactly one album's tracks, which unlocks the album Deep Dive.
+    public func showTagEditor(tracks: [Track], albumID: Int64? = nil) {
         let ids = tracks.compactMap(\.id)
         guard !ids.isEmpty else { return }
+        self.tagEditorAlbumID = albumID
         self.tagEditorTrackIDs = ids
+    }
+
+    /// The editor model for the current `tagEditorTrackIDs`, or nil when the
+    /// sheet should close. Carries the Deep Dive service and album identity.
+    public func makeTagEditorViewModel() -> TagEditorViewModel? {
+        guard let ids = self.tagEditorTrackIDs, !ids.isEmpty, let service = self.metadataEditService else { return nil }
+        return TagEditorViewModel(service: service, trackIDs: ids, deepDive: self.deepDiveService, albumID: self.tagEditorAlbumID)
     }
 
     /// Opens Get Info for an artist (#413).
@@ -889,6 +901,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     /// Opens the tag editor for the track currently loaded in the player.
     public func showTagEditorForNowPlaying() {
         guard let id = self.nowPlaying.nowPlayingTrackID else { return }
+        self.tagEditorAlbumID = nil
         self.tagEditorTrackIDs = [id]
     }
 

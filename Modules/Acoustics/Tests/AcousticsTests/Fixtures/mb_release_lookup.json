@@ -1,0 +1,39 @@
+{
+ "id": "d6010be3-98f8-422c-a6c9-787e2e491e58",
+ "title": "Abbey Road",
+ "date": "1969-09-26",
+ "country": "GB",
+ "status": "Official",
+ "barcode": "077774644624",
+ "artist-credit": [
+  {
+   "name": "The Beatles",
+   "artist": {
+    "id": "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d",
+    "name": "The Beatles"
+   }
+  }
+ ],
+ "label-info": [
+  {
+   "catalog-number": "PCS 7088",
+   "label": {
+    "id": "l1",
+    "name": "Apple Records"
+   }
+  }
+ ],
+ "media": [
+  {
+   "position": 1,
+   "format": "12\" Vinyl",
+   "track-count": 17
+  }
+ ],
+ "release-group": {
+  "id": "b84ee12a-09ef-3ab4-9d94-2c7e3a3ec1b0",
+  "title": "Abbey Road",
+  "primary-type": "Album",
+  "first-release-date": "1969-09-26"
+ }
+}

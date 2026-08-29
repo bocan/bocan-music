@@ -1,0 +1,31 @@
+{
+ "id": "w-1",
+ "title": "Come Together",
+ "type": "Song",
+ "relations": [
+  {
+   "type": "composer",
+   "direction": "backward",
+   "artist": {
+    "id": "a-l",
+    "name": "John Lennon"
+   }
+  },
+  {
+   "type": "composer",
+   "direction": "backward",
+   "artist": {
+    "id": "a-m",
+    "name": "Paul McCartney"
+   }
+  },
+  {
+   "type": "lyricist",
+   "direction": "backward",
+   "artist": {
+    "id": "a-l",
+    "name": "John Lennon"
+   }
+  }
+ ]
+}
