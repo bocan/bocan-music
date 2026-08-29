@@ -10,7 +10,12 @@ final class ContextMenuTableView: NSTableView {
     var returnKeyHandler: (() -> Void)?
 
     override func menu(for event: NSEvent) -> NSMenu? {
-        self.menuProvider?() ?? super.menu(for: event)
+        // NSTableView's own menu(for:) is what sets clickedRow (and
+        // clickedColumn) from the event. Skipping it left clickedRow at the
+        // last left-clicked row, so the menu acted on the old selection
+        // instead of the row under the pointer.
+        let fallback = super.menu(for: event)
+        return self.menuProvider?() ?? fallback
     }
 
     override func keyDown(with event: NSEvent) {

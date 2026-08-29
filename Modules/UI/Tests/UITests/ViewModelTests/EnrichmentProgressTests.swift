@@ -43,3 +43,19 @@ struct EnrichmentProgressTests {
         Issue.record("condition not met in time")
     }
 }
+
+@Suite("Track table context menu conventions")
+struct TrackContextMenuConventionTests {
+    @Test("ContextMenuTableView lets NSTableView set clickedRow before building the menu")
+    func superMenuRunsFirst() throws {
+        var url = URL(fileURLWithPath: #filePath)
+        for _ in 0 ..< 4 {
+            url.deleteLastPathComponent()
+        }
+        url.appendPathComponent("Sources/UI/Browse/ContextMenuTableView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let superCall = try #require(source.range(of: "super.menu(for: event)"))
+        let provider = try #require(source.range(of: "self.menuProvider?()"))
+        #expect(superCall.lowerBound < provider.lowerBound, "clickedRow is only valid after NSTableView.menu(for:) has run")
+    }
+}
