@@ -20,6 +20,10 @@
     "body": "AcoustID fingerprinting hands you MusicBrainz IDs for that 64 kbps Limp Bizkit b-side from 2003 your friend insists is yours. Pick the exact release you own, then write Picard-compatible IDs, ISRC and totals back to the file. Artwork lands as JPEG, PNG, HEIC, or AVIF, and sidecar covers (cover.jpg and friends) are picked up straight from the folder."
   },
   {
+    "title": "Deep Dive on any artist or track.",
+    "body": "Get Info grows a Deep Dive tab: the artist's bio from Wikipedia, members past and present with their years and instruments, a discography with the albums you own ticked, and for a track its ISRC, first release and every release it appears on. Cached for a week, readable offline, built on MusicBrainz."
+  },
+  {
     "title": "Mini-player that doesn't lie.",
     "body": "Stays on top, sized like a Winamp window, with a real spectrum analyser. No fake Apple-Music-style \"oscilloscope\". Reads the actual signal."
   },

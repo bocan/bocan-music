@@ -66,6 +66,9 @@ public struct TagEditorSheet: View {
 
                 case .markers:
                     self.markersTab
+
+                case .deepDive:
+                    self.deepDiveTab
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -73,7 +76,9 @@ public struct TagEditorSheet: View {
             Divider()
             self.bottomBar
         }
-        .frame(minWidth: 520, idealWidth: 600, minHeight: 420)
+        // Wide enough for the Deep Dive report's release lists and the
+        // read-only identifier rows without truncation (#413).
+        .frame(minWidth: 600, idealWidth: 720, minHeight: 460)
         .task { await self.vm.load() }
         .onAppear { self.focusedField = .title }
         .alert(L10n.string("Error"), isPresented: Binding(
@@ -102,7 +107,18 @@ public struct TagEditorSheet: View {
     /// The Markers tab only appears when the single track has CUE markers
     /// (ADR-087), so the segmented picker stays uncluttered for everyone else.
     private var visibleTabs: [Tab] {
-        Tab.allCases.filter { $0 != .markers || !self.vm.markers.isEmpty }
+        Tab.allCases.filter { tab in
+            switch tab {
+            case .markers:
+                !self.vm.markers.isEmpty
+
+            case .deepDive:
+                self.vm.deepDiveTrackVM != nil
+
+            default:
+                true
+            }
+        }
     }
 
     /// Banner displayed when at least one track has `needsConflictReview = true`.
@@ -321,7 +337,7 @@ enum TagEditorFocusField: Hashable {
 // MARK: - Tab enum
 
 private enum Tab: String, CaseIterable, Identifiable {
-    case details, artwork, lyrics, fileInfo, sorting, advanced, markers
+    case details, artwork, lyrics, fileInfo, sorting, advanced, markers, deepDive
 
     var id: String {
         self.rawValue
@@ -349,6 +365,9 @@ private enum Tab: String, CaseIterable, Identifiable {
 
         case .markers:
             L10n.string("Markers")
+
+        case .deepDive:
+            L10n.string("Deep Dive")
         }
     }
 }

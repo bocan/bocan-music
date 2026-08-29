@@ -1,0 +1,178 @@
+import Acoustics
+import Foundation
+import Persistence
+import Testing
+@testable import Library
+
+/// Routes MusicBrainz and Wikimedia URLs to canned JSON; anything unrouted is
+/// a 404, and `offline` makes every request throw.
+private final class RoutingHTTP: HTTPClient, @unchecked Sendable {
+    var routes: [(match: String, body: String)] = []
+    var offline = false
+    private(set) var requests: [String] = []
+
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        let url = request.url!.absoluteString.removingPercentEncoding ?? ""
+        self.requests.append(url)
+        if self.offline { throw URLError(.notConnectedToInternet) }
+        let hit = self.routes.first { url.contains($0.match) }
+        let status = hit == nil ? 404 : 200
+        return (Data((hit?.body ?? "").utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)
+    }
+}
+
+private let beatlesMBID = "b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d"
+
+private let artistJSON = """
+{"id":"\(beatlesMBID)","name":"The Beatles","sort-name":"Beatles, The","disambiguation":"","type":"Group","country":"GB",
+ "life-span":{"begin":"1957-03","end":"1970-04-10","ended":true},
+ "relations":[
+  {"type":"wikidata","direction":"forward","url":{"resource":"https://www.wikidata.org/wiki/Q1299"}},
+  {"type":"discogs","direction":"forward","url":{"resource":"https://www.discogs.com/artist/82730"}},
+  {"type":"member of band","direction":"backward","begin":"1957-03","end":"1970-04-10","ended":true,"attributes":["guitar","lead vocals"],"artist":{"id":"4d5447d7","name":"John Lennon"}},
+  {"type":"member of band","direction":"backward","begin":"1960-08","end":"1962-08","ended":true,"attributes":["drums"],"artist":{"id":"f3bd7f47","name":"Pete Best"}}]}
+"""
+private let browseJSON = """
+{"release-group-count":3,"release-group-offset":0,"release-groups":[
+ {"id":"rg-please","title":"Please Please Me","primary-type":"Album","first-release-date":"1963-03-22"},
+ {"id":"rg-love","title":"Love Me Do","primary-type":"Single","first-release-date":"1962-10-05"},
+ {"id":"rg-abbey","title":"Abbey Road","primary-type":"Album","first-release-date":"1969-09-26"}]}
+"""
+private let wikidataJSON = #"{"entities":{"Q1299":{"id":"Q1299","sitelinks":{"enwiki":{"site":"enwiki","title":"The Beatles"}}}}}"#
+private let summaryJSON = #"{"title":"The Beatles","extract":"The Beatles were an English rock band formed in Liverpool in 1960.","content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/The_Beatles"}}}"#
+private let searchJSON = #"{"artists":[{"id":"b10bbbfc-cf9e-42e0-be17-e2c3e1d2600d","name":"The Beatles","score":100,"type":"Group"}]}"#
+private let recordingJSON = """
+{"id":"rec-1","title":"Come Together","length":259000,"isrcs":["GBAYE0601690"],
+ "artist-credit":[{"name":"The Beatles","artist":{"id":"\(beatlesMBID)","name":"The Beatles"}}],
+ "tags":[{"name":"rock","count":9},{"name":"pop","count":3}],
+ "releases":[{"id":"rel-a","title":"Abbey Road","date":"1969-09-26","country":"GB","status":"Official","release-group":{"id":"rg-abbey","primary-type":"Album"}},
+             {"id":"rel-b","title":"1967-1970","date":"1973","country":"US","status":"Official","release-group":{"id":"rg-red","primary-type":"Album","secondary-types":["Compilation"]}}]}
+"""
+
+private struct Bed {
+    let db: Database
+    let http: RoutingHTTP
+    let service: DeepDiveService
+    let cacheRoot: URL
+}
+
+private func makeBed(ttl: TimeInterval = 3600) async throws -> Bed {
+    let db = try await Database(location: .inMemory)
+    let http = RoutingHTTP()
+    http.routes = [
+        ("/ws/2/artist/\(beatlesMBID)?", artistJSON),
+        ("/ws/2/artist?", searchJSON),
+        ("/ws/2/release-group?artist=", browseJSON),
+        ("/ws/2/recording/rec-1", recordingJSON),
+        ("Special:EntityData/Q1299.json", wikidataJSON),
+        ("page/summary/The_Beatles", summaryJSON),
+    ]
+    let limiter = RateLimiter(maxRequests: 1000, per: 1.0)
+    let root = FileManager.default.temporaryDirectory.appendingPathComponent("deepdive-\(UUID().uuidString)", isDirectory: true)
+    let service = DeepDiveService(
+        database: db,
+        musicBrainz: MusicBrainzClient(userAgent: "Bocan/test ( https://bocan.app )", rateLimiter: limiter, httpClient: http),
+        wikipedia: WikipediaClient(userAgent: "Bocan/test ( https://bocan.app )", rateLimiter: limiter, httpClient: http),
+        cache: DeepDiveCache(root: root, ttl: ttl),
+        now: { Date(timeIntervalSince1970: 1_720_000_000) }
+    )
+    return Bed(db: db, http: http, service: service, cacheRoot: root)
+}
+
+@Suite("DeepDiveService (#413)")
+struct DeepDiveServiceTests {
+    @Test("artist report assembles bio, members, links and discography with owned albums marked")
+    func artistReport() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let albums = AlbumRepository(database: bed.db)
+        let abbey = try await albums.findOrCreate(title: "Abbey Road", albumArtistID: artist.id)
+        try await albums.recomputeMusicBrainzIDs(albumID: #require(abbey.id)) // stays NULL: no tracks
+        _ = try await albums.findOrCreate(title: "Love Me Do", albumArtistID: artist.id)
+
+        let report = try await bed.service.artistReport(artistID: #require(artist.id))
+        #expect(report.name == "The Beatles")
+        #expect(report.mbidGuessed == false)
+        #expect(report.country == "GB")
+        #expect(report.activeFrom == "1957-03")
+        #expect(report.ended)
+        #expect(report.bio?.extract.hasPrefix("The Beatles were an English rock band") == true)
+        #expect(report.bio?.attribution == "Wikipedia, CC BY-SA 4.0")
+        #expect(report.members.map(\.name) == ["John Lennon", "Pete Best"])
+        #expect(report.members.first?.roles == ["guitar", "lead vocals"])
+        #expect(report.links.map(\.type) == ["discogs", "wikidata"])
+        #expect(report.discography.map(\.title) == ["Love Me Do", "Please Please Me", "Abbey Road"], "by year")
+        #expect(report.discography.map(\.owned) == [true, false, true], "matched by title under this artist")
+        #expect(report.discography.first?.primaryType == "Single")
+
+        // The same lookup stamps the enrichment columns.
+        #expect(try await ArtistRepository(database: bed.db).fetch(id: #require(artist.id)).musicbrainzFetchedAt == 1_720_000_000)
+
+        // Second call is served from the cache: no new requests.
+        let before = bed.http.requests.count
+        _ = try await bed.service.artistReport(artistID: #require(artist.id))
+        #expect(bed.http.requests.count == before)
+    }
+
+    @Test("an artist without an MBID is guessed from a confident name search and flagged")
+    func guessedMBID() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles")
+        let report = try await bed.service.artistReport(artistID: #require(artist.id))
+        #expect(report.mbidGuessed)
+        #expect(report.mbid == beatlesMBID)
+        #expect(bed.http.requests.first?.contains("/ws/2/artist?") == true)
+        #expect(
+            try await ArtistRepository(database: bed.db).fetch(id: #require(artist.id)).musicbrainzArtistID == nil,
+            "a guess is not persisted"
+        )
+    }
+
+    @Test("a stale cached report is served when offline, and offline with no cache throws")
+    func staleIfOffline() async throws {
+        let bed = try await makeBed(ttl: 0)
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let first = try await bed.service.artistReport(artistID: #require(artist.id))
+        bed.http.offline = true
+        let stale = try await bed.service.artistReport(artistID: #require(artist.id))
+        #expect(stale == first)
+
+        let other = try await ArtistRepository(database: bed.db).findOrCreate(name: "Nobody", musicbrainzID: "mb-nobody")
+        await #expect(throws: DeepDiveError.offline) {
+            _ = try await bed.service.artistReport(artistID: #require(other.id))
+        }
+    }
+
+    @Test("track report needs a recording MBID and lists appearances by year")
+    func trackReport() async throws {
+        let bed = try await makeBed()
+        let tracks = TrackRepository(database: bed.db)
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(
+            fileURL: "file:///tmp/ct.flac",
+            fileSize: 1,
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 259,
+            title: "Come Together",
+            addedAt: now,
+            updatedAt: now
+        )
+        let bare = try await tracks.upsert(track)
+        await #expect(throws: DeepDiveError.noIdentifier) {
+            _ = try await bed.service.trackReport(trackID: bare)
+        }
+        track.fileURL = "file:///tmp/ct2.flac"
+        track.musicbrainzRecordingID = "rec-1"
+        let id = try await tracks.upsert(track)
+        let report = try await bed.service.trackReport(trackID: id)
+        #expect(report.title == "Come Together")
+        #expect(report.artistCredit == "The Beatles")
+        #expect(report.length == 259_000)
+        #expect(report.isrcs == ["GBAYE0601690"])
+        #expect(report.firstReleaseYear == 1969)
+        #expect(report.tags == ["rock", "pop"])
+        #expect(report.appearances.map(\.releaseTitle) == ["Abbey Road", "1967-1970"])
+        #expect(report.appearances.last?.secondaryTypes == ["Compilation"])
+    }
+}

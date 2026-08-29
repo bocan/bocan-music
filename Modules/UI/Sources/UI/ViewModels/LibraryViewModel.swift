@@ -184,6 +184,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     /// Non-nil when the tag editor sheet should be presented.
     @Published public var tagEditorTrackIDs: [Int64]?
+    /// The artist whose Get Info sheet is open (#413).
+    @Published public var artistInfo: ArtistInfoRequest?
     /// `true` when at least one track is selected in the current track table.
     @Published public var hasTrackSelection = false
     /// `true` when exactly one track is selected — enables the "Identify Track…" toolbar button.
@@ -357,6 +359,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     // MARK: - Dependencies
 
     public let database: Database
+    /// Deep Dive reports (#413); built lazily, reports are cached on disk.
+    public private(set) lazy var deepDiveService = DeepDiveService(database: self.database)
     private let engine: any Transport
     private let settingsRepo: SettingsRepository
     let albumRepo: AlbumRepository
@@ -875,6 +879,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         let ids = tracks.compactMap(\.id)
         guard !ids.isEmpty else { return }
         self.tagEditorTrackIDs = ids
+    }
+
+    /// Opens Get Info for an artist (#413).
+    public func showArtistInfo(id: Int64) {
+        self.artistInfo = ArtistInfoRequest(id: id)
     }
 
     /// Opens the tag editor for the track currently loaded in the player.
