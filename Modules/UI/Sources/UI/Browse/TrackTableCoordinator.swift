@@ -242,7 +242,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     func buildContextMenu() -> NSMenu {
         guard let tv = tableView else { return NSMenu() }
         self.syncClickedRow(in: tv)
-        let selected = self.selectedTracks()
+        let selected = self.selectedTracks(in: tv)
         let first = selected.first
         let acts = self.parent.actions
         let menu = NSMenu()
@@ -263,9 +263,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     /// (a click outside the selection replaces it); it is intentional, not a bug.
     private func syncClickedRow(in tv: NSTableView) {
         let clicked = tv.clickedRow
-        // Already inside the selection — leave multi-row selection intact.
         guard clicked >= 0, !tv.selectedRowIndexes.contains(clicked) else { return }
-        // Outside the selection — move selection to the clicked row (Finder / Music.app behaviour).
         self.isSyncingSelection = true
         tv.selectRowIndexes(IndexSet(integer: clicked), byExtendingSelection: false)
         self.isSyncingSelection = false
@@ -274,13 +272,16 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         }
     }
 
-    private func selectedTracks() -> [Track] {
-        // O(selection.count) via pre-built dictionary, not an O(14k+) scan per open.
-        self.parent.selection.compactMap { id in id.flatMap { self.rowsByID[$0]?.track } }
+    /// The menu's tracks, from the table's own selection: `syncClickedRow` has
+    /// just written the binding, and a binding write is not readable in the
+    /// same pass, so `parent.selection` still showed the pre-click selection.
+    private func selectedTracks(in tv: NSTableView) -> [Track] {
+        tv.selectedRowIndexes.compactMap { idx in
+            self.dataSource?.itemIdentifier(forRow: idx).flatMap { self.rowsByID[$0]?.track }
+        }
     }
 
-    /// Handles Return/Enter key presses from the table.
-    /// Plays the first selected track using the same browse-view context as double-click.
+    /// Return/Enter plays the first selected track, like double-click.
     func handleReturnKeyDown() {
         guard let tableView = self.tableView,
               let firstIndex = tableView.selectedRowIndexes.first,
@@ -289,8 +290,7 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
         self.parent.actions.playNow(trackRow.track)
     }
 
-    /// Handles Delete/Forward Delete key presses from the table.
-    /// Returns `true` when consumed.
+    /// Delete/Forward Delete removes from the playlist; returns `true` when consumed.
     func handleRemoveFromPlaylistKeyDown() -> Bool {
         guard let removeFromPlaylist = self.parent.actions.removeFromPlaylist else {
             return false
