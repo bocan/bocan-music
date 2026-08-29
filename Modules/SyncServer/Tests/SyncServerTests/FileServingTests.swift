@@ -122,7 +122,7 @@ struct FileServingTests {
         let podcasts = PodcastRepository(database: server.database)
         let episodes = EpisodeRepository(database: server.database)
         let states = EpisodeStateRepository(database: server.database)
-        let podcastId = try await podcasts.insert(Podcast(feedURL: "https://x.test/feed", title: "Show", subscribed: true, addedAt: 0))
+        let podcastId = try await podcasts.insert(Podcast(feedURL: "https://x.test/feed", title: "Show", addedAt: 0))
         let guid = "https://x.test/ep/1"
         _ = try await episodes.upsert(PodcastEpisode(
             podcastID: podcastId,
@@ -200,7 +200,7 @@ struct FileServingTests {
         let bytes = Data((0 ..< 600).map { UInt8($0 % 251) })
         try bytes.write(to: imageURL)
         let hash = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
-        let podcastId = try await podcasts.insert(Podcast(feedURL: "https://x.test/feed", title: "Show", subscribed: true, addedAt: 0))
+        let podcastId = try await podcasts.insert(Podcast(feedURL: "https://x.test/feed", title: "Show", addedAt: 0))
         try await podcasts.setArtwork(id: podcastId, path: imageURL.path, hash: hash)
 
         // The podcast fallback serves the bytes with the same header contract

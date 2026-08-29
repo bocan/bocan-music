@@ -26,7 +26,6 @@ struct ManifestBuilderPodcastTests {
             title: "Some Show",
             author: "Someone",
             description: "<p>A show about things.</p>",
-            subscribed: true,
             playbackSpeed: 1.2,
             addedAt: 0
         ))
@@ -98,7 +97,6 @@ struct ManifestBuilderPodcastTests {
         let podcastId = try await podcasts.insert(Podcast(
             feedURL: "https://example.test/feed",
             title: "Show",
-            subscribed: true,
             addedAt: 0
         ))
         let guid = "g1"
@@ -148,7 +146,6 @@ struct ManifestBuilderPodcastTests {
         let podcastId = try await podcasts.insert(Podcast(
             feedURL: "https://example.test/feed",
             title: "Show",
-            subscribed: true,
             addedAt: 0
         ))
         let guid = "g1"
