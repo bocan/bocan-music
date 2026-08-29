@@ -120,6 +120,29 @@ Two things about the Picard set:
 - ffmpeg cannot write the iTunes freeform atoms TagLib reads, so the M4A's MusicBrainz ids and release type are written with Bòcan's own `TagWriter` by `PicardFixtureFinisherTests` in the Metadata package. It is skipped unless `BOCAN_FINISH_PICARD_FIXTURE=1`; run `cd Modules/Metadata && BOCAN_FINISH_PICARD_FIXTURE=1 swift test --filter PicardFixtureFinisherTests` after regenerating the M4A.
 - `ColumnPopulationGuardTests` scans that set and requires every column of `tracks`, `albums`, `artists` and `cover_art` to be populated (non-NULL, non-DEFAULT) on at least one row, or to appear in its allow-list with a reason. A stale allowance fails too. When you add a column, either give the fixture a tag the importer turns into it, or add a justified line to the allow-list; this is the CI side of the schema-discipline rule in `CLAUDE.md`.
 
+## Releasing
+
+Two workflows share a release, and the order matters:
+
+1. Push to `main`. The Release Please workflow opens or updates the
+   `chore(main): release X.Y.Z` PR, which carries the version bump
+   (manifest, `Info.plist`) and the generated `CHANGELOG.md` section.
+2. `make release-note` to add the human paragraphs above the generated list.
+   Write them on the PR branch, never on `main`; the bot recreates the branch
+   each cycle.
+3. Merge the release PR. Release Please then creates the `vX.Y.Z` tag and the
+   GitHub release, and copies the CHANGELOG section into the release body
+   (that body is what the Sparkle update prompt shows).
+4. Run the Release workflow (Actions > Release > Run workflow) with that tag.
+   It builds, signs, notarizes, uploads the DMG, updates the appcast and
+   pings the Homebrew tap.
+
+Step 4 refuses to run until step 3 is done: it checks that
+`.release-please-manifest.json` and `CHANGELOG.md` both carry the tag's
+version. v2.11.0 was dispatched with the PR still open, so the notes script
+found no section and fell back to a dead `[Unreleased]` stub; that fallback is
+gone and a missing section now fails the workflow instead of publishing.
+
 ## Secrets (for release builds)
 
 The following secrets are required in GitHub Actions for the release workflow.

@@ -1658,13 +1658,3 @@ This release adds Subsonic / Navidrome / Airsonic servers as first-class sources
 * **ui:** coalesce scan progress + non-blocking Add Folder/Files panels (Phase 5.5 audit L2) ([6c472b3](https://github.com/bocan/bocan-music/commit/6c472b3b13b9500a152d2a6aaa51c173c279b34f))
 * **ui:** remove unused read-only TrackInspectorPanel (Phase 5.5 audit H5) ([b27fdb6](https://github.com/bocan/bocan-music/commit/b27fdb6fcf97d8d0f93c66a07b54984d22b647df))
 * **ui:** replace PlaylistDetailView custom list with TracksView ([d9be477](https://github.com/bocan/bocan-music/commit/d9be477b66b11e3acfee96af97a60fa8da4615ce))
-
-## [Unreleased]
-
-### Added
-
-### Changed
-
-### Fixed
-
-### Removed

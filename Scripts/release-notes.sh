@@ -8,11 +8,11 @@
 #   - Reads CHANGELOG.md from repo root.
 #   - Finds the heading "## [<version>]" (Keep-a-Changelog format) and prints
 #     everything until the next "## [" heading or EOF.
-#   - If no matching section is found, falls back to the "## [Unreleased]"
-#     section so a release tagged before the changelog is bumped still has
-#     useful notes.
-#   - Always exits 0; the worst case is empty output, which the caller can
-#     handle.
+#   - If no matching section is found it prints nothing and exits 1. There
+#     is deliberately no fallback: the old "[Unreleased]" fallback shipped
+#     v2.11.0 with an empty Added/Changed/Fixed/Removed template as its
+#     release notes because the release PR had not been merged yet. A
+#     release without notes must fail, not publish.
 
 set -euo pipefail
 
@@ -30,7 +30,6 @@ if [[ ! -f "$CHANGELOG" ]]; then
     exit 0
 fi
 
-# Try the requested version first, then [Unreleased].
 extract() {
     local heading="$1"
     awk -v h="$heading" '
@@ -45,11 +44,7 @@ extract() {
 
 NOTES="$(extract "[$VERSION]")"
 if [[ -z "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]]; then
-    NOTES="$(extract "[Unreleased]")"
+    echo "release-notes.sh: no '## [${VERSION}]' section in CHANGELOG.md; merge the release PR first" >&2
+    exit 1
 fi
-
-if [[ -z "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]]; then
-    echo "_No release notes available for ${VERSION}._"
-else
-    printf '%s\n' "$NOTES"
-fi
+printf '%s\n' "$NOTES"
