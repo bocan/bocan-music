@@ -58,6 +58,8 @@ struct ArtistsGridContent: View {
     @ViewBuilder
     private func contextMenu(for model: CollectionCardModel) -> some View {
         if let id = Int64(model.id) {
+            Button(L10n.string("Get Info")) { self.library.showArtistInfo(id: id) }
+            Divider()
             Button(L10n.string("Remove Artist from Library"), role: .destructive) {
                 Task {
                     await RemoveFromLibraryConfirm.artist(

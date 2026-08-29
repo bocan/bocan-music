@@ -146,23 +146,21 @@ public final class TagEditorViewModel: ObservableObject {
 
     // MARK: - Init
 
-    public init(service: MetadataEditService, trackIDs: [Int64], fetcher: any CoverArtFetcher = CoverArtSearchService()) {
+    /// The Deep Dive tab's model; nil in multi-track mode or when no
+    /// `DeepDiveService` was supplied (#413).
+    public let deepDiveTrackVM: DeepDiveTrackViewModel?
+
+    public init(
+        service: MetadataEditService,
+        trackIDs: [Int64],
+        fetcher: any CoverArtFetcher = CoverArtSearchService(),
+        deepDive: DeepDiveService? = nil
+    ) {
         self.service = service
         self.trackIDs = trackIDs
         self.isSingleTrack = trackIDs.count == 1
         self.coverArtFetchVM = CoverArtFetchViewModel(fetcher: fetcher)
-    }
-
-    // MARK: - Multi-edit field selection
-
-    /// Marks every field as enabled so all edits will be applied on Save.
-    public func enableAllFields() {
-        self.enabledFields = Set(FieldKey.allCases)
-    }
-
-    /// Clears all field-enable flags so no edits will be applied on Save.
-    public func disableAllFields() {
-        self.enabledFields = []
+        self.deepDiveTrackVM = deepDive.flatMap { trackIDs.count == 1 ? DeepDiveTrackViewModel(service: $0, trackID: trackIDs[0]) : nil }
     }
 
     // MARK: - Load

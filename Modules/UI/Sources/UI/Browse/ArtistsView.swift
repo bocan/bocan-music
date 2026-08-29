@@ -36,15 +36,7 @@ public struct ArtistDetailView: View {
                 self.artistHeader(artist)
                     .padding(20)
                     .background(Color.bgSecondary)
-                    .contextMenu {
-                        Button(L10n.string("Remove Artist from Library"), role: .destructive) {
-                            Task {
-                                await RemoveFromLibraryConfirm.artist(
-                                    id: self.artistID, name: artist.name, library: self.library
-                                )
-                            }
-                        }
-                    }
+                    .contextMenu { ArtistContextMenu(id: self.artistID, name: artist.name, library: self.library) }
                 Divider()
             }
 
@@ -478,13 +470,7 @@ public struct ArtistsView: View {
             .accessibilityHint(L10n.string("Open artist"))
             .contextMenu {
                 if let id = artist.id {
-                    Button(L10n.string("Remove Artist from Library"), role: .destructive) {
-                        Task {
-                            await RemoveFromLibraryConfirm.artist(
-                                id: id, name: artist.name, library: self.library
-                            )
-                        }
-                    }
+                    ArtistContextMenu(id: id, name: artist.name, library: self.library)
                 }
             }
         }
