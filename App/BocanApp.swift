@@ -571,6 +571,8 @@ struct AppGraph {
     /// Retained here for the same reason: a local would deallocate the moment
     /// `buildGraph` returned and the pass would silently never run.
     let artistEnrichmentService: ArtistEnrichmentService
+    /// Starts and stops that pass with the Deep Dive setting (#413).
+    let deepDiveEnrichmentGate: DeepDiveEnrichmentGate
     /// Periodic podcast feed refresh. Its loop captures the service, not
     /// itself, so it kept running unretained; stored so it can be stopped.
     let feedRefreshScheduler: FeedRefreshScheduler
@@ -754,10 +756,11 @@ extension BocanApp {
         // MusicBrainz artist entity, one lookup per artist ever, through the
         // shared 1 req/s limiter. Starts well after launch so scanning and
         // hashing settle first (#401).
+        // Only while Deep Dive is on (Settings > Library, off by default):
+        // the pass sends every artist id to MusicBrainz (#413).
         let artistEnrichment = ArtistEnrichmentService(artists: ArtistRepository(database: db))
-        Task.detached(priority: .background) {
-            await artistEnrichment.start()
-        }
+        let deepDiveEnrichmentGate = DeepDiveEnrichmentGate(service: artistEnrichment)
+        deepDiveEnrichmentGate.apply()
 
         let podcastActions = AppPodcastActions(
             service: podcastService,
@@ -972,6 +975,7 @@ extension BocanApp {
             phoneSyncSettingsViewModel: phoneSyncViewModel,
             contentHashService: contentHashService,
             artistEnrichmentService: artistEnrichment,
+            deepDiveEnrichmentGate: deepDiveEnrichmentGate,
             feedRefreshScheduler: feedRefreshScheduler
         )
     }

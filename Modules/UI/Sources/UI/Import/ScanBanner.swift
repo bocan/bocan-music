@@ -18,6 +18,7 @@ import SwiftUI
 /// ```
 public struct ScanBanner: View {
     @ObservedObject public var vm: LibraryViewModel
+    @AppStorage(DeepDiveSetting.key) private var deepDiveEnabled = false
 
     /// Timer token used to auto-dismiss the summary after a short delay.
     @State private var dismissTimer: Timer?
@@ -34,7 +35,7 @@ public struct ScanBanner: View {
                 self.scanningBanner
             } else if self.vm.scanSummary != nil {
                 self.summaryBanner
-            } else if let progress = self.vm.enrichmentProgress, !progress.isComplete {
+            } else if self.deepDiveEnabled, let progress = self.vm.enrichmentProgress, !progress.isComplete {
                 self.enrichmentBanner(progress)
             }
         }

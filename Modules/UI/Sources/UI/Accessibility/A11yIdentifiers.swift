@@ -107,6 +107,10 @@ public enum A11y {
         public static let actionButton = "emptyState.action"
     }
 
+    public enum DeepDive {
+        public static let openSettingsButton = "deepDive.openSettings"
+    }
+
     public enum ScanBanner {
         public static let dismissButton = "scanBanner.dismiss"
         public static let enrichmentProgress = "scanBanner.enrichmentProgress"
@@ -167,6 +171,7 @@ public enum A11y {
     // MARK: - Settings panes
 
     public enum SettingsIDs {
+        public static let deepDive = "settings.library.deepDive"
         /// Sidebar navigation rows, keyed by `SettingsPage.rawValue`. Tag-
         /// selected `List(selection:)` rows are otherwise absent from the AX
         /// tree (the same VoiceOver defect the main sidebar hit in ADR-081).
