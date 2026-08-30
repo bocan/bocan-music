@@ -36,8 +36,7 @@ process:
    pull request. The full standard is in `CLAUDE.md` ("Branching").
 2. **Light CI on branch push, full CI on the pull request, nothing on
    `main`.** A branch push runs only a secret scan, lint, format-check and a
-   Debug build. The pull request runs the full test and coverage suite plus
-   CodeQL. Pushes to `main` trigger no build at all: with branch protection
+   Debug build. The pull request runs the full test and coverage suite. Pushes to `main` trigger no build at all: with branch protection
    requiring the PR checks, every commit on `main` has already passed them.
 3. **Squash-only merges with a Conventional Commit PR title.** The pull
    request is the unit of change; its title becomes the one commit on `main`
@@ -65,7 +64,6 @@ process:
 | `branch.yml` | push to any branch except `main` | gitleaks on `origin/main..HEAD` (Linux, parallel); lint + format-check + `make build` (macOS) | done, slice 1 (#427) |
 | `pr.yml` | pull request to `main` | `changes` job diffs the PR; docs-only PRs skip the rest. Otherwise the full suite: `make test-coverage` + SPM package tests | done, slice 2 |
 | `pr-metadata.yml` | pull request opened/edited/synchronize/labeled | Conventional Commit title check; `feat`/`fix`/`perf` must add a line under `## [Unreleased]` in `CHANGELOG.md` unless labelled `skip-changelog` | done, slice 2 |
-| `codeql.yml` | pull request + weekly cron | CodeQL Swift analysis | done, slice 2 (push trigger dropped) |
 | Snyk (GitHub app, no file) | pull request | dependency manifest scan | existing, keep |
 | `release.yml` | to be decided in slice 3 | build, sign, notarize, DMG, GitHub release, appcast, cask dispatch | existing, to be reworked |
 | `website.yml` | push to `main` touching `website/**`, after a release | Eleventy build + Pages deploy | existing, keep |
@@ -78,7 +76,7 @@ Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflow
 
 | Mistake | What stops it |
 |---|---|
-| Committing on `main` | `CLAUDE.md` rule; branch protection on `main` (required checks: Build & Test, Conventional Commit title, Release note in CHANGELOG Unreleased, Analyze (Swift)) |
+| Committing on `main` | `CLAUDE.md` rule; branch protection on `main` (required checks: Build & Test, Conventional Commit title, Release note in CHANGELOG Unreleased) |
 | Pushing a secret | gitleaks in the pre-commit hook (per clone, `make install-hooks`) and in `branch.yml` (authoritative) |
 | Breaking the build and not noticing until the PR | `make build` on every branch push |
 | Bad squash commit subject, so the wrong version bump | `pr-metadata.yml` title check, re-run on every title edit |
@@ -92,7 +90,7 @@ Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflow
 | `DEVELOPER_ID_CERT_P12`, `DEVELOPER_ID_CERT_PASSWORD`, `DEVELOPER_ID_IDENTITY`, `APPLE_ID`, `APPLE_TEAM_ID` | `release.yml`: signing and notarization |
 | `SPARKLE_ED_PRIVATE_KEY` | `release.yml`: appcast entry signature |
 | `HOMEBREW_TAP_TOKEN` | `release.yml`: `repository_dispatch` to `bocan/homebrew-bocan` |
-| `ACOUSTID_API_KEY`, `BOCAN_LASTFM_API_KEY`, `BOCAN_LASTFM_SHARED_SECRET`, `PODCAST_INDEX_API_KEY`, `PODCAST_INDEX_API_SECRET` | `release.yml` (baked into the shipped build); `pr.yml` and `codeql.yml` for the test build |
+| `ACOUSTID_API_KEY`, `BOCAN_LASTFM_API_KEY`, `BOCAN_LASTFM_SHARED_SECRET`, `PODCAST_INDEX_API_KEY`, `PODCAST_INDEX_API_SECRET` | `release.yml` (baked into the shipped build); `pr.yml` for the test build |
 | `GITHUB_TOKEN` (default) | everything else |
 
 `branch.yml` uses none of them.
@@ -104,9 +102,9 @@ Each slice is one branch and one PR.
 1. **Branch CI** (#427, merged 2026-08-30): `branch.yml`, gitleaks in Brewfile and hook,
    `CLAUDE.md` branching rule, this ADR rewritten. GitHub set to squash-only.
 2. **PR CI** (this PR): `pr.yml` replaces `ci.yml`; `pr-metadata.yml` added;
-   CodeQL loses its push trigger; `## [Unreleased]` added to `CHANGELOG.md`;
+   `codeql.yml` deleted; `## [Unreleased]` added to `CHANGELOG.md`;
    `skip-changelog` label created. After merging, enable branch protection on
-   `main`: require a PR, require the four checks above, no direct pushes, no
+   `main`: require a PR, require the three checks above, no direct pushes, no
    force pushes, and set `pr.yml`'s `Build & Test` as a required check even
    though it is skipped for docs-only PRs (a skipped job counts as passed).
 3. **Release**: decide and build the release trigger and version bump; rework
@@ -126,7 +124,23 @@ merge to `main`. Ignore it; it only edits its own branch, never `main`.
   release dashboards.
 - No composite actions or reusable workflows until two workflows genuinely
   share more than a checkout.
+- No CodeQL. Swift support is a GitHub preview, it cost 17 minutes per PR,
+  and its build step had been silently failing (see the 2026-08-30 note
+  below). Snyk covers dependency CVEs. Removed 2026-08-30.
 - No platform migration; this is GitHub Actions.
+
+## Note (2026-08-30): the Xcode test suite had not run in CI since 2 June
+
+`4de9bec6` gave the Debug config `DEVELOPMENT_TEAM` + automatic signing and
+`8166fd01` removed CI's `XCB_OVERRIDE` the same day; from the next run on,
+`make test-coverage` failed on the certificate-less runner with exit 65 and
+"Executed 0 tests". It reported green because `make test-coverage | xcbeautify`
+ran without `pipefail`, so xcbeautify's exit 0 won. `release.yml`'s "run tests
+before release" step has the same mask, and the Makefile `build` recipe pipes
+into xcbeautify without `set -o pipefail` at all, so `make build` cannot fail
+anywhere. Only the SPM package suites were real. Fix (decision pending): set
+`pipefail` everywhere, and have CI build ad-hoc signed with no team via
+`XCB_OVERRIDE`, as it did before June.
 
 ## Open questions (slice 3)
 
