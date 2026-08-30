@@ -4,8 +4,7 @@
 
 # Bòcan Music
 
-[![CI](https://github.com/bocan/bocan-music/actions/workflows/ci.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/codeql.yml)
+[![PR checks](https://github.com/bocan/bocan-music/actions/workflows/pr.yml/badge.svg)](https://github.com/bocan/bocan-music/actions/workflows/pr.yml)
 [![GitHub release](https://img.shields.io/github/v/release/bocan/bocan-music?color=4BC51D)](https://github.com/bocan/bocan-music/releases)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -101,7 +100,7 @@ I've tried hard to ensure Bòcan is fully navigable without a mouse or a screen:
 - **GRDB 7** with typed repositories, FTS5 full-text search, and `ValueObservation`-based reactive streams. Settings > Advanced can rebuild the search index in place if it ever drifts.
 - **One-click support bundles**: Export Diagnostics zips the session log, crash reports, and version info into a single file you can attach to a bug report.
 - **XcodeGen** project generation : no hand-edited `.pbxproj` files in the repo.
-- **CodeQL, SwiftLint, SwiftFormat, and Dependabot** on every pull request.
+- **SwiftLint, SwiftFormat, gitleaks, Snyk and Dependabot** on every pull request.
 
 ---
 
