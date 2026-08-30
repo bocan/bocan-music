@@ -19,7 +19,7 @@ final class MenuInvocationTests: XCTestCase {
     private var firstTone = ""
     private var otherTone = ""
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
     }

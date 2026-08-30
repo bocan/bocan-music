@@ -11,7 +11,7 @@ final class RadioStreamJourneyTests: XCTestCase {
     private var session: E2ESession!
     private var server: E2EStreamServer!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
         self.server = try E2EStreamServer(
@@ -21,9 +21,8 @@ final class RadioStreamJourneyTests: XCTestCase {
         )
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         self.server?.stop()
-        super.tearDown()
     }
 
     // MARK: - Add by URL

@@ -9,12 +9,12 @@ import XCTest
 final class FoundationJourneys: XCTestCase {
     private var session: E2ESession!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // No filesystem teardown: the runner cannot delete inside the app's
         // container. The app sweeps stale run homes on its next E2E launch.
         self.session = nil

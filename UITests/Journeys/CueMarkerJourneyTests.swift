@@ -11,12 +11,12 @@ import XCTest
 final class CueMarkerJourneyTests: XCTestCase {
     private var session: E2ESession!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         self.session = nil
     }
 
