@@ -8,8 +8,6 @@ name: CodeQL
 # bracket it.  Scheduled weekly plus on every PR into main.
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   schedule:

@@ -20,13 +20,24 @@ chore(deps): update GRDB to 6.28.0
 
 Scopes match module names: `audio`, `library`, `metadata`, `persistence`, `ui`, `playback`, `cast`, `scrobble`, `observability`.
 
-## Pull requests
+## Branches and pull requests
 
-- One logical change per PR.
-- Link the relevant phase spec file in the PR description.
-- All acceptance criteria for the relevant phase must be checked before merge.
-- `make lint && make test-coverage` must be green.
-- No force pushes to `main`.
+`main` is the trunk and is never committed to directly. Work on a short-lived
+branch named `<type>/<slug>` (`fix/349-album-grid-scroll-restore`), push it as
+often as you like (pushes run only a lint, build and secret scan), and land it
+with a pull request.
+
+- One logical change per branch and per PR. A PR is a feature or a fix, never
+  a release; releases are cut from `main` separately.
+- The PR title must be a Conventional Commit (`fix(subsonic): retry failed
+  logins`); it becomes the squash commit on `main` and drives the version bump.
+- A `feat`, `fix` or `perf` PR must add a short, user-facing note under
+  `## [Unreleased]` in `CHANGELOG.md`. It becomes the release notes and the
+  Sparkle update prompt. Label the PR `skip-changelog` if the change is not
+  user-visible.
+- `make lint && make test-coverage` must be green locally; the PR runs the
+  full suite and CodeQL.
+- Merges are squash-only. No direct or force pushes to `main`.
 
 ## Code style
 

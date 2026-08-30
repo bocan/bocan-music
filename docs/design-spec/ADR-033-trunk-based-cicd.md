@@ -62,26 +62,27 @@ process:
 
 | File | Trigger | Does | Status |
 |---|---|---|---|
-| `branch.yml` | push to any branch except `main` | gitleaks on `origin/main..HEAD` (Linux, parallel); lint + format-check + `make build` (macOS) | **built**, slice 1 |
-| `pr.yml` | pull request to `main` | full suite: `make test-coverage` + SPM package tests; Conventional Commit title check; `Unreleased` changelog check | planned, slice 2 |
-| `codeql.yml` | pull request + weekly cron | CodeQL Swift analysis (drop the push-to-main trigger) | planned, slice 2 |
+| `branch.yml` | push to any branch except `main` | gitleaks on `origin/main..HEAD` (Linux, parallel); lint + format-check + `make build` (macOS) | done, slice 1 (#427) |
+| `pr.yml` | pull request to `main` | `changes` job diffs the PR; docs-only PRs skip the rest. Otherwise the full suite: `make test-coverage` + SPM package tests | done, slice 2 |
+| `pr-metadata.yml` | pull request opened/edited/synchronize/labeled | Conventional Commit title check; `feat`/`fix`/`perf` must add a line under `## [Unreleased]` in `CHANGELOG.md` unless labelled `skip-changelog` | done, slice 2 |
+| `codeql.yml` | pull request + weekly cron | CodeQL Swift analysis | done, slice 2 (push trigger dropped) |
+| Snyk (GitHub app, no file) | pull request | dependency manifest scan | existing, keep |
 | `release.yml` | to be decided in slice 3 | build, sign, notarize, DMG, GitHub release, appcast, cask dispatch | existing, to be reworked |
 | `website.yml` | push to `main` touching `website/**`, after a release | Eleventy build + Pages deploy | existing, keep |
 | `dependency-drift.yml` | weekly cron | pin drift report as an issue | existing, keep |
-| `ci.yml` | push to `main` + PR | today's full suite | to be replaced by `pr.yml` |
 | `release-please.yml` | push to `main` | bot release PR, tag, release | to be deleted in slice 3 |
 
-Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflows.
+Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflows (`branch.yml` via `paths-ignore`; `pr.yml` via its `changes` job, because a required check that never starts would block the PR).
 
 ## Guardrails
 
 | Mistake | What stops it |
 |---|---|
-| Committing on `main` | `CLAUDE.md` rule now; branch protection once `pr.yml` exists |
+| Committing on `main` | `CLAUDE.md` rule; branch protection on `main` (required checks: Build & Test, Conventional Commit title, Release note in CHANGELOG Unreleased, Analyze (Swift)) |
 | Pushing a secret | gitleaks in the pre-commit hook (per clone, `make install-hooks`) and in `branch.yml` (authoritative) |
 | Breaking the build and not noticing until the PR | `make build` on every branch push |
-| Bad squash commit subject, so the wrong version bump | required PR title format check (slice 2) |
-| Blank or prose-less release notes | `Unreleased` section check on the PR (slice 2) |
+| Bad squash commit subject, so the wrong version bump | `pr-metadata.yml` title check, re-run on every title edit |
+| Blank or prose-less release notes | `pr-metadata.yml` changelog check: a `feat`/`fix`/`perf` PR must add to `## [Unreleased]` or carry `skip-changelog` |
 | Releasing an unmerged or untested commit | releases cut from `main` only, which only holds PR-checked commits |
 
 ## Secrets
@@ -100,12 +101,14 @@ Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflow
 
 Each slice is one branch and one PR.
 
-1. **Branch CI** (this PR): `branch.yml`, gitleaks in Brewfile and hook,
+1. **Branch CI** (#427, merged 2026-08-30): `branch.yml`, gitleaks in Brewfile and hook,
    `CLAUDE.md` branching rule, this ADR rewritten. GitHub set to squash-only.
-2. **PR CI**: `pr.yml` replaces `ci.yml`; CodeQL loses its push trigger; PR
-   title and `Unreleased` checks; `## [Unreleased]` added to `CHANGELOG.md`.
-   Then enable branch protection on `main`: require a PR, require the `pr.yml`
-   and CodeQL checks, no direct pushes, no force pushes.
+2. **PR CI** (this PR): `pr.yml` replaces `ci.yml`; `pr-metadata.yml` added;
+   CodeQL loses its push trigger; `## [Unreleased]` added to `CHANGELOG.md`;
+   `skip-changelog` label created. After merging, enable branch protection on
+   `main`: require a PR, require the four checks above, no direct pushes, no
+   force pushes, and set `pr.yml`'s `Build & Test` as a required check even
+   though it is skipped for docs-only PRs (a skipped job counts as passed).
 3. **Release**: decide and build the release trigger and version bump; rework
    `release.yml` to consume the `Unreleased` section and stop committing the
    appcast to `main`. Delete `release-please.yml`, `release-please-config.json`,
