@@ -5,7 +5,7 @@ reproduced below as required by each project's terms.
 
 ---
 
-## FFmpeg 8.1.2_1
+## FFmpeg 9.0.1
 
 <https://ffmpeg.org>
 
@@ -43,7 +43,7 @@ TagLib source code is available at <https://github.com/taglib/taglib>.
 
 ---
 
-## Chromaprint / fpcalc 1.6.0
+## Chromaprint / fpcalc 1.6.1_1
 
 <https://acoustid.org/chromaprint>
 
@@ -114,7 +114,7 @@ SOFTWARE.
 
 ---
 
-## swift-custom-dump 1.7.0
+## swift-custom-dump 1.7.3
 
 <https://github.com/pointfreeco/swift-custom-dump>
 
@@ -142,7 +142,7 @@ SOFTWARE.
 
 ---
 
-## xctest-dynamic-overlay 1.11.0
+## xctest-dynamic-overlay 1.13.1
 
 <https://github.com/pointfreeco/xctest-dynamic-overlay>
 
@@ -170,7 +170,7 @@ SOFTWARE.
 
 ---
 
-## Sparkle 2.9.5
+## Sparkle 2.9.6
 
 <https://sparkle-project.org>
 
@@ -228,7 +228,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.4.0
+## FeedKit 10.5.0
 
 <https://github.com/nmdias/FeedKit>
 
@@ -306,5 +306,5 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.6.0. Dependency versions are pinned in
+*This file was generated for Bòcan 2.11.0. Dependency versions are pinned in
 the workspace `Package.resolved`.*

@@ -38,25 +38,31 @@ struct DeepDiveSettingConventionTests {
     @MainActor
     func gateFollowsTheSetting() {
         var enabled = false
-        var starts = 0
+        var starts: [Duration] = []
         var stops = 0
-        let gate = DeepDiveEnrichmentGate(isEnabled: { enabled }, start: { starts += 1 }, stop: { stops += 1 })
+        let gate = DeepDiveEnrichmentGate(isEnabled: { enabled }, start: { starts.append($0) }, stop: { stops += 1 })
 
         gate.apply()
         gate.apply()
-        #expect(starts == 0)
+        #expect(starts.isEmpty)
         #expect(stops == 0, "stopping a pass that never started is noise")
 
         enabled = true
         NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: nil)
         NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: nil)
-        #expect(starts == 1, "one start per flip, not per defaults write")
+        #expect(starts == [DeepDiveEnrichmentGate.toggleDelay], "one start per flip, not per defaults write, and a short wait")
 
         enabled = false
         gate.apply()
         #expect(stops == 1)
         enabled = true
         gate.apply()
-        #expect(starts == 2)
+        #expect(starts.count == 2)
+
+        // Enabled at launch: the long wait, so scanning settles first.
+        var launchStarts: [Duration] = []
+        let atLaunch = DeepDiveEnrichmentGate(isEnabled: { true }, start: { launchStarts.append($0) }, stop: {})
+        atLaunch.apply()
+        #expect(launchStarts == [DeepDiveEnrichmentGate.launchDelay])
     }
 }

@@ -223,7 +223,7 @@ make test-audio-engine        # (PKG_CONFIG_PATH already in $GITHUB_ENV on CI)
 
 ## fpcalc / AcoustID fingerprinting
 
-Bòcan uses [Chromaprint](https://acoustid.org/chromaprint) (`fpcalc`) to generate acoustic fingerprints for track identification via the AcoustID API. Because the app runs in the macOS sandbox, `fpcalc` and all of its FFmpeg dylib dependencies must be bundled inside the app bundle with paths rewritten to `@loader_path`; it cannot reach out to Homebrew at runtime.
+Bòcan uses [Chromaprint](https://acoustid.org/chromaprint) (`fpcalc`) to generate acoustic fingerprints for track identification via the AcoustID API. `fpcalc` and all of its FFmpeg dylib dependencies must be bundled inside the app bundle with paths rewritten to `@loader_path`: the Debug build runs in the macOS sandbox and cannot reach Homebrew at all, and the shipped release build (unsandboxed, see CLAUDE.md) must not depend on Homebrew being installed on the user's Mac.
 
 ### Why the binaries are not in the repo
 

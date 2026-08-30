@@ -58,7 +58,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - **`Bocan.xcodeproj` is generated from `project.yml` via XcodeGen.** Do not hand-edit `project.pbxproj`. If a build setting needs changing, edit `project.yml` and run `make generate`.
 - **FFmpeg is dynamically linked via Homebrew**, not vendored. The `AudioEngine` module won't build outside Xcode without `PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig`. `make test-audio-engine` handles it; raw `swift build` from `Modules/AudioEngine` does not.
 - **`fpcalc` and its FFmpeg dylibs are not in git.** `make bundle-fpcalc` copies them from Homebrew into `Resources/` with paths rewritten to `@loader_path/…`. Re-run after any FFmpeg major version bump (e.g. `libavcodec.61` → `.62`); `make generate` only needs re-running if dylib filenames changed.
-- **Sandbox is on, hardened runtime is on.** Entitlements get added per-feature, not "just in case". File access goes through the `SecurityScope` helper — never raw `URL.startAccessingSecurityScopedResource()` scattered around.
+- **The Xcode (Debug) build is sandboxed; the shipped release build is not.** Both carry the hardened runtime. `Resources/Bocan.entitlements` applies to Debug only; the CI release build is deliberately re-signed without entitlements by `Scripts/embed-deps.sh`, so `/Applications/Bocan.app` runs unsandboxed. Consequences: the two builds use **different libraries** (Debug: `~/Library/Containers/io.cloudcauldron.bocan/Data/Library/Application Support/Bocan/`; release: `~/Library/Application Support/Bocan/`) and different preferences, so a debug run never touches the real library, and numbers read from one say nothing about the other. Before quoting anything from "the library", `lsof -p $(pgrep -x Bocan)` and query the file the running app actually has open. Entitlements for Debug get added per-feature, not "just in case", and file access still goes through the `SecurityScope` helper (it is a no-op outside the sandbox), never raw `URL.startAccessingSecurityScopedResource()` scattered around.
 - **`AVAudioFile` snapshots a file's length at open time.** It's the wrong decoder for live streams (Subsonic internet radio, etc.). `DecoderFactory.make(for:)` routes HTTP/HTTPS URLs to `FFmpegDecoder` for this reason; new playback paths need to honour the same split.
 - **`SubsonicStreamCache` waits for the full download before signalling readiness**, by deliberate design — `AVAudioFile`'s snapshot semantics meant the previous "stream while downloading" path silently truncated tracks to whatever bytes happened to be on disk at open. Don't reintroduce mid-download signalling without also swapping the decoder for a streaming-aware one.
 - **Capability snapshots are persisted per-Subsonic-server**, but `loadCapabilities` is only auto-invoked from the bootstrap fan-out in `BocanApp.swift` and from the Settings "Test Connection" path. Sidebar rows are gated on the persisted JSON; if a server upgrade exposes a new capability and nothing kicks a refresh, the row won't appear until the cache ages past `freshnessInterval` (24 h).
@@ -82,11 +82,22 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - Maintain `docs/data-dictionary.md`: every column lists "written by", "read by", and the spec requirement it traces to. A blank cell fails the phase. The tables are generated (`make data-dictionary`); the reviewed content goes in `docs/data-dictionary-notes.json`, keyed `table.column`, and a new column is not done until it has a `traces` entry there.
 - Definition of Done includes: `make audit-db` passes without significant findings (see DEVELOPMENT.md; it audits a copy of the real library, so run it against your own).
 
+## Branching (trunk-based, short-lived branches)
+
+`main` is the trunk and is never committed to directly, by the maintainer or by Claude. Every piece of work, however small, happens on a short-lived branch:
+
+- Start from an up-to-date trunk: `git switch main && git pull --ff-only`, then `git switch -c <type>/<slug>`.
+- Name: `<type>/<short-kebab-slug>`, where `<type>` is the Conventional Commit type the work will carry (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `ci/`) and the slug is a few words, optionally with the issue number: `fix/349-album-grid-scroll-restore`, `feat/phone-sync-manifest`.
+- One logical change per branch, lived for hours or a day or two, not weeks. If a task turns out to have two logical changes, make two branches.
+- Commit to the branch as slices go green (see Commits below). Push the branch whenever the user asks or a slice is done; branch pushes run only the light CI (lint, format, build, secret scan), so pushing is cheap.
+- Land it with a pull request into `main`. The full CI suite runs on the PR, not on the branch push. After the merge, delete the branch and switch back to `main`.
+- Before any git surgery, check `git branch --show-current`; if it says `main` and there are uncommitted changes, move them to a branch (`git switch -c ...` carries them across) rather than committing on trunk.
+
 ## Commits
 
 Document new features in README.md and in the repo's /website pages. NEVER use em dashes (—) in commit messages or markdown, or the website.
 After any logical change, run `make format`, `make lint`, `make build` and `make test-coverage` to ensure standards are met before committing.
-Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): …`, `chore(deps): …`. One logical change per commit / PR. The pre-commit hook (`make install-hooks`, also run automatically by `make bootstrap`) runs SwiftFormat in lint mode + SwiftLint strict; CI re-runs both. Don't `--no-verify` past failures; fix the issue.
+Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): …`, `chore(deps): …`. One logical change per commit / branch / PR. The pre-commit hook (`make install-hooks`, also run automatically by `make bootstrap`) runs SwiftFormat in lint mode + SwiftLint strict; CI re-runs both. Don't `--no-verify` past failures; fix the issue.
 
 ## When in doubt
 

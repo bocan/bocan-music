@@ -11,7 +11,14 @@ import Library
 @MainActor
 public final class DeepDiveEnrichmentGate {
     private let isEnabled: () -> Bool
-    private let start: () -> Void
+    /// Wait before the pass starts: long at launch so scanning settles first,
+    /// short when the user flips the toggle, so the progress line moves
+    /// within seconds instead of sitting at 0 for the best part of a minute.
+    public static let launchDelay: Duration = .seconds(45)
+    /// The wait after the user turns the setting on.
+    public static let toggleDelay: Duration = .seconds(2)
+
+    private let start: (Duration) -> Void
     private let stop: () -> Void
     private var applied: Bool?
     private var observer: NSObjectProtocol?
@@ -20,13 +27,13 @@ public final class DeepDiveEnrichmentGate {
     public convenience init(service: ArtistEnrichmentService, defaults: UserDefaults = .standard) {
         self.init(
             isEnabled: { DeepDiveSetting.isEnabled(in: defaults) },
-            start: { Task.detached(priority: .background) { await service.start() } },
+            start: { delay in Task.detached(priority: .background) { await service.start(after: delay) } },
             stop: { Task { await service.stop() } }
         )
     }
 
     /// Closure form, so tests can count starts and stops.
-    public init(isEnabled: @escaping () -> Bool, start: @escaping () -> Void, stop: @escaping () -> Void) {
+    public init(isEnabled: @escaping () -> Bool, start: @escaping (Duration) -> Void, stop: @escaping () -> Void) {
         self.isEnabled = isEnabled
         self.start = start
         self.stop = stop
@@ -42,7 +49,8 @@ public final class DeepDiveEnrichmentGate {
         let enabled = self.isEnabled()
         guard enabled != self.applied else { return }
         let wasRunning = self.applied == true
+        let delay = self.applied == nil ? Self.launchDelay : Self.toggleDelay
         self.applied = enabled
-        if enabled { self.start() } else if wasRunning { self.stop() }
+        if enabled { self.start(delay) } else if wasRunning { self.stop() }
     }
 }

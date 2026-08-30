@@ -40,7 +40,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-030-playlist-import-export.md](ADR-030-playlist-import-export.md) | M3U/M3U8/PLS/XSPF |
 | [ADR-031-casting.md](ADR-031-casting.md) | AirPlay 2 + Google Cast |
 | [ADR-032-distribution.md](ADR-032-distribution.md) | Sign, notarize, DMG, Sparkle |
-| [ADR-033-cicd-cancelled.md](ADR-033-cicd-cancelled.md) | CI/CD pipeline expansion (cancelled) |
+| [ADR-033-trunk-based-cicd.md](ADR-033-trunk-based-cicd.md) | Trunk-based development and a small, guarded CI/CD (in progress) |
 | [ADR-034-remote-control.md](ADR-034-remote-control.md) | Remote control server: Bonjour discovery, PIN pairing, REST/WebSocket API |
 | [ADR-035-subsonic.md](ADR-035-subsonic.md) | Subsonic / Navidrome / OpenSubsonic client: sidebar "Sources" section, federated search, streaming cache, write-through annotations |
 | [ADR-036-console.md](ADR-036-console.md) | In-app log console backed by `LogStore` |

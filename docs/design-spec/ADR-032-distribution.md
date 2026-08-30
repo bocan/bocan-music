@@ -283,7 +283,7 @@ Modules/App/Sources/App/LaunchSanity.swift
 
 ## Handoff
 
-There is no ADR-033. Post-1.0, routine work: CVE monitoring of FFmpeg/TagLib, macOS version compatibility each autumn, feature requests, community contributions.
+Post-1.0, routine work (ADR-033 later reworked the CI/CD pipeline): CVE monitoring of FFmpeg/TagLib, macOS version compatibility each autumn, feature requests, community contributions.
 
 Keep the CHANGELOG, keep signing certificates rotating, keep the app running fast, keep the icon sharp.
 

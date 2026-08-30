@@ -215,7 +215,11 @@ public struct LogConsoleView: View {
                         .id(Self.bottomAnchor)
                 }
             }
-            .onChange(of: self.vm.visible.count) { _, _ in
+            // Keyed on the newest id, not the count: once the mirror is full
+            // the count is pinned at capacity (one in, one out) and a
+            // count-keyed onChange never fires again, so the console stopped
+            // following the tail exactly when the buffer filled.
+            .onChange(of: self.vm.visible.last?.id) { _, _ in
                 if self.vm.isTailing {
                     proxy.scrollTo(Self.bottomAnchor, anchor: .bottom)
                 }
