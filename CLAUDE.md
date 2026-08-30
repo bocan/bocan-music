@@ -93,6 +93,12 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - Land it with a pull request into `main`. The full CI suite runs on the PR, not on the branch push. After the merge, delete the branch and switch back to `main`.
 - Before any git surgery, check `git branch --show-current`; if it says `main` and there are uncommitted changes, move them to a branch (`git switch -c ...` carries them across) rather than committing on trunk.
 
+## Release notes and releases
+
+- Every `feat`, `fix` or `perf` PR adds its release note under `## [Unreleased]` in `CHANGELOG.md`, in the same PR as the change. A PR check refuses the PR without one (label `skip-changelog` only when the change is genuinely not user-visible).
+- Write the note for a listener reading the update prompt: one or two plain sentences per change, present tense, what is different for them. No module, class or function names, no backticks, no PR numbers, no "refactored"/"implemented". A feature that deserves it gets a short paragraph; a fix gets a sentence. The check rejects backticks, `(#NNN)` and code vocabulary. Developer detail is generated automatically at release time from the squash subjects; do not duplicate it in the prose.
+- Never write a `## [X.Y.Z]` heading, stamp `Info.plist`, or create a tag by hand. `Scripts/release.sh` does that inside the manually started Release workflow (`make release-preview` shows what it would do). See DEVELOPMENT.md "Releasing" and ADR-033.
+
 ## Commits
 
 Document new features in README.md and in the repo's /website pages. NEVER use em dashes (—) in commit messages or markdown, or the website.
