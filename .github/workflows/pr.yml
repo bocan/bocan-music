@@ -1,22 +1,19 @@
-name: CI
+# PR CI: the full gate. Runs the whole test and coverage suite on every pull
+# request into main. Branch pushes get the light Branch workflow instead, and
+# pushes to main run nothing: with branch protection, every commit on main has
+# already passed this. See ADR-033.
+#
+# No paths-ignore here on purpose: a required check that never starts blocks
+# the PR forever. Instead the `changes` job decides whether code changed and
+# the build job is skipped (which counts as passed) for docs-only PRs.
+name: PR
 
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "website/**"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/PULL_REQUEST_TEMPLATE/**"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "website/**"
-      - ".github/ISSUE_TEMPLATE/**"
-      - ".github/PULL_REQUEST_TEMPLATE/**"
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,9 +31,41 @@ env:
   XCB_OVERRIDE: "CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS="
 
 jobs:
+  changes:
+    name: Detect code changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Diff against the base branch
+        id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed="$(git diff --name-only "$BASE" "$HEAD")"
+          echo "$changed"
+          # Anything outside these paths is code (or build config) and needs the suite.
+          if grep -qvE '^(.*\.md|docs/.*|website/.*|\.github/ISSUE_TEMPLATE/.*|\.github/PULL_REQUEST_TEMPLATE/.*|CHANGELOG\.md)$' <<<"$changed"; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "Code changed: running the full suite."
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+            echo "Docs-only change: skipping the full suite."
+          fi
+
   build-and-test:
     name: Build & Test
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: macos-26
+    timeout-minutes: 90
 
     steps:
       - name: Checkout
