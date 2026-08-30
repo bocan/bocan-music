@@ -15,6 +15,12 @@ on:
 permissions:
   contents: write
 
+# Explicit bash gives `-o pipefail`, so a failed `make ... | xcbeautify` fails
+# the step (see ADR-033).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check-signing:
     name: Check signing secrets
@@ -89,7 +95,7 @@ jobs:
           echo "Release PR for ${VERSION} is merged: manifest and CHANGELOG agree."
 
       - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.5.app
+        run: sudo xcode-select -s /Applications/Xcode_26.6.app
 
       - name: Cache Homebrew packages
         uses: actions/cache@v6
@@ -148,6 +154,10 @@ jobs:
         run: make generate
 
       - name: Run tests before release (fail fast)
+        env:
+          # The Debug test build cannot use the Developer ID identity imported
+          # below: build it ad-hoc, no team, no entitlements.
+          XCB_OVERRIDE: "CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS="
         run: make test-coverage 2>&1 | xcbeautify
 
       - name: Import Developer ID certificate
