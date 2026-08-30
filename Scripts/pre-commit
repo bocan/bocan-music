@@ -1,10 +1,22 @@
 #!/usr/bin/env bash
-# pre-commit hook — Runs swiftformat (lint) and swiftlint on staged Swift files.
+# pre-commit hook: runs gitleaks on everything staged, then swiftformat (lint)
+# and swiftlint on staged Swift files.
 # Installed by `make install-hooks` to .git/hooks/pre-commit.
 #
 # Bypass with `git commit --no-verify` (discouraged; reviewers should reject
 # commits with --no-verify unless a justification is in the PR description).
 set -euo pipefail
+
+echo "=== Pre-commit: gitleaks (staged changes) ==="
+if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks git --pre-commit --staged --no-banner --redact . && echo "✓ no secrets staged" || {
+        echo "✗ gitleaks found a possible secret in the staged changes. Remove it before committing."
+        exit 1
+    }
+else
+    echo "✗ gitleaks is not installed; run 'brew bundle' (it is in the Brewfile)."
+    exit 1
+fi
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
 
