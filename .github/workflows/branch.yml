@@ -18,6 +18,12 @@ on:
 permissions:
   contents: read
 
+# Explicit bash gives `-o pipefail`; the implicit default is `bash -e` only,
+# which would let `make build | xcbeautify` pass on a failed build.
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -39,8 +45,9 @@ jobs:
         run: |
           curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
             | tar -xz -C "$RUNNER_TEMP" gitleaks
+          # GITHUB_PATH only applies to later steps; call it by path here.
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-          gitleaks version
+          "$RUNNER_TEMP/gitleaks" version
 
       - name: Scan the commits this branch adds on top of main
         run: |
