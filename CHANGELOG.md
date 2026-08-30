@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Deep Dive can now find an album or song on MusicBrainz by name when your files carry no MusicBrainz tags, instead of giving up. A match found this way is labelled in the report, and searches ignore stray spaces around names.
+
 ## [2.11.0](https://github.com/bocan/bocan-music/compare/v2.10.0...v2.11.0) (2026-08-29)
 
 Deep Dive (off by default)

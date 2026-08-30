@@ -172,9 +172,20 @@ public actor DeepDiveService {
     }
 
     private func buildAlbumReport(_ album: Album) async throws -> AlbumReport {
+        var artist: Artist?
+        if let artistID = album.albumArtistID {
+            artist = try? await self.artists.fetch(id: artistID)
+        }
+
         var releaseChosen = false
+        var guessed = false
         var releaseID = album.musicbrainzReleaseID
-        if releaseID == nil, let groupID = album.musicbrainzReleaseGroupID {
+        var groupID = album.musicbrainzReleaseGroupID
+        if releaseID == nil, groupID == nil {
+            groupID = try await self.guessReleaseGroupMBID(album: album, artist: artist)
+            guessed = groupID != nil
+        }
+        if releaseID == nil, let groupID {
             let group = try await self.mapErrors { try await self.musicBrainz.fetchReleaseGroup(mbid: groupID) }
             releaseID = Self.representativeRelease(group.releases ?? [])?.id
             releaseChosen = releaseID != nil
@@ -182,10 +193,6 @@ public actor DeepDiveService {
         guard let releaseID else { throw DeepDiveError.noIdentifier }
         let release = try await self.mapErrors { try await self.musicBrainz.fetchRelease(mbid: releaseID) }
 
-        var artist: Artist?
-        if let artistID = album.albumArtistID {
-            artist = try? await self.artists.fetch(id: artistID)
-        }
         let nearby = await self.nearbyReleases(of: release, album: album, artist: artist)
 
         let ownedTracks = try await self.tracks.count(albumID: album.id ?? 0)
@@ -197,6 +204,7 @@ public actor DeepDiveService {
             releaseMBID: release.id,
             releaseGroupMBID: release.releaseGroup?.id ?? album.musicbrainzReleaseGroupID,
             releaseChosen: releaseChosen,
+            mbidGuessed: guessed,
             primaryType: release.releaseGroup?.primaryType,
             secondaryTypes: release.releaseGroup?.secondaryTypes ?? [],
             date: release.date,
@@ -243,7 +251,13 @@ public actor DeepDiveService {
     /// The recording report for a track. Requires a recording MBID on the row.
     public func trackReport(trackID: Int64, forceRefresh: Bool = false) async throws -> TrackReport {
         let track = try await self.tracks.fetch(id: trackID)
-        guard let mbid = track.musicbrainzRecordingID, !mbid.isEmpty else { throw DeepDiveError.noIdentifier }
+        var guessed = false
+        var resolved = track.musicbrainzRecordingID
+        if resolved == nil || resolved?.isEmpty == true {
+            resolved = try await self.guessRecordingMBID(track: track)
+            guessed = resolved != nil
+        }
+        guard let mbid = resolved, !mbid.isEmpty else { throw DeepDiveError.noIdentifier }
         let key = "recording-\(mbid)"
         let cached: (value: TrackReport, fresh: Bool)? = await self.cache.load(TrackReport.self, key: key)
         if let cached, cached.fresh, !forceRefresh { return cached.value }
@@ -269,6 +283,7 @@ public actor DeepDiveService {
             let report = TrackReport(
                 trackID: trackID,
                 recordingMBID: mbid,
+                mbidGuessed: guessed,
                 title: recording.title,
                 artistCredit: recording.artistName,
                 length: recording.length,
@@ -286,6 +301,38 @@ public actor DeepDiveService {
             if let cached { return cached.value }
             throw error
         }
+    }
+
+    // MARK: - Name-search fallbacks
+
+    /// Guesses the album's release group by a name search when the tags
+    /// supplied no release or release-group id. Only a match at or above
+    /// `guessScoreThreshold` is used; the report is flagged `mbidGuessed` and
+    /// nothing is persisted, because the album MBID columns are rolled up
+    /// from tracks by the scanner and a stored guess would not survive a
+    /// rescan.
+    private func guessReleaseGroupMBID(album: Album, artist: Artist?) async throws -> String? {
+        guard let artist else { return nil }
+        let title = album.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = artist.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, !name.isEmpty else { return nil }
+        let results = try await self.mapErrors { try await self.musicBrainz.searchReleaseGroups(artist: name, album: title, limit: 5) }
+        guard let best = results.first, (best.score ?? 0) >= Self.guessScoreThreshold else { return nil }
+        self.log.info("deepdive.album.guessed", ["album": title, "mbid": best.id, "score": best.score ?? 0])
+        return best.id
+    }
+
+    /// Guesses the track's recording by an artist + title search, same rules.
+    private func guessRecordingMBID(track: Track) async throws -> String? {
+        guard let artistID = track.artistID,
+              let artist = try? await self.artists.fetch(id: artistID) else { return nil }
+        let title = (track.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = artist.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, !name.isEmpty else { return nil }
+        let results = try await self.mapErrors { try await self.musicBrainz.searchRecordings(artist: name, title: title, limit: 5) }
+        guard let best = results.first, (best.score ?? 0) >= Self.guessScoreThreshold else { return nil }
+        self.log.info("deepdive.track.guessed", ["track": title, "mbid": best.id, "score": best.score ?? 0])
+        return best.id
     }
 
     // MARK: - Errors

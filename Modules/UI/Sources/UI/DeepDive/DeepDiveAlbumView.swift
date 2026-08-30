@@ -50,6 +50,11 @@ struct DeepDiveAlbumView: View {
 
     private func releaseSection(_ report: AlbumReport) -> some View {
         Section(L10n.string("Release")) {
+            if report.mbidGuessed {
+                Label(L10n.string("Matched by name; the tags carry no MusicBrainz id."), systemImage: "questionmark.circle")
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.warningTint)
+            }
             if report.releaseChosen {
                 Label(
                     L10n.string("The tags name only the release group; showing its earliest official release."),

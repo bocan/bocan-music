@@ -84,6 +84,10 @@ public struct AlbumReport: Codable, Sendable, Equatable {
     /// True when the album carried only a release-group id and a
     /// representative release was chosen (earliest official).
     public let releaseChosen: Bool
+    /// True when the tags carried no MusicBrainz id at all and the release
+    /// group came from a confident name search. Never persisted: the album
+    /// MBID columns are rolled up from tracks by the scanner.
+    public let mbidGuessed: Bool
     public let primaryType: String?
     public let secondaryTypes: [String]
     public let date: String?
@@ -105,6 +109,9 @@ public struct AlbumReport: Codable, Sendable, Equatable {
 }
 
 /// A concise recording report for a track.
+/// - Note: `mbidGuessed` is true when the tags carried no recording id and
+///   the recording came from a confident artist + title search; the guess is
+///   shown, labelled, and never written back to the track row.
 public struct TrackReport: Codable, Sendable, Equatable {
     public struct Appearance: Codable, Sendable, Equatable {
         public let releaseTitle: String
@@ -126,6 +133,7 @@ public struct TrackReport: Codable, Sendable, Equatable {
 
     public let trackID: Int64
     public let recordingMBID: String
+    public let mbidGuessed: Bool
     public let title: String
     public let artistCredit: String
     /// Milliseconds.
