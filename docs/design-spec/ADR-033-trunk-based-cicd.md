@@ -65,10 +65,9 @@ process:
 | `pr.yml` | pull request to `main` | `changes` job diffs the PR; docs-only PRs skip the rest. Otherwise the full suite: `make test-coverage` + SPM package tests | done, slice 2 |
 | `pr-metadata.yml` | pull request opened/edited/synchronize/labeled | Conventional Commit title check; `feat`/`fix`/`perf` must add a line under `## [Unreleased]` in `CHANGELOG.md` unless labelled `skip-changelog` | done, slice 2 |
 | Snyk (GitHub app, no file) | pull request | dependency manifest scan | existing, keep |
-| `release.yml` | to be decided in slice 3 | build, sign, notarize, DMG, GitHub release, appcast, cask dispatch | existing, to be reworked |
-| `website.yml` | push to `main` touching `website/**`, after a release | Eleventy build + Pages deploy | existing, keep |
+| `release.yml` | manual only (`workflow_dispatch`, optional `tag` to rebuild) | `prepare` (Linux): `Scripts/release.sh` decides the version and rewrites `CHANGELOG.md` + `Info.plist`, lands them as a `chore(release): X.Y.Z` PR through the normal checks, tags the merge. `build` (macOS): tests, sign, notarize, DMG, GitHub release with prose-only notes, `appcast-entry.xml` asset, cask dispatch | done, slice 3 |
+| `website.yml` | push to `main` touching `website/**` or `CHANGELOG.md`, after a Release run | `Scripts/build-appcast.sh` assembles the Sparkle feeds from `website/appcast/seed*.xml` plus every later release's asset; Eleventy build; Pages deploy | reworked, slice 3 |
 | `dependency-drift.yml` | weekly cron | pin drift report as an issue | existing, keep |
-| `release-please.yml` | push to `main` | bot release PR, tag, release | to be deleted in slice 3 |
 
 Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflows (`branch.yml` via `paths-ignore`; `pr.yml` via its `changes` job, because a required check that never starts would block the PR).
 
@@ -80,8 +79,12 @@ Changes touching only `**.md`, `docs/**` or `website/**` skip the build workflow
 | Pushing a secret | gitleaks in the pre-commit hook (per clone, `make install-hooks`) and in `branch.yml` (authoritative) |
 | Breaking the build and not noticing until the PR | `make build` on every branch push |
 | Bad squash commit subject, so the wrong version bump | `pr-metadata.yml` title check, re-run on every title edit |
-| Blank or prose-less release notes | `pr-metadata.yml` changelog check: a `feat`/`fix`/`perf` PR must add to `## [Unreleased]` or carry `skip-changelog` |
-| Releasing an unmerged or untested commit | releases cut from `main` only, which only holds PR-checked commits |
+| Blank or prose-less release notes | `pr-metadata.yml` changelog check: a `feat`/`fix`/`perf` PR must add to `## [Unreleased]` or carry `skip-changelog`; `release.sh apply` and `release-notes.sh` both refuse an empty section |
+| Release notes written as commit messages | the same check rejects backticks, `(#NNN)` and code vocabulary in the added lines |
+| Releasing an unmerged or untested commit | releases cut from `main` only, which only holds PR-checked commits; the release commit itself goes through the same PR checks |
+| Typing the wrong version, or releasing when nothing changed | `release.sh next` computes it from the squash subjects and exits 3 when nothing is releasable |
+| Appcast pointing at the wrong OS floor, or shrinking | `build-appcast.sh` refuses an entry whose `minimumSystemVersion` disagrees with `project.yml`, and refuses fewer items than the seed |
+| CI committing to `main` | nothing does any more: the release commit is a PR, the appcast is assembled at site build time |
 
 ## Secrets
 
@@ -101,22 +104,23 @@ Each slice is one branch and one PR.
 
 1. **Branch CI** (#427, merged 2026-08-30): `branch.yml`, gitleaks in Brewfile and hook,
    `CLAUDE.md` branching rule, this ADR rewritten. GitHub set to squash-only.
-2. **PR CI** (this PR): `pr.yml` replaces `ci.yml`; `pr-metadata.yml` added;
-   `codeql.yml` deleted; `## [Unreleased]` added to `CHANGELOG.md`;
-   `skip-changelog` label created. After merging, enable branch protection on
-   `main`: require a PR, require the three checks above, no direct pushes, no
-   force pushes, and set `pr.yml`'s `Build & Test` as a required check even
-   though it is skipped for docs-only PRs (a skipped job counts as passed).
-3. **Release**: decide and build the release trigger and version bump; rework
-   `release.yml` to consume the `Unreleased` section and stop committing the
-   appcast to `main`. Delete `release-please.yml`, `release-please-config.json`,
-   `.release-please-manifest.json`, `Scripts/release-note.sh` and the
-   `release-note` Makefile target. Close the bot's open release PR.
-4. **Docs**: `CONTRIBUTING.md`, `DEVELOPMENT.md` and the website release notes
-   page updated to the new flow.
-
-Until slice 3, the release-please bot keeps refreshing its PR after every
-merge to `main`. Ignore it; it only edits its own branch, never `main`.
+2. **PR CI** (#428, merged 2026-08-30, after #429 made the suite honest):
+   `pr.yml` replaces `ci.yml`; `pr-metadata.yml` added; `codeql.yml` deleted;
+   `## [Unreleased]` added to `CHANGELOG.md`; `skip-changelog` label created.
+   Branch protection on `main` enabled the same day: PR required, the three
+   checks required (strict), admins included, no force pushes, linear
+   history. `Build & Test` counts as passed when skipped for docs-only PRs.
+3. **Release** (this PR): `Scripts/release.sh` (+ tests under `Scripts/tests`,
+   run by `pr.yml`'s `Script tests` job and `make test-scripts`),
+   `Scripts/release-notes.sh` reduced to the prose, `Scripts/build-appcast.sh`,
+   `release.yml` rewritten as above, the committed feeds frozen as
+   `website/appcast/seed*.xml`, `pr-metadata.yml` rejects techno-speak in the
+   note, `make release-preview`. Deleted: `release-please.yml`,
+   `release-please-config.json`, `.release-please-manifest.json`,
+   `Scripts/release-note.sh`, `make release-note`. After merging: add the
+   `RELEASE_TOKEN` secret and close the bot's last open release PR.
+4. **Docs** (this PR): `DEVELOPMENT.md` "Releasing", `CLAUDE.md` release-note
+   rules, this ADR. `CONTRIBUTING.md` was updated in slice 2.
 
 ## Not doing
 
@@ -138,13 +142,39 @@ merge to `main`. Ignore it; it only edits its own branch, never `main`.
 ran without `pipefail`, so xcbeautify's exit 0 won. `release.yml`'s "run tests
 before release" step has the same mask, and the Makefile `build` recipe pipes
 into xcbeautify without `set -o pipefail` at all, so `make build` cannot fail
-anywhere. Only the SPM package suites were real. Fix (decision pending): set
-`pipefail` everywhere, and have CI build ad-hoc signed with no team via
-`XCB_OVERRIDE`, as it did before June.
+anywhere. Only the SPM package suites were real. Fixed in #429 (2026-08-30):
+`pipefail` everywhere, CI builds ad-hoc signed with no team via
+`XCB_OVERRIDE` as it did before June, Xcode pinned to 26.6, and an explicit
+`Sendable` on the E2E menu manifest types whose recursive inference resolved
+differently on the runner. The first honest run: 811 tests, 95% coverage.
 
-## Open questions (slice 3)
+## Release decisions (2026-08-30, slice 3)
 
-- What triggers a release: a manually run workflow that bumps and tags from
-  `main`, or automatic tagging on merge when `Unreleased` is non-empty?
-- Where the appcast lives once it is no longer committed to `main`: a release
-  asset served through the website build, or an `appcast` branch.
+7. **A release is started by hand, never by a merge.** The maintainer ships
+   at most about once a week because updates tire users; `Unreleased`
+   accumulates zero to ten PRs in between. `workflow_dispatch` with no input
+   cuts the next version; with a tag input it rebuilds that tag.
+8. **The version comes from the squash subjects since the last tag**, first
+   parent only: `!`/`BREAKING CHANGE` major, `feat` minor, `fix`/`perf`
+   patch, nothing else releasable. Nobody types a version.
+9. **Two audiences, one file.** Each `CHANGELOG.md` version section is the
+   maintainer's prose (from `Unreleased`) followed by a generated
+   `### For developers` list of the squash subjects grouped Added / Fixed /
+   Changed / Removed with PR links. The GitHub release body and the Sparkle
+   prompt carry the prose only, plus a "Full changelog" compare link.
+10. **The release commit lands through the same protected PR as any change**,
+    auto-merged by the workflow once its checks pass (fully automated to
+    start with; switching to a maintainer-merged release PR is a one-line
+    change if the assembled notes need a last look). It needs a fine-scoped
+    PAT (`RELEASE_TOKEN`) because a `GITHUB_TOKEN`-opened PR gets no checks.
+11. **The appcast is derived, not committed.** Every release uploads its
+    signed `appcast-entry.xml`; the website build appends the entries newer
+    than the frozen seed (`website/appcast/seed.xml`, the history up to
+    2.11.0, kept because older assets carry a wrong `26.0` OS floor) and
+    refuses to publish if any entry's floor disagrees with `project.yml` or
+    the feed would shrink. There is no `gh-pages` branch (Pages deploys an
+    artifact), so "an appcast branch" was never needed.
+12. **A hand-rolled `Scripts/release.sh` rather than release-please or
+    git-cliff.** The bump is a `git log` and a `case`; the bullets are the
+    subjects. Eighty readable lines with a fixture-repo test beat a bot branch
+    or a template DSL for a solo maintainer.

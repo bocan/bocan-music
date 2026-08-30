@@ -70,3 +70,7 @@ Secrets.xcconfig
 /website/node_modules/
 /website/_site/
 /website/.cache/
+# Assembled by Scripts/build-appcast.sh from website/appcast/seed*.xml plus
+# the appcast-entry.xml asset of every later release. Never committed.
+/website/static/appcast.xml
+/website/static/appcast-beta.xml

@@ -327,9 +327,15 @@ data-dictionary:
 	python3 Scripts/gen-data-dictionary.py "$$tmp"; \
 	rm -rf "$$(dirname "$$tmp")"
 
-## release-note: Add a human note to the pending release PR's changelog (guarded flow)
-release-note:
-	@Scripts/release-note.sh
+## release-preview: Show the version and CHANGELOG section the next release would produce (nothing is written)
+release-preview:
+	@echo "Next version: $$(Scripts/release.sh next)"
+	@echo
+	@Scripts/release.sh preview
+
+## test-scripts: Run the shell script tests under Scripts/tests (CI runs them on Linux)
+test-scripts:
+	@for t in Scripts/tests/*.sh; do bash "$$t" || exit 1; done
 
 ## format-check: Run SwiftFormat in lint mode (CI)
 format-check:

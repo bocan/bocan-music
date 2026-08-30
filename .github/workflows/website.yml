@@ -48,6 +48,13 @@ jobs:
         working-directory: website
         run: npm ci
 
+      # The Sparkle feeds are not committed: the frozen seeds in
+      # website/appcast/ plus every later release's appcast-entry.xml asset.
+      - name: Assemble appcast feeds from release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: Scripts/build-appcast.sh
+
       - name: Build with Eleventy
         working-directory: website
         run: npm run build

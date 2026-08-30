@@ -37,7 +37,8 @@ jobs:
             echo "::error::PR title must be a Conventional Commit, e.g. 'fix(subsonic): retry failed logins' (types: feat fix perf refactor docs chore ci build test style revert; scope = module). Got: '$TITLE'"
             exit 1
           fi
-          if [[ "$TITLE" == *"—"* ]]; then
+          # U+2014 (em dash) as bytes, so this file does not contain one itself.
+          if [[ "$TITLE" == *$'\xe2\x80\x94'* ]]; then
             echo "::error::PR title contains an em dash; use plain punctuation."
             exit 1
           fi
@@ -82,3 +83,11 @@ jobs:
           fi
           echo "Release note added:"
           echo "$added"
+
+          # The note is what a listener reads in the update prompt: plain
+          # sentences, no code names, no PR numbers. Developer detail goes in
+          # the generated "For developers" list at release time.
+          if grep -qE '`|\(#[0-9]+\)|\b(refactor|refactored|implemented|ViewModel|Repository|actor|struct|enum|protocol)\b' <<<"$added"; then
+            echo "::error::The Unreleased note reads like a commit message (backticks, a PR number, or code vocabulary). Rewrite it for a listener: what changes for them, in one or two plain sentences."
+            exit 1
+          fi

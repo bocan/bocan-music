@@ -60,6 +60,21 @@ jobs:
             echo "Docs-only change: skipping the full suite."
           fi
 
+  scripts:
+    name: Script tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Run Scripts/tests
+        run: |
+          for t in Scripts/tests/*.sh; do
+            echo "== $t"
+            bash "$t"
+          done
+
   build-and-test:
     name: Build & Test
     needs: changes
