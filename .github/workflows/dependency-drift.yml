@@ -17,6 +17,10 @@ permissions:
   contents: read
   issues: write
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     runs-on: ubuntu-latest

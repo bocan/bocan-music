@@ -15,9 +15,11 @@ EXPECTED_SWIFTLINT := $(shell cat .swiftlint-version 2>/dev/null)
 EXPECTED_SWIFTFORMAT := $(shell cat .swiftformat-version 2>/dev/null)
 
 # Extra xcodebuild settings injected into `build`/`test`/`test-coverage`. Empty by
-# default. CI uses it to strip the keychain-access-groups entitlement on unsigned
-# ad-hoc builds (which otherwise demand a provisioning profile):
-#   make test-coverage XCB_OVERRIDE='CODE_SIGN_ENTITLEMENTS='
+# default, so a local build signs with the team in project.yml. CI runners have
+# no certificate, so every workflow exports this as an environment variable to
+# build ad-hoc signed with no team, and without the keychain-access-groups
+# entitlement (which ad-hoc signing cannot carry without a provisioning profile):
+#   XCB_OVERRIDE='CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS='
 XCB_OVERRIDE ?=
 
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
@@ -98,7 +100,7 @@ generate:
 
 ## build: Build the Debug configuration
 build:
-	xcodebuild \
+	set -o pipefail && xcodebuild \
 		-project Bocan.xcodeproj \
 		-scheme Bocan \
 		-configuration Debug \
@@ -283,7 +285,7 @@ test-observability:
 
 ## uitest: Run UI smoke tests (BocanUITests scheme target)
 uitest:
-	xcodebuild \
+	set -o pipefail && xcodebuild \
 		-project Bocan.xcodeproj \
 		-scheme Bocan \
 		-configuration Debug \
