@@ -71,6 +71,19 @@ private let recordingSearchJSON = """
 {"count":1,"recordings":[{"id":"rec-1","score":100,"title":"Come Together","artist-credit":[{"name":"The Beatles"}]}]}
 """
 
+/// Records what a confirm would have written to file tags.
+private final class SaverSpy: DeepDiveTagSaving, @unchecked Sendable {
+    private(set) var recordings: [(mbid: String, trackID: Int64)] = []
+    private(set) var groups: [(mbid: String, trackIDs: [Int64])] = []
+    func saveRecordingID(_ mbid: String, trackID: Int64) async throws {
+        self.recordings.append((mbid, trackID))
+    }
+
+    func saveReleaseGroupID(_ mbid: String, trackIDs: [Int64]) async throws {
+        self.groups.append((mbid, trackIDs))
+    }
+}
+
 private struct Bed {
     let db: Database
     let http: RoutingHTTP
@@ -333,6 +346,76 @@ struct DeepDiveServiceTests {
             bed.http.requests.contains { $0.contains("query=artist:\"The Beatles\" AND recording:\"Come Together\"") },
             "the search uses trimmed names"
         )
+    }
+
+    @Test("saving a guessed track match writes the recording id to the file and unflags the cached report")
+    func trackSaveToTags() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let tracks = TrackRepository(database: bed.db)
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(
+            fileURL: "file:///tmp/ct4.flac",
+            fileSize: 1,
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 259,
+            title: "Come Together",
+            addedAt: now,
+            updatedAt: now
+        )
+        track.artistID = artist.id
+        let id = try await tracks.upsert(track)
+        let guessed = try await bed.service.trackReport(trackID: id)
+        #expect(guessed.mbidGuessed)
+
+        let spy = SaverSpy()
+        let confirmed = try await bed.service.confirmTrackMatch(report: guessed, saver: spy)
+        #expect(!confirmed.mbidGuessed)
+        #expect(spy.recordings.map(\.mbid) == ["rec-1"])
+        #expect(spy.recordings.map(\.trackID) == [id])
+
+        // The re-cached report is served unflagged.
+        let again = try await bed.service.trackReport(trackID: id)
+        #expect(!again.mbidGuessed)
+    }
+
+    @Test("saving a guessed album match writes the release-group id to every track in one call")
+    func albumSaveToTags() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let albums = AlbumRepository(database: bed.db)
+        let album = try await albums.findOrCreate(title: "Abbey Road", albumArtistID: artist.id)
+        let tracks = TrackRepository(database: bed.db)
+        let now = Int64(Date().timeIntervalSince1970)
+        var ids: [Int64] = []
+        for n in 1 ... 2 {
+            var track = Track(
+                fileURL: "file:///tmp/st-\(n).flac",
+                fileSize: 1,
+                fileMtime: now,
+                fileFormat: "flac",
+                duration: 1,
+                title: "T\(n)",
+                addedAt: now,
+                updatedAt: now
+            )
+            track.albumID = album.id
+            try await ids.append(tracks.upsert(track))
+        }
+        let guessed = try await bed.service.albumReport(albumID: #require(album.id))
+        #expect(guessed.mbidGuessed)
+
+        let spy = SaverSpy()
+        let outcome = try await bed.service.confirmAlbumMatch(report: guessed, saver: spy)
+        #expect(!outcome.report.mbidGuessed)
+        #expect(outcome.tracksWritten == 2)
+        #expect(spy.groups.map(\.mbid) == ["rg-abbey"])
+        #expect(spy.groups.first?.trackIDs.sorted() == ids.sorted())
+
+        // The re-cached report is served unflagged.
+        let again = try await bed.service.albumReport(albumID: #require(album.id))
+        #expect(!again.mbidGuessed)
     }
 
     @Test("a name match below the confidence threshold is not used")
