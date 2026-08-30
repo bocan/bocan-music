@@ -5,6 +5,13 @@ All notable changes to Bòcan are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.1](https://github.com/bocan/bocan-music/compare/v2.11.0...v2.11.1) (2026-08-30)
+
+
+### Fixed
+
+* **ci:** stop xcbeautify masking build failures, and build ad-hoc signed on runners ([#429](https://github.com/bocan/bocan-music/issues/429)) ([4f6255b](https://github.com/bocan/bocan-music/commit/4f6255bd0cfc2d2f8508648dc87b5988bf70ee53))
+
 ## [2.11.0](https://github.com/bocan/bocan-music/compare/v2.10.0...v2.11.0) (2026-08-29)
 
 Deep Dive (off by default)
