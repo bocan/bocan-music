@@ -22,12 +22,12 @@ final class FullScreenTests: XCTestCase {
     private var session: E2ESession!
     private var app: XCUIApplication?
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
     }
 
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         // Guarantee the app is windowed before it is torn down, whatever the
         // test outcome, so a wedged full-screen Space can never survive.
         guard let app = self.app else { return }

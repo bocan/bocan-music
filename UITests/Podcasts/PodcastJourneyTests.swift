@@ -10,7 +10,7 @@ final class PodcastJourneyTests: XCTestCase {
     private var session: E2ESession!
     private var server: E2EPodcastServer!
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         continueAfterFailure = false
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
         // Long enough that a single 30s skip-forward (the resume journey)
@@ -18,9 +18,8 @@ final class PodcastJourneyTests: XCTestCase {
         self.server = try E2EPodcastServer(showTitle: "E2E Test Cast", episodeSeconds: 60)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         self.server?.stop()
-        super.tearDown()
     }
 
     // MARK: - Subscribe + episode list
