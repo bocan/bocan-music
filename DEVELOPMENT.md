@@ -122,26 +122,44 @@ Two things about the Picard set:
 
 ## Releasing
 
-Two workflows share a release, and the order matters:
+A release is a decision, never a side effect of merging (ADR-033). The notes
+are written before the release exists, one PR at a time:
 
-1. Push to `main`. The Release Please workflow opens or updates the
-   `chore(main): release X.Y.Z` PR, which carries the version bump
-   (manifest, `Info.plist`) and the generated `CHANGELOG.md` section.
-2. `make release-note` to add the human paragraphs above the generated list.
-   Write them on the PR branch, never on `main`; the bot recreates the branch
-   each cycle.
-3. Merge the release PR. Release Please then creates the `vX.Y.Z` tag and the
-   GitHub release, and copies the CHANGELOG section into the release body
-   (that body is what the Sparkle update prompt shows).
-4. Run the Release workflow (Actions > Release > Run workflow) with that tag.
-   It builds, signs, notarizes, uploads the DMG, updates the appcast and
-   pings the Homebrew tap.
+1. Every `feat`, `fix` or `perf` PR adds one or two plain sentences under
+   `## [Unreleased]` in `CHANGELOG.md`, written for the person reading the
+   update prompt (no code names, no PR numbers). The `Release note in
+   CHANGELOG Unreleased` check refuses the PR otherwise; label it
+   `skip-changelog` if the change is not user-visible.
+2. When you want to ship, run `make release-preview` to see the version the
+   squash commits since the last tag imply and the section that will be
+   written (nothing is changed locally). Then Actions > Release > Run
+   workflow, with no input. The workflow:
+   - runs `Scripts/release.sh apply`: `Unreleased` becomes `## [X.Y.Z]` with
+     your prose on top and a generated `### For developers` list of the squash
+     subjects beneath; `Info.plist` is stamped;
+   - opens `chore(release): X.Y.Z` as a PR, waits for the checks, squash-merges
+     it and tags the merge commit `vX.Y.Z`;
+   - builds, signs, notarizes, packages the DMG, and publishes the GitHub
+     release with the prose only (`Scripts/release-notes.sh`) plus a "Full
+     changelog" link, uploading the DMG, its checksum and the signed
+     `appcast-entry.xml`;
+   - pings the Homebrew tap. The Website workflow then assembles the Sparkle
+     feed from every release's `appcast-entry.xml` (`Scripts/build-appcast.sh`)
+     on top of the frozen history in `website/appcast/` and redeploys the site.
+     Nothing is ever committed to `main` by CI.
+3. To rebuild an existing version without retagging, run the workflow with
+   the tag as input; `prepare` is skipped.
 
-Step 4 refuses to run until step 3 is done: it checks that
-`.release-please-manifest.json` and `CHANGELOG.md` both carry the tag's
-version. v2.11.0 was dispatched with the PR still open, so the notes script
-found no section and fell back to a dead `[Unreleased]` stub; that fallback is
-gone and a missing section now fails the workflow instead of publishing.
+Version rule (`Scripts/release.sh`, tested by `make test-scripts`): a `!` or
+`BREAKING CHANGE` gives major, `feat` minor, `fix` or `perf` patch; anything
+else only (`chore`, `docs`, `ci`, ...) means there is nothing to release and
+the workflow stops. An empty `Unreleased` also stops it: a release without
+notes is a bug.
+
+The `prepare` job needs the `RELEASE_TOKEN` secret, a fine-grained PAT with
+Contents and Pull requests read/write on this repository, because a PR opened
+with the default `GITHUB_TOKEN` gets no checks and branch protection requires
+them.
 
 ## Secrets (for release builds)
 

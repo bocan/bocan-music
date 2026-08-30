@@ -5,6 +5,7 @@
   "description": "bocan.app — static site for the Bòcan music player",
   "type": "module",
   "scripts": {
+    "prebuild": "test -f static/appcast.xml || bash ../Scripts/build-appcast.sh --offline",
     "build": "eleventy",
     "serve": "eleventy --serve --quiet",
     "clean": "rm -rf _site",

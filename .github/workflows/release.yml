@@ -1,19 +1,33 @@
+# Release: the only way a version ships. Always started by hand (Actions >
+# Release > Run workflow); nothing releases on merge. ADR-033, slice 3.
+#
+# With no input, `prepare` (Linux, ~3 min) decides the version from the squash
+# commits since the last tag, rewrites CHANGELOG.md and Info.plist, lands that
+# as a `chore(release): X.Y.Z` PR through the normal protected-branch checks,
+# and tags the merge commit. `build` (macOS) then builds, signs, notarizes and
+# publishes that tag. Pass an existing tag to rebuild it without retagging.
+#
+# The release body and the Sparkle prompt carry the maintainer's prose only
+# (Scripts/release-notes.sh); the appcast is assembled by the Website
+# workflow from each release's appcast-entry.xml asset, so no job here ever
+# commits to main.
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.1.0)"
-        required: true
+        description: "Rebuild an existing tag (e.g. v2.12.0) instead of cutting a new release"
+        required: false
+        default: ""
 
 permissions:
   contents: write
+
+# One release at a time, never cancelled half way.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 # Explicit bash gives `-o pipefail`, so a failed `make ... | xcbeautify` fails
 # the step (see ADR-033).
@@ -22,6 +36,106 @@ defaults:
     shell: bash
 
 jobs:
+  prepare:
+    name: Version, changelog, release PR, tag
+    if: inputs.tag == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    env:
+      # A fine-scoped PAT (contents + pull requests on this repo). The default
+      # GITHUB_TOKEN cannot open a PR whose checks run, and branch protection
+      # requires those checks.
+      GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    steps:
+      - name: Require RELEASE_TOKEN
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo "::error::RELEASE_TOKEN secret is not set (fine-grained PAT: Contents read/write, Pull requests read/write on bocan/bocan-music)."
+            exit 1
+          fi
+
+      - name: Checkout main (full history for the version calculation)
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+
+      - name: Decide the version
+        id: version
+        run: |
+          set +e
+          version="$(Scripts/release.sh next)"
+          code=$?
+          set -e
+          if [[ $code -eq 3 ]]; then
+            echo "::error::Nothing to release: no feat, fix or perf commits on main since the last tag."
+            exit 1
+          elif [[ $code -ne 0 ]]; then
+            exit $code
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Next version: $version"
+
+      - name: Rewrite CHANGELOG.md and Info.plist
+        id: apply
+        run: |
+          Scripts/release.sh apply
+          echo "## Release notes (users)" >> "$GITHUB_STEP_SUMMARY"
+          Scripts/release-notes.sh "${{ steps.version.outputs.version }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "## CHANGELOG section" >> "$GITHUB_STEP_SUMMARY"
+          awk -v h="## [${{ steps.version.outputs.version }}]" 'index($0,h)==1{p=1;print;next} p&&/^## \[/{exit} p' CHANGELOG.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open the release PR
+        id: pr
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          branch="release/v${VERSION}"
+          git switch -c "$branch"
+          git add CHANGELOG.md Resources/Info.plist
+          git commit -m "chore(release): ${VERSION}"
+          git push -u origin "$branch"
+          body="$(Scripts/release-notes.sh "$VERSION")"
+          url="$(gh pr create --base main --head "$branch" \
+            --title "chore(release): ${VERSION}" \
+            --body "$(printf 'Cut by the Release workflow. Merging tags v%s and publishes it.\n\n---\n\n%s' "$VERSION" "$body")")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Release PR: $url"
+
+      - name: Wait for the PR checks and merge
+        env:
+          URL: ${{ steps.pr.outputs.url }}
+        run: |
+          # A docs-only PR: the full suite is skipped by pr.yml's changes job,
+          # the title and changelog checks take seconds.
+          gh pr checks "$URL" --watch --fail-fast --interval 15
+          gh pr merge "$URL" --squash --delete-branch
+          # Wait until the merge is visible, then find the merge commit.
+          for _ in $(seq 1 40); do
+            sha="$(gh pr view "$URL" --json mergeCommit --jq '.mergeCommit.oid // empty')"
+            [[ -n "$sha" ]] && break
+            sleep 5
+          done
+          [[ -n "$sha" ]] || { echo "::error::PR did not report a merge commit"; exit 1; }
+          echo "MERGE_SHA=$sha" >> "$GITHUB_ENV"
+
+      - name: Tag the merge commit
+        id: tag
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git fetch origin main
+          git -c tag.gpgsign=false tag -a "v${VERSION}" "$MERGE_SHA" -m "Bòcan ${VERSION}"
+          git push origin "v${VERSION}"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Tagged v${VERSION} at ${MERGE_SHA}"
+
   check-signing:
     name: Check signing secrets
     runs-on: ubuntu-latest
@@ -35,15 +149,19 @@ jobs:
         run: |
           if [[ -z "${DEVELOPER_ID_CERT_P12}" ]]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Signing secrets not yet configured — skipping binary release build. Configure them in repo Settings → Secrets and variables → Actions when you have a Developer ID certificate."
+            echo "::notice::Signing secrets not configured; skipping the binary release build."
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           fi
 
-  release:
+  build:
     name: Build, Sign & Release (arm64)
-    needs: check-signing
-    if: needs.check-signing.outputs.enabled == 'true'
+    needs: [prepare, check-signing]
+    # Run when prepare produced a tag, or when a tag was given (prepare skipped).
+    if: >
+      always() &&
+      needs.check-signing.outputs.enabled == 'true' &&
+      (needs.prepare.result == 'success' || (needs.prepare.result == 'skipped' && inputs.tag != ''))
     runs-on: macos-26
 
     # arm64-only: Bòcan targets Apple Silicon (macOS 15+). Intel Macs are not
@@ -54,7 +172,7 @@ jobs:
     env:
       ARCHS: arm64
       ONLY_ACTIVE_ARCH: "NO"
-      MARKETING_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag || needs.prepare.outputs.tag }}
       HAS_SPARKLE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY != '' && 'true' || 'false' }}
 
     steps:
@@ -64,35 +182,28 @@ jobs:
       # v-prefixed semver so the git tag and the appcast URLs always agree.
       - name: Validate release tag
         run: |
-          TAG="${MARKETING_VERSION}"
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-            echo "::error::Release tag must be a lowercase 'vMAJOR.MINOR.PATCH' (e.g. v2.4.0), got: '$TAG'. Re-run with a correct tag."
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::Release tag must be a lowercase 'vMAJOR.MINOR.PATCH' (e.g. v2.4.0), got: '$RELEASE_TAG'."
             exit 1
           fi
-          echo "Release tag '$TAG' is valid."
+          echo "Release tag '$RELEASE_TAG' is valid."
 
-      - name: Checkout (full history for changelog)
+      - name: Checkout the tag
         uses: actions/checkout@v7
         with:
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
-      # The release PR must be merged before this workflow runs: it is what
-      # writes the version's CHANGELOG section (the release notes and the
-      # Sparkle prompt) and bumps the manifest. v2.11.0 was dispatched with
-      # the PR still open and shipped an empty notes template; refuse that.
-      - name: Require the merged release PR
+      # The tag must carry its own CHANGELOG section: prepare wrote it, or,
+      # for a rebuild, the earlier release did. Refuse to ship without notes.
+      - name: Require release notes for this tag
         run: |
-          VERSION="${MARKETING_VERSION#v}"
-          MANIFEST=$(python3 -c 'import json; print(json.load(open(".release-please-manifest.json"))["."])')
-          if [[ "$MANIFEST" != "$VERSION" ]]; then
-            echo "::error::.release-please-manifest.json says ${MANIFEST}, not ${VERSION}. Merge the release-please PR for ${VERSION} first, then run this workflow."
-            exit 1
-          fi
+          VERSION="${RELEASE_TAG#v}"
           if ! grep -q "^## \[${VERSION}\]" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no '## [${VERSION}]' section. Merge the release-please PR for ${VERSION} first, then run this workflow."
+            echo "::error::CHANGELOG.md at ${RELEASE_TAG} has no '## [${VERSION}]' section."
             exit 1
           fi
-          echo "Release PR for ${VERSION} is merged: manifest and CHANGELOG agree."
+          Scripts/release-notes.sh "$VERSION" > /dev/null
 
       - name: Select Xcode 26
         run: sudo xcode-select -s /Applications/Xcode_26.6.app
@@ -187,14 +298,14 @@ jobs:
 
       - name: Stamp version into Info.plist
         run: |
-          VERSION="${MARKETING_VERSION#v}"
+          VERSION="${RELEASE_TAG#v}"
           BUILD_NUMBER=$(date +%s)
-          # CFBundleShortVersionString: stamp the marketing version string directly.
-          # release-please also updates this, but re-stamping here is safe and ensures
-          # the archive always matches the tag even on workflow_dispatch runs.
+          # CFBundleShortVersionString is already stamped in the tagged commit by
+          # Scripts/release.sh; re-stamping is a no-op that guarantees the archive
+          # matches the tag even on a rebuild of an older tag.
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" Resources/Info.plist
-          # CFBundleVersion is NOT stamped here — Info.plist uses $(CURRENT_PROJECT_VERSION)
-          # which xcodebuild resolves from the build setting we pass on the archive command line.
+          # CFBundleVersion is NOT stamped here: Info.plist uses $(CURRENT_PROJECT_VERSION)
+          # which xcodebuild resolves from the build setting on the archive command line.
           echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
 
@@ -346,16 +457,14 @@ jobs:
           SHA256=$(awk '{print $1}' Bocan.dmg.sha256)
           echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
 
-      - name: Generate release notes from CHANGELOG
+      - name: Release notes (users only) from CHANGELOG
         id: notes
         run: |
-          chmod +x Scripts/release-notes.sh
           NOTES_FILE=$(mktemp)
-          # No fallback: a missing section fails the release (see the script).
-          Scripts/release-notes.sh "${MARKETING_VERSION#v}" > "$NOTES_FILE"
-          {
-            echo "notes_path=$NOTES_FILE"
-          } >> "$GITHUB_OUTPUT"
+          Scripts/release-notes.sh "${RELEASE_VERSION}" > "$NOTES_FILE"
+          echo "notes_path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+          echo "## Release notes" >> "$GITHUB_STEP_SUMMARY"
+          cat "$NOTES_FILE" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Sign appcast entry (Sparkle EdDSA)
         if: env.HAS_SPARKLE_KEY == 'true'
@@ -369,46 +478,22 @@ jobs:
             --build "${BUILD_NUMBER}" \
             --output build/appcast-entry.xml
 
+      # appcast-entry.xml is the source the Website workflow assembles the
+      # feed from (Scripts/build-appcast.sh); it runs when this workflow
+      # completes. Nothing is committed to main.
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.RELEASE_VERSION }}
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
           body_path: ${{ steps.notes.outputs.notes_path }}
           files: |
             build/Bocan.dmg
             build/Bocan.dmg.sha256
             build/appcast-entry.xml
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-rc') }}
-
-      - name: Update appcast.xml
-        if: env.HAS_SPARKLE_KEY == 'true'
-        env:
-          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
-        run: |
-          FEED="website/static/appcast.xml"
-          if [[ "$GITHUB_REF_NAME" == *"-beta"* || "$GITHUB_REF_NAME" == *"-rc"* ]]; then
-            FEED="website/static/appcast-beta.xml"
-          fi
-          chmod +x Scripts/sparkle-update.sh
-          Scripts/sparkle-update.sh \
-            --dmg build/Bocan.dmg \
-            --version "${RELEASE_VERSION}" \
-            --build "${BUILD_NUMBER}" \
-            --prepend-to "$FEED"
-          echo "APPCAST_FEED=$FEED" >> "$GITHUB_ENV"
-
-      - name: Commit and push updated appcast
-        if: env.HAS_SPARKLE_KEY == 'true'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add website/static/appcast.xml website/static/appcast-beta.xml
-          git diff --cached --quiet && echo "No appcast changes to commit" && exit 0
-          git commit -m "chore(release): update appcast for v${RELEASE_VERSION}"
-          git push origin HEAD:main
+          prerelease: ${{ contains(env.RELEASE_TAG, '-beta') || contains(env.RELEASE_TAG, '-rc') }}
 
       - name: Trigger cask update
         uses: peter-evans/repository-dispatch@v4
