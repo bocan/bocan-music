@@ -8,6 +8,7 @@
 brew "swiftlint"
 brew "swiftformat"
 brew "xcbeautify"
+brew "gitleaks"    # secret scan in the pre-commit hook; CI pins its own copy
 # Phase 1 audit #26: bocan-music links against FFmpeg, Chromaprint, and
 # TagLib at fixed major versions.  Homebrew formulae do not pin cleanly
 # (Homebrew refuses old bottles after a few months), so we surface drift

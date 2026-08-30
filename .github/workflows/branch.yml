@@ -1,0 +1,127 @@
+# Branch CI: the light gate that runs on every push to a non-main branch.
+#
+# Deliberately small. It answers two questions fast: "did I leak a secret?"
+# and "does it still lint, format and compile?". The full suite (tests,
+# coverage, CodeQL) runs on the pull request, not here. See ADR-033.
+name: Branch
+
+on:
+  push:
+    branches-ignore: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "website/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+
+permissions:
+  contents: read
+
+# Explicit bash gives `-o pipefail`; the implicit default is `bash -e` only,
+# which would let `make build | xcbeautify` pass on a failed build.
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout (full history so every commit on the branch is scanned)
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        env:
+          GITLEAKS_VERSION: 8.30.1
+        run: |
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP" gitleaks
+          # GITHUB_PATH only applies to later steps; call it by path here.
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/gitleaks" version
+
+      - name: Scan the commits this branch adds on top of main
+        run: |
+          git fetch --no-tags origin main
+          gitleaks git --no-banner --redact --verbose --log-opts="origin/main..HEAD" .
+
+  build:
+    name: Lint, format & build
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Select Xcode 26
+        run: sudo xcode-select -s /Applications/Xcode_26.5.app
+
+      - name: Cache SPM packages
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            ~/.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Install Brewfile dependencies
+        run: brew bundle
+
+      - name: Pin SwiftLint to .swiftlint-version
+        run: |
+          version="$(cat .swiftlint-version)"
+          echo "Pinning SwiftLint to ${version}"
+          mkdir -p "$RUNNER_TEMP/swiftlint"
+          curl -fsSL "https://github.com/realm/SwiftLint/releases/download/${version}/portable_swiftlint.zip" \
+            -o "$RUNNER_TEMP/swiftlint.zip"
+          unzip -o "$RUNNER_TEMP/swiftlint.zip" swiftlint -d "$RUNNER_TEMP/swiftlint"
+          # Prepend so this shadows the Homebrew-installed swiftlint for every later step.
+          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+
+      - name: Pin SwiftFormat to .swiftformat-version
+        run: |
+          version="$(cat .swiftformat-version)"
+          echo "Pinning SwiftFormat to ${version}"
+          mkdir -p "$RUNNER_TEMP/swiftformat"
+          curl -fsSL "https://github.com/nicklockwood/SwiftFormat/releases/download/${version}/swiftformat.zip" \
+            -o "$RUNNER_TEMP/swiftformat.zip"
+          unzip -o "$RUNNER_TEMP/swiftformat.zip" swiftformat -d "$RUNNER_TEMP/swiftformat"
+          echo "$RUNNER_TEMP/swiftformat" >> "$GITHUB_PATH"
+
+      - name: Set pkg-config path for FFmpeg and TagLib
+        run: |
+          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig:/opt/homebrew/opt/taglib/lib/pkgconfig" >> "$GITHUB_ENV"
+
+      # A branch build only needs to compile; template placeholders are enough,
+      # so no repository secrets are exposed to this workflow.
+      - name: Stub Secrets.xcconfig (xcodegen requires it)
+        run: |
+          if [[ ! -f Secrets.xcconfig ]]; then
+            cp Secrets.xcconfig.template Secrets.xcconfig
+          fi
+
+      - name: Doctor (print tool versions)
+        run: make doctor
+
+      - name: Bundle fpcalc + FFmpeg dylibs into Resources/
+        run: make bundle-fpcalc
+
+      - name: Generate Xcode project
+        run: make generate
+
+      - name: Lint (SwiftLint + SwiftFormat)
+        run: make lint && make format-check
+
+      - name: Build (Debug)
+        run: make build 2>&1 | xcbeautify
