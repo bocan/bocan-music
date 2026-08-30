@@ -82,11 +82,22 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - Maintain `docs/data-dictionary.md`: every column lists "written by", "read by", and the spec requirement it traces to. A blank cell fails the phase. The tables are generated (`make data-dictionary`); the reviewed content goes in `docs/data-dictionary-notes.json`, keyed `table.column`, and a new column is not done until it has a `traces` entry there.
 - Definition of Done includes: `make audit-db` passes without significant findings (see DEVELOPMENT.md; it audits a copy of the real library, so run it against your own).
 
+## Branching (trunk-based, short-lived branches)
+
+`main` is the trunk and is never committed to directly, by the maintainer or by Claude. Every piece of work, however small, happens on a short-lived branch:
+
+- Start from an up-to-date trunk: `git switch main && git pull --ff-only`, then `git switch -c <type>/<slug>`.
+- Name: `<type>/<short-kebab-slug>`, where `<type>` is the Conventional Commit type the work will carry (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `ci/`) and the slug is a few words, optionally with the issue number: `fix/349-album-grid-scroll-restore`, `feat/phone-sync-manifest`.
+- One logical change per branch, lived for hours or a day or two, not weeks. If a task turns out to have two logical changes, make two branches.
+- Commit to the branch as slices go green (see Commits below). Push the branch whenever the user asks or a slice is done; branch pushes run only the light CI (lint, format, build, secret scan), so pushing is cheap.
+- Land it with a pull request into `main`. The full CI suite runs on the PR, not on the branch push. After the merge, delete the branch and switch back to `main`.
+- Before any git surgery, check `git branch --show-current`; if it says `main` and there are uncommitted changes, move them to a branch (`git switch -c ...` carries them across) rather than committing on trunk.
+
 ## Commits
 
 Document new features in README.md and in the repo's /website pages. NEVER use em dashes (—) in commit messages or markdown, or the website.
 After any logical change, run `make format`, `make lint`, `make build` and `make test-coverage` to ensure standards are met before committing.
-Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): …`, `chore(deps): …`. One logical change per commit / PR. The pre-commit hook (`make install-hooks`, also run automatically by `make bootstrap`) runs SwiftFormat in lint mode + SwiftLint strict; CI re-runs both. Don't `--no-verify` past failures; fix the issue.
+Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): …`, `chore(deps): …`. One logical change per commit / branch / PR. The pre-commit hook (`make install-hooks`, also run automatically by `make bootstrap`) runs SwiftFormat in lint mode + SwiftLint strict; CI re-runs both. Don't `--no-verify` past failures; fix the issue.
 
 ## When in doubt
 
