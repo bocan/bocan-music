@@ -36,7 +36,7 @@ with a pull request.
   Sparkle update prompt. Label the PR `skip-changelog` if the change is not
   user-visible.
 - `make lint && make test-coverage` must be green locally; the PR runs the
-  full suite and CodeQL.
+  full suite.
 - Merges are squash-only. No direct or force pushes to `main`.
 
 ## Code style
