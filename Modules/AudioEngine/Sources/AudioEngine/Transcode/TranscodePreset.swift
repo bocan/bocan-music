@@ -105,4 +105,10 @@ public struct TranscodeResult: Sendable, Equatable {
     public let size: Int64
     /// The preset's target bitrate in kbps (nominal for VBR rungs).
     public let bitrateKbps: Int
+
+    public init(sha256: String, size: Int64, bitrateKbps: Int) {
+        self.sha256 = sha256
+        self.size = size
+        self.bitrateKbps = bitrateKbps
+    }
 }

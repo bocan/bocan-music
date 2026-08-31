@@ -256,32 +256,14 @@ struct FileServing {
     }
 
     private func isTrackInProfile(_ trackId: Int64) async throws -> Bool {
-        switch await self.loadProfile() {
-        case .everything:
+        let membership = ProfileMembership(
+            playlistRepository: self.playlistRepository,
+            smartService: self.smartService
+        )
+        guard let ids = try await membership.selectedTrackIDs(profile: self.loadProfile()) else {
             return true
-        case let .selected(playlistIds, _):
-            let playlists = try await self.playlistRepository.fetchAll()
-            var ids: Set<Int64> = []
-            for playlistId in playlistIds {
-                try await self.gatherPlaylistTracks(playlistId, playlists: playlists, into: &ids)
-            }
-            return ids.contains(trackId)
         }
-    }
-
-    private func gatherPlaylistTracks(_ playlistId: Int64, playlists: [Playlist], into ids: inout Set<Int64>) async throws {
-        guard let playlist = playlists.first(where: { $0.id == playlistId }) else { return }
-        switch playlist.kind {
-        case .manual:
-            try await ids.formUnion(self.playlistRepository.fetchTrackIDs(playlistID: playlistId))
-        case .smart:
-            try await ids.formUnion(self.smartService.tracks(for: playlistId).compactMap(\.id))
-        case .folder:
-            for child in playlists where child.parentID == playlistId {
-                guard let childId = child.id else { continue }
-                try await self.gatherPlaylistTracks(childId, playlists: playlists, into: &ids)
-            }
-        }
+        return ids.contains(trackId)
     }
 
     // MARK: - Helpers

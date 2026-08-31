@@ -136,6 +136,20 @@ struct SyncTranscodeRepositoryTests {
         #expect(try await repo.allValid(preset: "mp3_320").count == 1)
     }
 
+    @Test("delete removes exactly one (track, preset) pair")
+    func deleteRemovesOnePair() async throws {
+        let db = try await makeDatabase()
+        let trackID = try await insertTrack(db: db, contentHash: "src")
+        let repo = SyncTranscodeRepository(database: db)
+        try await repo.upsert(self.makeRow(trackID: trackID, preset: "opus_128", sourceContentHash: "src"))
+        try await repo.upsert(self.makeRow(trackID: trackID, preset: "mp3_320", sourceContentHash: "src"))
+
+        try await repo.delete(trackID: trackID, preset: "opus_128")
+
+        #expect(try await repo.allValid(preset: "opus_128").isEmpty)
+        #expect(try await repo.allValid(preset: "mp3_320").count == 1)
+    }
+
     @Test("deleting the track cascades its ledger rows away")
     func trackDeleteCascades() async throws {
         let db = try await makeDatabase()

@@ -347,31 +347,12 @@ public struct ManifestBuilder: Sendable {
     // MARK: - Profile
 
     private func inProfileTrackIds(profile: SyncProfile, allTracks: [Track], playlists: [Playlist]) async throws -> Set<Int64> {
-        switch profile {
-        case .everything:
-            return Set(allTracks.compactMap(\.id))
-        case let .selected(playlistIds, _):
-            var ids: Set<Int64> = []
-            for playlistId in playlistIds {
-                try await self.gatherPlaylistTracks(playlistId: playlistId, playlists: playlists, into: &ids)
-            }
-            return ids
-        }
-    }
-
-    private func gatherPlaylistTracks(playlistId: Int64, playlists: [Playlist], into ids: inout Set<Int64>) async throws {
-        guard let playlist = playlists.first(where: { $0.id == playlistId }) else { return }
-        switch playlist.kind {
-        case .manual:
-            try await ids.formUnion(self.playlistRepository.fetchTrackIDs(playlistID: playlistId))
-        case .smart:
-            try await ids.formUnion(self.smartService.tracks(for: playlistId).compactMap(\.id))
-        case .folder:
-            for child in playlists where child.parentID == playlistId {
-                guard let childId = child.id else { continue }
-                try await self.gatherPlaylistTracks(playlistId: childId, playlists: playlists, into: &ids)
-            }
-        }
+        let membership = ProfileMembership(
+            playlistRepository: self.playlistRepository,
+            smartService: self.smartService
+        )
+        return try await membership.selectedTrackIDs(profile: profile, playlists: playlists)
+            ?? Set(allTracks.compactMap(\.id))
     }
 
     // MARK: - Formatting

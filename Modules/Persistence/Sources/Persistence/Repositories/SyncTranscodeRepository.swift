@@ -71,6 +71,17 @@ public struct SyncTranscodeRepository: Sendable {
         }
     }
 
+    /// Removes one (track, preset) row: the track left the sync selection or
+    /// stopped qualifying for transcoding. The caller reaps the bytes.
+    public func delete(trackID: Int64, preset: String) async throws {
+        try await self.database.write { db in
+            try db.execute(
+                sql: "DELETE FROM sync_transcodes WHERE track_id = ? AND preset = ?",
+                arguments: [trackID, preset]
+            )
+        }
+    }
+
     /// Removes every row for `preset`. Used when the sync profile switches
     /// rungs; the caller deletes the preset's workspace directory alongside.
     @discardableResult

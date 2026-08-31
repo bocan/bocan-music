@@ -12,4 +12,8 @@ public enum SyncServerError: Error, Sendable {
     /// is a short token; `status` is the underlying `OSStatus` when a Keychain or
     /// Security call failed, else `nil`.
     case identity(reason: String, status: Int32?)
+
+    /// The transcode coordinator could not reach a track's source file: the
+    /// stored file URL was unparsable and no bookmark exists (ADR-088).
+    case transcodeSourceUnavailable(trackID: Int64)
 }

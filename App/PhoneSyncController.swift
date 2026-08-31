@@ -47,16 +47,25 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
     }
 
     func loadProfile() async -> PhoneSyncProfile {
-        let stored = try? await self.profileRepository.profileJSON()
-        let profile = stored
-            .flatMap { try? JSONDecoder().decode(SyncProfile.self, from: $0) } ?? .default
-        return Self.toUI(profile)
+        await Self.toUI(self.loadDocument().profile)
+    }
+
+    /// The stored profile document. Transcode settings (ADR-088) ride along
+    /// so a save from this UI never clobbers them.
+    private func loadDocument() async -> SyncProfileDocument {
+        do {
+            return try await SyncProfileDocument.decode(self.profileRepository.profileJSON())
+        } catch {
+            self.log.error("sync.profile.read.failed", ["error": String(reflecting: error)])
+            return .default
+        }
     }
 
     func saveProfile(_ profile: PhoneSyncProfile) async {
-        guard let data = try? JSONEncoder().encode(Self.toSync(profile)) else { return }
+        var document = await self.loadDocument()
+        document.profile = Self.toSync(profile)
         do {
-            try await self.profileRepository.setProfileJSON(data)
+            try await self.profileRepository.setProfileJSON(document.encoded())
         } catch {
             self.log.error("sync.profile.save.failed", ["error": String(reflecting: error)])
         }
