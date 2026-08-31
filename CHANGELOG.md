@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.12.0](https://github.com/bocan/bocan-music/compare/v2.11.0...v2.12.0) (2026-08-31)
+
 Deep Dive can now find an album or song on MusicBrainz by name when your files carry no MusicBrainz tags, instead of giving up. A match found this way is labelled in the report, and searches ignore stray spaces around names.
 
 When you agree with a match, one click on Save to Tags writes the MusicBrainz id into the files themselves, with a backup kept, so the match survives rescans and is there for every other tool that reads your tags.
 
 Search now understands release years. Type a year like 1984 over the album gallery and it filters down to the albums released that year, and a fuller date like 2004-06 narrows it to the month, when your files carry full release dates. Your chosen sort order stays exactly as it was.
+
+### For developers
+
+**Added**
+- library: save a Deep Dive name match into the file's tags ([#434](https://github.com/bocan/bocan-music/pull/434))
+- persistence: album search matches release years and full dates ([#435](https://github.com/bocan/bocan-music/pull/435))
+
+**Fixed**
+- ci: stop xcbeautify masking build failures, and build ad-hoc signed on runners ([#429](https://github.com/bocan/bocan-music/pull/429))
+- library: Deep Dive searches MusicBrainz by name for albums and tracks without ids ([#433](https://github.com/bocan/bocan-music/pull/433))
 
 ## [2.11.0](https://github.com/bocan/bocan-music/compare/v2.10.0...v2.11.0) (2026-08-29)
 
