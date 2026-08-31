@@ -64,6 +64,13 @@ private let recordingJSON = """
              {"id":"rel-b","title":"1967-1970","date":"1973","country":"US","status":"Official","release-group":{"id":"rg-red","primary-type":"Album","secondary-types":["Compilation"]}}]}
 """
 
+private let groupSearchJSON = """
+{"count":1,"release-groups":[{"id":"rg-abbey","score":100,"title":"Abbey Road","primary-type":"Album","first-release-date":"1969-09-26"}]}
+"""
+private let recordingSearchJSON = """
+{"count":1,"recordings":[{"id":"rec-1","score":100,"title":"Come Together","artist-credit":[{"name":"The Beatles"}]}]}
+"""
+
 private struct Bed {
     let db: Database
     let http: RoutingHTTP
@@ -78,6 +85,10 @@ private func makeBed(ttl: TimeInterval = 3600) async throws -> Bed {
         ("/ws/2/artist/\(beatlesMBID)?", artistJSON),
         ("/ws/2/artist?", searchJSON),
         ("/ws/2/release-group?artist=", browseJSON),
+        // The client sorts query keys ("limit" before "query"), so match on
+        // the query content, which is unique per search kind.
+        ("AND releasegroup:\"", groupSearchJSON),
+        ("AND recording:\"", recordingSearchJSON),
         ("/ws/2/recording/rec-1", recordingJSON),
         ("/ws/2/release/rel-a?", releaseJSON),
         ("/ws/2/release-group/rg-abbey?", groupLookupJSON),
@@ -252,6 +263,7 @@ struct DeepDiveServiceTests {
         #expect(report.title == "Abbey Road")
         #expect(report.releaseMBID == "rel-a")
         #expect(report.releaseChosen == false)
+        #expect(report.mbidGuessed == false)
         #expect(report.labels == [AlbumReport.Label(name: "Apple Records", catalogNumber: "PCS 7088")])
         #expect(report.formats == ["12\" Vinyl"])
         #expect(report.trackCount == 17)
@@ -276,5 +288,65 @@ struct DeepDiveServiceTests {
         #expect(report.releaseChosen)
         #expect(report.releaseMBID == "rel-a", "earliest official, not the 2019 reissue or the bootleg")
         #expect(bed.http.requests.contains { $0.contains("/ws/2/release-group/rg-abbey?") })
+    }
+
+    @Test("an album with no MusicBrainz ids at all is found by a confident name search and flagged guessed")
+    func albumReportGuessed() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let album = try await AlbumRepository(database: bed.db).findOrCreate(title: " Abbey Road ", albumArtistID: artist.id)
+
+        let report = try await bed.service.albumReport(albumID: #require(album.id))
+        #expect(report.mbidGuessed)
+        #expect(report.releaseChosen, "the guessed group still resolves to its earliest official release")
+        #expect(report.releaseMBID == "rel-a")
+        #expect(
+            bed.http.requests.contains { $0.contains("query=artist:\"The Beatles\" AND releasegroup:\"Abbey Road\"") },
+            "the search uses trimmed names"
+        )
+    }
+
+    @Test("a track with no recording id is found by a confident artist + title search and flagged guessed")
+    func trackReportGuessed() async throws {
+        let bed = try await makeBed()
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles", musicbrainzID: beatlesMBID)
+        let tracks = TrackRepository(database: bed.db)
+        let now = Int64(Date().timeIntervalSince1970)
+        var track = Track(
+            fileURL: "file:///tmp/ct3.flac",
+            fileSize: 1,
+            fileMtime: now,
+            fileFormat: "flac",
+            duration: 259,
+            title: " Come Together ",
+            addedAt: now,
+            updatedAt: now
+        )
+        track.artistID = artist.id
+        let id = try await tracks.upsert(track)
+
+        let report = try await bed.service.trackReport(trackID: id)
+        #expect(report.mbidGuessed)
+        #expect(report.recordingMBID == "rec-1")
+        #expect(report.title == "Come Together")
+        #expect(
+            bed.http.requests.contains { $0.contains("query=artist:\"The Beatles\" AND recording:\"Come Together\"") },
+            "the search uses trimmed names"
+        )
+    }
+
+    @Test("a name match below the confidence threshold is not used")
+    func lowScoreRejected() async throws {
+        let bed = try await makeBed()
+        bed.http.routes = bed.http.routes.map { route in
+            route.match == "AND releasegroup:\""
+                ? (route.match, #"{"count":1,"release-groups":[{"id":"rg-wrong","score":62,"title":"Abbey Roadhouse"}]}"#)
+                : route
+        }
+        let artist = try await ArtistRepository(database: bed.db).findOrCreate(name: "The Beatles")
+        let album = try await AlbumRepository(database: bed.db).findOrCreate(title: "Abbey Road", albumArtistID: artist.id)
+        await #expect(throws: DeepDiveError.noIdentifier) {
+            _ = try await bed.service.albumReport(albumID: #require(album.id))
+        }
     }
 }

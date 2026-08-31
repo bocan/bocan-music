@@ -59,7 +59,7 @@ extension UISnapshotTests {
             let vm = try await DeepDiveAlbumViewModel(service: self.makeService(), albumID: 1)
             try vm.show(self.decode("""
             {"albumID":1,"title":"Abbey Road","artistName":"The Beatles","releaseMBID":"rel-a","releaseGroupMBID":"rg-abbey",
-             "releaseChosen":true,"primaryType":"Album","secondaryTypes":[],"date":"1969-09-26","country":"GB",
+             "releaseChosen":true,"mbidGuessed":false,"primaryType":"Album","secondaryTypes":[],"date":"1969-09-26","country":"GB",
              "status":"Official","barcode":"077774644624","labels":[{"name":"Apple Records","catalogNumber":"PCS 7088"}],
              "formats":["12\\" Vinyl"],"trackCount":17,"ownedTrackCount":17,
              "coverArtArchiveURL":"https://coverartarchive.org/release/rel-a","musicBrainzURL":"https://musicbrainz.org/release/rel-a",
@@ -74,7 +74,7 @@ extension UISnapshotTests {
         func trackReport() async throws {
             let vm = try await DeepDiveTrackViewModel(service: self.makeService(), trackID: 1)
             try vm.show(self.decode("""
-            {"trackID":1,"recordingMBID":"rec-1","title":"Come Together","artistCredit":"The Beatles","length":259000,
+            {"trackID":1,"recordingMBID":"rec-1","mbidGuessed":false,"title":"Come Together","artistCredit":"The Beatles","length":259000,
              "isrcs":["GBAYE0601690"],"firstReleaseYear":1969,"tags":["rock","pop"],
              "appearances":[{"releaseTitle":"Abbey Road","releaseMBID":"rel-a","year":1969,"country":"GB","status":"Official",
               "primaryType":"Album","secondaryTypes":[]},

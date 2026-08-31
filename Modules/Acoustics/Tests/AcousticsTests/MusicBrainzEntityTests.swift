@@ -22,12 +22,30 @@ struct MusicBrainzEntityTests {
         #expect(groups.first?.artistName == "The Beatles")
         #expect(groups.first?.year == 1969)
         #expect(groups.first?.primaryType == "Album")
+        #expect(groups.first?.score == 100, "search results carry the Lucene score")
         #expect(groups.last?.secondaryTypes == ["Compilation"])
+        #expect(groups.last?.score == 61)
         let url = try #require(mock.lastRequest?.url?.absoluteString.removingPercentEncoding)
         #expect(url.contains("/ws/2/release-group?"))
         #expect(url.contains("query=artist:\"The Beatles\" AND releasegroup:\"Abbey Road\""))
         #expect(url.hasSuffix("fmt=json"))
         #expect(mock.lastRequest?.value(forHTTPHeaderField: "User-Agent") == "Bocan/test ( https://bocan.app )")
+    }
+
+    @Test("searchRecordings decodes the search shape with scores and builds the query")
+    func recordingSearch() async throws {
+        let mock = MockHTTPClient()
+        mock.responseData = Bundle.fixtureData(named: "Fixtures/mb_recording_search.json")
+        let results = try await self.makeClient(mock).searchRecordings(artist: "Lisa Gerrard", title: "The Messenger")
+        #expect(results.count == 2)
+        #expect(results.first?.id == "4c305d49-1dae-4790-b508-3fa8d43c01a1")
+        #expect(results.first?.score == 100)
+        #expect(results.first?.title == "The Messenger")
+        #expect(results.first?.artistName == "Lisa Gerrard")
+        #expect(results.last?.score == 45)
+        let url = try #require(mock.lastRequest?.url?.absoluteString.removingPercentEncoding)
+        #expect(url.contains("/ws/2/recording?"))
+        #expect(url.contains("query=artist:\"Lisa Gerrard\" AND recording:\"The Messenger\""))
     }
 
     @Test("fetchArtist decodes life span, members with dates, and links")
