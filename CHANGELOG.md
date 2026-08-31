@@ -11,6 +11,8 @@ Deep Dive can now find an album or song on MusicBrainz by name when your files c
 
 When you agree with a match, one click on Save to Tags writes the MusicBrainz id into the files themselves, with a backup kept, so the match survives rescans and is there for every other tool that reads your tags.
 
+Search now understands release years. Type a year like 1984 over the album gallery and it filters down to the albums released that year, and a fuller date like 2004-06 narrows it to the month, when your files carry full release dates. Your chosen sort order stays exactly as it was.
+
 ## [2.11.0](https://github.com/bocan/bocan-music/compare/v2.10.0...v2.11.0) (2026-08-29)
 
 Deep Dive (off by default)

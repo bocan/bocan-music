@@ -267,6 +267,11 @@ public struct AlbumRepository: Sendable {
     /// indexed metadata matches. Deduped by album ID; empty for blank
     /// queries. The track-level pass mirrors how Subsonic's `search3`
     /// surfaces an album when one of its songs matches.
+    ///
+    /// A query that is a four-digit year ("1984") or a date beginning with
+    /// one ("2004-06") additionally matches albums released then: by the
+    /// album's year, or by any non-disabled track's raw date tag for
+    /// date-shaped queries (#378).
     public func search(query: String) async throws -> [Album] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
@@ -282,6 +287,17 @@ public struct AlbumRepository: Sendable {
             for album in trackMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
                 results.append(album)
                 if let id = album.id { seenIDs.insert(id) }
+            }
+            if let yearTerm = SQL.yearSearchTerm(trimmed) {
+                var yearMatches: [Album] = []
+                if let year = yearTerm.year {
+                    yearMatches += try SQL.albumsByYearQuery(year).fetchAll(db)
+                }
+                yearMatches += try SQL.albumsByTrackYearTextQuery(yearTerm.dateTextPrefix).fetchAll(db)
+                for album in yearMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
+                    results.append(album)
+                    if let id = album.id { seenIDs.insert(id) }
+                }
             }
             return results
         }
