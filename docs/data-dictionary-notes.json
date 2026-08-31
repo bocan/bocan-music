@@ -1,5 +1,37 @@
 {
   "_comment": "Curated layer for docs/data-dictionary.md, keyed by table.column. 'traces' is the ADR / issue the column serves and marks the row as reviewed; 'note' is free text. Regenerate with make data-dictionary.",
+  "sync_transcodes.track_id": {
+    "traces": "ADR-088",
+    "note": "Track the artifact belongs to; cascades away with the track."
+  },
+  "sync_transcodes.preset": {
+    "traces": "ADR-088",
+    "note": "Transcode preset raw value (e.g. mp3_320); opaque to Persistence, vocabulary owned by AudioEngine. Composite key with track_id."
+  },
+  "sync_transcodes.source_content_hash": {
+    "traces": "ADR-088",
+    "note": "The track's content_hash the artifact was derived from; the row is valid only while it still matches, so a retag invalidates the artifact."
+  },
+  "sync_transcodes.sha256": {
+    "traces": "ADR-088",
+    "note": "SHA-256 of the artifact bytes, advertised as the manifest sha256 and used as the file endpoint's ETag. Hashed once at encode time; the ledger outlives the bytes."
+  },
+  "sync_transcodes.size": {
+    "traces": "ADR-088",
+    "note": "Artifact size in bytes, advertised as the manifest size; feeds the phone's storage accounting."
+  },
+  "sync_transcodes.bitrate": {
+    "traces": "ADR-088",
+    "note": "Artifact bitrate in kbps when known; advertised as the manifest bitrate. NULL when the encoder did not report one."
+  },
+  "sync_transcodes.created_at": {
+    "traces": "ADR-088",
+    "note": "Unix seconds when the artifact was encoded."
+  },
+  "sync_transcodes.served_at": {
+    "traces": "ADR-088",
+    "note": "Unix seconds when a file response last delivered the artifact through EOF; NULL until then. The prepare-and-release sweep deletes bytes for stamped rows unless the keep toggle is on."
+  },
   "tracks.bit_depth": {
     "traces": "ADR-009:52, ADR-065:134, #405",
     "note": "Container bit depth (FLAC, WAV, AIFF, APE, WavPack, ALAC); NULL for lossy formats. Was NULL everywhere until #405; full rescan backfills."
