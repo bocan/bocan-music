@@ -52,9 +52,16 @@ struct DeepDiveTrackView: View {
     private func recordingSection(_ report: TrackReport) -> some View {
         Section(L10n.string("Recording")) {
             if report.mbidGuessed {
-                Label(L10n.string("Matched by name; the tags carry no MusicBrainz id."), systemImage: "questionmark.circle")
-                    .font(Typography.caption)
-                    .foregroundStyle(Color.warningTint)
+                HStack {
+                    Label(L10n.string("Matched by name; the tags carry no MusicBrainz id."), systemImage: "questionmark.circle")
+                        .font(Typography.caption)
+                        .foregroundStyle(Color.warningTint)
+                    Spacer()
+                    if self.vm.canSaveToTags {
+                        Button(L10n.string("Save to Tags")) { self.vm.saveMatchToTags() }
+                            .help(L10n.string("Write this MusicBrainz id into the file's tags; the editor keeps a backup"))
+                    }
+                }
             }
             LabeledContent(L10n.string("Title"), value: report.title)
             LabeledContent(L10n.string("Artist credit"), value: report.artistCredit)

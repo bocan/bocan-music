@@ -70,13 +70,19 @@ jobs:
             exit 0
           fi
 
-          # Lines added inside the Unreleased section by this PR.
-          added="$(git diff "$BASE" "$HEAD" -- CHANGELOG.md | awk '
-            /^\+\+\+/ { next }
-            /^[-+ ]?## \[Unreleased\]/ { inside = 1; next }
-            /^[-+ ]?## \[/ { inside = 0 }
-            inside && /^\+/ { sub(/^\+/, ""); if ($0 ~ /[^[:space:]]/) print }
-          ')"
+          # Lines this PR adds inside the Unreleased section. Compare the
+          # section extracted from the base and head files rather than
+          # parsing the diff: a diff hunk only carries three context lines,
+          # so once Unreleased holds an earlier note the heading falls out
+          # of the hunk and diff-parsing misses the addition (bit #434).
+          section() {
+            git show "$1:CHANGELOG.md" 2>/dev/null | awk '
+              /^## \[Unreleased\]/ { inside = 1; next }
+              /^## \[/ { inside = 0 }
+              inside { print }
+            '
+          }
+          added="$(diff <(section "$BASE") <(section "$HEAD") | sed -n 's/^> //p' | grep -v '^[[:space:]]*$' || true)"
           if [[ -z "$added" ]]; then
             echo "::error::This is a '$type' PR but CHANGELOG.md gained nothing under '## [Unreleased]'. Add a short, user-facing note there (it becomes the release notes and the Sparkle update prompt), or add the 'skip-changelog' label if this change is not user-visible."
             exit 1

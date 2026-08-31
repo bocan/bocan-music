@@ -163,7 +163,7 @@ public final class TagEditorViewModel: ObservableObject {
         self.trackIDs = trackIDs
         self.isSingleTrack = trackIDs.count == 1
         self.coverArtFetchVM = CoverArtFetchViewModel(fetcher: fetcher)
-        let deepDiveModels = Self.deepDiveModels(service: deepDive, trackIDs: trackIDs, albumID: albumID)
+        let deepDiveModels = Self.deepDiveModels(service: deepDive, trackIDs: trackIDs, albumID: albumID, saver: service)
         self.deepDiveAlbumVM = deepDiveModels.album
         self.deepDiveTrackVM = deepDiveModels.track
     }

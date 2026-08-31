@@ -7,6 +7,12 @@ import Testing
 @testable import Persistence
 @testable import UI
 
+/// A saver whose presence enables the Save to Tags button; snapshots never save.
+private struct NoopSaver: DeepDiveTagSaving {
+    func saveRecordingID(_ mbid: String, trackID: Int64) async throws {}
+    func saveReleaseGroupID(_ mbid: String, trackIDs: [Int64]) async throws {}
+}
+
 extension UISnapshotTests {
     // MARK: - Deep Dive report snapshots (#413)
 
@@ -85,6 +91,30 @@ extension UISnapshotTests {
              "acoustIDURL":"https://acoustid.org/track/abc","fetchedAt":1720000000}
             """))
             self.snapshot(DeepDiveTrackView(vm: vm), named: "deepdive-track")
+        }
+
+        @Test("album report matched by name shows the banner and Save to Tags")
+        func albumReportGuessed() async throws {
+            let vm = try await DeepDiveAlbumViewModel(service: self.makeService(), albumID: 1, saver: NoopSaver())
+            try vm.show(self.decode("""
+            {"albumID":1,"title":"The Black Opal","artistName":"Lisa Gerrard","releaseMBID":"rel-bo","releaseGroupMBID":"rg-bo",
+             "releaseChosen":true,"mbidGuessed":true,"primaryType":"Album","secondaryTypes":[],"date":"2009-10-01","country":"AU",
+             "status":"Official","labels":[],"formats":["CD"],"trackCount":11,"ownedTrackCount":11,
+             "coverArtArchiveURL":"https://coverartarchive.org/release/rel-bo","musicBrainzURL":"https://musicbrainz.org/release/rel-bo",
+             "nearby":[],"fetchedAt":1720000000}
+            """))
+            self.snapshot(DeepDiveAlbumView(vm: vm), named: "deepdive-album-guessed")
+        }
+
+        @Test("track report matched by name shows the banner and Save to Tags")
+        func trackReportGuessed() async throws {
+            let vm = try await DeepDiveTrackViewModel(service: self.makeService(), trackID: 1, saver: NoopSaver())
+            try vm.show(self.decode("""
+            {"trackID":1,"recordingMBID":"rec-m","mbidGuessed":true,"title":"The Messenger","artistCredit":"Lisa Gerrard",
+             "length":331000,"isrcs":[],"firstReleaseYear":2009,"tags":[],"appearances":[],"works":[],
+             "fetchedAt":1720000000}
+            """))
+            self.snapshot(DeepDiveTrackView(vm: vm), named: "deepdive-track-guessed")
         }
 
         @Test("retry countdown while MusicBrainz asks us to slow down")
