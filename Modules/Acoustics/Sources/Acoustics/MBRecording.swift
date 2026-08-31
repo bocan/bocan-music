@@ -140,9 +140,11 @@ public struct MBReleaseGroup: Decodable, Sendable {
     public let firstReleaseDate: String?
     public let artistCredit: [MBArtistCredit]?
     public let releases: [MBRelease]?
+    /// Lucene relevance, 0–100. Search results only; nil on lookups and browses.
+    public let score: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, releases
+        case id, title, releases, score
         case primaryType = "primary-type"
         case secondaryTypes = "secondary-types"
         case firstReleaseDate = "first-release-date"
@@ -157,6 +159,30 @@ public struct MBReleaseGroup: Decodable, Sendable {
         guard let d = self.firstReleaseDate, d.count >= 4 else { return nil }
         return Int(d.prefix(4))
     }
+}
+
+/// One result of `GET /ws/2/recording?query=…`: the search shape is a light
+/// recording plus the Lucene relevance score, distinct from the full
+/// `MBRecording` lookup shape.
+public struct MBRecordingSearchResult: Decodable, Sendable {
+    public let id: String
+    public let title: String?
+    /// Lucene relevance, 0–100.
+    public let score: Int?
+    public let artistCredit: [MBArtistCredit]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, score
+        case artistCredit = "artist-credit"
+    }
+
+    public var artistName: String {
+        self.artistCredit?.map { ($0.name ?? $0.artist?.name ?? "") + ($0.joinphrase ?? "") }.joined() ?? ""
+    }
+}
+
+public struct MBRecordingSearchResponse: Decodable, Sendable {
+    public let recordings: [MBRecordingSearchResult]
 }
 
 public struct MBTrack: Decodable, Sendable {

@@ -1,0 +1,33 @@
+{
+ "created": "2026-08-30T00:00:00.000Z",
+ "count": 2,
+ "offset": 0,
+ "recordings": [
+  {
+   "id": "4c305d49-1dae-4790-b508-3fa8d43c01a1",
+   "score": 100,
+   "title": "The Messenger",
+   "length": 331000,
+   "artist-credit": [
+    {
+     "name": "Lisa Gerrard",
+     "artist": {
+      "id": "a-lg",
+      "name": "Lisa Gerrard",
+      "sort-name": "Gerrard, Lisa"
+     }
+    }
+   ]
+  },
+  {
+   "id": "r-other",
+   "score": 45,
+   "title": "Messenger",
+   "artist-credit": [
+    {
+     "name": "Someone Else"
+    }
+   ]
+  }
+ ]
+}

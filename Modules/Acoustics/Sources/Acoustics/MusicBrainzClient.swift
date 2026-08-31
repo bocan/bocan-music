@@ -111,6 +111,19 @@ public actor MusicBrainzClient {
         ).releaseGroups
     }
 
+    /// Searches recordings by artist + title, best score first, for guessing
+    /// a recording MBID the tags did not supply (Deep Dive).
+    public func searchRecordings(artist: String, title: String, limit: Int = 10) async throws -> [MBRecordingSearchResult] {
+        let query = "artist:\"\(artist.mbEscaped)\" AND recording:\"\(title.mbEscaped)\""
+        return try await self.get(
+            "recording",
+            query: ["query": query, "limit": String(limit)],
+            as: MBRecordingSearchResponse.self,
+            op: "mb.recording.search",
+            context: title
+        ).recordings
+    }
+
     /// Browses an artist's release groups (their discography); page with `offset`.
     public func browseReleaseGroups(artistMBID: String, limit: Int = 100, offset: Int = 0) async throws -> MBReleaseGroupBrowse {
         try await self.get(

@@ -51,6 +51,11 @@ struct DeepDiveTrackView: View {
 
     private func recordingSection(_ report: TrackReport) -> some View {
         Section(L10n.string("Recording")) {
+            if report.mbidGuessed {
+                Label(L10n.string("Matched by name; the tags carry no MusicBrainz id."), systemImage: "questionmark.circle")
+                    .font(Typography.caption)
+                    .foregroundStyle(Color.warningTint)
+            }
             LabeledContent(L10n.string("Title"), value: report.title)
             LabeledContent(L10n.string("Artist credit"), value: report.artistCredit)
             if let length = report.length {
