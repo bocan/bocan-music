@@ -245,6 +245,30 @@ struct FTSSearchTests {
         #expect(SQL.escapeLIKETerm("%_\\") == "\\%\\_\\\\")
     }
 
+    // MARK: - Year search terms (#378)
+
+    @Test("yearSearchTerm accepts years and date prefixes, rejects everything else")
+    func yearSearchTermUnit() {
+        let year = SQL.yearSearchTerm("1984")
+        #expect(year?.year == 1984)
+        #expect(year?.dateTextPrefix == "1984")
+
+        let month = SQL.yearSearchTerm("2004-06")
+        #expect(month?.year == nil)
+        #expect(month?.dateTextPrefix == "2004-06")
+        #expect(SQL.yearSearchTerm("2004-06-15")?.dateTextPrefix == "2004-06-15")
+        #expect(SQL.yearSearchTerm("2004.06")?.dateTextPrefix == "2004.06")
+        #expect(SQL.yearSearchTerm("2004/06")?.dateTextPrefix == "2004/06")
+
+        #expect(SQL.yearSearchTerm("19") == nil)
+        #expect(SQL.yearSearchTerm("198") == nil)
+        #expect(SQL.yearSearchTerm("19842") == nil)
+        #expect(SQL.yearSearchTerm("1984x") == nil)
+        #expect(SQL.yearSearchTerm("2004-fire") == nil)
+        #expect(SQL.yearSearchTerm("abba") == nil)
+        #expect(SQL.yearSearchTerm("") == nil)
+    }
+
     @Test("albumsByArtistQuery with % in search term does not match unrelated albums (#287)")
     func albumsByArtistQueryPercentMetachar() async throws {
         let db = try await makeDatabase()
