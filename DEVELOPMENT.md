@@ -57,7 +57,7 @@ make doctor
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
 | `make generate` | Regenerate Xcode project from `project.yml` |
-| `make doctor` | Print tool versions and verify the SwiftLint/SwiftFormat pins |
+| `make doctor` | Print tool versions and verify the SwiftLint/SwiftFormat pins and the FFmpeg major pin (`.ffmpeg-major`, enforced by `Scripts/check-ffmpeg-major.sh`) |
 
 ## Xcode project
 
@@ -219,6 +219,25 @@ brew install ffmpeg           # installed automatically by make bootstrap
 make doctor                   # verifies pkg-config finds libavformat etc.
 ```
 
+### The FFmpeg major pin
+
+Homebrew cannot pin a formula (old bottles stop resolving), so `brew bundle`
+always installs the current FFmpeg, locally and on CI runners. The supported
+major lives in `.ffmpeg-major`, and `make doctor` (run in the PR and branch
+workflows too) fails via `Scripts/check-ffmpeg-major.sh` when the installed
+FFmpeg has a different major, or when the bundled fpcalc dylibs in
+`Resources/` were built from a different major than the installed one.
+
+When a new FFmpeg major lands and you decide to move to it:
+
+1. Update `.ffmpeg-major`.
+2. Re-run `make bundle-fpcalc` if any dylib major changed (it regenerates the
+   Xcode project itself).
+3. Run the full test suites; decoder APIs move between majors.
+
+The check's tests are hermetic (`Scripts/tests/check-ffmpeg-major-test.sh`,
+run by `make test-scripts`, on Linux in CI).
+
 ### Building AudioEngine outside Xcode
 
 ```bash
@@ -271,11 +290,13 @@ make bundle-fpcalc   # re-copies and relinks all dylibs, then regenerates the Xc
 
 `bundle-fpcalc` runs `xcodegen generate` itself, so the project picks up
 renamed dylibs (e.g. `libavcodec.62` to `libavcodec.63`) automatically; no
-separate `make generate` is needed.
+separate `make generate` is needed. If the upgrade crossed an FFmpeg major,
+update `.ffmpeg-major` too or `make doctor` (and CI) will fail on the
+mismatch; see "The FFmpeg major pin" above.
 
 ### CI
 
-The CI workflow (`ci.yml`) installs both `ffmpeg` and `chromaprint` via `brew bundle` (both are in the Brewfile). A dedicated step runs `make bundle-fpcalc` before `make generate` so all dylibs are present when XcodeGen scans `Resources/`.
+The CI workflows (`pr.yml`, `branch.yml`) install both `ffmpeg` and `chromaprint` via `brew bundle` (both are in the Brewfile). A dedicated step runs `make bundle-fpcalc` before `make generate` so all dylibs are present when XcodeGen scans `Resources/`.
 
 ### Signing for distribution
 

@@ -89,6 +89,7 @@ doctor:
 	else \
 		echo "✓ SwiftFormat $$actual matches the pin"; \
 	fi
+	@Scripts/check-ffmpeg-major.sh
 
 ## open: Open the Xcode project
 open:

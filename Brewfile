@@ -11,9 +11,13 @@ brew "xcbeautify"
 brew "gitleaks"    # secret scan in the pre-commit hook; CI pins its own copy
 # Phase 1 audit #26: bocan-music links against FFmpeg, Chromaprint, and
 # TagLib at fixed major versions.  Homebrew formulae do not pin cleanly
-# (Homebrew refuses old bottles after a few months), so we surface drift
-# at runtime via `make doctor`.  Expected major versions:
-#   ffmpeg     >= 8   (uses lavfi sine, libopus, wavpack codec ids)
+# (Homebrew refuses old bottles after a few months).  The FFmpeg major is
+# pinned in `.ffmpeg-major` and ENFORCED by `make doctor` (also run in CI)
+# via Scripts/check-ffmpeg-major.sh, which additionally fails when the
+# bundled fpcalc dylibs under Resources/ drift from the installed majors.
+# Expected major versions:
+#   ffmpeg     == .ffmpeg-major  (bump deliberately: update the pin, re-run
+#                                 'make bundle-fpcalc', run the full suites)
 #   chromaprint >= 1.6 (fpcalc CLI flags assumed by the wrapper)
 #   taglib     >= 2.2 (Swift bindings need MP4ItemFactory APIs)
 brew "ffmpeg"
