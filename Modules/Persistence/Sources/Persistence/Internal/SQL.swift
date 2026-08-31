@@ -111,6 +111,71 @@ enum SQL {
         )
     }
 
+    /// Returns albums whose release year equals `year`.
+    ///
+    /// Supplements FTS title search so a four-digit query like "1984"
+    /// surfaces albums released that year (#378).
+    static func albumsByYearQuery(_ year: Int) -> SQLRequest<Album> {
+        SQLRequest(
+            sql: """
+            SELECT albums.*
+            FROM albums
+            WHERE albums.year = ?
+            ORDER BY albums.title
+            """,
+            arguments: [year]
+        )
+    }
+
+    /// Returns albums containing at least one non-disabled track whose raw
+    /// date/year tag (`year_text`) starts with `prefix`.
+    ///
+    /// Many files carry proper dates ("2004-06-15", "1974-05") rather than a
+    /// bare year; those survive only on `tracks.year_text`, since
+    /// `albums.year` is an integer. This pass lets a date-shaped query narrow
+    /// the album grid to a month or day, and covers albums whose integer year
+    /// never got set.
+    static func albumsByTrackYearTextQuery(_ prefix: String) -> SQLRequest<Album> {
+        let escaped = Self.escapeLIKETerm(prefix)
+        return SQLRequest(
+            sql: """
+            SELECT DISTINCT albums.*
+            FROM albums
+            JOIN tracks ON tracks.album_id = albums.id
+            WHERE tracks.year_text LIKE ? ESCAPE '\\'
+              AND tracks.disabled = 0
+            ORDER BY albums.title
+            """,
+            arguments: ["\(escaped)%"]
+        )
+    }
+
+    /// Interprets a search query as a release-year or release-date term.
+    ///
+    /// Returns non-`nil` only when the whole query is a year (exactly four
+    /// ASCII digits, "1984") or a date beginning with one (four digits, a
+    /// separator, then only digits and separators: "2004-06", "2004-06-15").
+    /// Shorter digit runs never qualify, so "19" cannot swallow half a
+    /// library. For a plain year, `year` carries the integer for matching
+    /// `albums.year`; a fuller date matches only via `year_text` prefixes,
+    /// so `year` stays `nil` and "2004-06" does not return every 2004 album.
+    static func yearSearchTerm(_ term: String) -> (year: Int?, dateTextPrefix: String)? {
+        func isASCIIDigit(_ char: Character) -> Bool {
+            char.isASCII && char.isNumber
+        }
+        let separators: Set<Character> = ["-", ".", "/"]
+        guard term.count >= 4, term.prefix(4).allSatisfy(isASCIIDigit) else { return nil }
+        let rest = term.dropFirst(4)
+        if rest.isEmpty {
+            return (year: Int(term), dateTextPrefix: term)
+        }
+        guard let first = rest.first, separators.contains(first),
+              rest.allSatisfy({ isASCIIDigit($0) || separators.contains($0) }) else {
+            return nil
+        }
+        return (year: nil, dateTextPrefix: term)
+    }
+
     // MARK: - LIKE helpers
 
     /// Escapes `%`, `_`, and `\` in a LIKE pattern operand so they are treated
