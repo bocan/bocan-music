@@ -130,8 +130,35 @@ public final class DeepDiveArtistViewModel: DeepDiveReportViewModel<ArtistReport
 
 @MainActor
 public final class DeepDiveTrackViewModel: DeepDiveReportViewModel<TrackReport> {
-    public init(service: DeepDiveService, trackID: Int64, delays: [Duration] = DeepDiveRetry.delays) {
+    private let service: DeepDiveService
+    private let saver: (any DeepDiveTagSaving)?
+
+    public init(
+        service: DeepDiveService,
+        trackID: Int64,
+        saver: (any DeepDiveTagSaving)? = nil,
+        delays: [Duration] = DeepDiveRetry.delays
+    ) {
+        self.service = service
+        self.saver = saver
         super.init(category: "track", delays: delays) { try await service.trackReport(trackID: trackID, forceRefresh: $0) }
+    }
+
+    /// True when a guessed match could be written to the file's tags here.
+    public var canSaveToTags: Bool {
+        self.saver != nil
+    }
+
+    /// Writes the guessed recording id into the file's tags.
+    public func saveMatchToTags() {
+        guard case let .loaded(report) = self.state, report.mbidGuessed, let saver else { return }
+        Task { [service] in
+            do {
+                try await self.show(service.confirmTrackMatch(report: report, saver: saver))
+            } catch {
+                self.log.error("deepdive.track.saveToTags.failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 }
 
@@ -139,7 +166,37 @@ public final class DeepDiveTrackViewModel: DeepDiveReportViewModel<TrackReport> 
 
 @MainActor
 public final class DeepDiveAlbumViewModel: DeepDiveReportViewModel<AlbumReport> {
-    public init(service: DeepDiveService, albumID: Int64, delays: [Duration] = DeepDiveRetry.delays) {
+    private let service: DeepDiveService
+    private let saver: (any DeepDiveTagSaving)?
+
+    public init(
+        service: DeepDiveService,
+        albumID: Int64,
+        saver: (any DeepDiveTagSaving)? = nil,
+        delays: [Duration] = DeepDiveRetry.delays
+    ) {
+        self.service = service
+        self.saver = saver
         super.init(category: "album", delays: delays) { try await service.albumReport(albumID: albumID, forceRefresh: $0) }
+    }
+
+    /// True when a guessed match could be written to the album's files here.
+    public var canSaveToTags: Bool {
+        self.saver != nil
+    }
+
+    /// Writes the guessed release-group id into the tags of every track of
+    /// the album, one edit transaction.
+    public func saveMatchToTags() {
+        guard case let .loaded(report) = self.state, report.mbidGuessed, let saver else { return }
+        Task { [service] in
+            do {
+                let outcome = try await service.confirmAlbumMatch(report: report, saver: saver)
+                self.log.info("deepdive.album.saveToTags", ["tracks": outcome.tracksWritten])
+                self.show(outcome.report)
+            } catch {
+                self.log.error("deepdive.album.saveToTags.failed", ["error": String(reflecting: error)])
+            }
+        }
     }
 }

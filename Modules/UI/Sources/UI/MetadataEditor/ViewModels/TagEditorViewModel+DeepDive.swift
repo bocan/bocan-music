@@ -9,14 +9,15 @@ extension TagEditorViewModel {
     static func deepDiveModels(
         service: DeepDiveService?,
         trackIDs: [Int64],
-        albumID: Int64?
+        albumID: Int64?,
+        saver: (any DeepDiveTagSaving)? = nil
     ) -> (album: DeepDiveAlbumViewModel?, track: DeepDiveTrackViewModel?) {
         guard let service else { return (nil, nil) }
         if let albumID {
-            return (DeepDiveAlbumViewModel(service: service, albumID: albumID), nil)
+            return (DeepDiveAlbumViewModel(service: service, albumID: albumID, saver: saver), nil)
         }
         if trackIDs.count == 1 {
-            return (nil, DeepDiveTrackViewModel(service: service, trackID: trackIDs[0]))
+            return (nil, DeepDiveTrackViewModel(service: service, trackID: trackIDs[0], saver: saver))
         }
         return (nil, nil)
     }
