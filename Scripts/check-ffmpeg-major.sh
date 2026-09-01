@@ -35,9 +35,18 @@ fail() {
 }
 
 [[ -f "$EXPECTED_FILE" ]] || fail ".ffmpeg-major is missing." \
-    "Create it with the FFmpeg major the codebase supports, e.g.: echo 9 > .ffmpeg-major"
-expected="$(tr -d '[:space:]' < "$EXPECTED_FILE")"
-[[ "$expected" =~ ^[0-9]+$ ]] || fail ".ffmpeg-major must hold a bare major version, got '$expected'."
+    "Create it with the FFmpeg major(s) the codebase supports, e.g.: echo 9 > .ffmpeg-major"
+# The file holds one or more accepted majors, whitespace-separated. The FIRST
+# is the primary: the major the committed fpcalc dylibs in Resources/ were
+# built from. Later entries are also accepted (e.g. the CI runner image
+# lagging one major behind the dev machines until it catches up).
+read -r -a accepted_majors <<< "$(tr '\n' ' ' < "$EXPECTED_FILE")"
+[[ "${#accepted_majors[@]}" -ge 1 ]] || fail ".ffmpeg-major is empty." \
+    "List the accepted FFmpeg majors, primary first, e.g.: echo 9 > .ffmpeg-major"
+for major in "${accepted_majors[@]}"; do
+    [[ "$major" =~ ^[0-9]+$ ]] || fail ".ffmpeg-major must hold a bare major version per entry, got '$major'."
+done
+primary="${accepted_majors[0]}"
 
 [[ -n "$FFMPEG_VERSION_LINE" ]] || fail "ffmpeg is not installed (or not on PATH)." \
     "Install it with: brew bundle"
@@ -45,13 +54,25 @@ expected="$(tr -d '[:space:]' < "$EXPECTED_FILE")"
 actual="$(echo "$FFMPEG_VERSION_LINE" | awk '{print $3}' | cut -d. -f1)"
 [[ "$actual" =~ ^[0-9]+$ ]] || fail "Could not parse an FFmpeg version from: $FFMPEG_VERSION_LINE"
 
-if [[ "$actual" != "$expected" ]]; then
-    fail "FFmpeg major mismatch: installed $actual, expected $expected (.ffmpeg-major)." \
-        "The build links FFmpeg at a fixed major and Homebrew cannot pin it (see Brewfile)." \
+accepted=false
+for major in "${accepted_majors[@]}"; do
+    [[ "$actual" == "$major" ]] && accepted=true
+done
+if [[ "$accepted" != true ]]; then
+    fail "FFmpeg major mismatch: installed $actual, expected one of: ${accepted_majors[*]} (.ffmpeg-major)." \
+        "The build links FFmpeg at fixed majors and Homebrew cannot pin them (see Brewfile)." \
         "If this upgrade is intentional:" \
-        "  1. update .ffmpeg-major," \
+        "  1. update .ffmpeg-major (primary first: the major the committed fpcalc dylibs track)," \
         "  2. re-run 'make bundle-fpcalc' if any dylib major changed ('make generate' too if filenames changed)," \
         "  3. run the full test suites before committing (decoder APIs move between majors)."
+fi
+
+if [[ "$actual" != "$primary" ]]; then
+    # A secondary accepted major (e.g. a CI runner lagging the dev machines).
+    # The committed fpcalc dylibs track the primary, so comparing them against
+    # this install would always disagree; the primary machines keep that guard.
+    echo "✓ FFmpeg major $actual accepted (secondary; primary is $primary); bundled-dylib check skipped"
+    exit 0
 fi
 
 # Bundled fpcalc dylibs must come from the same majors as the installed
@@ -74,4 +95,4 @@ if [[ "$mismatches" -gt 0 ]]; then
         "Re-run 'make bundle-fpcalc' (and 'make generate' if dylib filenames changed)."
 fi
 
-echo "✓ FFmpeg major $actual matches the pin (.ffmpeg-major); bundled dylib majors agree"
+echo "✓ FFmpeg major $actual matches the primary pin (.ffmpeg-major); bundled dylib majors agree"

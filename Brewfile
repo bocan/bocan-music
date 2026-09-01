@@ -16,7 +16,8 @@ brew "gitleaks"    # secret scan in the pre-commit hook; CI pins its own copy
 # via Scripts/check-ffmpeg-major.sh, which additionally fails when the
 # bundled fpcalc dylibs under Resources/ drift from the installed majors.
 # Expected major versions:
-#   ffmpeg     == .ffmpeg-major  (bump deliberately: update the pin, re-run
+#   ffmpeg     in .ffmpeg-major  (accepted majors, primary first; bump
+#                                 deliberately: update the pin, re-run
 #                                 'make bundle-fpcalc', run the full suites)
 #   chromaprint >= 1.6 (fpcalc CLI flags assumed by the wrapper)
 #   taglib     >= 2.2 (Swift bindings need MP4ItemFactory APIs)

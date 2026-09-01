@@ -223,10 +223,14 @@ make doctor                   # verifies pkg-config finds libavformat etc.
 
 Homebrew cannot pin a formula (old bottles stop resolving), so `brew bundle`
 always installs the current FFmpeg, locally and on CI runners. The supported
-major lives in `.ffmpeg-major`, and `make doctor` (run in the PR and branch
-workflows too) fails via `Scripts/check-ffmpeg-major.sh` when the installed
-FFmpeg has a different major, or when the bundled fpcalc dylibs in
-`Resources/` were built from a different major than the installed one.
+majors live in `.ffmpeg-major` (whitespace-separated, primary first: the
+major the committed fpcalc dylibs in `Resources/` were built from; later
+entries are also accepted, e.g. a CI runner image lagging one major behind
+the dev machines). `make doctor` (run in the PR and branch workflows too)
+fails via `Scripts/check-ffmpeg-major.sh` when the installed FFmpeg has an
+unlisted major, or, on a primary-major machine, when the bundled fpcalc
+dylibs in `Resources/` were built from a different major than the installed
+one (secondary-major machines skip that comparison by design).
 
 When a new FFmpeg major lands and you decide to move to it:
 

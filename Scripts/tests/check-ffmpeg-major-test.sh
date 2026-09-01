@@ -45,7 +45,7 @@ VER10="ffmpeg version 10.0 Copyright (c) 2000-2027 the FFmpeg developers"
 
 echo "check-ffmpeg-major.sh:"
 
-run_case "matching major and dylibs passes" 0 "matches the pin" \
+run_case "matching major and dylibs passes" 0 "matches the primary pin" \
     EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER9"
 
 run_case "major mismatch fails with remediation" 1 "re-run 'make bundle-fpcalc'" \
@@ -72,8 +72,20 @@ run_case "bundled dylib drift fails" 1 "libavcodec major drift" \
     EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_VERSION_LINE="$VER9"
 
 # Nothing installed to compare against (Linux CI): dylib pass is skipped.
-run_case "absent installed lib dir is skipped" 0 "matches the pin" \
+run_case "absent installed lib dir is skipped" 0 "matches the primary pin" \
     EXPECTED_FILE="$PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$WORK/absent" FFMPEG_VERSION_LINE="$VER9"
+
+# Accepted-list behaviour: "9 8" accepts an 8 install as secondary and skips
+# the bundled-dylib comparison (the committed dylibs track the primary).
+LIST_PIN="$WORK/list-pin"
+echo "9 8" > "$LIST_PIN"
+VER8="ffmpeg version 8.1.1 Copyright (c) 2000-2025 the FFmpeg developers"
+run_case "secondary accepted major passes and skips the dylib check" 0 "secondary; primary is 9" \
+    EXPECTED_FILE="$LIST_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_VERSION_LINE="$VER8"
+run_case "primary from a list still runs the dylib check" 1 "libavcodec major drift" \
+    EXPECTED_FILE="$LIST_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB2" FFMPEG_VERSION_LINE="$VER9"
+run_case "a major outside the list fails" 1 "expected one of: 9 8" \
+    EXPECTED_FILE="$LIST_PIN" RESOURCES_DIR="$RES" FFMPEG_LIB_DIR="$LIB" FFMPEG_VERSION_LINE="$VER10"
 
 if [[ "$failures" -gt 0 ]]; then
     echo "$failures test(s) failed" >&2
