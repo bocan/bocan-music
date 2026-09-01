@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Phone Sync can now shrink your music on the way to the phone. Pick a quality in Settings, from MP3 320 down to Opus 128, and anything bigger is converted before it syncs, so a lossless library fits in a fraction of the space. Each choice shows what your selection would cost the phone in storage, a progress line follows the conversion as it runs ahead of the sync, and your files on the Mac are never touched. Converted copies are made just in time and cleaned up once the phone has them, so the Mac does not fill up either; a switch keeps them around if you would rather re-sync instantly.
+
 ## [2.12.0](https://github.com/bocan/bocan-music/compare/v2.11.0...v2.12.0) (2026-08-31)
 
 Deep Dive can now find an album or song on MusicBrainz by name when your files carry no MusicBrainz tags, instead of giving up. A match found this way is labelled in the report, and searches ignore stray spaces around names.
