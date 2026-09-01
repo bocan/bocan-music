@@ -43,6 +43,20 @@ with a pull request.
 
 Run `make format` before committing. The pre-commit hook (installed by `make bootstrap`) runs `swiftformat --lint` and `swiftlint` automatically.
 
+## AI-assisted contributions
+
+Contributions written with AI assistance are entirely welcome, on the same
+terms as any other: the existing coding standards apply in full, and every PR
+gets a thorough human review regardless of who or what typed it.
+
+If you point a coding assistant at this repo, give it the same context a
+human contributor reads: `DEVELOPMENT.md` for environment setup and the
+binding standards in `docs/design-spec/_standards.md`. The repo also carries
+`CLAUDE.md` files (at the root and recursively in `App/` and several
+`Modules/*/` directories) with the project's conventions and sharp edges;
+they are written for Claude but are plain markdown, so feed them to whatever
+assistant you use.
+
 ## Reporting bugs
 
 Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md).
