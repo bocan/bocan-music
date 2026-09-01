@@ -99,8 +99,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      - name: Install Brewfile dependencies
-        run: brew bundle
+      - name: Install Brewfile dependencies (FFmpeg at the pinned major)
+        run: |
+          # The runner image's FFmpeg can lag the pinned major; upgrade it to
+          # current so CI builds and tests the same major the dev machines do.
+          # `make doctor` then enforces `.ffmpeg-major` and fails loudly if
+          # the runner still cannot reach the primary.
+          brew update --quiet
+          brew upgrade ffmpeg --quiet || brew install --quiet ffmpeg
+          brew bundle
 
       - name: Pin SwiftLint to .swiftlint-version
         run: |
