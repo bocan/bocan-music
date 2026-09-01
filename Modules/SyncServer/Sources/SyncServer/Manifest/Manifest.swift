@@ -46,6 +46,10 @@ struct ManifestTrack: Codable, Equatable {
     var bitrate: Int?
     var channelCount: Int?
     var isLossless: Bool?
+    /// The Mac-side source container when this entry describes a transcoded
+    /// artifact (ADR-088); omitted for tracks served as-is. Display only,
+    /// additive per sync-protocol.md section 10.
+    var sourceFormat: String?
     var replayGain: ManifestReplayGain?
     var artworkHash: String?
     var lyricsHash: String?

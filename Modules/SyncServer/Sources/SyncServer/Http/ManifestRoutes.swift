@@ -25,11 +25,12 @@ enum ManifestRoutes {
             },
             Router.Route("GET", "/v1/manifest", auth: .paired) { request, _ in
                 do {
-                    let profile = await Self.loadProfile(profileRepository)
+                    let document = await Self.loadDocument(profileRepository)
                     let serverId = try await syncMeta.serverId()
                     let generation = try await syncMeta.generation()
                     let manifest = try await builder.build(
-                        profile: profile,
+                        profile: document.profile,
+                        transcode: document.transcode,
                         serverId: serverId,
                         serverName: serverName(),
                         generation: generation,

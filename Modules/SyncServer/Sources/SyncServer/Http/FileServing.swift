@@ -1,3 +1,4 @@
+import AudioEngine
 import Crypto
 import Foundation
 import Library
@@ -30,9 +31,17 @@ struct FileServing {
     private let smartService: SmartPlaylistService
     private let lyricsService: LyricsService
     private let downloadStore: DownloadStore
+    private let transcodeLedger: SyncTranscodeRepository
+    private let transcodeStore: TranscodeStore
+    private let transcodeCoordinator: TranscodeCoordinator?
     private let log = AppLogger.make(.sync)
 
-    init(database: Database, downloadRoot: URL? = nil) {
+    init(
+        database: Database,
+        downloadRoot: URL? = nil,
+        transcodeRoot: URL? = nil,
+        transcodeCoordinator: TranscodeCoordinator? = nil
+    ) {
         self.trackRepository = TrackRepository(database: database)
         self.episodeRepository = EpisodeRepository(database: database)
         self.episodeStateRepository = EpisodeStateRepository(database: database)
@@ -43,6 +52,9 @@ struct FileServing {
         self.smartService = SmartPlaylistService(database: database)
         self.lyricsService = LyricsService(database: database, fetcher: nil)
         self.downloadStore = DownloadStore(root: downloadRoot)
+        self.transcodeLedger = SyncTranscodeRepository(database: database)
+        self.transcodeStore = TranscodeStore(root: transcodeRoot)
+        self.transcodeCoordinator = transcodeCoordinator
     }
 
     func routes() -> [Router.Route] {
@@ -85,6 +97,13 @@ struct FileServing {
             return Self.serverError
         }
 
+        // ADR-088: under a transcode preset, a track the predicate marks for
+        // transcoding is served from its prepared artifact, never the source.
+        let transcode = await ManifestRoutes.loadDocument(self.profileRepository).transcode
+        if let preset = transcode.preset, TranscodeCoordinator.needsTranscode(track, preset: preset) {
+            return await self.transcodedTrack(request, track: track, trackId: trackId, preset: preset)
+        }
+
         // If-Match compares the stored content hash, so reject a stale request
         // before touching the file.
         if let ifMatch = request.header("if-match"), let hash = track.contentHash, ifMatch != hash {
@@ -125,6 +144,92 @@ struct FileServing {
                 try await SecurityScope.withAccess(bookmark) { url in
                     try await Self.streamFile(url, offset: start, length: length, write: write)
                 }
+            }
+        }
+    }
+
+    /// Serves the prepared artifact for a transcoded track (ADR-088). Ledger
+    /// fields are the truth (`ETag` = artifact `sha256`), `served_at` is
+    /// stamped when a response delivers the artifact through EOF, and
+    /// released bytes draw `503 busy` with `Retry-After` while the re-encode
+    /// is queued at the head of the coordinator's work.
+    private func transcodedTrack(
+        _ request: HttpRequest,
+        track: Track,
+        trackId: Int64,
+        preset: TranscodePreset
+    ) async -> HttpResponse {
+        guard let sourceHash = track.contentHash else { return Self.notFound }
+        let row: SyncTranscode?
+        do {
+            row = try await self.transcodeLedger.validRow(
+                trackID: trackId,
+                preset: preset.rawValue,
+                sourceContentHash: sourceHash
+            )
+        } catch {
+            self.log.error("file.track.ledger.failed", ["id": trackId, "error": String(reflecting: error)])
+            return Self.serverError
+        }
+        // No valid row: the manifest never advertised this track.
+        guard let row else { return Self.notFound }
+
+        // If-Match compares the artifact hash the manifest promised.
+        if let ifMatch = request.header("if-match"), ifMatch != row.sha256 {
+            return .error(.notFound, message: "Precondition failed", status: 412)
+        }
+
+        guard self.transcodeStore.exists(trackID: trackId, sourceContentHash: sourceHash, preset: preset) else {
+            // Bytes were released after a completed transfer; re-prepare and
+            // say busy (sync-protocol.md section 6). A hash change across the
+            // re-encode surfaces as an ordinary 412 on the retry.
+            if let coordinator = self.transcodeCoordinator {
+                await coordinator.requestUrgent(trackID: trackId)
+            }
+            var response = HttpResponse.error(.busy, message: "Preparing the file", status: 503)
+            response.headers["retry-after"] = "15"
+            return response
+        }
+        let url = self.transcodeStore.artifactURL(trackID: trackId, sourceContentHash: sourceHash, preset: preset)
+
+        var headers: [String: String] = [
+            "content-type": Self.audioMIME(preset.formatName),
+            "accept-ranges": "bytes",
+            "etag": row.sha256,
+        ]
+
+        let ledger = self.transcodeLedger
+        let stamp: @Sendable () async -> Void = {
+            do {
+                try await ledger.stampServed(
+                    trackID: trackId,
+                    preset: preset.rawValue,
+                    at: Int64(Date().timeIntervalSince1970)
+                )
+            } catch {
+                AppLogger.make(.sync).warning("file.track.stamp.failed", [
+                    "id": trackId,
+                    "error": String(reflecting: error),
+                ])
+            }
+        }
+
+        switch Self.resolveRange(request, totalSize: row.size) {
+        case .unsatisfiable:
+            return .error(.notFound, message: "Range not satisfiable", status: 416)
+
+        case let .full(fullSize):
+            return .streamed(status: 200, headers: headers, length: Int(fullSize)) { write in
+                try await Self.streamFile(url, offset: 0, length: fullSize, write: write)
+                await stamp()
+            }
+
+        case let .partial(start, length, contentRange):
+            headers["content-range"] = contentRange
+            let reachesEOF = start + length == row.size
+            return .streamed(status: 206, headers: headers, length: Int(length)) { write in
+                try await Self.streamFile(url, offset: start, length: length, write: write)
+                if reachesEOF { await stamp() }
             }
         }
     }

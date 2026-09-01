@@ -57,15 +57,21 @@ public actor SyncServer {
         self.pairing = pairing
 
         self.libraryObserver = LibraryChangeObserver(syncMeta: meta, debounce: config.changeDebounce)
-        self.transcodeCoordinator = TranscodeCoordinator(
+        let transcodeCoordinator = TranscodeCoordinator(
             database: database,
             store: TranscodeStore(root: transcodeRoot),
             prepareWindowBytes: config.prepareWindowBytes,
             debounce: config.changeDebounce
         )
+        self.transcodeCoordinator = transcodeCoordinator
 
         let builder = ManifestBuilder(database: database, downloadRoot: downloadRoot)
-        let fileServing = FileServing(database: database, downloadRoot: downloadRoot)
+        let fileServing = FileServing(
+            database: database,
+            downloadRoot: downloadRoot,
+            transcodeRoot: transcodeRoot,
+            transcodeCoordinator: transcodeCoordinator
+        )
         let routes = PairingRoutes.routes(coordinator: pairing)
             + ManifestRoutes.routes(
                 builder: builder,

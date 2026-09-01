@@ -79,7 +79,7 @@ public enum TranscodePreset: String, CaseIterable, Sendable, Codable {
     /// The output sample rate for a given source rate: Opus requires 48 kHz;
     /// MP3 keeps a rate it supports and resamples anything else (hi-res
     /// sources included) down to 48 kHz.
-    func outputSampleRate(forSourceRate rate: Int32) -> Int32 {
+    public func outputSampleRate(forSourceRate rate: Int32) -> Int32 {
         switch self {
         case .opus192, .opus128:
             48000
