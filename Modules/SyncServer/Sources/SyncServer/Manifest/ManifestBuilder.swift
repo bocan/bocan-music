@@ -446,19 +446,74 @@ public extension ManifestBuilder {
     }
 
     func sizeEstimate(for profile: SyncProfile) async throws -> SizeEstimate {
-        let manifest = try await self.build(
-            profile: profile,
-            serverId: "estimate",
-            serverName: "",
-            generation: 0,
-            generatedAt: Date(timeIntervalSince1970: 0)
+        try await self.sizeEstimates(for: profile)[nil] ?? SizeEstimate(bytes: 0, trackCount: 0, episodeCount: 0)
+    }
+
+    /// Per-rung estimates for the settings quality picker (ADR-088): one
+    /// aggregate over the selection, keyed by preset (`nil` is Original).
+    /// Pass-through tracks count at their real size; tracks the predicate
+    /// marks for transcoding count at duration times the target bitrate
+    /// (near-exact for CBR MP3, nominal for VBR Opus). Episode bytes come
+    /// from the recorded download sizes and are constant across rungs.
+    /// No manifest build, no hashing, no file I/O.
+    func sizeEstimates(for profile: SyncProfile) async throws -> [TranscodePreset?: SizeEstimate] {
+        let candidates = try await self.estimateCandidates(profile: profile)
+        let episodes = try await self.episodeEstimate(profile: profile)
+
+        var estimates: [TranscodePreset?: SizeEstimate] = [:]
+        let originalBytes = candidates.reduce(Int64(0)) { $0 + $1.fileSize }
+        estimates[nil] = SizeEstimate(
+            bytes: originalBytes + episodes.bytes,
+            trackCount: candidates.count,
+            episodeCount: episodes.count
         )
-        let trackBytes = manifest.tracks.reduce(Int64(0)) { $0 + $1.size }
-        let episodeBytes = manifest.episodes.reduce(Int64(0)) { $0 + $1.size }
-        return SizeEstimate(
-            bytes: trackBytes + episodeBytes,
-            trackCount: manifest.tracks.count,
-            episodeCount: manifest.episodes.count
-        )
+        for preset in TranscodePreset.allCases {
+            let bytes = candidates.reduce(Int64(0)) { sum, track in
+                if TranscodeCoordinator.needsTranscode(track, preset: preset) {
+                    sum + Int64(track.duration * Double(preset.targetKbps) * 125.0)
+                } else {
+                    sum + track.fileSize
+                }
+            }
+            estimates[preset] = SizeEstimate(
+                bytes: bytes + episodes.bytes,
+                trackCount: candidates.count,
+                episodeCount: episodes.count
+            )
+        }
+        return estimates
+    }
+
+    /// (prepared, total) for the settings preparing-progress row under
+    /// `preset`: total is the selection's transcodable-track count, prepared
+    /// the subset with a valid ledger row.
+    func transcodeProgress(for profile: SyncProfile, preset: TranscodePreset) async throws -> (prepared: Int, total: Int) {
+        let targets = try await self.estimateCandidates(profile: profile)
+            .filter { TranscodeCoordinator.needsTranscode($0, preset: preset) }
+        let targetIDs = Set(targets.compactMap(\.id))
+        let prepared = try await self.transcodeLedger.allValid(preset: preset.rawValue)
+            .count { targetIDs.contains($0.trackID) }
+        return (prepared: prepared, total: targets.count)
+    }
+
+    /// The estimate's track selection: enabled, hashed, and in the profile.
+    /// (The manifest additionally gates on a resolvable relPath; the estimate
+    /// skips that per-file nuance by design.)
+    private func estimateCandidates(profile: SyncProfile) async throws -> [Track] {
+        let allTracks = try await self.trackRepository.fetchAllIncludingDisabled()
+        let playlists = try await self.playlistRepository.fetchAll()
+        let profileTrackIds = try await self.inProfileTrackIds(profile: profile, allTracks: allTracks, playlists: playlists)
+        return allTracks
+            .filter { !$0.disabled }
+            .filter { $0.contentHash != nil }
+            .filter { $0.id.map { profileTrackIds.contains($0) } ?? false }
+    }
+
+    /// Downloaded-episode bytes from the recorded sizes; no stat, no hash.
+    private func episodeEstimate(profile: SyncProfile) async throws -> (bytes: Int64, count: Int) {
+        guard profile.includesPodcasts else { return (0, 0) }
+        let downloaded = try await self.episodeStateRepository.fetchByDownloadState([.downloaded])
+        let bytes = downloaded.reduce(Int64(0)) { $0 + ($1.downloadBytes ?? 0) }
+        return (bytes: bytes, count: downloaded.count)
     }
 }

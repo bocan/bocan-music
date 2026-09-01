@@ -1,3 +1,4 @@
+import AudioEngine
 import Persistence
 import SwiftUI
 
@@ -22,12 +23,17 @@ public struct PhoneSyncSettingsView: View {
                 self.pairedDevicesSection
                 self.pairButton
                 self.profileSection
+                self.qualitySection
             }
         }
         .formStyle(.grouped)
         .task {
             await self.viewModel.load()
-            await self.viewModel.watchHashingProgress()
+            // Both watchers run for the pane's lifetime; concurrent, since
+            // each awaits its stream until the task is cancelled.
+            async let hashing: Void = self.viewModel.watchHashingProgress()
+            async let preparing: Void = self.viewModel.watchTranscodeProgress()
+            _ = await (hashing, preparing)
         }
         .sheet(isPresented: self.pairingPresentedBinding) {
             PhoneSyncPairingSheet(viewModel: self.viewModel)
@@ -231,6 +237,99 @@ public struct PhoneSyncSettingsView: View {
             set: { presented in
                 if !presented { Task { await self.viewModel.dismissPairing() } }
             }
+        )
+    }
+
+    // MARK: - Quality (ADR-088)
+
+    private var qualitySection: some View {
+        Section {
+            Picker(L10n.string("Quality on Phone"), selection: self.presetBinding) {
+                ForEach(Self.presetOptions, id: \.self) { option in
+                    Text(self.rungRowText(option)).tag(option)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+            .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncQuality)
+
+            if self.viewModel.transcode.preset != nil {
+                Toggle(isOn: self.keepBinding) {
+                    Text(localized: "Keep prepared copies for faster re-syncs")
+                }
+                .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncKeepArtifacts)
+                self.preparingRow
+            }
+        } header: {
+            Text(localized: "Quality on Phone")
+        } footer: {
+            Text(localized: "Files above the chosen quality are converted for the phone; smaller files sync unchanged.")
+        }
+    }
+
+    /// Visible once the progress observation emits under an active preset;
+    /// mirrors the readiness row's shape.
+    @ViewBuilder
+    private var preparingRow: some View {
+        if let progress = self.viewModel.transcodeProgress {
+            LabeledContent {
+                Text(self.preparingText(progress))
+                    .foregroundStyle(.secondary)
+            } label: {
+                Text(localized: "Preparing for sync")
+            }
+            .accessibilityLabel(L10n.string("Preparing for sync"))
+            .accessibilityValue(self.preparingText(progress))
+        }
+    }
+
+    private static let presetOptions: [TranscodePreset?] = [nil] + TranscodePreset.allCases
+
+    /// UI-side display mapping; preset raw values stay English identifiers.
+    private func presetName(_ preset: TranscodePreset?) -> String {
+        switch preset {
+        case nil:
+            L10n.string("Original quality")
+
+        case .mp3320:
+            L10n.string("MP3 320 kbps")
+
+        case .mp3256:
+            L10n.string("MP3 256 kbps")
+
+        case .opus192:
+            L10n.string("Opus 192 kbps")
+
+        case .opus128:
+            L10n.string("Opus 128 kbps")
+        }
+    }
+
+    private func rungRowText(_ preset: TranscodePreset?) -> String {
+        let name = self.presetName(preset)
+        guard let estimate = self.viewModel.rungEstimates[preset], estimate.bytes > 0 else { return name }
+        let bytes = estimate.bytes.formatted(.byteCount(style: .file))
+        return preset == nil
+            ? L10n.string("\(name) · \(bytes)")
+            : L10n.string("\(name) · about \(bytes)")
+    }
+
+    private func preparingText(_ progress: PhoneSyncTranscodeProgress) -> String {
+        guard !progress.isComplete else { return L10n.string("All songs prepared") }
+        return L10n.string("\(progress.prepared) of \(progress.total) songs")
+    }
+
+    private var presetBinding: Binding<TranscodePreset?> {
+        Binding(
+            get: { self.viewModel.transcode.preset },
+            set: { preset in Task { await self.viewModel.setTranscodePreset(preset) } }
+        )
+    }
+
+    private var keepBinding: Binding<Bool> {
+        Binding(
+            get: { self.viewModel.transcode.keepArtifacts },
+            set: { keep in Task { await self.viewModel.setKeepArtifacts(keep) } }
         )
     }
 
