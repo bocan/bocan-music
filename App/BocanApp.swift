@@ -902,7 +902,8 @@ extension BocanApp {
             profileRepository: SyncProfileRepository(database: db),
             playlistRepository: PlaylistRepository(database: db),
             trackRepository: TrackRepository(database: db),
-            manifestBuilder: ManifestBuilder(database: db)
+            manifestBuilder: ManifestBuilder(database: db),
+            syncMeta: SyncMetaRepository(database: db)
         )
         let phoneSyncViewModel = PhoneSyncViewModel(control: phoneSyncController)
         phoneSyncBridge.receiver = phoneSyncViewModel

@@ -1,3 +1,4 @@
+import AudioEngine
 import Combine
 import Foundation
 import Observability
@@ -37,6 +38,15 @@ public final class PhoneSyncViewModel: ObservableObject, PhoneSyncPairingReceive
     /// observation's first emission. `internal(set)` so snapshot tests can pin
     /// a state directly.
     @Published public internal(set) var hashingProgress: ContentHashProgress?
+    /// The transcode choice (ADR-088): quality rung and keep toggle.
+    @Published public private(set) var transcode: PhoneSyncTranscodeState = .original
+    /// Per-rung size estimates for the quality picker, keyed by preset
+    /// (`nil` is Original). Refreshed alongside the profile estimate.
+    @Published public private(set) var rungEstimates: [TranscodePreset?: PhoneSyncSizeEstimate] = [:]
+    /// Preparing-for-sync progress, `nil` until the observation's first
+    /// emission or while no preset is active. `internal(set)` so snapshot
+    /// tests can pin a state directly.
+    @Published public internal(set) var transcodeProgress: PhoneSyncTranscodeProgress?
     /// The pairing sheet's current state, or `nil` when not presented.
     /// `internal(set)` so snapshot tests can pin a state directly.
     @Published public internal(set) var pairingSheet: PairingSheetState?
@@ -60,6 +70,7 @@ public final class PhoneSyncViewModel: ObservableObject, PhoneSyncPairingReceive
         self.profile = await self.control.loadProfile()
         self.playlists = await self.control.availablePlaylists()
         self.pairedDevices = await self.control.pairedDevices()
+        self.transcode = await self.control.transcodeState()
         await self.recomputeEstimate()
     }
 
@@ -126,7 +137,42 @@ public final class PhoneSyncViewModel: ObservableObject, PhoneSyncPairingReceive
     }
 
     private func recomputeEstimate() async {
-        self.sizeEstimate = await self.control.sizeEstimate(for: self.profile)
+        self.rungEstimates = await self.control.rungEstimates(for: self.profile)
+        if let rung = self.rungEstimates[self.transcode.preset] {
+            self.sizeEstimate = rung
+        } else {
+            self.sizeEstimate = await self.control.sizeEstimate(for: self.profile)
+        }
+    }
+
+    // MARK: - Transcoding (ADR-088)
+
+    /// Follows the preparing-for-sync progress. Call from the view's `.task`
+    /// after `load()`; runs until that task is cancelled.
+    public func watchTranscodeProgress() async {
+        let stream = await self.control.observeTranscodeProgress()
+        do {
+            for try await progress in stream {
+                self.transcodeProgress = progress
+            }
+        } catch {
+            self.log.warning("sync.transcode_progress.observe.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    public func setTranscodePreset(_ preset: TranscodePreset?) async {
+        self.transcode.preset = preset
+        await self.persistTranscode()
+    }
+
+    public func setKeepArtifacts(_ keep: Bool) async {
+        self.transcode.keepArtifacts = keep
+        await self.persistTranscode()
+    }
+
+    private func persistTranscode() async {
+        await self.control.setTranscodeState(self.transcode)
+        await self.recomputeEstimate()
     }
 
     // MARK: - Paired devices

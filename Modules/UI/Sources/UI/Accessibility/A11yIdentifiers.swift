@@ -261,6 +261,8 @@ public enum A11y {
         /// Uniform across the playlist checkboxes; the row's label (the
         /// playlist name) disambiguates.
         public static let phoneSyncPlaylistToggle = "settings.phoneSync.playlistToggle"
+        public static let phoneSyncQuality = "settings.phoneSync.quality"
+        public static let phoneSyncKeepArtifacts = "settings.phoneSync.keepArtifacts"
 
         // Playback
         public static let speedSlider = "settings.playback.speed"

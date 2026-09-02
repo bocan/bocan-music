@@ -10,6 +10,7 @@
 #include <libavutil/samplefmt.h>
 #include <libavutil/frame.h>
 #include <libavutil/dict.h>
+#include <libavutil/audio_fifo.h>
 #include <libavutil/mathematics.h>
 #include <libavutil/mem.h>
 

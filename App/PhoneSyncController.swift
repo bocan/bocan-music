@@ -1,3 +1,4 @@
+import AudioEngine
 import Foundation
 import Observability
 import Persistence
@@ -13,6 +14,7 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
     private let playlistRepository: PlaylistRepository
     private let trackRepository: TrackRepository
     private let manifestBuilder: ManifestBuilder
+    private let syncMeta: SyncMetaRepository
     private let log = AppLogger.make(.sync)
 
     init(
@@ -20,13 +22,15 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
         profileRepository: SyncProfileRepository,
         playlistRepository: PlaylistRepository,
         trackRepository: TrackRepository,
-        manifestBuilder: ManifestBuilder
+        manifestBuilder: ManifestBuilder,
+        syncMeta: SyncMetaRepository
     ) {
         self.server = server
         self.profileRepository = profileRepository
         self.playlistRepository = playlistRepository
         self.trackRepository = trackRepository
         self.manifestBuilder = manifestBuilder
+        self.syncMeta = syncMeta
     }
 
     func isEnabled() -> Bool {
@@ -47,16 +51,25 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
     }
 
     func loadProfile() async -> PhoneSyncProfile {
-        let stored = try? await self.profileRepository.profileJSON()
-        let profile = stored
-            .flatMap { try? JSONDecoder().decode(SyncProfile.self, from: $0) } ?? .default
-        return Self.toUI(profile)
+        await Self.toUI(self.loadDocument().profile)
+    }
+
+    /// The stored profile document. Transcode settings (ADR-088) ride along
+    /// so a save from this UI never clobbers them.
+    private func loadDocument() async -> SyncProfileDocument {
+        do {
+            return try await SyncProfileDocument.decode(self.profileRepository.profileJSON())
+        } catch {
+            self.log.error("sync.profile.read.failed", ["error": String(reflecting: error)])
+            return .default
+        }
     }
 
     func saveProfile(_ profile: PhoneSyncProfile) async {
-        guard let data = try? JSONEncoder().encode(Self.toSync(profile)) else { return }
+        var document = await self.loadDocument()
+        document.profile = Self.toSync(profile)
         do {
-            try await self.profileRepository.setProfileJSON(data)
+            try await self.profileRepository.setProfileJSON(document.encoded())
         } catch {
             self.log.error("sync.profile.save.failed", ["error": String(reflecting: error)])
         }
@@ -89,6 +102,76 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
 
     func observeHashingProgress() async -> AsyncThrowingStream<ContentHashProgress, Error> {
         await self.trackRepository.observeContentHashProgress()
+    }
+
+    // MARK: - Transcoding (ADR-088)
+
+    func transcodeState() async -> PhoneSyncTranscodeState {
+        let settings = await self.loadDocument().transcode
+        return PhoneSyncTranscodeState(preset: settings.preset, keepArtifacts: settings.keepArtifacts)
+    }
+
+    func setTranscodeState(_ state: PhoneSyncTranscodeState) async {
+        var document = await self.loadDocument()
+        document.transcode = TranscodeSettings(preset: state.preset, keepArtifacts: state.keepArtifacts)
+        do {
+            try await self.profileRepository.setProfileJSON(document.encoded())
+        } catch {
+            self.log.error("sync.transcode.save.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    func rungEstimates(for profile: PhoneSyncProfile) async -> [TranscodePreset?: PhoneSyncSizeEstimate] {
+        do {
+            let estimates = try await self.manifestBuilder.sizeEstimates(for: Self.toSync(profile))
+            return estimates.mapValues {
+                PhoneSyncSizeEstimate(bytes: $0.bytes, trackCount: $0.trackCount, episodeCount: $0.episodeCount)
+            }
+        } catch {
+            self.log.warning("sync.estimate.failed", ["error": String(reflecting: error)])
+            return [:]
+        }
+    }
+
+    /// Recomputed on every library-change emission (the observed tables
+    /// include the transcode ledger, so each prepared artifact ticks the row).
+    func observeTranscodeProgress() async -> AsyncThrowingStream<PhoneSyncTranscodeProgress?, Error> {
+        let changes = await self.syncMeta.observeLibraryChanges()
+        return AsyncThrowingStream { continuation in
+            let task = Task {
+                do {
+                    for try await _ in changes {
+                        await continuation.yield(self.currentTranscodeProgress())
+                    }
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private func currentTranscodeProgress() async -> PhoneSyncTranscodeProgress? {
+        let document = await self.loadDocument()
+        guard let preset = document.transcode.preset else { return nil }
+        do {
+            let progress = try await self.manifestBuilder.transcodeProgress(for: document.profile, preset: preset)
+            // Mirrors the live coordinator: the default config's prepare
+            // window applies unless the keep toggle lifts it (ADR-088).
+            let window = SyncServerConfig().prepareWindowBytes
+            let parked = !document.transcode.keepArtifacts
+                && progress.prepared < progress.total
+                && progress.unservedBytes >= window
+            return PhoneSyncTranscodeProgress(
+                prepared: progress.prepared,
+                total: progress.total,
+                parkedWindowBytes: parked ? window : nil
+            )
+        } catch {
+            self.log.warning("sync.transcode_progress.failed", ["error": String(reflecting: error)])
+            return nil
+        }
     }
 
     func revoke(fingerprint: String) async {

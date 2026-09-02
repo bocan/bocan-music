@@ -87,6 +87,7 @@ public struct Migrator {
         M050DropPodcastSubscribedSortIndex.register(in: &dm)
         M051ArtistMusicBrainzFetchedAt.register(in: &dm)
         M052ArtistMusicBrainzIDSource.register(in: &dm)
+        M053SyncTranscodes.register(in: &dm)
     }
 
     // MARK: - Migration

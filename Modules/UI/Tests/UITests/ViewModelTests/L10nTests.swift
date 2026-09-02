@@ -321,6 +321,7 @@ struct L10nTests {
             "Sources/UI/Settings/BackupSettingsViewModel.swift",
             "Sources/UI/Settings/SmartPlaylistsSettingsView.swift",
             "Sources/UI/Settings/DSPSettingsView.swift",
+            "Sources/UI/Settings/PhoneSyncSettingsView.swift",
         ]
     )
     func phase3SettingsUsesHelper(relativePath: String) throws {

@@ -15,6 +15,11 @@ import Testing
 /// Contrast is evaluated by resolving each adaptive `Color` through
 /// `NSAppearance.performAsCurrentDrawingAppearance` to guarantee the correct
 /// light/dark variant is sampled.
+/// Main-actor: an `NSAppearance` lookup off the main thread can deadlock in
+/// AppKit's system-appearance-proxy `dispatch_once` under the parallel test
+/// runner (it wedged a full `make tests` run for hours on 2026-09-01, in
+/// `+[NSSystemAppearanceProxy systemProxy]`). AppKit belongs on main anyway.
+@MainActor
 @Suite("Colour Contrast — WCAG 2.1 AA")
 struct ContrastTests {
     // MARK: Helpers

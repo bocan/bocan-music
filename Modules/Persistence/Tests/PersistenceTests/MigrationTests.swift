@@ -9,7 +9,7 @@ struct MigrationTests {
     func migrationsApplyToEmptyDatabase() async throws {
         let db = try await Database(location: .inMemory)
         let version = try await db.schemaVersion()
-        #expect(version == 52)
+        #expect(version == 53)
     }
 
     @Test("Integrity check passes after migration")
@@ -69,7 +69,7 @@ struct MigrationTests {
     @Test("Migrator reports thirty-eight migrations")
     func migratorReportsAllMigrations() {
         let migrator = Migrator.make()
-        #expect(migrator.migrations.count == 52)
+        #expect(migrator.migrations.count == 53)
     }
 
     @Test("radio_stations has the stream-detail profile columns after M037")

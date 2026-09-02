@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 import Persistence
 
 /// Builds the `/v1/ping` and `/v1/manifest` routes, wired to the live
@@ -24,11 +25,12 @@ enum ManifestRoutes {
             },
             Router.Route("GET", "/v1/manifest", auth: .paired) { request, _ in
                 do {
-                    let profile = await Self.loadProfile(profileRepository)
+                    let document = await Self.loadDocument(profileRepository)
                     let serverId = try await syncMeta.serverId()
                     let generation = try await syncMeta.generation()
                     let manifest = try await builder.build(
-                        profile: profile,
+                        profile: document.profile,
+                        transcode: document.transcode,
                         serverId: serverId,
                         serverName: serverName(),
                         generation: generation,
@@ -52,13 +54,21 @@ enum ManifestRoutes {
         ]
     }
 
-    /// The persisted profile, or the default (everything, podcasts included).
-    static func loadProfile(_ repository: SyncProfileRepository) async -> SyncProfile {
-        guard
-            let data = try? await repository.profileJSON(),
-            let profile = try? JSONDecoder().decode(SyncProfile.self, from: data) else {
+    /// The persisted profile document (selection plus transcode settings), or
+    /// the default. Decoding handles legacy bare-profile blobs (ADR-088).
+    static func loadDocument(_ repository: SyncProfileRepository) async -> SyncProfileDocument {
+        do {
+            return try await SyncProfileDocument.decode(repository.profileJSON())
+        } catch {
+            AppLogger.make(.sync).warning("sync.profile.read.failed", [
+                "error": String(reflecting: error),
+            ])
             return .default
         }
-        return profile
+    }
+
+    /// The persisted profile, or the default (everything, podcasts included).
+    static func loadProfile(_ repository: SyncProfileRepository) async -> SyncProfile {
+        await self.loadDocument(repository).profile
     }
 }

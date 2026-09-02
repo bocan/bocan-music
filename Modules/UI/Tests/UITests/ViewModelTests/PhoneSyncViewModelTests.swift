@@ -1,3 +1,4 @@
+import AudioEngine
 import Foundation
 import Persistence
 import Testing
@@ -16,9 +17,14 @@ final class FakePhoneSyncControl: PhoneSyncControlling, @unchecked Sendable {
     /// Yielded once by `observeHashingProgress` (then the stream finishes), so
     /// a watch loop in a test consumes it and returns deterministically.
     var hashingProgress: ContentHashProgress?
+    var transcode: PhoneSyncTranscodeState = .original
+    var rungEstimates: [TranscodePreset?: PhoneSyncSizeEstimate] = [:]
+    /// Yielded once by `observeTranscodeProgress` (then the stream finishes).
+    var transcodeProgress: PhoneSyncTranscodeProgress?
 
     private(set) var setEnabledCalls: [Bool] = []
     private(set) var savedProfiles: [PhoneSyncProfile] = []
+    private(set) var savedTranscodeStates: [PhoneSyncTranscodeState] = []
     private(set) var revoked: [String] = []
     private(set) var armCount = 0
     private(set) var cancelCount = 0
@@ -73,6 +79,27 @@ final class FakePhoneSyncControl: PhoneSyncControlling, @unchecked Sendable {
             if let progress {
                 continuation.yield(progress)
             }
+            continuation.finish()
+        }
+    }
+
+    func transcodeState() async -> PhoneSyncTranscodeState {
+        self.transcode
+    }
+
+    func setTranscodeState(_ state: PhoneSyncTranscodeState) async {
+        self.transcode = state
+        self.savedTranscodeStates.append(state)
+    }
+
+    func rungEstimates(for _: PhoneSyncProfile) async -> [TranscodePreset?: PhoneSyncSizeEstimate] {
+        self.rungEstimates
+    }
+
+    func observeTranscodeProgress() async -> AsyncThrowingStream<PhoneSyncTranscodeProgress?, Error> {
+        let progress = self.transcodeProgress
+        return AsyncThrowingStream { continuation in
+            continuation.yield(progress)
             continuation.finish()
         }
     }

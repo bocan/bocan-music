@@ -227,8 +227,15 @@ jobs:
             ${{ runner.os }}-spm-release-
             ${{ runner.os }}-spm-
 
-      - name: Install Brewfile dependencies
-        run: brew bundle install --no-upgrade
+      - name: Install Brewfile dependencies (FFmpeg at the pinned major)
+        run: |
+          # The release must ship the FFmpeg major the suites ran on. Upgrade
+          # only FFmpeg to current (everything else stays --no-upgrade);
+          # `make doctor` is not run here, but embed-deps bundles whatever is
+          # installed, so this keeps the shipped dylibs on the pinned major.
+          brew update --quiet
+          brew upgrade ffmpeg --quiet || brew install --quiet ffmpeg
+          brew bundle install --no-upgrade
 
       - name: Set pkg-config path for FFmpeg and TagLib
         run: |

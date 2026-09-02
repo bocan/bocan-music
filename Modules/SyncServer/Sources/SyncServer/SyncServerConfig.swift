@@ -8,8 +8,13 @@ public struct SyncServerConfig: Sendable {
     /// generation counter bumps (the phone polls the counter to decide to re-sync).
     public var changeDebounce: Duration
 
-    public init(changeDebounce: Duration = .seconds(5)) {
+    /// The prepare-and-release window (ADR-088): the most un-served artifact
+    /// bytes the transcode coordinator holds on disk before pausing.
+    public var prepareWindowBytes: Int64
+
+    public init(changeDebounce: Duration = .seconds(5), prepareWindowBytes: Int64 = 5 << 30) {
         self.changeDebounce = changeDebounce
+        self.prepareWindowBytes = prepareWindowBytes
     }
 
     public static let `default` = SyncServerConfig()

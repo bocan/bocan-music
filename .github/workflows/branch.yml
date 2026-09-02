@@ -79,8 +79,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-spm-
 
-      - name: Install Brewfile dependencies
-        run: brew bundle
+      - name: Install Brewfile dependencies (FFmpeg at the pinned major)
+        run: |
+          # Same FFmpeg handling as pr.yml: the runner image can lag the
+          # pinned major; doctor enforces `.ffmpeg-major` afterwards.
+          brew update --quiet
+          brew upgrade ffmpeg --quiet || brew install --quiet ffmpeg
+          brew bundle
 
       - name: Pin SwiftLint to .swiftlint-version
         run: |

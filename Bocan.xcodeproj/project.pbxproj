@@ -163,6 +163,7 @@
 		AD13D1B26277B86B70025030 /* PlaylistSortConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33F8C1281A81DC0A2CF4A5F8 /* PlaylistSortConventionTests.swift */; };
 		AE7DBDB3DD4836389E11BAC5 /* Acoustics in Frameworks */ = {isa = PBXBuildFile; productRef = 66DA699183F712D5B228B317 /* Acoustics */; };
 		AE83F7B52E3E141F29952E6D /* AppDelegate+DockMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACE57B7C3E8393E36758EBA /* AppDelegate+DockMenu.swift */; };
+		AF3A9B479E484B15FE40BBB8 /* PhoneSyncTranscodeViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7BBFED666CFBF579ECDB73 /* PhoneSyncTranscodeViewModelTests.swift */; };
 		AF763AE0F3E478AC74B04C4A /* DeepDiveSettingConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C116952AAF9A395E0B0FB7 /* DeepDiveSettingConventionTests.swift */; };
 		AF89FF7108FDCD32D6C14FAB /* E2EPodcastServerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FB39B66D9E68DAC00825540 /* E2EPodcastServerState.swift */; };
 		AFC2291506F5C92F46B51EA3 /* LaunchAtLoginController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83A27BDC0A44ED576CBDE8C /* LaunchAtLoginController.swift */; };
@@ -351,6 +352,7 @@
 		6C8BD227AC55BA870F3E55D5 /* libmp3lame.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libmp3lame.0.dylib; sourceTree = "<group>"; };
 		6D814D9D39C8E3F75FA33680 /* SurfaceCrawler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceCrawler.swift; sourceTree = "<group>"; };
 		6E014B4987A60B08F6DE299A /* Persistence */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Persistence; path = Modules/Persistence; sourceTree = SOURCE_ROOT; };
+		6F7BBFED666CFBF579ECDB73 /* PhoneSyncTranscodeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncTranscodeViewModelTests.swift; sourceTree = "<group>"; };
 		6FD61F1DD6BA0A85D52B677B /* libavutil.61.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libavutil.61.dylib; sourceTree = "<group>"; };
 		6FEF2BB262B2FEBE0C028A23 /* liblzma.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = liblzma.5.dylib; sourceTree = "<group>"; };
 		7239B94475BB9DFDD91C52FA /* SidebarAddFolderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarAddFolderTests.swift; sourceTree = "<group>"; };
@@ -483,7 +485,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_BCA7A743-B04F-4C26-BEAF-755A4AD13803" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_3FA57237-929B-45AA-AAE4-0044830533C3" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -689,6 +691,7 @@
 				64E3CB22079D5B857F200875 /* NowPlayingViewModelTests.swift */,
 				482751F61B55D58658657609 /* OPMLConventionTests.swift */,
 				24FEF0F7E262A623A7D0B435 /* PerShowSettingsConventionTests.swift */,
+				6F7BBFED666CFBF579ECDB73 /* PhoneSyncTranscodeViewModelTests.swift */,
 				FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */,
 				038D38CF2D9FA71F5ADBA446 /* PlaybackRateLabelTests.swift */,
 				8929B62314FB8D67123CC447 /* PlaylistDetailViewModelTests.swift */,
@@ -969,10 +972,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_6E78A6D3-7159-4762-92B2-404F8B127764" /* bocan-music */ = {
+		"TEMP_86AAA480-7E39-4B98-A8C9-98E6FF65A9C5" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_BCA7A743-B04F-4C26-BEAF-755A4AD13803" /* Secrets.xcconfig */,
+				"TEMP_3FA57237-929B-45AA-AAE4-0044830533C3" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1220,6 +1223,7 @@
 				77F45CC96B5C6CCE9C3BF662 /* NowPlayingViewModelTests.swift in Sources */,
 				7484DA661EE860EF74F807A4 /* OPMLConventionTests.swift in Sources */,
 				0172BC6D397A8EF3686EE095 /* PerShowSettingsConventionTests.swift in Sources */,
+				AF3A9B479E484B15FE40BBB8 /* PhoneSyncTranscodeViewModelTests.swift in Sources */,
 				D3DBF4DE1751AE7830A60A1F /* PhoneSyncViewModelTests.swift in Sources */,
 				09EB5116A16C3BF5BE7F96F8 /* PhoneSyncWiringTests.swift in Sources */,
 				990FF16C8D40B45E510EDE7F /* PlaybackRateLabelTests.swift in Sources */,
@@ -1416,7 +1420,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BCA7A743-B04F-4C26-BEAF-755A4AD13803" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_3FA57237-929B-45AA-AAE4-0044830533C3" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1552,7 +1556,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BCA7A743-B04F-4C26-BEAF-755A4AD13803" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_3FA57237-929B-45AA-AAE4-0044830533C3" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;

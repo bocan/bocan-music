@@ -9,7 +9,9 @@ set -uo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-TMPLOG=$(mktemp /tmp/bocan-tests-XXXXXX.log)
+# Xs must end the template: BSD mktemp does not substitute them before a
+# suffix, which made this one literal, collision-prone path for years.
+TMPLOG=$(mktemp /tmp/bocan-tests.XXXXXX)
 trap 'rm -f "$TMPLOG"' EXIT
 
 PASS=0
