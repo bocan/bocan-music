@@ -60,6 +60,22 @@ public actor TranscodeCoordinator {
     private var observationTask: Task<Void, Never>?
     private var pendingPass: Task<Void, Never>?
     private var urgentTrackIDs: [Int64] = []
+    private var passRunning = false
+    /// Set when a change event lands while a pass is running (a pass's own
+    /// ledger writes come back through the observation): the pass finishes
+    /// its work and then schedules one follow-up, instead of the event
+    /// cancelling the encode in flight. Internal so tests can observe it.
+    private(set) var rerunRequested = false
+    /// One entry per encode failure this app-run. Later passes skip these,
+    /// so one damaged file cannot tax every pass. Keyed by source hash, so
+    /// a repaired or retagged file gets a fresh try.
+    private var failedEncodes: Set<FailedEncode> = []
+
+    struct FailedEncode: Hashable {
+        let trackID: Int64
+        let preset: String
+        let sourceContentHash: String
+    }
 
     init(
         database: Database,
@@ -119,17 +135,27 @@ public actor TranscodeCoordinator {
     }
 
     /// Puts a track at the head of the queue (a request arrived for released
-    /// bytes; the 503-busy path of ADR-088) and schedules a pass.
+    /// bytes; the 503-busy path of ADR-088) and schedules a pass. The phone
+    /// is waiting, so this is the one caller allowed to interrupt a running
+    /// pass; a failure memo for the track is cleared for one fresh try.
     public func requestUrgent(trackID: Int64) {
         if !self.urgentTrackIDs.contains(trackID) {
             self.urgentTrackIDs.insert(trackID, at: 0)
         }
-        self.schedulePass()
+        self.failedEncodes = self.failedEncodes.filter { $0.trackID != trackID }
+        self.schedulePass(interrupt: true)
     }
 
-    /// Debounced pass scheduling: a burst of changes runs one pass.
-    private func schedulePass() {
+    /// Debounced pass scheduling: a burst of changes runs one pass. While a
+    /// pass is running, a non-interrupting call defers to a follow-up pass
+    /// instead of cancelling the work in flight (the coordinator's own
+    /// ledger writes fire the same observation stream).
+    private func schedulePass(interrupt: Bool = false) {
         guard self.running else { return }
+        if self.passRunning, !interrupt {
+            self.rerunRequested = true
+            return
+        }
         self.pendingPass?.cancel()
         self.pendingPass = Task { [weak self, debounce] in
             do {
@@ -152,13 +178,24 @@ public actor TranscodeCoordinator {
     /// `running` is false in tests (the guard lives in `schedulePass`).
     func runPass() async {
         let started = Date()
+        self.passRunning = true
+        self.rerunRequested = false
+        var cancelled = false
         do {
             try await self.pass()
             self.log.debug("transcode.pass.end", ["ms": "\(Int(Date().timeIntervalSince(started) * 1000))"])
         } catch is CancellationError {
+            cancelled = true
             self.log.debug("transcode.pass.cancelled")
         } catch {
             self.log.warning("transcode.pass.failed", ["error": String(reflecting: error)])
+        }
+        self.passRunning = false
+        // Changes that arrived mid-pass get one follow-up pass; a cancelled
+        // pass leaves scheduling to whoever cancelled it (stop or urgent).
+        if !cancelled, self.rerunRequested {
+            self.rerunRequested = false
+            self.schedulePass()
         }
     }
 
@@ -267,7 +304,11 @@ public actor TranscodeCoordinator {
     /// cancellation stops the pass.
     private func encodeMissing(targets: [Track], valid: [SyncTranscode], preset: TranscodePreset) async throws {
         let validIDs = Set(valid.map(\.trackID))
-        var pending = targets.filter { track in track.id.map { !validIDs.contains($0) } ?? false }
+        var pending = targets.filter { track in
+            guard let id = track.id, let hash = track.contentHash, !validIDs.contains(id) else { return false }
+            let memo = FailedEncode(trackID: id, preset: preset.rawValue, sourceContentHash: hash)
+            return !self.failedEncodes.contains(memo)
+        }
         let urgent = self.urgentTrackIDs
         self.urgentTrackIDs.removeAll()
         pending.sort { lhs, rhs in
@@ -310,6 +351,11 @@ public actor TranscodeCoordinator {
             } catch is CancellationError {
                 throw CancellationError()
             } catch {
+                self.failedEncodes.insert(FailedEncode(
+                    trackID: id,
+                    preset: preset.rawValue,
+                    sourceContentHash: sourceHash
+                ))
                 self.log.warning("transcode.encode.failed", [
                     "track": "\(id)",
                     "error": String(reflecting: error),
