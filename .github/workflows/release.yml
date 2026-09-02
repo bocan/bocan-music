@@ -112,8 +112,18 @@ jobs:
         env:
           URL: ${{ steps.pr.outputs.url }}
         run: |
-          # A docs-only PR: the full suite is skipped by pr.yml's changes job,
-          # the title and changelog checks take seconds.
+          # `gh pr checks --watch` only watches checks that already exist: if
+          # GitHub has not registered the new PR's check runs yet, it exits 1
+          # immediately with "no checks reported". That registration can lag
+          # PR creation by 15 s or more on a busy evening (it killed the
+          # 2.13.0 release twice), so first wait for the checks to appear.
+          checks=0
+          for _ in $(seq 1 60); do
+            checks="$(gh pr view "$URL" --json statusCheckRollup --jq '.statusCheckRollup | length')"
+            [[ "$checks" -gt 0 ]] && break
+            sleep 5
+          done
+          [[ "$checks" -gt 0 ]] || { echo "::error::No checks appeared on the release PR within 5 minutes"; exit 1; }
           gh pr checks "$URL" --watch --fail-fast --interval 15
           gh pr merge "$URL" --squash --delete-branch
           # Wait until the merge is visible, then find the merge commit.
