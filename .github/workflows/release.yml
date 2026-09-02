@@ -94,8 +94,13 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Commit as the RELEASE_TOKEN owner, not github-actions[bot]: the
+          # squash merge credits any branch-commit author who is not the PR
+          # author with a Co-authored-by trailer, so a bot-authored commit
+          # stamps "Co-authored-by: github-actions[bot]" onto every release
+          # commit on main.
+          git config user.name "Chris Funderburg"
+          git config user.email "chris@funderburg.me"
           branch="release/v${VERSION}"
           git switch -c "$branch"
           git add CHANGELOG.md Resources/Info.plist
