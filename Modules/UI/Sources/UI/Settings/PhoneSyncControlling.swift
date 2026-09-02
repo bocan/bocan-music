@@ -91,10 +91,14 @@ public struct PhoneSyncTranscodeProgress: Equatable, Sendable {
     public let prepared: Int
     /// Tracks the predicate marks for transcoding in the current selection.
     public let total: Int
+    /// Non-nil when preparation is parked at a full prepare window: the
+    /// window size, for display. The rest converts as the phone syncs.
+    public let parkedWindowBytes: Int64?
 
-    public init(prepared: Int, total: Int) {
+    public init(prepared: Int, total: Int, parkedWindowBytes: Int64? = nil) {
         self.prepared = prepared
         self.total = total
+        self.parkedWindowBytes = parkedWindowBytes
     }
 
     public var isComplete: Bool {

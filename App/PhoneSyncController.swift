@@ -157,7 +157,17 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
         guard let preset = document.transcode.preset else { return nil }
         do {
             let progress = try await self.manifestBuilder.transcodeProgress(for: document.profile, preset: preset)
-            return PhoneSyncTranscodeProgress(prepared: progress.prepared, total: progress.total)
+            // Mirrors the live coordinator: the default config's prepare
+            // window applies unless the keep toggle lifts it (ADR-088).
+            let window = SyncServerConfig().prepareWindowBytes
+            let parked = !document.transcode.keepArtifacts
+                && progress.prepared < progress.total
+                && progress.unservedBytes >= window
+            return PhoneSyncTranscodeProgress(
+                prepared: progress.prepared,
+                total: progress.total,
+                parkedWindowBytes: parked ? window : nil
+            )
         } catch {
             self.log.warning("sync.transcode_progress.failed", ["error": String(reflecting: error)])
             return nil

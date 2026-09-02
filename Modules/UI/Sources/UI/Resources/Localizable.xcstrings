@@ -9820,6 +9820,16 @@
         }
       }
     },
+    "First %@ ready · the rest converts during sync" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒíŕšţ %@ ŕéáđý · ţĥé ŕéšţ çóñvéŕţš đúŕíñĝ šýñç one two three"
+          }
+        }
+      }
+    },
     "First released" : {
       "localizations" : {
         "en-XA" : {

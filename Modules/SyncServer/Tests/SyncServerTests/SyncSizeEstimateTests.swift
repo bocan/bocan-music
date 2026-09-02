@@ -110,6 +110,7 @@ struct SyncSizeEstimateTests {
         )
         #expect(progress.total == 2, "the lossless and the 320 kbps lossy qualify")
         #expect(progress.prepared == 0)
+        #expect(progress.unservedBytes == 0)
 
         let rows = try await fixture.tracks.fetchAllIncludingDisabled()
         let lossless = try #require(rows.first { $0.contentHash == "h-l" }?.id)
@@ -122,5 +123,14 @@ struct SyncSizeEstimateTests {
         )
         #expect(progress.prepared == 1)
         #expect(progress.total == 2)
+        #expect(progress.unservedBytes == 1)
+
+        // Serving releases the bytes from the window; the row stays prepared.
+        try await fixture.ledger.stampServed(trackID: lossless, preset: "opus_128", at: 2)
+        progress = try await fixture.builder.transcodeProgress(
+            for: .everything(includePodcasts: false), preset: .opus128
+        )
+        #expect(progress.prepared == 1)
+        #expect(progress.unservedBytes == 0, "served bytes leave the prepare window")
     }
 }

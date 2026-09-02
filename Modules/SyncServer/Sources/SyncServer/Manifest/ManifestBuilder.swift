@@ -484,16 +484,22 @@ public extension ManifestBuilder {
         return estimates
     }
 
-    /// (prepared, total) for the settings preparing-progress row under
-    /// `preset`: total is the selection's transcodable-track count, prepared
-    /// the subset with a valid ledger row.
-    func transcodeProgress(for profile: SyncProfile, preset: TranscodePreset) async throws -> (prepared: Int, total: Int) {
+    /// (prepared, total, unservedBytes) for the settings preparing-progress
+    /// row under `preset`: total is the selection's transcodable-track count,
+    /// prepared the subset with a valid ledger row, and unservedBytes the
+    /// prepared-but-unserved artifact bytes the prepare window counts, so the
+    /// UI can tell a parked window from active conversion.
+    func transcodeProgress(
+        for profile: SyncProfile,
+        preset: TranscodePreset
+    ) async throws -> (prepared: Int, total: Int, unservedBytes: Int64) {
         let targets = try await self.estimateCandidates(profile: profile)
             .filter { TranscodeCoordinator.needsTranscode($0, preset: preset) }
         let targetIDs = Set(targets.compactMap(\.id))
-        let prepared = try await self.transcodeLedger.allValid(preset: preset.rawValue)
-            .count { targetIDs.contains($0.trackID) }
-        return (prepared: prepared, total: targets.count)
+        let rows = try await self.transcodeLedger.allValid(preset: preset.rawValue)
+            .filter { targetIDs.contains($0.trackID) }
+        let unserved = rows.filter { $0.servedAt == nil }.reduce(Int64(0)) { $0 + $1.size }
+        return (prepared: rows.count, total: targets.count, unservedBytes: unserved)
     }
 
     /// The estimate's track selection: enabled, hashed, and in the profile.

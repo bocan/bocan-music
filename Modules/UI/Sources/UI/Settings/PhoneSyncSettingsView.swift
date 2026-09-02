@@ -316,6 +316,10 @@ public struct PhoneSyncSettingsView: View {
 
     private func preparingText(_ progress: PhoneSyncTranscodeProgress) -> String {
         guard !progress.isComplete else { return L10n.string("All songs prepared") }
+        if let window = progress.parkedWindowBytes {
+            let size = window.formatted(.byteCount(style: .file))
+            return L10n.string("First \(size) ready · the rest converts during sync")
+        }
         return L10n.string("\(progress.prepared) of \(progress.total) songs")
     }
 

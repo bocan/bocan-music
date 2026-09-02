@@ -216,7 +216,12 @@ public actor TranscodeCoordinator {
             keepArtifacts: document.transcode.keepArtifacts
         )
 
-        try await self.encodeMissing(targets: targets, valid: valid, preset: preset)
+        try await self.encodeMissing(
+            targets: targets,
+            valid: valid,
+            preset: preset,
+            ignoreWindow: document.transcode.keepArtifacts
+        )
     }
 
     /// Original selected: every rung's rows and bytes go.
@@ -300,9 +305,16 @@ public actor TranscodeCoordinator {
     }
 
     /// Encodes targets lacking a valid row, urgent requests first, until the
-    /// prepare window fills. One failed file logs and moves on; only
+    /// prepare window fills. `ignoreWindow` (the keep-artifacts toggle) lifts
+    /// the window: the user opted into the disk cost, so the whole selection
+    /// prepares up front. One failed file logs and moves on; only
     /// cancellation stops the pass.
-    private func encodeMissing(targets: [Track], valid: [SyncTranscode], preset: TranscodePreset) async throws {
+    private func encodeMissing(
+        targets: [Track],
+        valid: [SyncTranscode],
+        preset: TranscodePreset,
+        ignoreWindow: Bool
+    ) async throws {
         let validIDs = Set(valid.map(\.trackID))
         var pending = targets.filter { track in
             guard let id = track.id, let hash = track.contentHash, !validIDs.contains(id) else { return false }
@@ -332,7 +344,7 @@ public actor TranscodeCoordinator {
             // stop() cancels the pass's task, so cancellation is the one
             // mid-pass exit; a direct runPass() in tests runs to completion.
             try Task.checkCancellation()
-            if unservedBytes >= self.prepareWindowBytes {
+            if !ignoreWindow, unservedBytes >= self.prepareWindowBytes {
                 self.log.debug("transcode.window.full", ["bytes": "\(unservedBytes)"])
                 break
             }

@@ -246,6 +246,22 @@ struct TranscodeCoordinatorTests {
         try self.cleanup(fixture)
     }
 
+    @Test("the keep toggle lifts the prepare window")
+    func keepToggleLiftsWindow() async throws {
+        let fixture = try await makeFixture(prepareWindowBytes: 100)
+        let first = try await insertTrack(fixture, title: "A", contentHash: "h-a", isLossless: true)
+        let second = try await insertTrack(fixture, title: "B", contentHash: "h-b", isLossless: true)
+        try await self.setDocument(fixture, preset: .opus128, keepArtifacts: true)
+
+        await fixture.coordinator.runPass()
+
+        #expect(fixture.encoder.encodeCount == 2, "keep-artifacts prepares the whole selection up front")
+        let rows = try await fixture.ledger.allValid(preset: "opus_128")
+        #expect(Set(rows.map(\.trackID)) == [first, second])
+
+        try self.cleanup(fixture)
+    }
+
     // MARK: - Invalidation
 
     @Test("a retagged source re-encodes and the stale artifact goes")
