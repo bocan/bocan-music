@@ -35,7 +35,7 @@ Current internal-module dependencies:
 | Acoustics     | Observability                                                                             |
 | Persistence   | Observability                                                                             |
 | Subsonic      | Observability, Persistence                                                                |
-| SyncServer    | Observability, Persistence (Library, Podcasts edges land in ADR-065/22-6)              |
+| SyncServer    | Observability, Persistence, AudioEngine, Library, Metadata, Podcasts (AudioEngine edge: ADR-088 transcoding) |
 | Library       | Observability, Persistence, Metadata, Acoustics                                           |
 | Playback      | Observability, Persistence, AudioEngine                                                   |
 | Scrobble      | Observability, Persistence, Playback                                                      |

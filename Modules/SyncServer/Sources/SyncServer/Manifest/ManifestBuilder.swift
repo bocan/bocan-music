@@ -1,3 +1,4 @@
+import AudioEngine
 import Crypto
 import Foundation
 import Library
@@ -34,6 +35,7 @@ public struct ManifestBuilder: Sendable {
     private let lyricsService: LyricsService
     private let smartService: SmartPlaylistService
     private let downloadStore: DownloadStore
+    private let transcodeLedger: SyncTranscodeRepository
     private let log = AppLogger.make(.sync)
 
     /// - Parameter downloadRoot: overrides the podcast Downloads directory (tests
@@ -50,10 +52,12 @@ public struct ManifestBuilder: Sendable {
         self.lyricsService = LyricsService(database: database, fetcher: nil)
         self.smartService = SmartPlaylistService(database: database)
         self.downloadStore = DownloadStore(root: downloadRoot)
+        self.transcodeLedger = SyncTranscodeRepository(database: database)
     }
 
     func build(
         profile: SyncProfile,
+        transcode: TranscodeSettings = .original,
         serverId: String,
         serverName: String,
         generation: Int,
@@ -70,12 +74,23 @@ public struct ManifestBuilder: Sendable {
 
         let profileTrackIds = try await self.inProfileTrackIds(profile: profile, allTracks: allTracks, playlists: playlists)
 
+        // ADR-088: under a transcode preset the manifest describes prepared
+        // artifacts. One bulk ledger read; no file I/O on this path.
+        var ledgerRows: [Int64: SyncTranscode] = [:]
+        if let preset = transcode.preset {
+            for row in try await self.transcodeLedger.allValid(preset: preset.rawValue) {
+                ledgerRows[row.trackID] = row
+            }
+        }
+
         var manifestTracks = self.buildTracks(
             allTracks: allTracks,
             profileTrackIds: profileTrackIds,
             roots: roots,
             artistName: artistName,
-            albumTitle: albumTitle
+            albumTitle: albumTitle,
+            preset: transcode.preset,
+            ledger: ledgerRows
         )
 
         // Lyrics hashes are assembled outside the record fetch (best effort; a
@@ -201,7 +216,9 @@ public struct ManifestBuilder: Sendable {
         profileTrackIds: Set<Int64>,
         roots: [LibraryRoot],
         artistName: [Int64: String],
-        albumTitle: [Int64: String]
+        albumTitle: [Int64: String],
+        preset: TranscodePreset?,
+        ledger: [Int64: SyncTranscode]
     ) -> [ManifestTrack] {
         let candidates = allTracks
             .filter { !$0.disabled }
@@ -210,6 +227,7 @@ public struct ManifestBuilder: Sendable {
 
         var result: [ManifestTrack] = []
         var skipped = 0
+        var awaiting = 0
 
         for track in candidates {
             guard let id = track.id else { continue }
@@ -217,6 +235,19 @@ public struct ManifestBuilder: Sendable {
                 continue
             }
             guard let relPath = Self.relPath(for: track.fileURL, roots: roots) else { skipped += 1
+                continue
+            }
+            if let preset, TranscodeCoordinator.needsTranscode(track, preset: preset) {
+                // ADR-088 served-bytes rule: describe the artifact, and only
+                // once it is prepared (the same gate shape as a missing hash);
+                // the sync grows as the coordinator's pass progresses.
+                guard let row = ledger[id] else { awaiting += 1
+                    continue
+                }
+                result.append(self.makeArtifactTrack(
+                    track, id: id, relPath: relPath, row: row, preset: preset,
+                    artistName: artistName, albumTitle: albumTitle
+                ))
                 continue
             }
             result.append(self.makeTrack(
@@ -228,7 +259,44 @@ public struct ManifestBuilder: Sendable {
         if skipped > 0 {
             self.log.debug("manifest.tracks.skipped", ["count": skipped])
         }
+        if awaiting > 0 {
+            self.log.debug("manifest.tracks.awaiting_transcode", ["count": awaiting])
+        }
         return result.sorted { $0.id < $1.id }
+    }
+
+    /// A manifest entry whose file-describing fields are the prepared
+    /// artifact's (ADR-088): ledger size and hash, the preset's format and
+    /// extension, lossy artifact properties, and `sourceFormat` for display.
+    private func makeArtifactTrack(
+        _ track: Track,
+        id: Int64,
+        relPath: String,
+        row: SyncTranscode,
+        preset: TranscodePreset,
+        artistName: [Int64: String],
+        albumTitle: [Int64: String]
+    ) -> ManifestTrack {
+        var artifact = self.makeTrack(
+            track, id: id,
+            relPath: Self.swapExtension(relPath, to: preset.fileExtension),
+            size: row.size, sha256: row.sha256,
+            format: preset.formatName, clip: nil,
+            artistName: artistName, albumTitle: albumTitle
+        )
+        artifact.sourceFormat = track.fileFormat
+        artifact.bitrate = row.bitrate ?? preset.targetKbps
+        artifact.sampleRate = Int(preset.outputSampleRate(forSourceRate: Int32(track.sampleRate ?? 44100)))
+        artifact.bitDepth = nil
+        artifact.channelCount = track.channelCount.map { min($0, 2) }
+        artifact.isLossless = false
+        return artifact
+    }
+
+    /// The artifact's relPath: the source path with the preset's extension,
+    /// so the bytes and the filename agree on the phone.
+    static func swapExtension(_ relPath: String, to ext: String) -> String {
+        (relPath as NSString).deletingPathExtension + "." + ext
     }
 
     private func makeTrack(
@@ -271,6 +339,7 @@ public struct ManifestBuilder: Sendable {
             bitrate: track.bitrate,
             channelCount: track.channelCount,
             isLossless: track.isLossless,
+            sourceFormat: nil,
             replayGain: Self.replayGain(track),
             artworkHash: track.coverArtHash,
             lyricsHash: nil,
@@ -347,31 +416,12 @@ public struct ManifestBuilder: Sendable {
     // MARK: - Profile
 
     private func inProfileTrackIds(profile: SyncProfile, allTracks: [Track], playlists: [Playlist]) async throws -> Set<Int64> {
-        switch profile {
-        case .everything:
-            return Set(allTracks.compactMap(\.id))
-        case let .selected(playlistIds, _):
-            var ids: Set<Int64> = []
-            for playlistId in playlistIds {
-                try await self.gatherPlaylistTracks(playlistId: playlistId, playlists: playlists, into: &ids)
-            }
-            return ids
-        }
-    }
-
-    private func gatherPlaylistTracks(playlistId: Int64, playlists: [Playlist], into ids: inout Set<Int64>) async throws {
-        guard let playlist = playlists.first(where: { $0.id == playlistId }) else { return }
-        switch playlist.kind {
-        case .manual:
-            try await ids.formUnion(self.playlistRepository.fetchTrackIDs(playlistID: playlistId))
-        case .smart:
-            try await ids.formUnion(self.smartService.tracks(for: playlistId).compactMap(\.id))
-        case .folder:
-            for child in playlists where child.parentID == playlistId {
-                guard let childId = child.id else { continue }
-                try await self.gatherPlaylistTracks(playlistId: childId, playlists: playlists, into: &ids)
-            }
-        }
+        let membership = ProfileMembership(
+            playlistRepository: self.playlistRepository,
+            smartService: self.smartService
+        )
+        return try await membership.selectedTrackIDs(profile: profile, playlists: playlists)
+            ?? Set(allTracks.compactMap(\.id))
     }
 
     // MARK: - Formatting
@@ -396,19 +446,80 @@ public extension ManifestBuilder {
     }
 
     func sizeEstimate(for profile: SyncProfile) async throws -> SizeEstimate {
-        let manifest = try await self.build(
-            profile: profile,
-            serverId: "estimate",
-            serverName: "",
-            generation: 0,
-            generatedAt: Date(timeIntervalSince1970: 0)
+        try await self.sizeEstimates(for: profile)[nil] ?? SizeEstimate(bytes: 0, trackCount: 0, episodeCount: 0)
+    }
+
+    /// Per-rung estimates for the settings quality picker (ADR-088): one
+    /// aggregate over the selection, keyed by preset (`nil` is Original).
+    /// Pass-through tracks count at their real size; tracks the predicate
+    /// marks for transcoding count at duration times the target bitrate
+    /// (near-exact for CBR MP3, nominal for VBR Opus). Episode bytes come
+    /// from the recorded download sizes and are constant across rungs.
+    /// No manifest build, no hashing, no file I/O.
+    func sizeEstimates(for profile: SyncProfile) async throws -> [TranscodePreset?: SizeEstimate] {
+        let candidates = try await self.estimateCandidates(profile: profile)
+        let episodes = try await self.episodeEstimate(profile: profile)
+
+        var estimates: [TranscodePreset?: SizeEstimate] = [:]
+        let originalBytes = candidates.reduce(Int64(0)) { $0 + $1.fileSize }
+        estimates[nil] = SizeEstimate(
+            bytes: originalBytes + episodes.bytes,
+            trackCount: candidates.count,
+            episodeCount: episodes.count
         )
-        let trackBytes = manifest.tracks.reduce(Int64(0)) { $0 + $1.size }
-        let episodeBytes = manifest.episodes.reduce(Int64(0)) { $0 + $1.size }
-        return SizeEstimate(
-            bytes: trackBytes + episodeBytes,
-            trackCount: manifest.tracks.count,
-            episodeCount: manifest.episodes.count
-        )
+        for preset in TranscodePreset.allCases {
+            let bytes = candidates.reduce(Int64(0)) { sum, track in
+                if TranscodeCoordinator.needsTranscode(track, preset: preset) {
+                    sum + Int64(track.duration * Double(preset.targetKbps) * 125.0)
+                } else {
+                    sum + track.fileSize
+                }
+            }
+            estimates[preset] = SizeEstimate(
+                bytes: bytes + episodes.bytes,
+                trackCount: candidates.count,
+                episodeCount: episodes.count
+            )
+        }
+        return estimates
+    }
+
+    /// (prepared, total, unservedBytes) for the settings preparing-progress
+    /// row under `preset`: total is the selection's transcodable-track count,
+    /// prepared the subset with a valid ledger row, and unservedBytes the
+    /// prepared-but-unserved artifact bytes the prepare window counts, so the
+    /// UI can tell a parked window from active conversion.
+    func transcodeProgress(
+        for profile: SyncProfile,
+        preset: TranscodePreset
+    ) async throws -> (prepared: Int, total: Int, unservedBytes: Int64) {
+        let targets = try await self.estimateCandidates(profile: profile)
+            .filter { TranscodeCoordinator.needsTranscode($0, preset: preset) }
+        let targetIDs = Set(targets.compactMap(\.id))
+        let rows = try await self.transcodeLedger.allValid(preset: preset.rawValue)
+            .filter { targetIDs.contains($0.trackID) }
+        let unserved = rows.filter { $0.servedAt == nil }.reduce(Int64(0)) { $0 + $1.size }
+        return (prepared: rows.count, total: targets.count, unservedBytes: unserved)
+    }
+
+    /// The estimate's track selection: enabled, hashed, and in the profile.
+    /// (The manifest additionally gates on a resolvable relPath; the estimate
+    /// skips that per-file nuance by design.)
+    private func estimateCandidates(profile: SyncProfile) async throws -> [Track] {
+        let allTracks = try await self.trackRepository.fetchAllIncludingDisabled()
+        let playlists = try await self.playlistRepository.fetchAll()
+        let profileTrackIds = try await self.inProfileTrackIds(profile: profile, allTracks: allTracks, playlists: playlists)
+        return allTracks
+            .filter { !$0.disabled }
+            .filter { $0.contentHash != nil }
+            .filter { $0.id.map { profileTrackIds.contains($0) } ?? false }
+    }
+
+    /// Downloaded-episode bytes from the recorded sizes; no stat, no hash.
+    private func episodeEstimate(profile: SyncProfile) async throws -> (bytes: Int64, count: Int) {
+        guard profile.includesPodcasts else { return (0, 0) }
+        let downloaded = try await self.episodeStateRepository.fetchByDownloadState([.downloaded])
+        let bytes = downloaded.reduce(Int64(0)) { $0 + ($1.downloadBytes ?? 0) }
+        return (bytes: bytes, count: downloaded.count)
     }
 }

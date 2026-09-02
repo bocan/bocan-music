@@ -50,6 +50,9 @@ public struct SyncMetaRepository: Sendable {
             // (22-10); a hash change must bump so the phone re-syncs art.
             Table("podcasts"),
             Table("sync_profile"),
+            // Transcode-ledger writes gate manifest inclusion under a
+            // transcode preset (ADR-088), so the phone must re-poll.
+            Table("sync_transcodes"),
         ]) { _ in }
     }
 

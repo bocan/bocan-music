@@ -13,6 +13,7 @@ public enum AudioEngineError: Error, Sendable, CustomStringConvertible {
     case accessDenied(URL, underlying: Error?)
     case unsupportedFormat(magic: Data, url: URL)
     case decoderFailure(codec: String, underlying: Error)
+    case encoderFailure(codec: String, underlying: Error)
     case formatConversionFailure(from: AVAudioFormat, to: AVAudioFormat)
     case engineStartFailed(underlying: Error)
     case outputDeviceUnavailable
@@ -34,6 +35,9 @@ public enum AudioEngineError: Error, Sendable, CustomStringConvertible {
 
         case let .decoderFailure(codec, err):
             return "Decoder failure [\(codec)]: \(err.localizedDescription)"
+
+        case let .encoderFailure(codec, err):
+            return "Encoder failure [\(codec)]: \(err.localizedDescription)"
 
         case let .formatConversionFailure(from, to):
             return "Format conversion failed: \(from) → \(to)"

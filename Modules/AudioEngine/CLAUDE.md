@@ -11,6 +11,7 @@ The realtime audio path. The public seam other modules consume is the `Transport
 - `AudioEngine.swift` (plus the `AudioEngine+*.swift` extensions: AntiPop, Crossfade, DSP, Gapless, Tap) is the actor that owns the `AVAudioEngine` graph. `Graph/` holds the `AVAudioPlayerNode`-backed `EngineGraph` and `BufferPump`.
 - `Decoder/` is the format split: `FormatSniffer` + `DecoderFactory` choose between `AVFoundationDecoder` (local files AVFoundation can open) and `FFmpegDecoder` (everything else, and all HTTP/HTTPS streams).
 - `DSP/` is the effects chain (EQ, bass boost, crossfeed, stereo width) plus `DSP/Presets/`. `ReplayGain/` applies loudness normalisation. `Tap/` feeds the visualizer/FFT. `Streaming/` holds `SubsonicStreamCache` and the HTTP transport.
+- `Transcode/` is the offline encode path for Phone Sync (ADR-088): `TranscodePreset` (the quality-rung vocabulary) and the `AudioTranscoder` actor, which demuxes, decodes, resamples, encodes (libmp3lame / libopus), muxes, and hashes through the same CFFmpeg module, one file at a time at utility priority.
 
 ## Things easy to get wrong
 

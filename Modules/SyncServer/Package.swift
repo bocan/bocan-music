@@ -13,6 +13,7 @@ let package = Package(
     dependencies: [
         .package(path: "../Observability"),
         .package(path: "../Persistence"),
+        .package(path: "../AudioEngine"),
         .package(path: "../Library"),
         .package(path: "../Metadata"),
         .package(path: "../Podcasts"),
@@ -26,6 +27,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Observability", package: "Observability"),
                 .product(name: "Persistence", package: "Persistence"),
+                // ADR-088: the transcode coordinator drives AudioTranscoder.
+                .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "Library", package: "Library"),
                 .product(name: "Metadata", package: "Metadata"),
                 .product(name: "Podcasts", package: "Podcasts"),
@@ -42,6 +45,7 @@ let package = Package(
             dependencies: [
                 "SyncServer",
                 .product(name: "Persistence", package: "Persistence"),
+                .product(name: "AudioEngine", package: "AudioEngine"),
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ],

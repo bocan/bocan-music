@@ -11,6 +11,12 @@ import UniformTypeIdentifiers
 /// resolution (up to 4096px) regardless of display size and had no
 /// `totalCostLimit`, so 200 large covers could exceed 1 GB. `ArtworkLoader` now
 /// downsamples via `CGImageSource` to a capped, display-sized thumbnail.
+/// Main-actor: `NSImage` construction on a worker thread races AppKit's
+/// application-context `dispatch_once` under the parallel runner and can
+/// deadlock against a main-actor suite creating a window (it wedged two full
+/// `make tests` runs on 2026-09-01, in `-[NSApplication init]`). AppKit
+/// object creation belongs on main.
+@MainActor
 @Suite("ArtworkLoader")
 struct ArtworkLoaderTests {
     @Test("downsamples a large cover to a small cell size")

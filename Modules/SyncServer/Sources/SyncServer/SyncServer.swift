@@ -16,6 +16,7 @@ public actor SyncServer {
     private let trusted: TrustedDevices
     private let pairing: PairingCoordinator
     private let libraryObserver: LibraryChangeObserver
+    private let transcodeCoordinator: TranscodeCoordinator
     private let listener: SyncListener
     private let log = AppLogger.make(.sync)
 
@@ -35,6 +36,7 @@ public actor SyncServer {
         identity: ServerIdentity,
         ui: any PairingUIBridge,
         downloadRoot: URL? = nil,
+        transcodeRoot: URL? = nil,
         serverName: @escaping @Sendable () -> String,
         config: SyncServerConfig = .default
     ) {
@@ -55,9 +57,21 @@ public actor SyncServer {
         self.pairing = pairing
 
         self.libraryObserver = LibraryChangeObserver(syncMeta: meta, debounce: config.changeDebounce)
+        let transcodeCoordinator = TranscodeCoordinator(
+            database: database,
+            store: TranscodeStore(root: transcodeRoot),
+            prepareWindowBytes: config.prepareWindowBytes,
+            debounce: config.changeDebounce
+        )
+        self.transcodeCoordinator = transcodeCoordinator
 
         let builder = ManifestBuilder(database: database, downloadRoot: downloadRoot)
-        let fileServing = FileServing(database: database, downloadRoot: downloadRoot)
+        let fileServing = FileServing(
+            database: database,
+            downloadRoot: downloadRoot,
+            transcodeRoot: transcodeRoot,
+            transcodeCoordinator: transcodeCoordinator
+        )
         let routes = PairingRoutes.routes(coordinator: pairing)
             + ManifestRoutes.routes(
                 builder: builder,
@@ -94,6 +108,7 @@ public actor SyncServer {
         guard !self.running else { return }
         try await self.trusted.start()
         await self.libraryObserver.start()
+        await self.transcodeCoordinator.start()
 
         let port = try await self.listener.start(advertise: true)
         self.boundPort = port
@@ -116,6 +131,7 @@ public actor SyncServer {
         await self.pairing.cancel()
         await self.listener.stop()
         await self.libraryObserver.stop()
+        await self.transcodeCoordinator.stop()
         await self.trusted.stop()
         self.boundPort = nil
         self.running = false
