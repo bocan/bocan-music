@@ -109,6 +109,32 @@ struct AudioTranscoderTests {
         #expect(!FileManager.default.fileExists(atPath: destination.path))
     }
 
+    @Test("mid-file damage is tolerated and the healthy audio survives")
+    func midFileDamageIsTolerated() async throws {
+        // Deterministic damage: stomp 512 bytes in the middle of a FLAC
+        // stream (well past STREAMINFO), the shape of the real-world files
+        // that play fine but used to fail the transcoder outright.
+        let source = try fixtureURL("sine-1s-44100-24-stereo.flac")
+        var data = try Data(contentsOf: source)
+        let start = data.count / 2
+        let end = min(start + 512, data.count)
+        data.replaceSubrange(start ..< end, with: Data(repeating: 0x55, count: end - start))
+        let damaged = FileManager.default.temporaryDirectory
+            .appendingPathComponent("bocan-damaged-\(UUID().uuidString).flac")
+        try data.write(to: damaged)
+        let destination = self.makeDestination(for: .opus128)
+
+        let result = try await AudioTranscoder().transcode(source: damaged, to: destination, preset: .opus128)
+
+        #expect(result.size > 0)
+        let decoder = try FFmpegDecoder(url: destination)
+        #expect(decoder.duration > 0.5, "most of the healthy audio survives the damaged region")
+        await decoder.close()
+
+        try self.removeIfPresent(destination)
+        try self.removeIfPresent(damaged)
+    }
+
     @Test("a missing source throws fileNotFound")
     func missingSourceThrows() async throws {
         let source = URL(fileURLWithPath: "/tmp/does-not-exist-\(UUID().uuidString).wav")

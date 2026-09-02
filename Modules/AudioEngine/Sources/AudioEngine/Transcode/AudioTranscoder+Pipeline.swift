@@ -170,7 +170,13 @@ extension AudioTranscoder {
             try Task.checkCancellation()
             let readRet = av_read_frame(inFmt, pkt)
             if readRet == avErrorEof { break }
-            try checkDecode(readRet)
+            if readRet < 0 {
+                // Mid-file damage the demuxer cannot resync past: keep the
+                // audio decoded so far and finish (the ffmpeg CLI's default
+                // tolerance) instead of failing the whole file.
+                ctx.toleratedErrors += 1
+                break
+            }
             defer { av_packet_unref(pkt) }
             guard pkt.pointee.stream_index == ctx.streamIndex else { continue }
             try self.decodeAndBuffer(ctx, packet: pkt)
@@ -182,6 +188,11 @@ extension AudioTranscoder {
         try self.decodeAndBuffer(ctx, packet: nil)
         try self.drainResampler(ctx)
         try self.encodeBufferedFrames(ctx, includePartial: true)
+        guard ctx.nextPts > 0 else {
+            // Not one decodable sample: this is a broken file, not damage
+            // to tolerate. Never emit a silent header-only artifact.
+            throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: TranscodeInternalError.noAudio)
+        }
         try self.pumpEncoder(ctx, frame: nil)
         try checkEncode(av_write_trailer(ctx.outFormatCtx), preset: nil)
     }
@@ -194,12 +205,19 @@ extension AudioTranscoder {
         guard let decodeCtx = ctx.decodeCtx, let frame = ctx.decodedFrame else { return }
         let sendRet = avcodec_send_packet(decodeCtx, packet)
         if sendRet < 0, sendRet != averrorPosix(eagainCode), sendRet != avErrorEof {
-            throw AudioEngineError.decoderFailure(codec: "FFmpeg", underlying: ffError(sendRet))
+            // A damaged packet: count it and skip it, the same tolerance as
+            // FFmpegDecoder's playback loop (these files play fine). The
+            // flush send (nil packet) still drains what the decoder holds.
+            ctx.toleratedErrors += 1
+            if packet != nil { return }
         }
         while true {
             let recvRet = avcodec_receive_frame(decodeCtx, frame)
             if recvRet == averrorPosix(eagainCode) || recvRet == avErrorEof { break }
-            try checkDecode(recvRet)
+            if recvRet < 0 {
+                ctx.toleratedErrors += 1
+                break
+            }
             defer { av_frame_unref(frame) }
             try self.resampleIntoFIFO(ctx, samples: frame.pointee.nb_samples, input: frame)
         }
@@ -387,6 +405,7 @@ private enum TranscodeInternalError: Error, LocalizedError {
     case noStream
     case noDecoder
     case noEncoder
+    case noAudio
     case alloc
 
     var errorDescription: String? {
@@ -402,6 +421,9 @@ private enum TranscodeInternalError: Error, LocalizedError {
 
         case .noEncoder:
             "Encoder not available in this FFmpeg build"
+
+        case .noAudio:
+            "No decodable audio in the source"
 
         case .alloc:
             "Memory allocation failed"

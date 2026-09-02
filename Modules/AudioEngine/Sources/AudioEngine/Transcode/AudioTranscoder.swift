@@ -59,6 +59,12 @@ public actor AudioTranscoder {
         try self.openInput(ctx, source: source)
         try self.openOutput(ctx, destination: destination, preset: preset, metadata: metadata)
         try self.runPipeline(ctx)
+        if ctx.toleratedErrors > 0 {
+            self.log.warning("transcode.damage.tolerated", [
+                "src": source.lastPathComponent,
+                "count": "\(ctx.toleratedErrors)",
+            ])
+        }
 
         let sha256 = try Self.sha256Hex(ofFileAt: destination)
         let attributes = try FileManager.default.attributesOfItem(atPath: destination.path)
@@ -134,6 +140,9 @@ final class TranscodeContext {
     var outSampleRate: Int32 = 0
     var outChannels: Int32 = 2
     var nextPts: Int64 = 0
+    /// Damaged packets and demux errors skipped instead of fatal (the same
+    /// tolerance as playback); the transcoder logs a warning when non-zero.
+    var toleratedErrors = 0
 
     init() {
         self.packet = av_packet_alloc()
