@@ -141,6 +141,14 @@ Contributions and ideas welcome. Open an issue or a pull request.
 
 **Download the DMG** from [bocan.app/download](https://bocan.app/download) or the [GitHub Releases](https://github.com/bocan/bocan-music/releases) page. Open it, drag Bòcan to Applications, done.
 
+**Verify a download** (optional). Every DMG is signed with a Developer ID and notarized by Apple, and the release workflow also publishes a signed build attestation that ties the exact file to the commit and workflow run that built it. With the [GitHub CLI](https://cli.github.com) installed:
+
+```bash
+gh attestation verify Bocan.dmg --repo bocan/bocan-music
+```
+
+The command fails if the file was altered or was not built by this repository's release workflow.
+
 **Homebrew**: add the tap once, then install:
 
 ```bash

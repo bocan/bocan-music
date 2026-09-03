@@ -164,6 +164,15 @@ jobs:
       (needs.prepare.result == 'success' || (needs.prepare.result == 'skipped' && inputs.tag != ''))
     runs-on: macos-26
 
+    # id-token + attestations let actions/attest-build-provenance sign a
+    # SLSA provenance statement for the DMG with a short-lived Sigstore
+    # certificate tied to this job's OIDC identity. Scoped to this job only;
+    # prepare never needs them.
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
     # arm64-only: Bòcan targets Apple Silicon (macOS 15+). Intel Macs are not
     # supported because the bundled FFmpeg dylibs and fpcalc binary in Resources/
     # are arm64-only. A universal binary would require rebuilding those as fat
@@ -463,6 +472,18 @@ jobs:
           shasum -a 256 Bocan.dmg | tee Bocan.dmg.sha256
           SHA256=$(awk '{print $1}' Bocan.dmg.sha256)
           echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+
+      # Build provenance: a signed SLSA statement, stored by GitHub (not as a
+      # release asset), that ties the final notarized DMG's digest to this
+      # repo, commit, workflow and run. Developer ID + notarization prove who
+      # signed the DMG; this proves it was built here from this tag. Anyone
+      # can check a download with:
+      #   gh attestation verify Bocan.dmg --repo bocan/bocan-music
+      # Runs after stapling so the attested digest is the one users download.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: build/Bocan.dmg
 
       - name: Release notes (users only) from CHANGELOG
         id: notes
