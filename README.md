@@ -22,7 +22,7 @@
 
 ## Why Bòcan?
 
-Most Mac music players are either abandoned, Electron-wrapped, or stripped-down streaming clients that barely tolerate local files. Bòcan is the answer to all three: a **native Swift 6 app** built entirely around owning and enjoying your own library, the way iTunes used to before it became a content storefront.
+Most Mac music players are either abandoned, Electron-wrapped, or stripped-down streaming clients that barely tolerate local files. Bòcan is the answer to all three: a **native Swift 6 app** built entirely around owning and enjoying your own library, the way iTunes used to be before it became a content storefront.
 
 ### 🔊 It sounds better
 
@@ -98,6 +98,7 @@ I've tried hard to ensure Bòcan is fully navigable without a mouse or a screen:
 - **Swift 6 strict concurrency** : `@MainActor` isolation, `Sendable` everywhere it matters, zero data races by design.
 - **Twelve clean SPM modules** with no upward imports and their own test suites.
 - **80% line-coverage gate** in CI; the build fails if coverage drops.
+- **A full End to End test suite** that drives through the UI, and checks the results against expectations.
 - **GRDB 7** with typed repositories, FTS5 full-text search, and `ValueObservation`-based reactive streams. Settings > Advanced can rebuild the search index in place if it ever drifts.
 - **One-click support bundles**: Export Diagnostics zips the session log, crash reports, and version info into a single file you can attach to a bug report.
 - **XcodeGen** project generation : no hand-edited `.pbxproj` files in the repo.
