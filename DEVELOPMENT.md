@@ -142,7 +142,9 @@ are written before the release exists, one PR at a time:
    - builds, signs, notarizes, packages the DMG, and publishes the GitHub
      release with the prose only (`Scripts/release-notes.sh`) plus a "Full
      changelog" link, uploading the DMG, its checksum and the signed
-     `appcast-entry.xml`;
+     `appcast-entry.xml`, and records a build-provenance attestation for the
+     DMG (Sigstore-signed, stored on the repo's Attestations page, verifiable
+     with `gh attestation verify Bocan.dmg --repo bocan/bocan-music`);
    - pings the Homebrew tap. The Website workflow then assembles the Sparkle
      feed from every release's `appcast-entry.xml` (`Scripts/build-appcast.sh`)
      on top of the frozen history in `website/appcast/` and redeploys the site.

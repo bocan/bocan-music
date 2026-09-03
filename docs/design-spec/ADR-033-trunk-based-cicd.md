@@ -65,7 +65,7 @@ process:
 | `pr.yml` | pull request to `main` | `changes` job diffs the PR; docs-only PRs skip the rest. Otherwise the full suite: `make test-coverage` + SPM package tests | done, slice 2 |
 | `pr-metadata.yml` | pull request opened/edited/synchronize/labeled | Conventional Commit title check; `feat`/`fix`/`perf` must add a line under `## [Unreleased]` in `CHANGELOG.md` unless labelled `skip-changelog` | done, slice 2 |
 | Snyk (GitHub app, no file) | pull request | dependency manifest scan | existing, keep |
-| `release.yml` | manual only (`workflow_dispatch`, optional `tag` to rebuild) | `prepare` (Linux): `Scripts/release.sh` decides the version and rewrites `CHANGELOG.md` + `Info.plist`, lands them as a `chore(release): X.Y.Z` PR through the normal checks, tags the merge. `build` (macOS): tests, sign, notarize, DMG, GitHub release with prose-only notes, `appcast-entry.xml` asset, cask dispatch | done, slice 3 |
+| `release.yml` | manual only (`workflow_dispatch`, optional `tag` to rebuild) | `prepare` (Linux): `Scripts/release.sh` decides the version and rewrites `CHANGELOG.md` + `Info.plist`, lands them as a `chore(release): X.Y.Z` PR through the normal checks, tags the merge. `build` (macOS): tests, sign, notarize, DMG, build-provenance attestation of the DMG, GitHub release with prose-only notes, `appcast-entry.xml` asset, cask dispatch | done, slice 3 |
 | `website.yml` | push to `main` touching `website/**` or `CHANGELOG.md`, after a Release run | `Scripts/build-appcast.sh` assembles the Sparkle feeds from `website/appcast/seed*.xml` plus every later release's asset; Eleventy build; Pages deploy | reworked, slice 3 |
 | `dependency-drift.yml` | weekly cron | pin drift report as an issue | existing, keep |
 
