@@ -49,6 +49,38 @@ struct AudioTranscoderTests {
         try self.removeIfPresent(destination)
     }
 
+    /// A decoder can change the frame shape mid-stream: an MP3 whose frames
+    /// switch between stereo and mono (a damaged file resyncing on a false
+    /// header, or a deliberate mode switch) is the real-world case. The
+    /// resampler was built for the first shape; feeding it the other one used
+    /// to read a plane that does not exist and fault the whole app.
+    @Test(
+        "a mid-stream channel change reconfigures the resampler instead of faulting",
+        arguments: ["sine-1s-44100-stereo-then-mono.mp3", "sine-1s-44100-mono-then-stereo.mp3"]
+    )
+    func channelChangeMidStream(fixture: String) async throws {
+        let source = try fixtureURL(fixture)
+        // The output shape is fixed at open from the stream probe, which for
+        // a short file reflects whichever frame it decoded last. Whatever it
+        // says, the artifact must agree with it, and every frame must land.
+        let probe = try FFmpegDecoder(url: source)
+        let expectedChannels = probe.streamDetails.channelCount
+        await probe.close()
+        for preset in [TranscodePreset.opus128, .mp3320] {
+            let destination = self.makeDestination(for: preset)
+
+            let result = try await AudioTranscoder().transcode(source: source, to: destination, preset: preset)
+            #expect(result.size > 0)
+
+            let decoder = try FFmpegDecoder(url: destination)
+            #expect(abs(decoder.duration - 1.0) < 0.2, "duration drifted: \(decoder.duration)")
+            #expect(decoder.streamDetails.channelCount == expectedChannels)
+            await decoder.close()
+
+            try self.removeIfPresent(destination)
+        }
+    }
+
     @Test("metadata tags land in the artifact for both containers", arguments: [TranscodePreset.mp3320, .opus128])
     func metadataRoundTrips(preset: TranscodePreset) async throws {
         let source = try fixtureURL("sine-1s-44100-16-stereo.wav")

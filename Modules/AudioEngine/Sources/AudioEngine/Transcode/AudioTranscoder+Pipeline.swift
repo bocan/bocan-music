@@ -101,19 +101,13 @@ extension AudioTranscoder {
         }
 
         // Resampler: source layout/format/rate to encoder layout/format/rate.
-        let swrRet = swr_alloc_set_opts2(
-            &ctx.swrCtx,
-            &encodeCtx.pointee.ch_layout,
-            sampleFmt,
-            ctx.outSampleRate,
-            &decodeCtx.pointee.ch_layout,
-            decodeCtx.pointee.sample_fmt,
-            ctx.inSampleRate,
-            0,
-            nil
+        try self.configureResampler(
+            ctx,
+            inLayout: &decodeCtx.pointee.ch_layout,
+            inFormat: decodeCtx.pointee.sample_fmt,
+            inRate: ctx.inSampleRate,
+            preset: preset
         )
-        try checkEncode(swrRet, preset: preset)
-        try checkEncode(swr_init(ctx.swrCtx), preset: preset)
 
         ctx.fifo = av_audio_fifo_alloc(sampleFmt, ctx.outChannels, 4096)
         guard ctx.fifo != nil else {
@@ -131,6 +125,40 @@ extension AudioTranscoder {
         }
         try checkEncode(avio_open(&outFmt.pointee.pb, destination.path, avioFlagWrite), preset: preset)
         try checkEncode(avformat_write_header(outFmt, nil), preset: preset)
+    }
+
+    /// Builds (or replaces) the resampler for one input shape. The output side
+    /// is always the encoder's, so the FIFO and encoder never notice a rebuild.
+    /// Records the shape on `ctx` so the decode loop can spot a mismatch.
+    private func configureResampler(
+        _ ctx: TranscodeContext,
+        inLayout: UnsafePointer<AVChannelLayout>,
+        inFormat: AVSampleFormat,
+        inRate: Int32,
+        preset: TranscodePreset?
+    ) throws {
+        guard let encodeCtx = ctx.encodeCtx else {
+            throw AudioEngineError.encoderFailure(codec: preset?.encoderName ?? "FFmpeg", underlying: TranscodeInternalError.alloc)
+        }
+        var previous = ctx.swrCtx
+        swr_free(&previous)
+        ctx.swrCtx = nil
+        let swrRet = swr_alloc_set_opts2(
+            &ctx.swrCtx,
+            &encodeCtx.pointee.ch_layout,
+            encodeCtx.pointee.sample_fmt,
+            ctx.outSampleRate,
+            inLayout,
+            inFormat,
+            inRate,
+            0,
+            nil
+        )
+        try checkEncode(swrRet, preset: preset)
+        try checkEncode(swr_init(ctx.swrCtx), preset: preset)
+        try checkEncode(av_channel_layout_copy(&ctx.swrInLayout, inLayout), preset: preset)
+        ctx.swrInFormat = inFormat
+        ctx.inSampleRate = inRate
     }
 
     /// Finds and opens the preset's encoder, configured for the output shape,
@@ -219,8 +247,45 @@ extension AudioTranscoder {
                 break
             }
             defer { av_frame_unref(frame) }
+            guard frame.pointee.ch_layout.nb_channels > 0, frame.pointee.sample_rate > 0, frame.pointee.format >= 0 else {
+                // A frame with no usable shape (a false sync in a damaged
+                // stream): skip it like a damaged packet.
+                ctx.toleratedErrors += 1
+                continue
+            }
+            if self.inputShapeChanged(ctx, frame: frame) {
+                try self.reconfigureResampler(ctx, for: frame)
+            }
             try self.resampleIntoFIFO(ctx, samples: frame.pointee.nb_samples, input: frame)
         }
+    }
+
+    /// Whether `frame` differs from the shape the resampler was built for.
+    private func inputShapeChanged(_ ctx: TranscodeContext, frame: UnsafeMutablePointer<AVFrame>) -> Bool {
+        frame.pointee.format != ctx.swrInFormat.rawValue
+            || frame.pointee.sample_rate != ctx.inSampleRate
+            || av_channel_layout_compare(&frame.pointee.ch_layout, &ctx.swrInLayout) != 0
+    }
+
+    /// A decoder may change the frame shape mid-stream (an MP3 with a mono
+    /// frame inside a stereo file, damaged or deliberate). The resampler reads
+    /// one plane per configured input channel, so the old context faulted on
+    /// a null plane. Drain it, then rebuild it for the new shape.
+    private func reconfigureResampler(_ ctx: TranscodeContext, for frame: UnsafeMutablePointer<AVFrame>) throws {
+        try self.drainResampler(ctx)
+        let format = AVSampleFormat(rawValue: frame.pointee.format)
+        self.log.info("transcode.input.reshaped", [
+            "channels": "\(ctx.swrInLayout.nb_channels)->\(frame.pointee.ch_layout.nb_channels)",
+            "rate": "\(ctx.inSampleRate)->\(frame.pointee.sample_rate)",
+            "format": "\(ctx.swrInFormat.rawValue)->\(frame.pointee.format)",
+        ])
+        try self.configureResampler(
+            ctx,
+            inLayout: &frame.pointee.ch_layout,
+            inFormat: format,
+            inRate: frame.pointee.sample_rate,
+            preset: nil
+        )
     }
 
     /// Runs `swr_convert` with a nil input until the delay buffer is empty.
