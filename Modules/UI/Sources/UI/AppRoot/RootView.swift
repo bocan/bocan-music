@@ -169,9 +169,7 @@ public struct BocanRootView: View {
                 }
             }
         }
-        .onChange(of: self.vm.nowPlaying.nowPlayingTrackID) { _, trackID in
-            self.lyricsVM.trackDidChange(trackID: trackID)
-        }
+        .modifier(LyricsPlaybackDriver(lyricsVM: self.lyricsVM, nowPlaying: self.vm.nowPlaying))
         .safeAreaInset(edge: .top, spacing: 0) {
             // Crash-recovery banner takes priority over the diagnostics consent
             // banner (issue #208).  Collapses once the user picks Recover or
