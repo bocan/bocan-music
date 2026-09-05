@@ -34,8 +34,13 @@ struct ImmersivePanel: ViewModifier {
         RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
     }
 
+    /// Experiment (2026-09-05): fully opaque, to test whether any
+    /// translucency over the live Metal layer is what makes the visualizer
+    /// stutter. Restore `Color.black.opacity(Self.tintOpacity)` if it is not.
     private var fill: Color {
-        self.reduceTransparency ? Color.bgPrimary : Color.black.opacity(Self.tintOpacity)
+        _ = Self.tintOpacity
+        // Half way from the window's dark background toward the black field.
+        return Color.bgPrimary.mix(with: .black, by: 0.5)
     }
 
     func body(content: Content) -> some View {

@@ -255,6 +255,22 @@ struct BocanApp: App {
         .defaultSize(width: 1280, height: 800)
         .commandsRemoved()
 
+        // MARK: Immersive Mode (ADR-089)
+
+        // Its own window, like the fullscreen visualizer: an overlay in the
+        // main window could never hide that window's toolbar and sidebar
+        // chrome. Restoration is disabled like every secondary scene (the
+        // mini player's scene restoration once starved bootstrap); the root
+        // view reopens it after bootstrap when it was left open.
+        Window("Immersive Mode", id: "immersive") {
+            ImmersiveWindowContent(model: self.model)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentMinSize)
+        .defaultSize(width: 1200, height: 760)
+        .restorationBehavior(.disabled)
+        .commandsRemoved()
+
         // MARK: Equaliser & DSP panel
 
         // No scene-level .keyboardShortcut: it only decorated the

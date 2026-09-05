@@ -32,6 +32,11 @@ public struct ImmersiveView: View {
 
     // MARK: - Constants
 
+    /// The preference that mirrors whether the Immersive Mode window is
+    /// open (ADR-089). Set by ``ImmersiveWindowView``; read by the toolbar
+    /// button, the View menu item and the launch restore.
+    public static let preferenceKey = "ui.immersive.visible"
+
     /// The look this surface always draws, regardless of the saved preference.
     static let visualizerMode: VisualizerMode = .oscilloscope
     static let visualizerPalette: VisualizerPalette = .drift
@@ -39,8 +44,9 @@ public struct ImmersiveView: View {
     /// The queue card shows this many rows before it scrolls, and every card
     /// takes its height from it.
     static let queueVisibleRows = 10
-    /// One inset `List` row of `QueueRow` (a single 11pt line with insets).
-    static let queueRowHeight: CGFloat = 30
+    /// One inset `List` row of `QueueRow`: a body title over a caption
+    /// subtitle, plus the row insets. Measured in the running app.
+    static let queueRowHeight: CGFloat = 40
     /// The "Up Next" and "Lyrics" header rows.
     static let headerHeight: CGFloat = 36
 
@@ -120,7 +126,7 @@ public struct ImmersiveView: View {
             // The List's own background would paint over the card; the
             // rows keep their inset style. The card's fixed height is what
             // makes the list scroll past ten rows.
-            QueueView(vm: self.library)
+            QueueView(vm: self.library, showsGenre: false)
                 .scrollContentBackground(.hidden)
         }
     }

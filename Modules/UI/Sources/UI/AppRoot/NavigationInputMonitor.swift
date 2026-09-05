@@ -9,9 +9,6 @@ import SwiftUI
 /// plain `let` so the helper never re-renders on view-model churn.
 struct NavigationInputBackground: View {
     let vm: LibraryViewModel
-    /// Immersive Mode sits above drill-out in the Esc ladder (ADR-089): one
-    /// Esc leaves the overlay and touches nothing else.
-    @AppStorage(ImmersiveOverlay.preferenceKey) private var immersiveVisible = false
 
     var body: some View {
         NavigationInputMonitor(
@@ -26,11 +23,6 @@ struct NavigationInputBackground: View {
                         await vm.goForward()
                     }
                 }
-            },
-            onImmersiveExit: {
-                guard self.immersiveVisible else { return false }
-                self.immersiveVisible = false
-                return true
             },
             onDrillOut: { self.vm.drillOutToParent() }
         )
@@ -65,22 +57,13 @@ struct NavigationInputMonitor: NSViewRepresentable {
 
     /// Called on the main actor with the history direction for a side button.
     let onHistory: (HistoryDirection) -> Void
-    /// Called on the main actor for Esc before drill-out; returns whether an
-    /// Immersive Mode overlay was dismissed (ADR-089). Defaults to a no-op
-    /// so surfaces without the overlay are unchanged.
-    var onImmersiveExit: () -> Bool = { false }
     /// Called on the main actor for Esc; returns whether a drill-out actually
     /// navigated, so an unhandled Esc passes through untouched.
     let onDrillOut: () -> Bool
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
-        context.coordinator.install(
-            for: view,
-            onHistory: self.onHistory,
-            onImmersiveExit: self.onImmersiveExit,
-            onDrillOut: self.onDrillOut
-        )
+        context.coordinator.install(for: view, onHistory: self.onHistory, onDrillOut: self.onDrillOut)
         return view
     }
 
@@ -126,7 +109,6 @@ struct NavigationInputMonitor: NSViewRepresentable {
         func install(
             for view: NSView,
             onHistory: @escaping (HistoryDirection) -> Void,
-            onImmersiveExit: @escaping () -> Bool = { false },
             onDrillOut: @escaping () -> Bool
         ) {
             guard self.monitor == nil else { return }
@@ -148,9 +130,7 @@ struct NavigationInputMonitor: NSViewRepresentable {
                         onHistory(direction)
                         return true
                     }
-                    // keyDown: Esc. Text focus and system full screen pass
-                    // through; then Immersive Mode exit, then drill-out,
-                    // last in the precedence ladder (ADR-089).
+                    // keyDown: Esc drill-out, last in its precedence ladder.
                     guard NavigationInputMonitor.isBareEscape(
                         keyCode: event.keyCode,
                         modifiers: event.modifierFlags
@@ -159,7 +139,6 @@ struct NavigationInputMonitor: NSViewRepresentable {
                         !window.styleMask.contains(.fullScreen) else {
                         return false
                     }
-                    if onImmersiveExit() { return true }
                     return onDrillOut()
                 }
                 return handled ? nil : event

@@ -4,10 +4,12 @@ import Testing
 
 // MARK: - ImmersiveWiringConventionTests
 
-/// ADR-089 slice 4: Immersive Mode is wired through one preference key, one
-/// overlay modifier on the root, an Esc hook ahead of drill-out, a strip
-/// button, a View menu item, and the E2E seeder. Source conventions, because
-/// the window, the menu bar and the key monitor cannot be exercised host-less.
+/// ADR-089 slice 4: Immersive Mode is its own hidden-title-bar window. One
+/// preference key mirrors whether it is open, the toolbar and the View menu
+/// open or dismiss it, Esc closes it from inside, the root reopens it after
+/// bootstrap, and the E2E seeder clears the key. Source conventions, because
+/// scenes, the menu bar and window presentation cannot be exercised
+/// host-less.
 @Suite("Immersive Mode wiring conventions")
 struct ImmersiveWiringConventionTests {
     private var moduleRoot: URL {
@@ -28,48 +30,71 @@ struct ImmersiveWiringConventionTests {
         try String(contentsOf: root.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
-    @Test("one preference key, owned by the overlay modifier")
-    func onePreferenceKey() {
-        #expect(ImmersiveOverlay.preferenceKey == "ui.immersive.visible")
+    @Test("one preference key and one window identifier")
+    func identifiers() {
+        #expect(ImmersiveView.preferenceKey == "ui.immersive.visible")
+        #expect(ImmersiveWindowView.windowID == "immersive")
     }
 
-    @Test("the root applies the overlay to the whole window content and skips the trailing pane while immersive")
-    func rootAppliesOverlay() throws {
+    @Test("the scene is a hidden-title-bar secondary window with restoration disabled")
+    func sceneShape() throws {
+        let app = try self.source("App/BocanApp.swift", from: self.repoRoot)
+        let scene = try #require(app.range(of: "Window(\"Immersive Mode\", id: \"immersive\")"))
+        let tail = String(app[scene.upperBound...].prefix(600))
+        #expect(tail.contains("ImmersiveWindowContent(model: self.model)"))
+        #expect(tail.contains(".windowStyle(.hiddenTitleBar)"))
+        #expect(tail.contains(".restorationBehavior(.disabled)"))
+        #expect(tail.contains(".commandsRemoved()"))
+        let content = try self.source("App/AppSceneContent.swift", from: self.repoRoot)
+        #expect(content.contains("ImmersiveWindowView("))
+    }
+
+    @Test("the window content mirrors the open flag and closes on Esc")
+    func windowContent() throws {
+        let window = try self.source("Sources/UI/Immersive/ImmersiveWindowView.swift", from: self.moduleRoot)
+        #expect(window.contains(".onAppear { self.isOpen = true }"))
+        #expect(window.contains(".onDisappear { self.isOpen = false }"))
+        #expect(window.contains(".onKeyPress(.escape)"))
+        #expect(window.contains("self.dismissWindow(id: Self.windowID)"))
+        #expect(window.contains(".ignoresSafeArea()"))
+    }
+
+    @Test("the root reopens the window after bootstrap and no longer hosts an overlay")
+    func rootRestoresAndHostsNoOverlay() throws {
         let root = try self.source("Sources/UI/AppRoot/RootView.swift", from: self.moduleRoot)
-        #expect(root.contains(".modifier(ImmersiveOverlay(library: self.vm, lyricsVM: self.lyricsVM, visualizerVM: self.visualizerVM))"))
-        #expect(root.contains("if self.immersiveVisible {"))
-        #expect(root.contains("@AppStorage(ImmersiveOverlay.preferenceKey) private var immersiveVisible = false"))
-    }
-
-    @Test("Esc leaves Immersive Mode before drill-out, after the text-focus and full-screen guards")
-    func escPrecedence() throws {
+        #expect(root.contains("@AppStorage(ImmersiveView.preferenceKey) private var immersiveOpen = false"))
+        let restore = try #require(root.range(of: "self.windowMode.restoreIfNeeded()"))
+        // The toolbar closure opens the window too; the reopen must follow
+        // the mini player restore inside the bootstrap task.
+        let afterRestore = restore.upperBound ..< root.endIndex
+        let reopen = root.range(of: "self.openWindow(id: ImmersiveWindowView.windowID)", range: afterRestore)
+        #expect(reopen != nil)
+        #expect(!root.contains("ImmersiveOverlay"))
+        #expect(!root.contains("ImmersiveView("))
         let monitor = try self.source("Sources/UI/AppRoot/NavigationInputMonitor.swift", from: self.moduleRoot)
-        let fullScreenGuard = try #require(monitor.range(of: "!window.styleMask.contains(.fullScreen)"))
-        let immersiveExit = try #require(monitor.range(of: "if onImmersiveExit() { return true }"))
-        let drillOut = try #require(monitor.range(of: "return onDrillOut()"))
-        #expect(fullScreenGuard.lowerBound < immersiveExit.lowerBound)
-        #expect(immersiveExit.lowerBound < drillOut.lowerBound)
-        #expect(monitor.contains("@AppStorage(ImmersiveOverlay.preferenceKey) private var immersiveVisible = false"))
+        #expect(!monitor.contains("Immersive"))
     }
 
-    @Test("the toolbar toggles Immersive Mode beside the other view toggles, with an identifier and localized help")
+    @Test("the toolbar toggles the window beside the other view toggles, with an identifier and localized help")
     func toolbarButton() throws {
         let root = try self.source("Sources/UI/AppRoot/RootView.swift", from: self.moduleRoot)
-        #expect(root.contains("immersiveVisible: self.$immersiveVisible"))
+        #expect(root.contains("self.dismissWindow(id: ImmersiveWindowView.windowID)"))
         let toolbar = try self.source("Sources/UI/AppRoot/MainToolbarItems.swift", from: self.moduleRoot)
         #expect(toolbar.contains(".accessibilityIdentifier(A11y.Toolbar.immersiveToggle)"))
         #expect(toolbar.contains("L10n.string(\"Toggle Immersive Mode (⇧⌘I)\")"))
-        #expect(toolbar.contains("self.toggleAnimated(self.immersiveVisible)"))
+        #expect(toolbar.contains("self.toggleImmersive()"))
         // The strip has no slack at the minimum window width; nothing new goes there.
         let strip = try self.source("Sources/UI/AppRoot/NowPlayingPanelButtons.swift", from: self.moduleRoot)
         #expect(!strip.contains("Immersive"))
     }
 
-    @Test("the View menu mirrors the key and uses ⇧⌘I")
+    @Test("the View menu mirrors the key, opens or dismisses the window, and uses ⇧⌘I")
     func viewMenuItem() throws {
         let commands = try self.source("App/BocanCommands.swift", from: self.repoRoot)
-        #expect(commands.contains("@AppStorage(\"ui.immersive.visible\") private var immersiveVisible = false"))
-        #expect(commands.contains("Button(self.immersiveVisible ? \"Exit Immersive Mode\" : \"Enter Immersive Mode\")"))
+        #expect(commands.contains("@AppStorage(\"ui.immersive.visible\") private var immersiveOpen = false"))
+        #expect(commands.contains("Button(self.immersiveOpen ? \"Exit Immersive Mode\" : \"Enter Immersive Mode\")"))
+        #expect(commands.contains("self.dismissWindow(id: \"immersive\")"))
+        #expect(commands.contains("self.openWindow(id: \"immersive\")"))
         #expect(commands.contains(".keyboardShortcut(\"i\", modifiers: [.command, .shift])"))
     }
 

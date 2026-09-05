@@ -23,8 +23,9 @@ struct BocanCommands: Commands {
     @AppStorage("visualizer.paneVisible") private var visualizerPaneVisible = false
     /// Mirrors `NowPlayingStrip.showRecentScrobbles` (`@AppStorage("scrobble.showRecentSheet")`).
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
-    /// Mirrors `ImmersiveOverlay` (`@AppStorage("ui.immersive.visible")`, ADR-089).
-    @AppStorage("ui.immersive.visible") private var immersiveVisible = false
+    /// Mirrors whether the Immersive Mode window is open (`ImmersiveWindowView`
+    /// keeps `ui.immersive.visible` current, ADR-089).
+    @AppStorage("ui.immersive.visible") private var immersiveOpen = false
     /// Mirrors `LibraryViewModel.isScanning`. CommandGroup items on system
     /// menus only re-evaluate `.disabled` when this body rebuilds, so
     /// enablement must come from defaults, not the plain-`let` VM.
@@ -48,6 +49,7 @@ struct BocanCommands: Commands {
     // Internal (not private): the file-split command extensions
     // (`BocanCommands+Tools.swift`) open windows too.
     @Environment(\.openWindow) var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.openSettings) private var openSettings
 
     /// `true` when motion should be suppressed (system Reduce Motion or the in-app toggle).
@@ -173,8 +175,12 @@ struct BocanCommands: Commands {
             .keyboardShortcut("m", modifiers: [.command, .option])
 
             // ⌘I is Get Info and ⌥⌘I is Identify Track; Immersive Mode takes ⇧⌘I.
-            Button(self.immersiveVisible ? "Exit Immersive Mode" : "Enter Immersive Mode") {
-                self.toggleAnimated(self.$immersiveVisible)
+            Button(self.immersiveOpen ? "Exit Immersive Mode" : "Enter Immersive Mode") {
+                if self.immersiveOpen {
+                    self.dismissWindow(id: "immersive")
+                } else {
+                    self.openWindow(id: "immersive")
+                }
             }
             .keyboardShortcut("i", modifiers: [.command, .shift])
 

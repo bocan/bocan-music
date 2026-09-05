@@ -42,8 +42,10 @@ public struct BocanRootView: View {
     @AppStorage(MetricKitListener.consentAskedKey) private var diagnosticsConsentAsked = false
     /// Show the crash-recovery banner when the previous session ended abnormally (issue #208).
     @AppStorage("launch.didCrashPreviously") private var didCrashPreviously = false
-    /// Immersive Mode (ADR-089); the overlay itself is applied in `body`.
-    @AppStorage(ImmersiveOverlay.preferenceKey) private var immersiveVisible = false
+    /// Mirrors whether the Immersive Mode window is open (ADR-089); the
+    /// window content keeps it current. Read for the toolbar label and to
+    /// reopen the window after bootstrap when it was left open.
+    @AppStorage(ImmersiveView.preferenceKey) private var immersiveOpen = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -96,7 +98,14 @@ public struct BocanRootView: View {
                         toggleMiniPlayer: { self.windowMode.toggleMiniPlayer() },
                         lyricsPaneVisible: self.$lyricsVM.paneVisible,
                         visualizerPaneVisible: self.$visualizerVM.paneVisible,
-                        immersiveVisible: self.$immersiveVisible,
+                        immersiveOpen: self.immersiveOpen,
+                        toggleImmersive: {
+                            if self.immersiveOpen {
+                                self.dismissWindow(id: ImmersiveWindowView.windowID)
+                            } else {
+                                self.openWindow(id: ImmersiveWindowView.windowID)
+                            }
+                        },
                         reduceMotion: self.reduceMotion
                     )
                 }
@@ -106,11 +115,7 @@ public struct BocanRootView: View {
             }
 
             // One trailing slot: Visualizer wins over Lyrics when both are on.
-            // Neither is built while Immersive Mode covers it (ADR-089), so
-            // the pane's visualizer stops and its identifiers leave the tree.
-            if self.immersiveVisible {
-                EmptyView()
-            } else if self.visualizerVM.paneVisible {
+            if self.visualizerVM.paneVisible {
                 VisualizerPane(vm: self.visualizerVM, nowPlayingVM: self.vm.nowPlaying)
             } else {
                 LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
@@ -151,6 +156,12 @@ public struct BocanRootView: View {
             await self.vm.bootstrapSubsonic()
             await self.vm.restoreUIState()
             self.windowMode.restoreIfNeeded()
+            // Immersive Mode left open last time reopens after bootstrap
+            // (ADR-089), the same point the mini player restores; its scene
+            // restoration is disabled so it can never open before this.
+            if self.immersiveOpen {
+                self.openWindow(id: ImmersiveWindowView.windowID)
+            }
             await self.vm.refreshRoots()
             await self.vm.loadCurrentDestination()
             self.vm.triggerScan()
@@ -205,7 +216,6 @@ public struct BocanRootView: View {
             // the main window starts a fresh search seeded with it.
             .background(TypeToSearchBackground(vm: self.vm))
             .background(NavigationInputBackground(vm: self.vm))
-            .modifier(ImmersiveOverlay(library: self.vm, lyricsVM: self.lyricsVM, visualizerVM: self.visualizerVM))
             .onChange(of: self.vm.searchFocusRequestID) { _, _ in
                 // ADR-005 audit H5: ⌘F (Find) focuses the search field.
                 self.searchFocused = true

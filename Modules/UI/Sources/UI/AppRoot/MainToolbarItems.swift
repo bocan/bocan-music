@@ -13,9 +13,10 @@ struct MainToolbarItems: ToolbarContent {
     let toggleMiniPlayer: () -> Void
     let lyricsPaneVisible: Binding<Bool>
     let visualizerPaneVisible: Binding<Bool>
-    /// Immersive Mode (ADR-089). The toolbar stays visible while it is on, so
-    /// this button is also an exit.
-    let immersiveVisible: Binding<Bool>
+    /// Immersive Mode (ADR-089) is its own window; the root opens or
+    /// dismisses it, and `immersiveOpen` mirrors the window's state.
+    let immersiveOpen: Bool
+    let toggleImmersive: () -> Void
     let reduceMotion: Bool
 
     var body: some ToolbarContent {
@@ -66,10 +67,10 @@ struct MainToolbarItems: ToolbarContent {
             .accessibilityIdentifier(A11y.Toolbar.visualizerToggle)
 
             Button(
-                self.immersiveVisible.wrappedValue ? L10n.string("Exit Immersive Mode") : L10n.string("Enter Immersive Mode"),
+                self.immersiveOpen ? L10n.string("Exit Immersive Mode") : L10n.string("Enter Immersive Mode"),
                 systemImage: "rectangle.split.3x1"
             ) {
-                self.toggleAnimated(self.immersiveVisible)
+                self.toggleImmersive()
             }
             .help(L10n.string("Toggle Immersive Mode (⇧⌘I)"))
             .accessibilityIdentifier(A11y.Toolbar.immersiveToggle)
