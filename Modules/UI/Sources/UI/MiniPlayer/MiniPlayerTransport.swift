@@ -18,6 +18,25 @@ struct MiniPlayerTransport: View {
         case full
         /// Strip: play, shuffle, repeat, stop (no track navigation or info).
         case strip
+        /// Immersive Mode (ADR-089): prev, play, next, shuffle, repeat, stop.
+        /// No info button; that surface already shows the track in full.
+        case navigation
+    }
+
+    /// Accessibility identifiers per control. The mini player passes none
+    /// (its crawl is window-level); Immersive Mode passes its own so every
+    /// control is reachable by the surface crawl (ADR-080). An empty string
+    /// is the same as no identifier.
+    struct Identifiers {
+        var info = ""
+        var previous = ""
+        var playPause = ""
+        var next = ""
+        var shuffle = ""
+        var repeatMode = ""
+        var stopAfter = ""
+        var skipBack = ""
+        var skipForward = ""
     }
 
     /// Foreground colours per layout. Active toggles always use the accent colour.
@@ -47,6 +66,7 @@ struct MiniPlayerTransport: View {
     var np: NowPlayingViewModel
     var musicLayout: MusicLayout = .full
     var palette: Palette = .standard
+    var identifiers = Identifiers()
     /// Opens the Track Info window (music `.full` only).
     var openInfoWindow: () -> Void = {}
     var spacing: CGFloat
@@ -72,10 +92,12 @@ struct MiniPlayerTransport: View {
             } else {
                 if self.musicLayout == .full {
                     self.infoButton
+                }
+                if self.musicLayout != .strip {
                     self.previousButton
                 }
                 self.playPauseButton
-                if self.musicLayout == .full {
+                if self.musicLayout != .strip {
                     self.nextButton
                 }
                 self.shuffleButton
@@ -98,6 +120,7 @@ struct MiniPlayerTransport: View {
         .foregroundStyle(self.palette.primary)
         .help(self.np.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
         .accessibilityLabel(self.np.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
+        .accessibilityIdentifier(self.identifiers.playPause)
     }
 
     // MARK: - Podcast
@@ -113,6 +136,7 @@ struct MiniPlayerTransport: View {
         .foregroundStyle(self.palette.primary)
         .help(L10n.string("Skip back 15 seconds"))
         .accessibilityLabel(L10n.string("Skip back 15 seconds"))
+        .accessibilityIdentifier(self.identifiers.skipBack)
     }
 
     private var skipForwardButton: some View {
@@ -126,6 +150,7 @@ struct MiniPlayerTransport: View {
         .foregroundStyle(self.palette.primary)
         .help(L10n.string("Skip forward 30 seconds"))
         .accessibilityLabel(L10n.string("Skip forward 30 seconds"))
+        .accessibilityIdentifier(self.identifiers.skipForward)
     }
 
     // MARK: - Music
@@ -142,6 +167,7 @@ struct MiniPlayerTransport: View {
         .disabled(self.np.nowPlayingTrackID == nil)
         .help(L10n.string("Get info for current track"))
         .accessibilityLabel(L10n.string("Track Info"))
+        .accessibilityIdentifier(self.identifiers.info)
     }
 
     private var previousButton: some View {
@@ -155,6 +181,7 @@ struct MiniPlayerTransport: View {
         .foregroundStyle(self.palette.primary)
         .help(L10n.string("Within first 3 seconds: previous track · After 3 seconds: restart current track"))
         .accessibilityLabel(L10n.string("Previous or restart"))
+        .accessibilityIdentifier(self.identifiers.previous)
     }
 
     private var nextButton: some View {
@@ -168,6 +195,7 @@ struct MiniPlayerTransport: View {
         .foregroundStyle(self.palette.primary)
         .help(L10n.string("Next track"))
         .accessibilityLabel(L10n.string("Next"))
+        .accessibilityIdentifier(self.identifiers.next)
     }
 
     private var shuffleButton: some View {
@@ -184,6 +212,7 @@ struct MiniPlayerTransport: View {
             : L10n.string("Shuffle: Off — click to enable"))
         .accessibilityLabel(self.np.shuffleOn ? L10n.string("Shuffle On") : L10n.string("Shuffle Off"))
         .accessibilityAddTraits(.isToggle)
+        .accessibilityIdentifier(self.identifiers.shuffle)
     }
 
     private var repeatButton: some View {
@@ -198,6 +227,7 @@ struct MiniPlayerTransport: View {
         .help(L10n.string("Repeat: \(self.repeatModeLabel) — click to cycle"))
         .accessibilityLabel(L10n.string("Repeat \(self.repeatModeLabel)"))
         .accessibilityAddTraits(.isToggle)
+        .accessibilityIdentifier(self.identifiers.repeatMode)
     }
 
     private var stopAfterButton: some View {
@@ -216,6 +246,7 @@ struct MiniPlayerTransport: View {
             ? L10n.string("Stop After Current: On")
             : L10n.string("Stop After Current: Off"))
         .accessibilityAddTraits(.isToggle)
+        .accessibilityIdentifier(self.identifiers.stopAfter)
     }
 
     /// Localized label for the current repeat mode ("Off" / "All" / "One").

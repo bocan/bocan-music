@@ -294,6 +294,7 @@ struct L10nTests {
             "Sources/UI/MetadataEditor/TagFieldRow.swift",
             "Sources/UI/MetadataEditor/ConflictDiffSheet.swift",
             "Sources/UI/Lyrics/LyricsPane.swift",
+            "Sources/UI/Lyrics/LyricsOffsetControl.swift",
             "Sources/UI/Lyrics/LyricsEditorSheet.swift",
             "Sources/UI/Lyrics/LyricsSettingsView.swift",
             "Sources/UI/Lyrics/LyricsView.swift",

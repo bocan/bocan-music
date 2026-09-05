@@ -11,10 +11,16 @@ import SwiftUI
 /// serves as the fallback (no device, or the `visualizer.forceCanvas` debug
 /// default). Both paths share the toast overlay, accessibility label, and FPS
 /// watchdog.
+///
+/// A surface normally follows the saved mode and palette. One that needs a
+/// fixed look pins either or both through `init(vm:mode:palette:)`; the host
+/// then ignores the shared preference for that value and never writes it
+/// back (ADR-089, ``VisualizerSurfaceSelection``).
 public struct VisualizerHost: View {
     // MARK: - Dependencies
 
     @ObservedObject public var vm: VisualizerViewModel
+    private let selection: VisualizerSurfaceSelection
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -39,8 +45,34 @@ public struct VisualizerHost: View {
 
     // MARK: - Init
 
-    public init(vm: VisualizerViewModel) {
+    /// - Parameters:
+    ///   - vm: The shared visualizer view model (audio tap, analysis, settings).
+    ///   - mode: A mode to pin for this surface, or `nil` to follow the saved
+    ///     `visualizer.mode`.
+    ///   - palette: A palette to pin for this surface, or `nil` to follow the
+    ///     saved `visualizer.palette`.
+    public init(vm: VisualizerViewModel, mode: VisualizerMode? = nil, palette: VisualizerPalette? = nil) {
         self.vm = vm
+        self.selection = VisualizerSurfaceSelection(mode: mode, palette: palette)
+    }
+
+    // MARK: - Effective selection
+
+    /// The mode this surface draws: the pinned one, else the saved preference.
+    var effectiveMode: VisualizerMode {
+        self.selection.effectiveMode(preferred: self.vm.mode)
+    }
+
+    /// The palette this surface draws: the pinned one, else the saved preference.
+    var effectivePalette: VisualizerPalette {
+        self.selection.effectivePalette(preferred: self.vm.palette)
+    }
+
+    /// Whether this surface's frame-rate watchdog may switch the saved mode
+    /// to Spectrum Bars. A pinned surface must not: it would rewrite a
+    /// preference it does not itself display (ADR-089).
+    private var autoSimplifies: Bool {
+        !self.selection.overridesPreferences
     }
 
     // MARK: - Body
@@ -51,7 +83,9 @@ public struct VisualizerHost: View {
             self.activeContent
         }
         .overlay(alignment: .bottom) {
-            if let toast = self.vm.performanceToast {
+            // The toast reports a switch of the saved mode; a pinned surface
+            // did not switch, so it stays quiet.
+            if self.autoSimplifies, let toast = self.vm.performanceToast {
                 self.performanceToastBanner(toast: toast)
                     .padding(.bottom, 16)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -59,21 +93,21 @@ public struct VisualizerHost: View {
         }
         .animation(self.reduceMotion ? nil : .easeInOut(duration: 0.25), value: self.vm.performanceToast?.id)
         // No .accessibilityIdentifier here: A11y.Visualizer.host lives on
-        // VisualizerControlOverlay's zero-size readout element instead
-        // (see LivenessAccessibilityValue's doc comment) — two elements
-        // sharing one identifier would make `.firstMatch` non-deterministic
-        // about which one (this label-only one, or that value-bearing one)
-        // a query resolves to. The label stays here for VoiceOver users
-        // navigating to the render area itself.
+        // the surface's zero-size readout element instead (see
+        // VisualizerLivenessReadout's doc comment); two elements sharing one
+        // identifier would make `.firstMatch` non-deterministic about which
+        // one (this label-only one, or that value-bearing one) a query
+        // resolves to. The label stays here for VoiceOver users navigating
+        // to the render area itself.
         .accessibilityLabel(self.accessibilityLabel)
         .onAppear { self.rebuildRenderer() }
-        .onChange(of: self.vm.mode) { _, _ in
+        .onChange(of: self.effectiveMode) { _, _ in
             self.rebuildRenderer()
             // Reset FPS monitor so a manual mode change (or revert) gets a
             // fresh 3-second window before another auto-simplify can fire.
             self.frameMonitor = FrameRateMonitor()
         }
-        .onChange(of: self.vm.palette) { _, _ in self.rebuildRenderer() }
+        .onChange(of: self.effectivePalette) { _, _ in self.rebuildRenderer() }
         .onChange(of: self.reduceMotion) { _, _ in self.rebuildRenderer() }
         .onChange(of: self.reduceTransparency) { _, _ in self.rebuildRenderer() }
     }
@@ -98,7 +132,8 @@ public struct VisualizerHost: View {
                 device: device,
                 pixelFormat: .bgra8Unorm,
                 preferredFPS: self.vm.effectiveFPS,
-                reduceMotion: self.reduceMotion
+                reduceMotion: self.reduceMotion,
+                autoSimplifies: self.autoSimplifies
             )
             .id(self.rendererKey)
         } else {
@@ -130,7 +165,9 @@ public struct VisualizerHost: View {
     /// Records a frame tick and triggers ``VisualizerViewModel/autoSimplify()``
     /// when the rolling average FPS stays below 30 for ≥ 3 consecutive seconds.
     private func recordFrameTick(at date: Date) {
-        if self.frameMonitor.record(time: date.timeIntervalSinceReferenceDate) {
+        // Always record, so the E2E liveness FPS stays live on a pinned
+        // surface too; only the auto-simplify side effect is gated.
+        if self.frameMonitor.record(time: date.timeIntervalSinceReferenceDate), self.autoSimplifies {
             self.vm.autoSimplify()
         }
         // A no-op unless E2E liveness is on; see VisualizerViewModel.
@@ -140,7 +177,12 @@ public struct VisualizerHost: View {
     // MARK: - Renderer management
 
     private func rebuildRenderer() {
-        let key = "\(vm.mode.rawValue)-\(self.vm.palette.rawValue)-\(self.reduceMotion)-\(self.reduceTransparency)"
+        let key = VisualizerSurfaceSelection.rendererKey(
+            mode: self.effectiveMode,
+            palette: self.effectivePalette,
+            reduceMotion: self.reduceMotion,
+            reduceTransparency: self.reduceTransparency
+        )
         guard key != self.rendererKey else { return }
         self.rendererKey = key
 
@@ -156,15 +198,15 @@ public struct VisualizerHost: View {
         guard
             let device = MetalSupport.device,
             !UserDefaults.standard.bool(forKey: "visualizer.forceCanvas"),
-            MetalVisualizerFactory.supports(self.vm.mode),
-            !(self.vm.mode.requiresMetal && self.reduceMotion) else { return }
+            MetalVisualizerFactory.supports(self.effectiveMode),
+            !(self.effectiveMode.requiresMetal && self.reduceMotion) else { return }
         let config = MetalRendererConfig(
-            palette: self.vm.palette,
+            palette: self.effectivePalette,
             reduceMotion: self.reduceMotion,
             reduceTransparency: self.reduceTransparency
         )
         self.metalRenderer = MetalVisualizerFactory.make(
-            mode: self.vm.mode,
+            mode: self.effectiveMode,
             device: device,
             pixelFormat: .bgra8Unorm,
             config: config
@@ -175,34 +217,34 @@ public struct VisualizerHost: View {
     /// fallback when Metal is unavailable and the visual-parity reference, and it
     /// costs nothing until actually rendered.
     private func buildCanvasRenderer() {
-        switch self.vm.mode {
+        switch self.effectiveMode {
         case .spectrumBars:
             self.renderer = SpectrumBars(
-                palette: self.vm.palette,
+                palette: self.effectivePalette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
 
         case .oscilloscope:
-            self.renderer = Oscilloscope(palette: self.vm.palette, reduceMotion: self.reduceMotion)
+            self.renderer = Oscilloscope(palette: self.effectivePalette, reduceMotion: self.reduceMotion)
 
         case .halo:
             self.renderer = Halo(
-                palette: self.vm.palette,
+                palette: self.effectivePalette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
 
         case .cascade:
             self.renderer = Cascade(
-                palette: self.vm.palette,
+                palette: self.effectivePalette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
 
         case .starfield:
             self.renderer = Starfield(
-                palette: self.vm.palette,
+                palette: self.effectivePalette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
@@ -211,7 +253,7 @@ public struct VisualizerHost: View {
             // Nebula is Metal-only; the Canvas fallback used when Metal is
             // unavailable, forced off, or Reduce Motion is on is the calm Spectrum Bars.
             self.renderer = SpectrumBars(
-                palette: self.vm.palette,
+                palette: self.effectivePalette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
             )
@@ -235,7 +277,7 @@ public struct VisualizerHost: View {
     }
 
     private var accessibilityLabel: String {
-        L10n.string("Visualizer: \(self.vm.mode.displayName)")
+        L10n.string("Visualizer: \(self.effectiveMode.displayName)")
     }
 
     // MARK: - Performance toast
@@ -263,25 +305,5 @@ public struct VisualizerHost: View {
             )
         )
         .foregroundStyle(.white)
-    }
-}
-
-// MARK: - LivenessAccessibilityValue
-
-/// Applies `VisualizerViewModel.currentFPS` as an accessibility value only
-/// under `e2eLiveness` — never for a real user, whose accessibility tree
-/// must not carry this internal metric (ADR-084). Always applies the
-/// modifier (an empty value reads as no value to VoiceOver) rather than
-/// branching to a differently-shaped view per condition, which resets
-/// SwiftUI's identity for the wrapped content and can silently drop
-/// modifiers applied to it further up the chain. Not `private`: shared by
-/// `VisualizerControlOverlay`, common to all three visualizer surfaces.
-struct LivenessAccessibilityValue: ViewModifier {
-    @ObservedObject var vm: VisualizerViewModel
-
-    func body(content: Content) -> some View {
-        content.accessibilityValue(
-            self.vm.e2eLiveness ? L10n.string("\(Int(self.vm.currentFPS.rounded())) fps") : ""
-        )
     }
 }

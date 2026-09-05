@@ -26,7 +26,7 @@ enum E2ESeeder {
         // prior run's "Show Lyrics" toggle would otherwise leak into this
         // launch. Reset (not argument-domain pin: pinning shadows every
         // later read, freezing the menu's live Show/Hide labels).
-        for key in ["lyrics.paneVisible", "visualizer.paneVisible"] {
+        for key in ["lyrics.paneVisible", "visualizer.paneVisible", "ui.immersive.visible"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         let fm = FileManager.default

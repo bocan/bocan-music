@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Experimental: Immersive Mode. Press Shift-Command-I, pick View, Enter Immersive Mode, or click the new three-column button in the toolbar, and Bòcan opens a full-screen window with nothing on it but the music: the oscilloscope running edge to edge in the Drift palette, and three cards over it with the artwork, title and player controls, the next ten songs in your queue (scroll for the rest), and the lyrics, synced where you have them. Esc brings you back. It is marked experimental on purpose: the visualizer behind the cards is heavier than the one in the side pane, and if it turns out to stutter on too many Macs the mode may change shape or be removed in a later update.
+
 Phone Sync conversion no longer takes the whole app down on a file whose sound switches between stereo and mono part way through, which some damaged MP3s do. The converter now adapts mid-file and carries on, so a single odd track cannot stop every sync.
 
 ## [2.13.0](https://github.com/bocan/bocan-music/compare/v2.12.0...v2.13.0) (2026-09-02)

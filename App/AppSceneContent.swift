@@ -59,6 +59,21 @@ struct VisualizerWindowContent: View {
     }
 }
 
+// MARK: - Immersive Mode (ADR-089)
+
+struct ImmersiveWindowContent: View {
+    let model: AppModel
+    var body: some View {
+        GraphContent(model: self.model) { graph in
+            ImmersiveWindowView(
+                library: graph.libraryViewModel,
+                lyricsVM: graph.lyricsViewModel,
+                visualizerVM: graph.visualizerViewModel
+            )
+        }
+    }
+}
+
 // MARK: - Equaliser & DSP
 
 struct DSPWindowContent: View {

@@ -95,6 +95,8 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-085-e2e-hermetic-network.md](ADR-085-e2e-hermetic-network.md) | E2E: hermetic network (loopback stubs, radio journeys) |
 | [ADR-086-e2e-nightly-pipeline.md](ADR-086-e2e-nightly-pipeline.md) | E2E: nightly pipeline, smoke subset, GPU runner |
 | [ADR-087-cue-markers.md](ADR-087-cue-markers.md) | CUE sheets as in-track markers (chapters model, supersedes virtual tracks) |
+| [ADR-088-sync-transcode.md](ADR-088-sync-transcode.md) | Phone Sync transcode presets (MP3/Opus), prepare-and-release cache, size estimates |
+| [ADR-089-immersive-mode.md](ADR-089-immersive-mode.md) | Immersive Mode: full-window now-playing overlay (artwork, queue, lyrics) over an Oscilloscope/Drift visualizer |
 
 ## Conventions used in every ADR
 

@@ -7,13 +7,17 @@ import SwiftUI
 /// Shows the current playback queue with drag-to-reorder and context menu.
 public struct QueueView: View {
     @ObservedObject public var vm: LibraryViewModel
+    /// Immersive Mode (ADR-089) drops the genre column so the narrower card
+    /// keeps the title and artist readable.
+    public var showsGenre: Bool
 
-    public init(vm: LibraryViewModel) {
+    public init(vm: LibraryViewModel, showsGenre: Bool = true) {
         self.vm = vm
+        self.showsGenre = showsGenre
     }
 
     public var body: some View {
-        QueueContentView(vm: self.vm)
+        QueueContentView(vm: self.vm, showsGenre: self.showsGenre)
     }
 }
 
@@ -24,13 +28,15 @@ private struct QueueContentView: View {
     @ObservedObject var vm: LibraryViewModel
     /// Observed separately so the animated row indicator pauses when playback pauses.
     var nowPlaying: NowPlayingViewModel
+    var showsGenre = true
     @State private var items: [QueueItem] = []
     @State private var currentIndex: Int?
     @State private var unavailableIDs: Set<QueueItem.ID> = []
 
-    init(vm: LibraryViewModel) {
+    init(vm: LibraryViewModel, showsGenre: Bool = true) {
         self.vm = vm
         self.nowPlaying = vm.nowPlaying
+        self.showsGenre = showsGenre
     }
 
     /// The slice of the queue shown in Up Next: the now-playing track followed by
@@ -86,7 +92,8 @@ private struct QueueContentView: View {
                             isCurrent: entry.isCurrent,
                             isPlaying: self.nowPlaying.isPlaying,
                             isUnavailable: entry.isUnavailable,
-                            position: entry.index
+                            position: entry.index,
+                            showsGenre: self.showsGenre
                         )
                         .listRowBackground(entry.isCurrent ? Color.accentColor.opacity(0.15) : Color.clear)
                         .contextMenu {
@@ -244,6 +251,7 @@ private struct QueueRow: View {
     let isPlaying: Bool
     let isUnavailable: Bool
     let position: Int
+    var showsGenre = true
     @State private var isHovered = false
 
     /// Best-effort display title: metadata title → decoded filename stem → raw last path component.
@@ -298,7 +306,9 @@ private struct QueueRow: View {
             .padding(.leading, 4)
 
             // Genre
-            if let genre = item.genre, !genre.isEmpty {
+            if !self.showsGenre {
+                Spacer().frame(width: 8)
+            } else if let genre = item.genre, !genre.isEmpty {
                 Text(genre)
                     .font(Typography.caption)
                     .foregroundStyle(Color.textSecondary)
