@@ -29,37 +29,11 @@ struct VisualizerControlOverlay: View {
         self.controlsCard
             // Zero-size readouts, applied here rather than inside
             // `controlsCard` so they stay queryable regardless of that
-            // card's own fade state (an `.opacity`/`.allowsHitTesting`
-            // applied to a parent affects everything nested inside it,
-            // including a value-bearing element that has nothing to do
-            // with the card's own visibility). Shared by all three
-            // surfaces this overlay is embedded in (pane, mini player,
-            // fullscreen). Three separate plain (non-adjustable) elements,
-            // each exposing one thing as its `.accessibilityValue`, because
-            // two other AX roles in this view don't reliably bridge a value
-            // to XCUITest even though their label bridges fine (found
-            // empirically, ADR-084): a Canvas/MTKView-backed render
-            // surface, and — less expected — a plain view carrying
-            // `.accessibilityAdjustableAction` (the mode/palette stepper
-            // rows below), which XCUITest exposes with no `value:` at all.
-            .overlay {
-                Text(verbatim: "\u{00A0}")
-                    .frame(width: 0, height: 0)
-                    .accessibilityIdentifier(A11y.Visualizer.host)
-                    .modifier(LivenessAccessibilityValue(vm: self.vm))
-            }
-            .overlay {
-                Text(verbatim: "\u{00A0}")
-                    .frame(width: 0, height: 0)
-                    .accessibilityIdentifier(A11y.Visualizer.modeValue)
-                    .accessibilityValue(self.vm.mode.displayName)
-            }
-            .overlay {
-                Text(verbatim: "\u{00A0}")
-                    .frame(width: 0, height: 0)
-                    .accessibilityIdentifier(A11y.Visualizer.paletteValue)
-                    .accessibilityValue(self.vm.palette.displayName)
-            }
+            // card's own fade state. See VisualizerLivenessReadout for why
+            // they are three separate plain elements. The steppers below
+            // always show the saved mode and palette, so the readout
+            // reports the same.
+            .modifier(VisualizerLivenessReadout(vm: self.vm, mode: self.vm.mode, palette: self.vm.palette))
             // .contain, not the default: without it, this composite view
             // (controlsCard + the readouts' `.overlay`s) auto-combines into
             // a single accessibility element, silently absorbing the mode

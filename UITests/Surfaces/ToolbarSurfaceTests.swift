@@ -24,7 +24,8 @@ final class ToolbarSurfaceTests: XCTestCase {
     /// test (every registered surface identifier lives in exactly one table).
     static let coveredIdentifiers = [
         "toolbar.back", "toolbar.forward", "toolbar.lyrics",
-        "toolbar.visualizer", "toolbar.miniPlayer", "toolbar.identifyTrack",
+        "toolbar.visualizer", "toolbar.miniPlayer", "toolbar.immersive",
+        "toolbar.identifyTrack",
     ]
 
     // MARK: The crawl
@@ -77,6 +78,16 @@ final class ToolbarSurfaceTests: XCTestCase {
                 }
             ) { _, inv, _ in
                 inv.element("miniPlayer.layout").waitForExistence(timeout: 5)
+            },
+            // Immersive Mode (ADR-089) opens a full-screen window, which would
+            // take the rest of this crawl into another space; asserted
+            // present and enabled here, exercised by its own window tests.
+            SurfaceControl(
+                "toolbar.immersive", "Immersive Mode toggle",
+                action: .presence,
+                skip: "opens a full-screen window; ImmersiveModeTests owns the journey"
+            ) { _, inv, _ in
+                inv.element("toolbar.immersive").isEnabled
             },
             // Networked (AcoustID): asserted present and correctly disabled
             // without a single-track selection, not clicked (phase 34).

@@ -20,13 +20,18 @@ struct MetalVisualizerView: NSViewRepresentable {
     let pixelFormat: MTLPixelFormat
     let preferredFPS: Int
     let reduceMotion: Bool
+    /// Whether the watchdog may auto-simplify the saved mode. False on a
+    /// surface that pins its own mode (ADR-089): it would rewrite a
+    /// preference it does not display. Defaults on for the shared surfaces.
+    var autoSimplifies = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(
             renderer: self.renderer,
             vm: self.vm,
             device: self.device,
-            reduceMotion: self.reduceMotion
+            reduceMotion: self.reduceMotion,
+            autoSimplifies: self.autoSimplifies
         )
     }
 
@@ -74,13 +79,16 @@ struct MetalVisualizerView: NSViewRepresentable {
 final class VisualizerMTKView: MTKView {
     var targetScale: CGFloat = 1
 
-    override func layout() {
-        super.layout()
-        self.applyDrawableSize()
-    }
+    // No `layout()` override. Writing `drawableSize` inside AppKit's layout
+    // pass re-enters layout (`NSDetectedLayoutRecursion`) and can zero the
+    // view's bounds, after which every frame computes a 1x1 drawable and the
+    // visualizer looks frozen. The pane never resized so it never showed; a
+    // window that animates open or into full screen resizes every frame
+    // (ADR-089). The per-frame draw already applies the size, outside layout.
 
     /// Sets `drawableSize` to the backing-pixel bounds scaled by `targetScale`.
-    /// Cheap and idempotent: a no-op when the size already matches.
+    /// Cheap and idempotent: a no-op when the size already matches. Called
+    /// from the coordinator's draw, never from `layout()`.
     func applyDrawableSize() {
         let backing = self.convertToBacking(self.bounds.size)
         let target = CGSize(
@@ -104,6 +112,7 @@ extension MetalVisualizerView {
         private let renderer: any MetalVisualizer
         private let vm: VisualizerViewModel
         private let reduceMotion: Bool
+        private let autoSimplifies: Bool
         private let commandQueue: MTLCommandQueue?
         private let log = AppLogger.make(.ui)
         private var hasPresentedFirstFrame = false
@@ -119,11 +128,13 @@ extension MetalVisualizerView {
             renderer: any MetalVisualizer,
             vm: VisualizerViewModel,
             device: MTLDevice,
-            reduceMotion: Bool
+            reduceMotion: Bool,
+            autoSimplifies: Bool = true
         ) {
             self.renderer = renderer
             self.vm = vm
             self.reduceMotion = reduceMotion
+            self.autoSimplifies = autoSimplifies
             self.commandQueue = device.makeCommandQueue()
             super.init()
             if self.commandQueue == nil {
@@ -185,7 +196,9 @@ extension MetalVisualizerView {
             // Watchdog: measured here, off the SwiftUI update cycle. Trips at most
             // once, then auto-simplifies to Spectrum Bars (which tears this view
             // down via the host's renderer key, so the coordinator goes away).
-            if self.frameMonitor.record(time: CACurrentMediaTime()) {
+            // Always recorded, so the E2E liveness FPS stays live on a pinned
+            // surface; only the side effect is gated (ADR-089).
+            if self.frameMonitor.record(time: CACurrentMediaTime()), self.autoSimplifies {
                 self.vm.autoSimplify()
             }
             // A no-op unless E2E liveness is on; see VisualizerViewModel.

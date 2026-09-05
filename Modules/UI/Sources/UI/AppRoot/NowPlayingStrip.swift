@@ -10,7 +10,6 @@ import SwiftUI
 public struct NowPlayingStrip: View {
     public var vm: NowPlayingViewModel
     @EnvironmentObject private var library: LibraryViewModel
-    @Environment(DSPViewModel.self) private var dsp: DSPViewModel
 
     /// While dragging the scrubber, the fraction is held locally so the Slider
     /// doesn't fight live `vm.position` updates; seeking happens on release.
@@ -18,7 +17,6 @@ public struct NowPlayingStrip: View {
     @State private var scrubDragFraction: Double?
     /// Menu-to-strip signal (BocanCommands sets it); cleared at launch by BocanApp.
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Optional — only the main window injects a `ScrobbleSettingsViewModel`.
@@ -266,72 +264,10 @@ public struct NowPlayingStrip: View {
         }
     }
 
+    /// Speed, sleep timer, pending scrobbles, DSP and Immersive Mode; see
+    /// `NowPlayingPanelButtons`.
     private var panelButtons: some View {
-        HStack(spacing: 14) {
-            SpeedPickerView(vm: self.vm)
-
-            SleepTimerMenu(vm: self.vm)
-
-            if self.vm.pendingScrobbleCount > 0, self.scrobbleSettingsVM != nil {
-                Button {
-                    self.showRecentScrobbles = true
-                } label: {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .scaledSystemFont(size: 15, weight: .medium)
-                        .overlay(alignment: .topTrailing) {
-                            ZStack {
-                                Circle()
-                                    .fill(.background)
-                                    .frame(width: 9, height: 9)
-                                Circle()
-                                    .fill(Color.orange)
-                                    .frame(width: 6, height: 6)
-                            }
-                            .offset(x: 5, y: -4)
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.warningTint)
-                .help(L10n.string("Scrobbles pending: \(self.vm.pendingScrobbleCount) — click to view"))
-                .accessibilityLabel(L10n.string("Scrobbles pending"))
-                .accessibilityValue(String(self.vm.pendingScrobbleCount))
-                .accessibilityHint(L10n.string("Click to view recent scrobbles"))
-                .accessibilityIdentifier(A11y.NowPlaying.scrobblePendingButton)
-            }
-
-            Button {
-                self.openWindow(id: "dsp")
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .scaledSystemFont(size: 15, weight: .medium)
-                    .overlay(alignment: .topTrailing) {
-                        if self.dsp.isEQActive || self.dsp.hasScopedPreset {
-                            ZStack {
-                                Circle()
-                                    .fill(.background)
-                                    .frame(width: 7, height: 7)
-                                Circle()
-                                    .fill(self.dsp.hasScopedPreset ? Color.orange : Color.accentColor)
-                                    .frame(width: 5, height: 5)
-                            }
-                            .offset(x: 5, y: -4)
-                        }
-                    }
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(
-                (self.dsp.isEQActive || self.dsp.hasScopedPreset)
-                    ? Color.accentColor : Color.textPrimary
-            )
-            .help(L10n.string("Equaliser & DSP (⌘⌥E)"))
-            .accessibilityLabel(
-                self.dsp.isEQActive || self.dsp.hasScopedPreset
-                    ? L10n.string("Equaliser & DSP — active") : L10n.string("Equaliser & DSP")
-            )
-            .accessibilityIdentifier(A11y.NowPlaying.dspButton)
-        }
+        NowPlayingPanelButtons(vm: self.vm, scrobbleSettingsVM: self.scrobbleSettingsVM)
     }
 
     private var volumeAndScrubber: some View {
