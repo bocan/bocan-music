@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Phone Sync conversion no longer takes the whole app down on a file whose sound switches between stereo and mono part way through, which some damaged MP3s do. The converter now adapts mid-file and carries on, so a single odd track cannot stop every sync.
+
 ## [2.13.0](https://github.com/bocan/bocan-music/compare/v2.12.0...v2.13.0) (2026-09-02)
 
 Phone Sync can now shrink your music on the way to the phone. Pick a quality in Settings, from MP3 320 down to Opus 128, and anything bigger is converted before it syncs, so a lossless library fits in a fraction of the space. Each choice shows what your selection would cost the phone in storage, a progress line follows the conversion as it runs ahead of the sync, and your files on the Mac are never touched. Converted copies are made just in time and cleaned up once the phone has them, so the Mac does not fill up either: conversion stays a few gigabytes ahead of the phone, and the progress line says so while the next batch waits. A switch keeps the copies around if you would rather re-sync instantly, and with it on the whole selection converts up front.
