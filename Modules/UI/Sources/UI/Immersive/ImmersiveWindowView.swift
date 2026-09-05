@@ -40,12 +40,8 @@ public struct ImmersiveWindowView: View {
             self.dismissWindow(id: Self.windowID)
         }
         .ignoresSafeArea()
+        .background(ImmersiveFullScreenEnforcer().frame(width: 0, height: 0).allowsHitTesting(false))
         .onAppear { self.isOpen = true }
-        .task {
-            // Let the window finish presenting before asking AppKit for it.
-            try? await Task.sleep(for: .milliseconds(50))
-            Self.enterFullScreenIfNeeded()
-        }
         .onDisappear { self.isOpen = false }
         .onKeyPress(.escape) {
             self.dismissWindow(id: Self.windowID)
@@ -53,13 +49,51 @@ public struct ImmersiveWindowView: View {
         }
     }
 
-    /// Finds this scene's window and toggles it into system full screen once.
-    /// A no-op if it is already there (a relaunch restore, say).
+    /// Toggles `window` into system full screen. A no-op while the window is
+    /// not yet on screen (AppKit ignores the toggle then) or already there (a
+    /// relaunch restore, say). Returns whether the toggle was requested.
     @MainActor
-    static func enterFullScreenIfNeeded() {
-        guard let window = NSApp.windows.first(where: {
-            $0.identifier?.rawValue == Self.windowID || $0.title == "Immersive Mode"
-        }), !window.styleMask.contains(.fullScreen) else { return }
+    @discardableResult
+    static func enterFullScreenIfNeeded(_ window: NSWindow?) -> Bool {
+        guard let window, window.isVisible, !window.styleMask.contains(.fullScreen) else { return false }
+        window.collectionBehavior.insert(.fullScreenPrimary)
         window.toggleFullScreen(nil)
+        return true
+    }
+}
+
+// MARK: - ImmersiveFullScreenEnforcer
+
+/// Zero-size helper that reaches the exact `NSWindow` hosting the Immersive
+/// Mode content, the way `MainWindowGrabber` reaches the main window, and
+/// asks for full screen once the window is attached and visible. A timed
+/// lookup by title ran before the window was on screen and was ignored.
+private struct ImmersiveFullScreenEnforcer: NSViewRepresentable {
+    final class Coordinator {
+        var requested = false
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        self.request(from: view, coordinator: context.coordinator)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        self.request(from: nsView, coordinator: context.coordinator)
+    }
+
+    private func request(from view: NSView, coordinator: Coordinator) {
+        guard !coordinator.requested else { return }
+        DispatchQueue.main.async {
+            guard !coordinator.requested else { return }
+            if ImmersiveWindowView.enterFullScreenIfNeeded(view.window) {
+                coordinator.requested = true
+            }
+        }
     }
 }

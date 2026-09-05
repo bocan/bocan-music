@@ -216,6 +216,7 @@ No new packages. No schema change. No new entitlements.
 
 ## Gotchas
 
+- **The Metal view must not touch `drawableSize` in `layout()`.** In the pane the `MTKView` never resizes, so the write in `VisualizerMTKView.layout()` was a no-op after the first frame. A window that animates open, or into full screen, resizes it every frame; the write re-entered AppKit layout (`NSDetectedLayoutRecursion`), zeroed the bounds, and every later frame drew a 1x1 drawable: a frozen, flat visualizer. The override is gone; the coordinator's per-frame draw applies the size outside the layout pass. This is the same trap ADR-028 hit with a sub-1.0 render scale, from the other side.
 - **No glass or material over the Metal layer.** `VisualizerHost` draws the oscilloscope in an `MTKView` at the display rate. Glass and materials blur what is behind them, which means an offscreen blur of the live Metal content on every frame, per card; a clear-glass cut made the visualizer stutter on an M5 Max. A tinted translucent fill gives the see-through look for free. If glass is ever wanted, it needs a static backdrop (a blurred cover, say), not the live visualizer.
 - **Forced dark scheme.** `.environment(\.colorScheme, .dark)` on the overlay changes every colour inside it, including `QueueView` rows and the lyrics text. Snapshot both system appearances to prove nothing inside goes invisible.
 - **`QueueView` sets `.navigationTitle`.** Harmless outside a navigation container, but do not let it leak a title onto the main window; if it does, wrap or drop it.

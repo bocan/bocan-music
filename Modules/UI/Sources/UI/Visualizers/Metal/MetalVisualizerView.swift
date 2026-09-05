@@ -79,13 +79,16 @@ struct MetalVisualizerView: NSViewRepresentable {
 final class VisualizerMTKView: MTKView {
     var targetScale: CGFloat = 1
 
-    override func layout() {
-        super.layout()
-        self.applyDrawableSize()
-    }
+    // No `layout()` override. Writing `drawableSize` inside AppKit's layout
+    // pass re-enters layout (`NSDetectedLayoutRecursion`) and can zero the
+    // view's bounds, after which every frame computes a 1x1 drawable and the
+    // visualizer looks frozen. The pane never resized so it never showed; a
+    // window that animates open or into full screen resizes every frame
+    // (ADR-089). The per-frame draw already applies the size, outside layout.
 
     /// Sets `drawableSize` to the backing-pixel bounds scaled by `targetScale`.
-    /// Cheap and idempotent: a no-op when the size already matches.
+    /// Cheap and idempotent: a no-op when the size already matches. Called
+    /// from the coordinator's draw, never from `layout()`.
     func applyDrawableSize() {
         let backing = self.convertToBacking(self.bounds.size)
         let target = CGSize(
