@@ -123,7 +123,9 @@ The value persists across launches. An app that quits immersive relaunches immer
 
 `ImmersivePanel` is a `ViewModifier`:
 
-- Background is **translucent glass**: `glassEffect(.regular, in:)` on macOS 26, `.ultraThinMaterial` on macOS 15, in one availability-gated surface modifier. Both blur the visualizer running beneath, so the oscilloscope reads through the cards. Reduce Transparency turns the card solid (`Color.bgPrimary`), the same escape the strip's material has.
+- Background is **clear glass**: `glassEffect(.clear, in:)` over a light black dimming layer on macOS 26 (the treatment Apple documents for the clear variant, so text stays legible), `.ultraThinMaterial` on macOS 15, in one availability-gated surface modifier. Both let the oscilloscope read through the cards. Reduce Transparency turns the card solid (`Color.bgPrimary`), the same escape the strip's material has.
+- **The now-playing column has no card.** Artwork, text and controls float on the visualizer, centred, with a soft shadow under the cover, so the cluster reads as a hero beside two glass cards rather than three equal boxes. The column keeps the same sizing and accessibility container (`immersivePanel(surface: false)`).
+- Card headers ("Up Next", "Lyrics") are quiet uppercase captions with no rule beneath them; the card edge is the frame.
 - The whole overlay runs under `.environment(\.colorScheme, .dark)`, so the cards read as dark glass on the black field in both system appearances.
 - Corner radius `Theme.cornerRadiusLarge`. Under Increase Contrast a 1pt `.separator` border is added, matching `AdaptiveMaterialBackground`.
 - Text inside uses `Color.textPrimary` and friends, which resolve correctly under the forced dark scheme. The contrast audit (`ThemeAudit`, `ContrastAudit`) is run against the panel colours.

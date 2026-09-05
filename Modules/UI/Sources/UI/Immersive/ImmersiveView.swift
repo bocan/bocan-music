@@ -83,8 +83,11 @@ public struct ImmersiveView: View {
                 ))
 
             HStack(spacing: self.gutter) {
+                // No card: the artwork, text and controls float on the
+                // visualizer, so the cluster is two glass cards beside a
+                // hero, not three equal boxes.
                 ImmersiveNowPlayingColumn(vm: self.library.nowPlaying)
-                    .immersivePanel()
+                    .immersivePanel(surface: false)
                     .frame(width: self.nowPlayingWidth)
                     .accessibilityIdentifier(A11y.Immersive.nowPlayingColumn)
 
@@ -117,7 +120,6 @@ public struct ImmersiveView: View {
     private var queueColumn: some View {
         VStack(spacing: 0) {
             self.columnHeader(L10n.string("Up Next"))
-            Divider()
             // The List's own background would paint over the card; the
             // rows keep their inset style. The card's fixed height is what
             // makes the list scroll past ten rows.
@@ -133,23 +135,26 @@ public struct ImmersiveView: View {
                 Spacer()
                 if case .synced = self.lyricsVM.document {
                     LyricsOffsetControl(vm: self.lyricsVM)
-                        .padding(.trailing, 12)
+                        .padding(.trailing, 14)
                 }
             }
-            Divider()
             LyricsView(vm: self.lyricsVM) { position in
                 Task { await self.library.nowPlaying.scrub(to: position) }
             }
         }
     }
 
+    /// A quiet caption, no rule beneath it: the card edge is the frame.
     private func columnHeader(_ title: String) -> some View {
         Text(title)
-            .font(.headline)
-            .foregroundStyle(Color.textPrimary)
+            .font(.caption)
+            .fontWeight(.semibold)
+            .textCase(.uppercase)
+            .kerning(0.8)
+            .foregroundStyle(Color.textSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: Self.headerHeight)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 14)
             .accessibilityAddTraits(.isHeader)
     }
 

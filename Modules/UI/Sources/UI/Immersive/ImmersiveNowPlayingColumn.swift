@@ -12,10 +12,10 @@ struct ImmersiveNowPlayingColumn: View {
     var vm: NowPlayingViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .center, spacing: 12) {
             self.artwork
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .center, spacing: 4) {
                 Text(self.titleText)
                     .font(.title3)
                     .fontWeight(.semibold)
@@ -39,6 +39,8 @@ struct ImmersiveNowPlayingColumn: View {
                         .accessibilityIdentifier(A11y.Immersive.album)
                 }
             }
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 0)
 
@@ -46,7 +48,8 @@ struct ImmersiveNowPlayingColumn: View {
             // The strip is covered while Immersive Mode is on.
             ImmersiveTransport(np: self.vm)
         }
-        .padding(16)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
     }
 
     // MARK: - Text
@@ -81,6 +84,8 @@ struct ImmersiveNowPlayingColumn: View {
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: Theme.cornerRadiusMedium, style: .continuous))
+            // Lifts the cover off the visualizer now that no card frames it.
+            .shadow(color: .black.opacity(0.45), radius: 18, y: 8)
             .accessibilityLabel(
                 self.vm.title.isEmpty ? L10n.string("No artwork") : L10n.string("Artwork for \(self.vm.title)")
             )
