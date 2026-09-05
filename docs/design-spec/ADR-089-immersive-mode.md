@@ -123,8 +123,8 @@ The value persists across launches. An app that quits immersive relaunches immer
 
 `ImmersivePanel` is a `ViewModifier`:
 
-- Background is **clear glass**: `glassEffect(.clear, in:)` over a light black dimming layer on macOS 26 (the treatment Apple documents for the clear variant, so text stays legible), `.ultraThinMaterial` on macOS 15, in one availability-gated surface modifier. Both let the oscilloscope read through the cards. Reduce Transparency turns the card solid (`Color.bgPrimary`), the same escape the strip's material has.
-- **The now-playing column has no card.** Artwork, text and controls float on the visualizer, centred, with a soft shadow under the cover, so the cluster reads as a hero beside two glass cards rather than three equal boxes. The column keeps the same sizing and accessibility container (`immersivePanel(surface: false)`).
+- Background is a **tinted translucent fill**, `Color.black` at about half opacity, and deliberately not glass or a material. Both of those blur what is behind them, and behind these cards is an `MTKView` redrawing at the display rate; a clear-glass cut forced an offscreen blur pass over every card on every frame and the visualizer stuttered visibly. The tint lets the waveform read through at no cost and keeps the text legible. Reduce Transparency turns the card solid (`Color.bgPrimary`), the same escape the strip's material has. The opacity is one named constant.
+- All three columns carry the card, the now-playing one included: with the clear surface its text was hard to read. Artwork, title and controls are centred within it, with a soft shadow under the cover.
 - Card headers ("Up Next", "Lyrics") are quiet uppercase captions with no rule beneath them; the card edge is the frame.
 - The whole overlay runs under `.environment(\.colorScheme, .dark)`, so the cards read as dark glass on the black field in both system appearances.
 - Corner radius `Theme.cornerRadiusLarge`. Under Increase Contrast a 1pt `.separator` border is added, matching `AdaptiveMaterialBackground`.
@@ -215,7 +215,7 @@ No new packages. No schema change. No new entitlements.
 
 ## Gotchas
 
-- **Glass over a Metal layer.** `VisualizerHost` paints black and draws the oscilloscope in an `MTKView`. Glass and materials blur what is behind them within the window, so the waveform shows through; the first cut used solid cards and lost that. `glassEffect` is macOS 26 only, so the surface modifier keeps the availability branch in one place with the material fallback beside it.
+- **No glass or material over the Metal layer.** `VisualizerHost` draws the oscilloscope in an `MTKView` at the display rate. Glass and materials blur what is behind them, which means an offscreen blur of the live Metal content on every frame, per card; a clear-glass cut made the visualizer stutter on an M5 Max. A tinted translucent fill gives the see-through look for free. If glass is ever wanted, it needs a static backdrop (a blurred cover, say), not the live visualizer.
 - **Forced dark scheme.** `.environment(\.colorScheme, .dark)` on the overlay changes every colour inside it, including `QueueView` rows and the lyrics text. Snapshot both system appearances to prove nothing inside goes invisible.
 - **`QueueView` sets `.navigationTitle`.** Harmless outside a navigation container, but do not let it leak a title onto the main window; if it does, wrap or drop it.
 - **Global mode and palette.** Do not "temporarily" write `visualizer.mode`. The pane, mini player and fullscreen window share that key and would flip too. The override parameter exists so nobody has to.

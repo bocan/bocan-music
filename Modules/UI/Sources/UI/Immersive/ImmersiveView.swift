@@ -83,11 +83,8 @@ public struct ImmersiveView: View {
                 ))
 
             HStack(spacing: self.gutter) {
-                // No card: the artwork, text and controls float on the
-                // visualizer, so the cluster is two glass cards beside a
-                // hero, not three equal boxes.
                 ImmersiveNowPlayingColumn(vm: self.library.nowPlaying)
-                    .immersivePanel(surface: false)
+                    .immersivePanel()
                     .frame(width: self.nowPlayingWidth)
                     .accessibilityIdentifier(A11y.Immersive.nowPlayingColumn)
 

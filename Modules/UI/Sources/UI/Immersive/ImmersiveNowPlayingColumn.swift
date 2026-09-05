@@ -48,8 +48,7 @@ struct ImmersiveNowPlayingColumn: View {
             // The strip is covered while Immersive Mode is on.
             ImmersiveTransport(np: self.vm)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 4)
+        .padding(16)
     }
 
     // MARK: - Text
