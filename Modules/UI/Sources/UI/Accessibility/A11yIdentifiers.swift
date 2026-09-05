@@ -444,6 +444,33 @@ public enum A11y {
         public static let editor = "lyricsEditor"
         public static let insertTimestampButton = "lyricsEditor.insertTimestamp"
     }
+
+    // MARK: - Immersive Mode (ADR-089)
+
+    public enum Immersive {
+        public static let root = "immersive"
+        public static let nowPlayingColumn = "immersive.nowPlaying"
+        public static let artwork = "immersive.nowPlaying.artwork"
+        public static let title = "immersive.nowPlaying.title"
+        public static let artist = "immersive.nowPlaying.artist"
+        public static let album = "immersive.nowPlaying.album"
+        public static let queueColumn = "immersive.queue"
+        public static let lyricsColumn = "immersive.lyrics"
+        public static let close = "immersive.close"
+        /// The player controls at the foot of the now-playing column.
+        public static let transport = "immersive.transport"
+        public static let scrubber = "immersive.transport.scrubber"
+        public static let previous = "immersive.transport.prev"
+        public static let playPause = "immersive.transport.playPause"
+        public static let next = "immersive.transport.next"
+        public static let shuffle = "immersive.transport.shuffle"
+        public static let repeatMode = "immersive.transport.repeat"
+        public static let stopAfter = "immersive.transport.stopAfterCurrent"
+        public static let skipBack = "immersive.transport.skipBack"
+        public static let skipForward = "immersive.transport.skipForward"
+        public static let mute = "immersive.transport.mute"
+        public static let volume = "immersive.transport.volume"
+    }
 }
 
 /// Legacy flat alias — retained so any UITest code written before the
