@@ -1,3 +1,4 @@
+import AppKit // full-screen entry needs the NSWindow
 import SwiftUI
 
 // MARK: - ImmersiveWindowView
@@ -8,8 +9,10 @@ import SwiftUI
 /// Immersive Mode is its own window, not an overlay in the main window: an
 /// overlay can never hide that window's own chrome (the toolbar, the split
 /// view's sidebar header), and "immersive" means no chrome at all. The
-/// window keeps the traffic lights, so it can be zoomed to system full
-/// screen like any other; `Esc` closes it.
+/// window takes itself to system full screen as soon as it appears (SwiftUI
+/// scenes have no modifier for that, so it is the same AppKit step the
+/// fullscreen visualizer uses to move itself to a screen); `Esc` closes it,
+/// which leaves full screen with it.
 ///
 /// The `ui.immersive.visible` preference mirrors whether this window is
 /// open: set on appear, cleared on disappear. The toolbar button and the
@@ -38,10 +41,25 @@ public struct ImmersiveWindowView: View {
         }
         .ignoresSafeArea()
         .onAppear { self.isOpen = true }
+        .task {
+            // Let the window finish presenting before asking AppKit for it.
+            try? await Task.sleep(for: .milliseconds(50))
+            Self.enterFullScreenIfNeeded()
+        }
         .onDisappear { self.isOpen = false }
         .onKeyPress(.escape) {
             self.dismissWindow(id: Self.windowID)
             return .handled
         }
+    }
+
+    /// Finds this scene's window and toggles it into system full screen once.
+    /// A no-op if it is already there (a relaunch restore, say).
+    @MainActor
+    static func enterFullScreenIfNeeded() {
+        guard let window = NSApp.windows.first(where: {
+            $0.identifier?.rawValue == Self.windowID || $0.title == "Immersive Mode"
+        }), !window.styleMask.contains(.fullScreen) else { return }
+        window.toggleFullScreen(nil)
     }
 }

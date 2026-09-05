@@ -57,6 +57,9 @@ struct ImmersiveWiringConventionTests {
         #expect(window.contains(".onKeyPress(.escape)"))
         #expect(window.contains("self.dismissWindow(id: Self.windowID)"))
         #expect(window.contains(".ignoresSafeArea()"))
+        // Opens straight into system full screen; a no-op if already there.
+        #expect(window.contains("!window.styleMask.contains(.fullScreen)"))
+        #expect(window.contains("window.toggleFullScreen(nil)"))
     }
 
     @Test("the root reopens the window after bootstrap and no longer hosts an overlay")
