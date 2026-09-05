@@ -173,6 +173,9 @@ enum MenuManifest {
             .own("Show Visualizer", "Hide Visualizer", key: "⇧⌘V", row: "Show Visualizer"),
             .own("Open Fullscreen Visualizer", key: "⇧⌘F", row: "Open Fullscreen Visualizer"),
             .own("Toggle Miniplayer", key: "⌥⌘M", row: "Toggle Miniplayer"),
+            // Immersive Mode (ADR-089): opens its own full-screen window; the
+            // label follows the ui.immersive.visible mirror.
+            .own("Enter Immersive Mode", "Exit Immersive Mode", key: "⇧⌘I", row: "Enter Immersive Mode"),
             .own("Show Recent Scrobbles", key: "⌥⇧⌘S", row: "Show Recent Scrobbles"),
             .own("Equaliser & DSP…", key: "⌥⌘E", binding: "showEQPanel", row: "Equaliser & DSP"),
             // The "View as" inline picker renders as a header row plus two

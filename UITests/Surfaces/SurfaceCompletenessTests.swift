@@ -16,7 +16,7 @@ final class SurfaceCompletenessTests: XCTestCase {
     /// A11y.Toolbar.* — fully owned by ToolbarSurfaceTests.
     static let toolbarRegistry: Set = [
         "toolbar.back", "toolbar.forward", "toolbar.miniPlayer",
-        "toolbar.lyrics", "toolbar.visualizer", "toolbar.identifyTrack",
+        "toolbar.lyrics", "toolbar.visualizer", "toolbar.immersive", "toolbar.identifyTrack",
     ]
 
     /// A11y.NowPlaying.* that are actually attached to a control.
