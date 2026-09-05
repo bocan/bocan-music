@@ -157,6 +157,9 @@
     "Identify Track…" : {
 
     },
+    "Immersive Mode" : {
+
+    },
     "Import Last.fm History…" : {
       "comment" : "A menu item that backfills listening history from a Last.fm export."
     },
