@@ -3,15 +3,20 @@ import SwiftUI
 // MARK: - ImmersiveView
 
 /// Immersive Mode (ADR-089): a full-window now-playing arrangement laid over
-/// an Oscilloscope visualizer in the Drift palette. Three opaque columns:
-/// artwork and track text, the play queue, and the lyrics. Every column is
+/// an Oscilloscope visualizer in the Drift palette. Three translucent cards
+/// sit in a compact cluster at the centre of the window: artwork, track text
+/// and the player controls; the play queue; and the lyrics. Every card is
 /// built from a view the app already has (``QueueView``, ``LyricsView``,
 /// ``NowPlayingViewModel``), so playback, queue edits and lyrics behave
 /// exactly as they do in the normal window.
 ///
+/// The cluster is sized by the queue: ten rows tall, and the queue scrolls
+/// for anything past that. The other two cards match that height, so the
+/// visualizer keeps most of the window rather than three empty columns.
+///
 /// The visualizer is pinned through `VisualizerHost.init(vm:mode:palette:)`;
 /// the user's saved visualizer preference is never written. The overlay
-/// forces a dark scheme so the cards read as dark panels on the black field
+/// forces a dark scheme so the cards read as dark glass on the black field
 /// in both system appearances.
 ///
 /// This view owns its visualizer lifecycle: one `start()` on appear and one
@@ -31,8 +36,24 @@ public struct ImmersiveView: View {
     static let visualizerMode: VisualizerMode = .oscilloscope
     static let visualizerPalette: VisualizerPalette = .drift
 
-    /// The gap around and between the columns, where the visualizer shows.
+    /// The queue card shows this many rows before it scrolls, and every card
+    /// takes its height from it.
+    static let queueVisibleRows = 10
+    /// One inset `List` row of `QueueRow` (a single 11pt line with insets).
+    static let queueRowHeight: CGFloat = 30
+    /// The "Up Next" and "Lyrics" header rows.
+    static let headerHeight: CGFloat = 36
+
+    /// The gap around and between the cards, where the visualizer shows.
     private let gutter: CGFloat = 16
+    /// The now-playing card is fixed; the queue and lyrics cards share the rest.
+    private let nowPlayingWidth: CGFloat = 300
+    /// The cluster never grows past this, however wide the window is.
+    private let maxClusterWidth: CGFloat = 960
+
+    private var clusterHeight: CGFloat {
+        Self.headerHeight + 1 + CGFloat(Self.queueVisibleRows) * Self.queueRowHeight + 8
+    }
 
     // MARK: - Init
 
@@ -64,6 +85,7 @@ public struct ImmersiveView: View {
             HStack(spacing: self.gutter) {
                 ImmersiveNowPlayingColumn(vm: self.library.nowPlaying)
                     .immersivePanel()
+                    .frame(width: self.nowPlayingWidth)
                     .accessibilityIdentifier(A11y.Immersive.nowPlayingColumn)
 
                 self.queueColumn
@@ -74,6 +96,8 @@ public struct ImmersiveView: View {
                     .immersivePanel()
                     .accessibilityIdentifier(A11y.Immersive.lyricsColumn)
             }
+            .frame(maxWidth: self.maxClusterWidth)
+            .frame(height: self.clusterHeight)
             .padding(self.gutter)
         }
         .overlay(alignment: .bottomTrailing) {
@@ -95,7 +119,8 @@ public struct ImmersiveView: View {
             self.columnHeader(L10n.string("Up Next"))
             Divider()
             // The List's own background would paint over the card; the
-            // rows keep their inset style.
+            // rows keep their inset style. The card's fixed height is what
+            // makes the list scroll past ten rows.
             QueueView(vm: self.library)
                 .scrollContentBackground(.hidden)
         }
@@ -123,8 +148,8 @@ public struct ImmersiveView: View {
             .font(.headline)
             .foregroundStyle(Color.textPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: Self.headerHeight)
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
             .accessibilityAddTraits(.isHeader)
     }
 

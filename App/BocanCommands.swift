@@ -23,6 +23,8 @@ struct BocanCommands: Commands {
     @AppStorage("visualizer.paneVisible") private var visualizerPaneVisible = false
     /// Mirrors `NowPlayingStrip.showRecentScrobbles` (`@AppStorage("scrobble.showRecentSheet")`).
     @AppStorage("scrobble.showRecentSheet") private var showRecentScrobbles = false
+    /// Mirrors `ImmersiveOverlay` (`@AppStorage("ui.immersive.visible")`, ADR-089).
+    @AppStorage("ui.immersive.visible") private var immersiveVisible = false
     /// Mirrors `LibraryViewModel.isScanning`. CommandGroup items on system
     /// menus only re-evaluate `.disabled` when this body rebuilds, so
     /// enablement must come from defaults, not the plain-`let` VM.
@@ -169,6 +171,12 @@ struct BocanCommands: Commands {
                 self.windowMode.toggleMiniPlayer()
             }
             .keyboardShortcut("m", modifiers: [.command, .option])
+
+            // ⌘I is Get Info and ⌥⌘I is Identify Track; Immersive Mode takes ⇧⌘I.
+            Button(self.immersiveVisible ? "Exit Immersive Mode" : "Enter Immersive Mode") {
+                self.toggleAnimated(self.$immersiveVisible)
+            }
+            .keyboardShortcut("i", modifiers: [.command, .shift])
 
             Divider()
 

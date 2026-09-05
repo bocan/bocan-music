@@ -96,6 +96,8 @@ public enum A11y {
         public static let miniPlayerToggle = "toolbar.miniPlayer"
         public static let lyricsToggle = "toolbar.lyrics"
         public static let visualizerToggle = "toolbar.visualizer"
+        /// Enters and exits Immersive Mode (ADR-089).
+        public static let immersiveToggle = "toolbar.immersive"
         public static let identifyTrack = "toolbar.identifyTrack"
     }
 

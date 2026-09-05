@@ -42,6 +42,8 @@ public struct BocanRootView: View {
     @AppStorage(MetricKitListener.consentAskedKey) private var diagnosticsConsentAsked = false
     /// Show the crash-recovery banner when the previous session ended abnormally (issue #208).
     @AppStorage("launch.didCrashPreviously") private var didCrashPreviously = false
+    /// Immersive Mode (ADR-089); the overlay itself is applied in `body`.
+    @AppStorage(ImmersiveOverlay.preferenceKey) private var immersiveVisible = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -88,80 +90,27 @@ public struct BocanRootView: View {
                 .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: Text(localized: "Search"))
                 .searchFocused(self.$searchFocused)
                 .toolbar {
-                    ToolbarItemGroup(placement: .navigation) {
-                        Button(L10n.string("Back"), systemImage: "chevron.left") {
-                            Task { await self.vm.goBack() }
-                        }
-                        .disabled(!self.vm.canGoBack)
-                        .help(L10n.string("Back (⌘[)"))
-                        .keyboardShortcut("[", modifiers: .command)
-                        .accessibilityIdentifier(A11y.Toolbar.back)
-
-                        Button(L10n.string("Forward"), systemImage: "chevron.right") {
-                            Task { await self.vm.goForward() }
-                        }
-                        .disabled(!self.vm.canGoForward)
-                        .help(L10n.string("Forward (⌘])"))
-                        .keyboardShortcut("]", modifiers: .command)
-                        .accessibilityIdentifier(A11y.Toolbar.forward)
-
-                        Button(
-                            self.windowMode.miniPlayerOpen ? L10n.string("Hide Mini Player") : L10n.string("Show Mini Player"),
-                            systemImage: "pip.enter"
-                        ) {
-                            self.windowMode.toggleMiniPlayer()
-                        }
-                        .help(L10n.string("Toggle mini player (⌥⌘M)"))
-                        .accessibilityIdentifier(A11y.Toolbar.miniPlayerToggle)
-
-                        Button(
-                            self.lyricsVM.paneVisible ? L10n.string("Hide Lyrics") : L10n.string("Show Lyrics"),
-                            systemImage: "text.quote"
-                        ) {
-                            if self.reduceMotion {
-                                self.lyricsVM.paneVisible.toggle()
-                            } else {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    self.lyricsVM.paneVisible.toggle()
-                                }
-                            }
-                        }
-                        .help(L10n.string("Toggle lyrics pane (⌥⌘L)"))
-                        .accessibilityIdentifier(A11y.Toolbar.lyricsToggle)
-
-                        Button(
-                            self.visualizerVM.paneVisible ? L10n.string("Hide Visualizer") : L10n.string("Show Visualizer"),
-                            // Spectrum-bars glyph, distinct from the waveform +
-                            // magnifier used by Identify Track right beside it.
-                            systemImage: "chart.bar.xaxis"
-                        ) {
-                            if self.reduceMotion {
-                                self.visualizerVM.paneVisible.toggle()
-                            } else {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    self.visualizerVM.paneVisible.toggle()
-                                }
-                            }
-                        }
-                        .help(L10n.string("Toggle visualizer pane (⇧⌘V)"))
-                        .accessibilityIdentifier(A11y.Toolbar.visualizerToggle)
-
-                        Button(L10n.string("Identify Track"), systemImage: "waveform.badge.magnifyingglass") {
-                            self.vm.showIdentifyTrackForCurrentSelection()
-                        }
-                        .disabled(!self.vm.hasSingleTrackSelection)
-                        .help(L10n.string("Identify track using AcoustID (⌘⌥I)"))
-                        .accessibilityIdentifier(A11y.Toolbar.identifyTrack)
-                    }
+                    MainToolbarItems(
+                        vm: self.vm,
+                        miniPlayerOpen: self.windowMode.miniPlayerOpen,
+                        toggleMiniPlayer: { self.windowMode.toggleMiniPlayer() },
+                        lyricsPaneVisible: self.$lyricsVM.paneVisible,
+                        visualizerPaneVisible: self.$visualizerVM.paneVisible,
+                        immersiveVisible: self.$immersiveVisible,
+                        reduceMotion: self.reduceMotion
+                    )
                 }
 
                 NowPlayingStrip(vm: self.vm.nowPlaying, scrobbleSettingsVM: self.scrobbleSettingsVM)
                     .environmentObject(self.visualizerVM)
             }
 
-            // Lyrics and Visualizer panes are mutually exclusive — both occupy the
-            // same trailing overlay slot. Visualizer wins when both are toggled on.
-            if self.visualizerVM.paneVisible {
+            // One trailing slot: Visualizer wins over Lyrics when both are on.
+            // Neither is built while Immersive Mode covers it (ADR-089), so
+            // the pane's visualizer stops and its identifiers leave the tree.
+            if self.immersiveVisible {
+                EmptyView()
+            } else if self.visualizerVM.paneVisible {
                 VisualizerPane(vm: self.visualizerVM, nowPlayingVM: self.vm.nowPlaying)
             } else {
                 LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
@@ -245,8 +194,7 @@ public struct BocanRootView: View {
             // No root .accessibilityIdentifier: an unused "BocanMainWindow" one masked a child's own identifier (ADR-084).
             .background(MainWindowGrabber().frame(width: 0, height: 0).allowsHitTesting(false))
             .background(
-                // ADR-005 audit H2: persist sidebar divider position via NSSplitView
-                // autosave + a settings-key fallback held on LibraryViewModel.
+                // ADR-005 audit H2: sidebar divider via NSSplitView autosave + a settings fallback.
                 SidebarWidthAutosave(initialWidth: self.vm.sidebarWidth) { width in
                     self.vm.sidebarWidth = width
                 }
@@ -257,6 +205,7 @@ public struct BocanRootView: View {
             // the main window starts a fresh search seeded with it.
             .background(TypeToSearchBackground(vm: self.vm))
             .background(NavigationInputBackground(vm: self.vm))
+            .modifier(ImmersiveOverlay(library: self.vm, lyricsVM: self.lyricsVM, visualizerVM: self.visualizerVM))
             .onChange(of: self.vm.searchFocusRequestID) { _, _ in
                 // ADR-005 audit H5: ⌘F (Find) focuses the search field.
                 self.searchFocused = true

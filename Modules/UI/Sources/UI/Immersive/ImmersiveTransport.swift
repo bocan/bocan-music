@@ -34,15 +34,16 @@ struct ImmersiveTransport: View {
                         skipBack: A11y.Immersive.skipBack,
                         skipForward: A11y.Immersive.skipForward
                     ),
-                    spacing: 14,
-                    secondarySize: 18,
-                    primarySize: 28,
-                    accentSize: 14
+                    spacing: 10,
+                    secondarySize: 16,
+                    primarySize: 24,
+                    accentSize: 13
                 )
-                Spacer(minLength: 8)
+                Spacer(minLength: 6)
                 self.volume
             }
         }
+        .frame(maxWidth: .infinity)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(A11y.Immersive.transport)
     }
@@ -104,7 +105,7 @@ struct ImmersiveTransport: View {
                 if !editing { Haptics.positionCommit() }
             }
             .controlSize(.mini)
-            .frame(width: 90)
+            .frame(width: 70)
             .id(self.accentColorKey)
             .help(L10n.string("Volume: \(Int(self.np.volume * 100))%"))
             .accessibilityLabel(L10n.string("Volume"))

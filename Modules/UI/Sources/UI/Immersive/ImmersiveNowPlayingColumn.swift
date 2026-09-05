@@ -12,20 +12,20 @@ struct ImmersiveNowPlayingColumn: View {
     var vm: NowPlayingViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 12) {
             self.artwork
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(self.titleText)
-                    .font(.title)
+                    .font(.title3)
                     .fontWeight(.semibold)
                     .foregroundStyle(self.vm.title.isEmpty ? Color.textSecondary : Color.textPrimary)
-                    .lineLimit(2)
+                    .lineLimit(1)
                     .accessibilityIdentifier(A11y.Immersive.title)
 
                 if !self.vm.artist.isEmpty {
                     Text(self.vm.artist)
-                        .font(.title3)
+                        .font(.body)
                         .foregroundStyle(Color.textSecondary)
                         .lineLimit(1)
                         .accessibilityIdentifier(A11y.Immersive.artist)
@@ -33,7 +33,7 @@ struct ImmersiveNowPlayingColumn: View {
 
                 if let detail = self.detailText {
                     Text(detail)
-                        .font(.body)
+                        .font(.callout)
                         .foregroundStyle(Color.textTertiary)
                         .lineLimit(1)
                         .accessibilityIdentifier(A11y.Immersive.album)
@@ -46,7 +46,7 @@ struct ImmersiveNowPlayingColumn: View {
             // The strip is covered while Immersive Mode is on.
             ImmersiveTransport(np: self.vm)
         }
-        .padding(20)
+        .padding(16)
     }
 
     // MARK: - Text

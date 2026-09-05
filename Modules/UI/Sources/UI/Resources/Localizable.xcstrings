@@ -8936,6 +8936,23 @@
         }
       }
     },
+    "Enter Immersive Mode" : {
+      "comment" : "Accessibility label for the transport strip button that opens Immersive Mode.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter Immersive Mode"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éñţéŕ Íḿḿéŕšívé Ḿóđé one two"
+          }
+        }
+      }
+    },
     "Enter this code on your phone." : {
       "localizations" : {
         "en-XA" : {
@@ -22517,6 +22534,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ţó çĥáñĝé óúţƥúţ, çĺíçķ ţĥé ÁíŕƤĺáý ƀúţţóñ ñéxţ ţó ţĥíš çĥíƥ, óŕ úšé ţĥé ÁíŕƤĺáý ḿéñú íñ Çóñţŕóĺ Çéñţŕé. one two three four five six seven"
+          }
+        }
+      }
+    },
+    "Toggle Immersive Mode (⇧⌘I)" : {
+      "comment" : "Help tip for the toolbar button that enters and exits Immersive Mode.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toggle Immersive Mode (⇧⌘I)"
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţóĝĝĺé Íḿḿéŕšívé Ḿóđé (⇧⌘Í) one two three"
           }
         }
       }

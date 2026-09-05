@@ -6,7 +6,7 @@
 
 ## Goal
 
-Give the main window a full-window now-playing view called **Immersive Mode**. While it is on, the browse UI (sidebar, toolbar, content pane, trailing lyrics or visualizer pane) is replaced by three opaque columns laid over a full-window Oscilloscope visualizer running in the Drift palette:
+Give the main window a full-window now-playing view called **Immersive Mode**. While it is on, the browse UI (sidebar, content pane, trailing lyrics or visualizer pane, transport strip) is replaced by a compact cluster of three translucent glass cards at the centre of a full-window Oscilloscope visualizer running in the Drift palette:
 
 | Column | Content |
 |---|---|
@@ -56,7 +56,8 @@ Changed files:
 | `Modules/UI/Sources/UI/MiniPlayer/MiniPlayerTransport.swift` | Optional per-control accessibility identifiers and a `.navigation` layout (previous, play, next, shuffle, repeat, stop; no info button). The mini player passes neither and is unchanged. |
 | `Modules/UI/Sources/UI/AppRoot/RootView.swift` | `@AppStorage("ui.immersive.visible")`; overlay slot covering the split view and the strip; toolbar hidden while immersive; Esc precedence. |
 | `Modules/UI/Sources/UI/AppRoot/NavigationInputMonitor.swift` | An `onImmersiveExit` hook ahead of drill-out. |
-| `Modules/UI/Sources/UI/AppRoot/NowPlayingStrip.swift` | An Immersive Mode toggle button in the panel-button group. |
+| `Modules/UI/Sources/UI/AppRoot/MainToolbarItems.swift` (new) | The main toolbar group, extracted from `RootView` to make room; gains the Immersive Mode toggle. |
+| `Modules/UI/Sources/UI/AppRoot/NowPlayingPanelButtons.swift` (new) | The strip's panel buttons, extracted from `NowPlayingStrip` to keep it under the type-body cap. No new button. |
 | `Modules/UI/Sources/UI/Accessibility/A11yIdentifiers.swift` | `A11y.Immersive` enum. |
 | `Modules/UI/Sources/UI/Resources/Localizable.xcstrings` | New keys; `make pseudolocale` after. |
 | `App/BocanCommands.swift` | View menu item with an `@AppStorage` mirror. |
@@ -111,8 +112,8 @@ The value persists across launches. An app that quits immersive relaunches immer
 +----------------------------------------------------------------------+
 ```
 
-- The overlay covers the whole window: sidebar, toolbar, content pane, trailing pane and the transport strip. The toolbar is hidden with `toolbarVisibility(.hidden, for: .windowToolbar)` while immersive so it does not float above the visualizer. If that modifier fights `NavigationSplitView` on macOS 15, the fallback is to leave the toolbar visible and record it in Gotchas; the columns still work.
-- Three columns of equal width in an `HStack`, `Theme.cornerRadiusLarge` gaps, uniform outer padding so the visualizer shows through the gutters.
+- The overlay covers the whole content area: sidebar, content pane, trailing pane and the transport strip. The window toolbar stays. Hiding the `.windowToolbar` placement removes the title bar and the traffic lights with it (confirmed against the SwiftUI documentation), which is more than a regular window should lose; the toolbar sits above the content area, so it never overlaps the columns. System full screen already hides it.
+- A compact cluster, centred, not three full-height columns. The queue card shows ten rows and scrolls past that; the cluster's height is derived from that (header plus ten `QueueRow` rows), and the other two cards match it. The now-playing card has a fixed width; the queue and lyrics cards share the rest up to a maximum cluster width, so a wide window keeps the visualizer around the cluster rather than stretching the cards. Gaps of `gutter` between and around the cards.
 - Column 1: artwork fills the column width as a square (`ArtworkLoader.shared.image(at:maxDimensionPoints: 512)` is the cap; nothing larger helps), then title, artist, album in that order. Podcasts show episode title, show name, and no album line. Radio shows the live stream title and the station name. Missing artwork uses `GradientPlaceholder`. Under everything else, pinned to the foot of the column, `ImmersiveTransport`: a full-width scrubber with elapsed and total time, then `MiniPlayerTransport` in its `.navigation` layout (podcast-aware: skip back and forward for an episode), then mute and a volume slider. Every control has its own identifier and localized help.
 - Column 2: `QueueView(vm:)` as is, with `.scrollContentBackground(.hidden)` so the panel colour shows. Drag reorder, context menu and double-click to play keep working because the view is the same one.
 - Column 3: `LyricsView(vm:onSeek:searchText:)` with a header row holding the source badge and `LyricsOffsetControl`. The lyrics view model is driven from `BocanRootView` today (`trackDidChange`); the implementation must confirm that `positionDidChange` is also driven at root, not inside `LyricsPane`, and move it up if not. Otherwise lyrics do not scroll while the pane is hidden.
@@ -122,7 +123,8 @@ The value persists across launches. An app that quits immersive relaunches immer
 
 `ImmersivePanel` is a `ViewModifier`:
 
-- Background is **solid**: `Color(nsColor: .windowBackgroundColor)` under a `.environment(\.colorScheme, .dark)` set on the whole overlay, so panels are dark cards on the black visualizer field in both system appearances. No material, no transparency, regardless of the Reduce Transparency setting (it is already opaque).
+- Background is **translucent glass**: `glassEffect(.regular, in:)` on macOS 26, `.ultraThinMaterial` on macOS 15, in one availability-gated surface modifier. Both blur the visualizer running beneath, so the oscilloscope reads through the cards. Reduce Transparency turns the card solid (`Color.bgPrimary`), the same escape the strip's material has.
+- The whole overlay runs under `.environment(\.colorScheme, .dark)`, so the cards read as dark glass on the black field in both system appearances.
 - Corner radius `Theme.cornerRadiusLarge`. Under Increase Contrast a 1pt `.separator` border is added, matching `AdaptiveMaterialBackground`.
 - Text inside uses `Color.textPrimary` and friends, which resolve correctly under the forced dark scheme. The contrast audit (`ThemeAudit`, `ContrastAudit`) is run against the panel colours.
 
@@ -139,7 +141,7 @@ The overlay embeds `VisualizerLivenessReadout` (the `A11y.Visualizer.host`, `mod
 | Trigger | Where | Behaviour |
 |---|---|---|
 | View menu item | `BocanCommands`, after Toggle Miniplayer | Title "Enter Immersive Mode" / "Exit Immersive Mode". Shortcut `⌥⌘I` unless `ShortcutParityTests` shows a clash, in which case pick a free one and update the manifest. Enabled always. |
-| Strip button | `NowPlayingStrip` panel-button group | Same toggle. `A11y.Immersive.toggle`, localized help. |
+| Toolbar button | `MainToolbarItems`, beside the mini player, lyrics and visualizer toggles | Same toggle; the toolbar stays visible while immersive, so it is also an exit. `A11y.Toolbar.immersiveToggle`, localized help. Not the strip: the strip has no slack at the window's minimum width, and a fifth panel button starved the scrubber. |
 | Esc | `NavigationInputMonitor` | Handled above drill-out. Passes through while a text view has focus and while the window is in system full screen, exactly as the existing guards do. |
 | Close button | overlay corner | `A11y.Immersive.close`. |
 
@@ -147,7 +149,7 @@ Entering animates with `Theme.Animation.default` opacity unless Reduce Motion is
 
 ### Accessibility identifiers
 
-`A11y.Immersive`: `root`, `nowPlayingColumn`, `artwork`, `title`, `artist`, `album`, `queueColumn`, `lyricsColumn`, `close`, `toggle` (the strip button, slice 4), and the transport: `transport`, `scrubber`, `previous`, `playPause`, `next`, `shuffle`, `repeatMode`, `stopAfter`, `skipBack`, `skipForward`, `mute`, `volume`. The lyrics offset control keeps `A11y.Lyrics.offsetButton` and `offsetSlider`; it is the same control. The root and every column use `.accessibilityElement(children: .contain)` so the children keep their identifiers.
+`A11y.Toolbar.immersiveToggle` for the toolbar button. `A11y.Immersive`: `root`, `nowPlayingColumn`, `artwork`, `title`, `artist`, `album`, `queueColumn`, `lyricsColumn`, `close`, and the transport: `transport`, `scrubber`, `previous`, `playPause`, `next`, `shuffle`, `repeatMode`, `stopAfter`, `skipBack`, `skipForward`, `mute`, `volume`. The lyrics offset control keeps `A11y.Lyrics.offsetButton` and `offsetSlider`; it is the same control. The root and every column use `.accessibilityElement(children: .contain)` so the children keep their identifiers.
 
 ### Localization keys
 
@@ -160,7 +162,7 @@ Five slices. Each is one commit on `feat/immersive`, gates green (`make format`,
 1. **Visualizer per-surface override.** `VisualizerHost.init(vm:mode:palette:)`, effective values in `rendererKey`, `VisualizerHostOverrideTests`. Extract `VisualizerLivenessReadout` from `VisualizerControlOverlay` with no behaviour change; `VisualizerLivenessTests` still pass.
 2. **Lyrics offset extraction.** Move the popover (`Slider` in `-5000...5000`, step 50, `A11y.Lyrics.offsetSlider`) into `LyricsOffsetControl`; `LyricsPane` uses it. Confirm `positionDidChange` is driven from `BocanRootView`; move it if it lives in the pane. `LyricsViewModelOffsetTests` unchanged and green.
 3. **The overlay.** `ImmersivePanel`, `ImmersiveNowPlayingColumn`, `ImmersiveTransport`, `ImmersiveView` with the three columns and the visualizer behind; `MiniPlayerTransport` gains optional identifiers and the `.navigation` layout. `A11y.Immersive`, catalog keys, pseudolocale, light, dark and increased-contrast snapshots. The view owns its `start()`/`stop()` pairing. No wiring into the window yet; the snapshot host is the only consumer.
-4. **Wiring.** `ui.immersive.visible` in `BocanRootView`; overlay slot covering the split view and the strip; toolbar hidden while immersive; strip button; View menu item with mirror; Esc hook in `NavigationInputMonitor`; E2E launch argument. Manual check in Xcode by the maintainer.
+4. **Wiring.** `ImmersiveOverlay` modifier (owns `ui.immersive.visible`) applied to the whole window content in `BocanRootView`; the trailing pane slot is not built while immersive; strip button; View menu item with mirror (`⇧⌘I`); `onImmersiveExit` hook in `NavigationInputMonitor` ahead of drill-out; `E2ESeeder` clears the key on every E2E launch (a launch argument would shadow it and freeze the menu label, the same trap the pane keys hit). Manual check in Xcode by the maintainer.
 5. **E2E and docs.** `MenuManifest` row, `SurfaceCompletenessTests` registry rows, liveness fourth surface, `ImmersiveModeTests` (enter, Esc exit, menu exit, Esc under full screen still exits full screen first). CHANGELOG Unreleased note, README feature bullet, website feature page, ADR index row.
 
 Slices 1 and 2 are independent of each other. Slice 3 needs both. Slice 4 needs 3. Slice 5 needs 4.
@@ -203,7 +205,7 @@ No new packages. No schema change. No new entitlements.
 
 - The View menu, the strip button, Esc and the close button all enter or exit Immersive Mode, and the menu title flips.
 - The visualizer behind the columns is Oscilloscope in Drift regardless of the saved visualizer preference, and the saved preference is unchanged afterwards.
-- The three panels are opaque; the visualizer is visible only in the gutters and around the panels.
+- The three cards are translucent glass (material on macOS 15, solid under Reduce Transparency), sized to a ten-row queue and centred, so the visualizer fills the rest of the window and reads through the cards.
 - The transport strip is covered while immersive, and column 1's controls drive playback, the scrubber, and volume.
 - The queue and lyrics columns are the real `QueueView` and `LyricsView`, with reorder and synced scrolling working.
 - Esc precedence matches the table above, and `FullScreenTests` stays green.
@@ -211,12 +213,13 @@ No new packages. No schema change. No new entitlements.
 
 ## Gotchas
 
-- **Opaque means opaque.** `VisualizerHost` is black underneath. A material panel will look like frosted black, not like the design. Use the solid colour.
+- **Glass over a Metal layer.** `VisualizerHost` paints black and draws the oscilloscope in an `MTKView`. Glass and materials blur what is behind them within the window, so the waveform shows through; the first cut used solid cards and lost that. `glassEffect` is macOS 26 only, so the surface modifier keeps the availability branch in one place with the material fallback beside it.
 - **Forced dark scheme.** `.environment(\.colorScheme, .dark)` on the overlay changes every colour inside it, including `QueueView` rows and the lyrics text. Snapshot both system appearances to prove nothing inside goes invisible.
 - **`QueueView` sets `.navigationTitle`.** Harmless outside a navigation container, but do not let it leak a title onto the main window; if it does, wrap or drop it.
 - **Global mode and palette.** Do not "temporarily" write `visualizer.mode`. The pane, mini player and fullscreen window share that key and would flip too. The override parameter exists so nobody has to.
 - **Refcount balance.** One `start()` in `onAppear`, one `stop()` in `onDisappear`, on the overlay itself. Hiding the trailing visualizer pane while immersive triggers its own `onDisappear`; that is expected and balanced.
-- **Toolbar hiding.** If `toolbarVisibility` misbehaves with the split view on macOS 15, do not fight it; leave the toolbar and note it here.
+- **Toolbar hiding.** Decided against: `toolbarVisibility(.hidden, for: .windowToolbar)` takes the title bar and traffic lights with it. The toolbar stays visible above the overlay.
+- **Preference shadowing in E2E.** A `-ui.immersive.visible NO` launch argument would shadow the key for the whole run, so a menu toggle could never flip the label. `E2ESeeder` deletes the key instead, like the pane keys.
 - **Esc guards.** Copy the existing guard order. Swallowing Esc in full screen breaks fullscreen exit and `FullScreenTests`.
 - **Scene restoration.** Not applicable: this is not a new window. If anyone later moves it to a window, it needs `.restorationBehavior(.disabled)` like every secondary scene.
 - **Identifier combining.** A label plus an identifier on a container merges the children. Use `.accessibilityElement(children: .contain)` on every column and on the root.
