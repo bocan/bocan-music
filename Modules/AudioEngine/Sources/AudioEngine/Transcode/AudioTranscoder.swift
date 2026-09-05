@@ -140,6 +140,12 @@ final class TranscodeContext {
     var outSampleRate: Int32 = 0
     var outChannels: Int32 = 2
     var nextPts: Int64 = 0
+    /// The input shape `swrCtx` was built for (with `inSampleRate`). A decoded
+    /// frame that differs forces a rebuild before it is converted: the
+    /// resampler reads one plane per configured input channel, so a mono
+    /// frame handed to a stereo-configured context is a null-plane read.
+    var swrInLayout = AVChannelLayout()
+    var swrInFormat = AV_SAMPLE_FMT_NONE
     /// Damaged packets and demux errors skipped instead of fatal (the same
     /// tolerance as playback); the transcoder logs a warning when non-zero.
     var toleratedErrors = 0
@@ -157,6 +163,7 @@ final class TranscodeContext {
         av_frame_free(&decodedFrame)
         var swr = swrCtx
         swr_free(&swr)
+        av_channel_layout_uninit(&swrInLayout)
         if let fifo { av_audio_fifo_free(fifo) }
         var dec = decodeCtx
         avcodec_free_context(&dec)
