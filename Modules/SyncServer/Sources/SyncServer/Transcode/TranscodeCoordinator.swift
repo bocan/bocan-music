@@ -309,20 +309,31 @@ public actor TranscodeCoordinator {
     /// the window: the user opted into the disk cost, so the whole selection
     /// prepares up front. One failed file logs and moves on; only
     /// cancellation stops the pass.
+    ///
+    /// An urgent request for a track whose row is valid but whose bytes were
+    /// released (the 503-busy self-heal of ADR-088) re-encodes that track
+    /// too: the row stays advertised, the upsert clears `served_at`, and the
+    /// phone's retry finds the artifact. Urgent work also passes a full
+    /// window, because the phone is waiting on it right now.
     private func encodeMissing(
         targets: [Track],
         valid: [SyncTranscode],
         preset: TranscodePreset,
         ignoreWindow: Bool
     ) async throws {
+        let urgent = self.urgentTrackIDs
+        self.urgentTrackIDs.removeAll()
         let validIDs = Set(valid.map(\.trackID))
+        let released = Set(valid.lazy
+            .filter { urgent.contains($0.trackID) }
+            .filter { !self.store.exists(trackID: $0.trackID, sourceContentHash: $0.sourceContentHash, preset: preset) }
+            .map(\.trackID))
         var pending = targets.filter { track in
-            guard let id = track.id, let hash = track.contentHash, !validIDs.contains(id) else { return false }
+            guard let id = track.id, let hash = track.contentHash else { return false }
+            guard !validIDs.contains(id) || released.contains(id) else { return false }
             let memo = FailedEncode(trackID: id, preset: preset.rawValue, sourceContentHash: hash)
             return !self.failedEncodes.contains(memo)
         }
-        let urgent = self.urgentTrackIDs
-        self.urgentTrackIDs.removeAll()
         pending.sort { lhs, rhs in
             let lhsUrgent = lhs.id.map { urgent.contains($0) } ?? false
             let rhsUrgent = rhs.id.map { urgent.contains($0) } ?? false
@@ -330,6 +341,9 @@ public actor TranscodeCoordinator {
             return (lhs.id ?? 0) < (rhs.id ?? 0)
         }
         guard !pending.isEmpty else { return }
+        if !released.isEmpty {
+            self.log.debug("transcode.reencode.released", ["count": "\(released.count)", "preset": preset.rawValue])
+        }
 
         var unservedBytes = valid
             .filter { $0.servedAt == nil }
@@ -344,11 +358,13 @@ public actor TranscodeCoordinator {
             // stop() cancels the pass's task, so cancellation is the one
             // mid-pass exit; a direct runPass() in tests runs to completion.
             try Task.checkCancellation()
-            if !ignoreWindow, unservedBytes >= self.prepareWindowBytes {
+            guard let id = track.id, let sourceHash = track.contentHash else { continue }
+            // Urgent tracks sort first, so the first non-urgent track is where
+            // a full window parks the pass.
+            if !ignoreWindow, !urgent.contains(id), unservedBytes >= self.prepareWindowBytes {
                 self.log.debug("transcode.window.full", ["bytes": "\(unservedBytes)"])
                 break
             }
-            guard let id = track.id, let sourceHash = track.contentHash else { continue }
             do {
                 let result = try await self.encodeOne(
                     track,

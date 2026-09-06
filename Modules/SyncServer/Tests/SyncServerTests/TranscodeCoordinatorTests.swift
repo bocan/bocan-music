@@ -324,6 +324,77 @@ struct TranscodeCoordinatorTests {
         try self.cleanup(fixture)
     }
 
+    @Test("an urgent request for released bytes re-encodes and clears the served stamp")
+    func urgentReencodesReleasedBytes() async throws {
+        let fixture = try await makeFixture()
+        let id = try await insertTrack(fixture, title: "L", contentHash: "h1", isLossless: true)
+        try await self.setDocument(fixture, preset: .opus128)
+        await fixture.coordinator.runPass()
+
+        // Served, then swept: the row stays, the bytes go.
+        try await fixture.ledger.stampServed(trackID: id, preset: "opus_128", at: 1_756_000_000)
+        await fixture.coordinator.runPass()
+        #expect(!fixture.store.exists(trackID: id, sourceContentHash: "h1", preset: .opus128))
+
+        // The phone asks again (the 503-busy path) and the next pass heals it.
+        await fixture.coordinator.requestUrgent(trackID: id)
+        await fixture.coordinator.runPass()
+
+        #expect(fixture.encoder.encodeCount == 2)
+        #expect(fixture.store.exists(trackID: id, sourceContentHash: "h1", preset: .opus128))
+        let row = try #require(try await fixture.ledger.allValid(preset: "opus_128").first)
+        #expect(row.trackID == id)
+        #expect(row.servedAt == nil, "a fresh artifact must survive the next release sweep")
+
+        // The following pass leaves the fresh bytes alone.
+        await fixture.coordinator.runPass()
+        #expect(fixture.encoder.encodeCount == 2)
+        #expect(fixture.store.exists(trackID: id, sourceContentHash: "h1", preset: .opus128))
+
+        try self.cleanup(fixture)
+    }
+
+    @Test("an urgent request for bytes still on disk does not re-encode")
+    func urgentWithPresentBytesIsNoop() async throws {
+        let fixture = try await makeFixture()
+        let id = try await insertTrack(fixture, title: "L", contentHash: "h1", isLossless: true)
+        try await self.setDocument(fixture, preset: .opus128)
+        await fixture.coordinator.runPass()
+
+        await fixture.coordinator.requestUrgent(trackID: id)
+        await fixture.coordinator.runPass()
+
+        #expect(fixture.encoder.encodeCount == 1)
+
+        try self.cleanup(fixture)
+    }
+
+    @Test("an urgent re-encode passes a full prepare window")
+    func urgentPassesFullWindow() async throws {
+        let fixture = try await makeFixture(prepareWindowBytes: 100)
+        let first = try await insertTrack(fixture, title: "A", contentHash: "h-a", isLossless: true)
+        let second = try await insertTrack(fixture, title: "B", contentHash: "h-b", isLossless: true)
+        try await self.setDocument(fixture, preset: .opus128)
+
+        // First pass fills the window with A; B parks.
+        await fixture.coordinator.runPass()
+        #expect(fixture.encoder.encodedTrackIDs == [first])
+
+        // A is served and swept, B gets encoded and now fills the window.
+        try await fixture.ledger.stampServed(trackID: first, preset: "opus_128", at: 1_756_000_000)
+        await fixture.coordinator.runPass()
+        #expect(fixture.encoder.encodedTrackIDs == [first, second])
+        #expect(!fixture.store.exists(trackID: first, sourceContentHash: "h-a", preset: .opus128))
+
+        // The phone lost A and asks again: the window is full of B, yet A re-encodes.
+        await fixture.coordinator.requestUrgent(trackID: first)
+        await fixture.coordinator.runPass()
+        #expect(fixture.encoder.encodedTrackIDs == [first, second, first])
+        #expect(fixture.store.exists(trackID: first, sourceContentHash: "h-a", preset: .opus128))
+
+        try self.cleanup(fixture)
+    }
+
     @Test("ledger writes bump the sync generation through the observed tables")
     func ledgerWritesBumpGeneration() async throws {
         let fixture = try await makeFixture()
