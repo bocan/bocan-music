@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Phone Sync no longer leaves a converted song stuck as pending forever. If the phone lost a song after the Mac had already sent it (for example when Android stopped the app mid-transfer to save battery), the Mac now converts that song again the next time the phone asks for it, instead of answering busy on every sync.
 
+This release pairs with Bòcan Music for Android 0.4.0, which carries the phone side of that fix: the phone now waits while the Mac converts the song again instead of giving up on it until the next sync. Install it from https://github.com/bocan/bocan-music-android/releases/tag/v0.4.0 so both ends match.
+
 ## [2.14.0](https://github.com/bocan/bocan-music/compare/v2.13.0...v2.14.0) (2026-09-05)
 
 Experimental: Immersive Mode. Press Shift-Command-I, pick View, Enter Immersive Mode, or click the new three-column button in the toolbar, and Bòcan opens a full-screen window with nothing on it but the music: the oscilloscope running edge to edge in the Drift palette, and three cards over it with the artwork, title and player controls, the next ten songs in your queue (scroll for the rest), and the lyrics, synced where you have them. Esc brings you back. It is marked experimental on purpose: the visualizer behind the cards is heavier than the one in the side pane, and if it turns out to stutter on too many Macs the mode may change shape or be removed in a later update.
