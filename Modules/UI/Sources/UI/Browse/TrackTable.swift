@@ -77,6 +77,11 @@ public struct TrackTable: NSViewRepresentable {
     public typealias Coordinator = TrackTableCoordinator
 
     let rows: [TrackRow]
+    /// The view model's counter for `rows` (#450). `updateNSView` walks the
+    /// rows only when this moved since the last apply; a parent re-render with
+    /// unchanged rows then costs nothing per row. Defaulted so callers that
+    /// build a table by hand (tests) need not supply it.
+    var rowsVersion = 0
     @Binding var selection: Set<Track.ID>
     @Binding var sortOrder: [KeyPathComparator<TrackRow>]
     let nowPlayingTrackID: Track.ID?
@@ -199,47 +204,53 @@ public struct TrackTable: NSViewRepresentable {
         guard let tableView = coordinator.tableView,
               let dataSource = coordinator.dataSource else { return }
 
-        // 1 — Structural change: a different set of track IDs.
-        let newIDs = self.rows.compactMap(\.id)
-        let oldIDs = coordinator.lastAppliedIDs
+        // 1 — Decide what moved since the last apply (#450). The rows version
+        // gates every per-row walk, so a parent re-render with unchanged
+        // inputs does no per-row work at all.
+        let plan = TrackTableUpdatePlan.make(
+            rowsVersion: self.rowsVersion,
+            ids: { self.rows.compactMap(\.id) },
+            nowPlayingID: self.nowPlayingTrackID,
+            selection: self.selection,
+            applied: coordinator.applied
+        )
+        switch plan.rowsWork {
+        case .structural:
+            self.applyStructuralChange(ids: plan.ids ?? [], coordinator: coordinator, dataSource: dataSource)
 
-        if newIDs != oldIDs {
-            coordinator.updateRows(self.rows)
-            coordinator.lastAppliedIDs = newIDs
-
-            // NSDiffableDataSourceSnapshot requires unique item identifiers.
-            // Guard against duplicate track IDs (e.g. the same track added
-            // twice to a playlist) by deduplicating while preserving order.
-            var seen = Set<Int64>()
-            let uniqueIDs = newIDs.filter { seen.insert($0).inserted }
-
-            var snapshot = NSDiffableDataSourceSnapshot<Int, Int64>()
-            snapshot.appendSections([0])
-            snapshot.appendItems(uniqueIDs)
-            let animated = coordinator.hasAppliedInitialSnapshot && !self.rows.isEmpty
-            dataSource.apply(snapshot, animatingDifferences: animated)
-            coordinator.hasAppliedInitialSnapshot = true
-        } else {
+        case .reconfigure:
             // 2 — Same ID set: reconfigure rows whose displayed content changed
             // (love toggled, play count bumped, rating, in-place tag edits) and
             // the rows gaining or losing the now-playing highlight.  Without
             // this the NSTableView keeps rendering stale cells until a reload.
             self.reconfigureChangedRows(coordinator: coordinator, dataSource: dataSource)
-        }
-        coordinator.lastNowPlayingID = self.nowPlayingTrackID
 
-        // 3 — Selection changed externally (e.g. syncSelectionToNowPlaying).
-        let expectedIndexes = IndexSet(
-            coordinator.rows.enumerated()
-                .compactMap { idx, row -> Int? in
-                    guard let id = row.id, selection.contains(id) else { return nil }
-                    return idx
-                }
+        case .unchanged:
+            // Rows unchanged; only the highlight may have moved.
+            Self.reload(rows: plan.highlightReload, dataSource: dataSource)
+        }
+        coordinator.applied = plan.applied(
+            after: coordinator.applied,
+            rowsVersion: self.rowsVersion,
+            nowPlayingID: self.nowPlayingTrackID,
+            selection: self.selection
         )
-        if tableView.selectedRowIndexes != expectedIndexes {
-            coordinator.isSyncingSelection = true
-            tableView.selectRowIndexes(expectedIndexes, byExtendingSelection: false)
-            coordinator.isSyncingSelection = false
+
+        // 3 — Selection changed externally (e.g. syncSelectionToNowPlaying),
+        // or the rows did: recomputing the index set walks every row.
+        if plan.syncSelection {
+            let expectedIndexes = IndexSet(
+                coordinator.rows.enumerated()
+                    .compactMap { idx, row -> Int? in
+                        guard let id = row.id, selection.contains(id) else { return nil }
+                        return idx
+                    }
+            )
+            if tableView.selectedRowIndexes != expectedIndexes {
+                coordinator.isSyncingSelection = true
+                tableView.selectRowIndexes(expectedIndexes, byExtendingSelection: false)
+                coordinator.isSyncingSelection = false
+            }
         }
 
         // 4 — Sort indicator changed externally (e.g. "Clear Sort" button).
@@ -260,6 +271,29 @@ public struct TrackTable: NSViewRepresentable {
         self.applyScrollIfNeeded(coordinator: coordinator, tableView: tableView)
     }
 
+    /// A different set of track IDs: rebuild the rows dictionary and apply a
+    /// new snapshot.
+    private func applyStructuralChange(
+        ids: [Int64],
+        coordinator: TrackTableCoordinator,
+        dataSource: TrackDiffableDataSource
+    ) {
+        coordinator.updateRows(self.rows)
+
+        // NSDiffableDataSourceSnapshot requires unique item identifiers.
+        // Guard against duplicate track IDs (e.g. the same track added
+        // twice to a playlist) by deduplicating while preserving order.
+        var seen = Set<Int64>()
+        let uniqueIDs = ids.filter { seen.insert($0).inserted }
+
+        var snapshot = NSDiffableDataSourceSnapshot<Int, Int64>()
+        snapshot.appendSections([0])
+        snapshot.appendItems(uniqueIDs)
+        let animated = coordinator.hasAppliedInitialSnapshot && !self.rows.isEmpty
+        dataSource.apply(snapshot, animatingDifferences: animated)
+        coordinator.hasAppliedInitialSnapshot = true
+    }
+
     /// Reloads only the rows whose rendered content changed (or whose
     /// now-playing highlight is gained/lost) while the set of track IDs is
     /// unchanged.  `reloadItems` re-runs the cell provider for those identifiers
@@ -278,12 +312,18 @@ public struct TrackTable: NSViewRepresentable {
         }
         // The now-playing highlight depends on `nowPlayingTrackID`, not on row
         // content, so the outgoing and incoming now-playing rows must refresh
-        // too — even when their underlying values are identical.
-        if coordinator.lastNowPlayingID != self.nowPlayingTrackID {
-            if let old = coordinator.lastNowPlayingID, let oldID = old { changed.append(oldID) }
+        // too, even when their underlying values are identical.
+        if coordinator.applied.nowPlayingID != self.nowPlayingTrackID {
+            if let old = coordinator.applied.nowPlayingID, let oldID = old { changed.append(oldID) }
             if let new = self.nowPlayingTrackID, let newID = new { changed.append(newID) }
         }
         coordinator.updateRows(self.rows)
+        Self.reload(rows: changed, dataSource: dataSource)
+    }
+
+    /// Reloads the given rows in place, ignoring IDs the snapshot does not hold
+    /// and duplicates. A no-op for an empty list.
+    private static func reload(rows changed: [Int64], dataSource: TrackDiffableDataSource) {
         guard !changed.isEmpty else { return }
         var snapshot = dataSource.snapshot()
         let existing = Set(snapshot.itemIdentifiers(inSection: 0))

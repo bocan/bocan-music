@@ -14,9 +14,9 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
     var rows: [TrackRow] = []
     var rowsByID: [Int64: TrackRow] = [:]
 
-    // Change-detection state used in updateNSView.
-    var lastAppliedIDs: [Int64] = []
-    var lastNowPlayingID: Track.ID?
+    /// What the last `updateNSView` applied: rows version, IDs, highlight,
+    /// selection. `TrackTableUpdatePlan` diffs the next inputs against it (#450).
+    var applied = TrackTableUpdatePlan.Applied()
     var hasAppliedInitialSnapshot = false
     /// Tracks the last scroll-request counter processed to avoid re-scrolling.
     var lastScrollRequest: Int = -1
