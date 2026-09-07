@@ -156,9 +156,17 @@ public final class LyricsViewModel: ObservableObject {
     }
 
     /// Updates `currentLineIndex` from the engine's playback position.
+    ///
+    /// Called on every 0.5 s position tick. A `@Published` assignment emits
+    /// `objectWillChange` even when the value is unchanged, and every
+    /// `@ObservedObject` / `@EnvironmentObject` consumer of this model (the
+    /// root view, the tracks view) re-renders on each emission, so this must
+    /// publish only when the index actually moves (#450).
     public func positionDidChange(_ position: TimeInterval) {
         guard case let .synced(lines, offsetMS) = document, !lines.isEmpty else {
-            self.currentLineIndex = nil
+            if self.currentLineIndex != nil {
+                self.currentLineIndex = nil
+            }
             return
         }
 
