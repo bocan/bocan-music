@@ -8,8 +8,12 @@ import SwiftUI
 /// Applied once, at the root of the main window, not inside the lyrics pane,
 /// so every surface that shows the document sees the same highlight whether
 /// or not the pane is on screen: the pane, and the Immersive Mode lyrics
-/// column (ADR-089). The root body already reads the position for the pane,
-/// so this adds no new observation.
+/// column (ADR-089).
+///
+/// This modifier is the only reader of `position` at the root. A modifier's
+/// body is its own graph node, so the 0.5 s tick re-evaluates this small
+/// chain and not `BocanRootView.body` (#450); keep position reads out of
+/// the root body itself.
 struct LyricsPlaybackDriver: ViewModifier {
     let lyricsVM: LyricsViewModel
     let nowPlaying: NowPlayingViewModel

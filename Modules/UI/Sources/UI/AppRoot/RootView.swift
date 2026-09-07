@@ -118,7 +118,11 @@ public struct BocanRootView: View {
             if self.visualizerVM.paneVisible {
                 VisualizerPane(vm: self.visualizerVM, nowPlayingVM: self.vm.nowPlaying)
             } else {
-                LyricsPane(vm: self.lyricsVM, position: self.vm.nowPlaying.position) { pos in
+                // Pass the model, never `nowPlaying.position`: a position read
+                // here makes this whole body a dependent of the 0.5 s tick, and
+                // every child that cannot prove itself unchanged re-runs with it,
+                // down to the songs table re-diffing every row (#450).
+                LyricsPane(vm: self.lyricsVM, nowPlaying: self.vm.nowPlaying) { pos in
                     Task { await self.vm.nowPlaying.scrub(to: pos) }
                 }
             }

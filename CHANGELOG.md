@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Immersive Mode and the visualizer no longer stutter twice a second while a song plays with the full Songs list open. The main window was quietly redrawing every row of the songs table on each playback tick; it now leaves the table alone until something in it actually changes.
+
 Phone Sync no longer leaves a converted song stuck as pending forever. If the phone lost a song after the Mac had already sent it (for example when Android stopped the app mid-transfer to save battery), the Mac now converts that song again the next time the phone asks for it, instead of answering busy on every sync.
 
 This release pairs with Bòcan Music for Android 0.4.0, which carries the phone side of that fix: the phone now waits while the Mac converts the song again instead of giving up on it until the next sync. Install it from https://github.com/bocan/bocan-music-android/releases/tag/v0.4.0 so both ends match.
