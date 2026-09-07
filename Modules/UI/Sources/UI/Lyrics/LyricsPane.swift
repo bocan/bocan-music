@@ -12,8 +12,11 @@ public struct LyricsPane: View {
 
     @ObservedObject public var vm: LyricsViewModel
 
-    /// Current engine position, forwarded to ``LyricsView`` for line highlight.
-    public var position: TimeInterval
+    /// The transport model. Held as a plain reference: `@Observable` tracking
+    /// is per property, and the only property read here is `position`, inside
+    /// the editor sheet's content, so the 0.5 s position tick invalidates the
+    /// sheet content alone, never this pane and never `BocanRootView` (#450).
+    public var nowPlaying: NowPlayingViewModel
 
     /// Seek callback forwarded to ``LyricsView`` when the user taps a synced line.
     public var onSeek: (TimeInterval) -> Void
@@ -31,11 +34,11 @@ public struct LyricsPane: View {
 
     public init(
         vm: LyricsViewModel,
-        position: TimeInterval,
+        nowPlaying: NowPlayingViewModel,
         onSeek: @escaping (TimeInterval) -> Void
     ) {
         self.vm = vm
-        self.position = position
+        self.nowPlaying = nowPlaying
         self.onSeek = onSeek
     }
 
@@ -50,10 +53,10 @@ public struct LyricsPane: View {
                     self.searchBar
                     Divider()
                 }
-                // Line highlight is driven from BocanRootView, which forwards
-                // the engine position to the view model whether or not this
-                // pane is on screen (ADR-089: the Immersive Mode lyrics column
-                // shares the same document and needs the same ticks).
+                // Line highlight is driven by LyricsPlaybackDriver at the root,
+                // which forwards the engine position to the view model whether
+                // or not this pane is on screen (ADR-089: the Immersive Mode
+                // lyrics column shares the same document and needs the same ticks).
                 LyricsView(vm: self.vm, onSeek: self.onSeek, searchText: self.searchText)
             }
             .frame(width: self.paneWidth)
@@ -88,10 +91,13 @@ public struct LyricsPane: View {
                 }
             }
             .sheet(isPresented: self.$vm.isEditorPresented) {
+                // The one position read in this file. It runs while the sheet
+                // is up, inside the sheet's own content, so the tick reaches
+                // nothing else.
                 LyricsEditorSheet(
                     vm: self.vm,
                     isPresented: self.$vm.isEditorPresented,
-                    currentPosition: self.position
+                    currentPosition: self.nowPlaying.position
                 )
             }
             .accessibilityIdentifier(A11y.Lyrics.pane)

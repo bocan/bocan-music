@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import ImageIO
@@ -11,14 +12,36 @@ import UniformTypeIdentifiers
 /// resolution (up to 4096px) regardless of display size and had no
 /// `totalCostLimit`, so 200 large covers could exceed 1 GB. `ArtworkLoader` now
 /// downsamples via `CGImageSource` to a capped, display-sized thumbnail.
-/// Main-actor: `NSImage` construction on a worker thread races AppKit's
-/// application-context `dispatch_once` under the parallel runner and can
-/// deadlock against a main-actor suite creating a window (it wedged two full
-/// `make tests` runs on 2026-09-01, in `-[NSApplication init]`). AppKit
-/// object creation belongs on main.
+/// `NSImage` construction on a worker thread races AppKit's application-context
+/// `dispatch_once` under the parallel runner and deadlocks against a main-actor
+/// suite creating a window (`WindowFadeTests`): it wedged two full `make tests`
+/// runs on 2026-09-01 and two `make test-ui` runs on 2026-09-07, in
+/// `-[NSApplication init]`. Marking the suite `@MainActor` is not enough:
+/// `ArtworkLoader` is an actor, so `await loader.image(...)` hops to the
+/// cooperative pool and builds the `NSImage` there. The `init` below runs on
+/// main (the suite is main-actor) and walks the same `NSImage(cgImage:)` path
+/// once, so AppKit's application context is initialised on main before any
+/// test awaits the loader, the order the app guarantees at launch. It must
+/// not touch `NSApplication`: the Xcode `BocanTests` bundle is host-less and
+/// that fails there.
 @MainActor
 @Suite("ArtworkLoader")
 struct ArtworkLoaderTests {
+    init() {
+        let context = CGContext(
+            data: nil,
+            width: 1,
+            height: 1,
+            bitsPerComponent: 8,
+            bytesPerRow: 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )
+        if let cg = context?.makeImage() {
+            _ = NSImage(cgImage: cg, size: NSSize(width: 1, height: 1))
+        }
+    }
+
     @Test("downsamples a large cover to a small cell size")
     func downsamplesSmallCell() async throws {
         let url = try TestImage.solidPNG(width: 1000, height: 1000)
