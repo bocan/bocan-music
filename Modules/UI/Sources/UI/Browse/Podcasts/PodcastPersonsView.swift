@@ -82,7 +82,7 @@ private struct PodcastPersonCard: View {
         Group {
             if let img = person.imageURL, let url = URL(string: img) {
                 AsyncImage(url: url) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
+                    image.resizable().scaledToFill()
                 } placeholder: {
                     self.placeholder
                 }

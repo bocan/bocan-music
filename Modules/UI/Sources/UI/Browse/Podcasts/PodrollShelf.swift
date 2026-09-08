@@ -105,7 +105,7 @@ private struct PodrollCard: View {
         Group {
             if let art = preview?.artworkURL {
                 AsyncImage(url: art) { image in
-                    image.resizable().aspectRatio(contentMode: .fill)
+                    image.resizable().scaledToFill()
                 } placeholder: {
                     self.placeholder
                 }

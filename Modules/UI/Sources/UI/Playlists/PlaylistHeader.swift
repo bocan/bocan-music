@@ -95,7 +95,7 @@ public struct PlaylistHeader: View {
             if let img = effective {
                 Image(nsImage: img)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
             } else {
                 self.accentPlaceholder
             }

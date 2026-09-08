@@ -34,7 +34,7 @@ public struct MenuBarExtraScene: View {
                 if let img = self.vm.artwork {
                     Image(nsImage: img)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .scaledToFill()
                 } else {
                     GradientPlaceholder(seed: 3)
                 }
