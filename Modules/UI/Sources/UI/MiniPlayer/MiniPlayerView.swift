@@ -308,10 +308,18 @@ public struct MiniPlayerView: View {
         guard let screen = win.screen ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
         var frame = win.frame
-        if frame.maxX > visible.maxX { frame.origin.x = visible.maxX - frame.width }
-        if frame.minX < visible.minX { frame.origin.x = visible.minX }
-        if frame.maxY > visible.maxY { frame.origin.y = visible.maxY - frame.height }
-        if frame.minY < visible.minY { frame.origin.y = visible.minY }
+        if frame.maxX > visible.maxX {
+            frame.origin.x = visible.maxX - frame.width
+        }
+        if frame.minX < visible.minX {
+            frame.origin.x = visible.minX
+        }
+        if frame.maxY > visible.maxY {
+            frame.origin.y = visible.maxY - frame.height
+        }
+        if frame.minY < visible.minY {
+            frame.origin.y = visible.minY
+        }
         guard frame != win.frame else { return }
         win.setFrame(frame, display: true)
     }

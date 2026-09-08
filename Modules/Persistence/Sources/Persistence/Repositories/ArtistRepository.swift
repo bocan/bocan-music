@@ -95,7 +95,9 @@ public struct ArtistRepository: Sendable {
                     existing.sortName = derived
                     changed = true
                 }
-                if changed { try existing.update(db) }
+                if changed {
+                    try existing.update(db)
+                }
                 return existing
             }
             var artist = Artist(

@@ -117,9 +117,15 @@ public struct PlaylistImportSheet: View {
 
     private static func rowAccessibilityLabel(for row: PreviewRow) -> String {
         var parts = [row.url.lastPathComponent, row.summary]
-        if row.matched > 0 { parts.append(L10n.string("\(row.matched) matched")) }
-        if row.missed > 0 { parts.append(L10n.string("\(row.missed) missing")) }
-        if row.stations > 0 { parts.append(L10n.string("\(row.stations) stations")) }
+        if row.matched > 0 {
+            parts.append(L10n.string("\(row.matched) matched"))
+        }
+        if row.missed > 0 {
+            parts.append(L10n.string("\(row.missed) missing"))
+        }
+        if row.stations > 0 {
+            parts.append(L10n.string("\(row.stations) stations"))
+        }
         return parts.joined(separator: ", ")
     }
 
@@ -160,7 +166,9 @@ public struct PlaylistImportSheet: View {
         var inaccessible: [URL] = []
         for url in self.pickedURLs {
             let blocked = await self.importer.cueAudioNeedingAccess(at: url)
-            if !blocked.isEmpty, firstCue == nil { firstCue = url }
+            if !blocked.isEmpty, firstCue == nil {
+                firstCue = url
+            }
             inaccessible.append(contentsOf: blocked)
         }
         guard let firstCue, !inaccessible.isEmpty else { return }
@@ -240,7 +248,9 @@ public struct PlaylistImportSheet: View {
         for url in self.pickedURLs {
             do {
                 let report = try await self.importer.importFile(at: url, parentID: nil)
-                if let id = report.playlistID { lastID = id }
+                if let id = report.playlistID {
+                    lastID = id
+                }
                 stationsAdded += report.stationsAdded
             } catch {
                 self.errorMessage = L10n.string("Failed to import \(url.lastPathComponent): \(error.localizedDescription)")

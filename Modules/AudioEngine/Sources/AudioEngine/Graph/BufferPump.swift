@@ -197,7 +197,8 @@ actor BufferPump {
         var framesPumped: AVAudioFrameCount = 0
 
         while !Task.isCancelled {
-            if self.availableSlots <= 0 { try await self.waitForSlot()
+            if self.availableSlots <= 0 {
+                try await self.waitForSlot()
                 continue
             }
             try Task.checkCancellation()

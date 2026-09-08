@@ -61,7 +61,9 @@ struct AudioTapTests {
             var result: [AudioSamples] = []
             for await s in stream {
                 result.append(s)
-                if result.count >= 3 { break }
+                if result.count >= 3 {
+                    break
+                }
             }
             return result
         }

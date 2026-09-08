@@ -80,7 +80,9 @@ struct BufferPumpWindowTests {
     private static func awaitWindowSettled(_ pump: BufferPump, target: Int) async throws -> Int {
         let deadline = ContinuousClock.now + .seconds(10)
         while ContinuousClock.now < deadline {
-            if await pump.scheduledBufferCount >= target { break }
+            if await pump.scheduledBufferCount >= target {
+                break
+            }
             try await Task.sleep(for: .milliseconds(10))
         }
         try await Task.sleep(for: .milliseconds(100)) // let any overshoot manifest

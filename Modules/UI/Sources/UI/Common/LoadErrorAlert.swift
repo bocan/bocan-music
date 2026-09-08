@@ -18,7 +18,11 @@ extension View {
             title,
             isPresented: Binding(
                 get: { message.wrappedValue != nil },
-                set: { if !$0 { message.wrappedValue = nil } }
+                set: {
+                    if !$0 {
+                        message.wrappedValue = nil
+                    }
+                }
             ),
             actions: { Button(L10n.string("OK"), role: .cancel) {} },
             message: { Text(message.wrappedValue ?? "") }

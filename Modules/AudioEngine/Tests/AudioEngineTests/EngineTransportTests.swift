@@ -30,7 +30,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .ready { break }
+                if s == .ready {
+                    break
+                }
             }
             return collected
         }
@@ -51,8 +53,12 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if case .failed = s { break }
-                if s == .ready { break }
+                if case .failed = s {
+                    break
+                }
+                if s == .ready {
+                    break
+                }
             }
             return collected
         }
@@ -60,7 +66,10 @@ struct EngineTransportTests {
         try? await engine.load(url)
         let states = await stateTask.value
 
-        let hasFailed = states.contains { if case .failed = $0 { return true }
+        let hasFailed = states.contains {
+            if case .failed = $0 {
+                return true
+            }
             return false
         }
         #expect(hasFailed, "Expected .failed state for missing file")
@@ -118,7 +127,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .stopped { break }
+                if s == .stopped {
+                    break
+                }
             }
             return collected
         }
@@ -140,7 +151,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .paused { break }
+                if s == .paused {
+                    break
+                }
             }
             return collected
         }
@@ -284,14 +297,26 @@ struct EngineTransportTests {
     )
     func seekWhilePlayingReschedulesInPlace() async throws {
         let engine = AudioEngine()
-        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        // The 3 s fixture leaves ~2.9 s of runway after the seek, far beyond the
+        // pump's 0.8 s read-ahead window. The 1 s sine left only 0.1 s of slack
+        // and a starved CI runner tipped it into EOF before the assertions.
+        let url = try fixtureURL("sample-alac.m4a")
         try await engine.load(url)
         try await engine.play()
-        try await Task.sleep(for: .milliseconds(100))
+
+        // Wait for the render thread to make real progress instead of a fixed
+        // 100 ms pause; on a loaded runner the pause proved nothing.
+        var started = false
+        for _ in 0 ..< 250 {
+            if await engine.currentTime > 0 {
+                started = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(started, "Engine never started rendering")
         let pumpBefore = await engine.pump
 
-        // Seek to 0.1 s: the 0.9 s remaining is beyond the pump's 0.8 s read-ahead
-        // window, so it does not immediately hit EOF and the engine stays playing.
         try await engine.seek(to: 0.1)
 
         let isPlaying = await engine.isPlaying
@@ -316,7 +341,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .ready { break }
+                if s == .ready {
+                    break
+                }
             }
             return collected
         }

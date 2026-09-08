@@ -108,45 +108,49 @@ extension TrackTable {
 
     // MARK: Sort helpers
 
-    // swiftlint:disable cyclomatic_complexity
+    /// Every sortable column as its descriptor key and the comparator that
+    /// sorts it in a given order. `sortKey(for:)` walks this table; the
+    /// inverse mapping below still spells each case out.
+    private static let sortKeyTable: [(key: String, make: (SortOrder) -> KeyPathComparator<TrackRow>)] = [
+        ("trackNumber", { KeyPathComparator(\TrackRow.trackNumber, order: $0) }),
+        ("trackTotal", { KeyPathComparator(\TrackRow.trackTotal, order: $0) }),
+        ("discNumber", { KeyPathComparator(\TrackRow.discNumber, order: $0) }),
+        ("discTotal", { KeyPathComparator(\TrackRow.discTotal, order: $0) }),
+        ("databaseID", { KeyPathComparator(\TrackRow.databaseID, order: $0) }),
+        ("title", { KeyPathComparator(\TrackRow.title, comparator: .localizedStandard, order: $0) }),
+        ("artistName", { KeyPathComparator(\TrackRow.artistName, comparator: .localizedStandard, order: $0) }),
+        ("albumName", { KeyPathComparator(\TrackRow.albumName, comparator: .localizedStandard, order: $0) }),
+        ("yearText", { KeyPathComparator(\TrackRow.yearText, comparator: .localizedStandard, order: $0) }),
+        ("genre", { KeyPathComparator(\TrackRow.genre, comparator: .localizedStandard, order: $0) }),
+        ("duration", { KeyPathComparator(\TrackRow.duration, order: $0) }),
+        ("playCount", { KeyPathComparator(\TrackRow.playCount, order: $0) }),
+        ("rating", { KeyPathComparator(\TrackRow.rating, order: $0) }),
+        ("addedAt", { KeyPathComparator(\TrackRow.addedAt, order: $0) }),
+        ("fileFormat", { KeyPathComparator(\TrackRow.fileFormat, comparator: .localizedStandard, order: $0) }),
+        ("bitrate", { KeyPathComparator(\TrackRow.bitrate, order: $0) }),
+        ("sampleRate", { KeyPathComparator(\TrackRow.sampleRate, order: $0) }),
+        ("shuffleSortKey", { KeyPathComparator(\TrackRow.shuffleSortKey, order: $0) }),
+        ("lovedSortKey", { KeyPathComparator(\TrackRow.lovedSortKey, order: $0) }),
+        ("composer", { KeyPathComparator(\TrackRow.composer, comparator: .localizedStandard, order: $0) }),
+        ("bpm", { KeyPathComparator(\TrackRow.bpm, order: $0) }),
+        ("key", { KeyPathComparator(\TrackRow.key, comparator: .localizedStandard, order: $0) }),
+        ("bitDepth", { KeyPathComparator(\TrackRow.bitDepth, order: $0) }),
+        ("channelCount", { KeyPathComparator(\TrackRow.channelCount, order: $0) }),
+        ("isLossless", { KeyPathComparator(\TrackRow.isLossless, order: $0) }),
+        ("skipCount", { KeyPathComparator(\TrackRow.skipCount, order: $0) }),
+        ("lastPlayedAt", { KeyPathComparator(\TrackRow.lastPlayedAt, order: $0) }),
+        ("fileSize", { KeyPathComparator(\TrackRow.fileSize, order: $0) }),
+        ("fileMtime", { KeyPathComparator(\TrackRow.fileMtime, order: $0) }),
+        ("musicBrainzID", {
+            KeyPathComparator(\TrackRow.musicBrainzRecordingID, comparator: .localizedStandard, order: $0)
+        }),
+    ]
+
     /// Maps a `KeyPathComparator<TrackRow>` to the sort descriptor key string.
     static func sortKey(for comparator: KeyPathComparator<TrackRow>) -> String? {
         let ord = comparator.order
-        if comparator == KeyPathComparator(\TrackRow.trackNumber, order: ord) { return "trackNumber" }
-        if comparator == KeyPathComparator(\TrackRow.trackTotal, order: ord) { return "trackTotal" }
-        if comparator == KeyPathComparator(\TrackRow.discNumber, order: ord) { return "discNumber" }
-        if comparator == KeyPathComparator(\TrackRow.discTotal, order: ord) { return "discTotal" }
-        if comparator == KeyPathComparator(\TrackRow.databaseID, order: ord) { return "databaseID" }
-        if comparator == KeyPathComparator(\TrackRow.title, comparator: .localizedStandard, order: ord) { return "title" }
-        if comparator == KeyPathComparator(\TrackRow.artistName, comparator: .localizedStandard, order: ord) { return "artistName" }
-        if comparator == KeyPathComparator(\TrackRow.albumName, comparator: .localizedStandard, order: ord) { return "albumName" }
-        if comparator == KeyPathComparator(\TrackRow.yearText, comparator: .localizedStandard, order: ord) { return "yearText" }
-        if comparator == KeyPathComparator(\TrackRow.genre, comparator: .localizedStandard, order: ord) { return "genre" }
-        if comparator == KeyPathComparator(\TrackRow.duration, order: ord) { return "duration" }
-        if comparator == KeyPathComparator(\TrackRow.playCount, order: ord) { return "playCount" }
-        if comparator == KeyPathComparator(\TrackRow.rating, order: ord) { return "rating" }
-        if comparator == KeyPathComparator(\TrackRow.addedAt, order: ord) { return "addedAt" }
-        if comparator == KeyPathComparator(\TrackRow.fileFormat, comparator: .localizedStandard, order: ord) { return "fileFormat" }
-        if comparator == KeyPathComparator(\TrackRow.bitrate, order: ord) { return "bitrate" }
-        if comparator == KeyPathComparator(\TrackRow.sampleRate, order: ord) { return "sampleRate" }
-        if comparator == KeyPathComparator(\TrackRow.shuffleSortKey, order: ord) { return "shuffleSortKey" }
-        if comparator == KeyPathComparator(\TrackRow.lovedSortKey, order: ord) { return "lovedSortKey" }
-        if comparator == KeyPathComparator(\TrackRow.composer, comparator: .localizedStandard, order: ord) { return "composer" }
-        if comparator == KeyPathComparator(\TrackRow.bpm, order: ord) { return "bpm" }
-        if comparator == KeyPathComparator(\TrackRow.key, comparator: .localizedStandard, order: ord) { return "key" }
-        if comparator == KeyPathComparator(\TrackRow.bitDepth, order: ord) { return "bitDepth" }
-        if comparator == KeyPathComparator(\TrackRow.channelCount, order: ord) { return "channelCount" }
-        if comparator == KeyPathComparator(\TrackRow.isLossless, order: ord) { return "isLossless" }
-        if comparator == KeyPathComparator(\TrackRow.skipCount, order: ord) { return "skipCount" }
-        if comparator == KeyPathComparator(\TrackRow.lastPlayedAt, order: ord) { return "lastPlayedAt" }
-        if comparator == KeyPathComparator(\TrackRow.fileSize, order: ord) { return "fileSize" }
-        if comparator == KeyPathComparator(\TrackRow.fileMtime, order: ord) { return "fileMtime" }
-        let mbidCmp = KeyPathComparator(\TrackRow.musicBrainzRecordingID, comparator: .localizedStandard, order: ord)
-        if comparator == mbidCmp { return "musicBrainzID" }
-        return nil
+        return Self.sortKeyTable.first { comparator == $0.make(ord) }?.key
     }
-
-    // swiftlint:enable cyclomatic_complexity
 
     // swiftlint:disable function_body_length
     /// Maps a sort descriptor back to a `KeyPathComparator<TrackRow>`.

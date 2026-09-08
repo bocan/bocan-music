@@ -28,7 +28,9 @@ public struct ArtworkEditor: View {
     /// decodes via ImageIO, which handles all of these.
     static let artworkTypes: [UTType] = {
         var types: [UTType] = [.jpeg, .png, .webP, .gif, .heic]
-        if let avif = UTType("public.avif") { types.append(avif) }
+        if let avif = UTType("public.avif") {
+            types.append(avif)
+        }
         return types
     }()
 

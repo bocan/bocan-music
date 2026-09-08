@@ -115,7 +115,9 @@ public final class RadioViewModel: ObservableObject {
                 addedAt: now
             )
             do {
-                if try await self.repository.upsert(station) { added += 1 }
+                if try await self.repository.upsert(station) {
+                    added += 1
+                }
             } catch {
                 self.log.warning("radio.import.upsert.failed", ["error": String(reflecting: error)])
             }

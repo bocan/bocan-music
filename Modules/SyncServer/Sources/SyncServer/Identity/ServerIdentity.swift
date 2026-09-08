@@ -71,7 +71,9 @@ public actor ServerIdentity {
     }
 
     private func material() throws -> SelfSignedCert.Material {
-        if let cachedMaterial { return cachedMaterial }
+        if let cachedMaterial {
+            return cachedMaterial
+        }
         let material = try self.store.loadOrCreate()
         self.cachedMaterial = material
         return material

@@ -105,7 +105,11 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             }
             // Same rule for Track > Get Info, which opens the artist's Get
             // Info when an artist page is showing and no track is selected (#413).
-            let isArtistPage = if case .artist = self.selectedDestination { true } else { false }
+            let isArtistPage = if case .artist = self.selectedDestination {
+                true
+            } else {
+                false
+            }
             if UserDefaults.standard.bool(forKey: "library.artistPageActive") != isArtistPage {
                 UserDefaults.standard.set(isArtistPage, forKey: "library.artistPageActive")
             }
@@ -579,7 +583,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             do {
                 for try await progress in await repo.observeEnrichmentProgress() {
                     guard let self else { return }
-                    if self.enrichmentProgress != progress { self.enrichmentProgress = progress }
+                    if self.enrichmentProgress != progress {
+                        self.enrichmentProgress = progress
+                    }
                 }
             } catch {
                 self?.log.warning("artist.enrich.observe.failed", ["error": String(reflecting: error)])
@@ -611,7 +617,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                         isInitialSnapshot = false
                         continue
                     }
-                    if let track { self.tracks.updateRows(for: [track]) }
+                    if let track {
+                        self.tracks.updateRows(for: [track])
+                    }
                 }
             } catch is CancellationError {
                 // Expected when re-subscribing for a new now-playing track.
@@ -986,7 +994,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     public func showTagEditorForCurrentSelection() {
         let ids = self.tracks.selection.compactMap(\.self)
         guard !ids.isEmpty else {
-            if case let .artist(id) = self.selectedDestination { self.showArtistInfo(id: id) }
+            if case let .artist(id) = self.selectedDestination {
+                self.showArtistInfo(id: id)
+            }
             return
         }
         self.tagEditorAlbumID = nil
@@ -1035,7 +1045,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             self.backStack.append(HistoryEntry(
                 destination: self.selectedDestination, searchQuery: self.searchQuery
             ))
-            if self.backStack.count > Self.historyLimit { self.backStack.removeFirst() }
+            if self.backStack.count > Self.historyLimit {
+                self.backStack.removeFirst()
+            }
             self.forwardStack.removeAll()
             self.canGoBack = true
             self.canGoForward = false
@@ -1095,7 +1107,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.backStack.append(HistoryEntry(
             destination: self.selectedDestination, searchQuery: self.searchQuery
         ))
-        if self.backStack.count > Self.historyLimit { self.backStack.removeFirst() }
+        if self.backStack.count > Self.historyLimit {
+            self.backStack.removeFirst()
+        }
         self.canGoBack = true
         self.canGoForward = !self.forwardStack.isEmpty
         if self.searchQuery != next.searchQuery {

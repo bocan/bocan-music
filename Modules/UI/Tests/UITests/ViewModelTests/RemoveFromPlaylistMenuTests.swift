@@ -17,7 +17,7 @@ struct RemoveFromPlaylistMenuTests {
             .deletingLastPathComponent() // UITests/
             .deletingLastPathComponent() // Tests/
             .deletingLastPathComponent() // Modules/UI/
-            .appendingPathComponent("Sources/UI/Browse/TrackTableCoordinator.swift")
+            .appendingPathComponent("Sources/UI/Browse/TrackTableCoordinator+ContextMenu.swift")
         return try String(contentsOf: url, encoding: .utf8)
     }
 

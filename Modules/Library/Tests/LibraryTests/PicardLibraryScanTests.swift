@@ -36,7 +36,9 @@ private func scannedLibrary() async throws -> Persistence.Database {
     try await scanner.addRoot(picardLibraryURL)
     var finished = false
     for await event in await scanner.scan(mode: .full) {
-        if case .finished = event { finished = true }
+        if case .finished = event {
+            finished = true
+        }
     }
     #expect(finished)
     return db
@@ -188,10 +190,16 @@ struct ColumnPopulationGuardTests {
                     let dflt: String? = column["dflt_value"]
                     let key = "\(table).\(name)"
                     var sql = "SELECT COUNT(*) FROM \(table) WHERE \"\(name)\" IS NOT NULL"
-                    if let dflt { sql += " AND \"\(name)\" IS NOT \(dflt)" }
+                    if let dflt {
+                        sql += " AND \"\(name)\" IS NOT \(dflt)"
+                    }
                     let populated = try Int.fetchOne(grdb, sql: sql) ?? 0
-                    if populated == 0, allowed[key] == nil { unexplained.append(key) }
-                    if populated > 0, allowed[key] != nil { stale.append(key) }
+                    if populated == 0, allowed[key] == nil {
+                        unexplained.append(key)
+                    }
+                    if populated > 0, allowed[key] != nil {
+                        stale.append(key)
+                    }
                 }
             }
             return (unexplained, stale)

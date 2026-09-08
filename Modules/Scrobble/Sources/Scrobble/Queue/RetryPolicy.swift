@@ -39,7 +39,9 @@ public struct RetryPolicy: Sendable, Equatable {
     /// Returns the delay (in seconds) to wait *before* the given attempt number.
     /// `attemptNumber` is 1-indexed (the 1st attempt has delay 0).
     public func delay(forAttempt attemptNumber: Int, randomSource: () -> Double = { Double.random(in: 0 ... 1) }) -> TimeInterval {
-        if attemptNumber <= 1 { return 0 }
+        if attemptNumber <= 1 {
+            return 0
+        }
         let exponent = Double(attemptNumber - 1)
         let raw = self.baseDelay * pow(2.0, exponent - 1)
         let capped = min(raw, self.maxDelay)

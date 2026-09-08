@@ -61,7 +61,11 @@ public struct PodcastShowView: View {
             L10n.string("Open this funding link?"),
             isPresented: Binding(
                 get: { self.pendingFunding != nil },
-                set: { if !$0 { self.pendingFunding = nil } }
+                set: {
+                    if !$0 {
+                        self.pendingFunding = nil
+                    }
+                }
             ),
             titleVisibility: .visible,
             presenting: self.pendingFunding

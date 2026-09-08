@@ -102,7 +102,9 @@ struct ImmersiveTransport: View {
                 get: { Double(self.np.volume) },
                 set: { newVolume in Task { await self.np.setVolume(Float(newVolume)) } }
             ), in: 0 ... 1) { editing in
-                if !editing { Haptics.positionCommit() }
+                if !editing {
+                    Haptics.positionCommit()
+                }
             }
             .controlSize(.mini)
             .frame(width: 70)

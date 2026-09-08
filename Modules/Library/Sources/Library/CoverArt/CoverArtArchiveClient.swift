@@ -83,7 +83,9 @@ public actor CoverArtArchiveClient {
         }
 
         guard let http = response as? HTTPURLResponse else { return nil }
-        if http.statusCode == 404 { return nil }
+        if http.statusCode == 404 {
+            return nil
+        }
         guard (200 ..< 300).contains(http.statusCode) else { return nil }
 
         do {

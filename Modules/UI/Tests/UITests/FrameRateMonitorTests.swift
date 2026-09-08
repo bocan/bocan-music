@@ -15,7 +15,9 @@ struct FrameRateMonitorTests {
         var trips = 0
         var time: TimeInterval = 0
         while time <= seconds {
-            if monitor.record(time: time) { trips += 1 }
+            if monitor.record(time: time) {
+                trips += 1
+            }
             time += interval
         }
         return trips

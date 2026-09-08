@@ -263,7 +263,9 @@ final class E2EStreamServerTests: XCTestCase {
             )
             let ready = DispatchSemaphore(value: 0)
             self.connection.stateUpdateHandler = { state in
-                if case .ready = state { ready.signal() }
+                if case .ready = state {
+                    ready.signal()
+                }
             }
             self.connection.start(queue: self.queue)
             guard ready.wait(timeout: .now() + 5) == .success else {
@@ -284,7 +286,9 @@ final class E2EStreamServerTests: XCTestCase {
             let done = DispatchSemaphore(value: 0)
             func more() {
                 self.connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
-                    if let data { collected.append(data) }
+                    if let data {
+                        collected.append(data)
+                    }
                     if collected.count >= byteBudget || error != nil || data == nil {
                         done.signal()
                     } else {
@@ -302,7 +306,9 @@ final class E2EStreamServerTests: XCTestCase {
             let done = DispatchSemaphore(value: 0)
             func more() {
                 self.connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, isComplete, error in
-                    if let data { collected.append(data) }
+                    if let data {
+                        collected.append(data)
+                    }
                     if isComplete || error != nil {
                         done.signal()
                     } else {
@@ -384,7 +390,9 @@ final class E2EStreamServerTests: XCTestCase {
             let deadline = Date().addingTimeInterval(seconds)
             while Date() < deadline {
                 let n = recv(self.fd, &buf, buf.count, 0)
-                if n <= 0 { break }
+                if n <= 0 {
+                    break
+                }
                 total += n
             }
             return total
@@ -399,8 +407,12 @@ final class E2EStreamServerTests: XCTestCase {
             let deadline = Date().addingTimeInterval(timeout)
             while Date() < deadline {
                 let n = recv(self.fd, &buf, buf.count, 0)
-                if n == 0 { return true }
-                if n < 0, errno != EAGAIN, errno != EWOULDBLOCK { return true }
+                if n == 0 {
+                    return true
+                }
+                if n < 0, errno != EAGAIN, errno != EWOULDBLOCK {
+                    return true
+                }
             }
             return false
         }

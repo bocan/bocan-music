@@ -416,7 +416,9 @@ struct BocanApp: App {
         // The observer outlives the App struct (UserDefaults retains its
         // notification subscription).  Hold it in a static so multiple init
         // calls (e.g. SwiftUI previews) don't pile up redundant observers.
-        if self.launchAtLoginObserver != nil { return }
+        if self.launchAtLoginObserver != nil {
+            return
+        }
         self.launchAtLoginObserver = LaunchAtLoginObserver()
     }
 

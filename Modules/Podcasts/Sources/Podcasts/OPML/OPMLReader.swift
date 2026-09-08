@@ -54,7 +54,9 @@ private final class OPMLParserDelegate: NSObject, XMLParserDelegate {
 
     /// OPML uses camelCase `xmlUrl`/`htmlUrl`; tolerate producers that lowercase.
     private static func attribute(_ name: String, in dict: [String: String]) -> String? {
-        if let value = dict[name] { return value }
+        if let value = dict[name] {
+            return value
+        }
         let lowered = name.lowercased()
         return dict.first { $0.key.lowercased() == lowered }?.value
     }

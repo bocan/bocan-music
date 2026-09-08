@@ -35,7 +35,9 @@ public enum SubsonicError: Error, Sendable {
     /// stored but momentarily unreadable). Callers use this to distinguish
     /// "no password configured" from "couldn't read the password right now".
     public var isCredentialMissing: Bool {
-        if case let .keychain(status, _) = self { return status == errSecItemNotFound }
+        if case let .keychain(status, _) = self {
+            return status == errSecItemNotFound
+        }
         return false
     }
 

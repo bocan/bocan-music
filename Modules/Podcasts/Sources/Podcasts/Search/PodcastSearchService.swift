@@ -149,7 +149,9 @@ public actor PodcastSearchService {
                 // Carry over iTunes order so sorting stays correct.
                 if let newItOrd = itOrder[r.canonicalFeedKey] {
                     let winnerKey = merged[existingIdx].canonicalFeedKey
-                    if itOrder[winnerKey] == nil { itOrder[winnerKey] = newItOrd }
+                    if itOrder[winnerKey] == nil {
+                        itOrder[winnerKey] = newItOrd
+                    }
                 }
             } else {
                 seenTitleAuthor[ta] = merged.count
@@ -178,14 +180,30 @@ public actor PodcastSearchService {
     ) -> PodcastSearchResult {
         var r = preferred
         r.sources.formUnion(secondary.sources)
-        if r.author == nil { r.author = secondary.author }
-        if r.artworkURL == nil { r.artworkURL = secondary.artworkURL }
-        if r.description == nil { r.description = secondary.description }
-        if r.episodeCount == nil { r.episodeCount = secondary.episodeCount }
-        if r.lastPublishedAt == nil { r.lastPublishedAt = secondary.lastPublishedAt }
-        if r.categories.isEmpty { r.categories = secondary.categories }
-        if r.podcastIndexID == nil { r.podcastIndexID = secondary.podcastIndexID }
-        if r.itunesCollectionID == nil { r.itunesCollectionID = secondary.itunesCollectionID }
+        if r.author == nil {
+            r.author = secondary.author
+        }
+        if r.artworkURL == nil {
+            r.artworkURL = secondary.artworkURL
+        }
+        if r.description == nil {
+            r.description = secondary.description
+        }
+        if r.episodeCount == nil {
+            r.episodeCount = secondary.episodeCount
+        }
+        if r.lastPublishedAt == nil {
+            r.lastPublishedAt = secondary.lastPublishedAt
+        }
+        if r.categories.isEmpty {
+            r.categories = secondary.categories
+        }
+        if r.podcastIndexID == nil {
+            r.podcastIndexID = secondary.podcastIndexID
+        }
+        if r.itunesCollectionID == nil {
+            r.itunesCollectionID = secondary.itunesCollectionID
+        }
         // Prefer https feed URL.
         if secondary.feedURL.scheme?.lowercased() == "https",
            r.feedURL.scheme?.lowercased() != "https" {
@@ -195,8 +213,12 @@ public actor PodcastSearchService {
     }
 
     private static func sortGroup(_ r: PodcastSearchResult) -> Int {
-        if r.sources.count > 1 { return 0 }
-        if r.sources.contains(.podcastIndex) { return 1 }
+        if r.sources.count > 1 {
+            return 0
+        }
+        if r.sources.contains(.podcastIndex) {
+            return 1
+        }
         return 2
     }
 

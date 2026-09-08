@@ -176,7 +176,9 @@ public final class ArtistsViewModel: ObservableObject {
             items.sorted { lhs, rhs in
                 let lcount = lhs.id.flatMap { self.albumCounts[$0] } ?? 0
                 let rcount = rhs.id.flatMap { self.albumCounts[$0] } ?? 0
-                if lcount != rcount { return lcount > rcount }
+                if lcount != rcount {
+                    return lcount > rcount
+                }
                 return Self.nameKey(lhs).localizedStandardCompare(Self.nameKey(rhs)) == .orderedAscending
             }
 
@@ -184,7 +186,9 @@ public final class ArtistsViewModel: ObservableObject {
             items.sorted { lhs, rhs in
                 let lcount = lhs.id.flatMap { self.trackCounts[$0] } ?? 0
                 let rcount = rhs.id.flatMap { self.trackCounts[$0] } ?? 0
-                if lcount != rcount { return lcount > rcount }
+                if lcount != rcount {
+                    return lcount > rcount
+                }
                 return Self.nameKey(lhs).localizedStandardCompare(Self.nameKey(rhs)) == .orderedAscending
             }
         }

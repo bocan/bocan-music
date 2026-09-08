@@ -155,8 +155,12 @@ public enum LRCParser {
         for line in lines {
             let stripped = line.trimmingCharacters(in: .whitespaces)
             guard !stripped.isEmpty else { continue }
-            if stripped.firstMatch(of: self.metaPattern) != nil { continue }
-            if stripped.contains(self.offsetPattern) { continue }
+            if stripped.firstMatch(of: self.metaPattern) != nil {
+                continue
+            }
+            if stripped.contains(self.offsetPattern) {
+                continue
+            }
 
             var remaining = stripped[stripped.startIndex...]
             var timestamps: [Double] = []

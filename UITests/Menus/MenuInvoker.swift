@@ -56,7 +56,9 @@ struct MenuInvoker {
     ) rethrows -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            if try condition() { return true }
+            if try condition() {
+                return true
+            }
             self.settle(0.25)
         }
         let shot = XCUIScreen.main.screenshot()
@@ -144,8 +146,12 @@ struct MenuInvoker {
     }
 
     private static func contains(_ node: XCUIElementSnapshot, text: String) -> Bool {
-        if node.label.contains(text) || node.title.contains(text) { return true }
-        if let value = node.value as? String, value.contains(text) { return true }
+        if node.label.contains(text) || node.title.contains(text) {
+            return true
+        }
+        if let value = node.value as? String, value.contains(text) {
+            return true
+        }
         return node.children.contains { self.contains($0, text: text) }
     }
 

@@ -56,7 +56,9 @@ public enum FileWalker {
     ) {
         // Cooperative cancellation: the owning scan can be cancelled mid-walk
         // (app backgrounded, library re-pointed). Bail before doing more work.
-        if Task.isCancelled { return }
+        if Task.isCancelled {
+            return
+        }
 
         let fm = FileManager.default
 
@@ -91,11 +93,15 @@ public enum FileWalker {
         for case let child as URL in enumerator {
             // Cooperative cancellation inside the per-child loop: a single
             // directory can hold thousands of entries, so check every iteration.
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                return
+            }
 
             let name = child.lastPathComponent
             // Skip hidden
-            if name.hasPrefix(".") { continue }
+            if name.hasPrefix(".") {
+                continue
+            }
             // iCloud placeholder: optionally request download, then skip.
             if name.hasSuffix(".icloud") {
                 if iCloudDownload {
@@ -124,7 +130,9 @@ public enum FileWalker {
             let isSymlink = resourceValues?.isSymbolicLink ?? false
             let isHidden = resourceValues?.isHidden ?? false
 
-            if isHidden { continue }
+            if isHidden {
+                continue
+            }
 
             // Skip broken symlinks (resolve to target; skip if target doesn't exist)
             if isSymlink {
@@ -133,7 +141,9 @@ public enum FileWalker {
             }
 
             if isDirectory {
-                if isPackage { continue } // skip .app etc.
+                if isPackage {
+                    continue
+                } // skip .app etc.
                 // Recurse
                 self.enumerate(
                     child,

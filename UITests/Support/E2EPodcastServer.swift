@@ -42,7 +42,9 @@ final class E2EPodcastServer {
 
         let ready = DispatchSemaphore(value: 0)
         listener.stateUpdateHandler = { newState in
-            if case .ready = newState { ready.signal() }
+            if case .ready = newState {
+                ready.signal()
+            }
         }
         listener.newConnectionHandler = { connection in
             state.accept(connection, queue: queue)

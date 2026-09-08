@@ -115,7 +115,9 @@ struct NavigationInputTests {
         on vm: LibraryViewModel
     ) async throws -> Bool {
         for _ in 0 ..< 100 {
-            if vm.selectedDestination == expected { return true }
+            if vm.selectedDestination == expected {
+                return true
+            }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         return false

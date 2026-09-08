@@ -73,25 +73,33 @@ public enum PlayableSource: Sendable, Hashable, Codable {
 
     /// The server ID, when the source is `.subsonic`. `nil` for local sources.
     public var subsonicServerID: UUID? {
-        if case let .subsonic(serverID, _) = self { return serverID }
+        if case let .subsonic(serverID, _) = self {
+            return serverID
+        }
         return nil
     }
 
     /// The Subsonic song ID, when the source is `.subsonic`. `nil` for local sources.
     public var subsonicSongID: String? {
-        if case let .subsonic(_, songID) = self { return songID }
+        if case let .subsonic(_, songID) = self {
+            return songID
+        }
         return nil
     }
 
     /// The stream URL, when the source is `.internetRadio`. `nil` otherwise.
     public var internetRadioURL: URL? {
-        if case let .internetRadio(url) = self { return url }
+        if case let .internetRadio(url) = self {
+            return url
+        }
         return nil
     }
 
     /// The (feedURL, guid) pair when the source is `.podcast`. `nil` otherwise.
     public var podcastEpisode: (feedURL: URL, guid: String)? {
-        if case let .podcast(feedURL, guid) = self { return (feedURL, guid) }
+        if case let .podcast(feedURL, guid) = self {
+            return (feedURL, guid)
+        }
         return nil
     }
 

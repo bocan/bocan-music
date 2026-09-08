@@ -33,7 +33,9 @@ public struct MBArtistDetail: Decodable, Sendable {
                 }
             }
             .sorted { lhs, rhs in
-                if lhs.ended != rhs.ended { return !lhs.ended }
+                if lhs.ended != rhs.ended {
+                    return !lhs.ended
+                }
                 return (lhs.begin ?? "") < (rhs.begin ?? "")
             }
     }

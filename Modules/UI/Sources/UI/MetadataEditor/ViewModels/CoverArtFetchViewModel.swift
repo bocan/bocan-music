@@ -70,7 +70,9 @@ public final class CoverArtFetchViewModel: ObservableObject {
                         }
                     }
                     for await (id, data) in group {
-                        if let thumb = data { self.thumbnails[id] = thumb }
+                        if let thumb = data {
+                            self.thumbnails[id] = thumb
+                        }
                     }
                 }
             } catch is CancellationError {

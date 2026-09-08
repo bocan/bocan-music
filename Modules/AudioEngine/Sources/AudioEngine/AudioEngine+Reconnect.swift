@@ -97,7 +97,9 @@ extension AudioEngine {
         self.graph.playerNode.stop()
         await self.pump?.stop()
         self.pump = nil
-        if let prev = self.decoder { await prev.close() }
+        if let prev = self.decoder {
+            await prev.close()
+        }
         self.decoder = nil
 
         let dec = try DecoderFactory.make(for: url)

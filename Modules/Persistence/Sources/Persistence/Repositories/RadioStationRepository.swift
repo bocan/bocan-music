@@ -83,7 +83,9 @@ public struct RadioStationRepository: Sendable {
             let exists = try RadioStation
                 .filter(Column("stream_url") == station.streamURL)
                 .fetchCount(db) > 0
-            if exists { return false }
+            if exists {
+                return false
+            }
             var copy = station
             try copy.insert(db)
             return true

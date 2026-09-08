@@ -289,7 +289,9 @@ public struct NowPlayingStrip: View {
             Slider(
                 value: Binding(
                     get: {
-                        if let drag = self.scrubDragFraction { return drag }
+                        if let drag = self.scrubDragFraction {
+                            return drag
+                        }
                         return self.vm.duration > 0 ? self.vm.position / self.vm.duration : 0
                     },
                     set: { fraction in
@@ -367,7 +369,9 @@ public struct NowPlayingStrip: View {
                 get: { Double(self.vm.volume) },
                 set: { newVolume in Task { await self.vm.setVolume(Float(newVolume)) } }
             ), in: 0 ... 1) { editing in
-                if !editing { Haptics.positionCommit() }
+                if !editing {
+                    Haptics.positionCommit()
+                }
             }
             .controlSize(.mini)
             .frame(maxWidth: 100)

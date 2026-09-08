@@ -34,7 +34,9 @@ private final class FailingEncoder: ArtifactEncoding, @unchecked Sendable {
             self._attempts.append(trackID)
             return self._failingTrackIDs.contains(trackID)
         }
-        if shouldFail { throw EncodeRefused() }
+        if shouldFail {
+            throw EncodeRefused()
+        }
         try Data(repeating: 0xAB, count: 100).write(to: destination)
         return TranscodeResult(sha256: String(repeating: "ab", count: 32), size: 100, bitrateKbps: preset.targetKbps)
     }
@@ -90,11 +92,15 @@ private final class GatedEncoder: ArtifactEncoding, @unchecked Sendable {
         if shouldGate {
             await withCheckedContinuation { held in
                 let resumeNow = self.lock.withLock {
-                    if self.opened { return true }
+                    if self.opened {
+                        return true
+                    }
                     self.continuation = held
                     return false
                 }
-                if resumeNow { held.resume() }
+                if resumeNow {
+                    held.resume()
+                }
             }
             self.lock.withLock { self._cancelledDuringGate = Task.isCancelled }
         }

@@ -131,13 +131,17 @@ public struct DSPView: View {
 
     private var widthLabel: String {
         let width = self.vm.state.stereoWidth
-        if abs(width - 1.0) < 0.01 { return L10n.string("1.0× (off)") }
+        if abs(width - 1.0) < 0.01 {
+            return L10n.string("1.0× (off)")
+        }
         return String(format: "%.2f×", width)
     }
 
     private var crossfadeLabel: String {
         let seconds = self.vm.state.crossfadeSeconds
-        if seconds == 0 { return L10n.string("0 (Gapless)") }
+        if seconds == 0 {
+            return L10n.string("0 (Gapless)")
+        }
         return String(format: "%.1f s", seconds)
     }
 

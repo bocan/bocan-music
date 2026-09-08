@@ -210,7 +210,9 @@ public final class DSPChain: @unchecked Sendable {
         let gainsMatch = startGlobal == targetGlobal
             && startGains.count == targetGains.count
             && zip(startGains, targetGains).allSatisfy { abs($0 - $1) < 1e-4 }
-        if gainsMatch { return }
+        if gainsMatch {
+            return
+        }
 
         let steps = 12
         self.eqRampTask = Task { [weak self] in
@@ -271,8 +273,12 @@ public final class DSPChain: @unchecked Sendable {
         self.bassBoostRampTask?.cancel()
         let targetClamped = targetDB.clamped(to: 0 ... 12)
         let startDB = self.bassBoost.gainDB
-        if !self.bassBoost.node.bypass, targetClamped == startDB { return }
-        if self.bassBoost.node.bypass, targetClamped == 0 { return }
+        if !self.bassBoost.node.bypass, targetClamped == startDB {
+            return
+        }
+        if self.bassBoost.node.bypass, targetClamped == 0 {
+            return
+        }
 
         // Un-bypass at gain=0 so the filter starts from a flat (zero-gain) state.
         // Reset the IIR delay lines first — without this, stale state from the

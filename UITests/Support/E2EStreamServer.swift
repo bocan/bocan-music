@@ -59,7 +59,9 @@ final class E2EStreamServer {
 
         let ready = DispatchSemaphore(value: 0)
         listener.stateUpdateHandler = { newState in
-            if case .ready = newState { ready.signal() }
+            if case .ready = newState {
+                ready.signal()
+            }
         }
         listener.newConnectionHandler = { connection in
             state.accept(connection, queue: queue)

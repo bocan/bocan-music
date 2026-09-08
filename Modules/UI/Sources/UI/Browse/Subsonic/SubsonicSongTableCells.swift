@@ -146,7 +146,9 @@ actor SubsonicImageCache {
     /// Returns a decoded `NSImage` for `url`, downloading it if not cached.
     func image(url: URL) async -> NSImage? {
         let key = url.absoluteString as NSString
-        if let cached = cache.object(forKey: key) { return cached }
+        if let cached = cache.object(forKey: key) {
+            return cached
+        }
         guard let (data, _) = try? await URLSession.shared.data(from: url),
               let img = NSImage(data: data) else { return nil }
         self.cache.setObject(img, forKey: key)

@@ -313,7 +313,9 @@ struct SubsonicServiceCapabilityStreamTests {
         let collector = Task { () -> [UUID] in
             var ids: [UUID] = []
             for await uuid in stream {
-                if uuid == fence.id { break }
+                if uuid == fence.id {
+                    break
+                }
                 ids.append(uuid)
             }
             return ids
@@ -348,7 +350,9 @@ struct SubsonicServiceCapabilityStreamTests {
             var ids: [UUID] = []
             for await uuid in stream {
                 ids.append(uuid)
-                if ids.count >= 2 { break }
+                if ids.count >= 2 {
+                    break
+                }
             }
             return ids
         }
@@ -455,7 +459,9 @@ struct SubsonicServiceCapabilityStreamTests {
         let collector = Task { () -> [UUID] in
             var ids: [UUID] = []
             for await uuid in stream {
-                if uuid == fence.id { break }
+                if uuid == fence.id {
+                    break
+                }
                 ids.append(uuid)
             }
             return ids
@@ -524,7 +530,9 @@ struct SubsonicServiceCapabilityLieTests {
             var ids: [UUID] = []
             for await uuid in stream {
                 ids.append(uuid)
-                if ids.count >= 2 { break }
+                if ids.count >= 2 {
+                    break
+                }
             }
             return ids
         }
@@ -572,7 +580,9 @@ struct SubsonicServiceCapabilityLieTests {
             var ids: [UUID] = []
             for await uuid in stream {
                 ids.append(uuid)
-                if ids.count >= 2 { break }
+                if ids.count >= 2 {
+                    break
+                }
             }
             return ids
         }
@@ -613,7 +623,9 @@ struct SubsonicServiceCapabilityLieTests {
             var ids: [UUID] = []
             for await uuid in stream {
                 ids.append(uuid)
-                if ids.count >= 2 { break }
+                if ids.count >= 2 {
+                    break
+                }
             }
             return ids
         }
@@ -650,7 +662,9 @@ struct SubsonicServiceCapabilityLieTests {
         let collector = Task { () -> [UUID] in
             var ids: [UUID] = []
             for await uuid in stream {
-                if uuid == fence.id { break }
+                if uuid == fence.id {
+                    break
+                }
                 ids.append(uuid)
             }
             return ids
@@ -690,7 +704,9 @@ struct SubsonicServiceCapabilityLieTests {
         let collector = Task { () -> [UUID] in
             var ids: [UUID] = []
             for await uuid in stream {
-                if uuid == fence.id { break }
+                if uuid == fence.id {
+                    break
+                }
                 ids.append(uuid)
             }
             return ids
@@ -722,7 +738,9 @@ struct SubsonicServiceCapabilityLieTests {
         let collector = Task { () -> [UUID] in
             var ids: [UUID] = []
             for await uuid in stream {
-                if uuid == fence.id { break }
+                if uuid == fence.id {
+                    break
+                }
                 ids.append(uuid)
             }
             return ids

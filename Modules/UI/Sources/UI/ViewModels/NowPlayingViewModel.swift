@@ -255,187 +255,7 @@ public final class NowPlayingViewModel {
         self.nowPlayingIsLoved = loved
     }
 
-    /// Toggles play/pause on the engine.
-    public func playPause() async {
-        do {
-            if self.isPlaying {
-                await self.engine.pause()
-            } else if self.isPaused || self.nowPlayingTrackID != nil {
-                // Resume: either explicitly paused mid-playback, or stopped after a
-                // session restore (engine loaded a track but never called play()).
-                // QueuePlayer.play() handles the stopped-with-queue case internally,
-                // so this correctly resumes the restored (possibly shuffled) queue
-                // without discarding it.
-                try await self.engine.play()
-            } else {
-                // Nothing is playing, nothing was paused, and no track has ever been
-                // loaded — hand off to the library callback so it queues the full
-                // current browse view.  Covers first launch and cleared queues.
-                self.onPlayFromEmptyQueue?()
-            }
-        } catch {
-            self.log.error("transport.playPause.failed", ["error": String(reflecting: error)])
-        }
-    }
-
-    /// Seek to an absolute position.
-    public func scrub(to time: TimeInterval) async {
-        Haptics.positionCommit()
-        do {
-            try await self.engine.seek(to: time)
-        } catch {
-            self.log.error("transport.seek.failed", ["error": String(reflecting: error)])
-        }
-    }
-
-    /// Clamps and applies volume to the engine; preserves mute state.
-    public func setVolume(_ newVolume: Float) async {
-        self.volume = min(1, max(0, newVolume))
-        if !self.isMuted {
-            await self.engine.setVolume(self.volume)
-        }
-    }
-
-    /// Toggles mute; preserves stored volume so unmuting restores the previous level.
-    public func toggleMute() async {
-        if self.isMuted {
-            self.isMuted = false
-            await self.engine.setVolume(self.volume)
-        } else {
-            self.isMuted = true
-            await self.engine.setVolume(0)
-        }
-    }
-
-    /// Steps volume up by 10%, clamped to 1.0.
-    public func increaseVolume() async {
-        await self.setVolume(min(1.0, self.volume + 0.1))
-    }
-
-    /// Steps volume down by 10%, clamped to 0.0.
-    public func decreaseVolume() async {
-        await self.setVolume(max(0.0, self.volume - 0.1))
-    }
-
-    /// Skips to previous. Delegates to `QueuePlayer.previous()`, which owns
-    /// the restart threshold AND the CUE-marker semantics (ADR-087) — a
-    /// local shortcut here would make the strip's button disagree with media
-    /// keys. Falls back to a plain restart for non-QueuePlayer engines.
-    public func previous() async {
-        guard let qp = self.engine as? QueuePlayer else {
-            let pos = await self.engine.currentTime
-            if pos > 3.0 { await self.scrub(to: 0) }
-            return
-        }
-        do { try await qp.previous() } catch {
-            self.log.error("transport.previous.failed", ["error": String(reflecting: error)])
-        }
-    }
-
-    /// Restarts the current track from position 0, regardless of position.
-    public func restartTrack() async {
-        await self.scrub(to: 0)
-    }
-
-    /// Skips to the next track (no-op if engine is not a QueuePlayer).
-    public func next() async {
-        let end = Telemetry.timer("playback.next")
-        defer { end() }
-        guard let qp = engine as? QueuePlayer else { return }
-        do { try await qp.next() } catch {
-            self.log.error("transport.next.failed", ["error": String(reflecting: error)])
-        }
-    }
-
-    /// Toggles shuffle on the queue player.
-    public func toggleShuffle() async {
-        await self.setShuffle(!self.shuffleOn)
-    }
-
-    /// Sets shuffle to an explicit value on the queue player.
-    public func setShuffle(_ on: Bool) async {
-        guard let qp = engine as? QueuePlayer else { return }
-        await qp.setShuffle(on)
-        self.shuffleOn = on
-    }
-
-    /// Cycles to the next repeat mode (off → all → one → off).
-    public func cycleRepeat() async {
-        guard let qp = engine as? QueuePlayer else { return }
-        let next: RepeatMode = switch self.repeatMode {
-        case .off:
-            .all
-
-        case .all:
-            .one
-
-        case .one:
-            .off
-        }
-        await qp.setRepeat(next)
-        self.repeatMode = next
-    }
-
-    /// Toggles the stop-after-current flag on the queue player.
-    public func toggleStopAfterCurrent() async {
-        guard let qp = engine as? QueuePlayer else { return }
-        let new = !self.stopAfterCurrent
-        await qp.setStopAfterCurrent(new)
-        self.stopAfterCurrent = new
-    }
-
-    /// Set playback rate (0.5x-2.0x) with pitch correction.
-    /// Saves to `podcast.playback.rate` when a podcast is playing, `playback.rate` otherwise.
-    public func setRate(_ rate: Float) async {
-        guard let qp = engine as? QueuePlayer else { return }
-        await qp.setRate(rate)
-        self.playbackRate = max(0.5, min(2.0, rate))
-        if self.isPodcast {
-            UserDefaults.standard.set(Double(self.playbackRate), forKey: "podcast.playback.rate")
-        } else {
-            UserDefaults.standard.set(Double(self.playbackRate), forKey: "playback.rate")
-        }
-    }
-
-    /// Steps up to the next quick rate above the current rate.
-    public func increaseSpeed() async {
-        let next = Self.quickRates.first { $0 > self.playbackRate + 0.01 }
-        await self.setRate(next ?? 2.0)
-    }
-
-    /// Steps down to the next quick rate below the current rate.
-    public func decreaseSpeed() async {
-        let prev = Self.quickRates.last { $0 < self.playbackRate - 0.01 }
-        await self.setRate(prev ?? 0.75)
-    }
-
-    /// Resets playback speed to 1.0x.
-    public func resetSpeed() async {
-        await self.setRate(1.0)
-    }
-
-    /// Quick-pick rates shared with `SpeedPickerView` and the Playback menu.
-    public static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
-
-    /// Sleep timer presets shared with the Playback menu.
-    public static let sleepPresets: [(label: String, minutes: Int?)] = [
-        (L10n.string("Off"), nil),
-        (L10n.string("15 min"), 15),
-        (L10n.string("30 min"), 30),
-        (L10n.string("45 min"), 45),
-        (L10n.string("1 hr"), 60),
-        (L10n.string("1 hr 30 min"), 90),
-        (L10n.string("2 hr"), 120),
-    ]
-
-    /// Configure the sleep timer.  Pass `nil` minutes to cancel.
-    public func setSleepTimer(minutes: Int?, fadeOut: Bool = false) async {
-        guard let qp = engine as? QueuePlayer else { return }
-        await qp.sleepTimer.set(minutes: minutes, fadeOut: fadeOut)
-        self.sleepTimerFadeOut = fadeOut
-        self.sleepTimerActiveMinutes = minutes
-        if minutes == nil { self.sleepTimerRemaining = nil }
-    }
+    // MARK: - Transport commands: the `NowPlayingViewModel` transport extension below
 
     /// Streams are never engine-preloaded, so a restored queue whose
     /// current item is a stream emits no current-track change at launch
@@ -446,7 +266,9 @@ public final class NowPlayingViewModel {
     private func seedDisplayFromRestoredQueue(_ qp: QueuePlayer) async {
         guard self.currentTrack == nil, !self.hasCurrentItem else { return }
         guard let item = await qp.queue.currentItem else { return }
-        if case .localBookmark = item.playableSource { return }
+        if case .localBookmark = item.playableSource {
+            return
+        }
         await self.applyStreamItem(item)
     }
 
@@ -456,10 +278,14 @@ public final class NowPlayingViewModel {
     private func syncDisplayWithQueueIfIdle(_ qp: QueuePlayer) async {
         guard self.currentTrack == nil else { return }
         guard let item = await qp.queue.currentItem else {
-            if self.hasCurrentItem { self.clearNowPlayingDisplay() }
+            if self.hasCurrentItem {
+                self.clearNowPlayingDisplay()
+            }
             return
         }
-        if case .localBookmark = item.playableSource { return }
+        if case .localBookmark = item.playableSource {
+            return
+        }
         await self.applyStreamItem(item)
     }
 
@@ -540,7 +366,9 @@ public final class NowPlayingViewModel {
                 let (remaining, fadeOut) = await (rem, fade)
                 self.sleepTimerRemaining = remaining
                 self.sleepTimerFadeOut = fadeOut
-                if remaining == nil { self.sleepTimerActiveMinutes = nil }
+                if remaining == nil {
+                    self.sleepTimerActiveMinutes = nil
+                }
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
@@ -581,7 +409,9 @@ public final class NowPlayingViewModel {
                         // Queue played through to its end (#330).
                         Haptics.stateChange()
                     }
-                    if case .failed = state { self.onPlaybackError?() }
+                    if case .failed = state {
+                        self.onPlaybackError?()
+                    }
 
                 case .ready:
                     self.isPlaying = false
@@ -590,6 +420,200 @@ public final class NowPlayingViewModel {
                     break
                 }
             }
+        }
+    }
+}
+
+// MARK: - NowPlayingViewModel transport
+
+/// The transport commands the strip, the menus and the media keys call.
+/// Same-file extension, so the private engine and log stay reachable, and
+/// the class body stays inside the lint length limit (extensions do not
+/// count toward it).
+public extension NowPlayingViewModel {
+    /// Toggles play/pause on the engine.
+    func playPause() async {
+        do {
+            if self.isPlaying {
+                await self.engine.pause()
+            } else if self.isPaused || self.nowPlayingTrackID != nil {
+                // Resume: either explicitly paused mid-playback, or stopped after a
+                // session restore (engine loaded a track but never called play()).
+                // QueuePlayer.play() handles the stopped-with-queue case internally,
+                // so this correctly resumes the restored (possibly shuffled) queue
+                // without discarding it.
+                try await self.engine.play()
+            } else {
+                // Nothing is playing, nothing was paused, and no track has ever been
+                // loaded, so hand off to the library callback so it queues the full
+                // current browse view.  Covers first launch and cleared queues.
+                self.onPlayFromEmptyQueue?()
+            }
+        } catch {
+            self.log.error("transport.playPause.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Seek to an absolute position.
+    func scrub(to time: TimeInterval) async {
+        Haptics.positionCommit()
+        do {
+            try await self.engine.seek(to: time)
+        } catch {
+            self.log.error("transport.seek.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Clamps and applies volume to the engine; preserves mute state.
+    func setVolume(_ newVolume: Float) async {
+        self.volume = min(1, max(0, newVolume))
+        if !self.isMuted {
+            await self.engine.setVolume(self.volume)
+        }
+    }
+
+    /// Toggles mute; preserves stored volume so unmuting restores the previous level.
+    func toggleMute() async {
+        if self.isMuted {
+            self.isMuted = false
+            await self.engine.setVolume(self.volume)
+        } else {
+            self.isMuted = true
+            await self.engine.setVolume(0)
+        }
+    }
+
+    /// Steps volume up by 10%, clamped to 1.0.
+    func increaseVolume() async {
+        await self.setVolume(min(1.0, self.volume + 0.1))
+    }
+
+    /// Steps volume down by 10%, clamped to 0.0.
+    func decreaseVolume() async {
+        await self.setVolume(max(0.0, self.volume - 0.1))
+    }
+
+    /// Skips to previous. Delegates to `QueuePlayer.previous()`, which owns
+    /// the restart threshold AND the CUE-marker semantics (ADR-087); a
+    /// local shortcut here would make the strip's button disagree with media
+    /// keys. Falls back to a plain restart for non-QueuePlayer engines.
+    func previous() async {
+        guard let qp = self.engine as? QueuePlayer else {
+            let pos = await self.engine.currentTime
+            if pos > 3.0 {
+                await self.scrub(to: 0)
+            }
+            return
+        }
+        do { try await qp.previous() } catch {
+            self.log.error("transport.previous.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Restarts the current track from position 0, regardless of position.
+    func restartTrack() async {
+        await self.scrub(to: 0)
+    }
+
+    /// Skips to the next track (no-op if engine is not a QueuePlayer).
+    func next() async {
+        let end = Telemetry.timer("playback.next")
+        defer { end() }
+        guard let qp = engine as? QueuePlayer else { return }
+        do { try await qp.next() } catch {
+            self.log.error("transport.next.failed", ["error": String(reflecting: error)])
+        }
+    }
+
+    /// Toggles shuffle on the queue player.
+    func toggleShuffle() async {
+        await self.setShuffle(!self.shuffleOn)
+    }
+
+    /// Sets shuffle to an explicit value on the queue player.
+    func setShuffle(_ on: Bool) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.setShuffle(on)
+        self.shuffleOn = on
+    }
+
+    /// Cycles to the next repeat mode (off → all → one → off).
+    func cycleRepeat() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let next: RepeatMode = switch self.repeatMode {
+        case .off:
+            .all
+
+        case .all:
+            .one
+
+        case .one:
+            .off
+        }
+        await qp.setRepeat(next)
+        self.repeatMode = next
+    }
+
+    /// Toggles the stop-after-current flag on the queue player.
+    func toggleStopAfterCurrent() async {
+        guard let qp = engine as? QueuePlayer else { return }
+        let new = !self.stopAfterCurrent
+        await qp.setStopAfterCurrent(new)
+        self.stopAfterCurrent = new
+    }
+
+    /// Set playback rate (0.5x-2.0x) with pitch correction.
+    /// Saves to `podcast.playback.rate` when a podcast is playing, `playback.rate` otherwise.
+    func setRate(_ rate: Float) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.setRate(rate)
+        self.playbackRate = max(0.5, min(2.0, rate))
+        if self.isPodcast {
+            UserDefaults.standard.set(Double(self.playbackRate), forKey: "podcast.playback.rate")
+        } else {
+            UserDefaults.standard.set(Double(self.playbackRate), forKey: "playback.rate")
+        }
+    }
+
+    /// Steps up to the next quick rate above the current rate.
+    func increaseSpeed() async {
+        let next = Self.quickRates.first { $0 > self.playbackRate + 0.01 }
+        await self.setRate(next ?? 2.0)
+    }
+
+    /// Steps down to the next quick rate below the current rate.
+    func decreaseSpeed() async {
+        let prev = Self.quickRates.last { $0 < self.playbackRate - 0.01 }
+        await self.setRate(prev ?? 0.75)
+    }
+
+    /// Resets playback speed to 1.0x.
+    func resetSpeed() async {
+        await self.setRate(1.0)
+    }
+
+    /// Quick-pick rates shared with `SpeedPickerView` and the Playback menu.
+    static let quickRates: [Float] = [0.75, 1.0, 1.25, 1.5, 2.0]
+
+    /// Sleep timer presets shared with the Playback menu.
+    static let sleepPresets: [(label: String, minutes: Int?)] = [
+        (L10n.string("Off"), nil),
+        (L10n.string("15 min"), 15),
+        (L10n.string("30 min"), 30),
+        (L10n.string("45 min"), 45),
+        (L10n.string("1 hr"), 60),
+        (L10n.string("1 hr 30 min"), 90),
+        (L10n.string("2 hr"), 120),
+    ]
+
+    /// Configure the sleep timer.  Pass `nil` minutes to cancel.
+    func setSleepTimer(minutes: Int?, fadeOut: Bool = false) async {
+        guard let qp = engine as? QueuePlayer else { return }
+        await qp.sleepTimer.set(minutes: minutes, fadeOut: fadeOut)
+        self.sleepTimerFadeOut = fadeOut
+        self.sleepTimerActiveMinutes = minutes
+        if minutes == nil {
+            self.sleepTimerRemaining = nil
         }
     }
 }
@@ -640,7 +664,9 @@ private extension NowPlayingViewModel {
                 guard !Task.isCancelled else { break }
                 await MainActor.run {
                     self.position = pos
-                    if dur > 0 { self.duration = dur }
+                    if dur > 0 {
+                        self.duration = dur
+                    }
                 }
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 s
             }
@@ -788,7 +814,9 @@ private extension NowPlayingViewModel {
 
         let content = UNMutableNotificationContent()
         content.title = title
-        if !artist.isEmpty { content.subtitle = artist }
+        if !artist.isEmpty {
+            content.subtitle = artist
+        }
         content.sound = nil
 
         if let path = artworkPath {

@@ -59,7 +59,9 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying { self.startPositionTimer() }
+        if self.isPlaying {
+            self.startPositionTimer()
+        }
         self.log.debug("nowplaying.update", ["title": track.title ?? "unknown"])
 
         self.loadArtwork(path: coverArtPath)
@@ -95,7 +97,9 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying { self.startPositionTimer() }
+        if self.isPlaying {
+            self.startPositionTimer()
+        }
         self.log.debug("nowplaying.update.podcast", ["title": title, "show": showName])
     }
 
@@ -120,7 +124,9 @@ public final class NowPlayingCentre {
         info[MPNowPlayingInfoPropertyMediaType] = MPNowPlayingInfoMediaType.audio.rawValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        if self.isPlaying { self.startPositionTimer() }
+        if self.isPlaying {
+            self.startPositionTimer()
+        }
         self.log.debug("nowplaying.update.stream", ["title": title, "station": stationName])
     }
 

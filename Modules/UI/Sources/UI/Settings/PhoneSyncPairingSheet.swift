@@ -139,12 +139,16 @@ struct PhoneSyncPairingSheet: View {
     }
 
     private func resultSymbol(_ outcome: PhoneSyncPairingOutcome) -> String {
-        if case .paired = outcome { return "checkmark.circle.fill" }
+        if case .paired = outcome {
+            return "checkmark.circle.fill"
+        }
         return "exclamationmark.triangle.fill"
     }
 
     private func resultTint(_ outcome: PhoneSyncPairingOutcome) -> Color {
-        if case .paired = outcome { return .green }
+        if case .paired = outcome {
+            return .green
+        }
         return .orange
     }
 

@@ -346,7 +346,9 @@ public actor PlaybackQueue {
                 toShuffle.removeAll { $0.id == cur.id }
             }
             var shuffled = strategy.shuffled(toShuffle, seed: seed)
-            if let cur = current { shuffled.insert(cur, at: 0) }
+            if let cur = current {
+                shuffled.insert(cur, at: 0)
+            }
 
             self.items = shuffled
             self.currentIndex = shuffled.isEmpty ? nil : 0

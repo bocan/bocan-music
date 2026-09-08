@@ -150,7 +150,9 @@ struct HistoryRecorderTests {
     private func threshold(elapsed: TimeInterval, duration: TimeInterval) -> Bool {
         if duration > 0 {
             let fraction = elapsed / duration
-            if fraction >= 0.50 { return true }
+            if fraction >= 0.50 {
+                return true
+            }
         }
         return elapsed >= 240.0
     }

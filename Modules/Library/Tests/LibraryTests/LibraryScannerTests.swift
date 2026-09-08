@@ -93,7 +93,10 @@ struct LibraryScannerTests {
         }
 
         // Should produce nothing or just finish cleanly — no crash
-        #expect(!events.contains { if case .error = $0 { return true }
+        #expect(!events.contains {
+            if case .error = $0 {
+                return true
+            }
             return false
         })
     }
@@ -110,10 +113,16 @@ struct LibraryScannerTests {
             events.append(event)
         }
 
-        let hasStarted = events.contains { if case .started = $0 { return true }
+        let hasStarted = events.contains {
+            if case .started = $0 {
+                return true
+            }
             return false
         }
-        let hasFinished = events.contains { if case .finished = $0 { return true }
+        let hasFinished = events.contains {
+            if case .finished = $0 {
+                return true
+            }
             return false
         }
         #expect(hasStarted)
@@ -134,7 +143,9 @@ struct LibraryScannerTests {
         // A plain quick scan of an unchanged library skips everything.
         var quick: ScanProgress.Summary?
         for await event in await scanner.scan(mode: .quick) {
-            if case let .finished(summary) = event { quick = summary }
+            if case let .finished(summary) = event {
+                quick = summary
+            }
         }
         let skippedWhenQuick = try #require(quick).skipped
         #expect(skippedWhenQuick > 0)
@@ -143,7 +154,9 @@ struct LibraryScannerTests {
         try await maintenance.request(task: PendingMaintenance.Task.fullRescan, requestedBy: "test")
         var upgraded: ScanProgress.Summary?
         for await event in await scanner.scan(mode: .quick) {
-            if case let .finished(summary) = event { upgraded = summary }
+            if case let .finished(summary) = event {
+                upgraded = summary
+            }
         }
         let result = try #require(upgraded)
         #expect(result.skipped == 0)
@@ -180,7 +193,9 @@ struct LibraryScannerTests {
         // Second pass (quick)
         var skipped = 0
         for await event in await scanner.scan(mode: .quick) {
-            if case .processed(_, outcome: .skippedUnchanged) = event { skipped += 1 }
+            if case .processed(_, outcome: .skippedUnchanged) = event {
+                skipped += 1
+            }
         }
         #expect(skipped > 0, "Expected unchanged files to be skipped on quick scan")
     }
@@ -194,7 +209,9 @@ struct LibraryScannerTests {
 
         var summary: ScanProgress.Summary?
         for await event in await scanner.scan(mode: .full) {
-            if case let .finished(s) = event { summary = s }
+            if case let .finished(s) = event {
+                summary = s
+            }
         }
 
         let s = try #require(summary)
@@ -217,7 +234,9 @@ struct LibraryScannerTests {
         // Start a second scan — should immediately emit an error
         var secondScanError = false
         for await event in await scanner.scan(mode: .full) {
-            if case .error = event { secondScanError = true }
+            if case .error = event {
+                secondScanError = true
+            }
         }
         #expect(secondScanError)
 
@@ -242,7 +261,9 @@ struct LibraryScannerTests {
         // and imports every file regardless of the cancellation.
         let consumer = Task {
             for await event in await scanner.scan(mode: .full) {
-                if case .started = event { break }
+                if case .started = event {
+                    break
+                }
             }
         }
         consumer.cancel()

@@ -329,7 +329,9 @@ public final class PodcastsViewModel: ObservableObject {
             items.sorted { lhs, rhs in
                 let lcount = lhs.id.flatMap { self.podcastUnplayedCounts[$0] } ?? 0
                 let rcount = rhs.id.flatMap { self.podcastUnplayedCounts[$0] } ?? 0
-                if lcount != rcount { return lcount > rcount }
+                if lcount != rcount {
+                    return lcount > rcount
+                }
                 return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
             }
 
@@ -337,7 +339,9 @@ public final class PodcastsViewModel: ObservableObject {
             items.sorted { lhs, rhs in
                 let lcount = lhs.id.flatMap { self.podcastEpisodeCounts[$0] } ?? 0
                 let rcount = rhs.id.flatMap { self.podcastEpisodeCounts[$0] } ?? 0
-                if lcount != rcount { return lcount > rcount }
+                if lcount != rcount {
+                    return lcount > rcount
+                }
                 return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
             }
         }
@@ -434,7 +438,9 @@ public final class PodcastsViewModel: ObservableObject {
     public func setPlaybackSpeed(_ speed: Double?, podcastID: Int64) async {
         do {
             try await self.actions?.setPlaybackSpeed(speed, podcastID: podcastID)
-            if self.currentShow?.id == podcastID { self.currentShow?.playbackSpeed = speed }
+            if self.currentShow?.id == podcastID {
+                self.currentShow?.playbackSpeed = speed
+            }
         } catch {
             self.log.error("podcasts.setPlaybackSpeed.failed", ["id": podcastID, "error": String(reflecting: error)])
         }
@@ -460,7 +466,9 @@ public final class PodcastsViewModel: ObservableObject {
     public func setRetentionLimit(_ limit: Int?, podcastID: Int64) async {
         do {
             try await self.actions?.setRetentionLimit(limit, podcastID: podcastID)
-            if self.currentShow?.id == podcastID { self.currentShow?.retentionLimit = limit }
+            if self.currentShow?.id == podcastID {
+                self.currentShow?.retentionLimit = limit
+            }
         } catch {
             self.log.error("podcasts.setRetentionLimit.failed", ["id": podcastID, "error": String(reflecting: error)])
         }
@@ -471,7 +479,9 @@ public final class PodcastsViewModel: ObservableObject {
     public func setAutoDownload(_ on: Bool, podcastID: Int64) async {
         do {
             try await self.actions?.setAutoDownload(on, podcastID: podcastID)
-            if self.currentShow?.id == podcastID { self.currentShow?.autoDownload = on }
+            if self.currentShow?.id == podcastID {
+                self.currentShow?.autoDownload = on
+            }
         } catch {
             self.log.error("podcasts.setAutoDownload.failed", ["id": podcastID, "error": String(reflecting: error)])
         }

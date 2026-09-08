@@ -78,7 +78,11 @@ public struct VisualizerPane: View {
                                 .onEnded { _ in self.resizeDragStart = nil }
                         )
                         .onHover { hovering in
-                            if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                            if hovering {
+                                NSCursor.resizeLeftRight.push()
+                            } else {
+                                NSCursor.pop()
+                            }
                         }
                     Divider()
                 }

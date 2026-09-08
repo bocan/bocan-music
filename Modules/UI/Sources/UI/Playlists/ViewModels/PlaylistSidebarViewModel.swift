@@ -390,7 +390,9 @@ public final class PlaylistSidebarViewModel: ObservableObject {
 
     private func isVisible(_ id: Int64, in nodes: [PlaylistNode], ancestorsExpanded: Bool) -> Bool {
         for node in nodes {
-            if node.id == id { return ancestorsExpanded }
+            if node.id == id {
+                return ancestorsExpanded
+            }
             let nextExpanded = ancestorsExpanded && self.expandedFolders.contains(node.id)
             if self.isVisible(id, in: node.children, ancestorsExpanded: nextExpanded) {
                 return true

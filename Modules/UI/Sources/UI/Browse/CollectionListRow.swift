@@ -61,7 +61,9 @@ enum CollectionSort {
         return names.sorted { lhs, rhs in
             let lcount = counts[lhs] ?? 0
             let rcount = counts[rhs] ?? 0
-            if lcount != rcount { return lcount > rcount }
+            if lcount != rcount {
+                return lcount > rcount
+            }
             return lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
     }

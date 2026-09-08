@@ -53,14 +53,18 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
     /// Effective starred state for a song — optimistic override if present,
     /// otherwise the server-provided `starred` timestamp.
     public func isStarred(songID: String, serverStarred: Date?) -> Bool {
-        if let override = self.starOverrides[songID] { return override }
+        if let override = self.starOverrides[songID] {
+            return override
+        }
         return serverStarred != nil
     }
 
     /// Effective rating for a song (0–5) — optimistic override if present,
     /// otherwise the server-provided rating.
     public func rating(songID: String, serverRating: Int?) -> Int {
-        if let override = self.ratingOverrides[songID] { return override }
+        if let override = self.ratingOverrides[songID] {
+            return override
+        }
         return serverRating ?? 0
     }
 

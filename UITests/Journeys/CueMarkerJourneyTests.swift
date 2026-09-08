@@ -26,7 +26,9 @@ final class CueMarkerJourneyTests: XCTestCase {
     private func markerLine(in app: XCUIApplication, _ inv: MenuInvoker) -> String? {
         let element = app.descendants(matching: .any)["nowPlayingStrip.markerLine"].firstMatch
         guard element.exists else { return nil }
-        if let value = element.value as? String, !value.isEmpty { return value }
+        if let value = element.value as? String, !value.isEmpty {
+            return value
+        }
         let label = element.label
         return label.isEmpty ? nil : label
     }

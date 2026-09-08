@@ -51,7 +51,9 @@ final class PodcastServerState: @unchecked Sendable {
     private func readRequest(_ connection: NWConnection, queue: DispatchQueue, buffer: Data) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, isComplete, error in
             var buffer = buffer
-            if let data { buffer.append(data) }
+            if let data {
+                buffer.append(data)
+            }
             if let range = buffer.range(of: Data("\r\n\r\n".utf8)) {
                 let headerBlock = buffer[..<range.lowerBound]
                 self.dispatch(connection, requestLine: Self.firstLine(of: headerBlock))

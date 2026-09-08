@@ -184,7 +184,9 @@ private func makeDownloaded(
 @discardableResult
 private func eventually(_ maxYields: Int = 2000, _ condition: @Sendable () async -> Bool) async -> Bool {
     for _ in 0 ..< maxYields {
-        if await condition() { return true }
+        if await condition() {
+            return true
+        }
         await Task.yield()
     }
     return await condition()

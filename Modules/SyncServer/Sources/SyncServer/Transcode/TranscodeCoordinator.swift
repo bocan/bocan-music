@@ -269,8 +269,12 @@ public actor TranscodeCoordinator {
     }
 
     static func needsTranscode(_ track: Track, preset: TranscodePreset) -> Bool {
-        if track.isLossless == true { return true }
-        if let bitrate = track.bitrate, bitrate > preset.targetKbps { return true }
+        if track.isLossless == true {
+            return true
+        }
+        if let bitrate = track.bitrate, bitrate > preset.targetKbps {
+            return true
+        }
         return false
     }
 
@@ -337,7 +341,9 @@ public actor TranscodeCoordinator {
         pending.sort { lhs, rhs in
             let lhsUrgent = lhs.id.map { urgent.contains($0) } ?? false
             let rhsUrgent = rhs.id.map { urgent.contains($0) } ?? false
-            if lhsUrgent != rhsUrgent { return lhsUrgent }
+            if lhsUrgent != rhsUrgent {
+                return lhsUrgent
+            }
             return (lhs.id ?? 0) < (rhs.id ?? 0)
         }
         guard !pending.isEmpty else { return }
@@ -439,7 +445,9 @@ public actor TranscodeCoordinator {
     private static func nameMap(_ pairs: [(Int64?, String)]) -> [Int64: String] {
         var map: [Int64: String] = [:]
         for (id, name) in pairs {
-            if let id { map[id] = name }
+            if let id {
+                map[id] = name
+            }
         }
         return map
     }
@@ -451,16 +459,30 @@ public actor TranscodeCoordinator {
         albumTitle: [Int64: String]
     ) -> [String: String] {
         var tags: [String: String] = [:]
-        if let title = track.title { tags["title"] = title }
-        if let artistID = track.artistID, let name = artistName[artistID] { tags["artist"] = name }
+        if let title = track.title {
+            tags["title"] = title
+        }
+        if let artistID = track.artistID, let name = artistName[artistID] {
+            tags["artist"] = name
+        }
         if let albumArtistID = track.albumArtistID, let name = artistName[albumArtistID] {
             tags["album_artist"] = name
         }
-        if let albumID = track.albumID, let title = albumTitle[albumID] { tags["album"] = title }
-        if let trackNumber = track.trackNumber { tags["track"] = "\(trackNumber)" }
-        if let discNumber = track.discNumber { tags["disc"] = "\(discNumber)" }
-        if let year = track.year { tags["date"] = "\(year)" }
-        if let genre = track.genre { tags["genre"] = genre }
+        if let albumID = track.albumID, let title = albumTitle[albumID] {
+            tags["album"] = title
+        }
+        if let trackNumber = track.trackNumber {
+            tags["track"] = "\(trackNumber)"
+        }
+        if let discNumber = track.discNumber {
+            tags["disc"] = "\(discNumber)"
+        }
+        if let year = track.year {
+            tags["date"] = "\(year)"
+        }
+        if let genre = track.genre {
+            tags["genre"] = genre
+        }
         return tags
     }
 }

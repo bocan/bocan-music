@@ -60,8 +60,12 @@ struct NowPlayingOverlay: View {
 
     private var accessibilityDescription: String {
         var parts = [self.title]
-        if !self.artist.isEmpty { parts.append(self.artist) }
-        if !self.album.isEmpty { parts.append(self.album) }
+        if !self.artist.isEmpty {
+            parts.append(self.artist)
+        }
+        if !self.album.isEmpty {
+            parts.append(self.album)
+        }
         return parts.joined(separator: ", ")
     }
 

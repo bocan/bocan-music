@@ -188,7 +188,9 @@ struct LibrarySidebarExpansionTests {
 private func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) async throws {
     let deadline = Date().addingTimeInterval(timeout)
     while Date() < deadline {
-        if condition() { return }
+        if condition() {
+            return
+        }
         try await Task.sleep(nanoseconds: 20_000_000)
     }
 }

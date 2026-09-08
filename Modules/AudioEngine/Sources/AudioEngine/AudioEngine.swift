@@ -119,62 +119,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self._state == .playing
     }
 
-    // MARK: - Gapless public API
-
-    /// Pre-schedule the next track's audio buffers onto the current player node.
-    ///
-    /// Call this ~5 s before the current track ends. The engine will NOT stop the player
-    /// when the current track's decoder hits EOF; instead it calls `onTransition`, resets
-    /// timing, and continues playing seamlessly.
-    ///
-    /// - Parameters:
-    ///   - url: File URL of the next track. Must be the same sample rate and channel count
-    ///          as the current track (check `sourceFormat` first via `FormatBridge`).
-    ///   - onTransition: Invoked on the `AudioEngine` actor when the transition occurs.
-    /// - Throws: Any decoder error (file not found, unsupported format, etc.).
-    public func enableGaplessNext(url: URL, onTransition: @Sendable @escaping () -> Void) async throws {
-        // Cancel any previous pending-next setup.
-        await self.pendingNextPump?.stop()
-        if let prev = pendingNextDecoder { await prev.close() }
-        self.pendingNextPump = nil
-        self.pendingNextDecoder = nil
-        self.pendingNextTransition = nil
-
-        let dec = try DecoderFactory.make(for: url)
-        let nextDuration = dec.duration
-
-        let sampleRate = self.graph.outputSampleRate
-        guard let outputFmt = StereoLayout.format(sampleRate: sampleRate) else {
-            throw AudioEngineError.outputDeviceUnavailable
-        }
-
-        let playerNode = self.graph.playerNode
-        let nextPump = try BufferPump(
-            decoder: dec,
-            playerNode: playerNode,
-            outputFormat: outputFmt
-        )
-
-        self.pendingNextPump = nextPump
-        self.pendingNextDuration = nextDuration
-        self.pendingNextDecoder = dec
-        self.pendingNextTransition = onTransition
-
-        // Pump is started in `performGaplessTransition` (not here) so its
-        // scheduleBuffer calls land strictly after the outgoing pump's tail in
-        // the shared AVAudioPlayerNode FIFO — otherwise they interleave.
-        self.log.debug("engine.gapless.prefetch", ["url": url.lastPathComponent])
-    }
-
-    /// Cancel any active gapless preload without stopping the player.
-    public func cancelGaplessNext() async {
-        await self.pendingNextPump?.stop()
-        if let prev = pendingNextDecoder { await prev.close() }
-        self.pendingNextPump = nil
-        self.pendingNextDecoder = nil
-        self.pendingNextTransition = nil
-        self.log.debug("engine.gapless.cancelled")
-    }
+    // MARK: - Gapless public API: AudioEngine+GaplessAPI.swift
 
     // MARK: - Tap state
 
@@ -241,7 +186,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         await self.cancelGaplessNext()
 
         // Close previous decoder if any.
-        if let prev = decoder { await prev.close() }
+        if let prev = decoder {
+            await prev.close()
+        }
         self.decoder = nil
 
         // Stop any running pump.
@@ -306,7 +253,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         guard let dec = decoder else { return }
         // Already playing with a live pump: a redundant play() (double-tap, or a
         // remote command racing the button) is a no-op, not a pump rebuild.
-        if self._state == .playing, self.pump != nil { return }
+        if self._state == .playing, self.pump != nil {
+            return
+        }
         let start = Date()
         self.log.debug("engine.play.start")
 
@@ -318,25 +267,11 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             throw ae
         }
 
-        // Resuming from pause WITH a live pump: restart the node (its FIFO is intact).
-        // Recreating the pump would deadlock (pump.stop() awaits dataPlayedBack
-        // callbacks that never fire on a paused node). The `pump != nil` guard skips a
-        // paused CUE seek (which nils the pump); that falls through to a fresh start.
+        // Resuming from pause WITH a live pump restarts the node in place. The
+        // `pump != nil` guard skips a paused CUE seek (which nils the pump);
+        // that falls through to a fresh start.
         if self._state == .paused, self.pump != nil {
-            let playerNode = self.graph.playerNode
-            playerNode.volume = 0 // fade in from the muted state we entered on pause
-            playerNode.play()
-            // pause() banked the elapsed position into `_currentTime` but did NOT stop
-            // the node, so its `sampleTime` keeps climbing across the pause. Rebaseline
-            // the offset to the resume point or the live term re-counts everything
-            // played before the pause and the position races ahead each cycle.
-            if let renderTime = playerNode.lastRenderTime,
-               let playerTime = playerNode.playerTime(forNodeTime: renderTime) {
-                self._playerTimeOffset = playerTime.sampleTime
-            }
-            await self.fadePlayerNode(to: 1)
-            self.emit(.playing)
-            self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
+            await self.resumePausedNode(start: start)
             return
         }
 
@@ -373,6 +308,26 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         // AVAudioEngine connects a fresh graph. No-op on warm restarts (volume is 1).
         self.graph.playerNode.volume = 0
         playerNode.play()
+        await self.fadePlayerNode(to: 1)
+        self.emit(.playing)
+        self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
+    }
+
+    /// Resume from pause with a live pump: restart the node, its FIFO is
+    /// intact. Recreating the pump would deadlock (pump.stop() awaits
+    /// dataPlayedBack callbacks that never fire on a paused node).
+    private func resumePausedNode(start: Date) async {
+        let playerNode = self.graph.playerNode
+        playerNode.volume = 0 // fade in from the muted state we entered on pause
+        playerNode.play()
+        // pause() banked the elapsed position into `_currentTime` but did NOT stop
+        // the node, so its `sampleTime` keeps climbing across the pause. Rebaseline
+        // the offset to the resume point or the live term re-counts everything
+        // played before the pause and the position races ahead each cycle.
+        if let renderTime = playerNode.lastRenderTime,
+           let playerTime = playerNode.playerTime(forNodeTime: renderTime) {
+            self._playerTimeOffset = playerTime.sampleTime
+        }
         await self.fadePlayerNode(to: 1)
         self.emit(.playing)
         self.log.debug("engine.play.end", ["ms": -start.timeIntervalSinceNow * 1000])
@@ -434,7 +389,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
 
     func performSeek(to time: TimeInterval) async throws {
         guard let dec = decoder else { return }
-        if self.refuseLiveStreamSeek(time) { return }
+        if self.refuseLiveStreamSeek(time) {
+            return
+        }
         guard self._duration == 0 || time <= self._duration + 0.001 else {
             throw AudioEngineError.seekOutOfRange(requested: time, duration: self._duration)
         }

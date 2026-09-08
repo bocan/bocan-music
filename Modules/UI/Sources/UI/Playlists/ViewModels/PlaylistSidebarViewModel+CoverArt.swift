@@ -43,7 +43,9 @@ extension PlaylistSidebarViewModel {
     /// input is already a JPEG or the conversion fails.
     nonisolated static func normaliseToJPEG(_ data: Data) -> Data? {
         // JPEG magic bytes: FF D8 FF
-        if data.prefix(3).elementsEqual([0xFF, 0xD8, 0xFF]) { return nil }
+        if data.prefix(3).elementsEqual([0xFF, 0xD8, 0xFF]) {
+            return nil
+        }
         guard let img = NSImage(data: data) else { return nil }
         var rect = NSRect(origin: .zero, size: img.size)
         guard let cg = img.cgImage(forProposedRect: &rect, context: nil, hints: nil) else { return nil }

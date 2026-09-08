@@ -125,7 +125,9 @@ public struct PlaylistHeader: View {
         let total = Int(seconds.rounded())
         let hours = total / 3600
         let minutes = (total % 3600) / 60
-        if hours > 0 { return L10n.string("\(hours) hr \(minutes) min") }
+        if hours > 0 {
+            return L10n.string("\(hours) hr \(minutes) min")
+        }
         return L10n.string("\(minutes) min")
     }
 }

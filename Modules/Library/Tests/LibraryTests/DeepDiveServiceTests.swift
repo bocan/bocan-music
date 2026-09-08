@@ -14,7 +14,9 @@ private final class RoutingHTTP: HTTPClient, @unchecked Sendable {
     func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         let url = request.url!.absoluteString.removingPercentEncoding ?? ""
         self.requests.append(url)
-        if self.offline { throw URLError(.notConnectedToInternet) }
+        if self.offline {
+            throw URLError(.notConnectedToInternet)
+        }
         let hit = self.routes.first { url.contains($0.match) }
         let status = hit == nil ? 404 : 200
         return (Data((hit?.body ?? "").utf8), HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!)

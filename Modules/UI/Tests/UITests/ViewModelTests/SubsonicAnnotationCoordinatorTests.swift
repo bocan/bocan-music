@@ -65,7 +65,9 @@ struct SubsonicAnnotationCoordinatorTests {
 
     private func waitForCalls(_ stub: StubAnnotationDelivery, count: Int) async {
         for _ in 0 ..< 50 {
-            if stub.calls.count >= count { return }
+            if stub.calls.count >= count {
+                return
+            }
             try? await Task.sleep(for: .milliseconds(20))
         }
     }
@@ -109,7 +111,9 @@ struct SubsonicAnnotationCoordinatorTests {
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == true)
         stub.emit(SubsonicAnnotationFailure(serverID: self.serverID, songID: "s1", reason: "boom"))
         for _ in 0 ..< 50 {
-            if coord.isStarred(songID: "s1", serverStarred: nil) == false { break }
+            if coord.isStarred(songID: "s1", serverStarred: nil) == false {
+                break
+            }
             try? await Task.sleep(for: .milliseconds(20))
         }
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == false)
@@ -123,7 +127,9 @@ struct SubsonicAnnotationCoordinatorTests {
         #expect(coord.rating(songID: "s1", serverRating: 2) == 4)
         stub.emit(SubsonicAnnotationFailure(serverID: self.serverID, songID: "s1", reason: "boom"))
         for _ in 0 ..< 50 {
-            if coord.rating(songID: "s1", serverRating: 2) == 2 { break }
+            if coord.rating(songID: "s1", serverRating: 2) == 2 {
+                break
+            }
             try? await Task.sleep(for: .milliseconds(20))
         }
         #expect(coord.rating(songID: "s1", serverRating: 2) == 2)
@@ -137,7 +143,9 @@ struct SubsonicAnnotationCoordinatorTests {
         coord.toggleStar(songID: "s2", serverID: self.serverID, currentlyStarred: false)
         stub.emit(SubsonicAnnotationFailure(serverID: self.serverID, songID: "s1", reason: "boom"))
         for _ in 0 ..< 50 {
-            if coord.isStarred(songID: "s1", serverStarred: nil) == false { break }
+            if coord.isStarred(songID: "s1", serverStarred: nil) == false {
+                break
+            }
             try? await Task.sleep(for: .milliseconds(20))
         }
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == false)

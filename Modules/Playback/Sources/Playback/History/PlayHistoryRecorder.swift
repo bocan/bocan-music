@@ -188,7 +188,9 @@ public actor PlayHistoryRecorder {
             playStartedAt = nil
             hasScrobbled = false
         }
-        if self.hasScrobbled { return }
+        if self.hasScrobbled {
+            return
+        }
         if let ctx = currentSubsonicContext {
             await self.scrobbleSubsonic(context: ctx, durationPlayed: elapsed)
         } else if let id = currentTrackID {
@@ -209,7 +211,9 @@ public actor PlayHistoryRecorder {
     private func meetsThreshold(elapsed: TimeInterval, duration: TimeInterval) -> Bool {
         if duration > 0 {
             let fraction = elapsed / duration
-            if fraction >= Self.minimumFraction { return true }
+            if fraction >= Self.minimumFraction {
+                return true
+            }
         }
         return elapsed >= Self.minimumAbsoluteSeconds
     }

@@ -256,11 +256,15 @@ private struct QueueRow: View {
 
     /// Best-effort display title: metadata title → decoded filename stem → raw last path component.
     private var displayTitle: String {
-        if let t = item.title, !t.isEmpty { return t }
+        if let t = item.title, !t.isEmpty {
+            return t
+        }
         let raw = self.item.fileURL.split(separator: "/").last.map(String.init) ?? self.item.fileURL
         return raw.removingPercentEncoding.map { url in
             // Strip extension for cleaner display.
-            if let dot = url.lastIndex(of: ".") { return String(url[url.startIndex ..< dot]) }
+            if let dot = url.lastIndex(of: ".") {
+                return String(url[url.startIndex ..< dot])
+            }
             return url
         } ?? raw
     }
@@ -355,15 +359,23 @@ private struct QueueRow: View {
     }
 
     private var titleColor: Color {
-        if self.isUnavailable { return Color.textSecondary }
+        if self.isUnavailable {
+            return Color.textSecondary
+        }
         return self.isCurrent ? Color.accentColor : Color.textPrimary
     }
 
     private var rowLabel: String {
         var parts = [self.isCurrent ? L10n.string("Now playing: \(self.displayTitle)") : self.displayTitle]
-        if self.isUnavailable { parts.append(L10n.string("file missing")) }
-        if let sub = self.displaySubtitle { parts.append(sub) }
-        if let genre = item.genre, !genre.isEmpty { parts.append(genre) }
+        if self.isUnavailable {
+            parts.append(L10n.string("file missing"))
+        }
+        if let sub = self.displaySubtitle {
+            parts.append(sub)
+        }
+        if let genre = item.genre, !genre.isEmpty {
+            parts.append(genre)
+        }
         parts.append(Formatters.duration(self.item.duration))
         return parts.joined(separator: ", ")
     }

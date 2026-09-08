@@ -197,8 +197,12 @@ public struct StarRatingRow: View {
     private func starImage(for star: Int) -> String {
         let threshold = star * 20
         guard let r = self.rating else { return "star" }
-        if r >= threshold { return "star.fill" }
-        if r >= threshold - 10 { return "star.leadinghalf.filled" }
+        if r >= threshold {
+            return "star.fill"
+        }
+        if r >= threshold - 10 {
+            return "star.leadinghalf.filled"
+        }
         return "star"
     }
 
