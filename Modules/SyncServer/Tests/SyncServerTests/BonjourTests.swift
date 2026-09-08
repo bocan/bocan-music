@@ -21,7 +21,9 @@ struct BonjourTests {
     // MARK: - Deterministic TXT construction
 
     private func string(_ txt: NWTXTRecord, _ key: String) -> String? {
-        if case let .string(value) = txt.getEntry(for: key) { return value }
+        if case let .string(value) = txt.getEntry(for: key) {
+            return value
+        }
         return nil
     }
 
@@ -60,7 +62,9 @@ struct BonjourTests {
 
         let deadline = ContinuousClock.now.advanced(by: timeout)
         while ContinuousClock.now < deadline {
-            if let txt = found.withLock({ $0 }) { return txt }
+            if let txt = found.withLock({ $0 }) {
+                return txt
+            }
             try await Task.sleep(for: .milliseconds(100))
         }
         return found.withLock { $0 }

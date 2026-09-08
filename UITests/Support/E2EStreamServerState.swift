@@ -71,7 +71,9 @@ final class ServerState: @unchecked Sendable {
     private func readRequest(_ connection: NWConnection, queue: DispatchQueue, buffer: Data) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, isComplete, error in
             var buffer = buffer
-            if let data { buffer.append(data) }
+            if let data {
+                buffer.append(data)
+            }
             if let range = buffer.range(of: Data("\r\n\r\n".utf8)) {
                 let headerBlock = buffer[..<range.lowerBound]
                 self.dispatch(connection, queue: queue, requestLine: Self.firstLine(of: headerBlock))
@@ -149,7 +151,9 @@ final class ServerState: @unchecked Sendable {
         var payload = Data(text.utf8)
         payload.append(body)
         connection.send(content: payload, completion: .contentProcessed { _ in
-            if thenClose { connection.cancel() }
+            if thenClose {
+                connection.cancel()
+            }
         })
     }
 
@@ -219,7 +223,9 @@ final class ServerState: @unchecked Sendable {
     private func sendMetadataFrame(_ connection: NWConnection, queue: DispatchQueue, nextAudioOffset: Int) {
         let titleChanged = self.currentTitle != self.lastEmittedTitle
         let frame = IcyMetadataFramer.frame(title: titleChanged ? self.currentTitle : nil)
-        if titleChanged { self.lastEmittedTitle = self.currentTitle }
+        if titleChanged {
+            self.lastEmittedTitle = self.currentTitle
+        }
         connection.send(content: frame, completion: .contentProcessed { [weak self] error in
             guard let self, error == nil else {
                 self?.removeStreamConnection(connection)

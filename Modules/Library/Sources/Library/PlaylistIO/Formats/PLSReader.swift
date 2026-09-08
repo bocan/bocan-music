@@ -31,8 +31,11 @@ public enum PLSReader {
         let lines = M3UReader.splitLines(text)
         for raw in lines {
             let line = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            if line.isEmpty || line.hasPrefix(";") || line.hasPrefix("#") { continue }
-            if line.lowercased() == "[playlist]" { sawHeader = true
+            if line.isEmpty || line.hasPrefix(";") || line.hasPrefix("#") {
+                continue
+            }
+            if line.lowercased() == "[playlist]" {
+                sawHeader = true
                 continue
             }
             guard let eq = line.firstIndex(of: "=") else { continue }
@@ -82,13 +85,18 @@ public enum PLSReader {
         let lower = key.lowercased()
         let prefix: String
         let kind: Kind
-        if lower.hasPrefix("file") { prefix = "file"
+        if lower.hasPrefix("file") {
+            prefix = "file"
             kind = .file
-        } else if lower.hasPrefix("title") { prefix = "title"
+        } else if lower.hasPrefix("title") {
+            prefix = "title"
             kind = .title
-        } else if lower.hasPrefix("length") { prefix = "length"
+        } else if lower.hasPrefix("length") {
+            prefix = "length"
             kind = .length
-        } else { return nil }
+        } else {
+            return nil
+        }
         guard let n = Int(lower.dropFirst(prefix.count)), n >= 1 else { return nil }
         return (kind, n)
     }

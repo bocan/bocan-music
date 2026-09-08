@@ -68,11 +68,15 @@ extension FFmpegDecoder {
     private static func hasInterleavedMetadata(
         fmtCtx: UnsafeMutablePointer<AVFormatContext>
     ) -> Bool {
-        if av_dict_get(fmtCtx.pointee.metadata, "StreamTitle", nil, 0) != nil { return true }
+        if av_dict_get(fmtCtx.pointee.metadata, "StreamTitle", nil, 0) != nil {
+            return true
+        }
         // Ogg Vorbis/Opus streams carry titles as in-band vorbis comments;
         // a TITLE key in the context metadata after open is the equivalent
         // evidence for that key family (#386).
-        if av_dict_get(fmtCtx.pointee.metadata, "title", nil, 0) != nil { return true }
+        if av_dict_get(fmtCtx.pointee.metadata, "title", nil, 0) != nil {
+            return true
+        }
         let searchChildren: Int32 = 1 << 0 // AV_OPT_SEARCH_CHILDREN
         var raw: UnsafeMutablePointer<UInt8>?
         let ret = av_opt_get(UnsafeMutableRawPointer(fmtCtx), "icy_metadata_packet", searchChildren, &raw)

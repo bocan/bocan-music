@@ -43,6 +43,7 @@ struct TrackTableDragTests {
         )
         let table = TrackTable(
             rows: [],
+            rowsVersion: 0,
             selection: Binding(get: { selection }, set: { selection = $0 }),
             sortOrder: Binding(get: { sort }, set: { sort = $0 }),
             nowPlayingTrackID: nil,

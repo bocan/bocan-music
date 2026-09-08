@@ -22,13 +22,17 @@ public enum SubsonicConnectionStatus: Sendable, Equatable {
 
     /// `true` if the server is currently reachable and authenticated.
     public var isOnline: Bool {
-        if case .online = self { return true }
+        if case .online = self {
+            return true
+        }
         return false
     }
 
     /// `true` if the failure is permanent until the user intervenes.
     public var requiresUserAction: Bool {
-        if case .authFailed = self { return true }
+        if case .authFailed = self {
+            return true
+        }
         return false
     }
 

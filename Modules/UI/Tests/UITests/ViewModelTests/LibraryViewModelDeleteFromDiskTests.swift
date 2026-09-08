@@ -16,13 +16,19 @@ private final class MockTrackFileDeleter: TrackFileDeleter, @unchecked Sendable 
 
     func trash(_ url: URL) throws {
         self.trashedURLs.append(url)
-        if let err = trashErrorURLs[url] { throw err }
-        if let trashError { throw trashError }
+        if let err = trashErrorURLs[url] {
+            throw err
+        }
+        if let trashError {
+            throw trashError
+        }
     }
 
     func remove(_ url: URL) throws {
         self.removedURLs.append(url)
-        if let removeError { throw removeError }
+        if let removeError {
+            throw removeError
+        }
     }
 }
 

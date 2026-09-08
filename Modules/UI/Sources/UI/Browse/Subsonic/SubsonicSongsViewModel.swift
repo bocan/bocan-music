@@ -47,9 +47,13 @@ public final class SubsonicSongsViewModel: ObservableObject {
     /// "cached snapshot → fresh random batch replaces it" on launch.
     /// Use `refresh()` to explicitly reseed.
     public func load() async {
-        if !self.songs.isEmpty { return }
+        if !self.songs.isEmpty {
+            return
+        }
         await self.hydrateFromCache()
-        if !self.songs.isEmpty { return }
+        if !self.songs.isEmpty {
+            return
+        }
         self.hasMorePages = true
         await self.loadMore(replacingSample: true)
     }

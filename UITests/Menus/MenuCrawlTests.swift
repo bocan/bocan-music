@@ -72,7 +72,9 @@ final class MenuCrawlTests: XCTestCase {
             if index < observed.count, spec.titles.contains(observed[index].title) {
                 let item = observed[index]
                 index += 1
-                if spec.ignoreChildren { continue }
+                if spec.ignoreChildren {
+                    continue
+                }
                 if !spec.submenu.isEmpty || !item.children.isEmpty {
                     self.compare(
                         observed: item.children,

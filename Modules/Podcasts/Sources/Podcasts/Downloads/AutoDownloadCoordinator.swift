@@ -63,7 +63,9 @@ public struct AutoDownloadCoordinator: Sendable {
 
         var enqueued = 0
         for episode in episodes where newGUIDs.contains(episode.guid) {
-            if enqueued >= self.newestN { break }
+            if enqueued >= self.newestN {
+                break
+            }
             let state = try? await self.stateRepo.fetch(podcastID: podcastID, guid: episode.guid)
             if let state, state.downloadState == .downloaded || state.playState == .played {
                 continue // already downloaded or already heard

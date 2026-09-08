@@ -53,7 +53,9 @@ public actor AudioTranscoder {
         let ctx = TranscodeContext()
         var finished = false
         defer {
-            if !finished { self.removeArtifact(at: destination) }
+            if !finished {
+                self.removeArtifact(at: destination)
+            }
         }
 
         try self.openInput(ctx, source: source)
@@ -164,7 +166,9 @@ final class TranscodeContext {
         var swr = swrCtx
         swr_free(&swr)
         av_channel_layout_uninit(&swrInLayout)
-        if let fifo { av_audio_fifo_free(fifo) }
+        if let fifo {
+            av_audio_fifo_free(fifo)
+        }
         var dec = decodeCtx
         avcodec_free_context(&dec)
         var enc = encodeCtx

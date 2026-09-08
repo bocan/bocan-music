@@ -85,8 +85,12 @@ struct LRCParserDocumentTests {
     @Test("empty input yields unsynced empty document")
     func emptyInput() {
         let doc = LRCParser.parseDocument("")
-        if case .unsynced("") = doc { return }
-        if case let .unsynced(t) = doc, t.isEmpty { return }
+        if case .unsynced("") = doc {
+            return
+        }
+        if case let .unsynced(t) = doc, t.isEmpty {
+            return
+        }
         Issue.record("Expected empty unsynced document, got \(doc)")
     }
 

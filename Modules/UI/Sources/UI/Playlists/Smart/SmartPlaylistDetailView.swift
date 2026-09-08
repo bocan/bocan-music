@@ -74,7 +74,11 @@ public struct SmartPlaylistDetailView: View {
         }
         .alert(L10n.string("Error"), isPresented: Binding(
             get: { self.vm.lastError != nil },
-            set: { if !$0 { self.vm.lastError = nil } }
+            set: {
+                if !$0 {
+                    self.vm.lastError = nil
+                }
+            }
         )) {
             Button(L10n.string("OK")) { self.vm.lastError = nil }
                 .help(L10n.string("Dismiss this error"))

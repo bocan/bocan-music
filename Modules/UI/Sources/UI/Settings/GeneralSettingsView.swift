@@ -47,7 +47,9 @@ public struct GeneralSettingsView: View {
                 Toggle(L10n.string("Show track-change notifications"), isOn: self.$showNotifications)
                     .accessibilityIdentifier(A11y.SettingsIDs.trackNotifications)
                     .onChange(of: self.showNotifications) { _, enabled in
-                        if enabled { self.requestNotificationAuth() }
+                        if enabled {
+                            self.requestNotificationAuth()
+                        }
                     }
                 Text(localized: "Notifications only appear when Bòcan is not in the foreground.")
                     .font(.caption)

@@ -24,7 +24,9 @@ struct DeepDiveTrackView: View {
             }
         }
         .task {
-            if case .idle = self.vm.state { self.vm.load() }
+            if case .idle = self.vm.state {
+                self.vm.load()
+            }
         }
     }
 
@@ -96,9 +98,15 @@ struct DeepDiveTrackView: View {
 
     private static func credits(_ work: TrackReport.Work) -> String {
         var parts: [String] = []
-        if !work.composers.isEmpty { parts.append(L10n.string("Composer: \(work.composers.joined(separator: ", "))")) }
-        if !work.lyricists.isEmpty { parts.append(L10n.string("Lyricist: \(work.lyricists.joined(separator: ", "))")) }
-        if !work.writers.isEmpty { parts.append(L10n.string("Writer: \(work.writers.joined(separator: ", "))")) }
+        if !work.composers.isEmpty {
+            parts.append(L10n.string("Composer: \(work.composers.joined(separator: ", "))"))
+        }
+        if !work.lyricists.isEmpty {
+            parts.append(L10n.string("Lyricist: \(work.lyricists.joined(separator: ", "))"))
+        }
+        if !work.writers.isEmpty {
+            parts.append(L10n.string("Writer: \(work.writers.joined(separator: ", "))"))
+        }
         return parts.isEmpty ? L10n.string("No writer credits on MusicBrainz") : parts.joined(separator: " · ")
     }
 

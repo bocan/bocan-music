@@ -24,7 +24,11 @@ private final class ArtistStubHTTP: HTTPClient, @unchecked Sendable {
         if self.rateLimited.contains(mbid) {
             if let hits = self.rateLimitHits {
                 self.rateLimitHits = hits - 1
-                if hits <= 0 { self.rateLimited.remove(mbid) } else { return (Data(), response(503)) }
+                if hits <= 0 {
+                    self.rateLimited.remove(mbid)
+                } else {
+                    return (Data(), response(503))
+                }
             } else {
                 return (Data(), response(503))
             }

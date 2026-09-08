@@ -233,7 +233,9 @@ public actor MetadataEditService {
             if let modDate = attrs[.modificationDate] as? Date {
                 track.fileMtime = Int64(modDate.timeIntervalSince1970)
             }
-            if let sz = attrs[.size] as? Int { track.fileSize = Int64(sz) }
+            if let sz = attrs[.size] as? Int {
+                track.fileSize = Int64(sz)
+            }
         }
         try await self.trackRepo.update(track)
         self.log.debug("conflict.cleared", ["trackID": trackID])

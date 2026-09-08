@@ -57,7 +57,11 @@ public struct RuleBuilderView: View {
         .environment(\.playlistServiceForRules, self.playlistService)
         .alert(L10n.string("Save Error"), isPresented: Binding(
             get: { self.saveError != nil },
-            set: { if !$0 { self.saveError = nil } }
+            set: {
+                if !$0 {
+                    self.saveError = nil
+                }
+            }
         )) {
             Button(L10n.string("OK")) { self.saveError = nil }
                 .help(L10n.string("Dismiss this message"))

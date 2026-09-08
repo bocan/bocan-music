@@ -151,7 +151,9 @@ struct NowPlayingViewModelTests {
         // Put the VM into a paused state so playPause triggers resume.
         engine.emit(.paused)
         for _ in 0 ..< 100 {
-            if vm.isPaused { break }
+            if vm.isPaused {
+                break
+            }
             await Task.yield()
         }
         try #require(vm.isPaused)
@@ -184,7 +186,9 @@ struct NowPlayingViewModelTests {
         // A sleep is unreliable: under --enable-code-coverage, concurrent @MainActor
         // snapshot tests can hold the main actor beyond the sleep window.
         for _ in 0 ..< 100 {
-            if vm.isPlaying { break }
+            if vm.isPlaying {
+                break
+            }
             await Task.yield()
         }
         try #require(vm.isPlaying)
@@ -203,7 +207,9 @@ struct NowPlayingViewModelTests {
         // the periodic UI poll has published its first value.
         engine.emit(.paused)
         for _ in 0 ..< 100 {
-            if vm.isPaused, vm.position == 87.25 { break }
+            if vm.isPaused, vm.position == 87.25 {
+                break
+            }
             await Task.yield()
         }
 
@@ -419,7 +425,9 @@ struct NowPlayingViewModelTests {
         patterns.removeAll()
         engine.emit(.paused)
         for _ in 0 ..< 100 {
-            if vm.isPaused { break }
+            if vm.isPaused {
+                break
+            }
             await Task.yield()
         }
         try #require(vm.isPaused)
@@ -430,7 +438,9 @@ struct NowPlayingViewModelTests {
         engine.emit(.ended)
         // Yield until the @MainActor stateTask processes the event.
         for _ in 0 ..< 100 {
-            if patterns.contains(.levelChange) { break }
+            if patterns.contains(.levelChange) {
+                break
+            }
             await Task.yield()
         }
         #expect(patterns.contains(.levelChange))

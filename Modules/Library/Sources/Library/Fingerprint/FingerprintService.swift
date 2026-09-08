@@ -214,7 +214,9 @@ public actor FingerprintService {
         releases.sorted { a, b in
             let aOfficial = a.status == "Official"
             let bOfficial = b.status == "Official"
-            if aOfficial != bOfficial { return aOfficial }
+            if aOfficial != bOfficial {
+                return aOfficial
+            }
 
             // Partial-ISO date strings compare correctly lexicographically.
             switch (a.date, b.date) {
@@ -233,7 +235,9 @@ public actor FingerprintService {
 
             let aAlbum = Self.isStraightAlbum(a)
             let bAlbum = Self.isStraightAlbum(b)
-            if aAlbum != bAlbum { return aAlbum }
+            if aAlbum != bAlbum {
+                return aAlbum
+            }
 
             return a.id < b.id
         }

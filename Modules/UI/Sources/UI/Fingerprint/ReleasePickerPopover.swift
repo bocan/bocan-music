@@ -66,9 +66,15 @@ struct ReleasePickerControl: View {
     /// One-line summary: "Abbey Road · 1969 · GB · 12" Vinyl".
     static func summary(for release: ReleaseOption) -> String {
         var parts = [release.title]
-        if let year = release.year { parts.append(String(year)) }
-        if let country = release.country { parts.append(country) }
-        if let format = release.mediaFormat { parts.append(format) }
+        if let year = release.year {
+            parts.append(String(year))
+        }
+        if let country = release.country {
+            parts.append(country)
+        }
+        if let format = release.mediaFormat {
+            parts.append(format)
+        }
         return parts.joined(separator: " · ")
     }
 }

@@ -172,7 +172,9 @@ public extension TrackTags {
     /// worth storing (#403).
     static func primaryReleaseType(from values: [String]) -> String? {
         let lowered = values.map { $0.trimmingCharacters(in: .whitespaces).lowercased() }.filter { !$0.isEmpty }
-        if let primary = lowered.first(where: { self.primaryReleaseTypes.contains($0) }) { return primary }
+        if let primary = lowered.first(where: { self.primaryReleaseTypes.contains($0) }) {
+            return primary
+        }
         return lowered.first(where: { self.secondaryReleaseTypes.contains($0) })
     }
 }

@@ -60,7 +60,9 @@ struct WindowSignpostBracket: NSViewRepresentable {
                     MainActor.assumeIsolated { self?.finish() }
                 },
             ]
-            if window.isVisible { self.start() }
+            if window.isVisible {
+                self.start()
+            }
         }
 
         private func start() {
@@ -69,7 +71,9 @@ struct WindowSignpostBracket: NSViewRepresentable {
             let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated {
                     guard let self else { return }
-                    if self.window?.isVisible != true { self.finish() }
+                    if self.window?.isVisible != true {
+                        self.finish()
+                    }
                 }
             }
             RunLoop.main.add(timer, forMode: .common)

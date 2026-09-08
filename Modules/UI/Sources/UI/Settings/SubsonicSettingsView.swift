@@ -58,7 +58,9 @@ public struct SubsonicSettingsView: View {
             List(selection: Binding<UUID?>(
                 get: { self.vm.selectedServerID },
                 set: { newValue in
-                    if let id = newValue { Task { await self.vm.selectServer(id) } }
+                    if let id = newValue {
+                        Task { await self.vm.selectServer(id) }
+                    }
                 }
             )) {
                 ForEach(self.vm.servers, id: \.id) { server in
@@ -407,15 +409,33 @@ private struct TestResultBlock: View {
 
     private func extensions(from caps: SubsonicCapabilities) -> [String] {
         var names: [String] = []
-        if caps.isOpenSubsonic { names.append("openSubsonic") }
-        if caps.supportsApiKey { names.append("apiKeyAuthentication") }
-        if caps.supportsLyricsBySongId { names.append("songLyrics") }
-        if caps.supportsPodcasts { names.append("podcasts") }
-        if caps.supportsInternetRadio { names.append("internetRadio") }
-        if caps.supportsBookmarks { names.append("bookmarks") }
-        if caps.supportsJukebox { names.append("jukebox") }
-        if caps.supportsShares { names.append("shares") }
-        if caps.supportsRandomSongsByGenre { names.append("randomSongsByGenre") }
+        if caps.isOpenSubsonic {
+            names.append("openSubsonic")
+        }
+        if caps.supportsApiKey {
+            names.append("apiKeyAuthentication")
+        }
+        if caps.supportsLyricsBySongId {
+            names.append("songLyrics")
+        }
+        if caps.supportsPodcasts {
+            names.append("podcasts")
+        }
+        if caps.supportsInternetRadio {
+            names.append("internetRadio")
+        }
+        if caps.supportsBookmarks {
+            names.append("bookmarks")
+        }
+        if caps.supportsJukebox {
+            names.append("jukebox")
+        }
+        if caps.supportsShares {
+            names.append("shares")
+        }
+        if caps.supportsRandomSongsByGenre {
+            names.append("randomSongsByGenre")
+        }
         return names
     }
 }

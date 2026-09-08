@@ -84,7 +84,9 @@ public struct SubsonicSongsView: View {
             }
         }
         .task(id: self.serverID) {
-            if self.vm.songs.isEmpty { await self.vm.load() }
+            if self.vm.songs.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load songs"), message: self.$vm.errorMessage)
     }

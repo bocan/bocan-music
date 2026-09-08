@@ -34,7 +34,9 @@ public extension TagEditorViewModel {
         let normalised: [String?] = raw.map { ($0?.isEmpty == true) ? nil : $0 }
         guard let first = normalised.first else { return "" }
         let allSame = normalised.dropFirst().allSatisfy { $0 == first }
-        if !allSame { return "Various" }
+        if !allSame {
+            return "Various"
+        }
         return first ?? ""
     }
 }

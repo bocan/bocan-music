@@ -23,7 +23,9 @@ public actor ChaptersFetcher {
     /// fetch. Throws `PodcastsError` on a bad URL, network error, non-2xx, or an
     /// oversized body; an unparseable body yields an empty list (not a throw).
     public func chapters(for url: URL) async throws -> [Chapter] {
-        if let cached = self.cache[url] { return cached }
+        if let cached = self.cache[url] {
+            return cached
+        }
         try Task.checkCancellation()
 
         guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {

@@ -74,7 +74,9 @@ struct PodcastSearchServiceTests {
         let mock = MockHTTPClient()
         mock.handler = { request in
             let urlStr = request.url?.absoluteString ?? ""
-            if urlStr.contains("podcastindex.org") { return (piData, makeHTTPResponse(status: 200)) }
+            if urlStr.contains("podcastindex.org") {
+                return (piData, makeHTTPResponse(status: 200))
+            }
             return (itData, makeHTTPResponse(status: 200))
         }
 
@@ -107,7 +109,9 @@ struct PodcastSearchServiceTests {
         let mock = MockHTTPClient()
         mock.handler = { request in
             let urlStr = request.url?.absoluteString ?? ""
-            if urlStr.contains("podcastindex.org") { return (piData, makeHTTPResponse(status: 200)) }
+            if urlStr.contains("podcastindex.org") {
+                return (piData, makeHTTPResponse(status: 200))
+            }
             return (itData, makeHTTPResponse(status: 200))
         }
 

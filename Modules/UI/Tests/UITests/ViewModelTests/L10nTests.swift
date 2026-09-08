@@ -178,7 +178,7 @@ struct L10nTests {
             "Sources/UI/ViewModels/LibraryViewModel+Subsonic.swift",
             "Sources/UI/ViewModels/LibraryViewModel+PlaylistDrop.swift",
             "Sources/UI/ViewModels/NowPlayingViewModel.swift",
-            "Sources/UI/ViewModels/TracksViewModel.swift",
+            "Sources/UI/ViewModels/TrackSortColumn.swift",
             "Sources/UI/Visualizers/ViewModels/VisualizerViewModel.swift",
         ]
     )
@@ -346,6 +346,7 @@ struct L10nTests {
             "Sources/UI/Browse/RemoveFromLibraryConfirm.swift",
             "Sources/UI/Browse/TrackTable+ColSpecs.swift",
             "Sources/UI/Browse/TrackTableCoordinator.swift",
+            "Sources/UI/Browse/TrackTableCoordinator+ContextMenu.swift",
             "Sources/UI/Browse/TrackTableHelpers.swift",
             "Sources/UI/Browse/Subsonic/SubsonicSongsView.swift",
             "Sources/UI/Browse/Subsonic/SubsonicAlbumsView.swift",

@@ -92,7 +92,9 @@ public struct SubsonicBookmarksView: View {
             }
         }
         .task(id: self.serverID) {
-            if self.vm.bookmarks.isEmpty { await self.vm.load() }
+            if self.vm.bookmarks.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load bookmarks"), message: self.$vm.errorMessage)
     }

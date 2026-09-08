@@ -227,7 +227,9 @@ public struct BocanRootView: View {
             .onChange(of: self.anySheetOpen) { _, isOpen in
                 // Keyboard focus phase: return focus to the main content area when
                 // any modal sheet closes so Tab / arrow keys remain reachable.
-                if !isOpen { self.mainContentFocused = true }
+                if !isOpen {
+                    self.mainContentFocused = true
+                }
             }
             .onChange(of: self.watchForChanges) { _, _ in
                 // ADR-005 audit M8: live-toggle the FSEvents watcher when the
@@ -321,7 +323,11 @@ public struct BocanRootView: View {
                 PlaylistExportSheet(
                     isPresented: Binding(
                         get: { self.vm.playlistExportRequest != nil },
-                        set: { if !$0 { self.vm.playlistExportRequest = nil } }
+                        set: {
+                            if !$0 {
+                                self.vm.playlistExportRequest = nil
+                            }
+                        }
                     ),
                     exporter: self.vm.playlistExporter,
                     playlistID: req.id,
@@ -396,14 +402,22 @@ public struct BocanRootView: View {
     private var playbackErrorBinding: Binding<Bool> {
         Binding(
             get: { self.vm.playbackErrorMessage != nil },
-            set: { if !$0 { self.vm.playbackErrorMessage = nil } }
+            set: {
+                if !$0 {
+                    self.vm.playbackErrorMessage = nil
+                }
+            }
         )
     }
 
     private var rescanErrorBinding: Binding<Bool> {
         Binding(
             get: { self.vm.rescanErrorMessage != nil },
-            set: { if !$0 { self.vm.rescanErrorMessage = nil } }
+            set: {
+                if !$0 {
+                    self.vm.rescanErrorMessage = nil
+                }
+            }
         )
     }
 

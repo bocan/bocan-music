@@ -34,10 +34,18 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
     /// Canonical display, macOS modifier order (⌃⌥⇧⌘).
     var description: String {
         var out = ""
-        if self.modifiers.contains(.control) { out += "⌃" }
-        if self.modifiers.contains(.option) { out += "⌥" }
-        if self.modifiers.contains(.shift) { out += "⇧" }
-        if self.modifiers.contains(.command) { out += "⌘" }
+        if self.modifiers.contains(.control) {
+            out += "⌃"
+        }
+        if self.modifiers.contains(.option) {
+            out += "⌥"
+        }
+        if self.modifiers.contains(.shift) {
+            out += "⇧"
+        }
+        if self.modifiers.contains(.command) {
+            out += "⌘"
+        }
         switch self.key {
         case let .char(c): out += String(c).uppercased()
         case .space: out += "Space"
@@ -107,10 +115,18 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
         }
         var modifiers: Modifiers = []
         let clause = arguments[modifiersRange.upperBound...]
-        if clause.contains(".command") { modifiers.insert(.command) }
-        if clause.contains(".shift") { modifiers.insert(.shift) }
-        if clause.contains(".option") { modifiers.insert(.option) }
-        if clause.contains(".control") { modifiers.insert(.control) }
+        if clause.contains(".command") {
+            modifiers.insert(.command)
+        }
+        if clause.contains(".shift") {
+            modifiers.insert(.shift)
+        }
+        if clause.contains(".option") {
+            modifiers.insert(.option)
+        }
+        if clause.contains(".control") {
+            modifiers.insert(.control)
+        }
         return MenuShortcut(key, modifiers)
     }
 

@@ -43,7 +43,9 @@ public struct SubsonicGenresView: View {
         }
         .navigationTitle(L10n.string("Genres"))
         .task(id: self.serverID) {
-            if self.vm.genres.isEmpty { await self.vm.load() }
+            if self.vm.genres.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load genres"), message: self.$vm.errorMessage)
     }

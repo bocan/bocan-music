@@ -42,7 +42,9 @@ public struct CueMarkerService: Sendable {
         let ranked = cues.sorted { a, b in
             let aComplete = Self.allTargetsExist(inCueAt: a)
             let bComplete = Self.allTargetsExist(inCueAt: b)
-            if aComplete != bComplete { return aComplete }
+            if aComplete != bComplete {
+                return aComplete
+            }
             return a.lastPathComponent < b.lastPathComponent
         }
 

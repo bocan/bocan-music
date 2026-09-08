@@ -46,10 +46,16 @@ struct ScanCoordinatorTests {
         await coordinator.scan(roots: [], mode: .full) { box.append($0) }
         let events = box.events
 
-        let hasStarted = events.contains { if case .started = $0 { return true }
+        let hasStarted = events.contains {
+            if case .started = $0 {
+                return true
+            }
             return false
         }
-        let hasFinished = events.contains { if case .finished = $0 { return true }
+        let hasFinished = events.contains {
+            if case .finished = $0 {
+                return true
+            }
             return false
         }
         #expect(hasStarted)
@@ -134,7 +140,10 @@ struct ScanCoordinatorTests {
 
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
-        let processed = box.events.count(where: { if case .processed = $0 { return true }
+        let processed = box.events.count(where: {
+            if case .processed = $0 {
+                return true
+            }
             return false
         })
 
@@ -152,7 +161,9 @@ struct ScanCoordinatorTests {
         let events = box.events
 
         let inserted = events.count(where: {
-            if case .processed(_, outcome: .inserted) = $0 { return true }
+            if case .processed(_, outcome: .inserted) = $0 {
+                return true
+            }
             return false
         })
 
@@ -178,7 +189,9 @@ struct ScanCoordinatorTests {
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .quick) { box.append($0) }
         let skipped = box.events.count(where: {
-            if case .processed(_, outcome: .skippedUnchanged) = $0 { return true }
+            if case .processed(_, outcome: .skippedUnchanged) = $0 {
+                return true
+            }
             return false
         })
         #expect(skipped > 0)
@@ -195,7 +208,9 @@ struct ScanCoordinatorTests {
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .quick) { box.append($0) }
         let summary: ScanProgress.Summary? = box.events.compactMap {
-            if case let .finished(s) = $0 { return s }
+            if case let .finished(s) = $0 {
+                return s
+            }
             return nil
         }.first
 
@@ -234,7 +249,9 @@ struct ScanCoordinatorTests {
         let box = EventBox()
         await coordinator.scan(roots: [(url: tmp, rootID: 1)], mode: .quick) { box.append($0) }
         let removedEvents: [Int64] = box.events.compactMap {
-            if case let .removed(id) = $0 { return id }
+            if case let .removed(id) = $0 {
+                return id
+            }
             return nil
         }
 
@@ -255,11 +272,16 @@ struct ScanCoordinatorTests {
 
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
-        let errors = box.events.count(where: { if case .error = $0 { return true }
+        let errors = box.events.count(where: {
+            if case .error = $0 {
+                return true
+            }
             return false
         })
         let inserted = box.events.count(where: {
-            if case .processed(_, outcome: .inserted) = $0 { return true }
+            if case .processed(_, outcome: .inserted) = $0 {
+                return true
+            }
             return false
         })
 

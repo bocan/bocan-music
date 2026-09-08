@@ -41,7 +41,9 @@ struct PodcastShowViewTests {
     @Test("nil state maps to .unplayed")
     func statusUnplayed() {
         let item = makeItem(playState: nil)
-        if case .unplayed = status(item) {} else { Issue.record("Expected .unplayed") }
+        if case .unplayed = status(item) {} else {
+            Issue.record("Expected .unplayed")
+        }
     }
 
     @Test("inProgress with position 30 and duration 100 gives fraction 0.30")
@@ -87,7 +89,9 @@ struct PodcastShowViewTests {
     @Test("played playState maps to .played")
     func statusPlayed() {
         let item = makeItem(playState: .played)
-        if case .played = status(item) {} else { Issue.record("Expected .played") }
+        if case .played = status(item) {} else {
+            Issue.record("Expected .played")
+        }
     }
 
     @Test("durationLabel for unplayed shows full duration")

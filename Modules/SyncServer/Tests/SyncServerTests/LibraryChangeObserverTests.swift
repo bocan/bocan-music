@@ -9,7 +9,9 @@ struct LibraryChangeObserverTests {
         let deadline = ContinuousClock.now.advanced(by: timeout)
         while ContinuousClock.now < deadline {
             let value = try await syncMeta.generation()
-            if value >= target { return value }
+            if value >= target {
+                return value
+            }
             try await Task.sleep(for: .milliseconds(20))
         }
         return try await syncMeta.generation()

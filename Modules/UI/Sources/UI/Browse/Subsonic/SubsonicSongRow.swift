@@ -116,7 +116,9 @@ struct SubsonicRatingMenu: View {
                 } label: {
                     HStack {
                         Text(stars == 0 ? L10n.string("None") : String(repeating: "★", count: stars))
-                        if stars == current { Image(systemName: "checkmark") }
+                        if stars == current {
+                            Image(systemName: "checkmark")
+                        }
                     }
                 }
             }

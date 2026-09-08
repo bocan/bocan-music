@@ -25,7 +25,9 @@ extension BocanCommands {
         Binding(
             get: { self.collectionViewModeBinding.wrappedValue == mode },
             set: { isOn in
-                if isOn { self.collectionViewModeBinding.wrappedValue = mode }
+                if isOn {
+                    self.collectionViewModeBinding.wrappedValue = mode
+                }
             }
         )
     }

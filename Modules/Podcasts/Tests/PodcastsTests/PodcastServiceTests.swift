@@ -77,7 +77,9 @@ private let ep2GUID = "unique-guid-ep2"
 /// a detached task), up to ~3 s. Returns the path, or nil on timeout.
 private func pollArtworkPath(repo: PodcastRepository, id: Int64) async throws -> String? {
     for _ in 0 ..< 150 {
-        if let path = try await repo.fetch(id: id).artworkPath { return path }
+        if let path = try await repo.fetch(id: id).artworkPath {
+            return path
+        }
         try await Task.sleep(for: .milliseconds(20))
     }
     return nil
@@ -86,7 +88,9 @@ private func pollArtworkPath(repo: PodcastRepository, id: Int64) async throws ->
 /// Polls until `path` exists on disk, up to ~3 s. Returns the final existence.
 private func pollFileExists(_ path: String) async throws -> Bool {
     for _ in 0 ..< 150 {
-        if FileManager.default.fileExists(atPath: path) { return true }
+        if FileManager.default.fileExists(atPath: path) {
+            return true
+        }
         try await Task.sleep(for: .milliseconds(20))
     }
     return FileManager.default.fileExists(atPath: path)

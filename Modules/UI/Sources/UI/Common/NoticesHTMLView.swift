@@ -85,7 +85,9 @@ enum NoticesRenderer {
 
         func flush() {
             let text = paraLines.joined(separator: " ").trimmingCharacters(in: .whitespaces)
-            if !text.isEmpty { body += "<p>\(text)</p>\n" }
+            if !text.isEmpty {
+                body += "<p>\(text)</p>\n"
+            }
             paraLines.removeAll()
         }
 

@@ -72,7 +72,9 @@ struct SmartPlaylistDetailViewModelTests {
         // database I/O before the first emission, so a short sleep per iteration
         // lets those operations complete while the MainActor is suspended.
         for _ in 0 ..< 50 {
-            if !seed.vm.tracks.isEmpty { break }
+            if !seed.vm.tracks.isEmpty {
+                break
+            }
             try await Task.sleep(nanoseconds: 10_000_000) // 10 ms per iteration, 500 ms max
         }
 

@@ -97,7 +97,9 @@ actor EditTransaction {
             try await self.database.write { db in
                 for (track, coverHash) in updates {
                     var mutable = track
-                    if let hash = coverHash { mutable.coverArtHash = hash }
+                    if let hash = coverHash {
+                        mutable.coverArtHash = hash
+                    }
                     try mutable.update(db)
 
                     // Keep the lyrics table in sync with the edited text so
@@ -160,8 +162,12 @@ actor EditTransaction {
         if !successfulUpdates.isEmpty, regrouped || totalsChanged || mbidsChanged {
             let albumIDs = Set(successfulUpdates.compactMap(\.track.albumID))
             for albumID in albumIDs {
-                if regrouped || totalsChanged { try await self.albumRepo.recomputeTotals(albumID: albumID) }
-                if regrouped || mbidsChanged { try await self.albumRepo.recomputeMusicBrainzIDs(albumID: albumID) }
+                if regrouped || totalsChanged {
+                    try await self.albumRepo.recomputeTotals(albumID: albumID)
+                }
+                if regrouped || mbidsChanged {
+                    try await self.albumRepo.recomputeMusicBrainzIDs(albumID: albumID)
+                }
             }
         }
 
@@ -184,7 +190,9 @@ actor EditTransaction {
 
         var touchedByAlbum: [Int64: Int] = [:]
         for track in updates {
-            if let albumID = track.albumID { touchedByAlbum[albumID, default: 0] += 1 }
+            if let albumID = track.albumID {
+                touchedByAlbum[albumID, default: 0] += 1
+            }
         }
 
         for (albumID, touched) in touchedByAlbum {
@@ -317,23 +325,37 @@ actor EditTransaction {
             if let modDate = attrs[.modificationDate] as? Date {
                 updated.fileMtime = Int64(modDate.timeIntervalSince1970)
             }
-            if let sz = attrs[.size] as? Int { updated.fileSize = Int64(sz) }
+            if let sz = attrs[.size] as? Int {
+                updated.fileSize = Int64(sz)
+            }
         }
 
         if patch.artist != nil || patch.albumArtist != nil || patch.album != nil {
             // Fetch current album/albumArtist rows for fallback values (ignore errors).
-            let currentAlbum: Album? = if let id = track.albumID { try? await self.albumRepo.fetch(id: id) }
-            else { nil }
+            let currentAlbum: Album? = if let id = track.albumID {
+                try? await self.albumRepo.fetch(id: id)
+            } else {
+                nil
+            }
 
-            let currentAlbumArtist: Artist? = if let id = currentAlbum?.albumArtistID { try? await self.artistRepo.fetch(id: id) }
-            else { nil }
+            let currentAlbumArtist: Artist? = if let id = currentAlbum?.albumArtistID {
+                try? await self.artistRepo.fetch(id: id)
+            } else {
+                nil
+            }
 
-            let currentTrackArtist: Artist? = if let id = track.artistID { try? await self.artistRepo.fetch(id: id) }
-            else { nil }
+            let currentTrackArtist: Artist? = if let id = track.artistID {
+                try? await self.artistRepo.fetch(id: id)
+            } else {
+                nil
+            }
 
             // Resolve track-artist FK.
-            let artistName: String = if let patched = patch.artist { patched ?? "Unknown Artist" }
-            else { currentTrackArtist?.name ?? "Unknown Artist" }
+            let artistName: String = if let patched = patch.artist {
+                patched ?? "Unknown Artist"
+            } else {
+                currentTrackArtist?.name ?? "Unknown Artist"
+            }
             let artist = try await self.artistRepo.findOrCreate(
                 name: artistName,
                 sortName: patch.sortArtist ?? nil,
@@ -342,8 +364,11 @@ actor EditTransaction {
             updated.artistID = artist.id
 
             // Resolve album-artist (may differ from track artist).
-            let albumArtistName: String = if let patched = patch.albumArtist { patched ?? artistName }
-            else { currentAlbumArtist?.name ?? artistName }
+            let albumArtistName: String = if let patched = patch.albumArtist {
+                patched ?? artistName
+            } else {
+                currentAlbumArtist?.name ?? artistName
+            }
             let albumArtist = albumArtistName == artistName
                 ? artist
                 : try await self.artistRepo.findOrCreate(
@@ -353,8 +378,11 @@ actor EditTransaction {
                 )
 
             // Resolve album FK.
-            let albumTitle: String = if let patched = patch.album { patched ?? "Unknown Album" }
-            else { currentAlbum?.title ?? "Unknown Album" }
+            let albumTitle: String = if let patched = patch.album {
+                patched ?? "Unknown Album"
+            } else {
+                currentAlbum?.title ?? "Unknown Album"
+            }
             let album = try await self.albumRepo.findOrCreate(title: albumTitle, albumArtistID: albumArtist.id)
             updated.albumID = album.id
 
@@ -371,34 +399,86 @@ actor EditTransaction {
     }
 
     private static func applyPatch(_ patch: TrackTagPatch, to tags: inout TrackTags) {
-        if let v = patch.title { tags.title = v }
-        if let v = patch.artist { tags.artist = v }
-        if let v = patch.albumArtist { tags.albumArtist = v }
-        if let v = patch.album { tags.album = v }
-        if let v = patch.genre { tags.genre = v }
-        if let v = patch.composer { tags.composer = v }
-        if let v = patch.comment { tags.comment = v }
-        if let v = patch.trackNumber { tags.trackNumber = v }
-        if let v = patch.trackTotal { tags.trackTotal = v }
-        if let v = patch.discNumber { tags.discNumber = v }
-        if let v = patch.discTotal { tags.discTotal = v }
-        if let v = patch.year { tags.year = v }
-        if let v = patch.bpm { tags.bpm = v }
-        if let v = patch.key { tags.key = v }
-        if let v = patch.isrc { tags.isrc = v }
-        if let v = patch.musicbrainzTrackID { tags.musicbrainzTrackID = v }
-        if let v = patch.musicbrainzRecordingID { tags.musicbrainzRecordingID = v }
-        if let v = patch.musicbrainzReleaseID { tags.musicbrainzReleaseID = v }
-        if let v = patch.musicbrainzReleaseGroupID { tags.musicbrainzReleaseGroupID = v }
-        if let v = patch.musicbrainzArtistID { tags.musicbrainzArtistID = v }
-        if let v = patch.musicbrainzAlbumArtistID { tags.musicbrainzAlbumArtistID = v }
-        if let v = patch.lyrics { tags.lyrics = v }
+        if let v = patch.title {
+            tags.title = v
+        }
+        if let v = patch.artist {
+            tags.artist = v
+        }
+        if let v = patch.albumArtist {
+            tags.albumArtist = v
+        }
+        if let v = patch.album {
+            tags.album = v
+        }
+        if let v = patch.genre {
+            tags.genre = v
+        }
+        if let v = patch.composer {
+            tags.composer = v
+        }
+        if let v = patch.comment {
+            tags.comment = v
+        }
+        if let v = patch.trackNumber {
+            tags.trackNumber = v
+        }
+        if let v = patch.trackTotal {
+            tags.trackTotal = v
+        }
+        if let v = patch.discNumber {
+            tags.discNumber = v
+        }
+        if let v = patch.discTotal {
+            tags.discTotal = v
+        }
+        if let v = patch.year {
+            tags.year = v
+        }
+        if let v = patch.bpm {
+            tags.bpm = v
+        }
+        if let v = patch.key {
+            tags.key = v
+        }
+        if let v = patch.isrc {
+            tags.isrc = v
+        }
+        if let v = patch.musicbrainzTrackID {
+            tags.musicbrainzTrackID = v
+        }
+        if let v = patch.musicbrainzRecordingID {
+            tags.musicbrainzRecordingID = v
+        }
+        if let v = patch.musicbrainzReleaseID {
+            tags.musicbrainzReleaseID = v
+        }
+        if let v = patch.musicbrainzReleaseGroupID {
+            tags.musicbrainzReleaseGroupID = v
+        }
+        if let v = patch.musicbrainzArtistID {
+            tags.musicbrainzArtistID = v
+        }
+        if let v = patch.musicbrainzAlbumArtistID {
+            tags.musicbrainzAlbumArtistID = v
+        }
+        if let v = patch.lyrics {
+            tags.lyrics = v
+        }
         // syncedLyrics writes to the same audio-file tag as plain lyrics;
         // the isSynced distinction is maintained in the lyrics DB table only.
-        if let v = patch.syncedLyrics { tags.lyrics = v }
-        if let v = patch.sortArtist { tags.sortArtist = v }
-        if let v = patch.sortAlbumArtist { tags.sortAlbumArtist = v }
-        if let v = patch.sortAlbum { tags.sortAlbum = v }
+        if let v = patch.syncedLyrics {
+            tags.lyrics = v
+        }
+        if let v = patch.sortArtist {
+            tags.sortArtist = v
+        }
+        if let v = patch.sortAlbumArtist {
+            tags.sortAlbumArtist = v
+        }
+        if let v = patch.sortAlbum {
+            tags.sortAlbum = v
+        }
         if let v = patch.replaygainTrackGain {
             let rg = tags.replayGain
             tags.replayGain = ReplayGain(
@@ -419,12 +499,18 @@ actor EditTransaction {
         guard data.count >= 4 else { return "image/jpeg" }
         let header = data.prefix(4)
         // PNG: 89 50 4E 47
-        if header.starts(with: [0x89, 0x50, 0x4E, 0x47]) { return "image/png" }
+        if header.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            return "image/png"
+        }
         // JPEG: FF D8 FF
-        if header.starts(with: [0xFF, 0xD8, 0xFF]) { return "image/jpeg" }
+        if header.starts(with: [0xFF, 0xD8, 0xFF]) {
+            return "image/jpeg"
+        }
         // WebP: 52 49 46 46 ... 57 45 42 50 (need 12 bytes)
         if data.count >= 12, header.starts(with: [0x52, 0x49, 0x46, 0x46]),
-           data[8 ..< 12].elementsEqual([0x57, 0x45, 0x42, 0x50]) { return "image/webp" }
+           data[8 ..< 12].elementsEqual([0x57, 0x45, 0x42, 0x50]) {
+            return "image/webp"
+        }
         return "image/jpeg"
     }
 

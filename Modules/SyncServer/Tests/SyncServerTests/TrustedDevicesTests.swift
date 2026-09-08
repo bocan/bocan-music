@@ -78,7 +78,9 @@ struct TrustedDevicesTests {
     ) async throws {
         let deadline = ContinuousClock.now.advanced(by: timeout)
         while ContinuousClock.now < deadline {
-            if condition() { return }
+            if condition() {
+                return
+            }
             try await Task.sleep(for: .milliseconds(20))
         }
         #expect(condition(), "condition not met before the timeout")

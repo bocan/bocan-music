@@ -127,7 +127,9 @@ struct FileServing {
             "content-type": Self.audioMIME(track.fileFormat),
             "accept-ranges": "bytes",
         ]
-        if let hash = track.contentHash { headers["etag"] = hash }
+        if let hash = track.contentHash {
+            headers["etag"] = hash
+        }
 
         switch Self.resolveRange(request, totalSize: size) {
         case .unsatisfiable:
@@ -229,7 +231,9 @@ struct FileServing {
             let reachesEOF = start + length == row.size
             return .streamed(status: 206, headers: headers, length: Int(length)) { write in
                 try await Self.streamFile(url, offset: start, length: length, write: write)
-                if reachesEOF { await stamp() }
+                if reachesEOF {
+                    await stamp()
+                }
             }
         }
     }
@@ -263,7 +267,9 @@ struct FileServing {
             }
 
             var headers = ["content-type": Self.audioMIME(content.audioMIME ?? ""), "accept-ranges": "bytes"]
-            if let hash = state.contentHash { headers["etag"] = hash }
+            if let hash = state.contentHash {
+                headers["etag"] = hash
+            }
             switch Self.resolveRange(request, totalSize: size) {
             case .unsatisfiable:
                 return .error(.notFound, message: "Range not satisfiable", status: 416)

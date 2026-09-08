@@ -191,7 +191,9 @@ struct ScrobbleQueueWorkerTests {
     private func waitFor(timeout: TimeInterval, predicate: () async throws -> Bool) async throws {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            if try await predicate() { return }
+            if try await predicate() {
+                return
+            }
             try await Task.sleep(for: .milliseconds(20))
         }
         Issue.record("waitFor timed out after \(timeout)s")

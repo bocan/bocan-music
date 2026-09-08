@@ -92,7 +92,9 @@ public struct SubsonicStarredView: View {
             }
         }
         .task(id: self.serverID) {
-            if self.vm.songs.isEmpty { await self.vm.load() }
+            if self.vm.songs.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load starred items"), message: self.$vm.errorMessage)
     }

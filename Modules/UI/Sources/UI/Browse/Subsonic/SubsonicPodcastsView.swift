@@ -117,7 +117,9 @@ public struct SubsonicPodcastsView: View {
             }
         }
         .task(id: self.serverID) {
-            if self.vm.channels.isEmpty { await self.vm.load() }
+            if self.vm.channels.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load podcasts"), message: self.$vm.errorMessage)
     }

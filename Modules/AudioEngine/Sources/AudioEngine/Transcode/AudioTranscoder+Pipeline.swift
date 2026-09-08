@@ -197,7 +197,9 @@ extension AudioTranscoder {
         while true {
             try Task.checkCancellation()
             let readRet = av_read_frame(inFmt, pkt)
-            if readRet == avErrorEof { break }
+            if readRet == avErrorEof {
+                break
+            }
             if readRet < 0 {
                 // Mid-file damage the demuxer cannot resync past: keep the
                 // audio decoded so far and finish (the ffmpeg CLI's default
@@ -237,11 +239,15 @@ extension AudioTranscoder {
             // FFmpegDecoder's playback loop (these files play fine). The
             // flush send (nil packet) still drains what the decoder holds.
             ctx.toleratedErrors += 1
-            if packet != nil { return }
+            if packet != nil {
+                return
+            }
         }
         while true {
             let recvRet = avcodec_receive_frame(decodeCtx, frame)
-            if recvRet == averrorPosix(eagainCode) || recvRet == avErrorEof { break }
+            if recvRet == averrorPosix(eagainCode) || recvRet == avErrorEof {
+                break
+            }
             if recvRet < 0 {
                 ctx.toleratedErrors += 1
                 break
@@ -394,7 +400,9 @@ extension AudioTranscoder {
         }
         while true {
             let recvRet = avcodec_receive_packet(encodeCtx, pkt)
-            if recvRet == averrorPosix(eagainCode) || recvRet == avErrorEof { break }
+            if recvRet == averrorPosix(eagainCode) || recvRet == avErrorEof {
+                break
+            }
             try checkEncode(recvRet, preset: nil)
             pkt.pointee.stream_index = 0
             if let stream = outFmt.pointee.streams?[0] {
@@ -462,36 +470,5 @@ private func checkDecode(_ ret: Int32) throws {
 private func checkEncode(_ ret: Int32, preset: TranscodePreset?) throws {
     guard ret >= 0 else {
         throw AudioEngineError.encoderFailure(codec: preset?.encoderName ?? "FFmpeg", underlying: ffError(ret))
-    }
-}
-
-private enum TranscodeInternalError: Error, LocalizedError {
-    case code(Int32, String)
-    case noStream
-    case noDecoder
-    case noEncoder
-    case noAudio
-    case alloc
-
-    var errorDescription: String? {
-        switch self {
-        case let .code(_, msg):
-            msg
-
-        case .noStream:
-            "No audio stream found"
-
-        case .noDecoder:
-            "No decoder found for codec"
-
-        case .noEncoder:
-            "Encoder not available in this FFmpeg build"
-
-        case .noAudio:
-            "No decodable audio in the source"
-
-        case .alloc:
-            "Memory allocation failed"
-        }
     }
 }

@@ -44,7 +44,9 @@ actor CoverMosaicGenerator {
         guard !pathList.isEmpty else { return nil }
 
         let key = CacheKey(paths: pathList, version: version)
-        if let cached = cache[key] { return cached }
+        if let cached = cache[key] {
+            return cached
+        }
 
         let cgImages: [CGImage] = pathList.compactMap { path in
             guard let img = NSImage(contentsOfFile: path) else { return nil }

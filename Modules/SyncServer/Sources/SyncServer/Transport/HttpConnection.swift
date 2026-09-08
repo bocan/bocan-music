@@ -87,7 +87,9 @@ actor HttpConnection {
         while true {
             switch await self.receiveChunk() {
             case let .chunk(data):
-                if await self.ingest(data) { return }
+                if await self.ingest(data) {
+                    return
+                }
             case let .final(data):
                 _ = await self.ingest(data)
                 return

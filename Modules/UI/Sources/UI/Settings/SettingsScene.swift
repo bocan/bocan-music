@@ -49,7 +49,9 @@ public struct SettingsScene: View {
                                 .accessibilityIdentifier(A11y.SettingsIDs.sidebarRow(page.rawValue))
                         }
                     } header: {
-                        if let title = section.title { Text(title) }
+                        if let title = section.title {
+                            Text(title)
+                        }
                     }
                 }
             }
@@ -172,7 +174,9 @@ struct SettingsSection: Identifiable {
     /// rather than left as loose top-level tabs (#305).
     static func sidebar(includeScrobble: Bool) -> [Self] {
         var advanced: [SettingsPage] = []
-        if includeScrobble { advanced.append(.scrobble) }
+        if includeScrobble {
+            advanced.append(.scrobble)
+        }
         advanced.append(contentsOf: [.advanced, .diagnostics])
         return [
             Self(title: nil, pages: [.general, .appearance]),

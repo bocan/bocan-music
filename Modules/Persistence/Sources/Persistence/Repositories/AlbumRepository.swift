@@ -281,12 +281,16 @@ public struct AlbumRepository: Sendable {
             let artistMatches = try SQL.albumsByArtistQuery(trimmed).fetchAll(db)
             for album in artistMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
                 results.append(album)
-                if let id = album.id { seenIDs.insert(id) }
+                if let id = album.id {
+                    seenIDs.insert(id)
+                }
             }
             let trackMatches = try SQL.albumsByTrackFTSQuery(trimmed).fetchAll(db)
             for album in trackMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
                 results.append(album)
-                if let id = album.id { seenIDs.insert(id) }
+                if let id = album.id {
+                    seenIDs.insert(id)
+                }
             }
             if let yearTerm = SQL.yearSearchTerm(trimmed) {
                 var yearMatches: [Album] = []
@@ -296,7 +300,9 @@ public struct AlbumRepository: Sendable {
                 yearMatches += try SQL.albumsByTrackYearTextQuery(yearTerm.dateTextPrefix).fetchAll(db)
                 for album in yearMatches where album.id.map({ !seenIDs.contains($0) }) ?? true {
                     results.append(album)
-                    if let id = album.id { seenIDs.insert(id) }
+                    if let id = album.id {
+                        seenIDs.insert(id)
+                    }
                 }
             }
             return results

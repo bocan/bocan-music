@@ -60,7 +60,9 @@ final class StallingListener {
         let states = StateLog()
         listener.stateUpdateHandler = { state in
             states.record("\(state)")
-            if case .ready = state { ready.signal() }
+            if case .ready = state {
+                ready.signal()
+            }
         }
         listener.newConnectionHandler = { connection in
             bag.hold(connection)

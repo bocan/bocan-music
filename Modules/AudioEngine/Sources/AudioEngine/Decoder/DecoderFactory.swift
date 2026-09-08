@@ -44,8 +44,12 @@ public struct DecoderFactory: Sendable {
             do {
                 return try AVFoundationDecoder(url: url)
             } catch let error as AudioEngineError {
-                if case .accessDenied = error { throw error }
-                if case .fileNotFound = error { throw error }
+                if case .accessDenied = error {
+                    throw error
+                }
+                if case .fileNotFound = error {
+                    throw error
+                }
                 if let ffmpeg = try? FFmpegDecoder(url: url) {
                     return ffmpeg
                 }

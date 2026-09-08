@@ -156,7 +156,9 @@ struct KeychainIdentityStore: IdentityStoring {
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        if status == errSecItemNotFound { return nil }
+        if status == errSecItemNotFound {
+            return nil
+        }
         guard status == errSecSuccess, let item else {
             throw SyncServerError.identity(reason: "loadKey", status: status)
         }
@@ -175,7 +177,9 @@ struct KeychainIdentityStore: IdentityStoring {
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        if status == errSecItemNotFound { return nil }
+        if status == errSecItemNotFound {
+            return nil
+        }
         guard status == errSecSuccess, let data = item as? Data else {
             throw SyncServerError.identity(reason: "loadCert", status: status)
         }
@@ -208,7 +212,9 @@ struct KeychainIdentityStore: IdentityStoring {
             kSecAttrAccount as String: Self.certAccount,
         ]
         let update = SecItemUpdate(query as CFDictionary, [kSecValueData as String: der] as CFDictionary)
-        if update == errSecSuccess { return }
+        if update == errSecSuccess {
+            return
+        }
         if update == errSecItemNotFound {
             var addQuery = query
             addQuery[kSecValueData as String] = der

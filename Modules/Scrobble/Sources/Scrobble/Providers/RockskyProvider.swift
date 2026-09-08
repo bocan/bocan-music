@@ -56,7 +56,9 @@ public actor RockskyProvider: ScrobbleProvider {
 
     public func nowPlaying(_ play: PlayEvent) async throws {
         let now = self.now()
-        if let last = lastNowPlayingAt, now.timeIntervalSince(last) < 5 { return }
+        if let last = lastNowPlayingAt, now.timeIntervalSince(last) < 5 {
+            return
+        }
         self.lastNowPlayingAt = now
 
         guard let token = try await self.credentials.rockskyApiKey(), !token.isEmpty else {

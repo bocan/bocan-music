@@ -83,7 +83,9 @@ public actor ScrobbleQueueWorker {
         self.reachTask = Task { [weak self] in
             for await reachable in reachStream {
                 guard let self else { return }
-                if reachable { await self.kick() }
+                if reachable {
+                    await self.kick()
+                }
             }
         }
 

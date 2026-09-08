@@ -43,7 +43,8 @@ extension LibraryViewModel {
             do {
                 for try await updatedTracks in await service.observe(playlistID) {
                     // Skip the initial emission - it reflects what was just loaded for play.
-                    if isFirst { isFirst = false
+                    if isFirst {
+                        isFirst = false
                         continue
                     }
                     guard !Task.isCancelled else { return }
@@ -75,7 +76,9 @@ extension LibraryViewModel {
             let existingByTrackID: [Int64: QueueItem] = Dictionary(pairs) { first, _ in first }
             let newItems: [QueueItem] = updatedTracks.compactMap { (track: Track) -> QueueItem? in
                 guard let tid = track.id else { return nil }
-                if let existing = existingByTrackID[tid] { return existing }
+                if let existing = existingByTrackID[tid] {
+                    return existing
+                }
                 let name = track.artistID.flatMap { artistNames[$0] }
                 return QueueItem.make(from: track, artistName: name)
             }

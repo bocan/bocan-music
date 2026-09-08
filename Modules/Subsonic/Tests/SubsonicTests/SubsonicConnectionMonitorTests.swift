@@ -110,7 +110,11 @@ private func awaitStatus(
 
 /// True when a status is `.online`.
 private let isOnline: @Sendable (SubsonicConnectionStatus) -> Bool = {
-    if case .online = $0 { true } else { false }
+    if case .online = $0 {
+        true
+    } else {
+        false
+    }
 }
 
 // MARK: - Tests
@@ -138,7 +142,9 @@ struct SubsonicConnectionMonitorTests {
         let onlineSeen = await withTaskGroup(of: Bool.self) { group in
             group.addTask {
                 for await update in updates where update.serverID == id {
-                    if case .online = update.status { return true }
+                    if case .online = update.status {
+                        return true
+                    }
                 }
                 return false
             }
@@ -168,7 +174,9 @@ struct SubsonicConnectionMonitorTests {
         let authSeen = await withTaskGroup(of: Bool.self) { group in
             group.addTask {
                 for await update in updates where update.serverID == id {
-                    if case .authFailed = update.status { return true }
+                    if case .authFailed = update.status {
+                        return true
+                    }
                 }
                 return false
             }

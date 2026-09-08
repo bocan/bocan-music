@@ -88,8 +88,12 @@ public extension LibraryViewModel {
         let playlistExts: Set = ["m3u", "m3u8", "pls", "xspf", "cue"]
         let playlists = urls.filter { playlistExts.contains($0.pathExtension.lowercased()) }
         let audio = urls.filter { !playlistExts.contains($0.pathExtension.lowercased()) }
-        if !audio.isEmpty { await self.addURLs(audio) }
-        if !playlists.isEmpty { await self.importDroppedPlaylists(playlists) }
+        if !audio.isEmpty {
+            await self.addURLs(audio)
+        }
+        if !playlists.isEmpty {
+            await self.importDroppedPlaylists(playlists)
+        }
     }
 
     /// Removes a library root by its database ID.

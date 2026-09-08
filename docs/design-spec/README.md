@@ -97,6 +97,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-087-cue-markers.md](ADR-087-cue-markers.md) | CUE sheets as in-track markers (chapters model, supersedes virtual tracks) |
 | [ADR-088-sync-transcode.md](ADR-088-sync-transcode.md) | Phone Sync transcode presets (MP3/Opus), prepare-and-release cache, size estimates |
 | [ADR-089-immersive-mode.md](ADR-089-immersive-mode.md) | Immersive Mode: full-window now-playing overlay (artwork, queue, lyrics) over an Oscilloscope/Drift visualizer |
+| [ADR-090-duplicate-review.md](ADR-090-duplicate-review.md) | Duplicate Review done properly: hash and tag grouping, keeper ranking, trash under scope, in-place updates, search |
 
 ## Conventions used in every ADR
 

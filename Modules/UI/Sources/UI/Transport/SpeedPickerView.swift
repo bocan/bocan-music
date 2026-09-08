@@ -128,7 +128,9 @@ public struct SpeedPickerView: View {
     /// - Idle at unity: `textTertiary` — de-emphasised but WCAG AA compliant,
     ///   matching the convention used by shuffle/repeat/sleep inactive states.
     private var labelColor: Color {
-        if self.isActive { return AccentPalette.color(for: self.accentColorKey) }
+        if self.isActive {
+            return AccentPalette.color(for: self.accentColorKey)
+        }
         return self.isHovered ? Color.textPrimary : Color.textTertiary
     }
 }

@@ -85,10 +85,14 @@ public final class SubsonicArtistDetailViewModel: ObservableObject {
             let la = lhs.album ?? ""
             let ra = rhs.album ?? ""
             let cmp = la.localizedCaseInsensitiveCompare(ra)
-            if cmp != .orderedSame { return cmp == .orderedAscending }
+            if cmp != .orderedSame {
+                return cmp == .orderedAscending
+            }
             let lt = lhs.track ?? 0
             let rt = rhs.track ?? 0
-            if lt != rt { return lt < rt }
+            if lt != rt {
+                return lt < rt
+            }
             return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
         }
     }
@@ -148,7 +152,9 @@ public struct SubsonicArtistDetailView: View {
         }
         .navigationTitle(self.vm.artist?.name ?? L10n.string("Artist"))
         .task(id: self.artistID) {
-            if self.vm.artist == nil { await self.vm.load() }
+            if self.vm.artist == nil {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load artist"), message: self.$vm.errorMessage)
     }

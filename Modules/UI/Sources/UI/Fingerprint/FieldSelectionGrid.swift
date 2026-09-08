@@ -134,10 +134,14 @@ struct IdentifyFieldResolver {
             let currentValue = self.current(for: field)
             switch field.tier {
             case .primary:
-                if proposal != currentValue { fields.insert(field) }
+                if proposal != currentValue {
+                    fields.insert(field)
+                }
 
             case .advanced:
-                if currentValue.isEmpty { fields.insert(field) }
+                if currentValue.isEmpty {
+                    fields.insert(field)
+                }
             }
         }
         return fields
@@ -209,7 +213,11 @@ struct FieldSelectionGrid: View {
         let isOn = Binding<Bool>(
             get: { self.selection.contains(field) },
             set: { newValue in
-                if newValue { self.selection.insert(field) } else { self.selection.remove(field) }
+                if newValue {
+                    self.selection.insert(field)
+                } else {
+                    self.selection.remove(field)
+                }
             }
         )
         let unchanged = current == proposed && !current.isEmpty

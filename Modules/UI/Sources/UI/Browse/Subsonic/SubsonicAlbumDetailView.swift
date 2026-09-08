@@ -89,7 +89,9 @@ public struct SubsonicAlbumDetailView: View {
         }
         .navigationTitle(self.vm.album?.name ?? L10n.string("Album"))
         .task(id: self.albumID) {
-            if self.vm.album == nil { await self.vm.load() }
+            if self.vm.album == nil {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load album"), message: self.$vm.errorMessage)
     }

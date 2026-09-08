@@ -86,7 +86,9 @@ private struct Tokenizer {
             let char = self.scalars[self.index]
             if char == "<", let (token, next) = self.parseTag(from: self.index) {
                 flushText()
-                if let token { tokens.append(token) }
+                if let token {
+                    tokens.append(token)
+                }
                 self.index = next
             } else {
                 text.append(char)
@@ -119,7 +121,9 @@ private struct Tokenizer {
                 return (nil, self.skipRawText(tag, from: end))
             }
             guard Builder.knownTags.contains(tag) else { return (nil, end) }
-            if isClosing { return (.close(tag: tag), end) }
+            if isClosing {
+                return (.close(tag: tag), end)
+            }
             let href = tag == "a" ? HTMLEntities.webURL(Self.attribute("href", in: attrs)) : nil
             return (.open(tag: tag, href: href), end)
         }
@@ -140,7 +144,9 @@ private struct Tokenizer {
         }
 
         let isClosing = self.scalars[i] == "/"
-        if isClosing { i += 1 }
+        if isClosing {
+            i += 1
+        }
 
         var name = ""
         while i < self.scalars.count, self.scalars[i].isLetter || self.scalars[i].isNumber {
@@ -265,7 +271,9 @@ private struct Builder {
             break // underline intentionally not styled; keep text legible
 
         case "a":
-            if let href { self.linkStack.append(href) }
+            if let href {
+                self.linkStack.append(href)
+            }
 
         case "br":
             self.pendingNewlines = max(self.pendingNewlines, 1)
@@ -302,13 +310,19 @@ private struct Builder {
             self.italic = max(0, self.italic - 1)
 
         case "a":
-            if !self.linkStack.isEmpty { self.linkStack.removeLast() }
+            if !self.linkStack.isEmpty {
+                self.linkStack.removeLast()
+            }
 
         case "ul", "ol":
-            if !self.listStack.isEmpty { self.listStack.removeLast() }
+            if !self.listStack.isEmpty {
+                self.listStack.removeLast()
+            }
 
         case "h1", "h2", "h3", "h4", "h5", "h6":
-            if !self.headingStack.isEmpty { self.headingStack.removeLast() }
+            if !self.headingStack.isEmpty {
+                self.headingStack.removeLast()
+            }
             self.requestParagraphBreak()
 
         case "p", "div", "blockquote", "li":
@@ -327,7 +341,9 @@ private struct Builder {
             with: " ",
             options: .regularExpression
         )
-        if collapsed.trimmingCharacters(in: .whitespaces).isEmpty { return }
+        if collapsed.trimmingCharacters(in: .whitespaces).isEmpty {
+            return
+        }
         self.flushPending()
         var run = AttributedString(collapsed)
         run.mergeAttributes(self.currentAttributes())
@@ -365,13 +381,21 @@ private struct Builder {
     private func currentAttributes() -> AttributeContainer {
         var container = AttributeContainer()
         var intent: InlinePresentationIntent = []
-        if self.bold > 0 || !self.headingStack.isEmpty { intent.insert(.stronglyEmphasized) }
-        if self.italic > 0 { intent.insert(.emphasized) }
-        if !intent.isEmpty { container.inlinePresentationIntent = intent }
+        if self.bold > 0 || !self.headingStack.isEmpty {
+            intent.insert(.stronglyEmphasized)
+        }
+        if self.italic > 0 {
+            intent.insert(.emphasized)
+        }
+        if !intent.isEmpty {
+            container.inlinePresentationIntent = intent
+        }
         if let level = self.headingStack.last {
             container.font = .system(size: level <= 1 ? 17 : level == 2 ? 15 : 14, weight: .bold)
         }
-        if let url = self.linkStack.last { container.link = url }
+        if let url = self.linkStack.last {
+            container.link = url
+        }
         return container
     }
 }
@@ -424,7 +448,9 @@ enum HTMLEntities {
             } else {
                 UInt32(digits)
             }
-            if let value, let scalar = Unicode.Scalar(value) { return String(scalar) }
+            if let value, let scalar = Unicode.Scalar(value) {
+                return String(scalar)
+            }
             return nil
         }
         return self.named[body]

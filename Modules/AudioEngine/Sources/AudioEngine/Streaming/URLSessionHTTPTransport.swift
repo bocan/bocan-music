@@ -50,7 +50,9 @@ public struct URLSessionHTTPTransport: HTTPTransport {
                             buffer.removeAll(keepingCapacity: true)
                         }
                     }
-                    if !buffer.isEmpty { continuation.yield(buffer) }
+                    if !buffer.isEmpty {
+                        continuation.yield(buffer)
+                    }
                     continuation.finish()
                 } catch let error as URLError where error.code == .cancelled {
                     continuation.finish(throwing: RemoteTrackLoaderError.cancelled)

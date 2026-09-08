@@ -126,7 +126,9 @@ actor CoverArtCache {
                 source: source
             )
             try await self.repo.save(record)
-            if first == nil { first = (hash: hash, path: fileURL.path) }
+            if first == nil {
+                first = (hash: hash, path: fileURL.path)
+            }
         }
 
         // Periodically enforce the disk budget. Throttled by accumulated new
@@ -186,7 +188,9 @@ actor CoverArtCache {
         var evicted = 0
         var freed = 0
         for entry in entries {
-            if total <= self.totalBytesLimit { break }
+            if total <= self.totalBytesLimit {
+                break
+            }
             do {
                 try fm.removeItem(at: entry.url)
             } catch {

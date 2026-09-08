@@ -72,16 +72,32 @@ public actor LyricsService {
 
         switch priority {
         case .preferSynced:
-            if let sidecar = try await self.loadSidecar(for: trackID) { return (sidecar, "sidecar") }
-            if let row, row.source == "embedded", row.isSynced { return (self.parse(row: row), "embedded") }
-            if let row, row.source == "lrclib" { return (self.parse(row: row), "lrclib") }
-            if let row, row.source == "embedded", !row.isSynced { return (self.parse(row: row), "embedded") }
+            if let sidecar = try await self.loadSidecar(for: trackID) {
+                return (sidecar, "sidecar")
+            }
+            if let row, row.source == "embedded", row.isSynced {
+                return (self.parse(row: row), "embedded")
+            }
+            if let row, row.source == "lrclib" {
+                return (self.parse(row: row), "lrclib")
+            }
+            if let row, row.source == "embedded", !row.isSynced {
+                return (self.parse(row: row), "embedded")
+            }
 
         case .preferEmbedded, .preferUser:
-            if let row, row.source == "embedded", row.isSynced { return (self.parse(row: row), "embedded") }
-            if let sidecar = try await self.loadSidecar(for: trackID) { return (sidecar, "sidecar") }
-            if let row, row.source == "embedded", !row.isSynced { return (self.parse(row: row), "embedded") }
-            if let row, row.source == "lrclib" { return (self.parse(row: row), "lrclib") }
+            if let row, row.source == "embedded", row.isSynced {
+                return (self.parse(row: row), "embedded")
+            }
+            if let sidecar = try await self.loadSidecar(for: trackID) {
+                return (sidecar, "sidecar")
+            }
+            if let row, row.source == "embedded", !row.isSynced {
+                return (self.parse(row: row), "embedded")
+            }
+            if let row, row.source == "lrclib" {
+                return (self.parse(row: row), "lrclib")
+            }
         }
 
         return (nil, nil)
@@ -224,9 +240,15 @@ public actor LyricsService {
         // result, or a sidecar .lrc file is present.  Embedded (unsynced) lyrics don't
         // block the fetch — LRClib may have synced lyrics that are better.
         let row = try await lyricsRepo.fetch(trackID: trackID)
-        if let row, row.source == "user" { return self.parse(row: row) }
-        if let row, row.source == "lrclib" { return self.parse(row: row) }
-        if let sidecar = try await self.loadSidecar(for: trackID) { return sidecar }
+        if let row, row.source == "user" {
+            return self.parse(row: row)
+        }
+        if let row, row.source == "lrclib" {
+            return self.parse(row: row)
+        }
+        if let sidecar = try await self.loadSidecar(for: trackID) {
+            return sidecar
+        }
 
         guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
 
@@ -388,8 +410,12 @@ public actor LyricsService {
     /// that silently broke sidecar loading and no-bookmark embeds since ADR-015.
     /// Plain absolute paths (legacy rows, tests) are still accepted.
     private static func fileURL(from string: String) -> URL? {
-        if let url = URL(string: string), url.isFileURL { return url }
-        if string.hasPrefix("/") { return URL(fileURLWithPath: string) }
+        if let url = URL(string: string), url.isFileURL {
+            return url
+        }
+        if string.hasPrefix("/") {
+            return URL(fileURLWithPath: string)
+        }
         return nil
     }
 

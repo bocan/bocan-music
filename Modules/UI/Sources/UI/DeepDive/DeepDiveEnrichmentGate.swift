@@ -51,6 +51,10 @@ public final class DeepDiveEnrichmentGate {
         let wasRunning = self.applied == true
         let delay = self.applied == nil ? Self.launchDelay : Self.toggleDelay
         self.applied = enabled
-        if enabled { self.start(delay) } else if wasRunning { self.stop() }
+        if enabled {
+            self.start(delay)
+        } else if wasRunning {
+            self.stop()
+        }
     }
 }

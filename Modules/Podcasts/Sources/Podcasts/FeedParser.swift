@@ -59,8 +59,12 @@ public struct FeedParser: Sendable {
         //     these values. Remove this block if FeedKit gains official support and
         //     read the fields in parseRSS instead. ---
         let extra = PodcastNamespaceSupplement().extract(from: data)
-        if parsed.fundingURL == nil { parsed.fundingURL = extra.fundingURL }
-        if parsed.fundingText == nil { parsed.fundingText = extra.fundingText }
+        if parsed.fundingURL == nil {
+            parsed.fundingURL = extra.fundingURL
+        }
+        if parsed.fundingText == nil {
+            parsed.fundingText = extra.fundingText
+        }
         if !extra.chaptersByGUID.isEmpty {
             parsed.episodes = parsed.episodes.map { episode in
                 guard episode.chaptersURL == nil,
@@ -70,8 +74,12 @@ public struct FeedParser: Sendable {
                 return updated
             }
         }
-        if parsed.persons.isEmpty { parsed.persons = extra.channelPersons }
-        if parsed.podroll.isEmpty { parsed.podroll = extra.podroll }
+        if parsed.persons.isEmpty {
+            parsed.persons = extra.channelPersons
+        }
+        if parsed.podroll.isEmpty {
+            parsed.podroll = extra.podroll
+        }
         if !extra.personsByGUID.isEmpty {
             parsed.episodes = parsed.episodes.map { episode in
                 guard episode.persons.isEmpty,
@@ -378,7 +386,9 @@ public struct FeedParser: Sendable {
     }
 
     private static func fallbackTitle(episode: Int?, pubDate: Date?) -> String {
-        if let ep = episode { return "Episode \(ep)" }
+        if let ep = episode {
+            return "Episode \(ep)"
+        }
         if let date = pubDate {
             let fmt = DateFormatter()
             fmt.dateStyle = .medium

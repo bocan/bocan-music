@@ -94,7 +94,9 @@ public struct ArtistInfoSheet: View {
         .task { await self.loadInfo() }
         .onChange(of: self.deepDive.state) { _, state in
             // A confirmed match writes the row; the Info tab shows the stored id.
-            if case .loaded = state { Task { await self.loadInfo() } }
+            if case .loaded = state {
+                Task { await self.loadInfo() }
+            }
         }
     }
 

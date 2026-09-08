@@ -62,7 +62,9 @@ public enum M3UWriter {
     static func renderPath(for entry: PlaylistPayload.Entry, mode: PathMode) -> String {
         switch mode {
         case .absolute:
-            if let url = entry.absoluteURL, url.isFileURL { return url.path }
+            if let url = entry.absoluteURL, url.isFileURL {
+                return url.path
+            }
             return entry.path
         case let .relative(root):
             guard let url = entry.absoluteURL, url.isFileURL else { return entry.path }

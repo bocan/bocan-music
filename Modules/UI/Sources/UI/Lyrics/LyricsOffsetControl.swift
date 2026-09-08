@@ -33,7 +33,9 @@ struct LyricsOffsetControl: View {
             self.popover
         }
         .onChange(of: self.showPopover) { _, shown in
-            if !shown { self.vm.commitOffset() }
+            if !shown {
+                self.vm.commitOffset()
+            }
         }
     }
 

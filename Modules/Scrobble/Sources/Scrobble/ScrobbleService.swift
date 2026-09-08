@@ -254,7 +254,9 @@ public actor ScrobbleService: ScrobbleSink {
     private func activeProviderIDs() async -> [String] {
         var out: [String] = []
         for (pid, p) in self.providers {
-            if await p.isAuthenticated() { out.append(pid) }
+            if await p.isAuthenticated() {
+                out.append(pid)
+            }
         }
         return out.sorted()
     }

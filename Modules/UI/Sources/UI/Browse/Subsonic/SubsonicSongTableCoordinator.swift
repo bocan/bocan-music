@@ -297,7 +297,9 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
                 let rItem = ActionMenuItem(label) { [weak self] in
                     self?.parent.actions.setRating(row.id, stars)
                 }
-                if stars == row.rating { rItem.state = .on }
+                if stars == row.rating {
+                    rItem.state = .on
+                }
                 ratingMenu.addItem(rItem)
             }
             let ratingParent = NSMenuItem(title: L10n.string("Rating"), action: nil, keyEquivalent: "")

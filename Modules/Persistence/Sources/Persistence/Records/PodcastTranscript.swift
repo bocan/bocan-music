@@ -15,11 +15,21 @@ public enum TranscriptFormat: String, Codable, Sendable, CaseIterable {
     /// extension; defaulting to `.plain` so an unknown body still renders.
     public static func infer(fromURL url: URL, mime: String?) -> Self {
         if let mime = mime?.lowercased() {
-            if mime.contains("vtt") { return .vtt }
-            if mime.contains("srt") || mime.contains("subrip") { return .srt }
-            if mime.contains("json") { return .json }
-            if mime.contains("html") { return .html }
-            if mime.contains("text/plain") { return .plain }
+            if mime.contains("vtt") {
+                return .vtt
+            }
+            if mime.contains("srt") || mime.contains("subrip") {
+                return .srt
+            }
+            if mime.contains("json") {
+                return .json
+            }
+            if mime.contains("html") {
+                return .html
+            }
+            if mime.contains("text/plain") {
+                return .plain
+            }
         }
         switch url.pathExtension.lowercased() {
         case "vtt":

@@ -87,7 +87,9 @@ struct WindowFadeTests {
 
         // Wait for the animation completion to hide the window.
         for _ in 0 ..< 100 {
-            if completed { break }
+            if completed {
+                break
+            }
             try await Task.sleep(for: .milliseconds(20))
         }
         try #require(completed)

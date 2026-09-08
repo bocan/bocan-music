@@ -48,7 +48,9 @@ public actor ChangeDetector {
         let key = url.absoluteString.precomposedStringWithCanonicalMapping
         self.visited.insert(key)
         guard let record = known[key] else { return .new }
-        if record.mtime != mtime || record.size != size { return .modified }
+        if record.mtime != mtime || record.size != size {
+            return .modified
+        }
         return .unchanged
     }
 

@@ -34,17 +34,25 @@ final class MainWindowTracker {
     /// known auxiliary windows, then re-populates the tracker so later calls
     /// stay cheap.
     func resolveWindow() -> NSWindow? {
-        if let window { return window }
+        if let window {
+            return window
+        }
         let found = NSApp.windows.first { win in
             guard win.canBecomeMain else { return false }
             let identifier = win.identifier?.rawValue ?? ""
-            if Self.secondaryIdentifiers.contains(identifier) { return false }
+            if Self.secondaryIdentifiers.contains(identifier) {
+                return false
+            }
             // Belt-and-suspenders: exclude the borderless mini player and the
             // fullscreen visualizer by title in case their identifier is absent.
-            if win.title == "Mini Player" || win.title == "Visualizer" { return false }
+            if win.title == "Mini Player" || win.title == "Visualizer" {
+                return false
+            }
             return true
         }
-        if let found { self.window = found }
+        if let found {
+            self.window = found
+        }
         return found
     }
 }
@@ -166,9 +174,13 @@ struct SidebarWidthAutosave: NSViewRepresentable {
 
     private static func findSplitView(in view: NSView?) -> NSSplitView? {
         guard let view else { return nil }
-        if let split = view as? NSSplitView { return split }
+        if let split = view as? NSSplitView {
+            return split
+        }
         for child in view.subviews {
-            if let found = Self.findSplitView(in: child) { return found }
+            if let found = Self.findSplitView(in: child) {
+                return found
+            }
         }
         return nil
     }

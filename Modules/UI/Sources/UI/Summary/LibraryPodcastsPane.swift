@@ -359,8 +359,12 @@ struct LibraryPodcastsPane: View {
         }
         let weeks = report.backlogSeconds / report.weeklyListeningSeconds
         let months = weeks / 4.345
-        if months < 1 { return L10n.string("Under a month") }
-        if months > 120 { return L10n.string("Over ten years") }
+        if months < 1 {
+            return L10n.string("Under a month")
+        }
+        if months > 120 {
+            return L10n.string("Over ten years")
+        }
         return L10n.string("About \(Int(months.rounded(.up))) months")
     }
 

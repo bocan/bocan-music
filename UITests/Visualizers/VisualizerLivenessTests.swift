@@ -40,7 +40,9 @@ final class VisualizerLivenessTests: XCTestCase {
                 XCTFail("could not read mode value")
                 return
             }
-            if visitedModes.contains(mode) { break }
+            if visitedModes.contains(mode) {
+                break
+            }
             visitedModes.insert(mode)
 
             var visitedPalettes: Set<String> = []
@@ -49,7 +51,9 @@ final class VisualizerLivenessTests: XCTestCase {
                     XCTFail("could not read palette value")
                     return
                 }
-                if visitedPalettes.contains(palette) { break }
+                if visitedPalettes.contains(palette) {
+                    break
+                }
                 visitedPalettes.insert(palette)
 
                 self.assertLiveness(inv, context: "main pane \(mode) / \(palette)")
@@ -75,7 +79,9 @@ final class VisualizerLivenessTests: XCTestCase {
                 XCTFail("could not read mode value (mini player)")
                 return
             }
-            if visitedModes.contains(mode) { break }
+            if visitedModes.contains(mode) {
+                break
+            }
             visitedModes.insert(mode)
             self.assertLiveness(inv, context: "mini player \(mode)")
             self.stepStepperNext(inv, hoverTarget: hoverTarget, rowIdentifier: "visualizer.overlay.mode")
@@ -103,7 +109,9 @@ final class VisualizerLivenessTests: XCTestCase {
                 XCTFail("could not read mode value (full screen)")
                 return
             }
-            if visitedModes.contains(mode) { break }
+            if visitedModes.contains(mode) {
+                break
+            }
             visitedModes.insert(mode)
             self.assertLiveness(inv, context: "full screen \(mode)")
             self.stepStepperNext(inv, hoverTarget: hoverTarget, rowIdentifier: "visualizer.overlay.mode")
@@ -152,7 +160,9 @@ final class VisualizerLivenessTests: XCTestCase {
         var seen: Set<String> = []
         for _ in 0 ..< Self.maxCycleSteps {
             guard let mode = self.readValue(inv, identifier: "visualizer.overlay.mode.value") else { break }
-            if mode == "Nebula" || seen.contains(mode) { break }
+            if mode == "Nebula" || seen.contains(mode) {
+                break
+            }
             seen.insert(mode)
             self.stepStepperNext(inv, hoverTarget: hoverTarget, rowIdentifier: "visualizer.overlay.mode")
         }

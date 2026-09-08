@@ -269,7 +269,11 @@ private extension FFmpegDecoder {
         // throw path (#295) unless ownership is handed back to the caller.
         var swrCtx: OpaquePointer?
         var handedOff = false
-        defer { if !handedOff { swr_free(&swrCtx) } }
+        defer {
+            if !handedOff {
+                swr_free(&swrCtx)
+            }
+        }
 
         let ret = swr_alloc_set_opts2(
             &swrCtx,
@@ -342,13 +346,21 @@ private extension FFmpegDecoder {
             defer { av_packet_unref(pkt) }
             guard pkt.pointee.stream_index == self.ctx.streamIndex else { continue }
             let sendRet = avcodec_send_packet(codecCtx, pkt)
-            if sendRet < 0, sendRet != averrorPosix(eagainCode) { continue }
+            if sendRet < 0, sendRet != averrorPosix(eagainCode) {
+                continue
+            }
 
             inner: while true {
                 let recvRet = avcodec_receive_frame(codecCtx, frm)
-                if recvRet == averrorPosix(eagainCode) { continue outer }
-                if recvRet == avErrorEof { break outer }
-                if recvRet < 0 { break inner }
+                if recvRet == averrorPosix(eagainCode) {
+                    continue outer
+                }
+                if recvRet == avErrorEof {
+                    break outer
+                }
+                if recvRet < 0 {
+                    break inner
+                }
                 let converted = try convertFrame(frm, swrCtx: swrCtx)
                 av_frame_unref(frm)
                 result.append(contentsOf: converted)
@@ -382,8 +394,12 @@ private extension FFmpegDecoder {
     ) throws {
         while true {
             let ret = avcodec_receive_frame(codecCtx, frame)
-            if ret == avErrorEof || ret == averrorPosix(eagainCode) { break }
-            if ret < 0 { break }
+            if ret == avErrorEof || ret == averrorPosix(eagainCode) {
+                break
+            }
+            if ret < 0 {
+                break
+            }
             let converted = try convertFrame(frame, swrCtx: swrCtx)
             av_frame_unref(frame)
             result.append(contentsOf: converted)
@@ -474,27 +490,4 @@ private func ffError(_ code: Int32) -> Error {
         } ?? "error \(code)"
     }
     return FFmpegInternalError.code(code, message)
-}
-
-private enum FFmpegInternalError: Error, LocalizedError {
-    case code(Int32, String)
-    case noStream
-    case noDecoder
-    case alloc
-
-    var errorDescription: String? {
-        switch self {
-        case let .code(_, msg):
-            msg
-
-        case .noStream:
-            "No audio stream found"
-
-        case .noDecoder:
-            "No decoder found for codec"
-
-        case .alloc:
-            "Memory allocation failed"
-        }
-    }
 }

@@ -31,7 +31,9 @@ public enum ScrobbleRules {
     ///   - duration: Track duration in seconds.
     public static func isEligible(elapsed: TimeInterval, duration: TimeInterval) -> Bool {
         guard duration >= self.minimumDuration else { return false }
-        if elapsed >= self.minimumAbsoluteSeconds { return true }
+        if elapsed >= self.minimumAbsoluteSeconds {
+            return true
+        }
         guard duration > 0 else { return false }
         return (elapsed / duration) >= self.minimumFraction
     }

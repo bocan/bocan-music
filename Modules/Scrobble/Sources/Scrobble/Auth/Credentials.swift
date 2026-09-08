@@ -39,8 +39,12 @@ public actor Credentials {
         ]
         var item: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &item)
-        if status == errSecSuccess { return item as? Data }
-        if status == errSecItemNotFound { return nil }
+        if status == errSecSuccess {
+            return item as? Data
+        }
+        if status == errSecItemNotFound {
+            return nil
+        }
         throw ScrobbleError.keychain(status: status, message: Self.message(for: status))
     }
 
@@ -59,7 +63,9 @@ public actor Credentials {
 
         // Try to update first; fall back to add.
         let updateStatus = SecItemUpdate(baseQuery as CFDictionary, [kSecValueData as String: value] as CFDictionary)
-        if updateStatus == errSecSuccess { return }
+        if updateStatus == errSecSuccess {
+            return
+        }
 
         if updateStatus == errSecItemNotFound {
             var addQuery = baseQuery
@@ -82,7 +88,9 @@ public actor Credentials {
             kSecAttrAccount as String: account,
         ]
         let status = SecItemDelete(query as CFDictionary)
-        if status == errSecSuccess || status == errSecItemNotFound { return }
+        if status == errSecSuccess || status == errSecItemNotFound {
+            return
+        }
         throw ScrobbleError.keychain(status: status, message: Self.message(for: status))
     }
 

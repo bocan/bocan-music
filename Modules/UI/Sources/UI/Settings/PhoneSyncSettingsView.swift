@@ -235,7 +235,9 @@ public struct PhoneSyncSettingsView: View {
         Binding(
             get: { self.viewModel.pairingSheet != nil },
             set: { presented in
-                if !presented { Task { await self.viewModel.dismissPairing() } }
+                if !presented {
+                    Task { await self.viewModel.dismissPairing() }
+                }
             }
         )
     }

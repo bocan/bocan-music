@@ -18,7 +18,9 @@ actor HTMLLoader {
 
     func attributedString(for item: EpisodeListItem) async -> AttributedString? {
         let guid = item.episode.guid
-        if let cached = cache[guid] { return cached }
+        if let cached = cache[guid] {
+            return cached
+        }
         guard let html = item.episode.descriptionHTML, !html.isEmpty else { return nil }
         let result = SafeHTMLRenderer.render(html)
         guard !result.characters.isEmpty else { return nil }

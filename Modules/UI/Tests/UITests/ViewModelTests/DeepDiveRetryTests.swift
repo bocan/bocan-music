@@ -15,7 +15,9 @@ struct DeepDiveRetryTests {
         var reported: [Int] = []
         let value = try await DeepDiveRetry.run(delays: self.fast, onRetry: { reported.append($0) }, attempt: {
             calls += 1
-            if calls < 3 { throw DeepDiveError.rateLimited }
+            if calls < 3 {
+                throw DeepDiveError.rateLimited
+            }
             return "ok"
         })
         #expect(value == "ok")
@@ -48,14 +50,18 @@ struct DeepDiveRetryTests {
     func viewModelStates() async throws {
         let counter = Counter()
         let vm = DeepDiveReportViewModel<Int>(category: "test", delays: self.fast) { _ in
-            if await counter.next() < 2 { throw DeepDiveError.rateLimited }
+            if await counter.next() < 2 {
+                throw DeepDiveError.rateLimited
+            }
             return 42
         }
         let seen = Seen()
         let sink = vm.$state.dropFirst().sink { state in seen.states.append(state) }
         vm.load()
         for _ in 0 ..< 400 {
-            if case .loaded = vm.state { break }
+            if case .loaded = vm.state {
+                break
+            }
             try await Task.sleep(for: .milliseconds(5))
         }
         sink.cancel()
@@ -67,7 +73,9 @@ struct DeepDiveRetryTests {
         let vm = DeepDiveReportViewModel<Int>(category: "test", delays: self.fast) { _ in throw DeepDiveError.rateLimited }
         vm.load()
         for _ in 0 ..< 200 {
-            if case .failed = vm.state { break }
+            if case .failed = vm.state {
+                break
+            }
             try await Task.sleep(for: .milliseconds(5))
         }
         #expect(vm.state == .failed(.rateLimited))

@@ -393,14 +393,18 @@ extension TagEditorViewModel.FieldState {
 
 extension TagEditorViewModel.FieldState where Self == TagEditorViewModel.FieldState<String> {
     static func == (lhs: Self, rhs: Self) -> Bool {
-        if case .various = lhs, case .various = rhs { return true }
+        if case .various = lhs, case .various = rhs {
+            return true
+        }
         return false
     }
 }
 
 extension TagEditorViewModel.FieldState where Self == TagEditorViewModel.FieldState<Int> {
     static func == (lhs: Self, rhs: Self) -> Bool {
-        if case .various = lhs, case .various = rhs { return true }
+        if case .various = lhs, case .various = rhs {
+            return true
+        }
         return false
     }
 }
@@ -408,7 +412,9 @@ extension TagEditorViewModel.FieldState where Self == TagEditorViewModel.FieldSt
 /// Double-optional FieldState comparison for IntFieldRow.isVarious
 extension TagEditorViewModel.FieldState where Self == TagEditorViewModel.FieldState<Double> {
     static func == (lhs: Self, rhs: Self) -> Bool {
-        if case .various = lhs, case .various = rhs { return true }
+        if case .various = lhs, case .various = rhs {
+            return true
+        }
         return false
     }
 }

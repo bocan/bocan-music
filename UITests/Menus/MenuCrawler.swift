@@ -56,7 +56,9 @@ struct MenuBarCrawler {
         for index in 0 ..< count {
             let barItem = bar.children(matching: .menuBarItem).element(boundBy: index)
             let title = self.bestTitle(of: barItem)
-            if Self.skippedMenuBarItems.contains(title) { continue }
+            if Self.skippedMenuBarItems.contains(title) {
+                continue
+            }
             try menus.append(self.crawl(menuBarItem: barItem, title: title))
         }
         return menus
@@ -108,9 +110,13 @@ struct MenuBarCrawler {
         of node: XCUIElementSnapshot,
         ofType type: XCUIElement.ElementType
     ) -> XCUIElementSnapshot? {
-        if node.elementType == type { return node }
+        if node.elementType == type {
+            return node
+        }
         for child in node.children {
-            if let found = self.firstDescendant(of: child, ofType: type) { return found }
+            if let found = self.firstDescendant(of: child, ofType: type) {
+                return found
+            }
         }
         return nil
     }

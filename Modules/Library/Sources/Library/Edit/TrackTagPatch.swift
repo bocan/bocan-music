@@ -178,32 +178,79 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
         var out = track
         let now = Int64(Date().timeIntervalSince1970)
 
-        if let v = title { out.title = v }
-        if let v = genre { out.genre = v }
-        if let v = composer { out.composer = v }
-        if let v = trackNumber { out.trackNumber = v }
-        if let v = trackTotal { out.trackTotal = v }
-        if let v = discNumber { out.discNumber = v }
-        if let v = discTotal { out.discTotal = v }
-        if let v = year { out.year = v
+        if let v = title {
+            out.title = v
+        }
+        if let v = genre {
+            out.genre = v
+        }
+        if let v = composer {
+            out.composer = v
+        }
+        if let v = trackNumber {
+            out.trackNumber = v
+        }
+        if let v = trackTotal {
+            out.trackTotal = v
+        }
+        if let v = discNumber {
+            out.discNumber = v
+        }
+        if let v = discTotal {
+            out.discTotal = v
+        }
+        if let v = year {
+            out.year = v
             out.yearText = v.map { String($0) }
         }
-        if let v = bpm { out.bpm = v }
-        if let v = key { out.key = v }
-        if let v = isrc { out.isrc = v }
-        if let v = musicbrainzTrackID { out.musicbrainzTrackID = v }
-        if let v = musicbrainzRecordingID { out.musicbrainzRecordingID = v }
-        if let v = musicbrainzReleaseID { out.musicbrainzReleaseID = v }
-        if let v = musicbrainzReleaseGroupID { out.musicbrainzReleaseGroupID = v }
-        if let v = musicbrainzArtistID { out.musicbrainzArtistID = v }
-        if let v = musicbrainzAlbumArtistID { out.musicbrainzAlbumArtistID = v }
-        if let v = rating { out.rating = v ?? 0 }
-        if let v = loved { out.loved = v }
-        if let v = excludedFromShuffle { out.excludedFromShuffle = v }
-        if let v = replaygainTrackGain { out.replaygainTrackGain = v }
-        if let v = replaygainTrackPeak { out.replaygainTrackPeak = v }
-        if let v = replaygainAlbumGain { out.replaygainAlbumGain = v }
-        if let v = replaygainAlbumPeak { out.replaygainAlbumPeak = v }
+        if let v = bpm {
+            out.bpm = v
+        }
+        if let v = key {
+            out.key = v
+        }
+        if let v = isrc {
+            out.isrc = v
+        }
+        if let v = musicbrainzTrackID {
+            out.musicbrainzTrackID = v
+        }
+        if let v = musicbrainzRecordingID {
+            out.musicbrainzRecordingID = v
+        }
+        if let v = musicbrainzReleaseID {
+            out.musicbrainzReleaseID = v
+        }
+        if let v = musicbrainzReleaseGroupID {
+            out.musicbrainzReleaseGroupID = v
+        }
+        if let v = musicbrainzArtistID {
+            out.musicbrainzArtistID = v
+        }
+        if let v = musicbrainzAlbumArtistID {
+            out.musicbrainzAlbumArtistID = v
+        }
+        if let v = rating {
+            out.rating = v ?? 0
+        }
+        if let v = loved {
+            out.loved = v
+        }
+        if let v = excludedFromShuffle {
+            out.excludedFromShuffle = v
+        }
+        if let v = replaygainTrackGain {
+            out.replaygainTrackGain = v
+        }
+        if let v = replaygainTrackPeak {
+            out.replaygainTrackPeak = v
+        }
+        if let v = replaygainAlbumGain {
+            out.replaygainAlbumGain = v
+        }
+        if let v = replaygainAlbumPeak {
+            out.replaygainAlbumPeak = v
+        }
 
         out.userEdited = true
         out.updatedAt = now

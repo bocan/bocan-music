@@ -195,7 +195,9 @@ public actor LibraryScanner {
                 let effectiveMode = await self.effectiveScanMode(requested: mode)
                 let finished = FinishedFlag()
                 await self.coordinator.scan(roots: resolved, mode: effectiveMode) { event in
-                    if case .finished = event { finished.mark() }
+                    if case .finished = event {
+                        finished.mark()
+                    }
                     continuation.yield(event)
                 }
                 if effectiveMode == .full, finished.isSet, !Task.isCancelled {
@@ -382,7 +384,9 @@ public actor LibraryScanner {
                     markerRepo: TrackMarkerRepository(database: self.database)
                 )
                 for folder in ScanCoordinator.cueFolders(under: url) {
-                    if await service.attachMarkers(inFolder: folder) > 0 { didChange = true }
+                    if await service.attachMarkers(inFolder: folder) > 0 {
+                        didChange = true
+                    }
                 }
             } else {
                 if url.pathExtension.lowercased() == "cue" {

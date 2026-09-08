@@ -84,11 +84,21 @@ public actor ScrobbleQueueRepository {
         /// The "worst" aggregate status across all providers (most actionable first).
         public var aggregateStatus: SubmissionStatus {
             let statuses = self.statusByProvider.values
-            if statuses.contains(.failed) { return .failed }
-            if statuses.contains(.retry) { return .retry }
-            if statuses.contains(.pending) { return .pending }
-            if statuses.contains(.ignored) { return .ignored }
-            if statuses.contains(.sentUnconfirmed) { return .sentUnconfirmed }
+            if statuses.contains(.failed) {
+                return .failed
+            }
+            if statuses.contains(.retry) {
+                return .retry
+            }
+            if statuses.contains(.pending) {
+                return .pending
+            }
+            if statuses.contains(.ignored) {
+                return .ignored
+            }
+            if statuses.contains(.sentUnconfirmed) {
+                return .sentUnconfirmed
+            }
             return .sent
         }
     }

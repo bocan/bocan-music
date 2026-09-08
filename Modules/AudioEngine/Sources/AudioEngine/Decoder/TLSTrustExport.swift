@@ -69,7 +69,9 @@ enum TLSTrustExport {
             // by hand or OpenSSL rejects the block (and with it the whole
             // bundle — the bug that broke all TLS playback on 2026-08-16).
             var b64 = der.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
-            if !b64.hasSuffix("\n") { b64 += "\n" }
+            if !b64.hasSuffix("\n") {
+                b64 += "\n"
+            }
             pem += "-----BEGIN CERTIFICATE-----\n\(b64)-----END CERTIFICATE-----\n"
             count += 1
         }

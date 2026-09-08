@@ -69,7 +69,9 @@ public struct SubsonicArtistsView: View {
             }
         }
         .task(id: self.serverID) {
-            if self.vm.sections.isEmpty { await self.vm.load() }
+            if self.vm.sections.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load artists"), message: self.$vm.errorMessage)
     }
@@ -178,8 +180,12 @@ public struct SubsonicArtistsView: View {
         return groups
             .map { ArtistBucket(letter: $0.key, hits: $0.value) }
             .sorted { lhs, rhs in
-                if lhs.letter == "#" { return false }
-                if rhs.letter == "#" { return true }
+                if lhs.letter == "#" {
+                    return false
+                }
+                if rhs.letter == "#" {
+                    return true
+                }
                 return lhs.letter < rhs.letter
             }
     }

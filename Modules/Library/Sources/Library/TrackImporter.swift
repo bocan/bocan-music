@@ -282,7 +282,10 @@ actor TrackImporter {
             let lyricsRecord = Lyrics(
                 trackID: id,
                 lyricsText: lyricsText,
-                isSynced: { if case .synced = doc { return true }
+                isSynced: {
+                    if case .synced = doc {
+                        return true
+                    }
                     return false
                 }(),
                 source: "embedded"

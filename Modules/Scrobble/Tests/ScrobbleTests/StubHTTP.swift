@@ -81,7 +81,9 @@ final class StubProtocol: URLProtocol {
             defer { buf.deallocate() }
             while stream.hasBytesAvailable {
                 let read = stream.read(buf, maxLength: 4096)
-                if read <= 0 { break }
+                if read <= 0 {
+                    break
+                }
                 body.append(buf, count: read)
             }
             stream.close()

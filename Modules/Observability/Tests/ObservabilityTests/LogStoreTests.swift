@@ -234,7 +234,9 @@ struct LogStoreBroadcastTests {
         var liveEntries: [LogEntry] = []
         for await entry in stream {
             liveEntries.append(entry)
-            if liveEntries.count == 2 { break }
+            if liveEntries.count == 2 {
+                break
+            }
         }
 
         #expect(backfill.map(\.message) == ["pre-1", "pre-2"])
@@ -251,7 +253,9 @@ struct LogStoreBroadcastTests {
         var liveEntries: [LogEntry] = []
         for await entry in stream {
             liveEntries.append(entry)
-            if liveEntries.count == 1 { break }
+            if liveEntries.count == 1 {
+                break
+            }
         }
 
         #expect(backfill.isEmpty)
@@ -280,7 +284,9 @@ struct LogStoreBroadcastTests {
                 var acc: [String] = []
                 for await entry in stream1 {
                     acc.append(entry.message)
-                    if acc.count == messages.count { break }
+                    if acc.count == messages.count {
+                        break
+                    }
                 }
                 return (1, acc)
             }
@@ -288,12 +294,18 @@ struct LogStoreBroadcastTests {
                 var acc: [String] = []
                 for await entry in stream2 {
                     acc.append(entry.message)
-                    if acc.count == messages.count { break }
+                    if acc.count == messages.count {
+                        break
+                    }
                 }
                 return (2, acc)
             }
             for await (id, result) in group {
-                if id == 1 { r1 = result } else { r2 = result }
+                if id == 1 {
+                    r1 = result
+                } else {
+                    r2 = result
+                }
             }
         }
 
@@ -320,7 +332,9 @@ struct LogStoreBroadcastTests {
         var liveEntries: [LogEntry] = []
         for await entry in stream {
             liveEntries.append(entry)
-            if liveEntries.count == 5 { break }
+            if liveEntries.count == 5 {
+                break
+            }
         }
 
         let all = backfill + liveEntries

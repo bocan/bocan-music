@@ -57,7 +57,9 @@ public extension AudioEngine {
         let log = self.log
         self.crossfadeTask = Task { [weak self] in
             log.debug("crossfade.in.start", ["durationSeconds": durationSeconds, "steps": steps])
-            if let self { self.graph.playerNode.volume = 0 }
+            if let self {
+                self.graph.playerNode.volume = 0
+            }
             for step in 0 ..< steps {
                 guard !Task.isCancelled, let self else { break }
                 let t = Double(step + 1) / Double(steps)

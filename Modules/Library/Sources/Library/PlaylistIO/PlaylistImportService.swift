@@ -155,7 +155,9 @@ public actor PlaylistImportService {
                 addedAt: now
             )
             do {
-                if try await self.radioStations.upsert(station) { added += 1 }
+                if try await self.radioStations.upsert(station) {
+                    added += 1
+                }
             } catch {
                 self.log.warning("playlist.import.station.failed", [
                     "url": entry.path,
@@ -170,7 +172,9 @@ public actor PlaylistImportService {
     /// otherwise the URL host: import must never write an empty name.
     static func stationName(for entry: PlaylistPayload.Entry, url: URL) -> String {
         let title = entry.titleHint?.trimmingCharacters(in: .whitespaces) ?? ""
-        if !title.isEmpty { return title }
+        if !title.isEmpty {
+            return title
+        }
         return url.host ?? entry.path
     }
 
@@ -270,9 +274,13 @@ public actor PlaylistImportService {
                         "error": String(reflecting: error),
                     ])
                 }
-                if coveredByRoot { break }
+                if coveredByRoot {
+                    break
+                }
             }
-            if !coveredByRoot { blocked.append(ref) }
+            if !coveredByRoot {
+                blocked.append(ref)
+            }
         }
         return blocked
     }

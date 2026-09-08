@@ -93,7 +93,9 @@ public enum SQLBuilder {
         joins: inout Set<Join>
     ) throws -> String {
         let def = FieldDefinitions.definition(for: rule.field)
-        if let join = def.columnRef.join { joins.insert(join) }
+        if let join = def.columnRef.join {
+            joins.insert(join)
+        }
         let col = def.columnRef.expression
 
         switch rule.comparator {
@@ -283,7 +285,9 @@ public enum SQLBuilder {
         var terms: [String] = []
         for descriptor in descriptors where descriptor.key != .random {
             let ref = Self.orderColumn(for: descriptor.key)
-            if let join = ref.join { joins.insert(join) }
+            if let join = ref.join {
+                joins.insert(join)
+            }
             let dir = descriptor.ascending ? "ASC" : "DESC"
             terms.append("\(ref.expression) \(dir)")
         }

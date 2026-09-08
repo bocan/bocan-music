@@ -85,7 +85,11 @@ public struct LyricsPane: View {
                                 .onEnded { _ in self.resizeDragStart = nil }
                         )
                         .onHover { hovering in
-                            if hovering { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+                            if hovering {
+                                NSCursor.resizeLeftRight.push()
+                            } else {
+                                NSCursor.pop()
+                            }
                         }
                     Divider()
                 }
@@ -160,7 +164,9 @@ public struct LyricsPane: View {
                             self.showSearch.toggle()
                         }
                     }
-                    if !self.showSearch { self.searchText = "" }
+                    if !self.showSearch {
+                        self.searchText = ""
+                    }
                 } label: {
                     Image(systemName: "magnifyingglass")
                 }
@@ -184,7 +190,11 @@ public struct LyricsPane: View {
     }
 
     private func sourceBadge(_ label: String) -> some View {
-        let isSynced = if case .synced = self.vm.document { true } else { false }
+        let isSynced = if case .synced = self.vm.document {
+            true
+        } else {
+            false
+        }
         let detail = isSynced ? L10n.string("Synced") : L10n.string("Plain")
         return Text(localized: "\(label) · \(detail)")
             .font(.caption2)
@@ -243,23 +253,22 @@ public struct LyricsPane: View {
 
     /// A compact header button that force-fetches lyrics from LRClib, replacing
     /// whatever is currently stored.  Shows a spinner while the request is live.
+    @ViewBuilder
     private var replaceWithLRClibButton: some View {
-        Group {
-            if self.vm.isFetching {
-                ProgressView()
-                    .controlSize(.small)
-                    .help(L10n.string("Fetching from LRClib\u{2026}"))
-            } else {
-                Button {
-                    self.vm.forceFetch()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                }
-                .buttonStyle(.plain)
-                .help(L10n.string("Replace with LRClib result"))
-                .accessibilityLabel(L10n.string("Replace lyrics with LRClib result"))
-                .accessibilityIdentifier(A11y.Lyrics.replaceButton)
+        if self.vm.isFetching {
+            ProgressView()
+                .controlSize(.small)
+                .help(L10n.string("Fetching from LRClib\u{2026}"))
+        } else {
+            Button {
+                self.vm.forceFetch()
+            } label: {
+                Image(systemName: "arrow.clockwise")
             }
+            .buttonStyle(.plain)
+            .help(L10n.string("Replace with LRClib result"))
+            .accessibilityLabel(L10n.string("Replace lyrics with LRClib result"))
+            .accessibilityIdentifier(A11y.Lyrics.replaceButton)
         }
     }
 }

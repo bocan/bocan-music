@@ -98,7 +98,9 @@ public actor SubsonicStreamCache {
     ) async throws -> URL {
         if let existing = self.entries[key] {
             existing.lastAccess = Date()
-            if let error = existing.error { throw error }
+            if let error = existing.error {
+                throw error
+            }
             if existing.isComplete {
                 return existing.fileURL
             }
@@ -294,7 +296,9 @@ public actor SubsonicStreamCache {
         guard b.count >= 4 else { return nil }
 
         // FLAC: "fLaC"
-        if b.starts(with: [0x66, 0x4C, 0x61, 0x43]) { return "flac" }
+        if b.starts(with: [0x66, 0x4C, 0x61, 0x43]) {
+            return "flac"
+        }
         // Ogg container: "OggS". Inspect the payload to distinguish Opus vs Vorbis vs FLAC-in-Ogg.
         if b.starts(with: [0x4F, 0x67, 0x67, 0x53]) {
             if b.count >= 36, b[28 ..< 36].elementsEqual([0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64]) {
@@ -318,9 +322,13 @@ public actor SubsonicStreamCache {
             return "m4a"
         }
         // MP3 with ID3v2: "ID3"
-        if b.starts(with: [0x49, 0x44, 0x33]) { return "mp3" }
+        if b.starts(with: [0x49, 0x44, 0x33]) {
+            return "mp3"
+        }
         // MP3 frame sync (11 bits set: 0xFF Ex)
-        if b[0] == 0xFF, (b[1] & 0xE0) == 0xE0 { return "mp3" }
+        if b[0] == 0xFF, (b[1] & 0xE0) == 0xE0 {
+            return "mp3"
+        }
 
         return nil
     }
@@ -361,7 +369,9 @@ public actor SubsonicStreamCache {
             .filter { $0.isComplete && !self.pinned.contains($0.key) }
             .sorted { $0.lastAccess < $1.lastAccess }
         for entry in candidates {
-            if totalSize <= self.config.budgetBytes { break }
+            if totalSize <= self.config.budgetBytes {
+                break
+            }
             try? FileManager.default.removeItem(at: entry.fileURL)
             totalSize -= entry.bytesWritten
             self.entries[entry.key] = nil

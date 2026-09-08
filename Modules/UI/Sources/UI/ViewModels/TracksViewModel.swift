@@ -3,67 +3,6 @@ import Observability
 import Observation
 import Persistence
 
-// MARK: - Track sort support
-
-/// Codable column identifier used to persist table sort state.
-///
-/// `KeyPathComparator<Track>` is not `Codable`, so we store this enum
-/// and reconstruct the comparator on load. See gotchas in ADR-005.
-public enum TrackSortColumn: String, Codable, Sendable, CaseIterable {
-    case title
-    case artist
-    case album
-    case year
-    case genre
-    case duration
-    case playCount
-    case rating
-    case addedAt
-    case trackNumber
-    case trackTotal
-    case databaseID
-
-    public var displayName: String {
-        switch self {
-        case .title:
-            L10n.string("Title")
-
-        case .artist:
-            L10n.string("Artist")
-
-        case .album:
-            L10n.string("Album")
-
-        case .year:
-            L10n.string("Year")
-
-        case .genre:
-            L10n.string("Genre")
-
-        case .duration:
-            L10n.string("Time")
-
-        case .playCount:
-            L10n.string("Plays")
-
-        case .rating:
-            L10n.string("Rating")
-
-        case .addedAt:
-            L10n.string("Date Added")
-
-        case .trackNumber:
-            L10n.string("Track")
-
-        case .trackTotal:
-            L10n.string("Of")
-
-        case .databaseID:
-            L10n.string("ID")
-        }
-    }
-}
-
 // MARK: - TracksViewModel
 
 /// Manages the sorted, filtered list of tracks shown in `TracksView`.
@@ -290,16 +229,30 @@ public final class TracksViewModel {
                 albumCoverArtPath: track.albumID.flatMap { artPaths[$0] }
             )
         }
-        for i in self.allRows.indices {
-            if let id = self.allRows[i].track.id, let updated = newRowsByID[id] {
-                self.allRows[i] = updated
+        // Mutate local copies and assign once: `rows` has a `didSet`, so an
+        // in-place `self.rows[i] = ...` inside the loop would copy the whole
+        // array and bump `rowsVersion` once per matched row (#453).
+        if let allRows = Self.replacing(self.allRows, with: newRowsByID) {
+            self.allRows = allRows
+        }
+        if let rows = Self.replacing(self.rows, with: newRowsByID) {
+            self.rows = rows
+        }
+    }
+
+    /// Returns `rows` with every row whose track id appears in `newRowsByID`
+    /// swapped for the new value, or `nil` when no row matched so the caller
+    /// can leave the stored array (and its version) untouched.
+    private static func replacing(_ rows: [TrackRow], with newRowsByID: [Int64: TrackRow]) -> [TrackRow]? {
+        var rows = rows
+        var changed = false
+        for i in rows.indices {
+            if let id = rows[i].track.id, let updated = newRowsByID[id] {
+                rows[i] = updated
+                changed = true
             }
         }
-        for i in self.rows.indices {
-            if let id = self.rows[i].track.id, let updated = newRowsByID[id] {
-                self.rows[i] = updated
-            }
-        }
+        return changed ? rows : nil
     }
 
     /// Sets a pre-fetched track list directly (smart folders / search results).

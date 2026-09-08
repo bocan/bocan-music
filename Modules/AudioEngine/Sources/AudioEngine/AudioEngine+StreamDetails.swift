@@ -50,7 +50,9 @@ public extension AudioEngine {
         let continuation = self.streamTitleContinuation
         self.titleForwardTask = Task {
             for await title in dec.titleUpdates {
-                if Task.isCancelled { return }
+                if Task.isCancelled {
+                    return
+                }
                 continuation.yield(title)
             }
         }

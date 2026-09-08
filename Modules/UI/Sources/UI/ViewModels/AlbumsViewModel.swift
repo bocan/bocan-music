@@ -174,7 +174,9 @@ public final class AlbumsViewModel: ObservableObject {
                 let lname = lhs.albumArtistID.flatMap { self.artistNames[$0] } ?? ""
                 let rname = rhs.albumArtistID.flatMap { self.artistNames[$0] } ?? ""
                 let cmp = lname.localizedStandardCompare(rname)
-                if cmp != .orderedSame { return cmp == .orderedAscending }
+                if cmp != .orderedSame {
+                    return cmp == .orderedAscending
+                }
                 return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
             }
 
@@ -182,7 +184,9 @@ public final class AlbumsViewModel: ObservableObject {
             items.sorted { lhs, rhs in
                 let lyear = lhs.year ?? Int.min
                 let ryear = rhs.year ?? Int.min
-                if lyear != ryear { return lyear > ryear }
+                if lyear != ryear {
+                    return lyear > ryear
+                }
                 return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
             }
         }

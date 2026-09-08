@@ -94,7 +94,9 @@ public actor EpisodeDownloadManager {
     /// episode. Resumes a paused download using its saved resume data.
     public func download(podcastID: Int64, guid: String) async {
         let key = Key(podcastID: podcastID, guid: guid)
-        if self.active[key] != nil || self.pending.contains(key) { return }
+        if self.active[key] != nil || self.pending.contains(key) {
+            return
+        }
 
         let wasPaused = self.paused.remove(key) != nil
 
@@ -115,7 +117,9 @@ public actor EpisodeDownloadManager {
         }
 
         self.pending.append(key)
-        if !wasPaused { await self.persist(key, .queued, path: nil, bytes: nil) }
+        if !wasPaused {
+            await self.persist(key, .queued, path: nil, bytes: nil)
+        }
         self.emit(key, status: .queued, fraction: 0, written: 0, total: 0)
         await self.pumpQueue()
     }
@@ -206,7 +210,9 @@ public actor EpisodeDownloadManager {
             .sorted { Self.evictionAge($0) < Self.evictionAge($1) }
 
         for row in evictable {
-            if total <= maxBytes { break }
+            if total <= maxBytes {
+                break
+            }
             await self.evict(row)
             total -= (row.downloadBytes ?? 0)
         }
@@ -238,7 +244,9 @@ public actor EpisodeDownloadManager {
     /// the play state intact (`setDownloadState` does not touch play fields).
     private func evict(_ row: PodcastEpisodeState) async {
         let key = Key(podcastID: row.podcastID, guid: row.guid)
-        if let path = row.downloadPath { self.store.deleteFile(atPath: path) }
+        if let path = row.downloadPath {
+            self.store.deleteFile(atPath: path)
+        }
         await self.persist(key, .none, path: nil, bytes: nil)
         self.emit(key, status: .none, fraction: 0, written: 0, total: 0)
         self.log.debug("download.evicted", ["guid": row.guid, "bytes": row.downloadBytes ?? 0])

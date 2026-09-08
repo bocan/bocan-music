@@ -119,7 +119,9 @@ public enum SubsonicSidebarConnectionState: Sendable, Hashable {
 
     /// `true` when the server is reachable and authenticated.
     public var isOnline: Bool {
-        if case .online = self { return true }
+        if case .online = self {
+            return true
+        }
         return false
     }
 

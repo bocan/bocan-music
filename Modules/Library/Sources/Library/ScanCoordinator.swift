@@ -147,7 +147,9 @@ actor ScanCoordinator {
                     supportedExtensions: supported,
                     iCloudDownload: iCloudDownload
                 ) {
-                    if Task.isCancelled { break rootLoop }
+                    if Task.isCancelled {
+                        break rootLoop
+                    }
                     walked += 1
                     emit(.walking(currentPath: fileURL.path, walked: walked))
 
@@ -172,7 +174,9 @@ actor ScanCoordinator {
                         return (url, result)
                     }
                 }
-                if Task.isCancelled { break }
+                if Task.isCancelled {
+                    break
+                }
             }
             // Drain remaining
             for await r in group {
@@ -307,8 +311,12 @@ actor ScanCoordinator {
                 updated.fileMtime = mtime
                 // A changed file invalidates its transcode verdict (ADR-075)
                 // even when the user's edited tags are being preserved.
-                if mtime != ex.fileMtime { updated.clearProvenance() }
-                if ex.disabled { updated.disabled = false }
+                if mtime != ex.fileMtime {
+                    updated.clearProvenance()
+                }
+                if ex.disabled {
+                    updated.disabled = false
+                }
                 // Only raise the review flag when disk tags actually differ from
                 // the DB values. A mtime-only change (e.g. app rewrote the file
                 // but the tags are identical) is not a user-visible conflict.
