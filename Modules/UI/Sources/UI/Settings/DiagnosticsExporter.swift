@@ -91,7 +91,9 @@ enum DiagnosticsExporter {
                 result = .failure(error)
             }
         }
-        if let coordinatorError { throw coordinatorError }
+        if let coordinatorError {
+            throw coordinatorError
+        }
         return try result.get()
     }
 }

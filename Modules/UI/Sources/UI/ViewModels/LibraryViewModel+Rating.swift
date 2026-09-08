@@ -111,7 +111,9 @@ public extension LibraryViewModel {
             track.rating = rating
             do {
                 try await repo.update(track)
-                if let id = track.id { updatedIDs.append(id) }
+                if let id = track.id {
+                    updatedIDs.append(id)
+                }
             } catch {
                 self.log.error("library.rating.failed", ["error": String(reflecting: error)])
             }

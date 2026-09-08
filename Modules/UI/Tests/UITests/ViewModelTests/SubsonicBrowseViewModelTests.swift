@@ -263,9 +263,15 @@ private func makeSearchResult(
     let albumJSON = albums.map { #"{"id":"\#($0)","name":"\#($0)","songCount":1,"duration":100}"# }.joined(separator: ",")
     let songJSON = songs.map { #"{"id":"\#($0)","title":"\#($0)"}"# }.joined(separator: ",")
     var parts: [String] = []
-    if !artists.isEmpty { parts.append(#""artist":[\#(artistJSON)]"#) }
-    if !albums.isEmpty { parts.append(#""album":[\#(albumJSON)]"#) }
-    if !songs.isEmpty { parts.append(#""song":[\#(songJSON)]"#) }
+    if !artists.isEmpty {
+        parts.append(#""artist":[\#(artistJSON)]"#)
+    }
+    if !albums.isEmpty {
+        parts.append(#""album":[\#(albumJSON)]"#)
+    }
+    if !songs.isEmpty {
+        parts.append(#""song":[\#(songJSON)]"#)
+    }
     let json = "{\(parts.joined(separator: ","))}"
     return try! JSONDecoder().decode(SearchResult3.self, from: Data(json.utf8)) // swiftlint:disable:this force_try
 }
@@ -741,7 +747,9 @@ struct SubsonicMultiSourceSearchViewModelTests {
         #expect(vm.query == "hello")
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(20))
-            if !vm.isSearching { break }
+            if !vm.isSearching {
+                break
+            }
         }
         // Two servers x two songs each = four aggregated hits.
         #expect(vm.songs.count == 4)
@@ -761,7 +769,9 @@ struct SubsonicMultiSourceSearchViewModelTests {
         vm.search(query: "hi", servers: servers)
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(20))
-            if !vm.isSearching { break }
+            if !vm.isSearching {
+                break
+            }
         }
         #expect(vm.songs.allSatisfy { $0.serverName == "A" })
     }
@@ -774,7 +784,9 @@ struct SubsonicMultiSourceSearchViewModelTests {
         vm.search(query: "hi", servers: [sidebarServer("A")])
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(20))
-            if !vm.isSearching { break }
+            if !vm.isSearching {
+                break
+            }
         }
         #expect(vm.failedServerNames == ["A"])
         #expect(vm.songs.isEmpty)
@@ -790,7 +802,9 @@ struct SubsonicMultiSourceSearchViewModelTests {
         vm.search(query: "hi", servers: [sidebarServer("A")])
         for _ in 0 ..< 50 {
             try? await Task.sleep(for: .milliseconds(30))
-            if !vm.isSearching { break }
+            if !vm.isSearching {
+                break
+            }
         }
         #expect(vm.failedServerNames == ["A"])
     }

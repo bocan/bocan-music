@@ -194,8 +194,12 @@ public struct ScanBanner: View {
         let total = s.inserted + s.updated + s.skipped
         var parts: [String] = []
         parts.append(L10n.string("\(s.inserted.formatted(.number)) new"))
-        if s.updated > 0 { parts.append(L10n.string("\(s.updated.formatted(.number)) updated")) }
-        if s.skipped > 0 { parts.append(L10n.string("\(s.skipped.formatted(.number)) unchanged")) }
+        if s.updated > 0 {
+            parts.append(L10n.string("\(s.updated.formatted(.number)) updated"))
+        }
+        if s.skipped > 0 {
+            parts.append(L10n.string("\(s.skipped.formatted(.number)) unchanged"))
+        }
         if s.errors > 0 {
             parts.append(L10n.string("\(s.errors) errors"))
         }
@@ -207,8 +211,12 @@ public struct ScanBanner: View {
         let total = s.inserted + s.updated + s.skipped
         var parts: [String] = []
         parts.append(L10n.string("\(s.inserted.formatted(.number)) new"))
-        if s.updated > 0 { parts.append(L10n.string("\(s.updated.formatted(.number)) updated")) }
-        if s.skipped > 0 { parts.append(L10n.string("\(s.skipped.formatted(.number)) unchanged")) }
+        if s.updated > 0 {
+            parts.append(L10n.string("\(s.updated.formatted(.number)) updated"))
+        }
+        if s.skipped > 0 {
+            parts.append(L10n.string("\(s.skipped.formatted(.number)) unchanged"))
+        }
         if s.errors > 0 {
             parts.append(L10n.string("\(s.errors) errors"))
         }

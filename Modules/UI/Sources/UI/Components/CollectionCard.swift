@@ -107,7 +107,9 @@ struct CollectionCard: View {
     /// composer cards carry a name, hashed stably so the colour survives
     /// relaunches (`String.hashValue` is randomised per process).
     private var seed: Int {
-        if let intID = Int(self.model.id) { return intID }
+        if let intID = Int(self.model.id) {
+            return intID
+        }
         var hash = 5381
         for byte in self.model.id.utf8 {
             hash = (hash &* 33) &+ Int(byte)

@@ -72,7 +72,9 @@ struct RuleRowView: View {
             self.rule.value = .null
 
         case .between:
-            if case .range = self.rule.value { return }
+            if case .range = self.rule.value {
+                return
+            }
             self.rule.value = .range(.int(0), .int(100))
 
         case .inLastDays:
@@ -85,43 +87,64 @@ struct RuleRowView: View {
             self.rule.value = .int(1)
 
         case .memberOf, .notMemberOf:
-            if case .playlistRef = self.rule.value { return }
+            if case .playlistRef = self.rule.value {
+                return
+            }
             self.rule.value = .playlistRef(0)
 
         case .pathUnder:
-            if case .text = self.rule.value { return }
+            if case .text = self.rule.value {
+                return
+            }
             self.rule.value = .text("")
 
         default:
-            let def = FieldDefinitions.definition(for: self.rule.field)
-            switch def.dataType {
-            case .text:
-                if case .text = self.rule.value { return }
-                self.rule.value = .text("")
+            self.adaptValueForDataType(FieldDefinitions.definition(for: self.rule.field).dataType)
+        }
+    }
 
-            case .numeric:
-                if case .int = self.rule.value { return }
-                self.rule.value = .int(0)
-
-            case .date:
-                if case .date = self.rule.value { return }
-                self.rule.value = .date(Date())
-
-            case .bool:
-                self.rule.value = .null
-
-            case .duration:
-                if case .duration = self.rule.value { return }
-                self.rule.value = .duration(0)
-
-            case let .enumeration(options):
-                if case .enumeration = self.rule.value { return }
-                self.rule.value = .enumeration(options.first ?? "")
-
-            case .membership:
-                if case .playlistRef = self.rule.value { return }
-                self.rule.value = .playlistRef(0)
+    /// The comparator has no value shape of its own: keep a value that
+    /// already matches the field's data type, else seed a default for it.
+    private func adaptValueForDataType(_ dataType: Library.DataType) {
+        switch dataType {
+        case .text:
+            if case .text = self.rule.value {
+                return
             }
+            self.rule.value = .text("")
+
+        case .numeric:
+            if case .int = self.rule.value {
+                return
+            }
+            self.rule.value = .int(0)
+
+        case .date:
+            if case .date = self.rule.value {
+                return
+            }
+            self.rule.value = .date(Date())
+
+        case .bool:
+            self.rule.value = .null
+
+        case .duration:
+            if case .duration = self.rule.value {
+                return
+            }
+            self.rule.value = .duration(0)
+
+        case let .enumeration(options):
+            if case .enumeration = self.rule.value {
+                return
+            }
+            self.rule.value = .enumeration(options.first ?? "")
+
+        case .membership:
+            if case .playlistRef = self.rule.value {
+                return
+            }
+            self.rule.value = .playlistRef(0)
         }
     }
 }
@@ -303,7 +326,9 @@ private struct ValueControl: View {
             HStack {
                 TextField(L10n.string("from"), text: Binding(
                     get: {
-                        if case let .range(.text(lo), _) = self.rule.value { return lo }
+                        if case let .range(.text(lo), _) = self.rule.value {
+                            return lo
+                        }
                         return ""
                     },
                     set: { lo in
@@ -319,7 +344,9 @@ private struct ValueControl: View {
                     .foregroundStyle(Color.textSecondary)
                 TextField(L10n.string("to"), text: Binding(
                     get: {
-                        if case let .range(_, .text(hi)) = self.rule.value { return hi }
+                        if case let .range(_, .text(hi)) = self.rule.value {
+                            return hi
+                        }
                         return ""
                     },
                     set: { hi in
@@ -335,7 +362,9 @@ private struct ValueControl: View {
         } else {
             TextField(L10n.string("value"), text: Binding(
                 get: {
-                    if case let .text(t) = self.rule.value { return t }
+                    if case let .text(t) = self.rule.value {
+                        return t
+                    }
                     return ""
                 },
                 set: { self.rule.value = .text($0) }
@@ -351,7 +380,10 @@ private struct ValueControl: View {
         case .inLastDays, .inLastMonths, .inLastYears:
             Stepper(
                 value: Binding(
-                    get: { if case let .int(n) = self.rule.value { return Int(n) }
+                    get: {
+                        if case let .int(n) = self.rule.value {
+                            return Int(n)
+                        }
                         return 30
                     },
                     set: { self.rule.value = .int(Int64($0)) }
@@ -369,7 +401,10 @@ private struct ValueControl: View {
         case .between:
             HStack {
                 IntField(label: L10n.string("from"), value: Binding(
-                    get: { if case let .range(.int(lo), _) = self.rule.value { return lo }
+                    get: {
+                        if case let .range(.int(lo), _) = self.rule.value {
+                            return lo
+                        }
                         return 0
                     },
                     set: { lo in
@@ -382,7 +417,10 @@ private struct ValueControl: View {
                 ))
                 Text(localized: "to").foregroundStyle(Color.textSecondary)
                 IntField(label: L10n.string("to"), value: Binding(
-                    get: { if case let .range(_, .int(hi)) = self.rule.value { return hi }
+                    get: {
+                        if case let .range(_, .int(hi)) = self.rule.value {
+                            return hi
+                        }
                         return 100
                     },
                     set: { hi in
@@ -397,7 +435,10 @@ private struct ValueControl: View {
 
         default:
             IntField(label: L10n.string("value"), value: Binding(
-                get: { if case let .int(n) = self.rule.value { return n }
+                get: {
+                    if case let .int(n) = self.rule.value {
+                        return n
+                    }
                     return 0
                 },
                 set: { self.rule.value = .int($0) }
@@ -411,7 +452,10 @@ private struct ValueControl: View {
         DatePicker(
             "",
             selection: Binding(
-                get: { if case let .date(date) = self.rule.value { return date }
+                get: {
+                    if case let .date(date) = self.rule.value {
+                        return date
+                    }
                     return Date()
                 },
                 set: { self.rule.value = .date($0) }
@@ -425,7 +469,10 @@ private struct ValueControl: View {
 
     private var durationControl: some View {
         DurationField(value: Binding(
-            get: { if case let .duration(dur) = self.rule.value { return dur }
+            get: {
+                if case let .duration(dur) = self.rule.value {
+                    return dur
+                }
                 return 0
             },
             set: { self.rule.value = .duration($0) }
@@ -440,7 +487,9 @@ private struct ValueControl: View {
             return AnyView(EmptyView())
         }
         let current: String = {
-            if case let .enumeration(value) = self.rule.value { return value }
+            if case let .enumeration(value) = self.rule.value {
+                return value
+            }
             return options[0]
         }()
         return AnyView(
@@ -462,7 +511,9 @@ private struct ValueControl: View {
     private var membershipControl: some View {
         PlaylistPicker(selectedID: Binding(
             get: {
-                if case let .playlistRef(id) = self.rule.value { return id }
+                if case let .playlistRef(id) = self.rule.value {
+                    return id
+                }
                 return 0
             },
             set: { self.rule.value = .playlistRef($0) }

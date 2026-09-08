@@ -158,7 +158,9 @@ public actor PodcastService {
     }
 
     private func cacheEpisodeArtworkIfNeeded(episode: PodcastEpisode, podcastID: Int64) async -> String? {
-        if let path = episode.artworkPath, FileManager.default.fileExists(atPath: path) { return path }
+        if let path = episode.artworkPath, FileManager.default.fileExists(atPath: path) {
+            return path
+        }
         guard let episodeID = episode.id, let urlString = episode.artworkURL, let url = URL(string: urlString) else {
             return nil
         }
@@ -167,7 +169,9 @@ public actor PodcastService {
 
     private func kickEpisodeArtwork(episode: PodcastEpisode, podcastID: Int64) {
         guard episode.artworkURL != nil else { return }
-        if let path = episode.artworkPath, FileManager.default.fileExists(atPath: path) { return }
+        if let path = episode.artworkPath, FileManager.default.fileExists(atPath: path) {
+            return
+        }
         Task.detached(priority: .background) { [self] in
             await self.cacheEpisodeArtworkIfNeeded(episode: episode, podcastID: podcastID)
         }
@@ -366,7 +370,9 @@ public actor PodcastService {
 
         self.log.debug("podcast.refreshAllStale.start", ["count": stale.count])
         for podcast in stale {
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                return
+            }
             guard let podcastID = podcast.id else { continue }
             do {
                 _ = try await self.refresh(podcastID: podcastID)
@@ -589,7 +595,9 @@ public actor PodcastService {
             guard let state = try await stateRepo.fetch(podcastID: podcastID, guid: episodeGUID) else {
                 return 0
             }
-            if state.playState == .played { return 0 }
+            if state.playState == .played {
+                return 0
+            }
             if let episode = try await episodeRepo.fetchByGUID(
                 podcastID: podcastID,
                 guid: episodeGUID
@@ -766,7 +774,9 @@ public actor PodcastService {
             throw PodcastsError.invalidFeedURL(feedURL.absoluteString)
         }
         let key = stored.absoluteString
-        if let cached = idCache[key] { return cached }
+        if let cached = idCache[key] {
+            return cached
+        }
         guard let podcast = try await podcastRepo.fetchByFeedURL(key) else {
             throw PodcastsError.notFound(feedURL: feedURL)
         }

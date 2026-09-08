@@ -8,7 +8,9 @@ extension Color {
     /// `nil` on malformed input.
     init?(hex: String) {
         var raw = hex.trimmingCharacters(in: .whitespacesAndNewlines)
-        if raw.hasPrefix("#") { raw.removeFirst() }
+        if raw.hasPrefix("#") {
+            raw.removeFirst()
+        }
         guard raw.count == 6, let value = UInt32(raw, radix: 16) else {
             return nil
         }

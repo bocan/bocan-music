@@ -59,10 +59,14 @@ public struct SmartShuffle: ShuffleStrategy {
     private func weight(for item: QueueItem, now: Int64, daySeconds: Int64) -> Double {
         var w = 1.0
         w += Double(item.rating) * 0.2 // rating 0-100 → +0..20
-        if item.loved { w += 3.0 }
+        if item.loved {
+            w += 3.0
+        }
         w += 0.5 * log(Double(item.playCount) + 1.0) // log-scaled play count
         if let lastPlayed = item.lastPlayedAt,
-           now - lastPlayed < daySeconds { w -= 2.0 } // played today penalty
+           now - lastPlayed < daySeconds {
+            w -= 2.0
+        } // played today penalty
         return max(0.001, w)
     }
 
@@ -77,7 +81,9 @@ public struct SmartShuffle: ShuffleStrategy {
         var cumulative = 0.0
         for (item, weight) in zip(items, weights) {
             cumulative += weight
-            if pick < cumulative { return item }
+            if pick < cumulative {
+                return item
+            }
         }
         return items.last! // Fallback (floating-point rounding)
     }

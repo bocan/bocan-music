@@ -76,7 +76,9 @@ public actor AVFoundationDecoder: Decoder {
             // AVAudioFile occasionally throws OSStatus 0 (noErr) at exact EOF —
             // treat that as end-of-stream rather than a real failure.
             let nsError = error as NSError
-            if nsError.code == 0 { return 0 }
+            if nsError.code == 0 {
+                return 0
+            }
             throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: error)
         }
         // `framePosition` can, in rare EOF/seek-corner cases, fail to advance or

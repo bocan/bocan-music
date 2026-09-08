@@ -104,7 +104,9 @@ public enum PlaylistFolderTree {
             list.sorted {
                 let lhs = $0.sortOrder ?? Int.max
                 let rhs = $1.sortOrder ?? Int.max
-                if lhs != rhs { return lhs < rhs }
+                if lhs != rhs {
+                    return lhs < rhs
+                }
                 return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
             }
         }
@@ -136,7 +138,9 @@ public enum PlaylistFolderTree {
         rows: [Row]
     ) -> Bool {
         guard let newParentID else { return false }
-        if newParentID == candidateID { return true }
+        if newParentID == candidateID {
+            return true
+        }
         var childrenOf: [Int64: [Int64]] = [:]
         for row in rows {
             if let parent = row.parentID {
@@ -146,8 +150,12 @@ public enum PlaylistFolderTree {
         var stack: [Int64] = [candidateID]
         var seen: Set<Int64> = []
         while let current = stack.popLast() {
-            if seen.insert(current).inserted == false { continue }
-            if current == newParentID { return true }
+            if seen.insert(current).inserted == false {
+                continue
+            }
+            if current == newParentID {
+                return true
+            }
             for child in childrenOf[current] ?? [] {
                 stack.append(child)
             }

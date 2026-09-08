@@ -124,8 +124,12 @@ final class MenuEnablementTests: XCTestCase {
                     }
                 }
             }
-            if mismatches.isEmpty { return }
-            if attempt < 4 { self.settle(1.0) }
+            if mismatches.isEmpty {
+                return
+            }
+            if attempt < 4 {
+                self.settle(1.0)
+            }
         }
         XCTFail(
             """
@@ -144,8 +148,12 @@ final class MenuEnablementTests: XCTestCase {
         in items: [ObservedMenuItem]
     ) -> ObservedMenuItem? {
         for item in items {
-            if spec.titles.contains(item.title) { return item }
-            if let nested = self.find(spec, in: item.children) { return nested }
+            if spec.titles.contains(item.title) {
+                return item
+            }
+            if let nested = self.find(spec, in: item.children) {
+                return nested
+            }
         }
         return nil
     }

@@ -149,7 +149,9 @@ struct QueuePlayerTests {
         // Capture the first emitted state from QueuePlayer.state.
         async let observedEnded: Bool = {
             for await s in player.state {
-                if case .ended = s { return true }
+                if case .ended = s {
+                    return true
+                }
                 // Anything other than .ended (e.g. .loading on advance) means
                 // we re-seeked or advanced — that's the failure case.
                 return false

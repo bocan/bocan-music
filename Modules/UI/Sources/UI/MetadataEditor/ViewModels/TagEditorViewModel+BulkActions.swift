@@ -87,62 +87,61 @@ public extension TagEditorViewModel {
         return albumIDs.count > 1
     }
 
-    // swiftlint:disable cyclomatic_complexity
     /// Applies `style` to the current shared value of `field`.
     /// No-op when the field is `.various` (values differ across tracks).
     func applyTextCase(_ style: TextCaseStyle, to field: StringField) {
-        func transformed(_ state: FieldState<String>) -> String? {
-            switch state {
-            case let .shared(val):
-                val.map { style.apply(to: $0) }
+        let (state, setter) = self.textFieldAccess(field)
+        let current: String? = switch state {
+        case let .shared(val), let .edited(val):
+            val
 
-            case let .edited(val):
-                val.map { style.apply(to: $0) }
-
-            case .various:
-                nil
-            }
+        case .various:
+            nil
         }
-        switch field {
-        case .title:
-            if let val = transformed(self.title) { self.setTitle(val) }
-
-        case .artist:
-            if let val = transformed(self.artist) { self.setArtist(val) }
-
-        case .albumArtist:
-            if let val = transformed(self.albumArtist) { self.setAlbumArtist(val) }
-
-        case .album:
-            if let val = transformed(self.album) { self.setAlbum(val) }
-
-        case .genre:
-            if let val = transformed(self.genre) { self.setGenre(val) }
-
-        case .composer:
-            if let val = transformed(self.composer) { self.setComposer(val) }
-
-        case .comment:
-            if let val = transformed(self.comment) { self.setComment(val) }
-
-        case .key:
-            if let val = transformed(self.key) { self.setKey(val) }
-
-        case .isrc:
-            if let val = transformed(self.isrc) { self.setISRC(val) }
-
-        case .sortArtist:
-            if let val = transformed(self.sortArtist) { self.setSortArtist(val) }
-
-        case .sortAlbumArtist:
-            if let val = transformed(self.sortAlbumArtist) { self.setSortAlbumArtist(val) }
-
-        case .sortAlbum:
-            if let val = transformed(self.sortAlbum) { self.setSortAlbum(val) }
-        }
+        guard let current else { return }
+        setter(style.apply(to: current))
     }
 
-    // swiftlint:enable cyclomatic_complexity
+    /// The current state of a string field and the setter that marks it edited.
+    private func textFieldAccess(_ field: StringField) -> (FieldState<String>, @MainActor (String?) -> Void) {
+        switch field {
+        case .title:
+            (self.title, self.setTitle)
+
+        case .artist:
+            (self.artist, self.setArtist)
+
+        case .albumArtist:
+            (self.albumArtist, self.setAlbumArtist)
+
+        case .album:
+            (self.album, self.setAlbum)
+
+        case .genre:
+            (self.genre, self.setGenre)
+
+        case .composer:
+            (self.composer, self.setComposer)
+
+        case .comment:
+            (self.comment, self.setComment)
+
+        case .key:
+            (self.key, self.setKey)
+
+        case .isrc:
+            (self.isrc, self.setISRC)
+
+        case .sortArtist:
+            (self.sortArtist, self.setSortArtist)
+
+        case .sortAlbumArtist:
+            (self.sortAlbumArtist, self.setSortAlbumArtist)
+
+        case .sortAlbum:
+            (self.sortAlbum, self.setSortAlbum)
+        }
+    }
 
     /// Assigns sequential track numbers (1…N) to the selected tracks in the
     /// order they were passed to the view model (caller's sort order).

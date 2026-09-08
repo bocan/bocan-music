@@ -355,7 +355,9 @@ public final class FFTAnalyzer {
         var rawFlux: Float = 0
         for i in 0 ..< Self.bandCount {
             let delta = rawBands[i] - self.prevRawBands[i]
-            if delta > 0 { rawFlux += delta }
+            if delta > 0 {
+                rawFlux += delta
+            }
         }
         self.fluxPeak = max(rawFlux, self.fluxPeak * self.peakDecay)
         return self.fluxPeak > self.fluxPeakFloor ? rawFlux / self.fluxPeak : 0

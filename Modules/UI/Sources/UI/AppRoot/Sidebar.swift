@@ -136,7 +136,11 @@ public struct Sidebar: View {
             self.vm.subsonicServerPendingRemoval.map { L10n.string("Remove \u{201C}\($0.name)\u{201D}?") } ?? L10n.string("Remove Server?"),
             isPresented: Binding(
                 get: { self.vm.subsonicServerPendingRemoval != nil },
-                set: { if !$0 { self.vm.subsonicServerPendingRemoval = nil } }
+                set: {
+                    if !$0 {
+                        self.vm.subsonicServerPendingRemoval = nil
+                    }
+                }
             ),
             titleVisibility: .visible,
             presenting: self.vm.subsonicServerPendingRemoval

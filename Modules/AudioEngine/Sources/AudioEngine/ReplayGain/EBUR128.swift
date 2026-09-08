@@ -232,10 +232,14 @@ public struct EBUR128: Sendable {
                     let t = Double(k) / Double(factor)
                     let interp = Double(samples[i]) * (1 - t) + Double(samples[i + 1]) * t
                     let abs = Swift.abs(interp)
-                    if abs > peak { peak = abs }
+                    if abs > peak {
+                        peak = abs
+                    }
                 }
             }
-            if let last = samples.last { peak = Swift.max(peak, Swift.abs(Double(last))) }
+            if let last = samples.last {
+                peak = Swift.max(peak, Swift.abs(Double(last)))
+            }
         }
 
         maxInterpolated(left)

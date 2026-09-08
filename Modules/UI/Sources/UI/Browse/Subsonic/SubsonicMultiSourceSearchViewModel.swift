@@ -138,7 +138,9 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
                 }
                 for await (serverID, name, result) in group {
                     guard let self else { return }
-                    if Task.isCancelled { return }
+                    if Task.isCancelled {
+                        return
+                    }
                     self.merge(serverID: serverID, serverName: name, result: result)
                 }
             }
@@ -202,7 +204,9 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
             }
             group.addTask {
                 try? await Task.sleep(for: timeout)
-                if Task.isCancelled { return nil }
+                if Task.isCancelled {
+                    return nil
+                }
                 struct TimedOut: Error {}
                 return .failure(TimedOut())
             }

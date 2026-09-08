@@ -115,9 +115,13 @@ public extension StreamDetails {
         title: String?,
         artist: String?
     ) -> String? {
-        if let streamTitle, !streamTitle.isEmpty { return streamTitle }
+        if let streamTitle, !streamTitle.isEmpty {
+            return streamTitle
+        }
         guard let title, !title.isEmpty else { return nil }
-        if let artist, !artist.isEmpty { return "\(artist) - \(title)" }
+        if let artist, !artist.isEmpty {
+            return "\(artist) - \(title)"
+        }
         return title
     }
 }

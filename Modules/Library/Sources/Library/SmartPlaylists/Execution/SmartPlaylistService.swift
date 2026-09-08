@@ -86,7 +86,9 @@ public actor SmartPlaylistService {
             playlist.smartCriteria = criteriaJSON
             playlist.smartLimitSort = limitSortJSON
             playlist.updatedAt = now
-            if let name { playlist.name = name }
+            if let name {
+                playlist.name = name
+            }
             try playlist.update(db)
         }
         self.log.debug("smartPlaylist.update", ["id": id])
@@ -409,7 +411,9 @@ public actor SmartPlaylistService {
         switch criteria {
         case let .rule(rule):
             guard rule.comparator == .memberOf || rule.comparator == .notMemberOf else { return [] }
-            if case let .playlistRef(id) = rule.value { return [id] }
+            if case let .playlistRef(id) = rule.value {
+                return [id]
+            }
             return []
         case .invalid:
             return []

@@ -52,7 +52,11 @@ public enum SecurityScope {
     /// even if `body` throws. Use the async overload for bookmark-based access.
     public static func withAccess<T>(_ url: URL, _ body: (URL) throws -> T) rethrows -> T {
         let accessed = url.startAccessingSecurityScopedResource()
-        defer { if accessed { url.stopAccessingSecurityScopedResource() } }
+        defer {
+            if accessed {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
         return try body(url)
     }
 }

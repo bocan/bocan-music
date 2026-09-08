@@ -89,9 +89,15 @@ public actor LRClibClient: LRClibClientProtocol {
 
         var components = URLComponents(url: Self.baseURL.appendingPathComponent("search"), resolvingAgainstBaseURL: false)!
         var items: [URLQueryItem] = []
-        if let artist { items.append(URLQueryItem(name: "artist_name", value: artist)) }
-        if let title { items.append(URLQueryItem(name: "track_name", value: title)) }
-        if let album { items.append(URLQueryItem(name: "album_name", value: album)) }
+        if let artist {
+            items.append(URLQueryItem(name: "artist_name", value: artist))
+        }
+        if let title {
+            items.append(URLQueryItem(name: "track_name", value: title))
+        }
+        if let album {
+            items.append(URLQueryItem(name: "album_name", value: album))
+        }
         components.queryItems = items
 
         guard let url = components.url else { return [] }

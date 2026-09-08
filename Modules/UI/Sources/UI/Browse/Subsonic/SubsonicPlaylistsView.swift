@@ -87,7 +87,9 @@ public struct SubsonicPlaylistsView: View {
             }
         }
         .task(id: self.serverID) {
-            if self.vm.playlists.isEmpty { await self.vm.load() }
+            if self.vm.playlists.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load playlists"), message: self.$vm.errorMessage)
     }
@@ -220,7 +222,9 @@ public struct SubsonicPlaylistDetailView: View {
         }
         .navigationTitle(self.vm.playlist?.name ?? L10n.string("Playlist"))
         .task(id: self.playlistID) {
-            if self.vm.playlist == nil { await self.vm.load() }
+            if self.vm.playlist == nil {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load playlist"), message: self.$vm.errorMessage)
     }

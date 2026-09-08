@@ -319,7 +319,9 @@ final class MenuInvocationTests: XCTestCase {
         self.run(["Track", "Edit Lyrics…"], inv)
         inv.waitFor("lyrics editor") { app.sheets.firstMatch.exists || app.windows.count > 1 }
         inv.dismissSheet()
-        if app.windows.count > 1 { inv.closeFrontWindow() }
+        if app.windows.count > 1 {
+            inv.closeFrontWindow()
+        }
     }
 
     // MARK: Playback transport and modes
@@ -536,7 +538,9 @@ final class MenuInvocationTests: XCTestCase {
     private func clearQueueConfirm(_ app: XCUIApplication) -> XCUIElement {
         for container in [app.sheets.firstMatch, app.dialogs.firstMatch] where container.exists {
             let button = container.buttons["Clear Queue"]
-            if button.exists { return button }
+            if button.exists {
+                return button
+            }
         }
         return app.sheets.firstMatch.buttons["Clear Queue"]
     }
@@ -552,7 +556,9 @@ final class MenuInvocationTests: XCTestCase {
             if let raw = Double(string) {
                 return raw <= 1.0 ? Int((raw * 100).rounded()) : Int(raw)
             }
-            if let digits = Int(string.filter(\.isNumber)) { return digits }
+            if let digits = Int(string.filter(\.isNumber)) {
+                return digits
+            }
         }
         return -1
     }
@@ -620,7 +626,9 @@ final class MenuInvocationTests: XCTestCase {
         inv.waitFor("fullscreen visualizer window") { inv.windowCount == before + 1 }
         inv.settle(1.5)
         inv.pressEscape()
-        if inv.windowCount > before { inv.closeFrontWindow() }
+        if inv.windowCount > before {
+            inv.closeFrontWindow()
+        }
         inv.waitFor("visualizer window closed") { inv.windowCount == before }
     }
 

@@ -165,7 +165,9 @@ public struct PodcastsHomeView: View {
             panel.canChooseDirectories = false
             panel.canChooseFiles = true
             var types: [UTType] = [.xml]
-            if let opml = UTType(filenameExtension: "opml") { types.insert(opml, at: 0) }
+            if let opml = UTType(filenameExtension: "opml") {
+                types.insert(opml, at: 0)
+            }
             panel.allowedContentTypes = types
             let result = await withCheckedContinuation { cont in
                 panel.begin { cont.resume(returning: $0) }
@@ -184,7 +186,9 @@ public struct PodcastsHomeView: View {
             let data = try await self.vm.exportOPML()
             let save = NSSavePanel()
             save.nameFieldStringValue = L10n.string("Podcast Subscriptions") + ".opml"
-            if let opml = UTType(filenameExtension: "opml") { save.allowedContentTypes = [opml] }
+            if let opml = UTType(filenameExtension: "opml") {
+                save.allowedContentTypes = [opml]
+            }
             let result = await withCheckedContinuation { cont in
                 save.begin { cont.resume(returning: $0) }
             }

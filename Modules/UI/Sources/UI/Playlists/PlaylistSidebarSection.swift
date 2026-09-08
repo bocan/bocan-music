@@ -73,7 +73,11 @@ public struct PlaylistSidebarSection: View {
         // Load only if a startup trigger (LibraryViewModel setup / RootView spine)
         // has not already populated the tree; reload() also coalesces, so an
         // overlapping call here joins the in-flight fetch rather than duplicating it.
-        .task { if !self.vm.isLoaded { await self.vm.reload() } }
+        .task {
+            if !self.vm.isLoaded {
+                await self.vm.reload()
+            }
+        }
         // NOTE: Sheet / confirmationDialog presentation modifiers MUST be
         // attached to the enclosing `List` (not this `Section`) — see
         // `View.playlistSidebarPresentations` below. SwiftUI replicates
@@ -277,7 +281,11 @@ private struct DeleteDialogsModifier: ViewModifier {
                 L10n.string("Delete Playlist"),
                 isPresented: Binding(
                     get: { self.vm.deleteTarget != nil },
-                    set: { newValue in if !newValue { self.vm.deleteTarget = nil } }
+                    set: { newValue in
+                        if !newValue {
+                            self.vm.deleteTarget = nil
+                        }
+                    }
                 ),
                 presenting: self.vm.deleteTarget
             ) { target in
@@ -294,7 +302,11 @@ private struct DeleteDialogsModifier: ViewModifier {
                 L10n.string("Delete Folder and Contents"),
                 isPresented: Binding(
                     get: { self.vm.deleteRecursiveTarget != nil },
-                    set: { newValue in if !newValue { self.vm.deleteRecursiveTarget = nil } }
+                    set: { newValue in
+                        if !newValue {
+                            self.vm.deleteRecursiveTarget = nil
+                        }
+                    }
                 ),
                 presenting: self.vm.deleteRecursiveTarget
             ) { target in
@@ -334,7 +346,11 @@ private struct SidebarErrorAlertModifier: ViewModifier {
             L10n.string("Playlist Error"),
             isPresented: Binding(
                 get: { self.vm.lastError != nil },
-                set: { if !$0 { self.vm.lastError = nil } }
+                set: {
+                    if !$0 {
+                        self.vm.lastError = nil
+                    }
+                }
             )
         ) {
             Button(L10n.string("OK")) { self.vm.lastError = nil }

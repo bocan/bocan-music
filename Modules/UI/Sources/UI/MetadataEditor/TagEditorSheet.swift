@@ -84,7 +84,11 @@ public struct TagEditorSheet: View {
         .onAppear { self.focusedField = .title }
         .alert(L10n.string("Error"), isPresented: Binding(
             get: { self.vm.lastError != nil },
-            set: { if !$0 { self.vm.lastError = nil } }
+            set: {
+                if !$0 {
+                    self.vm.lastError = nil
+                }
+            }
         )) {
             Button(L10n.string("OK")) { self.vm.lastError = nil }
         } message: {
@@ -279,7 +283,9 @@ public struct TagEditorSheet: View {
             Button(L10n.string("Save")) {
                 Task {
                     await self.vm.save()
-                    if self.vm.lastError == nil { self.isPresented = false }
+                    if self.vm.lastError == nil {
+                        self.isPresented = false
+                    }
                 }
             }
             .keyboardShortcut(.return, modifiers: .command)

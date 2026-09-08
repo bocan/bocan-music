@@ -23,7 +23,9 @@ public final class SubsonicStreamResolver: SubsonicStreamResolving {
         let server = try await store.fetch(id: serverID)
         let bitrate: Int? = {
             guard let server else { return nil }
-            if case let .kbps(kbps) = server.maxBitrate { return kbps }
+            if case let .kbps(kbps) = server.maxBitrate {
+                return kbps
+            }
             return nil
         }()
         let formatString = server?.preferredFormat.rawValue ?? "original"

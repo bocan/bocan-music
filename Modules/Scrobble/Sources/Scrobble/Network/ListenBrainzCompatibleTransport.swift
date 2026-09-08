@@ -31,13 +31,21 @@ struct ListenBrainzCompatibleTransport {
                 "artist_name": play.artist,
                 "track_name": play.title,
             ]
-            if let album = play.album { trackMetadata["release_name"] = album }
+            if let album = play.album {
+                trackMetadata["release_name"] = album
+            }
             var additional: [String: Any] = [:]
             additional["media_player"] = "Bòcan"
             additional["submission_client"] = "Bòcan"
-            if let mbid = play.mbid { additional["recording_mbid"] = mbid }
-            if play.duration > 0 { additional["duration_ms"] = Int(play.duration * 1000) }
-            if !additional.isEmpty { trackMetadata["additional_info"] = additional }
+            if let mbid = play.mbid {
+                additional["recording_mbid"] = mbid
+            }
+            if play.duration > 0 {
+                additional["duration_ms"] = Int(play.duration * 1000)
+            }
+            if !additional.isEmpty {
+                trackMetadata["additional_info"] = additional
+            }
             var listen: [String: Any] = ["track_metadata": trackMetadata]
             if listenType != "playing_now" {
                 listen["listened_at"] = Int(play.playedAt.timeIntervalSince1970)

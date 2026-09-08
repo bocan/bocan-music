@@ -165,7 +165,9 @@ public struct TrackInfoPanel: View {
     private static func formatSampleRate(_ hz: Int?) -> String {
         guard let hz else { return "—" }
         let khz = Double(hz) / 1000.0
-        if khz == khz.rounded() { return L10n.string("\(Int(khz)) kHz") }
+        if khz == khz.rounded() {
+            return L10n.string("\(Int(khz)) kHz")
+        }
         return L10n.string("\(String(format: "%.1f", khz)) kHz")
     }
 

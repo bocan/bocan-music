@@ -223,7 +223,9 @@ public actor QueuePlayer: Transport {
     /// seeding is one) must await this first: a change emitted before the
     /// persistence subscription attaches is dropped and never saved.
     public func waitUntilActivated() async {
-        if self.isActivated { return }
+        if self.isActivated {
+            return
+        }
         await withCheckedContinuation { self.activationWaiters.append($0) }
     }
 
@@ -881,10 +883,14 @@ public actor QueuePlayer: Transport {
     private func notifyHistoryStart(for item: QueueItem) async {
         // Internet radio is a live stream — no track row, no scrobble.
         // Skip the history recorder entirely.
-        if case .internetRadio = item.playableSource { return }
+        if case .internetRadio = item.playableSource {
+            return
+        }
         // Podcasts are not music tracks and never scrobble to Last.fm /
         // ListenBrainz. Skip the recorder so no scrobble is ever enqueued.
-        if case .podcast = item.playableSource { return }
+        if case .podcast = item.playableSource {
+            return
+        }
         if let context = Self.subsonicPlayContext(for: item) {
             await self.historyRecorder.trackDidStart(subsonic: context)
         } else {
@@ -1089,8 +1095,12 @@ public actor QueuePlayer: Transport {
     }
 
     private static func isMissingFileError(_ error: Error) -> Bool {
-        if case AudioEngineError.fileNotFound = error { return true }
-        if case PlaybackError.bookmarkResolutionFailed = error { return true }
+        if case AudioEngineError.fileNotFound = error {
+            return true
+        }
+        if case PlaybackError.bookmarkResolutionFailed = error {
+            return true
+        }
         return false
     }
 
@@ -1236,7 +1246,9 @@ public actor QueuePlayer: Transport {
 
         // Fail early if the file is unreachable — avoids opaque AVAudioFile errors.
         guard FileManager.default.fileExists(atPath: url.path) else {
-            if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
+            if resolvedFromPerFileBookmark {
+                url.stopAccessingSecurityScopedResource()
+            }
             // `rootScope` deinit releases on return.
             throw PlaybackError.bookmarkResolutionFailed(
                 trackID: item.trackID,
@@ -1254,7 +1266,9 @@ public actor QueuePlayer: Transport {
                 }
             }
         } catch {
-            if resolvedFromPerFileBookmark { url.stopAccessingSecurityScopedResource() }
+            if resolvedFromPerFileBookmark {
+                url.stopAccessingSecurityScopedResource()
+            }
             // `rootScope` deinit releases on return.
             throw error
         }
@@ -1605,7 +1619,9 @@ public actor QueuePlayer: Transport {
         var artistNames: [Int64: String] = [:]
         artistNames.reserveCapacity(artists.count)
         for a in artists {
-            if let aid = a.id { artistNames[aid] = a.name }
+            if let aid = a.id {
+                artistNames[aid] = a.name
+            }
         }
         var items: [QueueItem] = []
         items.reserveCapacity(trackIDs.count)

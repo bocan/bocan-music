@@ -94,27 +94,26 @@ public struct ReplayGainSettingsView: View {
         }
     }
 
+    @ViewBuilder
     private var analysisButtons: some View {
-        Group {
-            HStack {
-                Text(localized: "Compute missing ReplayGain values")
-                Spacer()
-                Button(L10n.string("Compute Missing")) {
-                    Task { await self.library.computeMissingReplayGain() }
-                }
-                .buttonStyle(.bordered)
-                .help(L10n.string("Analyse any tracks that don't yet have ReplayGain data"))
+        HStack {
+            Text(localized: "Compute missing ReplayGain values")
+            Spacer()
+            Button(L10n.string("Compute Missing")) {
+                Task { await self.library.computeMissingReplayGain() }
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier(A11y.SettingsIDs.rgComputeMissing)
-
-            Button(L10n.string("Recompute All…"), role: .destructive) {
-                self.showRecomputeConfirm = true
-            }
-            .accessibilityLabel(L10n.string("Recompute ReplayGain for all library tracks"))
-            .accessibilityIdentifier(A11y.SettingsIDs.rgRecomputeAll)
-            .help(L10n.string("Re-analyse every track in the library. This may take several minutes."))
+            .buttonStyle(.bordered)
+            .help(L10n.string("Analyse any tracks that don't yet have ReplayGain data"))
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier(A11y.SettingsIDs.rgComputeMissing)
+
+        Button(L10n.string("Recompute All…"), role: .destructive) {
+            self.showRecomputeConfirm = true
+        }
+        .accessibilityLabel(L10n.string("Recompute ReplayGain for all library tracks"))
+        .accessibilityIdentifier(A11y.SettingsIDs.rgRecomputeAll)
+        .help(L10n.string("Re-analyse every track in the library. This may take several minutes."))
     }
 
     private func progressRow(_ progress: ReplayGainBatchProgress) -> some View {

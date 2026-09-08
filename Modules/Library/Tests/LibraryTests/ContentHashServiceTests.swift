@@ -119,7 +119,9 @@ struct ContentHashServiceTests {
         var hash: String?
         for _ in 0 ..< 200 {
             hash = try await repo.fetch(id: id).contentHash
-            if hash != nil { break }
+            if hash != nil {
+                break
+            }
             try await Task.sleep(for: .milliseconds(25))
         }
         #expect(hash == expected)

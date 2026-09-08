@@ -37,7 +37,9 @@ struct EnrichmentProgressTests {
 
     private func waitUntil(_ condition: @MainActor () -> Bool) async throws {
         for _ in 0 ..< 400 {
-            if condition() { return }
+            if condition() {
+                return
+            }
             try await Task.sleep(for: .milliseconds(5))
         }
         Issue.record("condition not met in time")

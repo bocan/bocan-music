@@ -144,7 +144,9 @@ public extension LibraryViewModel {
                 guard let self,
                       self.nowPlaying.nowPlayingRadioStreamURL == station.streamURL else { return }
                 details = await self.queuePlayer?.currentStreamDetails
-                if details != nil { break }
+                if details != nil {
+                    break
+                }
             }
             guard let details else { return }
             do {

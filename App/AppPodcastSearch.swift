@@ -152,7 +152,9 @@ struct AppPodcastSearch: PodcastSearchProviding {
         enriched: PodcastSearchResult?,
         parsed: ParsedFeed
     ) -> [String] {
-        if let cats = enriched?.categories, !cats.isEmpty { return cats }
+        if let cats = enriched?.categories, !cats.isEmpty {
+            return cats
+        }
         return parsed.categories
     }
 

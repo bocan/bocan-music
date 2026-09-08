@@ -30,7 +30,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .ready { break }
+                if s == .ready {
+                    break
+                }
             }
             return collected
         }
@@ -51,8 +53,12 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if case .failed = s { break }
-                if s == .ready { break }
+                if case .failed = s {
+                    break
+                }
+                if s == .ready {
+                    break
+                }
             }
             return collected
         }
@@ -60,7 +66,10 @@ struct EngineTransportTests {
         try? await engine.load(url)
         let states = await stateTask.value
 
-        let hasFailed = states.contains { if case .failed = $0 { return true }
+        let hasFailed = states.contains {
+            if case .failed = $0 {
+                return true
+            }
             return false
         }
         #expect(hasFailed, "Expected .failed state for missing file")
@@ -118,7 +127,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .stopped { break }
+                if s == .stopped {
+                    break
+                }
             }
             return collected
         }
@@ -140,7 +151,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .paused { break }
+                if s == .paused {
+                    break
+                }
             }
             return collected
         }
@@ -316,7 +329,9 @@ struct EngineTransportTests {
             var collected: [PlaybackState] = []
             for await s in engine.state {
                 collected.append(s)
-                if s == .ready { break }
+                if s == .ready {
+                    break
+                }
             }
             return collected
         }

@@ -53,7 +53,9 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
         let head = Self.headSnippet(data: data)
         let trimmed = head.drop { $0 == "\u{FEFF}" || $0.isWhitespace || $0.isNewline }
 
-        if trimmed.hasPrefix("#EXTM3U") { return .m3u8 }
+        if trimmed.hasPrefix("#EXTM3U") {
+            return .m3u8
+        }
         if trimmed.hasPrefix("[playlist]") || trimmed.hasPrefix("[Playlist]") || trimmed.hasPrefix("[PLAYLIST]") {
             return .pls
         }
@@ -82,8 +84,12 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
 
     private static func headSnippet(data: Data) -> Substring {
         let prefix = data.prefix(2048)
-        if let s = String(data: prefix, encoding: .utf8) { return Substring(s) }
-        if let s = String(data: prefix, encoding: .isoLatin1) { return Substring(s) }
+        if let s = String(data: prefix, encoding: .utf8) {
+            return Substring(s)
+        }
+        if let s = String(data: prefix, encoding: .isoLatin1) {
+            return Substring(s)
+        }
         return Substring("")
     }
 }

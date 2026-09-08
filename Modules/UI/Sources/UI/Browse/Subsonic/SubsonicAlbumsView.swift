@@ -66,7 +66,9 @@ public struct SubsonicAlbumsView: View {
         }
         .navigationTitle(self.title)
         .task(id: self.serverID) {
-            if self.vm.albums.isEmpty { await self.vm.load() }
+            if self.vm.albums.isEmpty {
+                await self.vm.load()
+            }
         }
         .loadErrorAlert(L10n.string("Couldn't load albums"), message: self.$vm.errorMessage)
     }

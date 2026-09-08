@@ -66,7 +66,9 @@ final class SettingsCrawlTests: XCTestCase {
 
         for pane in Self.panes {
             let row = inv.element("settings.sidebar.\(pane.raw)")
-            if pane.conditional, !row.waitForExistence(timeout: 2) { continue }
+            if pane.conditional, !row.waitForExistence(timeout: 2) {
+                continue
+            }
             XCTAssertTrue(row.waitForExistence(timeout: 6), "settings sidebar row \(pane.raw) is missing")
             Self.selectSidebarRow(row, anchor: anchor, app: app)
             inv.settle(0.3)

@@ -42,7 +42,9 @@ struct FFmpegDecoderTests {
         let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
         while true {
             let n = try await decoder.read(into: buf)
-            if n == 0 { break }
+            if n == 0 {
+                break
+            }
             totalFrames += n
         }
         await decoder.close()
@@ -205,7 +207,8 @@ struct FFmpegDecoderTests {
                 im -= Double(samples[j]) * sin(angle)
             }
             let mag = (re * re + im * im).squareRoot()
-            if mag > maxMag { maxMag = mag
+            if mag > maxMag {
+                maxMag = mag
                 peakBin = k
             }
         }

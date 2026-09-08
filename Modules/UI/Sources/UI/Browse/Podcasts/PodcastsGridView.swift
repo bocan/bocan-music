@@ -47,7 +47,9 @@ struct PodcastsGridView: View {
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        if let id = podcast.id { self.vm.openShow(id) }
+                        if let id = podcast.id {
+                            self.vm.openShow(id)
+                        }
                     }
                     .contextMenu { self.contextMenu(for: podcast) }
                 }

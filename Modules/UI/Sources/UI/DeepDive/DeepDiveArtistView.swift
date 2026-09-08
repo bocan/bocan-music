@@ -24,7 +24,9 @@ struct DeepDiveArtistView: View {
             }
         }
         .task {
-            if case .idle = self.vm.state { self.vm.load() }
+            if case .idle = self.vm.state {
+                self.vm.load()
+            }
         }
     }
 

@@ -69,7 +69,9 @@ enum MenuSourceParsing {
         var currentTitles: [String] = []
         for rawLine in source.split(separator: "\n", omittingEmptySubsequences: false) {
             let line = rawLine.trimmingCharacters(in: .whitespaces)
-            if line.hasPrefix("//") { continue }
+            if line.hasPrefix("//") {
+                continue
+            }
             if line.contains("Button(") {
                 currentTitles = self.stringLiterals(in: line).map(self.unescaped)
             }
@@ -96,10 +98,14 @@ enum MenuSourceParsing {
         var depth = 1
         var out = ""
         for char in text {
-            if char == "(" { depth += 1 }
+            if char == "(" {
+                depth += 1
+            }
             if char == ")" {
                 depth -= 1
-                if depth == 0 { break }
+                if depth == 0 {
+                    break
+                }
             }
             out.append(char)
         }

@@ -102,7 +102,9 @@ public struct PlaylistExportSheet: View {
             let result = await withCheckedContinuation { cont in
                 panel.begin { cont.resume(returning: $0) }
             }
-            if result == .OK { self.relativeRoot = panel.url }
+            if result == .OK {
+                self.relativeRoot = panel.url
+            }
         }
     }
 

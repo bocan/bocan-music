@@ -110,7 +110,9 @@ final class IdentifierAuditTests: XCTestCase {
         insideIdentifiedControl: Bool = false
     ) {
         if node.elementType == .table || node.elementType == .outline,
-           self.skippedTableIdentifiers.contains(node.identifier) { return }
+           self.skippedTableIdentifiers.contains(node.identifier) {
+            return
+        }
         // Segmented pickers expose their segments as radio buttons; the
         // segments are addressed through the identified picker plus their
         // label, so they need no identifiers of their own.
@@ -359,7 +361,9 @@ final class IdentifierAuditTests: XCTestCase {
             let key = violation.label.isEmpty
                 ? "\(violation.surface)|\(violation.type)|\(violation.frame)"
                 : "\(violation.type)|\(violation.label)"
-            if byControl[key] == nil { byControl[key] = violation }
+            if byControl[key] == nil {
+                byControl[key] = violation
+            }
         }
         return Array(byControl.values)
     }

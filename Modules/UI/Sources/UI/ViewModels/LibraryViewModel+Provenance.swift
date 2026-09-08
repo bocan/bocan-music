@@ -164,7 +164,9 @@ private extension LibraryViewModel {
 
                 case let .verdict(verdict):
                     if await self.storeVerdict(verdict, trackID: trackID, repo: repo, log: log) {
-                        if verdict.suspected { tally.suspected += 1 }
+                        if verdict.suspected {
+                            tally.suspected += 1
+                        }
                     } else {
                         tally.failed += 1
                     }

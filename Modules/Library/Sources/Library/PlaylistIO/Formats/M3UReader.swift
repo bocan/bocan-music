@@ -36,7 +36,9 @@ public enum M3UReader {
                     let parts = payload.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false)
                     if let durStr = parts.first {
                         let cleaned = String(durStr).trimmingCharacters(in: .whitespaces)
-                        if let dur = TimeInterval(cleaned), dur > 0 { pendingDuration = dur }
+                        if let dur = TimeInterval(cleaned), dur > 0 {
+                            pendingDuration = dur
+                        }
                     }
                     if parts.count > 1 {
                         let display = String(parts[1])
@@ -108,7 +110,9 @@ public enum M3UReader {
         if bytes.count >= 3, Array(bytes.prefix(3)) == bom {
             bytes.removeFirst(3)
         }
-        if let s = String(data: bytes, encoding: .utf8) { return (s, .utf8) }
+        if let s = String(data: bytes, encoding: .utf8) {
+            return (s, .utf8)
+        }
         let isM3U8 = sourceURL?.pathExtension.lowercased() == "m3u8"
         if !isM3U8, let s = String(data: bytes, encoding: .windowsCP1252) {
             return (s, .windowsCP1252)

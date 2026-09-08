@@ -87,7 +87,11 @@ public struct RadioView: View {
             L10n.string("Delete Station"),
             isPresented: Binding(
                 get: { self.stationToDelete != nil },
-                set: { if !$0 { self.stationToDelete = nil } }
+                set: {
+                    if !$0 {
+                        self.stationToDelete = nil
+                    }
+                }
             ),
             presenting: self.stationToDelete
         ) { station in
@@ -219,7 +223,9 @@ private struct RadioStationRow: View {
     }
 
     private var subtitle: String? {
-        if let home = self.station.homePageURL, !home.isEmpty { return home }
+        if let home = self.station.homePageURL, !home.isEmpty {
+            return home
+        }
         return URL(string: self.station.streamURL)?.host
     }
 }

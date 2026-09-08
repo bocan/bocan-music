@@ -26,8 +26,12 @@ public struct DSPAssignmentRepository: Sendable {
     ///
     /// Returns `nil` when neither has a scoped assignment (caller should use global).
     public func resolvePresetID(trackID: Int64, albumID: Int64?) async throws -> String? {
-        if let id = try await fetchTrackPresetID(trackID: trackID) { return id }
-        if let albumID, let id = try await fetchAlbumPresetID(albumID: albumID) { return id }
+        if let id = try await fetchTrackPresetID(trackID: trackID) {
+            return id
+        }
+        if let albumID, let id = try await fetchAlbumPresetID(albumID: albumID) {
+            return id
+        }
         return nil
     }
 

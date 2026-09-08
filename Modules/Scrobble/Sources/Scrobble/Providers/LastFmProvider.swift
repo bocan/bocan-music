@@ -84,7 +84,9 @@ public actor LastFmProvider: ScrobbleProvider {
 
     public func nowPlaying(_ play: PlayEvent) async throws {
         let now = self.now()
-        if let last = lastNowPlayingAt, now.timeIntervalSince(last) < 5 { return }
+        if let last = lastNowPlayingAt, now.timeIntervalSince(last) < 5 {
+            return
+        }
         self.lastNowPlayingAt = now
 
         guard self.config.isConfigured else { throw ScrobbleError.notAuthenticated(provider: self.id) }
@@ -100,9 +102,15 @@ public actor LastFmProvider: ScrobbleProvider {
             "track": play.title,
             "duration": String(Int(play.duration.rounded())),
         ]
-        if let album = play.album { params["album"] = album }
-        if let albumArtist = play.albumArtist { params["albumArtist"] = albumArtist }
-        if let mbid = play.mbid { params["mbid"] = mbid }
+        if let album = play.album {
+            params["album"] = album
+        }
+        if let albumArtist = play.albumArtist {
+            params["albumArtist"] = albumArtist
+        }
+        if let mbid = play.mbid {
+            params["mbid"] = mbid
+        }
 
         _ = try await self.signedPost(params)
         self.log.debug("scrobble.lastfm.nowplaying.ok", ["title": play.title])
@@ -134,9 +142,15 @@ public actor LastFmProvider: ScrobbleProvider {
                 params["artist[\(i)]"] = play.artist
                 params["track[\(i)]"] = play.title
                 params["timestamp[\(i)]"] = String(Int(play.playedAt.timeIntervalSince1970))
-                if let album = play.album { params["album[\(i)]"] = album }
-                if let albumArtist = play.albumArtist { params["albumArtist[\(i)]"] = albumArtist }
-                if let mbid = play.mbid { params["mbid[\(i)]"] = mbid }
+                if let album = play.album {
+                    params["album[\(i)]"] = album
+                }
+                if let albumArtist = play.albumArtist {
+                    params["albumArtist[\(i)]"] = albumArtist
+                }
+                if let mbid = play.mbid {
+                    params["mbid[\(i)]"] = mbid
+                }
                 params["duration[\(i)]"] = String(Int(play.duration.rounded()))
             }
 
@@ -171,7 +185,9 @@ public actor LastFmProvider: ScrobbleProvider {
             "artist": track.artist,
             "track": track.title,
         ]
-        if let mbid = track.mbid { params["mbid"] = mbid }
+        if let mbid = track.mbid {
+            params["mbid"] = mbid
+        }
         _ = try await self.signedPost(params)
         self.log.info("scrobble.lastfm.love", ["loved": loved, "track": track.title])
     }

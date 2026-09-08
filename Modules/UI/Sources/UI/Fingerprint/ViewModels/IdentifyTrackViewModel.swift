@@ -324,20 +324,30 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
         let discNumber = release == nil ? candidate.discNumber : release?.discNumber
         let year = release == nil ? candidate.year : release?.year
 
-        if fields.contains(.title) { patch.title = .some(candidate.title) }
-        if fields.contains(.artist) { patch.artist = .some(candidate.artist) }
+        if fields.contains(.title) {
+            patch.title = .some(candidate.title)
+        }
+        if fields.contains(.artist) {
+            patch.artist = .some(candidate.artist)
+        }
         if fields.contains(.albumArtist), let value = albumArtist {
             patch.albumArtist = .some(value)
         }
-        if fields.contains(.album), let value = album { patch.album = .some(value) }
-        if fields.contains(.genre), let value = candidate.genre { patch.genre = .some(value) }
+        if fields.contains(.album), let value = album {
+            patch.album = .some(value)
+        }
+        if fields.contains(.genre), let value = candidate.genre {
+            patch.genre = .some(value)
+        }
         if fields.contains(.trackNumber), let value = trackNumber {
             patch.trackNumber = .some(value)
         }
         if fields.contains(.discNumber), let value = discNumber {
             patch.discNumber = .some(value)
         }
-        if fields.contains(.year), let value = year { patch.year = .some(value) }
+        if fields.contains(.year), let value = year {
+            patch.year = .some(value)
+        }
     }
 
     private static func applyIdentifierFields(

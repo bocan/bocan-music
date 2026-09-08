@@ -72,7 +72,9 @@ private struct PodrollCard: View {
 
     var body: some View {
         Button {
-            if let url { self.onSelect(url) }
+            if let url {
+                self.onSelect(url)
+            }
         } label: {
             self.card
         }

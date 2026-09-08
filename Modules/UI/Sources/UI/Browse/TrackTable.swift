@@ -314,8 +314,12 @@ public struct TrackTable: NSViewRepresentable {
         // content, so the outgoing and incoming now-playing rows must refresh
         // too, even when their underlying values are identical.
         if coordinator.applied.nowPlayingID != self.nowPlayingTrackID {
-            if let old = coordinator.applied.nowPlayingID, let oldID = old { changed.append(oldID) }
-            if let new = self.nowPlayingTrackID, let newID = new { changed.append(newID) }
+            if let old = coordinator.applied.nowPlayingID, let oldID = old {
+                changed.append(oldID)
+            }
+            if let new = self.nowPlayingTrackID, let newID = new {
+                changed.append(newID)
+            }
         }
         coordinator.updateRows(self.rows)
         Self.reload(rows: changed, dataSource: dataSource)

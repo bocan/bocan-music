@@ -99,7 +99,9 @@ public actor PodcastArtworkCache {
         }
         var hashed = 0
         for show in shows {
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                return
+            }
             guard let id = show.id, show.artworkHash == nil, let path = show.artworkPath,
                   FileManager.default.fileExists(atPath: path),
                   let hash = self.sha256Hex(ofFileAt: URL(fileURLWithPath: path)) else { continue }
@@ -222,7 +224,9 @@ public actor PodcastArtworkCache {
         let path = fileURL.path
         do {
             let podcast = try await repo.fetch(id: podcastID)
-            if podcast.artworkPath == path, podcast.artworkHash != nil { return }
+            if podcast.artworkPath == path, podcast.artworkHash != nil {
+                return
+            }
         } catch {
             self.log.warning(
                 "artwork.fetchRow.failed",

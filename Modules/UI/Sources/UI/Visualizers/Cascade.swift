@@ -121,12 +121,16 @@ public final class Cascade: Visualizer {
             if self.reduceMotion {
                 let sinceStep = self.lastStepTime.map { time - $0 } ?? Self.reduceMotionUpdateInterval
                 shouldUpdateDisplay = sinceStep >= Self.reduceMotionUpdateInterval
-                if shouldUpdateDisplay { self.lastStepTime = time }
+                if shouldUpdateDisplay {
+                    self.lastStepTime = time
+                }
             } else {
                 shouldUpdateDisplay = true
             }
             self.writeColumn(analysis: analysis, time: time)
-            if shouldUpdateDisplay { self.imageIsDirty = true }
+            if shouldUpdateDisplay {
+                self.imageIsDirty = true
+            }
         }
 
         if self.imageIsDirty {

@@ -15,31 +15,31 @@
   },
   "formulae": {
     "swiftlint": {
-      "version": "0.63.2"
+      "version": "0.65.1"
     },
     "swiftformat": {
-      "version": "0.61.1"
+      "version": "0.63.0"
     },
     "xcbeautify": {
       "version": "3.2.1"
     },
     "ffmpeg": {
-      "version": "8.1.1"
+      "version": "9.0.1_1"
     },
     "chromaprint": {
-      "version": "1.6.0"
+      "version": "1.6.1_1"
     },
     "taglib": {
-      "version": "2.3"
+      "version": "2.3.2"
     },
     "create-dmg": {
-      "version": "1.2.3"
+      "version": "1.3.0"
     },
     "gh": {
-      "version": "2.92.0"
+      "version": "2.100.0"
     },
     "xcodegen": {
-      "version": "2.45.4"
+      "version": "2.46.0"
     }
   }
 }

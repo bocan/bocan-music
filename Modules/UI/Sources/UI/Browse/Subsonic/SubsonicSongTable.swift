@@ -244,7 +244,9 @@ struct SubsonicSongTable: NSViewRepresentable {
         autosaveName: String
     ) {
         var defs = self.colDefs
-        if includingSource { defs.append(self.sourceColDef) }
+        if includingSource {
+            defs.append(self.sourceColDef)
+        }
         for def in defs {
             let colID = NSUserInterfaceItemIdentifier("scol.\(def.rawID)")
             let col = NSTableColumn(identifier: colID)

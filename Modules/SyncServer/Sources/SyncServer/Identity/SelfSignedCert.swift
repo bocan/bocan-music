@@ -71,7 +71,9 @@ enum SelfSignedCert {
     private static func randomSerialBytes() -> [UInt8] {
         var bytes = (0 ..< 20).map { _ in UInt8.random(in: .min ... .max) }
         bytes[0] &= 0x7F
-        if bytes[0] == 0 { bytes[0] = 0x01 } // avoid a leading zero byte
+        if bytes[0] == 0 {
+            bytes[0] = 0x01
+        } // avoid a leading zero byte
         return bytes
     }
 

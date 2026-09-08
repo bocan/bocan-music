@@ -48,7 +48,9 @@ struct GapFreeSeekTests {
         let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
         while true {
             let n = try await decoder.read(into: buf)
-            if n == 0 { break }
+            if n == 0 {
+                break
+            }
             totalFrames += n
         }
         await decoder.close()
@@ -116,7 +118,9 @@ struct GapFreeSeekTests {
             let buf = try #require(AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: 512))
             while true {
                 let n = try await decoder.read(into: buf)
-                if n == 0 { break }
+                if n == 0 {
+                    break
+                }
             }
         }
         task.cancel()

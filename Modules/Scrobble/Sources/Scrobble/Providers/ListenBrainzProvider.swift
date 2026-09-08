@@ -58,7 +58,9 @@ public actor ListenBrainzProvider: ScrobbleProvider {
 
     public func nowPlaying(_ play: PlayEvent) async throws {
         let now = self.now()
-        if let last = lastNowPlayingAt, now.timeIntervalSince(last) < 5 { return }
+        if let last = lastNowPlayingAt, now.timeIntervalSince(last) < 5 {
+            return
+        }
         self.lastNowPlayingAt = now
 
         guard let token = try await self.credentials.listenBrainzToken(), !token.isEmpty else {
@@ -141,8 +143,12 @@ public actor ListenBrainzProvider: ScrobbleProvider {
             }
             throw ScrobbleError.invalidCredentials(provider: self.id)
         }
-        if status == 401 || status == 403 { throw ScrobbleError.invalidCredentials(provider: self.id) }
-        if status >= 500 { throw ScrobbleError.transient(provider: self.id, reason: "http \(status)", retryAfter: nil) }
+        if status == 401 || status == 403 {
+            throw ScrobbleError.invalidCredentials(provider: self.id)
+        }
+        if status >= 500 {
+            throw ScrobbleError.transient(provider: self.id, reason: "http \(status)", retryAfter: nil)
+        }
         throw ScrobbleError.permanent(provider: self.id, reason: "http \(status)")
     }
 }

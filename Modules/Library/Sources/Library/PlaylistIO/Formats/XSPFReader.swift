@@ -89,12 +89,16 @@ private final class XSPFParserDelegate: NSObject, XMLParserDelegate {
         if self.inTrack {
             switch name {
             case "location":
-                if self.currentTrack.location == nil { self.currentTrack.location = value }
+                if self.currentTrack.location == nil {
+                    self.currentTrack.location = value
+                }
             case "title": self.currentTrack.title = value
             case "creator": self.currentTrack.creator = value
             case "album": self.currentTrack.album = value
             case "duration":
-                if let ms = Int(value), ms > 0 { self.currentTrack.durationMs = ms }
+                if let ms = Int(value), ms > 0 {
+                    self.currentTrack.durationMs = ms
+                }
             case "track":
                 self.tracks.append(self.currentTrack)
                 self.inTrack = false

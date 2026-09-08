@@ -46,14 +46,18 @@ public actor DeepDiveService {
         let (mbid, guessed) = try await self.resolveArtistMBID(artist)
         let key = "artist-\(mbid)"
         let cached: (value: ArtistReport, fresh: Bool)? = await self.cache.load(ArtistReport.self, key: key)
-        if let cached, cached.fresh, !forceRefresh, cached.value.artistID == artistID { return cached.value }
+        if let cached, cached.fresh, !forceRefresh, cached.value.artistID == artistID {
+            return cached.value
+        }
 
         do {
             let report = try await self.buildArtistReport(artist: artist, mbid: mbid, guessed: guessed)
             await self.cache.store(report, key: key)
             return report
         } catch let error as DeepDiveError where error == .offline || error == .rateLimited {
-            if let cached { return cached.value }
+            if let cached {
+                return cached.value
+            }
             throw error
         }
     }
@@ -76,7 +80,9 @@ public actor DeepDiveService {
     }
 
     private func resolveArtistMBID(_ artist: Artist) async throws -> (String, Bool) {
-        if let mbid = artist.musicbrainzArtistID { return (mbid, false) }
+        if let mbid = artist.musicbrainzArtistID {
+            return (mbid, false)
+        }
         let results = try await self.mapErrors { try await self.musicBrainz.searchArtists(name: artist.name, limit: 5) }
         guard let best = results.first, (best.score ?? 0) >= Self.guessScoreThreshold else {
             throw DeepDiveError.noIdentifier
@@ -160,13 +166,17 @@ public actor DeepDiveService {
         let album = try await self.albums.fetch(id: albumID)
         let key = "album-\(albumID)"
         let cached: (value: AlbumReport, fresh: Bool)? = await self.cache.load(AlbumReport.self, key: key)
-        if let cached, cached.fresh, !forceRefresh { return cached.value }
+        if let cached, cached.fresh, !forceRefresh {
+            return cached.value
+        }
         do {
             let report = try await self.buildAlbumReport(album)
             await self.cache.store(report, key: key)
             return report
         } catch let error as DeepDiveError where error == .offline || error == .rateLimited {
-            if let cached { return cached.value }
+            if let cached {
+                return cached.value
+            }
             throw error
         }
     }
@@ -260,7 +270,9 @@ public actor DeepDiveService {
         guard let mbid = resolved, !mbid.isEmpty else { throw DeepDiveError.noIdentifier }
         let key = "recording-\(mbid)"
         let cached: (value: TrackReport, fresh: Bool)? = await self.cache.load(TrackReport.self, key: key)
-        if let cached, cached.fresh, !forceRefresh { return cached.value }
+        if let cached, cached.fresh, !forceRefresh {
+            return cached.value
+        }
         do {
             let recording = try await self.mapErrors { try await self.musicBrainz.fetchRecording(mbid: mbid) }
             // At most two work lookups: enough for a song and its medley partner.
@@ -298,7 +310,9 @@ public actor DeepDiveService {
             await self.cache.store(report, key: key)
             return report
         } catch let error as DeepDiveError where error == .offline || error == .rateLimited {
-            if let cached { return cached.value }
+            if let cached {
+                return cached.value
+            }
             throw error
         }
     }
