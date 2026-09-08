@@ -57,6 +57,12 @@ binding standards in `docs/design-spec/_standards.md`. The repo also carries
 they are written for Claude but are plain markdown, so feed them to whatever
 assistant you use.
 
+`.claude/skills/` is reserved for skills this project owns: workflows written
+against this repo's rules and gates. Please do not vendor third-party skill
+packs or generic reference material there; an assistant gets that from
+documentation lookups on demand, and the directory should stay short enough
+that the project's own skills are the only things on the menu.
+
 ## Reporting bugs
 
 Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md).
