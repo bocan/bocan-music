@@ -83,7 +83,7 @@ public struct NowPlayingStrip: View {
                 if let img = vm.artwork {
                     Image(nsImage: img)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .scaledToFill()
                         .frame(width: 48, height: 48)
                         .clipShape(RoundedRectangle(cornerRadius: Theme.artworkCornerRadius, style: .continuous))
                         .accessibilityHidden(true)
