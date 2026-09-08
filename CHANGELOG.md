@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The now-playing display no longer misses a queue change that lands in the first instants after launch while nothing is playing, which could leave it on "Not playing" until the next track change.
+
 Immersive Mode and the visualizer no longer stutter twice a second while a song plays with the full Songs list open. The main window was quietly redrawing every row of the songs table on each playback tick; it now leaves the table alone until something in it actually changes. The table also stopped re-checking every one of its rows whenever anything else in the window updated, such as a synced lyric line changing, so those moments no longer cause a stutter either.
 
 Phone Sync no longer leaves a converted song stuck as pending forever. If the phone lost a song after the Mac had already sent it (for example when Android stopped the app mid-transfer to save battery), the Mac now converts that song again the next time the phone asks for it, instead of answering busy on every sync.
