@@ -62,6 +62,26 @@ struct TracksViewModelRowsVersionTests {
         #expect(vm.rowsVersion == afterMatch, "a track outside the list touches no row")
     }
 
+    @Test("a multi-row update moves the version exactly once")
+    func multiRowUpdateBumpsOnce() async throws {
+        let vm = try await makeVM()
+        vm.setTracks([
+            self.makeTrack(id: 1, title: "A"),
+            self.makeTrack(id: 2, title: "B"),
+            self.makeTrack(id: 3, title: "C"),
+        ])
+        let before = vm.rowsVersion
+
+        vm.updateRows(for: [
+            self.makeTrack(id: 1, title: "A", playCount: 7),
+            self.makeTrack(id: 3, title: "C", playCount: 9),
+        ])
+
+        #expect(vm.rows.first { $0.id == 1 }?.track.playCount == 7)
+        #expect(vm.rows.first { $0.id == 3 }?.track.playCount == 9)
+        #expect(vm.rowsVersion == before + 1, "one batch is one copy and one bump, not one per row (#453)")
+    }
+
     @Test("selection changes leave the version alone")
     func selectionDoesNotBump() async throws {
         let vm = try await makeVM()

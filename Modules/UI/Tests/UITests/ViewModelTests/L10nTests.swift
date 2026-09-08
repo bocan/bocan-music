@@ -178,7 +178,7 @@ struct L10nTests {
             "Sources/UI/ViewModels/LibraryViewModel+Subsonic.swift",
             "Sources/UI/ViewModels/LibraryViewModel+PlaylistDrop.swift",
             "Sources/UI/ViewModels/NowPlayingViewModel.swift",
-            "Sources/UI/ViewModels/TracksViewModel.swift",
+            "Sources/UI/ViewModels/TrackSortColumn.swift",
             "Sources/UI/Visualizers/ViewModels/VisualizerViewModel.swift",
         ]
     )
