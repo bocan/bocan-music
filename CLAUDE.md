@@ -28,6 +28,10 @@ Per-module SPM tests use `swift test` under the module directory. To run a singl
 
 **The Xcode `BocanTests` target runs without a host app (`TEST_HOST = ""`), so AppKit / SwiftUI rendering is unavailable there.** Snapshot tests and anything that needs a real view tree live in the `UI` SPM package and run via `make test-ui`. `make test` will appear to "miss" them — that's by design, not a bug to chase.
 
+## Slice review for PRs
+
+Before opening a feat, fix or perf PR, run /slice-review. Its output is the `## Slice review` section of the PR body; `.github/PULL_REQUEST_TEMPLATE.md` carries the same form for PRs opened by hand. Docs, chore and other PR types are exempt.
+
 ## Architecture
 
 Strict module DAG, no upward imports:

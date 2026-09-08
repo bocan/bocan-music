@@ -35,6 +35,11 @@ with a pull request.
   `## [Unreleased]` in `CHANGELOG.md`. It becomes the release notes and the
   Sparkle update prompt. Label the PR `skip-changelog` if the change is not
   user-visible.
+- A `feat`, `fix` or `perf` PR also answers the seven review questions in the
+  PR template's "Slice review" section. They are the questions a reviewer
+  would ask anyway; short answers with a file and line are enough, and "not
+  relevant, because ..." is a valid answer. Delete the section on other PR
+  types.
 - `make lint && make test-coverage` must be green locally; the PR runs the
   full suite.
 - Merges are squash-only. No direct or force pushes to `main`.
