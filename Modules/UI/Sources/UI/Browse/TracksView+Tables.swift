@@ -7,6 +7,7 @@ extension TracksView {
     var sortableTable: some View {
         TrackTable(
             rows: self.vm.rows,
+            rowsVersion: self.vm.rowsVersion,
             selection: self.$vm.selection,
             sortOrder: self.$sortOrder,
             nowPlayingTrackID: self.nowPlaying.nowPlayingTrackID,
@@ -22,6 +23,7 @@ extension TracksView {
     var plainTable: some View {
         TrackTable(
             rows: self.vm.rows,
+            rowsVersion: self.vm.rowsVersion,
             selection: self.$vm.selection,
             sortOrder: self.$sortOrder,
             nowPlayingTrackID: self.nowPlaying.nowPlayingTrackID,
