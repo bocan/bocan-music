@@ -49,9 +49,14 @@ struct NowPlayingRadioRestoreTests {
         await player.waitUntilActivated()
         // View model first, queue second: the E2E seeder's ordering. The
         // queue-change observation (.reset) must sync the display because
-        // no engine emission ever follows a replace at rest.
+        // no engine emission ever follows a replace at rest. No sleep here
+        // on purpose (#451): the replace lands while the observer is still
+        // attaching, which is the race the view model must absorb. It
+        // subscribes before its first reads and derives the display once
+        // after, so the seed is caught whichever side of the subscription
+        // it falls on. The old 200 ms sleep only hid the race until a
+        // loaded run stretched the attach past it.
         let vm = NowPlayingViewModel(engine: player, database: db)
-        try await Task.sleep(nanoseconds: 200_000_000) // let observers attach
 
         let url = try #require(URL(string: "http://127.0.0.1:9/never"))
         let item = QueueItem.makeInternetRadio(name: "Late FM", streamURL: url, homePage: nil)
