@@ -86,6 +86,7 @@ struct VoiceOverTests {
         var sortStub = [KeyPathComparator<TrackRow>]()
         let table = TrackTable(
             rows: [],
+            rowsVersion: 0,
             selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
             sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
             nowPlayingTrackID: nil,
@@ -125,6 +126,7 @@ struct VoiceOverTests {
         var sortStub = [KeyPathComparator<TrackRow>]()
         let table = TrackTable(
             rows: [],
+            rowsVersion: 0,
             selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
             sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
             nowPlayingTrackID: trackID,
@@ -153,6 +155,7 @@ struct VoiceOverTests {
         var sortStub = [KeyPathComparator<TrackRow>]()
         let table = TrackTable(
             rows: [],
+            rowsVersion: 0,
             selection: Binding(get: { selectionStub }, set: { selectionStub = $0 }),
             sortOrder: Binding(get: { sortStub }, set: { sortStub = $0 }),
             nowPlayingTrackID: nil,

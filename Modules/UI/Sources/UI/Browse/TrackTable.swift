@@ -79,9 +79,10 @@ public struct TrackTable: NSViewRepresentable {
     let rows: [TrackRow]
     /// The view model's counter for `rows` (#450). `updateNSView` walks the
     /// rows only when this moved since the last apply; a parent re-render with
-    /// unchanged rows then costs nothing per row. Defaulted so callers that
-    /// build a table by hand (tests) need not supply it.
-    var rowsVersion = 0
+    /// unchanged rows then costs nothing per row. Deliberately has no default:
+    /// a caller that left it out would render its first rows and then never
+    /// react to another rows change, with no error to show for it (#454).
+    let rowsVersion: Int
     @Binding var selection: Set<Track.ID>
     @Binding var sortOrder: [KeyPathComparator<TrackRow>]
     let nowPlayingTrackID: Track.ID?
