@@ -35,7 +35,7 @@ public struct TrackInfoPanel: View {
                 if let img = np.artwork {
                     Image(nsImage: img)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .scaledToFill()
                 } else {
                     GradientPlaceholder(seed: 2)
                 }

@@ -127,7 +127,7 @@ private struct CandidateCell: View {
                 if let data = self.thumbnail, let img = NSImage(data: data) {
                     Image(nsImage: img)
                         .resizable()
-                        .aspectRatio(contentMode: .fill)
+                        .scaledToFill()
                 } else {
                     Color.secondary.opacity(0.2)
                 }

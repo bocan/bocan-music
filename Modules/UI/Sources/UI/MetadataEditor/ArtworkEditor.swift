@@ -42,7 +42,7 @@ public struct ArtworkEditor: View {
                 if let data = displayData, let img = NSImage(data: data) {
                     Image(nsImage: img)
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .scaledToFit()
                 } else {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color.secondary.opacity(0.2))

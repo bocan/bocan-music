@@ -67,7 +67,7 @@ struct MiniPlayerCompact: View {
             if let img = self.np.artwork {
                 Image(nsImage: img)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
             } else {
                 GradientPlaceholder(seed: 1)
             }
