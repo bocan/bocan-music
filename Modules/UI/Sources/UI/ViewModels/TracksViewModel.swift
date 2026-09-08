@@ -83,7 +83,13 @@ public final class TracksViewModel {
     // MARK: - State
 
     /// Decorated, already-sorted rows rendered by `Table`.
-    public private(set) var rows: [TrackRow] = []
+    public private(set) var rows: [TrackRow] = [] {
+        didSet { self.rowsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `rows`, in-place ones included, via `didSet` so no
+    /// path can forget it; `TrackTable` skips its per-row walks while it holds (#450).
+    public private(set) var rowsVersion = 0
     /// `true` while a load or search is in flight.
     public private(set) var isLoading = false
     /// The currently selected track IDs.
@@ -118,9 +124,7 @@ public final class TracksViewModel {
 
     // MARK: - Computed back-compat accessors
 
-    /// The raw tracks, in their current display order.  Preserved for
-    /// call sites (playback, context menus, tests) that don't need the
-    /// decorated row values.
+    /// The raw tracks in display order, for call sites that don't need the decorated rows.
     public var tracks: [Track] {
         self.rows.map(\.track)
     }
