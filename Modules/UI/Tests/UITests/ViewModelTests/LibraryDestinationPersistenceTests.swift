@@ -24,18 +24,30 @@ struct LibraryDestinationPersistenceTests {
         // (the fresh-VM default is `.songs`).
         vm.selectedDestination = .albums
 
-        // Poll a freshly-constructed VM's restore until it observes the navigated
-        // destination. The sink debounces 250 ms; 3 s is a generous ceiling.
-        var restored: SidebarDestination = .songs
-        let deadline = Date().addingTimeInterval(3.0)
+        // The sink debounces 250 ms and then writes "ui.state.v2". Wait for
+        // that write by reading the settings store, a cheap query, rather than
+        // by building a LibraryViewModel per poll: a full view model starts a
+        // dozen observation tasks, so on a loaded parallel run the old loop
+        // overshot its 3 s ceiling before the debounced save could land, and
+        // failed CI twice on 2026-09-08. The ceiling is generous on purpose;
+        // the test ends the moment the write appears.
+        let settings = SettingsRepository(database: db)
+        var saved: SidebarDestination?
+        let deadline = Date().addingTimeInterval(15.0)
         while Date() < deadline {
-            let probe = LibraryViewModel(database: db, engine: MockTransport())
-            await probe.restoreUIState()
-            restored = probe.selectedDestination
-            if restored == .albums { break }
+            if let state = try await settings.get(UIStateV2.self, for: "ui.state.v2") {
+                saved = state.selectedDestination
+                if saved == .albums {
+                    break
+                }
+            }
             try await Task.sleep(nanoseconds: 50_000_000)
         }
+        #expect(saved == .albums, "the debounced sink never persisted the navigation; last saved \(String(describing: saved))")
 
-        #expect(restored == .albums, "navigated destination should auto-persist; got \(restored)")
+        // One probe, built after the write landed, proves the restore path.
+        let probe = LibraryViewModel(database: db, engine: MockTransport())
+        await probe.restoreUIState()
+        #expect(probe.selectedDestination == .albums, "a fresh launch should restore the navigated destination")
     }
 }
