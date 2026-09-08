@@ -846,14 +846,23 @@ private extension NowPlayingViewModel {
         // Observe queue changes to keep UI state (shuffle, repeat, stop-after-current) in sync.
         self.queueChangesTask = Task { [weak self] in
             guard let self else { return }
+            // Subscribe before any other read. The queue registers the
+            // subscriber synchronously, so nothing emitted after this line
+            // can be missed; the three reads below each hop to the queue
+            // actor, and a replace landing in that window used to go unseen
+            // by both this loop and the one-shot seed above (#451).
+            let changes = await qp.queue.changes()
             let initialRepeat = await qp.queue.repeatMode
             let initialShuffle = await qp.queue.shuffleState
             let initialStopAfter = await qp.queue.stopAfterCurrent
             self.repeatMode = initialRepeat
             self.shuffleOn = initialShuffle != .off
             self.stopAfterCurrent = initialStopAfter
+            // Whatever the queue held before the subscription is not on the
+            // stream: derive the display from it once, then follow the stream.
+            await self.syncDisplayWithQueueIfIdle(qp)
 
-            for await change in await qp.queue.changes() {
+            for await change in changes {
                 switch change {
                 case let .stopAfterCurrentChanged(enabled):
                     self.stopAfterCurrent = enabled
