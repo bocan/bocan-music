@@ -1,0 +1,9 @@
+# Allowlist for Scripts/vital-signs.sh.
+#
+# One ripgrep glob per line. Files matching a glob are excluded from the
+# "outside the allowlist" counts of `Task {` and `Timer.scheduledTimer`.
+# Add a file here only with a reason in a trailing comment. An empty list
+# means the "outside" count equals the "all" count.
+#
+# Example:
+# Modules/Playback/Sources/Playback/SleepTimer.swift  # the one timer the app owns
