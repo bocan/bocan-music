@@ -168,17 +168,33 @@ unmeasured "Duplication percentage" \
     "no duplication scanner is installed or wired; the maintainability audit (docs/design-spec/maintainability-audit/findings-ledger.md) was a manual ledger" \
     "none"
 
-PERIPHERY_CMD="periphery scan --quiet --format json | jq length"
+# Periphery reports three kinds of finding. Only "unused" is dead code;
+# assign-only properties and redundant public modifiers are reported on
+# their own rows. One scan writes build/periphery-results.json and the rows
+# read that file, so each number is a jq filter over the same scan. Findings
+# in test targets are excluded from the source rows by location.
+PERIPHERY_RESULTS='build/periphery-results.json'
+PERIPHERY_SCAN_CMD="periphery scan --quiet --format json > $PERIPHERY_RESULTS && jq length $PERIPHERY_RESULTS"
+PERIPHERY_SRC='select(.location | test("/Tests/|/UITests/") | not)'
 if ! command -v periphery >/dev/null; then
-    unmeasured "Dead code · Periphery results" "periphery is not installed" "$PERIPHERY_CMD"
+    unmeasured "Dead code · Periphery scan" "periphery is not installed" "$PERIPHERY_SCAN_CMD"
 elif [[ ! -f .periphery.yml ]]; then
-    unmeasured "Dead code · Periphery results" \
-        "periphery $(periphery version 2>/dev/null || echo '?') is installed but not configured (no .periphery.yml); run periphery scan --setup once" \
-        "periphery scan --setup"
+    unmeasured "Dead code · Periphery scan" \
+        "periphery $(periphery version 2>/dev/null || echo '?') is installed but not configured (no .periphery.yml)" \
+        "$PERIPHERY_SCAN_CMD"
 elif (( SLOW )); then
-    measure "Dead code · Periphery results" "$PERIPHERY_CMD"
+    mkdir -p build
+    measure "Dead code · Periphery scan (all findings, tests included)" "$PERIPHERY_SCAN_CMD"
+    measure "Dead code · unused declarations in sources" \
+        "jq '[.[] | select(.hints[] == \"unused\") | $PERIPHERY_SRC] | length' $PERIPHERY_RESULTS"
+    measure "Dead code · assign-only properties in sources" \
+        "jq '[.[] | select(.hints[] == \"assignOnlyProperty\") | $PERIPHERY_SRC] | length' $PERIPHERY_RESULTS"
+    measure "Dead code · redundant public modifiers in sources" \
+        "jq '[.[] | select(.hints[] == \"redundantPublicAccessibility\") | $PERIPHERY_SRC] | length' $PERIPHERY_RESULTS"
 else
-    unmeasured "Dead code · Periphery results" "pass --slow (Periphery builds the project, several minutes)" "$PERIPHERY_CMD"
+    unmeasured "Dead code · Periphery scan" \
+        "pass --slow (the first scan builds the project, several minutes; later scans reuse the index)" \
+        "$PERIPHERY_SCAN_CMD"
 fi
 
 # try? split. The house rule (CLAUDE.md) wants an `else { log.warning }`

@@ -1,0 +1,22 @@
+# Periphery (dead-code scanner) configuration. Read by `periphery scan`;
+# Scripts/vital-signs.sh runs it under `make vital-signs SLOW=1`.
+#
+# The app scheme builds every local package under Modules/ as a dependency,
+# so one scheme indexes all twelve modules plus App/ and the Xcode test
+# bundle. References from the Xcode bundle's tests count as uses; the SPM
+# module test targets are not part of this scheme, so a declaration used
+# only by those tests will be reported. Treat such reports as "used only by
+# tests", which is still worth knowing.
+project: Bocan.xcodeproj
+schemes:
+  - Bocan
+
+# public is how the modules expose API to App and to each other, and both
+# sides are indexed, so unused public declarations are real findings and
+# redundant public modifiers get reported too. Flip to true to silence both.
+retain_public: false
+
+# AppKit drives menu actions, table delegates and KVO through @objc
+# selectors that the index store cannot always tie back to a reference.
+# Keep those, at the cost of missing some genuinely dead @objc methods.
+retain_objc_accessible: true
