@@ -69,6 +69,15 @@ CSV='docs/vital-signs.csv'
 ERR_FILE="$(mktemp)"
 trap 'rm -f "$ERR_FILE"' EXIT
 
+# Both slow steps make SwiftPM clone the package graph into a fresh folder.
+# With git's core.fsmonitor on (a common global setting with Homebrew git),
+# the checkout of a fresh clone can stall inside SwiftPM for good: seen twice
+# on 2026-09-10, once in Periphery's cache and once in TMPDIR, at zero CPU
+# with every package already cloned. Turning the monitor off for the git
+# those commands spawn, and nothing else, made the same build finish in two
+# minutes. It rides in the printed command so the reader can paste it.
+GIT_NO_FSMONITOR="GIT_CONFIG_PARAMETERS=\"'core.fsmonitor=false'\""
+
 RUN_DATE="$(date '+%Y-%m-%dT%H:%M')"
 RUN_COMMIT="$(git rev-parse --short HEAD)"
 RECORDED=0
@@ -237,7 +246,7 @@ unmeasured "Duplication percentage" \
 # read that file, so each number is a jq filter over the same scan. Findings
 # in test targets are excluded from the source rows by location.
 PERIPHERY_RESULTS='build/periphery-results.json'
-PERIPHERY_SCAN_CMD="periphery scan --quiet --format json > $PERIPHERY_RESULTS && jq length $PERIPHERY_RESULTS"
+PERIPHERY_SCAN_CMD="$GIT_NO_FSMONITOR periphery scan --quiet --format json > $PERIPHERY_RESULTS && jq length $PERIPHERY_RESULTS"
 PERIPHERY_SRC='select(.location | test("/Tests/|/UITests/") | not)'
 if ! command -v periphery >/dev/null; then
     unmeasured "Dead code · Periphery scan" "periphery is not installed" "$PERIPHERY_SCAN_CMD"
@@ -314,7 +323,11 @@ measure "ADRs with a status field" \
 # --- build and runtime -------------------------------------------------------
 
 section "Build and runtime"
-RELEASE_CMD="xcodebuild -project Bocan.xcodeproj -scheme Bocan -configuration Release -destination 'generic/platform=macOS' -derivedDataPath build/vital-signs-derived ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS= clean build"
+# Derived data goes outside the repo. A folder under build/ pulled the package
+# checkouts (swift-syntax and friends) inside the tree, and swiftformat walked
+# into them and failed on files that are not ours.
+RELEASE_DERIVED="${TMPDIR:-/tmp}/bocan-vital-signs-derived"
+RELEASE_CMD="$GIT_NO_FSMONITOR xcodebuild -project Bocan.xcodeproj -scheme Bocan -configuration Release -destination 'generic/platform=macOS' -derivedDataPath '$RELEASE_DERIVED' ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS= clean build"
 if (( SLOW )); then
     mkdir -p build
     start="$(date +%s)"
