@@ -50,7 +50,17 @@ public struct TracksView: View {
     /// on `TracksViewModel`.  Pushed into the VM via `.onChange` below.
     @State var sortOrder: [KeyPathComparator<TrackRow>] = TracksViewModel.defaultSortOrder
 
-    @EnvironmentObject var lyricsEnv: LyricsViewModel
+    /// The lyrics model as a plain reference, never observed: nothing in this
+    /// view renders from its state, the two context-menu closures only call
+    /// into it. As an `@EnvironmentObject` it re-ran this body and the whole
+    /// subtree on every synced lyric line, fetch and offset change (#456).
+    /// `nil` in previews and tests, where the lyrics menu items are absent.
+    @Environment(\.lyricsViewModel) var lyricsViewModel
+
+    /// The one lyrics flag this view renders from (the LRClib menu item
+    /// exists only when the setting is on), observed on its own key so the
+    /// item follows Settings without a subscription to the whole model.
+    @AppStorage("lyrics.lrclibEnabled") var lrclibEnabled = false
 
     public init(
         vm: TracksViewModel,

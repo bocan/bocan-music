@@ -19,7 +19,12 @@ import UniformTypeIdentifiers
 /// environment so deeply nested views can reach it directly.
 public struct BocanRootView: View {
     @StateObject private var vm: LibraryViewModel
-    @ObservedObject private var lyricsVM: LyricsViewModel
+    /// Plain reference (not @ObservedObject): the root only hands the model
+    /// to the lyrics pane, the playback driver and the environment. Observing
+    /// it re-ran this whole body, and every child that could not prove itself
+    /// unchanged, on each synced lyric line (#456). The pane toggle reads the
+    /// same preference key through `lyricsPaneVisible` below.
+    private let lyricsVM: LyricsViewModel
     @ObservedObject private var visualizerVM: VisualizerViewModel
     /// Plain reference (not @ObservedObject) so `BocanRootView` skips
     /// scrobble-settings re-renders; only `RecentScrobblesView` subscribes.
@@ -46,6 +51,11 @@ public struct BocanRootView: View {
     /// window content keeps it current. Read for the toolbar label and to
     /// reopen the window after bootstrap when it was left open.
     @AppStorage(ImmersiveView.preferenceKey) private var immersiveOpen = false
+    /// Mirrors `LyricsViewModel.paneVisible` (`@AppStorage("lyrics.paneVisible")`)
+    /// for the toolbar toggle, the same way the View menu does, so the root
+    /// re-renders when the pane opens or closes and not when a lyric line
+    /// changes (#456). Both sides read and write one UserDefaults key.
+    @AppStorage("lyrics.paneVisible") private var lyricsPaneVisible = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -96,7 +106,7 @@ public struct BocanRootView: View {
                         vm: self.vm,
                         miniPlayerOpen: self.windowMode.miniPlayerOpen,
                         toggleMiniPlayer: { self.windowMode.toggleMiniPlayer() },
-                        lyricsPaneVisible: self.$lyricsVM.paneVisible,
+                        lyricsPaneVisible: self.$lyricsPaneVisible,
                         visualizerPaneVisible: self.$visualizerVM.paneVisible,
                         immersiveOpen: self.immersiveOpen,
                         toggleImmersive: {
@@ -142,6 +152,7 @@ public struct BocanRootView: View {
             }
         }
         .environmentObject(self.vm)
+        .environment(\.lyricsViewModel, self.lyricsVM)
         .task {
             // Wire window openers before any UI loads.
             let ow = self.openWindow
