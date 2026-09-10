@@ -1,7 +1,12 @@
 import Foundation
 
 /// Errors thrown by the Metadata module.
-public enum MetadataError: Error, Sendable, CustomStringConvertible {
+///
+/// Conforms to `LocalizedError` so `localizedDescription` carries the reason.
+/// Without it, Foundation reports "(Metadata.MetadataError error 3.)", which
+/// is what callers that store `error.localizedDescription` end up showing to
+/// the user (#469).
+public enum MetadataError: Error, Sendable, CustomStringConvertible, LocalizedError {
     /// TagLib could not open or parse the file.
     case unreadableFile(URL, String)
 
@@ -30,5 +35,9 @@ public enum MetadataError: Error, Sendable, CustomStringConvertible {
         case let .readOnlyFile(url):
             "Metadata: file is read-only: \(url.lastPathComponent)"
         }
+    }
+
+    public var errorDescription: String? {
+        self.description
     }
 }

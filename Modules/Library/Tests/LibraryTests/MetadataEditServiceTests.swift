@@ -161,6 +161,35 @@ struct MetadataEditServiceTests {
         #expect(album.coverArtPath != nil)
     }
 
+    /// #469: a user saw "The operation couldn't be completed. (Library.EditError
+    /// error 3.)" when adding cover art. Code 3 is `.partial`, and the per-file
+    /// reason inside it was itself an opaque "MetadataError error N", so the
+    /// dialog could never say what went wrong. Both enums now carry their
+    /// reason through `localizedDescription`.
+    @Test func failedArtworkSaveReportsTheFileAndReasonNotAnErrorCode() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: tmp.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: tmp.path) }
+
+        let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+        var patch = TrackTagPatch()
+        patch.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
+
+        do {
+            try await svc.edit(trackID: trackID, patch: patch)
+            Issue.record("editing a read-only file must fail")
+        } catch {
+            let message = error.localizedDescription
+            #expect(message.contains("1 file(s) failed"), "the wrapper names the count: \(message)")
+            #expect(message.contains("read-only"), "the wrapper carries the per-file reason: \(message)")
+            #expect(message.contains(tmp.lastPathComponent), "the wrapper names the file: \(message)")
+            #expect(!message.contains("error 3"), "no Foundation error code: \(message)")
+        }
+    }
+
     @Test func partialAlbumEditNeverClobbersExistingAlbumArt() async throws {
         let db = try await makeDatabase()
         let tmpA = try tempMP3()
