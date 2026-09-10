@@ -18,8 +18,9 @@ on:
 permissions:
   contents: read
 
-# Explicit bash gives `-o pipefail`; the implicit default is `bash -e` only,
-# which would let `make build | xcbeautify` pass on a failed build.
+# Explicit bash gives `-o pipefail` to any pipe written in a step; the
+# implicit default is `bash -e` only, which would let a piped failing build
+# pass. The Makefile sets it for its own xcbeautify pipes as well.
 defaults:
   run:
     shell: bash
@@ -27,6 +28,9 @@ defaults:
 env:
   # The runner has no signing certificate: build ad-hoc, no team, no entitlements.
   XCB_OVERRIDE: "CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS="
+  # Output noise (#458): the build prints only tasks with warnings or errors.
+  # The flag lives in the Makefile and is empty for local runs.
+  XCBEAUTIFY_FLAGS: "--quiet"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -133,4 +137,4 @@ jobs:
         run: make lint && make format-check
 
       - name: Build (Debug)
-        run: make build 2>&1 | xcbeautify
+        run: make build

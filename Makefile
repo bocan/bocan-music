@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -21,6 +21,17 @@ EXPECTED_SWIFTFORMAT := $(shell cat .swiftformat-version 2>/dev/null)
 # entitlement (which ad-hoc signing cannot carry without a provisioning profile):
 #   XCB_OVERRIDE='CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_ENTITLEMENTS='
 XCB_OVERRIDE ?=
+
+# Flags for xcbeautify on every xcodebuild pipe. Empty locally, so a build or
+# test run shows its full beautified output. CI exports `--quiet`, so a green
+# run prints only the tasks with warnings or errors, and a failed test still
+# prints in full (#458).
+XCBEAUTIFY_FLAGS ?=
+
+# Flags for `swift test` in the per-module targets. Empty locally. CI exports
+# `-q`, which drops the build progress and the per-test started/passed lines
+# and keeps compiler diagnostics, failures and the run summary (#458).
+SWIFT_TEST_FLAGS ?=
 
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
 tests:
@@ -67,6 +78,11 @@ doctor:
 	@if [ ! -f Brewfile.lock.json ]; then \
 		echo "⚠️  WARNING: Brewfile.lock.json is missing. Run 'brew bundle install' then commit the lock file."; \
 	fi
+	@$(MAKE) -s check-swiftlint-version check-swiftformat-version
+	@Scripts/check-ffmpeg-major.sh
+
+## check-swiftlint-version: Fail unless the installed SwiftLint is the release pinned in .swiftlint-version
+check-swiftlint-version:
 	@actual="$$(swiftlint version 2>/dev/null)"; \
 	if [ -z "$(EXPECTED_SWIFTLINT)" ]; then \
 		echo "⚠️  WARNING: .swiftlint-version is missing; cannot verify the SwiftLint pin."; \
@@ -78,6 +94,9 @@ doctor:
 	else \
 		echo "✓ SwiftLint $$actual matches the pin"; \
 	fi
+
+## check-swiftformat-version: Fail unless the installed SwiftFormat is the release pinned in .swiftformat-version
+check-swiftformat-version:
 	@actual="$$(swiftformat --version 2>/dev/null)"; \
 	if [ -z "$(EXPECTED_SWIFTFORMAT)" ]; then \
 		echo "⚠️  WARNING: .swiftformat-version is missing; cannot verify the SwiftFormat pin."; \
@@ -89,7 +108,6 @@ doctor:
 	else \
 		echo "✓ SwiftFormat $$actual matches the pin"; \
 	fi
-	@Scripts/check-ffmpeg-major.sh
 
 ## open: Open the Xcode project
 open:
@@ -108,7 +126,7 @@ build:
 		-destination 'platform=macOS' \
 		$(XCB_OVERRIDE) \
 		build \
-		| xcbeautify
+		| xcbeautify $(XCBEAUTIFY_FLAGS)
 
 ## test: Run unit + integration tests (excludes UITests)
 test:
@@ -125,7 +143,7 @@ test:
 		-skip-testing:BocanUITests \
 		$(XCB_OVERRIDE) \
 		test \
-		| xcbeautify
+		| xcbeautify $(XCBEAUTIFY_FLAGS)
 
 ## test-coverage: Run tests and fail if coverage < 80%
 test-coverage:
@@ -143,7 +161,7 @@ test-coverage:
 		-skip-testing:BocanUITests \
 		$(XCB_OVERRIDE) \
 		test \
-		| xcbeautify
+		| xcbeautify $(XCBEAUTIFY_FLAGS)
 	Scripts/coverage-report.sh build/TestResults.xcresult 80
 
 ## test-e2e: Run the whole-app E2E journeys (BocanUITests; launches the app repeatedly)
@@ -161,7 +179,7 @@ test-e2e:
 		-only-testing:BocanUITests \
 		$(XCB_OVERRIDE) \
 		test \
-		| xcbeautify
+		| xcbeautify $(XCBEAUTIFY_FLAGS)
 
 # The curated <=10 minute subset for a quick pre-release sanity check: phase 28
 # journeys, the menu structural crawl, one surface, one radio journey. Deliberately
@@ -188,7 +206,7 @@ test-e2e-smoke:
 		$(E2E_SMOKE_TESTS) \
 		$(XCB_OVERRIDE) \
 		test \
-		| xcbeautify
+		| xcbeautify $(XCBEAUTIFY_FLAGS)
 
 ## coverage-all: Run SPM module tests with coverage and fail if any module is below threshold
 ## Defaults to 70%. Override with COVERAGE_THRESHOLD=NN for a global
@@ -205,84 +223,84 @@ test-audio-engine:
 	@echo "=============================="
 	@echo "= Executing AudioEngine Test"
 	@echo "=============================="
-	cd Modules/AudioEngine && swift test
+	cd Modules/AudioEngine && swift test $(SWIFT_TEST_FLAGS)
 
 ## test-persistence: Run Persistence SPM package tests
 test-persistence:
 	@echo "=============================="
 	@echo "= Executing Persistence Test"
 	@echo "=============================="
-	cd Modules/Persistence && swift test --enable-code-coverage
+	cd Modules/Persistence && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-metadata: Run Metadata SPM package tests
 test-metadata:
 	@echo "=============================="
 	@echo "= Executing Metadata Test"
 	@echo "=============================="
-	cd Modules/Metadata && swift test --enable-code-coverage
+	cd Modules/Metadata && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-library: Run Library SPM package tests
 test-library:
 	@echo "=============================="
 	@echo "= Executing Library Test"
 	@echo "=============================="
-	cd Modules/Library && swift test --enable-code-coverage
+	cd Modules/Library && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-acoustics: Run Acoustics SPM package tests
 test-acoustics:
 	@echo "=============================="
 	@echo "= Executing Acoustics Test"
 	@echo "=============================="
-	cd Modules/Acoustics && swift test --enable-code-coverage
+	cd Modules/Acoustics && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-ui: Run UI SPM package tests
 test-ui:
 	@echo "=============================="
 	@echo "= Executing UI Test"
 	@echo "=============================="
-	cd Modules/UI && swift test --enable-code-coverage
+	cd Modules/UI && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-playback: Run Playback SPM package tests (RouteManager, QueuePlayer, GaplessScheduler, etc.)
 test-playback:
 	@echo "=============================="
 	@echo "= Executing Playback Test"
 	@echo "=============================="
-	cd Modules/Playback && swift test --enable-code-coverage
+	cd Modules/Playback && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-scrobble: Run Scrobble SPM package tests
 test-scrobble:
 	@echo "=============================="
 	@echo "= Executing Scrobble Test"
 	@echo "=============================="
-	cd Modules/Scrobble && swift test --enable-code-coverage
+	cd Modules/Scrobble && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-subsonic: Run Subsonic SPM package tests
 test-subsonic:
 	@echo "=============================="
 	@echo "= Executing Subsonic Test"
 	@echo "=============================="
-	cd Modules/Subsonic && swift test --enable-code-coverage
+	cd Modules/Subsonic && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-podcasts: Run Podcasts SPM package tests
 test-podcasts:
 	@echo "=============================="
 	@echo "= Executing Podcasts Test"
 	@echo "=============================="
-	cd Modules/Podcasts && swift test --enable-code-coverage
+	cd Modules/Podcasts && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-sync-server: Run SyncServer SPM package tests
 test-sync-server:
 	@echo "=============================="
 	@echo "= Executing SyncServer Test"
 	@echo "=============================="
-	cd Modules/SyncServer && swift test --enable-code-coverage
+	cd Modules/SyncServer && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## test-observability: Run Observability SPM package tests
 test-observability:
 	@echo "=============================="
 	@echo "= Executing Observability Test"
 	@echo "=============================="
-	cd Modules/Observability && swift test --enable-code-coverage
+	cd Modules/Observability && swift test $(SWIFT_TEST_FLAGS) --enable-code-coverage
 
 ## uitest: Run UI smoke tests (BocanUITests scheme target)
 uitest:
@@ -293,15 +311,15 @@ uitest:
 		-destination 'platform=macOS' \
 		-only-testing:BocanUITests \
 		test \
-		| xcbeautify
+		| xcbeautify $(XCBEAUTIFY_FLAGS)
 
-## lint: Run SwiftLint
-lint:
-	swiftlint lint --strict
-	@python3 Scripts/audit-help-text.py --warn
+## lint: Run SwiftLint (strict, violations only; refuses to run on an unpinned SwiftLint)
+lint: check-swiftlint-version
+	swiftlint lint --strict --quiet
+	@python3 Scripts/audit-help-text.py --warn --summary
 
 ## format: Run SwiftFormat (modifies files)
-format:
+format: check-swiftformat-version
 	swiftformat .
 
 ## pseudolocale: Regenerate the en-XA pseudolocale in the UI String Catalog
@@ -339,7 +357,7 @@ test-scripts:
 	@for t in Scripts/tests/*.sh; do bash "$$t" || exit 1; done
 
 ## format-check: Run SwiftFormat in lint mode (CI)
-format-check:
+format-check: check-swiftformat-version
 	swiftformat --lint .
 
 ## install-hooks: Install git pre-commit hook
