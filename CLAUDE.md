@@ -28,6 +28,10 @@ Per-module SPM tests use `swift test` under the module directory. To run a singl
 
 **The Xcode `BocanTests` target runs without a host app (`TEST_HOST = ""`), so AppKit / SwiftUI rendering is unavailable there.** Snapshot tests and anything that needs a real view tree live in the `UI` SPM package and run via `make test-ui`. `make test` will appear to "miss" them — that's by design, not a bug to chase.
 
+## Slice review for PRs
+
+Before opening a feat, fix or perf PR, run /slice-review. Its output is the `## Slice review` section of the PR body; `.github/PULL_REQUEST_TEMPLATE.md` carries the same form for PRs opened by hand. Docs, chore and other PR types are exempt.
+
 ## Architecture
 
 Strict module DAG, no upward imports:
@@ -65,6 +69,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - **`PlayableSource` is `Codable`** with a discriminator key. The `QueuePersistence` v1→v2 migration depends on this; new cases need both encode/decode arms and existing-test updates.
 - **Context7 Lookups**. With Context7 lookups, ALWAYS choose the latest version of a dependency (FeedKit, GRDB, etc.) and avoid any deprecated APIs. Where the spec deviates from this, stop and ask for clarification before proceeding. This is as important as any other spec detail, and will save us from wasted work.
 - **No upward imports**. The dependency order above is enforced — if you find yourself wanting to `import UI` from `Playback`, the abstraction is in the wrong layer.
+- **`.claude/skills/` holds project-owned skills only.** A skill here is a workflow this repo runs (a per-change review gate, a perf-trace recipe, a release preview), written against this codebase's rules and gates. Third-party skill packs are not vendored: 306 files of generic Apple-platform reference material sat here for a month without a single invocation (#460). Reference material comes from Context7 on demand; project knowledge belongs in the `CLAUDE.md` files and `docs/`.
 - **All user-facing copy MUST be localized. No bare user-facing string literals, under any circumstances.** Every user-visible string in the `UI` module routes through the `L10n` helper (`Text(localized:)` / `L10n.string`) with a key in `Modules/UI/Sources/UI/Resources/Localizable.xcstrings`; a bare literal compiles, renders in English, and silently never localizes. The `no_bare_user_facing_literal` SwiftLint rule (module-wide, CI gate) and the `L10nTests` suite enforce this. After adding or changing catalog keys, run `make pseudolocale` (the en-XA coverage test fails otherwise). Strings displayed by the UI but owned by lower modules (preset names, status labels) keep English raw values and get a UI-side display mapping. New user-facing surfaces belong in the `UI` module where the catalog and guard cover them; do not add user-facing literals to `App/` (it has no String Catalog). Full workflow: `docs/design-spec/localization.md`.
 
 ## Concurrency, errors, logging
