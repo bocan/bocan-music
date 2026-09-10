@@ -208,10 +208,13 @@ public struct TrackTable: NSViewRepresentable {
         // 1 — Decide what moved since the last apply (#450). The rows version
         // gates every per-row walk, so a parent re-render with unchanged
         // inputs does no per-row work at all.
+        // `Track.ID` is `Int64?`, so `nowPlayingTrackID` is a double optional;
+        // the plan keys on the wrapped `Int64`, and nothing playing is `nil`.
+        let nowPlayingID: Int64? = self.nowPlayingTrackID.flatMap(\.self)
         let plan = TrackTableUpdatePlan.make(
             rowsVersion: self.rowsVersion,
             ids: { self.rows.compactMap(\.id) },
-            nowPlayingID: self.nowPlayingTrackID,
+            nowPlayingID: nowPlayingID,
             selection: self.selection,
             applied: coordinator.applied
         )
@@ -233,7 +236,7 @@ public struct TrackTable: NSViewRepresentable {
         coordinator.applied = plan.applied(
             after: coordinator.applied,
             rowsVersion: self.rowsVersion,
-            nowPlayingID: self.nowPlayingTrackID,
+            nowPlayingID: nowPlayingID,
             selection: self.selection
         )
 
@@ -314,11 +317,12 @@ public struct TrackTable: NSViewRepresentable {
         // The now-playing highlight depends on `nowPlayingTrackID`, not on row
         // content, so the outgoing and incoming now-playing rows must refresh
         // too, even when their underlying values are identical.
-        if coordinator.applied.nowPlayingID != self.nowPlayingTrackID {
-            if let old = coordinator.applied.nowPlayingID, let oldID = old {
+        let nowPlayingID: Int64? = self.nowPlayingTrackID.flatMap(\.self)
+        if coordinator.applied.nowPlayingID != nowPlayingID {
+            if let oldID = coordinator.applied.nowPlayingID {
                 changed.append(oldID)
             }
-            if let new = self.nowPlayingTrackID, let newID = new {
+            if let newID = nowPlayingID {
                 changed.append(newID)
             }
         }

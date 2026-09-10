@@ -72,6 +72,21 @@ struct SubsonicAnnotationCoordinatorTests {
         }
     }
 
+    @Test("every override write moves overridesVersion, so derived table rows get a new version (#455)")
+    func overridesVersionMovesWithOverrides() async {
+        let stub = StubAnnotationDelivery()
+        let coord = SubsonicAnnotationCoordinator(delivery: stub)
+        let fresh = coord.overridesVersion
+
+        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        let starred = coord.overridesVersion
+        #expect(starred > fresh, "a star override is a write")
+
+        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: true)
+        #expect(coord.overridesVersion > starred, "clearing it is a write too")
+        await self.waitForCalls(stub, count: 2)
+    }
+
     @Test("toggleStar updates override immediately and dispatches star")
     func toggleStarOptimistic() async {
         let stub = StubAnnotationDelivery()
