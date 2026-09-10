@@ -1,17 +1,26 @@
 #!/usr/bin/env bash
 # vital-signs.sh: print the repository's vital signs as a markdown table.
-# Every row shows the metric, its value, and the exact command that produced
-# the value, so each number can be re-run and audited by hand.
+# Every row shows the metric, its value, a note, and the exact command that
+# produced the value, so each number can be re-run and audited by hand.
 #
-# Usage: Scripts/vital-signs.sh [--slow]
-#   --slow   also time a clean Release build (several minutes) and, when a
-#            .periphery.yml exists, run a Periphery dead-code scan.
+# Usage: Scripts/vital-signs.sh [--slow] [--record] [--label NAME]
+#   --slow        also time a clean Release build (several minutes) and, when
+#                 a .periphery.yml exists, run a Periphery dead-code scan.
+#   --record      append this run to docs/vital-signs.csv, one row per metric
+#                 (date, commit, label, metric, value, unit, note), so runs
+#                 can be compared. Scripts/vital-signs-trend.py reads it.
+#   --label NAME  name this run in the history (for example pre-2.15.0).
 #
 # Source-based counts are scoped to Modules/*/Sources and App/, with tests
 # counted separately. Coverage and test timing are read from the artefacts
 # the last `make test-coverage` and `make coverage-all` left behind; nothing
 # is rebuilt. A metric that cannot be measured prints "unmeasured" and why.
 # Nothing is estimated.
+#
+# Metric names are the keys of the history, so they stay stable; anything
+# that varies per run (artefact dates, reasons) goes in the note column.
+# If a command changes in a way that changes the meaning of its number,
+# rename the metric so the old series ends there.
 #
 # shellcheck disable=SC2016  # commands are quoted strings shown to the reader
 set -euo pipefail
@@ -20,18 +29,26 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 SLOW=0
-for arg in "$@"; do
-    case "$arg" in
+RECORD=0
+LABEL=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         --slow) SLOW=1 ;;
+        --record) RECORD=1 ;;
+        --label)
+            LABEL="${2:?--label needs a name}"
+            shift
+            ;;
         -h | --help)
-            sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
-            echo "unknown argument: $arg" >&2
+            echo "unknown argument: $1" >&2
             exit 2
             ;;
     esac
+    shift
 done
 
 for tool in rg jq xcrun git; do
@@ -48,8 +65,13 @@ SUM="awk -F: '{s+=\$NF} END{print s+0}'"
 COUNT="wc -l | tr -d ' '"
 XCRESULT='build/TestResults.xcresult'
 ALLOWLIST='Scripts/vital-signs.allowlist'
+CSV='docs/vital-signs.csv'
 ERR_FILE="$(mktemp)"
 trap 'rm -f "$ERR_FILE"' EXIT
+
+RUN_DATE="$(date '+%Y-%m-%dT%H:%M')"
+RUN_COMMIT="$(git rev-parse --short HEAD)"
+RECORDED=0
 
 # --- table helpers -----------------------------------------------------------
 
@@ -57,31 +79,67 @@ escape_cell() {
     printf '%s' "$1" | sed 's/|/\\|/g'
 }
 
-row() { # metric, value, command
-    printf '| %s | %s | `%s` |\n' \
-        "$(escape_cell "$1")" "$(escape_cell "$2")" "$(escape_cell "$3")"
+csv_field() { # quote when the field holds a comma, a quote or a newline
+    local f="$1"
+    if [[ "$f" == *[,\"$'\n']* ]]; then
+        f="${f//\"/\"\"}"
+        printf '"%s"' "$f"
+    else
+        printf '%s' "$f"
+    fi
+}
+
+record() { # metric, value, note. Splits "74.5 s" into value 74.5 unit s.
+    local metric="$1" value="$2" note="$3" num="" unit=""
+    local num_re='^([0-9]+(\.[0-9]+)?)[[:space:]]*(%|s|MB)?$'
+    if [[ "$value" =~ $num_re ]]; then
+        num="${BASH_REMATCH[1]}"
+        unit="${BASH_REMATCH[3]}"
+    else
+        # unmeasured, error, no output: an empty value keeps the series honest
+        note="${note:-$value}"
+    fi
+    if [[ ! -f "$CSV" ]]; then
+        mkdir -p "$(dirname "$CSV")"
+        echo "date,commit,label,metric,value,unit,note" >"$CSV"
+    fi
+    printf '%s,%s,%s,%s,%s,%s,%s\n' \
+        "$RUN_DATE" "$RUN_COMMIT" "$(csv_field "$LABEL")" "$(csv_field "$metric")" \
+        "$num" "$unit" "$(csv_field "$note")" >>"$CSV"
+    RECORDED=$((RECORDED + 1))
+}
+
+row() { # metric, value, command, [note]
+    local metric="$1" value="$2" cmd="$3" note="${4:-}"
+    printf '| %s | %s | %s | `%s` |\n' \
+        "$(escape_cell "$metric")" "$(escape_cell "$value")" \
+        "$(escape_cell "$note")" "$(escape_cell "$cmd")"
+    if (( RECORD )); then
+        record "$metric" "$value" "$note"
+    fi
 }
 
 section() {
-    printf '| **%s** | | |\n' "$1"
+    printf '| **%s** | | | |\n' "$1"
 }
 
 # Run a command string, print its output as the value. rg exits 1 on no match,
 # so pipefail is off inside the evaluation; a real error shows up on stderr and
 # is reported instead of a silent zero.
-measure() { # metric, command
-    local metric="$1" cmd="$2" value
+measure() { # metric, command, [note]
+    local metric="$1" cmd="$2" note="${3:-}" value
     value="$(set +o pipefail; eval "$cmd" 2>"$ERR_FILE")" || true
     if [[ -z "$value" && -s "$ERR_FILE" ]]; then
-        value="error: $(head -n 1 "$ERR_FILE")"
+        value="error"
+        note="$(head -n 1 "$ERR_FILE")"
     elif [[ -z "$value" ]]; then
         value="no output"
     fi
-    row "$metric" "$value" "$cmd"
+    row "$metric" "$value" "$cmd" "$note"
 }
 
 unmeasured() { # metric, reason, command that would produce it
-    row "$1" "unmeasured: $2" "$3"
+    row "$1" "unmeasured" "$3" "$2"
 }
 
 mtime() {
@@ -92,11 +150,11 @@ mtime() {
 
 echo "# Bòcan vital signs"
 echo
-echo "Generated $(date '+%Y-%m-%d %H:%M %Z') at commit $(git rev-parse --short HEAD) on branch $(git branch --show-current)."
-echo "Source counts cover Modules/*/Sources and App/ unless a row says tests. Rows read from artefacts carry the artefact's date. Unmeasured rows say why."
+echo "Generated $RUN_DATE at commit $RUN_COMMIT on branch $(git branch --show-current)${LABEL:+, labelled $LABEL}."
+echo "Source counts cover Modules/*/Sources and App/ unless a row says tests. Rows read from artefacts carry the artefact's date in the note. Unmeasured rows say why."
 echo
-echo "| Metric | Value | Command |"
-echo "|---|---|---|"
+echo "| Metric | Value | Note | Command |"
+echo "|---|---|---|---|"
 
 # --- size --------------------------------------------------------------------
 
@@ -116,17 +174,20 @@ section "Tests"
 TEST_RE='^\s*(@Test\b|func test[A-Z])'
 for dir in Modules/*/; do
     module="$(basename "$dir")"
-    measure "Tests · $module (@Test and XCTest funcs)" \
-        "rg -c '$TEST_RE' Modules/$module/Tests -g '*.swift' | $SUM"
+    measure "Tests · $module" \
+        "rg -c '$TEST_RE' Modules/$module/Tests -g '*.swift' | $SUM" \
+        "@Test attributes and XCTest funcs"
 done
 measure "Tests · all modules" "rg -c '$TEST_RE' Modules/*/Tests -g '*.swift' | $SUM"
 
 if [[ -d "$XCRESULT" ]]; then
-    XCR_DATE="$(mtime "$XCRESULT")"
-    measure "Tests · Xcode bundle run ($XCR_DATE)" \
-        "xcrun xcresulttool get test-results summary --path $XCRESULT | jq -r '.totalTestCount'"
-    measure "Test suite wall time · Xcode bundle ($XCR_DATE)" \
-        "xcrun xcresulttool get test-results summary --path $XCRESULT | jq -r '(((.finishTime - .startTime) * 10 | round) / 10 | tostring) + \" s\"'"
+    XCR_NOTE="artefact $(mtime "$XCRESULT")"
+    measure "Tests · Xcode bundle run" \
+        "xcrun xcresulttool get test-results summary --path $XCRESULT | jq -r '.totalTestCount'" \
+        "$XCR_NOTE"
+    measure "Test suite wall time · Xcode bundle" \
+        "xcrun xcresulttool get test-results summary --path $XCRESULT | jq -r '(((.finishTime - .startTime) * 10 | round) / 10 | tostring) + \" s\"'" \
+        "$XCR_NOTE"
 else
     unmeasured "Tests · Xcode bundle run" "no $XCRESULT; run make test-coverage first" "make test-coverage"
     unmeasured "Test suite wall time · Xcode bundle" "no $XCRESULT; run make test-coverage first" "make test-coverage"
@@ -138,10 +199,11 @@ unmeasured "Test suite wall time · SPM modules" \
 
 section "Coverage"
 if [[ -d "$XCRESULT" ]]; then
-    measure "Coverage · Xcode bundle gate, BocanTests.xctest ($XCR_DATE)" \
-        "xcrun xccov view --report --json $XCRESULT | jq -r '.targets[] | select(.name == \"BocanTests.xctest\") | (((.lineCoverage * 1000 | round) / 10) | tostring) + \"%\"'"
+    measure "Coverage · Xcode bundle gate (BocanTests.xctest)" \
+        "xcrun xccov view --report --json $XCRESULT | jq -r '.targets[] | select(.name == \"BocanTests.xctest\") | (((.lineCoverage * 1000 | round) / 10) | tostring) + \"%\"'" \
+        "$XCR_NOTE"
 else
-    unmeasured "Coverage · Xcode bundle gate" "no $XCRESULT; run make test-coverage first" "make test-coverage"
+    unmeasured "Coverage · Xcode bundle gate (BocanTests.xctest)" "no $XCRESULT; run make test-coverage first" "make test-coverage"
 fi
 for dir in Modules/*/; do
     module="$(basename "$dir")"
@@ -150,8 +212,9 @@ for dir in Modules/*/; do
     if [[ -f "$profdata" && -x "$binary" ]]; then
         # The same llvm-cov invocation Scripts/coverage-all.sh uses, on the
         # artefacts it left behind, so the number matches make coverage-all.
-        measure "Coverage · $module (coverage-all artefact $(mtime "$profdata"))" \
-            "xcrun llvm-cov report $binary -instr-profile=$profdata -ignore-filename-regex='(\.build|/Tests/|/checkouts/|\.derivedSources)' Modules/$module/Sources/ | awk '/^TOTAL/ {print \$10}'"
+        measure "Coverage · $module" \
+            "xcrun llvm-cov report $binary -instr-profile=$profdata -ignore-filename-regex='(\.build|/Tests/|/checkouts/|\.derivedSources)' Modules/$module/Sources/ | awk '/^TOTAL/ {print \$10}'" \
+            "coverage-all artefact $(mtime "$profdata")"
     else
         have_prof="no"; [[ -f "$profdata" ]] && have_prof="yes"
         have_bin="no"; [[ -x "$binary" ]] && have_bin="yes"
@@ -184,7 +247,7 @@ elif [[ ! -f .periphery.yml ]]; then
         "$PERIPHERY_SCAN_CMD"
 elif (( SLOW )); then
     mkdir -p build
-    measure "Dead code · Periphery scan (all findings, tests included)" "$PERIPHERY_SCAN_CMD"
+    measure "Dead code · Periphery scan" "$PERIPHERY_SCAN_CMD" "all findings, tests included"
     measure "Dead code · unused declarations in sources" \
         "jq '[.[] | select(.hints[] == \"unused\") | $PERIPHERY_SRC] | length' $PERIPHERY_RESULTS"
     measure "Dead code · assign-only properties in sources" \
@@ -206,22 +269,24 @@ TRY_WITH_CMD="rg -U -o 'try\?[^\n]*\belse\s*\{[^\n]*(\n[^\n]*)?\blog\.(warning|e
 try_total="$(set +o pipefail; eval "$TRY_TOTAL_CMD" 2>/dev/null || true)"
 try_with="$(set +o pipefail; eval "$TRY_WITH_CMD" 2>/dev/null || true)"
 try_with="${try_with:-0}"
-row "try? in sources (occurrences)" "$try_total" "$TRY_TOTAL_CMD"
-row "try? with an else { log } companion (log call on the else line or the next)" "$try_with" "$TRY_WITH_CMD"
-row "try? without a companion" "$((try_total - try_with))" "(try? occurrences) - (try? with companion)"
+row "try? in sources" "$try_total" "$TRY_TOTAL_CMD" "occurrences"
+row "try? with an else { log } companion" "$try_with" "$TRY_WITH_CMD" "log call on the else line or the next"
+row "try? without a companion" "$((try_total - try_with))" "(try? in sources) - (try? with companion)"
 
 measure "nonisolated(unsafe) in sources" "rg -o 'nonisolated\(unsafe\)' $SRC -g '*.swift' | $COUNT"
 measure "@unchecked Sendable in sources" "rg -o '@unchecked Sendable' $SRC -g '*.swift' | $COUNT"
-measure "@MainActor outside the UI layer (Modules/* except UI; App is UI layer)" \
-    "rg -o '@MainActor' Modules/*/Sources -g '*.swift' -g '!Modules/UI/**' | $COUNT"
+measure "@MainActor outside the UI layer" \
+    "rg -o '@MainActor' Modules/*/Sources -g '*.swift' -g '!Modules/UI/**' | $COUNT" \
+    "Modules/* except UI; App is UI layer"
 
 for word in TODO FIXME XCTSkip fatalError; do
-    measure "$word in sources (whole word)" "rg -ow '$word' $SRC -g '*.swift' | $COUNT"
+    measure "$word in sources" "rg -ow '$word' $SRC -g '*.swift' | $COUNT" "whole word"
 done
-measure "XCTSkip in tests (whole word)" "rg -ow 'XCTSkip' Modules/*/Tests -g '*.swift' | $COUNT"
+measure "XCTSkip in tests" "rg -ow 'XCTSkip' Modules/*/Tests -g '*.swift' | $COUNT" "whole word"
 
 # Allowlist: one ripgrep glob per line, excluded from the "outside" counts.
 ALLOW_GLOBS=""
+ALLOW_COUNT=0
 if [[ -f "$ALLOWLIST" ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do
         line="${line%%#*}"
@@ -229,16 +294,18 @@ if [[ -f "$ALLOWLIST" ]]; then
         line="${line%"${line##*[![:space:]]}"}"
         [[ -z "$line" ]] && continue
         ALLOW_GLOBS+=" -g '!$line'"
+        ALLOW_COUNT=$((ALLOW_COUNT + 1))
     done <"$ALLOWLIST"
 fi
-measure "Task { in sources (all)" "rg -oF 'Task {' $SRC -g '*.swift' | $COUNT"
-measure "Task { outside the allowlist ($ALLOWLIST)" "rg -oF 'Task {' $SRC -g '*.swift'$ALLOW_GLOBS | $COUNT"
-measure "Timer.scheduledTimer in sources (all)" "rg -o 'Timer\.scheduledTimer' $SRC -g '*.swift' | $COUNT"
-measure "Timer.scheduledTimer outside the allowlist ($ALLOWLIST)" \
-    "rg -o 'Timer\.scheduledTimer' $SRC -g '*.swift'$ALLOW_GLOBS | $COUNT"
+ALLOW_NOTE="$ALLOWLIST, $ALLOW_COUNT entries"
+measure "Task { in sources" "rg -oF 'Task {' $SRC -g '*.swift' | $COUNT"
+measure "Task { outside the allowlist" "rg -oF 'Task {' $SRC -g '*.swift'$ALLOW_GLOBS | $COUNT" "$ALLOW_NOTE"
+measure "Timer.scheduledTimer in sources" "rg -o 'Timer\.scheduledTimer' $SRC -g '*.swift' | $COUNT"
+measure "Timer.scheduledTimer outside the allowlist" \
+    "rg -o 'Timer\.scheduledTimer' $SRC -g '*.swift'$ALLOW_GLOBS | $COUNT" "$ALLOW_NOTE"
 
-measure "sql: statements (lines)" "rg -c 'sql:' $SRC -g '*.swift' | $SUM"
-measure "sql: lines containing \\( interpolation" "rg -n 'sql:' $SRC -g '*.swift' | rg -cF '\\('"
+measure "sql: statements" "rg -c 'sql:' $SRC -g '*.swift' | $SUM" "lines"
+measure "sql: lines with interpolation" "rg -n 'sql:' $SRC -g '*.swift' | rg -cF '\\('" "contain \\("
 
 measure "ADRs" "ls docs/design-spec/ADR-*.md | $COUNT"
 measure "ADRs with a status field" \
@@ -252,20 +319,20 @@ if (( SLOW )); then
     mkdir -p build
     start="$(date +%s)"
     if eval "$RELEASE_CMD" >build/vital-signs-release-build.log 2>&1; then
-        row "Clean build time · Release (unsigned, arm64)" "$(( $(date +%s) - start )) s" "time $RELEASE_CMD"
+        row "Clean build time · Release" "$(( $(date +%s) - start )) s" "time $RELEASE_CMD" "unsigned, arm64"
     else
-        row "Clean build time · Release (unsigned, arm64)" "build failed; see build/vital-signs-release-build.log" "time $RELEASE_CMD"
+        row "Clean build time · Release" "error" "time $RELEASE_CMD" "build failed; see build/vital-signs-release-build.log"
     fi
 else
-    unmeasured "Clean build time · Release (unsigned, arm64)" "pass --slow (several minutes)" "time $RELEASE_CMD"
+    unmeasured "Clean build time · Release" "pass --slow (several minutes)" "time $RELEASE_CMD"
 fi
 
 TRACE_CMD="xctrace record --template 'Time Profiler' --all-processes --time-limit 30s --output build/launch.trace & sleep 2 && open -a Bocan; then read the signpost interval from the trace (xctrace export --xpath)"
-unmeasured "Cold start to first window (app.bootstrap signpost)" \
-    "the signpost exists (App/BocanApp.swift) but info-level log lines are not persisted to the unified log and no launch trace is automated" \
+unmeasured "Cold start to first window" \
+    "the app.bootstrap signpost exists (App/BocanApp.swift) but info-level log lines are not persisted to the unified log and no launch trace is automated" \
     "$TRACE_CMD"
-unmeasured "Library load time for the large fixture (tracks.load, library.scan signposts)" \
-    "no large fixture exists yet; the signposts exist" \
+unmeasured "Library load time for the large fixture" \
+    "no large fixture exists yet; the tracks.load and library.scan signposts exist" \
     "$TRACE_CMD"
 unmeasured "Hitch ratio for the standard playback scenario" \
     "no standard playback scenario or performance gate exists yet" \
@@ -273,3 +340,7 @@ unmeasured "Hitch ratio for the standard playback scenario" \
 unmeasured "Idle memory after 10 minutes of playback" \
     "the 10-minute playback protocol is not automated; sample a running instance by hand" \
     "ps -o rss= -p \$(pgrep -x Bocan) | awk '{printf \"%.0f MB\\n\", \$1 / 1024}'"
+
+if (( RECORD )); then
+    echo "recorded $RECORDED rows to $CSV as run $RUN_DATE ($RUN_COMMIT${LABEL:+, $LABEL})" >&2
+fi

@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -357,6 +357,11 @@ clean:
 downloads:
 	@Scripts/release-downloads.sh
 
-## vital-signs: Print the repository vital signs as a markdown table, each row with the command that produced it (SLOW=1 adds the clean Release build time)
+## vital-signs: Print the repository vital signs as a markdown table, each row with the command that produced it
+## SLOW=1 adds the clean Release build time and the Periphery scan; RECORD=1 appends the run to docs/vital-signs.csv; LABEL=pre-2.15.0 names it
 vital-signs:
-	@Scripts/vital-signs.sh $(if $(SLOW),--slow,)
+	@Scripts/vital-signs.sh $(if $(SLOW),--slow,) $(if $(RECORD),--record,) $(if $(LABEL),--label $(LABEL),)
+
+## vital-signs-trend: Show docs/vital-signs.csv as one column per recorded run, with the change and a sparkline (N=6 runs to show, FILTER=text)
+vital-signs-trend:
+	@Scripts/vital-signs-trend.py $(or $(N),6) $(if $(FILTER),--filter "$(FILTER)",)
