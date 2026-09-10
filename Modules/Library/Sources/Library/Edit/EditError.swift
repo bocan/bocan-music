@@ -1,7 +1,10 @@
 import Foundation
 
 /// Errors thrown by the metadata-editing subsystem.
-public enum EditError: Error, Sendable, CustomStringConvertible {
+/// Conforms to `LocalizedError` so `localizedDescription`, which the UI shows
+/// in its error dialog, carries the reason instead of Foundation's fallback
+/// "(Library.EditError error 3.)" (#469).
+public enum EditError: Error, Sendable, CustomStringConvertible, LocalizedError {
     /// The track was not found in the database.
     case trackNotFound(Int64)
 
@@ -28,7 +31,17 @@ public enum EditError: Error, Sendable, CustomStringConvertible {
         case .cancelled:
             "Edit: cancelled"
         case let .partial(errors):
-            "Edit: \(errors.count) file(s) failed"
+            // Lead with one concrete reason: a batch that fails usually fails
+            // every file the same way, and the count alone tells the user nothing.
+            if let first = errors.sorted(by: { $0.key < $1.key }).first?.value {
+                "Edit: \(errors.count) file(s) failed. First: \(first)"
+            } else {
+                "Edit: \(errors.count) file(s) failed"
+            }
         }
+    }
+
+    public var errorDescription: String? {
+        self.description
     }
 }

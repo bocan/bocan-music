@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
+
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
 The now-playing display no longer misses a queue change that lands in the first instants after launch while nothing is playing, which could leave it on "Not playing" until the next track change.
