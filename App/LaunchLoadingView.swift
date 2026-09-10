@@ -24,7 +24,6 @@ struct AppRootGate: View {
                 .environment(graph.dspViewModel)
                 .environment(\.settingsRouter, graph.settingsRouter)
                 .environmentObject(graph.windowMode)
-                .environmentObject(graph.lyricsViewModel)
                 .onAppear { graph.dockTile.start(observing: graph.libraryViewModel.nowPlaying) }
             } else if self.model.failed {
                 LaunchErrorView()

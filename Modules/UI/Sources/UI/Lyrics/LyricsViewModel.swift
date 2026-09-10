@@ -429,3 +429,14 @@ public enum LyricsFontSize: String, CaseIterable, Sendable {
         }
     }
 }
+
+/// Environment access to the shared ``LyricsViewModel`` as a plain reference.
+public extension EnvironmentValues {
+    /// The app-wide lyrics model, or `nil` where none was injected (previews,
+    /// tests). Views that only call into the model, such as a context menu's
+    /// "Edit Lyrics" action, read it from here instead of `@EnvironmentObject`,
+    /// so they never subscribe to its `objectWillChange` and do not re-render
+    /// on every synced lyric line (#456). Views that display lyrics state keep
+    /// observing the model directly.
+    @Entry var lyricsViewModel: LyricsViewModel?
+}

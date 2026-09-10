@@ -112,16 +112,20 @@ extension TracksView {
                 lib.setRating(stars: stars, for: tracks)
             },
             removeFromPlaylist: removeFromPlaylistAction,
-            editLyrics: { [lyricsEnv] track in
-                if let id = track.id {
-                    lyricsEnv.openEditor(for: id)
-                } else {
-                    lyricsEnv.openEditor()
+            editLyrics: self.lyricsViewModel.map { lyrics in
+                { track in
+                    if let id = track.id {
+                        lyrics.openEditor(for: id)
+                    } else {
+                        lyrics.openEditor()
+                    }
                 }
             },
-            fetchLyricsFromLRClib: self.lyricsEnv.lrclibEnabled ? { [lyricsEnv] track in
-                if let id = track.id {
-                    lyricsEnv.forceFetch(for: id)
+            fetchLyricsFromLRClib: self.lrclibEnabled ? self.lyricsViewModel.map { lyrics in
+                { track in
+                    if let id = track.id {
+                        lyrics.forceFetch(for: id)
+                    }
                 }
             } : nil
         )
