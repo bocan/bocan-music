@@ -16,6 +16,7 @@ struct SubsonicSongNowPlayingSelectionTests {
     private func makeCoordinator(rowIDs: [String]) -> SubsonicSongTableCoordinator {
         let table = SubsonicSongTable(
             rows: [],
+            rowsVersion: 0,
             isLoading: false,
             hasMorePages: false,
             coverArtProvider: nil,
@@ -38,7 +39,7 @@ struct SubsonicSongNowPlayingSelectionTests {
 
         coordinator.tableView = tableView
         coordinator.dataSource = dataSource
-        coordinator.lastAppliedIDs = rowIDs
+        coordinator.applied.ids = rowIDs
 
         var snap = NSDiffableDataSourceSnapshot<Int, String>()
         snap.appendSections([0])
@@ -129,6 +130,24 @@ struct SubsonicSongNowPlayingWiringTests {
             src.contains("self.nowPlayingSubsonicSongID = songID"),
             "the .subsonic queue item must populate the playing song ID"
         )
+    }
+
+    @Test("The Subsonic table gates its per-row work on a rows version that every caller supplies (#455)")
+    func tableAndCallersUseTheRowsVersion() throws {
+        let table = try self.source("Browse/Subsonic/SubsonicSongTable.swift")
+        #expect(table.contains("SubsonicSongTableUpdatePlan.make("), "the table must decide its work through the shared plan")
+        #expect(table.contains("let rowsVersion: Int"), "the version is a required input, never defaulted (#454)")
+        for rel in [
+            "Browse/Subsonic/SubsonicSongsView.swift",
+            "Browse/Subsonic/SubsonicAlbumDetailView.swift",
+            "Browse/Subsonic/SubsonicArtistDetailView.swift",
+        ] {
+            let src = try self.source(rel)
+            #expect(
+                src.contains("rowsVersion: SubsonicSongTable.rowsVersion("),
+                "\(rel) must fold its song counter and the annotation counter into the table's rows version"
+            )
+        }
     }
 
     @Test("The Subsonic Songs/detail views drive selection from the playing stream")

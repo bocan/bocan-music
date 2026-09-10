@@ -16,11 +16,20 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
 
     /// Per-song optimistic starred override. `true` ⇒ starred,
     /// `false` ⇒ unstarred. Absence means "fall back to server value".
-    @Published public private(set) var starOverrides: [String: Bool] = [:]
+    @Published public private(set) var starOverrides: [String: Bool] = [:] {
+        didSet { self.overridesVersion &+= 1 }
+    }
 
     /// Per-song optimistic rating override (0–5). Absence means
     /// "fall back to server value".
-    @Published public private(set) var ratingOverrides: [String: Int] = [:]
+    @Published public private(set) var ratingOverrides: [String: Int] = [:] {
+        didSet { self.overridesVersion &+= 1 }
+    }
+
+    /// Moves on every write to either override map. The views that derive
+    /// `SubsonicSongTable` rows from a song list plus these overrides fold it
+    /// into the rows version they hand the table (#455).
+    public private(set) var overridesVersion = 0
 
     // MARK: - Internals
 

@@ -17,7 +17,13 @@ public final class SubsonicSongsViewModel: ObservableObject {
 
     public let serverID: UUID
 
-    @Published public private(set) var songs: [Song] = []
+    @Published public private(set) var songs: [Song] = [] {
+        didSet { self.songsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `songs`; `SubsonicSongTable` skips its per-row
+    /// walks while the rows version it is given holds (#455).
+    public private(set) var songsVersion = 0
     @Published public private(set) var isLoading = false
     @Published public private(set) var hasMorePages = true
     @Published public var errorMessage: String?

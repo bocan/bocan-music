@@ -11,7 +11,14 @@ public final class SubsonicAlbumDetailViewModel: ObservableObject {
     public let serverID: UUID
     public let albumID: String
 
-    @Published public private(set) var album: AlbumID3?
+    @Published public private(set) var album: AlbumID3? {
+        didSet { self.albumVersion &+= 1 }
+    }
+
+    /// Moves on every write to `album`, whose songs feed the table;
+    /// `SubsonicSongTable` skips its per-row walks while the rows version it
+    /// is given holds (#455).
+    public private(set) var albumVersion = 0
     @Published public private(set) var isLoading = false
     @Published public var errorMessage: String?
 
@@ -122,6 +129,9 @@ public struct SubsonicAlbumDetailView: View {
     private func songsTable(_ songs: [Song]) -> some View {
         SubsonicSongTable(
             rows: self.makeRows(songs),
+            rowsVersion: SubsonicSongTable.rowsVersion(
+                songs: self.vm.albumVersion, annotations: self.annotationCoordinator
+            ),
             isLoading: false,
             hasMorePages: false,
             coverArtProvider: self.coverArtProvider,

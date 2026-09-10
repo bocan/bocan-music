@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Song lists from a Subsonic server, in the Songs view, album and artist pages and search results, no longer re-check every row whenever something else in the window updates, such as a synced lyric line changing. Large remote albums and playlists stay smooth.
+
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
 
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)

@@ -16,7 +16,13 @@ public final class SubsonicArtistDetailViewModel: ObservableObject {
 
     @Published public private(set) var artist: ArtistID3?
     @Published public private(set) var albums: [AlbumID3] = []
-    @Published public private(set) var tracks: [Song] = []
+    @Published public private(set) var tracks: [Song] = [] {
+        didSet { self.tracksVersion &+= 1 }
+    }
+
+    /// Moves on every write to `tracks`; `SubsonicSongTable` skips its per-row
+    /// walks while the rows version it is given holds (#455).
+    public private(set) var tracksVersion = 0
     @Published public private(set) var isLoading = false
     @Published public private(set) var isLoadingTracks = false
     @Published public var errorMessage: String?
@@ -320,6 +326,9 @@ public struct SubsonicArtistDetailView: View {
         }
         SubsonicSongTable(
             rows: rows,
+            rowsVersion: SubsonicSongTable.rowsVersion(
+                songs: self.vm.tracksVersion, annotations: self.annotationCoordinator
+            ),
             isLoading: self.vm.isLoadingTracks,
             hasMorePages: false,
             coverArtProvider: self.coverArtProvider,

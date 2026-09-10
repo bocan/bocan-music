@@ -59,7 +59,13 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
     public static let artistCount = 100
 
     @Published public private(set) var query = ""
-    @Published public private(set) var songs: [SubsonicSongHit] = []
+    @Published public private(set) var songs: [SubsonicSongHit] = [] {
+        didSet { self.songsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `songs`; `SubsonicSongTable` skips its per-row
+    /// walks while the rows version it is given holds (#455).
+    public private(set) var songsVersion = 0
     @Published public private(set) var albums: [SubsonicAlbumHit] = []
     @Published public private(set) var artists: [SubsonicArtistHit] = []
     @Published public private(set) var isSearching = false
