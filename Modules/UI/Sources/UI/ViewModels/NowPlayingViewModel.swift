@@ -100,17 +100,20 @@ public final class NowPlayingViewModel {
     private let database: Database
     private let subsonicCoverArtProvider: SubsonicCoverArtProvider?
     // nonisolated(unsafe): assigned only from @MainActor methods and read once
-    // from the nonisolated `deinit`, which has exclusive access — never
+    // from the nonisolated `deinit`, which has exclusive access, never
     // concurrently. Task handles are themselves Sendable. See #279.
-    private nonisolated(unsafe) var stateTask: Task<Void, Never>?
-    private nonisolated(unsafe) var positionTask: Task<Void, Never>?
-    private nonisolated(unsafe) var sleepTimerTask: Task<Void, Never>?
-    private nonisolated(unsafe) var scrobbleStatsTask: Task<Void, Never>?
-    private nonisolated(unsafe) var currentTrackTask: Task<Void, Never>?
-    private nonisolated(unsafe) var initialItemSyncTask: Task<Void, Never>?
-    private nonisolated(unsafe) var queueChangesTask: Task<Void, Never>?
-    private nonisolated(unsafe) var streamTitleTask: Task<Void, Never>?
-    private nonisolated(unsafe) var markerTask: Task<Void, Never>?
+    // @ObservationIgnored keeps them stored properties: `@Observable` would
+    // otherwise rewrite them as computed, where the annotation has no effect
+    // and the compiler says so on every build (#458).
+    @ObservationIgnored private nonisolated(unsafe) var stateTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var positionTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var sleepTimerTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var scrobbleStatsTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var currentTrackTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var initialItemSyncTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var queueChangesTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var streamTitleTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var markerTask: Task<Void, Never>?
 
     /// The current track's CUE markers (ADR-087), position-sorted; empty for
     /// tracks without them. Fed by `QueuePlayer.markerUpdates` per load.

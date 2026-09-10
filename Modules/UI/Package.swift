@@ -82,6 +82,10 @@ let package = Package(
                 .product(name: "SwiftSonic", package: "swiftsonic"),
                 .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
+            // The reference images are read by SnapshotTesting from the source
+            // tree via #filePath, not from the bundle; without this SwiftPM
+            // warns about 181 unhandled files on every build (#458).
+            exclude: ["SnapshotTests/__Snapshots__"],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
                 .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
