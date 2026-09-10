@@ -122,6 +122,9 @@ public struct SubsonicSongsView: View {
             }
             SubsonicSongTable(
                 rows: rows,
+                rowsVersion: SubsonicSongTable.rowsVersion(
+                    songs: self.vm.songsVersion, annotations: self.annotationCoordinator
+                ),
                 isLoading: self.vm.isLoading,
                 hasMorePages: self.vm.hasMorePages,
                 coverArtProvider: self.coverArtProvider,
@@ -197,6 +200,9 @@ public struct SubsonicSongsView: View {
                 }
                 SubsonicSongTable(
                     rows: rows,
+                    rowsVersion: SubsonicSongTable.rowsVersion(
+                        songs: self.search.songsVersion, annotations: self.annotationCoordinator
+                    ),
                     isLoading: self.search.isSearching,
                     hasMorePages: false,
                     coverArtProvider: self.coverArtProvider,

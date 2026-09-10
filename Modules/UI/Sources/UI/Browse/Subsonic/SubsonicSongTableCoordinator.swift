@@ -13,7 +13,9 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
     var rowsByID: [String: SubsonicSongTableRow] = [:]
 
     // Snapshot-tracking
-    var lastAppliedIDs: [String] = []
+    /// What the last `updateNSView` applied: rows version and the ID list in
+    /// the table's own order, which a header-click sort rewrites (#455).
+    var applied = SubsonicSongTableUpdatePlan.Applied()
     var hasAppliedInitialSnapshot = false
     /// Row ID last driven onto the selection by the now-playing sync. Tracked so
     /// the selection only follows the playing track when it actually changes,
@@ -44,7 +46,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         self.lastNowPlayingRowID = rowID
         guard let rowID,
               let tableView = self.tableView,
-              let index = self.lastAppliedIDs.firstIndex(of: rowID) else { return }
+              let index = self.applied.ids.firstIndex(of: rowID) else { return }
         guard tableView.selectedRowIndexes != IndexSet(integer: index) else { return }
         tableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
         tableView.scrollRowToVisible(index)
@@ -237,7 +239,7 @@ final class SubsonicSongTableCoordinator: NSObject, NSTableViewDelegate, NSMenuD
         }
 
         let newIDs = self.rows.map(\.id)
-        self.lastAppliedIDs = newIDs
+        self.applied.ids = newIDs
         var snap = NSDiffableDataSourceSnapshot<Int, String>()
         snap.appendSections([0])
         snap.appendItems(newIDs)

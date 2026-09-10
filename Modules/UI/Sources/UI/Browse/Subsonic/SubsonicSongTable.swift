@@ -99,6 +99,13 @@ struct SubsonicSongTableActions {
 /// see which server each row came from when results are aggregated.
 struct SubsonicSongTable: NSViewRepresentable {
     let rows: [SubsonicSongTableRow]
+    /// The owner's counter for `rows` (#455): `updateNSView` walks the rows
+    /// only when this moved since the last apply. Rows are derived in the
+    /// view from a song list and the annotation overrides, so the version
+    /// folds both counters; see `rowsVersion(songs:annotations:)`.
+    /// Deliberately has no default: a caller that left it out would render
+    /// its first rows and then never react to another change (#454).
+    let rowsVersion: Int
     let isLoading: Bool
     let hasMorePages: Bool
     let coverArtProvider: SubsonicCoverArtProvider?
@@ -110,6 +117,13 @@ struct SubsonicSongTable: NSViewRepresentable {
     let actions: SubsonicSongTableActions
 
     typealias NSViewType = NSScrollView
+
+    /// The rows version for a table whose rows are derived from a song list
+    /// counter plus the annotation coordinator's override counter. Both only
+    /// ever increase, so their sum moves whenever either input changed.
+    static func rowsVersion(songs: Int, annotations: SubsonicAnnotationCoordinator?) -> Int {
+        songs &+ (annotations?.overridesVersion ?? 0)
+    }
 
     func makeCoordinator() -> SubsonicSongTableCoordinator {
         SubsonicSongTableCoordinator(parent: self)
@@ -176,33 +190,59 @@ struct SubsonicSongTable: NSViewRepresentable {
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        context.coordinator.parent = self
-        guard let dataSource = context.coordinator.dataSource else { return }
+        let coordinator = context.coordinator
+        coordinator.parent = self
+        guard let dataSource = coordinator.dataSource else { return }
 
-        // Keep the cell-lookup dictionary current (star/rating may have changed).
-        context.coordinator.updateRows(self.rows)
+        // Decide what moved since the last apply (#455). The rows version
+        // gates every per-row walk, so a parent re-render with unchanged rows
+        // rebuilds neither the cell-lookup dictionary nor the ID sets. The
+        // table keeps its own row order (a header-click sort rewrites it), so
+        // the plan's ID list is compared against that order and a same-set,
+        // different-order result is resolved below without a snapshot.
+        // No highlight and no selection input: the now-playing row is handled
+        // by `syncSelectionToNowPlaying`, which has its own change guard.
+        let plan = SubsonicSongTableUpdatePlan.make(
+            rowsVersion: self.rowsVersion,
+            ids: { self.rows.map(\.id) },
+            nowPlayingID: nil,
+            selection: [],
+            applied: coordinator.applied
+        )
+        switch plan.rowsWork {
+        case .unchanged:
+            break
 
-        // Only rebuild the snapshot when the *set* of song IDs changes.
-        let newIDSet = Set(self.rows.map(\.id))
-        let currentIDSet = Set(context.coordinator.lastAppliedIDs)
-        if newIDSet != currentIDSet {
-            // Preserve the existing sort order for already-loaded songs; append
-            // new songs at the end.
-            let keepIDs = context.coordinator.lastAppliedIDs.filter { newIDSet.contains($0) }
+        case .reconfigure:
+            // Same rows, new content (a star or rating moved): refresh the
+            // cell-lookup dictionary that the star and text cells read from.
+            coordinator.updateRows(self.rows)
+
+        case .structural:
+            coordinator.updateRows(self.rows)
+            // Preserve the existing order for already-loaded songs; append
+            // new songs at the end. Only apply a snapshot when that changed
+            // the list, so a same-set update after a sort costs no apply.
+            let newIDSet = Set(plan.ids ?? [])
+            let currentIDSet = Set(coordinator.applied.ids)
+            let keepIDs = coordinator.applied.ids.filter { newIDSet.contains($0) }
             let addIDs = self.rows.filter { !currentIDSet.contains($0.id) }.map(\.id)
             let orderedIDs = keepIDs + addIDs
-            context.coordinator.lastAppliedIDs = orderedIDs
-
-            var snap = NSDiffableDataSourceSnapshot<Int, String>()
-            snap.appendSections([0])
-            snap.appendItems(orderedIDs)
-            dataSource.apply(snap, animatingDifferences: context.coordinator.hasAppliedInitialSnapshot)
-            context.coordinator.hasAppliedInitialSnapshot = true
+            if orderedIDs != coordinator.applied.ids {
+                var snap = NSDiffableDataSourceSnapshot<Int, String>()
+                snap.appendSections([0])
+                snap.appendItems(orderedIDs)
+                dataSource.apply(snap, animatingDifferences: coordinator.hasAppliedInitialSnapshot)
+                coordinator.hasAppliedInitialSnapshot = true
+            }
+            coordinator.applied.ids = orderedIDs
         }
+        // Remember the version; the IDs were set above in the table's order.
+        coordinator.applied.rowsVersion = self.rowsVersion
 
         // Once the snapshot reflects the current rows, move the selection onto
         // the now-playing row when it changes.
-        context.coordinator.syncSelectionToNowPlaying(self.nowPlayingRowID)
+        coordinator.syncSelectionToNowPlaying(self.nowPlayingRowID)
     }
 
     // MARK: Column definitions

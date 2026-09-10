@@ -296,6 +296,22 @@ struct SubsonicSongsViewModelTests {
         #expect(vm.isLoading == false)
     }
 
+    @Test("every write to songs moves songsVersion, so the table can skip unchanged updates (#455)")
+    func songsVersionMovesWithSongs() async {
+        let stub = StubBrowseDataSource()
+        // A full first page, or the view model concludes there is no more to load.
+        await stub.seedRandomPages([(0 ..< 100).map { song($0) }, [song(100)]])
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
+        let fresh = vm.songsVersion
+
+        await vm.load()
+        let loaded = vm.songsVersion
+        #expect(loaded > fresh, "load() writes songs")
+
+        await vm.loadMore()
+        #expect(vm.songsVersion > loaded, "loadMore() writes songs again")
+    }
+
     @Test("loadMore() appends and dedupes by id")
     func loadMoreDedupes() async {
         let stub = StubBrowseDataSource()
