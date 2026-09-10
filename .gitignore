@@ -59,6 +59,9 @@ Pods/
 # XcodeGen (keep project.yml, ignore generated project)
 # (we commit Bocan.xcodeproj - it's generated but part of the repo)
 
+# Python (Scripts/*.py helpers)
+__pycache__/
+
 # Editor
 .idea/
 *.swp
