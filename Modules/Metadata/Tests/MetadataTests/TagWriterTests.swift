@@ -306,6 +306,16 @@ struct TagWriterTests {
         #expect(throws: MetadataError.self) {
             try TagWriter().write(tags, to: tmp)
         }
+
+        // #469: the reason must survive `localizedDescription`, which is what
+        // callers store and show; Foundation's fallback is an opaque code.
+        do {
+            try TagWriter().write(tags, to: tmp)
+        } catch {
+            #expect(error.localizedDescription.contains("read-only"))
+            #expect(error.localizedDescription.contains(tmp.lastPathComponent))
+            #expect(!error.localizedDescription.contains("MetadataError error"))
+        }
     }
 
     // MARK: - FLAC
