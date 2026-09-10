@@ -81,9 +81,11 @@ These stay as they are. Grouped so the allowlist can be written as patterns rath
 | Tooling | 5 | `DebugAudioView`, `E2ESeeder`, the `BocanSchema` tool. |
 | Cache miss, conservative fallback, cosmetic | 33 | Listed per site in the appendix; each has a reason. |
 
-## Proposed rule (replaces the one line in CLAUDE.md and `_standards.md`)
+The 25 are filed as one issue per module: #480 (UI), #481 (Library), #482 (Playback), #483 (App), #484 (Podcasts), #485 (SyncServer).
 
-The current wording, "no `try?` without an `else { log.warning }` companion", names a shape that does not exist for an expression, so it was never copyable. Proposed:
+## The rule (now in CLAUDE.md and `_standards.md`)
+
+The old wording, "no `try?` without an `else { log.warning }` companion", named a shape that does not exist for an expression, so it was never copyable. The replacement, as written into both files:
 
 > **`try?` is allowed only for the allowlisted idioms in `Scripts/audit-try-optional-allowlist.txt`.** Everything else handles the error in one of two ways:
 >
@@ -107,7 +109,7 @@ The same mechanism as the help-text audit: `Scripts/audit-try-optional.py` walks
 
 As the issue says, one PR per module, biggest first. Suggested cut, so each PR is one review:
 
-1. The 25 (c) sites, across modules, as one `fix` PR: they are behaviour bugs, and the changelog entry writes itself.
+1. The 25 (c) sites, one `fix` PR per module issue (#480 to #485): they are behaviour bugs, and the changelog entry writes itself.
 2. UI (57 (b) sites), mostly view-model loads that show an empty page on a DB error.
 3. Library (62), mostly repository reads in the scanner, the editor and lyrics.
 4. Playback, App, Podcasts, Scrobble, AudioEngine, SyncServer (46 between them).

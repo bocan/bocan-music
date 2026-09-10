@@ -66,7 +66,7 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 - Each module defines a single `*Error: Error, Sendable` enum (e.g. `AudioEngineError`).
 - Errors carry context (URL, underlying error, human-readable reason) — not bare cases.
-- No `try?` in production code paths unless an `else { log.warning }` branch also exists.
+- `try?` only for the allowlisted idioms (a cancellation-checked `Task.sleep`, `defer { try? handle.close() }`, remove-if-present, directory pre-creation, a file-attribute read with a fallback, a decode whose fallback is the documented contract). Every other error is either recovered and logged (`do { try ... } catch { log.warning("op.failed", [...]) }`) or propagated with `try`. A user action that fails reaches the user; a value written to the database or sent on the wire is never derived from a swallowed error. See `docs/audits/try-optional-audit.md`.
 - `fatalError` is banned outside `#if DEBUG` or truly unreachable `default:` branches.
 
 ## Logging
