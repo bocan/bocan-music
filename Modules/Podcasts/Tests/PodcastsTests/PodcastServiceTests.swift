@@ -226,6 +226,78 @@ struct PodcastServiceTests {
         #expect(episodes.count == 2)
     }
 
+    // MARK: Stored scheme (#487)
+
+    @Test("a feed that only answers over http on the local network is stored as http and refreshes (#487)")
+    func lanHTTPFeedStoredAsHTTP() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        let lan = try #require(URL(string: "http://192.168.1.10:8000/feed.xml"))
+        bed.feedMock.handler = { request in
+            if request.url?.scheme == "https" {
+                throw URLError(.secureConnectionFailed)
+            }
+            return (rssData, HTTPURLResponse(url: lan, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let podcastID = try await bed.service.subscribe(feedURL: lan)
+        let stored = try await PodcastRepository(database: bed.db).fetch(id: podcastID)
+        #expect(stored.feedURL == "http://192.168.1.10:8000/feed.xml")
+
+        let outcome = try await bed.service.refresh(podcastID: podcastID)
+        #expect(outcome.notModified == false, "the stored address must still answer")
+    }
+
+    @Test("a plain-http listing whose https twin works is stored as https, one subscription under either scheme (#487)")
+    func httpListingWithTwinStoredAsHTTPS() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        bed.feedMock.handler = { request in
+            let url = request.url ?? testFeedURL
+            return (rssData, HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let listed = try #require(URL(string: "http://example.com/feed.rss"))
+
+        let id1 = try await bed.service.subscribe(feedURL: listed)
+        let id2 = try await bed.service.subscribe(feedURL: testFeedURL)
+        let id3 = try await bed.service.subscribe(feedURL: listed)
+        #expect(id1 == id2)
+        #expect(id2 == id3)
+        let all = try await PodcastRepository(database: bed.db).fetchAllSubscribed()
+        #expect(all.map(\.feedURL) == ["https://example.com/feed.rss"])
+    }
+
+    @Test("a subscription stored as https that only answers over http moves to http when re-added, keeping its row (#487)")
+    func reAddAdoptsWorkingScheme() async throws {
+        let bed = try await makeBed()
+        let rssData = try fixtureData(named: "rss-full.xml")
+        let repo = PodcastRepository(database: bed.db)
+        // What the pre-#487 normaliser stored for a feed on the local network.
+        let legacyID = try await repo.insert(Podcast(
+            feedURL: "https://192.168.1.10:8000/feed.xml",
+            title: "Home Server Show",
+            author: nil,
+            addedAt: fixedNow.timeIntervalSince1970
+        ))
+        try await bed.service.setPlaybackSpeed(1.5, podcastID: legacyID)
+        let lan = try #require(URL(string: "http://192.168.1.10:8000/feed.xml"))
+        bed.feedMock.handler = { request in
+            if request.url?.scheme == "https" {
+                throw URLError(.secureConnectionFailed)
+            }
+            return (rssData, HTTPURLResponse(url: lan, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+
+        let id = try await bed.service.subscribe(feedURL: lan)
+        #expect(id == legacyID)
+        #expect(try await repo.fetchAllSubscribed().count == 1)
+        let moved = try await repo.fetch(id: id)
+        #expect(moved.feedURL == "http://192.168.1.10:8000/feed.xml")
+        #expect(moved.playbackSpeed == 1.5, "user settings stay with the row")
+        let audio = try await bed.service.audioURL(feedURL: lan, episodeGUID: ep1GUID)
+        #expect(!audio.absoluteString.isEmpty, "playback resolves the show by its new address")
+    }
+
     @Test("directory IDs survive a refresh and the plain-ID subscribe overload stores them (#409)")
     func directoryIDsSurviveRefresh() async throws {
         let bed = try await makeBed()

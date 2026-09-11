@@ -181,6 +181,29 @@ struct AppPodcastSearchTests {
         #expect(detail.alreadySubscribed)
         #expect(detail.podcastID == id)
     }
+
+    @Test("a show stored under the other scheme still reads as subscribed (#487)")
+    func detailMatchesEitherScheme() async throws {
+        let bed = try await makeBed()
+        let search = AppPodcastSearch(
+            searchService: PodcastSearchService(podcastIndex: nil, itunes: ITunesSearchClient(http: bed.http)),
+            fetcher: FeedFetcher(http: bed.http),
+            parser: FeedParser(),
+            podcastRepo: PodcastRepository(database: bed.db)
+        )
+        // The directory lists http; the https twin answers; the row holds http.
+        let id = try await PodcastRepository(database: bed.db).insert(Podcast(
+            feedURL: "http://example.test/feed.rss",
+            title: "Seam Show",
+            author: nil,
+            addedAt: 0
+        ))
+        let listed = try #require(URL(string: "http://example.test/feed.rss"))
+
+        let detail = try await search.detail(feedURL: listed, hint: nil)
+        #expect(detail.alreadySubscribed)
+        #expect(detail.podcastID == id)
+    }
 }
 
 // MARK: - AppPodcastResolver

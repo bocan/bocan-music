@@ -37,12 +37,15 @@ struct AppPodcastSearch: PodcastSearchProviding {
         }
         let parsed = try self.parser.parse(data, sourceURL: feedURL)
 
-        // Check subscription status.
-        let storedURL = FeedURL.normalizedStorageURL(feedURL)?.absoluteString
-            ?? feedURL.absoluteString
+        // Check subscription status. The row holds the address that answered
+        // (what subscribe stores) or, for a show subscribed before #487, the
+        // other scheme of it; the lookup matches either.
+        let answered = fetchResult.requestedURL
+        let storedURL = FeedURL.normalizedStorageURL(answered)?.absoluteString
+            ?? answered.absoluteString
         let existing: Podcast?
         do {
-            existing = try await self.podcastRepo.fetchByFeedURL(storedURL)
+            existing = try await self.podcastRepo.fetchByFeedURLIgnoringScheme(storedURL)
         } catch {
             AppLogger.make(.app).warning(
                 "podcastSearch.fetchByFeedURL.failed",
