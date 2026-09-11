@@ -706,7 +706,7 @@ private extension NowPlayingViewModel {
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
         let repo = PodcastRepository(database: self.database)
-        let podcast = try? await repo.fetchByFeedURL(feedURL.absoluteString)
+        let podcast = try? await repo.fetchByFeedURLIgnoringScheme(feedURL.absoluteString)
         self.podcastID = podcast?.id
         if let path = podcast?.artworkPath {
             self.artwork = await ArtworkLoader.shared.image(at: path)

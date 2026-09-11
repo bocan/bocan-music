@@ -78,11 +78,14 @@ struct FeedURLTests {
 
     // MARK: - normalizedStorageURL
 
-    @Test("http URL is upgraded to https in storage URL")
-    func httpUpgradedToHttps() throws {
-        let http = try #require(URL(string: "http://example.com/feed"))
+    @Test("http URL keeps its scheme in the storage URL (#487)")
+    func httpKeepsScheme() throws {
+        let http = try #require(URL(string: "http://192.168.1.10:8000/feed"))
         let stored = FeedURL.normalizedStorageURL(http)
-        #expect(stored?.scheme == "https")
+        #expect(
+            stored?.absoluteString == "http://192.168.1.10:8000/feed",
+            "a local-network feed that ATS allows over http must keep a working address"
+        )
     }
 
     @Test("fragment is removed from storage URL")
@@ -121,10 +124,10 @@ struct FeedURLTests {
         #expect(stored?.scheme == "http", "TLS buys nothing on loopback and would break a same-machine http-only server")
     }
 
-    @Test("non-loopback http URL is still upgraded to https")
-    func nonLoopbackHTTPStillUpgraded() throws {
-        let http = try #require(URL(string: "http://example.com/feed"))
-        let stored = FeedURL.normalizedStorageURL(http)
-        #expect(stored?.scheme == "https")
+    @Test("scheme and host are lowercased in the storage URL, path case kept")
+    func schemeAndHostLowercased() throws {
+        let url = try #require(URL(string: "HTTPS://Example.COM/Feed"))
+        let stored = FeedURL.normalizedStorageURL(url)
+        #expect(stored?.absoluteString == "https://example.com/Feed")
     }
 }

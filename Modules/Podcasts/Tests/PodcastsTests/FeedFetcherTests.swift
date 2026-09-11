@@ -245,6 +245,7 @@ struct FeedFetcherTests {
         #expect(requested.query == "x=1")
         #expect(result.data == body)
         #expect(result.finalURL == expectedUpgraded)
+        #expect(result.requestedURL == expectedUpgraded, "the https twin answered, so that is the address to store")
     }
 
     @Test("When the https twin fails to connect, the URL is retried as given and its answer returned")
@@ -266,6 +267,7 @@ struct FeedFetcherTests {
         #expect(seen.requests.last?.url == original)
         #expect(result.data == body)
         #expect(result.finalURL == original)
+        #expect(result.requestedURL == original, "only the given http address answered")
     }
 
     @Test("When the https twin answers 404, the URL is retried as given")
@@ -327,6 +329,17 @@ struct FeedFetcherTests {
             // expected
         }
         #expect(seen.requests.count == 1)
+    }
+
+    @Test("requestedURL is the address asked, finalURL the redirect target (#487)")
+    func requestedURLIsNotTheRedirectTarget() async throws {
+        let mock = MockHTTPClient()
+        let asked = try #require(URL(string: "https://feeds.example.org/show"))
+        let moved = try #require(URL(string: "https://new.example.org/show"))
+        mock.handler = { _ in (Data("<rss/>".utf8), makeHTTPResponse(url: moved, status: 200)) }
+        let result = try await FeedFetcher(http: mock).fetch(asked, etag: nil, lastModified: nil)
+        #expect(result.requestedURL == asked)
+        #expect(result.finalURL == moved)
     }
 
     @Test("Loopback plain-http feed URL is fetched as http, with no https attempt")

@@ -13,6 +13,10 @@ public struct FeedFetchResult: Sendable {
     public var lastModified: String?
     /// The final URL after following any redirects.
     public var finalURL: URL
+    /// The address whose request answered, before any redirect: the https
+    /// twin of a plain-http URL when that served the feed, otherwise the URL
+    /// as given. A subscription stores this, not `finalURL` (#487).
+    public var requestedURL: URL
 }
 
 /// Fetches a feed URL with conditional GET support.
@@ -125,7 +129,8 @@ public actor FeedFetcher {
                 notModified: true,
                 etag: http.value(forHTTPHeaderField: "ETag"),
                 lastModified: http.value(forHTTPHeaderField: "Last-Modified"),
-                finalURL: finalURL
+                finalURL: finalURL,
+                requestedURL: url
             )
         }
 
@@ -153,7 +158,8 @@ public actor FeedFetcher {
             notModified: false,
             etag: http.value(forHTTPHeaderField: "ETag"),
             lastModified: http.value(forHTTPHeaderField: "Last-Modified"),
-            finalURL: finalURL
+            finalURL: finalURL,
+            requestedURL: url
         )
     }
 

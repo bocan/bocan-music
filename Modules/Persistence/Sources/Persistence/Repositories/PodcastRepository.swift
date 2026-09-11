@@ -177,6 +177,30 @@ public struct PodcastRepository: Sendable {
         }
     }
 
+    /// Fetches a podcast by feed URL whether its row holds the http or the
+    /// https form of the address; an exact match wins. A subscription stores
+    /// the address that answered, so a show added before #487 (always stored
+    /// as https) or reached later under the other scheme still resolves to
+    /// its one row.
+    public func fetchByFeedURLIgnoringScheme(_ feedURL: String) async throws -> Podcast? {
+        let candidates = Self.schemeVariants(of: feedURL)
+        return try await self.database.read { db in
+            let rows = try Podcast.filter(candidates.contains(Column("feed_url"))).fetchAll(db)
+            return rows.first { $0.feedURL == feedURL } ?? rows.first
+        }
+    }
+
+    /// `feedURL` and, for an http(s) address, the same address under the other scheme.
+    static func schemeVariants(of feedURL: String) -> [String] {
+        if feedURL.hasPrefix("https://") {
+            return [feedURL, "http://\(feedURL.dropFirst("https://".count))"]
+        }
+        if feedURL.hasPrefix("http://") {
+            return [feedURL, "https://\(feedURL.dropFirst("http://".count))"]
+        }
+        return [feedURL]
+    }
+
     /// Resolves a podcast by its cached-artwork SHA-256 (the Phone Sync
     /// `/v1/artwork/{hash}` fallback). Byte-identical art shared by several
     /// shows yields the same hash; any match points at the same file bytes.
