@@ -286,7 +286,9 @@ public struct MiniPlayerView: View {
             ctx.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.2, 0.64, 1.0)
             win.animator().setContentSize(targetSize)
         } completionHandler: {
-            Self.constrainToVisibleFrame(win)
+            // AppKit runs the completion on the main thread; the closure type
+            // is not marked so, hence the explicit assumption.
+            MainActor.assumeIsolated { Self.constrainToVisibleFrame(win) }
         }
     }
 

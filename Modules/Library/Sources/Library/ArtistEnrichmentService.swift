@@ -54,7 +54,7 @@ public actor ArtistEnrichmentService {
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
             await self.enrichOnce()
-            await self.passFinished()
+            self.passFinished()
         }
     }
 
@@ -163,12 +163,16 @@ public actor ArtistEnrichmentService {
             // A definite answer (typically 404 for a stale MBID): stamp so the
             // row is not retried every launch, keep whatever it already had.
             self.log.warning("artist.enrich.unresolved", ["id": id, "mbid": mbid])
-            try? await self.artists.setEnrichment(
-                mbid: mbid,
-                disambiguation: nil,
-                sortName: nil,
-                fetchedAt: Int64(self.now().timeIntervalSince1970)
-            )
+            do {
+                try await self.artists.setEnrichment(
+                    mbid: mbid,
+                    disambiguation: nil,
+                    sortName: nil,
+                    fetchedAt: Int64(self.now().timeIntervalSince1970)
+                )
+            } catch {
+                self.log.warning("artist.enrich.stamp_failed", ["id": id, "error": String(reflecting: error)])
+            }
             return .skipped
         } catch {
             self.log.warning("artist.enrich.failed", ["id": id, "error": String(reflecting: error)])

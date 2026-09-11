@@ -126,6 +126,10 @@ def main() -> int:
         "--warn", action="store_true",
         help="report violations without failing (rollout mode)"
     )
+    parser.add_argument(
+        "--summary", action="store_true",
+        help="print the violation count only, not the list (what `make lint` uses)"
+    )
     args = parser.parse_args()
 
     allowed = load_allowlist()
@@ -148,9 +152,15 @@ def main() -> int:
         print(f"note: stale allowlist entry (control gained help or moved): {stale}")
 
     if failures:
-        print(f"{len(failures)} interactive control(s) without help text:")
-        for failure in failures:
-            print(f"  {failure}")
+        if args.summary:
+            print(
+                f"{len(failures)} interactive control(s) without help text "
+                "(python3 Scripts/audit-help-text.py --warn lists them)"
+            )
+        else:
+            print(f"{len(failures)} interactive control(s) without help text:")
+            for failure in failures:
+                print(f"  {failure}")
         return 0 if args.warn else 1
     print("help-text audit clean")
     return 0

@@ -35,7 +35,7 @@ public struct ImmersiveView: View {
     /// The preference that mirrors whether the Immersive Mode window is
     /// open (ADR-089). Set by ``ImmersiveWindowView``; read by the toolbar
     /// button, the View menu item and the launch restore.
-    public static let preferenceKey = "ui.immersive.visible"
+    public nonisolated static let preferenceKey = "ui.immersive.visible"
 
     /// The look this surface always draws, regardless of the saved preference.
     static let visualizerMode: VisualizerMode = .oscilloscope

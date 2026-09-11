@@ -88,11 +88,12 @@ public final class LogConsoleViewModel {
     private let injectedFlushSignals: AsyncStream<Void>?
 
     // nonisolated(unsafe): assigned only from @MainActor methods and read once
-    // from the nonisolated `deinit`, which has exclusive access — never concurrently.
-    // Task handles are themselves Sendable. See #279.
-    private nonisolated(unsafe) var streamTask: Task<Void, Never>?
-    private nonisolated(unsafe) var flushTask: Task<Void, Never>?
-    private nonisolated(unsafe) var timerTask: Task<Void, Never>?
+    // from the nonisolated `deinit`, which has exclusive access, never concurrently.
+    // Task handles are themselves Sendable. See #279. @ObservationIgnored keeps
+    // them stored, so the annotation applies (#458, see UI CLAUDE.md).
+    @ObservationIgnored private nonisolated(unsafe) var streamTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var flushTask: Task<Void, Never>?
+    @ObservationIgnored private nonisolated(unsafe) var timerTask: Task<Void, Never>?
 
     // MARK: - Init
 
