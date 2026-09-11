@@ -52,7 +52,7 @@ public actor SyncServer {
             trusted: trusted,
             ui: ui,
             serverName: serverName,
-            serverId: { await (try? meta.serverId()) ?? "" }
+            serverId: { try await meta.serverId() }
         )
         self.pairing = pairing
 
