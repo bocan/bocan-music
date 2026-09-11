@@ -12,6 +12,9 @@ public enum PodcastsError: Error, Sendable, CustomStringConvertible, LocalizedEr
     case searchUnavailable(source: String, reason: String)
     case notFound(feedURL: URL)
     case keychain(OSStatus, String)
+    /// The feed is served over plain http only and App Transport Security
+    /// refused it (its https twin failed first). Nothing to retry.
+    case insecureFeedUnsupported(feedURL: URL)
 
     public var description: String {
         switch self {
@@ -35,6 +38,8 @@ public enum PodcastsError: Error, Sendable, CustomStringConvertible, LocalizedEr
             "Podcast not found: \(url)"
         case let .keychain(status, op):
             "Keychain error \(status) during \(op)"
+        case let .insecureFeedUnsupported(url):
+            "This feed is only served over unencrypted http, which is not fetched: \(url)"
         }
     }
 

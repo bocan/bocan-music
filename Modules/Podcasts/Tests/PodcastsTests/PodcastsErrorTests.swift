@@ -33,5 +33,11 @@ struct PodcastsErrorTests {
         )
         #expect(status.errorDescription == status.description)
         #expect(status.errorDescription?.hasPrefix("HTTP 404") == true)
+
+        let insecure = try PodcastsError.insecureFeedUnsupported(
+            feedURL: #require(URL(string: "http://example.org/feed"))
+        )
+        #expect(insecure.localizedDescription.contains("unencrypted http"))
+        #expect(insecure.localizedDescription.contains("http://example.org/feed"))
     }
 }
