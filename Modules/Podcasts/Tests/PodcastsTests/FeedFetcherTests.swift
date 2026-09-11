@@ -20,6 +20,20 @@ final class MockHTTPClient: HTTPClient, @unchecked Sendable {
     }
 }
 
+/// Thread-safe capture of requests seen by a mock handler.
+final class RequestRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var _requests: [URLRequest] = []
+
+    var requests: [URLRequest] {
+        self.lock.withLock { self._requests }
+    }
+
+    func record(_ request: URLRequest) {
+        self.lock.withLock { self._requests.append(request) }
+    }
+}
+
 private func makeHTTPResponse(
     url: URL = URL(string: "https://example.com/feed")!,
     status: Int,
@@ -205,5 +219,62 @@ struct FeedFetcherTests {
         } catch let PodcastsError.feedTooLarge(bytes) {
             #expect(bytes == 2000)
         }
+    }
+
+    @Test("Plain-http remote feed URL is upgraded to https before the request")
+    func plainHttpRemoteUpgradedToHttps() async throws {
+        let mock = MockHTTPClient()
+        let seen = RequestRecorder()
+        let body = "<?xml version='1.0'?><rss/>".data(using: .utf8)!
+        let expectedUpgraded = #require(URL(string: "https://podcast.example.org/feed?x=1"))
+        mock.handler = { request in
+            seen.record(request)
+            return (body, makeHTTPResponse(url: expectedUpgraded, status: 200))
+        }
+        let fetcher = FeedFetcher(http: mock)
+        let result = try await fetcher.fetch(
+            #require(URL(string: "http://podcast.example.org/feed?x=1")),
+            etag: nil,
+            lastModified: nil
+        )
+        let requested = #require(seen.requests.last?.url)
+        #expect(requested.scheme == "https")
+        #expect(requested.host == "podcast.example.org")
+        #expect(requested.path == "/feed")
+        #expect(requested.query == "x=1")
+        #expect(result.data == body)
+        #expect(result.finalURL == expectedUpgraded)
+    }
+
+    @Test("Loopback plain-http feed URL is kept as http")
+    func loopbackPlainHttpKept() async throws {
+        let mock = MockHTTPClient()
+        let seen = RequestRecorder()
+        let expectedKept = #require(URL(string: "http://127.0.0.1:8090/feed"))
+        mock.handler = { request in
+            seen.record(request)
+            return (Data("<rss/>".utf8), makeHTTPResponse(url: expectedKept, status: 200))
+        }
+        let fetcher = FeedFetcher(http: mock)
+        _ = try await fetcher.fetch(expectedKept, etag: nil, lastModified: nil)
+        let requested = #require(seen.requests.last?.url)
+        #expect(requested == expectedKept)
+        #expect(requested.scheme == "http")
+    }
+
+    @Test("httpsUpgraded leaves non-http schemes unchanged")
+    func httpsUpgradedNonHttp() {
+        let fileURL = URL(fileURLWithPath: "/tmp/feed.xml")
+        #expect(FeedFetcher.httpsUpgraded(fileURL) == fileURL)
+
+        var comps = URLComponents()
+        comps.scheme = "https"
+        comps.host = "example.org"
+        comps.path = "/feed"
+        guard let httpsURL = comps.url else {
+            Issue.record("https URL fixture failed to build")
+            return
+        }
+        #expect(FeedFetcher.httpsUpgraded(httpsURL) == httpsURL)
     }
 }

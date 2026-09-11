@@ -1,7 +1,7 @@
 import Foundation
 
 /// The single error type for the Podcasts module.
-public enum PodcastsError: Error, Sendable, CustomStringConvertible {
+public enum PodcastsError: Error, Sendable, CustomStringConvertible, LocalizedError {
     case invalidFeedURL(String)
     case network(underlying: Error)
     case httpStatus(code: Int, url: URL)
@@ -36,5 +36,12 @@ public enum PodcastsError: Error, Sendable, CustomStringConvertible {
         case let .keychain(status, op):
             "Keychain error \(status) during \(op)"
         }
+    }
+
+    /// Surfaced through `error.localizedDescription`. Without this conformance,
+    /// the runtime renders bare cases as "Podcasts.PodcastsError error 1." and
+    /// hides the underlying cause (e.g. an App Transport Security failure).
+    public var errorDescription: String? {
+        self.description
     }
 }

@@ -31,6 +31,13 @@ public actor FeedFetcher {
 
     /// Conditional GET for a feed URL.
     ///
+    /// Plain-http feed URLs are upgraded to https before the request unless the
+    /// host is loopback (local dev feeds, E2E fixtures). App Transport Security
+    /// blocks plain http on real hosts, and iTunes/Podcast Index search rows
+    /// still return http-only `feedUrl`s for older podcasts. The https variant
+    /// of such feeds serves identical content and validators, so stored etags
+    /// and Last-Modified stamps stay consistent.
+    ///
     /// - Parameters:
     ///   - url: The feed URL to fetch.
     ///   - etag: Previously stored ETag validator, if any.
@@ -40,7 +47,15 @@ public actor FeedFetcher {
     public func fetch(_ url: URL, etag: String?, lastModified: String?) async throws -> FeedFetchResult {
         try Task.checkCancellation()
 
-        var request = URLRequest(url: url, timeoutInterval: 20)
+        let fetchURL = Self.httpsUpgraded(url)
+        if fetchURL != url {
+            self.log.debug("feed.fetch.schemeUpgraded", [
+                "from": url.absoluteString,
+                "to": fetchURL.absoluteString,
+            ])
+        }
+
+        var request = URLRequest(url: fetchURL, timeoutInterval: 20)
         request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
         request.setValue(
             "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.8",
@@ -53,7 +68,7 @@ public actor FeedFetcher {
             request.setValue(lastModified, forHTTPHeaderField: "If-Modified-Since")
         }
 
-        self.log.debug("feed.fetch.start", ["url": url.absoluteString])
+        self.log.debug("feed.fetch.start", ["url": fetchURL.absoluteString])
 
         let data: Data
         let response: URLResponse
@@ -62,7 +77,7 @@ public actor FeedFetcher {
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            self.log.error("feed.fetch.failed", ["url": url.absoluteString, "error": String(reflecting: error)])
+            self.log.error("feed.fetch.failed", ["url": fetchURL.absoluteString, "error": String(reflecting: error)])
             throw PodcastsError.network(underlying: error)
         }
 
@@ -70,11 +85,11 @@ public actor FeedFetcher {
             throw PodcastsError.network(underlying: URLError(.badServerResponse))
         }
 
-        let finalURL = response.url ?? url
+        let finalURL = response.url ?? fetchURL
 
         // 304 Not Modified.
         if http.statusCode == 304 {
-            self.log.debug("feed.fetch.notModified", ["url": url.absoluteString])
+            self.log.debug("feed.fetch.notModified", ["url": fetchURL.absoluteString])
             return FeedFetchResult(
                 data: nil,
                 notModified: true,
@@ -86,7 +101,7 @@ public actor FeedFetcher {
 
         // Non-2xx responses.
         guard (200 ..< 300).contains(http.statusCode) else {
-            self.log.error("feed.fetch.httpError", ["url": url.absoluteString, "status": http.statusCode])
+            self.log.error("feed.fetch.httpError", ["url": fetchURL.absoluteString, "status": http.statusCode])
             throw PodcastsError.httpStatus(code: http.statusCode, url: finalURL)
         }
 
@@ -101,7 +116,7 @@ public actor FeedFetcher {
             throw PodcastsError.feedTooLarge(bytes: data.count)
         }
 
-        self.log.debug("feed.fetch.end", ["url": url.absoluteString, "bytes": data.count])
+        self.log.debug("feed.fetch.end", ["url": fetchURL.absoluteString, "bytes": data.count])
 
         return FeedFetchResult(
             data: data,
@@ -110,5 +125,17 @@ public actor FeedFetcher {
             lastModified: http.value(forHTTPHeaderField: "Last-Modified"),
             finalURL: finalURL
         )
+    }
+
+    /// Upgrades a plain-http feed URL to https, except loopback hosts.
+    /// Returns the input URL unchanged for non-http schemes or loopback.
+    static func httpsUpgraded(_ url: URL) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              components.scheme?.lowercased() == "http",
+              !FeedURL.isLoopback(host: components.host) else {
+            return url
+        }
+        components.scheme = "https"
+        return components.url ?? url
     }
 }
