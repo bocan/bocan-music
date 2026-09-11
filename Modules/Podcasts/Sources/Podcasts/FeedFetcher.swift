@@ -31,15 +31,60 @@ public actor FeedFetcher {
 
     /// Conditional GET for a feed URL.
     ///
+    /// A plain-http URL is tried over https first: App Transport Security
+    /// refuses plain http to internet hosts, and the directories still list
+    /// http-only `feedUrl`s for older shows whose https twin serves the same
+    /// feed and validators. If the https attempt fails with a network or HTTP
+    /// error, the URL is retried exactly as given and ATS decides: it lets
+    /// plain http through to the local network and loopback, and refuses it
+    /// for internet hosts, which surfaces as `insecureFeedUnsupported`.
+    /// Loopback hosts skip the https attempt (E2E fixtures, a local dev feed).
+    ///
     /// - Parameters:
     ///   - url: The feed URL to fetch.
     ///   - etag: Previously stored ETag validator, if any.
     ///   - lastModified: Previously stored Last-Modified validator, if any.
     /// - Returns: `FeedFetchResult` with either fresh data or `notModified == true`.
-    /// - Throws: `PodcastsError.network`, `.httpStatus`, `.feedTooLarge`, or `CancellationError`.
+    /// - Throws: `PodcastsError.network`, `.httpStatus`, `.feedTooLarge`,
+    ///   `.insecureFeedUnsupported`, or `CancellationError`.
     public func fetch(_ url: URL, etag: String?, lastModified: String?) async throws -> FeedFetchResult {
         try Task.checkCancellation()
 
+        let upgraded = Self.httpsUpgraded(url)
+        guard upgraded != url else {
+            return try await self.perform(url, etag: etag, lastModified: lastModified)
+        }
+
+        self.log.debug("feed.fetch.schemeUpgraded", ["from": url.absoluteString, "to": upgraded.absoluteString])
+        do {
+            return try await self.perform(upgraded, etag: etag, lastModified: lastModified)
+        } catch let error as PodcastsError {
+            switch error {
+            case .network, .httpStatus:
+                // The secure twin does not serve this feed. Try the URL as
+                // given; a larger-than-cap feed is not retried, it would only
+                // download the same bytes again.
+                self.log.debug("feed.fetch.retryOriginal", [
+                    "url": url.absoluteString,
+                    "httpsError": String(reflecting: error),
+                ])
+
+            default:
+                throw error
+            }
+        }
+
+        do {
+            return try await self.perform(url, etag: etag, lastModified: lastModified)
+        } catch let PodcastsError.network(underlying)
+            where (underlying as? URLError)?.code == .appTransportSecurityRequiresSecureConnection {
+            self.log.warning("feed.fetch.insecureOnly", ["url": url.absoluteString])
+            throw PodcastsError.insecureFeedUnsupported(feedURL: url)
+        }
+    }
+
+    /// One conditional GET of exactly `url`, no scheme rewriting.
+    private func perform(_ url: URL, etag: String?, lastModified: String?) async throws -> FeedFetchResult {
         var request = URLRequest(url: url, timeoutInterval: 20)
         request.setValue(UserAgent.string, forHTTPHeaderField: "User-Agent")
         request.setValue(
@@ -110,5 +155,17 @@ public actor FeedFetcher {
             lastModified: http.value(forHTTPHeaderField: "Last-Modified"),
             finalURL: finalURL
         )
+    }
+
+    /// The https twin of a plain-http feed URL, or the URL unchanged for any
+    /// other scheme and for loopback hosts.
+    static func httpsUpgraded(_ url: URL) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              components.scheme?.lowercased() == "http",
+              !FeedURL.isLoopback(host: components.host) else {
+            return url
+        }
+        components.scheme = "https"
+        return components.url ?? url
     }
 }

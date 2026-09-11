@@ -1,7 +1,7 @@
 import Foundation
 
 /// The single error type for the Podcasts module.
-public enum PodcastsError: Error, Sendable, CustomStringConvertible {
+public enum PodcastsError: Error, Sendable, CustomStringConvertible, LocalizedError {
     case invalidFeedURL(String)
     case network(underlying: Error)
     case httpStatus(code: Int, url: URL)
@@ -12,6 +12,9 @@ public enum PodcastsError: Error, Sendable, CustomStringConvertible {
     case searchUnavailable(source: String, reason: String)
     case notFound(feedURL: URL)
     case keychain(OSStatus, String)
+    /// The feed is served over plain http only and App Transport Security
+    /// refused it (its https twin failed first). Nothing to retry.
+    case insecureFeedUnsupported(feedURL: URL)
 
     public var description: String {
         switch self {
@@ -35,6 +38,15 @@ public enum PodcastsError: Error, Sendable, CustomStringConvertible {
             "Podcast not found: \(url)"
         case let .keychain(status, op):
             "Keychain error \(status) during \(op)"
+        case let .insecureFeedUnsupported(url):
+            "This feed is only served over unencrypted http, which is not fetched: \(url)"
         }
+    }
+
+    /// Surfaced through `error.localizedDescription`. Without this conformance,
+    /// the runtime renders bare cases as "Podcasts.PodcastsError error 1." and
+    /// hides the underlying cause (e.g. an App Transport Security failure).
+    public var errorDescription: String? {
+        self.description
     }
 }
