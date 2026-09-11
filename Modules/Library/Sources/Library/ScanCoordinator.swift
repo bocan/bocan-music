@@ -102,7 +102,26 @@ actor ScanCoordinator {
         // treated as new and re-imported (clearing their disabled flag).
         // Both quick and full scans seed so that deleted files are pruned in
         // either mode.
-        let allTracks = await (try? self.trackRepo.fetchAllIncludingDisabled()) ?? []
+        // A failed read must not read as an empty library: the seed is what
+        // makes deleted files prunable and keeps known files from looking new,
+        // so the scan stops here rather than re-importing everything and
+        // pruning nothing (#481).
+        let allTracks: [Track]
+        do {
+            allTracks = try await self.trackRepo.fetchAllIncludingDisabled()
+        } catch {
+            self.log.error("scan.seed_failed", ["error": String(reflecting: error)])
+            emit(.error(url: nil, error: error))
+            emit(.finished(ScanProgress.Summary(
+                inserted: 0,
+                updated: 0,
+                removed: 0,
+                skipped: 0,
+                errors: 1,
+                duration: ContinuousClock.now - start
+            )))
+            return
+        }
         // Normalize roots to filesystem paths with symlinks resolved (e.g.
         // `/var` → `/private/var`).  Without this, a root URL of
         // `file:///var/folders/...` never prefix-matches a stored track URL
@@ -292,8 +311,17 @@ actor ScanCoordinator {
             return .error
         }
 
-        // Check for conflict
-        let existingTrack = try? await trackRepo.fetchOne(fileURL: url.absoluteString)
+        // Check for conflict. A failed lookup must not read as "no such row":
+        // that is what protects a user-edited track from being overwritten by
+        // the scan, so the file is reported as an error and left alone (#481).
+        let existingTrack: Track?
+        do {
+            existingTrack = try await self.trackRepo.fetchOne(fileURL: url.absoluteString)
+        } catch {
+            self.log.error("scan.existing_lookup_failed", ["url": url.path, "error": String(reflecting: error)])
+            emit(.error(url: url, error: error))
+            return .error
+        }
         if let ex = existingTrack, let exID = ex.id, ex.userEdited {
             let resolution = ConflictResolver.resolve(existingTrackID: exID, userEdited: true)
             if case let .conflict(trackID) = resolution {
