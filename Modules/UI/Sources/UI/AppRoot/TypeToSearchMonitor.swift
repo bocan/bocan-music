@@ -63,8 +63,9 @@ struct TypeToSearchMonitor: NSViewRepresentable {
     /// Returns the seed character when a key event carrying `characters` (with
     /// `modifiers` held) should begin a search, or `nil` when the event must
     /// pass through. Pure, so the whole eligibility table is unit-testable
-    /// without synthesizing key events.
-    static func seedCharacter(
+    /// without synthesizing key events; nonisolated so the tests call it
+    /// without a main-actor hop (the representable is main-actor bound).
+    nonisolated static func seedCharacter(
         for characters: String?,
         modifiers: NSEvent.ModifierFlags
     ) -> Character? {

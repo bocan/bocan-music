@@ -81,7 +81,8 @@ struct NavigationInputMonitor: NSViewRepresentable {
 
     /// macOS delivers the thumb buttons as `otherMouse*` events with these
     /// button numbers; 0/1 are left/right and 2 is the middle wheel button.
-    static func historyDirection(forButtonNumber number: Int) -> HistoryDirection? {
+    /// Pure and nonisolated, so the tests call it without a main-actor hop.
+    nonisolated static func historyDirection(forButtonNumber number: Int) -> HistoryDirection? {
         switch number {
         case 3:
             .back
@@ -96,7 +97,7 @@ struct NavigationInputMonitor: NSViewRepresentable {
 
     /// Esc, and only a bare Esc: chords stay available to menus and the
     /// system. Pure, so the eligibility is unit-testable without events.
-    static func isBareEscape(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> Bool {
+    nonisolated static func isBareEscape(keyCode: UInt16, modifiers: NSEvent.ModifierFlags) -> Bool {
         keyCode == 53 && modifiers.isDisjoint(with: [.command, .control, .option, .shift, .function])
     }
 

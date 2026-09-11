@@ -73,9 +73,8 @@ public final class PodcastsViewModel: ObservableObject {
 
     // MARK: - Observation tasks
 
-    // Spurious compiler warning: `'nonisolated(unsafe)' has no effect on property 'X',
-    // consider using 'nonisolated'` fires here. Its fix-it does not compile (nonisolated
-    // is rejected on mutable stored properties). Leave nonisolated(unsafe) as-is -- see UI CLAUDE.md.
+    // nonisolated(unsafe): assigned only from @MainActor methods and read once
+    // from the nonisolated `deinit`. Task handles are Sendable. See #279.
     private nonisolated(unsafe) var subscribedTask: Task<Void, Never>?
     private nonisolated(unsafe) var episodesTask: Task<Void, Never>?
     private nonisolated(unsafe) var unplayedCountsTask: Task<Void, Never>?

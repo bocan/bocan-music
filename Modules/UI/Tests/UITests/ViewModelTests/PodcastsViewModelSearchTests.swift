@@ -84,10 +84,11 @@ struct PodcastsViewModelSearchTests {
     }
 
     @Test("Non-URL text clears addByURLCandidate")
-    func plainTextClearsCandidate() async throws {
+    func plainTextClearsCandidate() async {
         let stub = StubSearchProvider()
         let vm = PodcastsViewModel(library: nil, actions: nil, searchProvider: stub)
-        vm.addByURLCandidate = try #require(URL(string: "https://old.example.com"))
+        vm.addByURLCandidate = URL(string: "https://old.example.com")
+        #expect(vm.addByURLCandidate != nil)
         await vm.onAddBarTextChanged("science fiction")
         #expect(vm.addByURLCandidate == nil)
     }

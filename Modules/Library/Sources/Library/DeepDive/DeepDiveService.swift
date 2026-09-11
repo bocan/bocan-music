@@ -106,10 +106,15 @@ public actor DeepDiveService {
         }
         // Stamp the enrichment columns opportunistically: this is the same lookup.
         if !guessed {
-            try? await self.artists.setEnrichment(
-                mbid: mbid, disambiguation: detail.disambiguation, sortName: detail.sortName,
-                fetchedAt: Int64(self.now().timeIntervalSince1970)
-            )
+            do {
+                try await self.artists.setEnrichment(
+                    mbid: mbid, disambiguation: detail.disambiguation, sortName: detail.sortName,
+                    fetchedAt: Int64(self.now().timeIntervalSince1970)
+                )
+            } catch {
+                // The report does not depend on the stamp; the next pass retries it.
+                self.log.warning("deepdive.enrich.stamp_failed", ["mbid": mbid, "error": String(reflecting: error)])
+            }
         }
 
         let owned = try await self.ownedReleaseKeys(artistID: artist.id ?? 0)

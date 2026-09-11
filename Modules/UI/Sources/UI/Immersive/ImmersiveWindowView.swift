@@ -27,7 +27,7 @@ public struct ImmersiveWindowView: View {
     @AppStorage(ImmersiveView.preferenceKey) private var isOpen = false
 
     /// The scene identifier in `BocanApp`.
-    public static let windowID = "immersive"
+    public nonisolated static let windowID = "immersive"
 
     public init(library: LibraryViewModel, lyricsVM: LyricsViewModel, visualizerVM: VisualizerViewModel) {
         self.library = library
