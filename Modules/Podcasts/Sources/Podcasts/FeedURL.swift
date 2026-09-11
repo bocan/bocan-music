@@ -57,8 +57,15 @@ public enum FeedURL {
         return key
     }
 
-    /// The absolute URL to store: https-preferred, no trailing slash, no fragment.
-    /// Returns nil for non-http(s) inputs.
+    /// The absolute URL to store: scheme kept as given (lowercased), host
+    /// lowercased, no trailing slash, no fragment, no default port. Returns
+    /// nil for non-http(s) inputs.
+    ///
+    /// The scheme is deliberately not upgraded here. `FeedFetcher` tries
+    /// https first at fetch time and `PodcastService.subscribe` stores the
+    /// address that answered, so a feed on the local network, which App
+    /// Transport Security lets through over plain http, keeps a working
+    /// address instead of an https one its server never serves (#487).
     public static func normalizedStorageURL(_ url: URL) -> URL? {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               let scheme = components.scheme?.lowercased(),
@@ -66,13 +73,7 @@ public enum FeedURL {
             return nil
         }
 
-        // Prefer https -- except loopback, where TLS buys nothing (no network
-        // to eavesdrop on) and forcing it breaks any same-machine http-only
-        // server outright (E2E fixtures; a local dev feed). Real remote
-        // feeds are unaffected: this only fires for 127.0.0.1/::1/localhost.
-        if !Self.isLoopback(host: components.host) {
-            components.scheme = "https"
-        }
+        components.scheme = scheme
 
         // Lowercase host.
         components.host = components.host?.lowercased()
@@ -96,8 +97,8 @@ public enum FeedURL {
     }
 
     /// True for loopback hosts (127.0.0.1, ::1, localhost). Used by
-    /// `normalizedStorageURL` (skip TLS for same-machine servers) and by
-    /// `FeedFetcher` (no https attempt for loopback when fetching).
+    /// `FeedFetcher`, which makes no https attempt for loopback: TLS buys
+    /// nothing on the same machine (E2E fixtures, a local dev feed).
     static func isLoopback(host: String?) -> Bool {
         switch host?.lowercased() {
         case "127.0.0.1", "::1", "[::1]", "localhost":

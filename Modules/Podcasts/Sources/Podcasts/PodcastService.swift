@@ -99,16 +99,23 @@ public actor PodcastService {
     }
 
     public func subscribe(feedURL: URL, indexHints: PodcastSearchResult? = nil) async throws -> Int64 {
-        guard let stored = FeedURL.normalizedStorageURL(feedURL) else {
+        guard let given = FeedURL.normalizedStorageURL(feedURL) else {
             throw PodcastsError.invalidFeedURL(feedURL.absoluteString)
         }
 
-        self.log.debug("podcast.subscribe.start", ["url": stored.absoluteString])
+        self.log.debug("podcast.subscribe.start", ["url": given.absoluteString])
 
-        let fetchResult = try await fetcher.fetch(stored, etag: nil, lastModified: nil)
+        let fetchResult = try await fetcher.fetch(given, etag: nil, lastModified: nil)
         guard let data = fetchResult.data else {
             throw PodcastsError.network(underlying: URLError(.badServerResponse))
         }
+
+        // Store the address that answered: the https twin when it served the
+        // feed, the given http address when only that works (a feed on the
+        // local network, #487). Not the redirect target: that is a move, and
+        // would change the show's identity.
+        let stored = FeedURL.normalizedStorageURL(fetchResult.requestedURL) ?? given
+        try await self.adoptStoredScheme(stored)
 
         let parsed = try parser.parse(data, sourceURL: stored)
 
@@ -777,12 +784,36 @@ public actor PodcastService {
         if let cached = idCache[key] {
             return cached
         }
-        guard let podcast = try await podcastRepo.fetchByFeedURL(key) else {
+        // Either scheme: a queue persisted before a subscription's stored
+        // scheme was adopted (#487) still carries the old address.
+        guard let podcast = try await podcastRepo.fetchByFeedURLIgnoringScheme(key) else {
             throw PodcastsError.notFound(feedURL: feedURL)
         }
         let id = podcast.id ?? 0
         self.idCache[key] = id
         return id
+    }
+
+    /// Moves a subscription stored under the other scheme of `stored` onto
+    /// `stored`, so the subscribe upsert updates that row (its episodes,
+    /// positions and settings stay) instead of adding a second subscription.
+    /// This is how a show stored as https before #487, whose server only
+    /// answers over http on the local network, is repaired by re-adding it.
+    /// Only ever moves to an address whose request just succeeded; App
+    /// Transport Security admits plain http only for local hosts.
+    private func adoptStoredScheme(_ stored: URL) async throws {
+        let key = stored.absoluteString
+        guard let existing = try await self.podcastRepo.fetchByFeedURLIgnoringScheme(key),
+              existing.feedURL != key else { return }
+        var moved = existing
+        moved.feedURL = key
+        try await self.podcastRepo.update(moved)
+        self.idCache[existing.feedURL] = nil
+        self.log.info("podcast.subscribe.schemeAdopted", [
+            "id": existing.id ?? 0,
+            "from": existing.feedURL,
+            "to": key,
+        ])
     }
 }
 

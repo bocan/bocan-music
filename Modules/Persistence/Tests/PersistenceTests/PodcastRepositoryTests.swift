@@ -122,6 +122,28 @@ struct PodcastRepositoryTests {
         #expect(result == nil)
     }
 
+    @Test("fetchByFeedURLIgnoringScheme finds a row under the other scheme, and an exact match wins (#487)")
+    func fetchIgnoringScheme() async throws {
+        let db = try await makeDB()
+        let repo = PodcastRepository(database: db)
+        let httpsID = try await repo.insert(self.sample(feedURL: "https://example.test/feed.rss"))
+
+        #expect(try await repo.fetchByFeedURLIgnoringScheme("http://example.test/feed.rss")?.id == httpsID)
+        #expect(try await repo.fetchByFeedURLIgnoringScheme("https://example.test/feed.rss")?.id == httpsID)
+        #expect(try await repo.fetchByFeedURLIgnoringScheme("http://other.test/feed.rss") == nil)
+
+        let httpID = try await repo.insert(self.sample(feedURL: "http://example.test/feed.rss", title: "Twin"))
+        #expect(try await repo.fetchByFeedURLIgnoringScheme("http://example.test/feed.rss")?.id == httpID)
+        #expect(try await repo.fetchByFeedURLIgnoringScheme("https://example.test/feed.rss")?.id == httpsID)
+    }
+
+    @Test("schemeVariants pairs http with https and leaves other schemes alone")
+    func schemeVariants() {
+        #expect(PodcastRepository.schemeVariants(of: "http://a.test/f") == ["http://a.test/f", "https://a.test/f"])
+        #expect(PodcastRepository.schemeVariants(of: "https://a.test/f") == ["https://a.test/f", "http://a.test/f"])
+        #expect(PodcastRepository.schemeVariants(of: "feed://a.test/f") == ["feed://a.test/f"])
+    }
+
     @Test("delete removes the row")
     func deleteRow() async throws {
         let db = try await makeDB()
