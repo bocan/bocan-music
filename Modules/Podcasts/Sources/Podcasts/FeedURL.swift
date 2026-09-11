@@ -95,7 +95,10 @@ public enum FeedURL {
         return components.url
     }
 
-    private static func isLoopback(host: String?) -> Bool {
+    /// True for loopback hosts (127.0.0.1, ::1, localhost). Used by
+    /// `normalizedStorageURL` (skip TLS for same-machine servers) and by
+    /// `FeedFetcher` (no https attempt for loopback when fetching).
+    static func isLoopback(host: String?) -> Bool {
         switch host?.lowercased() {
         case "127.0.0.1", "::1", "[::1]", "localhost":
             true

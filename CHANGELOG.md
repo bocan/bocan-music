@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Adding a podcast whose directory listing gives a plain-http feed address now works when the show is also served securely, which most are. When it is not, the message says the feed is unencrypted-only instead of showing an error number. Any podcast error now shows its real reason.
+
 The main window and the Songs list no longer redraw every time a synced lyric line changes, a lyrics fetch starts or finishes, or the sync offset moves. Only the lyrics pane updates on those moments, so playing a song with synced lyrics while the full Songs list is open stays smooth.
 
 Song lists from a Subsonic server, in the Songs view, album and artist pages and search results, no longer re-check every row whenever something else in the window updates, such as a synced lyric line changing. Large remote albums and playlists stay smooth.
