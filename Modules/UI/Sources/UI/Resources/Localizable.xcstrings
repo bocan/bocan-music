@@ -7053,6 +7053,46 @@
         }
       }
     },
+    "Couldn’t add those tracks to the playlist." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđñ’ţ áđđ ţĥóšé ţŕáçķš ţó ţĥé ƥĺáýĺíšţ. one two three"
+          }
+        }
+      }
+    },
+    "Couldn’t read that image file." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđñ’ţ ŕéáđ ţĥáţ íḿáĝé ƒíĺé. one two three"
+          }
+        }
+      }
+    },
+    "Couldn’t save the log" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđñ’ţ šávé ţĥé ĺóĝ one two"
+          }
+        }
+      }
+    },
+    "Couldn’t update Loved for that track." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóúĺđñ’ţ úƥđáţé Ĺóvéđ ƒóŕ ţĥáţ ţŕáçķ. one two three"
+          }
+        }
+      }
+    },
     "Country" : {
       "localizations" : {
         "en-XA" : {
