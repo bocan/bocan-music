@@ -66,6 +66,7 @@ public struct SubsonicArtistsView: View {
                     Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading || self.isSearching)
+                .help(L10n.string("Fetches this server's artist list again."))
             }
         }
         .task(id: self.serverID) {

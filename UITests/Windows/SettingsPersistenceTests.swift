@@ -24,7 +24,7 @@ final class SettingsPersistenceTests: XCTestCase {
     /// below because it is a selection, not a toggle.
     static let toggles: [(pane: String, id: String)] = [
         ("general", "settings.general.dockBadge"),
-        ("library", "settings.library.quickScan"),
+        ("library", "settings.library.embedCoverArt"),
         ("smartPlaylists", "settings.smartPlaylists.liveUpdate"),
         ("podcasts", "settings.podcasts.refreshOnLaunch"),
         ("playback", "settings.playback.crossAlbumGapless"),

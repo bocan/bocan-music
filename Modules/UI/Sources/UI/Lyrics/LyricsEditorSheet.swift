@@ -99,6 +99,7 @@ public struct LyricsEditorSheet: View {
             }
             .keyboardShortcut(.defaultAction)
             .disabled(self.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .help(L10n.string("Saves these lyrics for the track, and into the file itself if Embed in file is ticked."))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -124,6 +125,7 @@ public struct LyricsEditorSheet: View {
             Button(L10n.string("Delete"), role: .destructive) {
                 self.showDeleteConfirm = true
             }
+            .help(L10n.string("Removes the lyrics stored for this track, after asking."))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

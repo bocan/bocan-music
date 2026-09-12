@@ -120,16 +120,53 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 - Every interactive element has an `accessibilityLabel`.
 - Every new interactive control ships with a stable `A11y` accessibility
-  identifier and localized `.help()` text (ADR-080). The identifier is
-  enforced by the E2E crawler audit in `make test-e2e`; help coverage is
-  reported by `Scripts/audit-help-text.py` in `make lint`. Controls inside
-  menus, alerts, and dialogs are exempt from `.help()` (macOS renders no
-  tooltips there); a label-is-self-sufficient exemption goes in the
-  audit's allowlist file with a reason.
+  identifier, enforced by the E2E crawler audit in `make test-e2e`.
+- Every new interactive control ships with localized `.help()` text, or an
+  allowlist entry saying why not. The policy is below.
 - Full keyboard navigation. No mouse-only actions.
 - VoiceOver rotor reaches every meaningful view.
 - Respects `reduceMotion`, `increaseContrast`, `differentiateWithoutColor`, `reduceTransparency`.
 - Passes Accessibility Inspector audits on key screens.
+
+### Hover text
+
+A control the user can click, switch or choose from carries `.help()`, and the
+text is a hover affordance, not a second copy of the label. It says what the
+control does, or what changes if it is switched, or what the user gets back.
+"Reshuffle the sample" on a Refresh button earns its place; "Refresh" on a
+Refresh button does not, and is worse than nothing, because it teaches the user
+that hovering tells them nothing.
+
+Which controls: `Button`, `Toggle`, `Picker`, `Slider` and `Menu`, in
+`Modules/UI/Sources` and `App/`. `Scripts/audit-help-text.py` finds them.
+
+**Exempt by rule, not by allowlist.** macOS renders no tooltip inside an open
+menu, alert or dialog, so `.help()` there is dead code. The audit already skips
+`Menu` and `CommandMenu` bodies, `CommandGroup`, `.contextMenu`,
+`confirmationDialog`, `.alert`, `.swipeActions`, `Picker` option closures, the
+dock menu, and anything in a `#Preview` body or a test source. None of this
+needs re-arguing at a call site.
+
+**The allowlist is the other right answer.** A control whose label is already
+the whole story does not get redundant hover text; it gets a line in
+`Scripts/audit-help-text-allowlist.txt` with a reason, keyed
+`<relative-path>|<normalized first line of the call site>`. Line numbers are
+deliberately not in the key, so ordinary edits do not churn it. The list is
+meant to stay short enough to read in one sitting: if it grows past a screen,
+the policy is being avoided rather than applied.
+
+**The text is user-facing copy.** In the `UI` module that means
+`L10n.string("…")` with a key in
+`Modules/UI/Sources/UI/Resources/Localizable.xcstrings`, and `make pseudolocale`
+re-run afterwards, or the en-XA coverage test fails. A bare literal compiles,
+renders in English and silently never localizes.
+
+Enforced by `Scripts/audit-help-text.py` from `make lint`, in strict mode since
+#509: a control that ships without hover text and without an allowlist entry
+fails the build, locally and in CI. The audit has its own hermetic tests in
+`Scripts/tests/audit-help-text-test.sh`, which `make test-scripts` and the CI
+`scripts` job both run. The backlog this replaced, counted per area, is
+`docs/audits/help-text-audit.md` (#501).
 
 ## Localization
 

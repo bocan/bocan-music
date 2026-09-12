@@ -97,6 +97,7 @@ public struct RecentScrobblesView: View {
                         .pickerStyle(.segmented)
                         .labelsHidden()
                         .fixedSize()
+                        .help(L10n.string("Shows only the scrobbles sent to one service."))
                         .accessibilityLabel(L10n.string("Filter by provider"))
                 }
                 Button(L10n.string("Done")) { self.dismiss() }

@@ -231,6 +231,7 @@ struct FieldSelectionGrid: View {
                     L10n.string("Accept \(field.displayName), currently \(currentSpoken), proposed \(proposed)")
                 )
                 .disabled(unchanged)
+                .help(L10n.string("Write the proposed value into this field when you apply the match."))
             Text(field.displayName)
                 .font(.callout)
                 .foregroundStyle(.secondary)

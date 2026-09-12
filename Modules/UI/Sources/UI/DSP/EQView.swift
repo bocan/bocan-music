@@ -226,6 +226,7 @@ public struct EQView: View {
                 }
                 .disabled(self.savePresetName.trimmingCharacters(in: .whitespaces).isEmpty)
                 .keyboardShortcut(.defaultAction)
+                .help(L10n.string("Stores the slider positions under this name, so you can pick them again later."))
             }
         }
         .padding()

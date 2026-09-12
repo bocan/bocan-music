@@ -213,6 +213,7 @@ private struct SubsonicEmptyState: View {
             }
             .keyboardShortcut(.defaultAction)
             .accessibilityIdentifier(A11y.SettingsIDs.addServerEmpty)
+            .help(L10n.string("Adds a Subsonic-compatible server. You can add more than one and browse them side by side."))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
@@ -251,6 +252,7 @@ private struct SubsonicServerEditorView: View {
                         .tag(SubsonicAuthKind.apiKey)
                 }
                 .pickerStyle(.menu)
+                .help(L10n.string("Token and password works with Subsonic and Navidrome. Choose API Key only if your server offers one."))
                 if self.vm.editor.authKind == .tokenSalt {
                     TextField(L10n.string("Username"), text: self.$vm.editor.username)
                         .autocorrectionDisabled(true)
@@ -262,6 +264,10 @@ private struct SubsonicServerEditorView: View {
 
             Section(L10n.string("Security")) {
                 Toggle(L10n.string("Allow self-signed TLS certificate"), isOn: self.$vm.editor.allowSelfSignedTLS)
+                    .help(L10n
+                        .string(
+                            "For a server whose certificate you issued yourself. It drops the check that you reached the right machine."
+                        ))
                 if self.vm.editor.allowSelfSignedTLS {
                     Label(
                         self.selfSignedWarning,
@@ -278,6 +284,7 @@ private struct SubsonicServerEditorView: View {
                     Text(localized: "Cap at…").tag(SubsonicSettingsViewModel.BitrateKind.kbps)
                 }
                 .pickerStyle(.segmented)
+                .help(L10n.string("Original streams the file as the server stores it. Cap at asks the server to convert it down first."))
 
                 if self.vm.editor.bitrateKind == .kbps {
                     Picker(L10n.string("Bitrate"), selection: self.$vm.editor.bitrateKbps) {
@@ -286,6 +293,7 @@ private struct SubsonicServerEditorView: View {
                         }
                     }
                     .pickerStyle(.menu)
+                    .help(L10n.string("The ceiling the server converts to. Lower values use less of your connection on the move."))
                 }
 
                 Picker(L10n.string("Preferred Format"), selection: self.$vm.editor.preferredFormat) {
@@ -294,16 +302,30 @@ private struct SubsonicServerEditorView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .help(L10n.string("The format to ask for when the server has to convert. Original leaves the choice to the server."))
 
                 Toggle(L10n.string("Pre-cache the next track"), isOn: self.$vm.editor.precacheNext)
+                    .help(L10n
+                        .string(
+                            "Fetches the next track in the queue while the current one plays, so a slow connection cannot cause a gap."
+                        ))
             }
 
             Section(L10n.string("Integration")) {
                 Toggle(L10n.string("Include in global search"), isOn: self.$vm.editor.includeInGlobalSearch)
+                    .help(L10n.string("Lets this server answer the search field, so its music appears alongside your local results."))
                 Toggle(L10n.string("Show in sidebar"), isOn: self.$vm.editor.showInSidebar)
+                    .help(L10n.string("Lists this server in the sidebar. Switch it off to keep the server configured but out of the way."))
                 Toggle(L10n.string("Scrobble to this server"), isOn: self.$vm.editor.scrobble)
+                    .help(L10n
+                        .string(
+                            "Reports finished plays to this server's own listening history, as well as to any scrobbling service you use."
+                        ))
                 Toggle(L10n.string("Sync starred items"), isOn: self.$vm.editor.syncStars)
+                    .help(L10n.string("Sends the stars you set here to the server. With it off, a star is not sent and is lost on quit."))
                 Toggle(L10n.string("Sync star ratings"), isOn: self.$vm.editor.syncRatings)
+                    .help(L10n
+                        .string("Sends the ratings you set here to the server. With it off, a rating is not sent and is lost on quit."))
             }
 
             if let test = self.vm.lastTestResult {

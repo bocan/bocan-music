@@ -22,6 +22,7 @@ public struct LyricsSettingsView: View {
             Section(L10n.string("Display")) {
                 Toggle(L10n.string("Show lyrics pane when a track has lyrics"), isOn: self.$autoShowPane)
                     .accessibilityIdentifier(A11y.SettingsIDs.lyricsAutoShow)
+                    .help(L10n.string("Opens the pane by itself when a track has lyrics, instead of waiting for you to open it."))
 
                 Picker(L10n.string("Default font size"), selection: self.$fontSizeDefault) {
                     ForEach(LyricsFontSize.allCases, id: \.self) { size in
@@ -29,6 +30,7 @@ public struct LyricsSettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .help(L10n.string("The size lyrics start at. You can still change the size while a track plays."))
             }
 
             Section(L10n.string("Source priority")) {
@@ -38,11 +40,13 @@ public struct LyricsSettingsView: View {
                     }
                 }
                 .pickerStyle(.radioGroup)
+                .help(L10n.string("Which lyrics win when a track has both its own and a downloaded set."))
             }
 
             Section(L10n.string("LRClib (opt-in)")) {
                 Toggle(L10n.string("Fetch lyrics from LRClib.net"), isOn: self.$lrclibEnabled)
                     .accessibilityIdentifier(A11y.SettingsIDs.lyricsLrclib)
+                    .help(L10n.string("Looks up missing lyrics online, which sends the track's artist and title to LRClib.net."))
                 Text(self.lrclibFooter)
                     .font(.caption)
                     .foregroundStyle(.secondary)

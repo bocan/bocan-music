@@ -84,6 +84,7 @@ public struct SubsonicPlaylistsView: View {
                     Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
+                .help(L10n.string("Fetches this server's playlists again."))
             }
         }
         .task(id: self.serverID) {
@@ -126,6 +127,7 @@ public struct SubsonicPlaylistsView: View {
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(L10n.string("\(playlist.name), \(playlist.songCount) songs"))
+                .help(L10n.string("Opens this playlist's songs."))
             }
             if self.vm.isLoading {
                 HStack { Spacer()

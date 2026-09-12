@@ -105,6 +105,7 @@ public struct IdentifyTrackSheet: View {
                 self.dismiss()
             }
             .buttonStyle(.bordered)
+            .help(L10n.string("Opens the tag editor for this track so you can fill the fields in yourself."))
         }
         .padding()
     }
@@ -120,6 +121,7 @@ public struct IdentifyTrackSheet: View {
                 self.vm.retry()
             }
             .buttonStyle(.borderedProminent)
+            .help(L10n.string("Fingerprints the track and asks AcoustID again."))
         }
         .padding()
     }

@@ -89,6 +89,7 @@ struct PodcastShowSettingsView: View {
                     Text(verbatim: "\(value.formatted())×").tag(Double?.some(value))
                 }
             }
+            .help(L10n.string("The speed episodes of this show start at, overriding the default in Podcasts settings."))
             .onChange(of: self.speed) { _, new in
                 Task { await self.vm.setPlaybackSpeed(new, podcastID: self.podcastID) }
             }
@@ -102,6 +103,7 @@ struct PodcastShowSettingsView: View {
                 Text(localized: "Newest First").tag(String?.some("newest"))
                 Text(localized: "Oldest First").tag(String?.some("oldest"))
             }
+            .help(L10n.string("Which end of this show's back catalogue is listed first. Serial shows often read better oldest first."))
             .onChange(of: self.sort) { _, new in
                 Task { await self.vm.setEpisodeSort(new, podcastID: self.podcastID) }
             }
@@ -116,6 +118,7 @@ struct PodcastShowSettingsView: View {
                     Text(L10n.string("\(value) most recent")).tag(Int?.some(value))
                 }
             }
+            .help(L10n.string("How many recent episodes this show lists. Older ones drop off the list, not off your disk."))
             .onChange(of: self.retention) { _, new in
                 Task { await self.vm.setRetentionLimit(new, podcastID: self.podcastID) }
             }
@@ -127,6 +130,7 @@ struct PodcastShowSettingsView: View {
     private var generalSection: some View {
         Section {
             Toggle(L10n.string("Auto-Download New Episodes"), isOn: self.$autoDownload)
+                .help(L10n.string("Downloads new episodes of this show as they appear, as many as Podcasts settings allows."))
                 .onChange(of: self.autoDownload) { _, new in
                     Task { await self.vm.setAutoDownload(new, podcastID: self.podcastID) }
                 }

@@ -525,6 +525,41 @@ public actor SubsonicService {
         }
     }
 
+    /// Whether this server mirrors the stars the user sets (`syncStars`).
+    ///
+    /// A server whose record cannot be read answers `false`: an annotation is
+    /// never sent to a server whose settings are unknown, and the reason
+    /// reaches the log rather than the user (#502).
+    public func syncsStars(serverID: UUID) async -> Bool {
+        await self.serverFlag(serverID: serverID, flag: \.syncStars, name: "syncStars")
+    }
+
+    /// Whether this server mirrors the ratings the user sets (`syncRatings`).
+    /// Same read-failure contract as `syncsStars`.
+    public func syncsRatings(serverID: UUID) async -> Bool {
+        await self.serverFlag(serverID: serverID, flag: \.syncRatings, name: "syncRatings")
+    }
+
+    private func serverFlag(
+        serverID: UUID,
+        flag: KeyPath<SubsonicServer, Bool>,
+        name: String
+    ) async -> Bool {
+        do {
+            guard let server = try await self.store.fetch(id: serverID) else {
+                self.log.warning("subsonic.serverFlag.missing", ["server": serverID.uuidString, "flag": name])
+                return false
+            }
+            return server[keyPath: flag]
+        } catch {
+            self.log.warning(
+                "subsonic.serverFlag.readFailed",
+                ["server": serverID.uuidString, "flag": name, "error": String(reflecting: error)]
+            )
+            return false
+        }
+    }
+
     /// Reads the persisted capability snapshot for a server, or `nil` if none
     /// has been stored. Used to detect real capability changes before emitting
     /// on `capabilityUpdates`.

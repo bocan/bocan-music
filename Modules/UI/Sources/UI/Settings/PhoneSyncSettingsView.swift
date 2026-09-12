@@ -49,6 +49,7 @@ public struct PhoneSyncSettingsView: View {
             }
             .accessibilityLabel(L10n.string("Phone Sync"))
             .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncToggle)
+            .help(L10n.string("Starts the server a paired phone connects to. It is reachable only from your own network."))
             if self.viewModel.enabled {
                 Text(localized: "On. Discoverable on your local network.")
                     .font(.footnote)
@@ -69,6 +70,7 @@ public struct PhoneSyncSettingsView: View {
             }
             .pickerStyle(.segmented)
             .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncMode)
+            .help(L10n.string("Everything sends your whole library. Choose playlists sends only the ones you tick."))
 
             if self.viewModel.profile.mode == .choosePlaylists {
                 self.playlistPicker
@@ -78,6 +80,7 @@ public struct PhoneSyncSettingsView: View {
                 Text(localized: "Include podcasts")
             }
             .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncIncludePodcasts)
+            .help(L10n.string("Sends downloaded podcast episodes to the phone as well as music."))
 
             LabeledContent {
                 Text(self.sizeEstimateText)
@@ -125,6 +128,7 @@ public struct PhoneSyncSettingsView: View {
                 .toggleStyle(.checkbox)
                 .accessibilityLabel(playlist.name)
                 .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncPlaylistToggle)
+                .help(L10n.string("Include this playlist, and the songs in it, in what the phone receives."))
             }
         }
     }
@@ -160,6 +164,7 @@ public struct PhoneSyncSettingsView: View {
             }
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier(A11y.SettingsIDs.pairPhone)
+            .help(L10n.string("Shows a code to enter in Bòcan on your phone. Both devices must be on the same network."))
         }
         // Form rows lay content out leading-aligned and the view hugs its
         // content, which parked the whole block left of the card's centre.
@@ -181,6 +186,7 @@ public struct PhoneSyncSettingsView: View {
                 Text(localized: "Revoke")
             }
             .accessibilityLabel(L10n.string("Revoke \(device.deviceName)"))
+            .help(L10n.string("Ends this phone's access. It has to be paired again before it can sync."))
         }
     }
 
@@ -197,6 +203,7 @@ public struct PhoneSyncSettingsView: View {
                 } label: {
                     Label(L10n.string("Pair a Phone"), systemImage: "iphone.and.arrow.forward")
                 }
+                .help(L10n.string("Shows a code to enter in Bòcan on another phone. Each phone is paired separately."))
             }
         }
     }
@@ -254,12 +261,14 @@ public struct PhoneSyncSettingsView: View {
             .pickerStyle(.inline)
             .labelsHidden()
             .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncQuality)
+            .help(L10n.string("The ceiling for what the phone receives. A lower rung fits more music on the phone."))
 
             if self.viewModel.transcode.preset != nil {
                 Toggle(isOn: self.keepBinding) {
                     Text(localized: "Keep prepared copies for faster re-syncs")
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.phoneSyncKeepArtifacts)
+                .help(L10n.string("Keeps the converted files on this Mac so a later sync does not convert them again. Costs disk space."))
                 self.preparingRow
             }
         } header: {

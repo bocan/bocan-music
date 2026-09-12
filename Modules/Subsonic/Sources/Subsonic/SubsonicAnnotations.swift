@@ -14,6 +14,15 @@ private enum AnnotationAction {
         case let .star(s, _), let .unstar(s, _), let .setRating(s, _, _): s
         }
     }
+
+    /// Log-only name for the action kind.
+    var name: String {
+        switch self {
+        case .star: "star"
+        case .unstar: "unstar"
+        case .setRating: "setRating"
+        }
+    }
 }
 
 // MARK: - SubsonicAnnotations
@@ -63,19 +72,48 @@ public actor SubsonicAnnotations {
         self.eventStream
     }
 
-    /// Queues a star action.
+    /// Queues a star action, unless this server has `syncStars` off.
     public func star(serverID: UUID, songID: String) async {
-        await self.attempt(action: .star(serverID: serverID, songID: songID))
+        let action = AnnotationAction.star(serverID: serverID, songID: songID)
+        guard await self.mirrors(action) else { return }
+        await self.attempt(action: action)
     }
 
-    /// Queues an unstar action.
+    /// Queues an unstar action, unless this server has `syncStars` off.
     public func unstar(serverID: UUID, songID: String) async {
-        await self.attempt(action: .unstar(serverID: serverID, songID: songID))
+        let action = AnnotationAction.unstar(serverID: serverID, songID: songID)
+        guard await self.mirrors(action) else { return }
+        await self.attempt(action: action)
     }
 
-    /// Queues a rating update.
+    /// Queues a rating update, unless this server has `syncRatings` off.
     public func setRating(serverID: UUID, songID: String, rating: Int) async {
-        await self.attempt(action: .setRating(serverID: serverID, songID: songID, rating: rating))
+        let action = AnnotationAction.setRating(serverID: serverID, songID: songID, rating: rating)
+        guard await self.mirrors(action) else { return }
+        await self.attempt(action: action)
+    }
+
+    /// Whether the server wants this action mirrored, per the `syncStars` and
+    /// `syncRatings` flags on its record.
+    ///
+    /// Both flags were stored, edited in Settings and read by nothing until
+    /// #502: every star and rating went to the server whatever the user had
+    /// chosen. A skipped action is not a failure, so it never enters the retry
+    /// queue and never raises `annotationFailed`.
+    private func mirrors(_ action: AnnotationAction) async -> Bool {
+        let enabled = switch action {
+        case .star, .unstar:
+            await self.service.syncsStars(serverID: action.serverID)
+        case .setRating:
+            await self.service.syncsRatings(serverID: action.serverID)
+        }
+        if !enabled {
+            self.log.debug(
+                "subsonic.annotation.notMirrored",
+                ["server": action.serverID.uuidString, "action": action.name]
+            )
+        }
+        return enabled
     }
 
     // MARK: - Delivery

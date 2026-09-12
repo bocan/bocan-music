@@ -114,6 +114,7 @@ public struct SubsonicPodcastsView: View {
                     Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
+                .help(L10n.string("Fetches this server's podcast list again."))
             }
         }
         .task(id: self.serverID) {

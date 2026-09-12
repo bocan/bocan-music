@@ -33,6 +33,7 @@ struct PodcastAddBar: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier(A11y.Podcasts.addBarClearButton)
                 .accessibilityLabel(L10n.string("Clear search"))
+                .help(L10n.string("Clears what you typed and returns to your subscriptions."))
             }
         }
         .padding(.horizontal, 12)

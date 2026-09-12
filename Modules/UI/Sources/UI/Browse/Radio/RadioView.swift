@@ -59,6 +59,7 @@ public struct RadioView: View {
                     Label(L10n.string("Add Station"), systemImage: "plus")
                 }
                 .accessibilityIdentifier(A11y.Radio.addButton)
+                .help(L10n.string("Adds a station from its stream address, or from a playlist address holding several."))
             }
         }
         .onAppear { self.vm.startObserving() }
@@ -114,6 +115,7 @@ public struct RadioView: View {
         } actions: {
             Button(L10n.string("Add Station")) { self.sheetMode = .add }
                 .accessibilityIdentifier(A11y.Radio.emptyStateAddButton)
+                .help(L10n.string("Adds a station from its stream address, or from a playlist address holding several."))
         }
         .accessibilityIdentifier(A11y.Radio.emptyState)
     }

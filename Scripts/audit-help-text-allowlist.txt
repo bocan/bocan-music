@@ -11,3 +11,78 @@ App/DebugAudioView.swift|Button("Play") { Task { try? await self.engine.play() }
 App/DebugAudioView.swift|Button("Pause") { Task { await self.engine.pause() } }  # debug-only utility
 App/DebugAudioView.swift|Button("Stop") { Task { await self.engine.stop() } }  # debug-only utility
 App/DebugAudioView.swift|Slider(value: self.$positionSec, in: 0 ... max(self.durationSec, 0.1)) { editing in  # debug-only utility
+
+# The pairing sheet's Cancel and Done dismiss it and do nothing else. Hover
+# text on a Cancel button teaches the user that hovering tells them nothing.
+# Trust, the one button with a consequence, carries help (#502).
+Modules/UI/Sources/UI/Settings/PhoneSyncPairingSheet.swift|Button(role: .cancel) {  # dismisses the sheet; label is the whole story
+Modules/UI/Sources/UI/Settings/PhoneSyncPairingSheet.swift|Button {  # the Done button; label is the whole story
+
+# Podcast sheets and the detail view: Done, Cancel and Back close what you
+# are looking at and do nothing else. Everything in these files that has a
+# consequence carries help instead (#503).
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastDetailView.swift|Button(L10n.string("Back")) { self.vm.dismissDetail() }  # closes the detail view
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastShowSettingsView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastOPMLImportSheet.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastOPMLImportSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/ShowNotesView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/TranscriptView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+
+# Radio and Subsonic sheets: Close and Cancel dismiss and do nothing else.
+# One entry covers both Cancel sites in the station sheet, since the key is
+# the call site's text rather than its line (#504).
+Modules/UI/Sources/UI/Browse/Radio/RadioStationInfoSheet.swift|Button(L10n.string("Close"), action: self.onDismiss)  # closes the sheet
+Modules/UI/Sources/UI/Browse/Radio/RadioStationSheet.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Subsonic/SubsonicInternetRadioView.swift|Button(L10n.string("Close"), action: self.onDismiss)  # closes the sheet
+
+# Playlist sheets: the commit and dismiss buttons of a sheet that has already
+# said what it is. The smart sheet's Create carries help instead, because it
+# also opens the rule editor, which the label does not say (#505).
+Modules/UI/Sources/UI/Playlists/AccentColorSheet.swift|Button(L10n.string("Cancel")) {  # closes the sheet
+Modules/UI/Sources/UI/Playlists/AccentColorSheet.swift|Button(L10n.string("Save")) {  # applies the colour picked above
+Modules/UI/Sources/UI/Playlists/NewPlaylistSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }  # closes the sheet
+Modules/UI/Sources/UI/Playlists/NewPlaylistSheet.swift|Button(L10n.string("Create")) { Task { await self.commit() } }  # creates the playlist named above
+Modules/UI/Sources/UI/Playlists/RenamePlaylistSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.target = nil }  # closes the sheet
+Modules/UI/Sources/UI/Playlists/RenamePlaylistSheet.swift|Button(L10n.string("Rename")) { Task { await self.commit() } }  # applies the name typed above
+Modules/UI/Sources/UI/Playlists/Smart/NewSmartPlaylistSheet.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Playlists/Smart/SmartPresetPickerView.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
+
+# The warm-up probe is a hidden 1x1 view in an off-screen panel that sets
+# ignoresMouseEvents; its controls exist to warm AppKit, and no pointer can
+# ever reach them (#505).
+Modules/UI/Sources/UI/Playlists/Smart/SmartPlaylistSurfacePrewarmer.swift|Picker("", selection: self.$mode) {  # off-screen warm-up probe
+Modules/UI/Sources/UI/Playlists/Smart/SmartPlaylistSurfacePrewarmer.swift|Menu(L10n.string("Preset")) {  # off-screen warm-up probe
+
+# Editing and tools: only the buttons that close a sheet without writing
+# anything. Everything in this cluster that touches a file or the library
+# carries help, because that is where the consequence matters (#506).
+Modules/UI/Sources/UI/MetadataEditor/ConflictDiffSheet.swift|Button(L10n.string("Done")) { self.isPresented = false }  # closes the diff view
+Modules/UI/Sources/UI/MetadataEditor/CoverArtFetchSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes without applying
+Modules/UI/Sources/UI/MetadataEditor/TagEditorSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes without saving
+Modules/UI/Sources/UI/Tools/BatchCoverArtSheet.swift|Button(L10n.string("Close")) { self.isPresented = false }  # closes the finished sheet
+Modules/UI/Sources/UI/Tools/BatchCoverArtSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes before starting
+Modules/UI/Sources/UI/Tools/DuplicateReviewSheet.swift|Button(L10n.string("Done")) { self.isPresented = false }  # closes the review
+
+# Playback surfaces: the dismiss buttons and the inline rename's OK, which
+# sits beside the text field it commits. Every control here that changes
+# what you hear or see carries help instead (#507).
+Modules/UI/Sources/UI/DSP/EQView.swift|Button(L10n.string("Cancel")) { self.showSaveSheet = false }  # closes without saving the preset
+Modules/UI/Sources/UI/DSP/PresetManagerView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the manager
+Modules/UI/Sources/UI/DSP/PresetManagerView.swift|Button(L10n.string("OK")) { self.commitRename(preset: preset) }  # commits the name in the field beside it
+Modules/UI/Sources/UI/DSP/ReplayGainSettingsView.swift|Button(L10n.string("Dismiss")) { self.library.replayGainProgress = nil }  # clears the finished-scan message
+Modules/UI/Sources/UI/Lyrics/LyricsEditorSheet.swift|Button(L10n.string("Cancel")) {  # closes without saving
+
+# The shared empty and error states take their button's label and the
+# message above it from the caller ("Add Music Folder", "Show All Artists"),
+# so the surface already says what the button does. One entry each covers
+# every screen that uses them (#508).
+Modules/UI/Sources/UI/Common/EmptyState.swift|Button(actionLabel, action: action)  # caller supplies the label and the message above it
+Modules/UI/Sources/UI/Common/ErrorState.swift|Button(actionLabel, action: action)  # caller supplies the label and the message above it
+
+# The summary tab strip draws each tab's name under its icon, so a tooltip
+# could only repeat what is already on screen.
+Modules/UI/Sources/UI/Summary/LibrarySummaryView.swift|Button {  # the tab's name is drawn under its icon
+
+# Summary and scrobble dismissals.
+Modules/UI/Sources/UI/Scrobble/RecentScrobblesView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Summary/LibraryAudioQualityPane.swift|Button(L10n.string("Dismiss")) {  # clears the finished-analysis message

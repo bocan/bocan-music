@@ -84,12 +84,14 @@ public struct PresetManagerView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.string("Rename \(preset.displayName)"))
+                    .help(L10n.string("Renames this preset."))
 
                     Button { self.duplicate(preset: preset) } label: {
                         Image(systemName: "plus.square.on.square")
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.string("Duplicate \(preset.displayName)"))
+                    .help(L10n.string("Makes a copy you can change without touching this one."))
 
                     Button(role: .destructive) {
                         self.vm.deleteUserPreset(id: preset.id)
@@ -98,6 +100,7 @@ public struct PresetManagerView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.string("Delete \(preset.displayName)"))
+                    .help(L10n.string("Deletes this preset. If it is the one in use, the equaliser goes back to Flat."))
                 } else {
                     Label(L10n.string("Built-in"), systemImage: "lock")
                         .font(.caption)

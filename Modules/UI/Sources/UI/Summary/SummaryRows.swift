@@ -50,6 +50,9 @@ struct SummaryOffenderRow: View {
             .accessibilityHint(self.trackID == nil
                 ? L10n.string("Double-tap to open album")
                 : L10n.string("Double-tap to open the album and select this song"))
+            .help(self.trackID == nil
+                ? L10n.string("Opens this album.")
+                : L10n.string("Opens this album with the song selected."))
         } else {
             self.rowText
         }

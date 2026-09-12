@@ -78,7 +78,7 @@ struct PlaylistPicker: View {
     private func menuContent(for nodes: [PlaylistNode]) -> some View {
         // Top-level manual playlists first (no folder header).
         ForEach(nodes.filter { $0.kind == .manual }, id: \.id) { node in
-            self.playlistButton(node)
+            self.playlistMenuItem(node)
         }
         // Then each folder as a Section, recursively.
         ForEach(nodes.filter { $0.kind == .folder }, id: \.id) { folder in
@@ -86,14 +86,17 @@ struct PlaylistPicker: View {
             if !manuals.isEmpty {
                 Section(folder.name) {
                     ForEach(manuals, id: \.id) { node in
-                        self.playlistButton(node)
+                        self.playlistMenuItem(node)
                     }
                 }
             }
         }
     }
 
-    private func playlistButton(_ node: PlaylistNode) -> some View {
+    /// One row of the picker's menu. Named for the menu it belongs to: it only
+    /// ever renders inside the `Menu` above, where macOS shows no tooltip, so
+    /// hover text here would be dead code (#505).
+    private func playlistMenuItem(_ node: PlaylistNode) -> some View {
         Button {
             self.selectedID = node.id
         } label: {

@@ -42,6 +42,7 @@ public struct TagEditorSheet: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.top, 12)
+            .help(L10n.string("Switches between groups of fields. Edits you have made are kept as you move between them."))
 
             Divider().padding(.top, 8)
 
@@ -273,6 +274,7 @@ public struct TagEditorSheet: View {
             if self.vm.lastEditID != nil {
                 Button(L10n.string("Undo")) { Task { await self.vm.undo() } }
                     .keyboardShortcut("z", modifiers: .command)
+                    .help(L10n.string("Puts the tags back as they were before your last save."))
             }
             Spacer()
             if self.vm.isSaving {
@@ -290,6 +292,7 @@ public struct TagEditorSheet: View {
             }
             .keyboardShortcut(.return, modifiers: .command)
             .disabled(self.vm.isSaving)
+            .help(L10n.string("Writes the ticked fields into the audio files and updates the library."))
         }
         .padding()
     }

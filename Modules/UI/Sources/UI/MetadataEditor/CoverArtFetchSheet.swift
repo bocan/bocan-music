@@ -37,6 +37,7 @@ public struct CoverArtFetchSheet: View {
                 // two buttons claiming Return made the key's behaviour random.
                 Button(L10n.string("Search")) { self.vm.search() }
                     .disabled(self.vm.searchArtist.isEmpty && self.vm.searchAlbum.isEmpty)
+                    .help(L10n.string("Looks for artwork on the Cover Art Archive, matching the artist and album above."))
             }
             .padding()
 
@@ -101,6 +102,7 @@ public struct CoverArtFetchSheet: View {
                 }
                 .disabled(self.vm.selectedCandidateID == nil || self.vm.isApplying)
                 .keyboardShortcut(.defaultAction)
+                .help(L10n.string("Downloads the image you picked at full size and puts it on this album."))
             }
             .padding()
         }

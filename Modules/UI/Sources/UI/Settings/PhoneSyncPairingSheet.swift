@@ -83,6 +83,7 @@ struct PhoneSyncPairingSheet: View {
                     Text(localized: "Trust")
                 }
                 .keyboardShortcut(.defaultAction)
+                .help(L10n.string("Grants this phone access to your library. Check the fingerprint matches the one the phone shows."))
             }
         }
     }
