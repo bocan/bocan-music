@@ -169,7 +169,16 @@ public actor LibraryScanner {
                         resolved.append((url, rootID))
                     } catch {
                         self.log.warning("library.root.inaccessible", ["id": rootID, "path": root.path])
-                        try? await self.rootRepo.markInaccessible(id: rootID, true)
+                        do {
+                            try await self.rootRepo.markInaccessible(id: rootID, true)
+                        } catch {
+                            // The row still says the folder is reachable, so
+                            // the UI keeps offering it as healthy (#492).
+                            self.log.warning("library.root.markInaccessibleFailed", [
+                                "id": rootID,
+                                "error": String(reflecting: error),
+                            ])
+                        }
                         continuation.yield(.error(url: URL(fileURLWithPath: root.path), error: error))
                     }
                 }
@@ -263,7 +272,14 @@ public actor LibraryScanner {
     /// Calling this when a watcher is already running is a no-op.
     public func startWatching() async {
         guard self.fsWatcher == nil else { return }
-        let allRoots = await (try? self.rootRepo.fetchAll()) ?? []
+        // An empty list starts a watcher that follows nothing, so the library
+        // quietly stops noticing changes on disk (#492).
+        var allRoots: [LibraryRoot] = []
+        do {
+            allRoots = try await self.rootRepo.fetchAll()
+        } catch {
+            self.log.error("fsevents.start.rootsUnavailable", ["error": String(reflecting: error)])
+        }
 
         let watcher = FSWatcher { [weak self, log] urls in
             log.debug("fsevents.change", ["count": urls.count])
@@ -304,7 +320,17 @@ public actor LibraryScanner {
     /// Called automatically by `addRoot(_:)` when watching is active.
     func watchNewRoot(path: String) async {
         guard let watcher = self.fsWatcher else { return }
-        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        var roots: [LibraryRoot] = []
+        do {
+            roots = try await self.rootRepo.fetchAll()
+        } catch {
+            // The new root is then watched without its bookmark, which fails
+            // silently inside the sandbox (#492).
+            self.log.warning("fsevents.addRoot.rootsUnavailable", [
+                "path": path,
+                "error": String(reflecting: error),
+            ])
+        }
         let bookmark = roots.first(where: { $0.path == path })?.bookmark
         let url = self.watchableURL(for: path)
         await watcher.watch(url, bookmark: bookmark)
@@ -346,21 +372,37 @@ public actor LibraryScanner {
                 // File or directory was deleted — disable matching tracks.
                 if TagReader.isSupported(url) {
                     // Single audio file: look it up by URL and mark disabled.
-                    if let track = try? await trackRepo.fetchOne(fileURL: url.absoluteString),
-                       let id = track.id {
-                        var disabled = track
-                        disabled.disabled = true
-                        try? await trackRepo.update(disabled)
-                        self.log.info("fsevents.file_removed", ["id": id, "path": url.lastPathComponent])
-                        didChange = true
+                    // The info line below claims the library was updated, so a
+                    // failed read or write must not reach it (#492).
+                    do {
+                        if let track = try await trackRepo.fetchOne(fileURL: url.absoluteString),
+                           let id = track.id {
+                            var disabled = track
+                            disabled.disabled = true
+                            try await trackRepo.update(disabled)
+                            self.log.info("fsevents.file_removed", ["id": id, "path": url.lastPathComponent])
+                            didChange = true
+                        }
+                    } catch {
+                        self.log.warning("fsevents.file_removed.failed", [
+                            "path": url.lastPathComponent,
+                            "error": String(reflecting: error),
+                        ])
                     }
                 } else {
                     // Directory (or unrecognised path): disable all tracks whose
                     // file_url starts with this URL.  This is a no-op if nothing
                     // in the DB lives under this path.
-                    try? await trackRepo.disableAll(underPath: url.absoluteString)
-                    self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent])
-                    didChange = true
+                    do {
+                        try await trackRepo.disableAll(underPath: url.absoluteString)
+                        self.log.info("fsevents.dir_removed", ["path": url.lastPathComponent])
+                        didChange = true
+                    } catch {
+                        self.log.warning("fsevents.dir_removed.failed", [
+                            "path": url.lastPathComponent,
+                            "error": String(reflecting: error),
+                        ])
+                    }
                 }
             } else if isDir.boolValue {
                 // A whole directory was moved/created — enumerate it recursively.

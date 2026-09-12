@@ -104,10 +104,20 @@ public actor MetadataEditService {
         self.log.debug("edit.end", ["count": trackIDs.count, "ms": ms])
 
         // Return the most-recent backup editID for the first track
-        if let firstID = trackIDs.first,
-           let track = try? await self.trackRepo.fetch(id: firstID),
-           let entry = try? await self.backupRing.lastEntry(forFileURL: track.fileURL) {
-            return entry.editID
+        if let firstID = trackIDs.first {
+            do {
+                let track = try await self.trackRepo.fetch(id: firstID)
+                if let entry = try await self.backupRing.lastEntry(forFileURL: track.fileURL) {
+                    return entry.editID
+                }
+            } catch {
+                // An empty editID means the caller cannot offer Undo for an
+                // edit that did happen (#492).
+                self.log.warning("edit.editID.lookupFailed", [
+                    "track": firstID,
+                    "error": String(reflecting: error),
+                ])
+            }
         }
         return ""
     }
@@ -134,11 +144,20 @@ public actor MetadataEditService {
         }.value
 
         // Update DB: clear userEdited flag since we're reverting to pre-edit state
-        if let track = try? await self.trackRepo.fetchOne(fileURL: entry.fileURL) {
-            var reverted = track
-            reverted.userEdited = false
-            reverted.updatedAt = Int64(Date().timeIntervalSince1970)
-            try await self.trackRepo.update(reverted)
+        do {
+            if let track = try await self.trackRepo.fetchOne(fileURL: entry.fileURL) {
+                var reverted = track
+                reverted.userEdited = false
+                reverted.updatedAt = Int64(Date().timeIntervalSince1970)
+                try await self.trackRepo.update(reverted)
+            }
+        } catch {
+            // The file is back but the row still says the user edited it, so
+            // the next scan will not refresh its tags (#492).
+            self.log.warning("undo.rowUpdateFailed", [
+                "file": entry.fileURL,
+                "error": String(reflecting: error),
+            ])
         }
 
         await self.backupRing.delete(editID: editID)
@@ -149,8 +168,15 @@ public actor MetadataEditService {
     public func readTracks(ids: [Int64]) async throws -> [Track] {
         var tracks: [Track] = []
         for id in ids {
-            if let track = try? await self.trackRepo.fetch(id: id) {
-                tracks.append(track)
+            do {
+                try await tracks.append(self.trackRepo.fetch(id: id))
+            } catch {
+                // The tag editor simply opens without this track, which reads
+                // as the selection having been smaller (#492).
+                self.log.warning("edit.readTracks.lookupFailed", [
+                    "track": id,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         return tracks
@@ -166,8 +192,17 @@ public actor MetadataEditService {
         let lyricsRepo = LyricsRepository(database: self.database)
         var byID: [Int64: String] = [:]
         for id in ids {
-            if let row = try? await lyricsRepo.fetch(trackID: id) {
-                byID[id] = row.lyricsText
+            do {
+                if let row = try await lyricsRepo.fetch(trackID: id) {
+                    byID[id] = row.lyricsText
+                }
+            } catch {
+                // "Get Info" then shows the file's own lyrics only, which
+                // looks like the stored ones were lost (#492).
+                self.log.warning("edit.storedLyrics.lookupFailed", [
+                    "track": id,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         return byID
@@ -228,13 +263,22 @@ public actor MetadataEditService {
         guard track.needsConflictReview else { return }
         track.needsConflictReview = false
         // Sync the stored mtime/size so the scanner won't re-flag this file.
-        if let url = URL(string: track.fileURL),
-           let attrs = try? FileManager.default.attributesOfItem(atPath: url.path) {
-            if let modDate = attrs[.modificationDate] as? Date {
-                track.fileMtime = Int64(modDate.timeIntervalSince1970)
-            }
-            if let sz = attrs[.size] as? Int {
-                track.fileSize = Int64(sz)
+        if let url = URL(string: track.fileURL) {
+            do {
+                let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
+                if let modDate = attrs[.modificationDate] as? Date {
+                    track.fileMtime = Int64(modDate.timeIntervalSince1970)
+                }
+                if let sz = attrs[.size] as? Int {
+                    track.fileSize = Int64(sz)
+                }
+            } catch {
+                // Without the stamp the scanner re-flags this file, so the
+                // banner the user just dismissed comes back (#492).
+                self.log.warning("conflict.clear.mtimeStampFailed", [
+                    "track": trackID,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         try await self.trackRepo.update(track)

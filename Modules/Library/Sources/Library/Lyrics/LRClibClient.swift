@@ -107,7 +107,18 @@ public actor LRClibClient: LRClibClientProtocol {
         let request = self.makeRequest(url: url)
         guard let data = try await self.fetchData(for: request) else { return [] }
 
-        let results = (try? JSONDecoder().decode([LRClibSearchResult].self, from: data)) ?? []
+        let results: [LRClibSearchResult]
+        do {
+            results = try JSONDecoder().decode([LRClibSearchResult].self, from: data)
+        } catch {
+            // A shape change at LRClib otherwise reads as "no lyrics exist for
+            // this track"; the cover-art client hid exactly that for years (#492).
+            self.log.warning("lrclib.search.decodeFailed", [
+                "bytes": data.count,
+                "error": String(reflecting: error),
+            ])
+            return []
+        }
         return results.compactMap { Self.toDocument($0) }
     }
 
@@ -127,8 +138,17 @@ public actor LRClibClient: LRClibClientProtocol {
 
                 switch http.statusCode {
                 case 200:
-                    guard let result = try? JSONDecoder().decode(LRClibGetResult.self, from: data) else { return nil }
-                    return Self.toDocument(result)
+                    do {
+                        let result = try JSONDecoder().decode(LRClibGetResult.self, from: data)
+                        return Self.toDocument(result)
+                    } catch {
+                        // As above: a 200 we cannot read is not "no lyrics" (#492).
+                        self.log.warning("lrclib.get.decodeFailed", [
+                            "bytes": data.count,
+                            "error": String(reflecting: error),
+                        ])
+                        return nil
+                    }
                 case 404:
                     return nil
                 case 429:

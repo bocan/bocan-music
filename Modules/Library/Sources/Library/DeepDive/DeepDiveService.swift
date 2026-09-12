@@ -97,11 +97,20 @@ public actor DeepDiveService {
         var bio: ArtistReport.Bio?
         if let wikidataID = detail.wikidataID {
             // A missing bio must never sink the report.
-            if let summary = try? await self.wikipedia.summary(wikidataID: wikidataID) {
-                bio = ArtistReport.Bio(
-                    extract: summary.extract, pageURL: summary.pageURL, thumbnailURL: summary.thumbnailURL,
-                    attribution: "Wikipedia, CC BY-SA 4.0"
-                )
+            do {
+                if let summary = try await self.wikipedia.summary(wikidataID: wikidataID) {
+                    bio = ArtistReport.Bio(
+                        extract: summary.extract, pageURL: summary.pageURL, thumbnailURL: summary.thumbnailURL,
+                        attribution: "Wikipedia, CC BY-SA 4.0"
+                    )
+                }
+            } catch {
+                // The report is still built, but a missing biography now has
+                // a reason rather than looking like Wikipedia had none (#492).
+                self.log.debug("deepdive.bio.failed", [
+                    "wikidata": wikidataID,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         // Stamp the enrichment columns opportunistically: this is the same lookup.
@@ -189,7 +198,16 @@ public actor DeepDiveService {
     private func buildAlbumReport(_ album: Album) async throws -> AlbumReport {
         var artist: Artist?
         if let artistID = album.albumArtistID {
-            artist = try? await self.artists.fetch(id: artistID)
+            do {
+                artist = try await self.artists.fetch(id: artistID)
+            } catch {
+                // Without the row the report loses its artist section and the
+                // nearby-releases pass below returns nothing (#492).
+                self.log.warning("deepdive.album.artistLookupFailed", [
+                    "artist": artistID,
+                    "error": String(reflecting: error),
+                ])
+            }
         }
 
         var releaseChosen = false
@@ -242,9 +260,21 @@ public actor DeepDiveService {
     /// The artist's other release groups within two years of `release`.
     private func nearbyReleases(of release: MBRelease, album: Album, artist: Artist?) async -> [AlbumReport.Nearby] {
         guard let artist, let artistMBID = artist.musicbrainzArtistID, let year = release.year ?? album.year else { return [] }
-        guard let owned = try? await self.ownedReleaseKeys(artistID: artist.id ?? 0),
-              let groups = try? await self
-              .mapErrors({ try await self.musicBrainz.browseReleaseGroups(artistMBID: artistMBID, limit: 100) }) else { return [] }
+        let owned: (groupIDs: Set<String>, titles: Set<String>)
+        let groups: MBReleaseGroupBrowse
+        do {
+            owned = try await self.ownedReleaseKeys(artistID: artist.id ?? 0)
+            groups = try await self
+                .mapErrors { try await self.musicBrainz.browseReleaseGroups(artistMBID: artistMBID, limit: 100) }
+        } catch {
+            // An empty "nearby releases" section otherwise reads as "this
+            // artist released nothing else around then" (#492).
+            self.log.debug("deepdive.nearby.failed", [
+                "artist": artistMBID,
+                "error": String(reflecting: error),
+            ])
+            return []
+        }
         var nearby: [AlbumReport.Nearby] = []
         for group in groups.releaseGroups {
             guard group.id != release.releaseGroup?.id, let groupYear = group.year, abs(groupYear - year) <= 2 else { continue }
@@ -283,11 +313,18 @@ public actor DeepDiveService {
             // At most two work lookups: enough for a song and its medley partner.
             var works: [TrackReport.Work] = []
             for ref in recording.works.prefix(2) {
-                if let work = try? await self.mapErrors({ try await self.musicBrainz.fetchWork(mbid: ref.id) }) {
+                do {
+                    let work = try await self.mapErrors { try await self.musicBrainz.fetchWork(mbid: ref.id) }
                     works.append(TrackReport.Work(
                         title: work.title ?? ref.title ?? "", mbid: work.id,
                         composers: work.composers, lyricists: work.lyricists, writers: work.writers
                     ))
+                } catch {
+                    // The songwriting credits are simply absent otherwise (#492).
+                    self.log.debug("deepdive.work.failed", [
+                        "work": ref.id,
+                        "error": String(reflecting: error),
+                    ])
                 }
             }
             let appearances = (recording.releases ?? []).map { release in
@@ -376,8 +413,19 @@ public actor DeepDiveService {
 
     /// Guesses the track's recording by an artist + title search, same rules.
     private func guessRecordingMBID(track: Track) async throws -> String? {
-        guard let artistID = track.artistID,
-              let artist = try? await self.artists.fetch(id: artistID) else { return nil }
+        guard let artistID = track.artistID else { return nil }
+        let artist: Artist
+        do {
+            artist = try await self.artists.fetch(id: artistID)
+        } catch {
+            // Without the artist there is nothing to search MusicBrainz with,
+            // so the guess is abandoned; that is worth a line (#492).
+            self.log.warning("deepdive.guess.artistLookupFailed", [
+                "artist": artistID,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
         let title = (track.title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let name = artist.name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty, !name.isEmpty else { return nil }

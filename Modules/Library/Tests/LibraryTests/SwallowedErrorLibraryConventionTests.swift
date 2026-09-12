@@ -34,6 +34,71 @@ struct SwallowedErrorLibraryConventionTests {
         #expect(importOne.contains("scan.existing_lookup_failed"))
     }
 
+    @Test("the lyrics service logs a failed lookup instead of reading it as 'no lyrics' (#492)")
+    func lyricsLookupsAreLogged() throws {
+        let source = try self.source("Sources/Library/Lyrics/LyricsService.swift")
+        #expect(!source.contains("try? await trackRepo.fetch("))
+        #expect(!source.contains("try? await artistRepo.fetch("))
+        #expect(!source.contains("try? await albumRepo.fetch("))
+        for event in ["lyrics.trackLookup.failed", "lyrics.artistLookup.failed",
+                      "lyrics.albumLookup.failed", "lyrics.root_scope.rootsUnavailable"] {
+            #expect(source.contains(event), "missing \(event)")
+        }
+
+        let client = try self.source("Sources/Library/Lyrics/LRClibClient.swift")
+        #expect(!client.contains("try? JSONDecoder().decode"))
+        #expect(client.contains("lrclib.search.decodeFailed"))
+        #expect(client.contains("lrclib.get.decodeFailed"))
+    }
+
+    @Test("the scanner and the scan coordinator log the writes they used to drop (#492)")
+    func scanWritesAreLogged() throws {
+        let scanner = try self.source("Sources/Library/LibraryScanner.swift")
+        for event in ["library.root.markInaccessibleFailed", "fsevents.start.rootsUnavailable",
+                      "fsevents.file_removed.failed", "fsevents.dir_removed.failed"] {
+            #expect(scanner.contains(event), "missing \(event)")
+        }
+
+        let coordinator = try self.source("Sources/Library/ScanCoordinator.swift")
+        for event in ["scan.setting.readFailed", "scan.removal.failed", "scan.pruneOrphans.failed",
+                      "scan.conflict.updateFailed", "scan.bookmark.mintFailed"] {
+            #expect(coordinator.contains(event), "missing \(event)")
+        }
+    }
+
+    @Test("the tag editor logs the rows and stamps it could not read (#492)")
+    func editorLookupsAreLogged() throws {
+        let transaction = try self.source("Sources/Library/Edit/EditTransaction.swift")
+        for event in ["edit.albumArt.albumLookupFailed", "edit.perFileScope.bookmarkUnresolvable",
+                      "edit.mtimeStamp.failed", "edit.fallbackRow.albumLookupFailed",
+                      "edit.root_scope.rootsUnavailable"] {
+            #expect(transaction.contains(event), "missing \(event)")
+        }
+
+        let service = try self.source("Sources/Library/Edit/MetadataEditService.swift")
+        for event in ["edit.editID.lookupFailed", "undo.rowUpdateFailed", "edit.readTracks.lookupFailed",
+                      "edit.storedLyrics.lookupFailed", "conflict.clear.mtimeStampFailed"] {
+            #expect(service.contains(event), "missing \(event)")
+        }
+    }
+
+    @Test("playlist import and export, cue markers and the remote resolver log their failures (#492)")
+    func playlistPathsAreLogged() throws {
+        let resolver = try self.source("Sources/Library/PlaylistIO/TrackResolver.swift")
+        #expect(!resolver.contains("try? await self.trackRepo"))
+        #expect(resolver.contains("playlist.import.lookupFailed"))
+
+        let export = try self.source("Sources/Library/PlaylistIO/PlaylistExportService.swift")
+        #expect(export.contains("playlist.export.lookupFailed"))
+
+        let cue = try self.source("Sources/Library/PlaylistIO/CueMarkerService.swift")
+        #expect(cue.contains("cue.markers.lookupFailed"))
+        #expect(cue.contains("cue.markers.clearLookupFailed"))
+
+        let remote = try self.source("Sources/Library/PlaylistIO/RemotePlaylistResolver.swift")
+        #expect(remote.contains("playlist.remote.parseFailed"))
+    }
+
     @Test("an edit that cannot cache the user's cover art fails rather than reporting success (#481)")
     func albumArtPersistPropagates() throws {
         let source = try self.source("Sources/Library/Edit/EditTransaction.swift")

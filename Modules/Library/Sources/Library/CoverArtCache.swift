@@ -206,7 +206,16 @@ actor CoverArtCache {
             if !entry.isOriginal {
                 // hash == filename stem (`<hash>.<ext>`).
                 let hash = entry.url.deletingPathExtension().lastPathComponent
-                try? await self.repo.delete(hash: hash)
+                do {
+                    try await self.repo.delete(hash: hash)
+                } catch {
+                    // The file is gone but its row is not, so the next lookup
+                    // resolves to a path that no longer exists (#492).
+                    self.log.warning("cover_art.sweep.rowDeleteFailed", [
+                        "hash": hash,
+                        "error": String(reflecting: error),
+                    ])
+                }
             }
         }
         self.log.info("cover_art.sweep", [
