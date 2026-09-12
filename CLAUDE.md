@@ -113,7 +113,10 @@ Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): �
 
 ## When in doubt
 
+- `docs/GOTCHAS.md`: the traps, procedures and settled decisions that are true but not deducible from the code. Read it before touching SwiftUI observation, the menu bar, the audio engine's transport, TagLib reads, the keychain, the E2E suite, or the SPM pins.
 - `docs/design-spec/_standards.md` — the engineering charter, binding on all new code.
 - `docs/design-spec/ADR-NNN-*.md` — historical context for major subsystems; the ADR number often hints at why a particular boundary exists.
 - `DEVELOPMENT.md` — environment setup, FFmpeg / fpcalc details, secrets layout.
 - `CONTRIBUTING.md` — commit / PR conventions.
+
+**Every project memory the agent saves is mirrored into `docs/GOTCHAS.md`.** Whenever you record a trap, a procedure or a decision to your own memory, add the same entry to `docs/GOTCHAS.md` on the current branch in the same session, in the file's Problem / Rule / Why / Canonical file form, and verify the cited path exists before writing it. Memory is private to one machine; the repository is what every session, model and checkout reads. Notes about how you and the maintainer work together (reporting style, push and PR etiquette, release ownership) are not project gotchas and stay in memory only.
