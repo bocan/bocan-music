@@ -263,9 +263,9 @@ Never gate on a piped grep, whose status is grep's. And in a test file that uses
 
 **Problem:** `NowPlayingViewModelTests.transportHaptics` fails in a full `make test-ui` run with "Expectation failed: !patterns.contains(.levelChange)", and passes when run alone or with a few suites.
 
-**Rule:** a test that writes a Subsonic star or rating while it is suspended must silence the haptic seam around the call: save `Haptics.performPattern`, set it to `{ _ in }`, call, restore, with no `await` in between.
+**Rule:** a test that writes a Subsonic star or rating for any reason other than testing the haptic wraps the call in `silencingHaptics { … }` (`SubsonicAnnotationCoordinatorTests.swift`). A test that is about the haptic installs its own recorder instead.
 
-**Why:** `Haptics.performPattern` is one process-global closure. `transportHaptics` installs a recorder and keeps it installed across suspension points, so a `.levelChange` performed by any concurrently running test lands in its array. A swap with no suspension point is invisible to other `@MainActor` tests. `SubsonicAnnotationCoordinatorTests` still writes overrides unsilenced, which leaves the same flake reachable.
+**Why:** `Haptics.performPattern` is one process-global closure. `transportHaptics` installs a recorder and keeps it installed across suspension points, so a `.levelChange` performed by any concurrently running test lands in its array. The helper swaps the seam and restores it with no suspension point in between, which makes the swap invisible to other `@MainActor` tests.
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/Haptics.swift`
 
