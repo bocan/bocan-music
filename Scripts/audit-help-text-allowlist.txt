@@ -34,3 +34,21 @@ Modules/UI/Sources/UI/Browse/Podcasts/TranscriptView.swift|Button(L10n.string("D
 Modules/UI/Sources/UI/Browse/Radio/RadioStationInfoSheet.swift|Button(L10n.string("Close"), action: self.onDismiss)  # closes the sheet
 Modules/UI/Sources/UI/Browse/Radio/RadioStationSheet.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
 Modules/UI/Sources/UI/Browse/Subsonic/SubsonicInternetRadioView.swift|Button(L10n.string("Close"), action: self.onDismiss)  # closes the sheet
+
+# Playlist sheets: the commit and dismiss buttons of a sheet that has already
+# said what it is. The smart sheet's Create carries help instead, because it
+# also opens the rule editor, which the label does not say (#505).
+Modules/UI/Sources/UI/Playlists/AccentColorSheet.swift|Button(L10n.string("Cancel")) {  # closes the sheet
+Modules/UI/Sources/UI/Playlists/AccentColorSheet.swift|Button(L10n.string("Save")) {  # applies the colour picked above
+Modules/UI/Sources/UI/Playlists/NewPlaylistSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.isPresented = false }  # closes the sheet
+Modules/UI/Sources/UI/Playlists/NewPlaylistSheet.swift|Button(L10n.string("Create")) { Task { await self.commit() } }  # creates the playlist named above
+Modules/UI/Sources/UI/Playlists/RenamePlaylistSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.target = nil }  # closes the sheet
+Modules/UI/Sources/UI/Playlists/RenamePlaylistSheet.swift|Button(L10n.string("Rename")) { Task { await self.commit() } }  # applies the name typed above
+Modules/UI/Sources/UI/Playlists/Smart/NewSmartPlaylistSheet.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Playlists/Smart/SmartPresetPickerView.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
+
+# The warm-up probe is a hidden 1x1 view in an off-screen panel that sets
+# ignoresMouseEvents; its controls exist to warm AppKit, and no pointer can
+# ever reach them (#505).
+Modules/UI/Sources/UI/Playlists/Smart/SmartPlaylistSurfacePrewarmer.swift|Picker("", selection: self.$mode) {  # off-screen warm-up probe
+Modules/UI/Sources/UI/Playlists/Smart/SmartPlaylistSurfacePrewarmer.swift|Menu(L10n.string("Preset")) {  # off-screen warm-up probe

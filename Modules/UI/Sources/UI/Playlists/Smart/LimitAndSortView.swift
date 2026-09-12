@@ -46,6 +46,7 @@ struct LimitAndSortView: View {
                 ))
                 .font(Typography.body)
                 .frame(width: 80, alignment: .trailing)
+                .help(L10n.string("Caps the playlist at a number of tracks. The sort order above decides which ones it keeps."))
 
                 if let limit = self.limitSort.limit {
                     Stepper(
@@ -90,6 +91,7 @@ struct LimitAndSortView: View {
             .labelsHidden()
             .frame(minWidth: 140)
             .accessibilityLabel(L10n.string("Sort key"))
+            .help(L10n.string("What this playlist sorts by, which also decides which tracks a limit keeps."))
 
             if descriptor.key != .random {
                 Toggle(isOn: self.ascendingBinding(index: index)) {

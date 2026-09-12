@@ -4952,6 +4952,16 @@
         }
       }
     },
+    "Caps the playlist at a number of tracks. The sort order above decides which ones it keeps." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çáƥš ţĥé ƥĺáýĺíšţ áţ á ñúḿƀéŕ óƒ ţŕáçķš. Ţĥé šóŕţ óŕđéŕ áƀóvé đéçíđéš ŵĥíçĥ óñéš íţ ķééƥš. one two three four five six"
+          }
+        }
+      }
+    },
     "Caps to 30 fps and switches to Spectrum Bars when running on battery power" : {
       "localizations" : {
         "en-XA" : {
@@ -7335,6 +7345,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çŕéáţé ƒŕóḿ çúŕŕéñţ šéĺéçţíóñ one two three"
+          }
+        }
+      }
+    },
+    "Creates a smart playlist from this preset's rules, which you can edit afterwards." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çŕéáţéš á šḿáŕţ ƥĺáýĺíšţ ƒŕóḿ ţĥíš ƥŕéšéţ'š ŕúĺéš, ŵĥíçĥ ýóú çáñ éđíţ áƒţéŕŵáŕđš. one two three four five six"
+          }
+        }
+      }
+    },
+    "Creates the playlist and opens its rule editor, starting from a rule that matches everything." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çŕéáţéš ţĥé ƥĺáýĺíšţ áñđ óƥéñš íţš ŕúĺé éđíţóŕ, šţáŕţíñĝ ƒŕóḿ á ŕúĺé ţĥáţ ḿáţçĥéš évéŕýţĥíñĝ. one two three four five six"
           }
         }
       }
@@ -22664,6 +22694,16 @@
         }
       }
     },
+    "The value this rule matches." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ţĥé váĺúé ţĥíš ŕúĺé ḿáţçĥéš. one two three"
+          }
+        }
+      }
+    },
     "The whole album is normalised together, preserving relative dynamics between tracks." : {
       "localizations" : {
         "en" : {
@@ -24340,6 +24380,16 @@
         }
       }
     },
+    "What this playlist sorts by, which also decides which tracks a limit keeps." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŵĥáţ ţĥíš ƥĺáýĺíšţ šóŕţš ƀý, ŵĥíçĥ áĺšó đéçíđéš ŵĥíçĥ ţŕáçķš á ĺíḿíţ ķééƥš. one two three four five"
+          }
+        }
+      }
+    },
     "What to sync" : {
       "localizations" : {
         "en-XA" : {
@@ -24514,6 +24564,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ŵĥéŕé ţĥé šţŕíƥš đíšáĝŕéé, ýóúŕ šĥéĺƒ áñđ ýóúŕ ţášţé ƥáŕţ ŵáýš. one two three four"
+          }
+        }
+      }
+    },
+    "Where this playlist is filed in the sidebar. You can move it later by dragging." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŵĥéŕé ţĥíš ƥĺáýĺíšţ íš ƒíĺéđ íñ ţĥé šíđéƀáŕ. Ýóú çáñ ḿóvé íţ ĺáţéŕ ƀý đŕáĝĝíñĝ. one two three four five"
           }
         }
       }

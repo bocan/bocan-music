@@ -503,6 +503,7 @@ private struct ValueControl: View {
             .menuStyle(.borderlessButton)
             .fixedSize()
             .accessibilityLabel(Text(localized: "File format"))
+            .help(L10n.string("The value this rule matches."))
         )
     }
 

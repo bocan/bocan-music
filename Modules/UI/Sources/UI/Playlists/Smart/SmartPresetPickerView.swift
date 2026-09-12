@@ -106,5 +106,6 @@ private struct PresetCard: View {
             )
         }
         .buttonStyle(.plain)
+        .help(L10n.string("Creates a smart playlist from this preset's rules, which you can edit afterwards."))
     }
 }
