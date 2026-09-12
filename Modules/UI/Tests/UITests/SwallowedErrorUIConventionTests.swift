@@ -79,3 +79,109 @@ struct SwallowedErrorUIConventionTests {
         #expect(source.contains("AppLogger.make(.ui).error(\"metadataEditService.init_failed\""))
     }
 }
+
+// MARK: - QuietRecoveryUIConventionTests
+
+/// #491: the audit found 57 places in this module that recovered from a failed
+/// read correctly but silently (`docs/audits/try-optional-audit.md`, class
+/// (b)). Every recovery and every fallback value is unchanged. What needed
+/// pinning is the log line that now explains each one, and a log cannot be read
+/// back from a host-less test.
+@Suite("Quiet-recovery conventions in UI (#491)")
+struct QuietRecoveryUIConventionTests {
+    private var sourceRoot: URL {
+        URL(filePath: #filePath)
+            .deletingLastPathComponent() // UITests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/UI/
+            .appendingPathComponent("Sources/UI")
+    }
+
+    private func source(_ relativePath: String) throws -> String {
+        try String(contentsOf: self.sourceRoot.appendingPathComponent(relativePath), encoding: .utf8)
+    }
+
+    @Test("the shared helper logs the error it recovers from and returns nil")
+    func recoveredReadLogs() throws {
+        let source = try self.source("Common/RecoveredRead.swift")
+        #expect(source.contains("func recoveredRead<T: Sendable>"))
+        #expect(source.contains("AppLogger.make(.ui).warning(event"))
+        #expect(source.contains("return nil"))
+    }
+
+    /// These files had every one of their swallowed reads replaced, so the
+    /// absence of `try?` is itself the assertion.
+    @Test("a page that loads empty now says whether the read failed")
+    func emptyPagesSayWhy() throws {
+        let cases = [
+            ("Browse/GenresView.swift", "genres.allGenres.failed"),
+            ("Browse/ComposersView.swift", "composers.allComposers.failed"),
+            ("Browse/ArtistsView.swift", "artistDetail.albums.failed"),
+            ("Browse/AlbumsGridView.swift", "albumsGrid.openInspector.failed"),
+            ("DeepDive/ArtistInfoSheet.swift", "artistInfo.artist.failed"),
+            ("ViewModels/AlbumsViewModel.swift", "albums.artistNames.failed"),
+            ("ViewModels/ArtistsViewModel.swift", "artists.albumCounts.failed"),
+            ("ViewModels/TracksViewModel.swift", "tracks.artistNames.failed"),
+            ("ViewModels/LibraryViewModel+Navigation.swift", "library.smartFolder.failed"),
+            ("MetadataEditor/ViewModels/TagEditorViewModel.swift", "tagEditor.readTags.failed"),
+            ("Browse/Podcasts/PodcastsViewModel+Counts.swift", "podcasts.episodeCounts.failed"),
+            ("Common/NoticesHTMLView.swift", "notices.read.failed"),
+            ("Settings/GeneralSettingsView.swift", "notifications.authRequest.failed"),
+        ]
+        for (path, event) in cases {
+            let source = try self.source(path)
+            #expect(source.contains(event), "missing \(event)")
+            #expect(!source.contains("try?"), "\(path) still swallows a read error")
+        }
+    }
+
+    /// A comment-only `catch` is the same defect as a `try?` and no text search
+    /// for `try?` can see it. These three were found by reading the catches in
+    /// this module rather than by the audit (#498 taught the lesson, #491
+    /// applied it). The fourth, in `PodcastsHomeView`, is left alone: its only
+    /// possible error is the debounce cancelling, which is the working case.
+    @Test("a catch that only carried a comment now carries a log line")
+    func commentOnlyCatchesLog() throws {
+        let cases = [
+            ("Browse/AlbumDetailView.swift", "albumDetail.load.failed"),
+            ("Playlists/Smart/SmartPresetPickerView.swift", "smartPresets.list.failed"),
+            ("Browse/Podcasts/PodcastsGridView.swift", "podcasts.refresh.failed"),
+        ]
+        for (path, event) in cases {
+            let source = try self.source(path)
+            #expect(source.contains(event), "missing \(event)")
+        }
+    }
+
+    /// This module's allowlist is not a single idiom, as Playback's and
+    /// Scrobble's are, so it is spelled out. Anything else swallowing an error
+    /// is a regression.
+    @Test("every remaining try? in this module is an allowlisted idiom")
+    func onlyAllowlistedIdiomsSwallow() throws {
+        let allowed = [
+            "Task.sleep",
+            "JSONDecoder", "JSONEncoder", "JSONSerialization",
+            "removeItem", "createDirectory", "copyItem",
+            "String(contentsOf:",
+            "self.service.ping(",
+            "provider.coverArtURL(",
+            "URLSession.shared.data(",
+            "UNNotificationAttachment(",
+        ]
+        let enumerator = try #require(
+            FileManager.default.enumerator(at: self.sourceRoot, includingPropertiesForKeys: nil)
+        )
+        var offenders: [String] = []
+        for case let url as URL in enumerator where url.pathExtension == "swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard trimmed.contains("try?"), !trimmed.hasPrefix("//") else { continue }
+                if !allowed.contains(where: trimmed.contains) {
+                    offenders.append("\(url.lastPathComponent): \(trimmed)")
+                }
+            }
+        }
+        #expect(offenders.isEmpty, "a swallowed error outside the allowlist: \(offenders)")
+    }
+}

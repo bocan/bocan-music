@@ -560,7 +560,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         // the sidebar so presets appear even if the initial load raced ahead.
         let sps = self.smartPlaylistService
         Task {
-            try? await BuiltInSmartPresets.seed(using: sps)
+            do {
+                try await BuiltInSmartPresets.seed(using: sps)
+            } catch {
+                // The built-in smart playlists then never appear in the sidebar
+                // and nothing on screen says why (#491).
+                self.log.warning("library.smartPresets.seed.failed", ["error": String(reflecting: error)])
+            }
             await self.playlistSidebar.reload()
         }
 
@@ -1317,8 +1323,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         let repo = TrackRepository(database: self.database)
         var collected: [Track] = []
         for id in albumIDs {
-            if let tracks = try? await repo.fetchAll(albumID: id) {
+            do {
+                let tracks = try await repo.fetchAll(albumID: id)
                 collected.append(contentsOf: tracks)
+            } catch {
+                // The album drops out of the play set, so the user gets a
+                // shorter queue than they asked for with no sign of it (#491).
+                self.log.warning("library.playAlbums.fetchFailed", [
+                    "id": id,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         guard !collected.isEmpty else { return }
@@ -1555,8 +1569,16 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         let repo = TrackRepository(database: self.database)
         var updated: [Track] = []
         for id in ids {
-            if let track = try? await repo.fetch(id: id) {
+            do {
+                let track = try await repo.fetch(id: id)
                 updated.append(track)
+            } catch {
+                // The row keeps the values it had before the edit, so the table
+                // silently contradicts what was just saved (#491).
+                self.log.warning("library.refreshTracks.fetchFailed", [
+                    "id": id,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         guard !updated.isEmpty else { return }

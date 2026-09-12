@@ -217,8 +217,8 @@ public final class PodcastsViewModel: ObservableObject {
         do {
             let fetched = try await library.subscribedPodcasts()
             // Counts first: the count-based sorts read them.
-            self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
-            self.podcastUnplayedCounts = await (try? library.unplayedCounts()) ?? [:]
+            self.podcastEpisodeCounts = await self.episodeCounts(library)
+            self.podcastUnplayedCounts = await self.unplayedCounts(library)
             self.subscribed = self.sortedPodcasts(fetched)
         } catch {
             self.log.error("podcasts.loadSubscribed.failed", ["error": String(reflecting: error)])
@@ -269,6 +269,7 @@ public final class PodcastsViewModel: ObservableObject {
         guard !stale.isEmpty else { return }
         self.log.debug("podcasts.artwork.stale", ["count": stale.count])
         let actions = self.actions
+        let log = self.log
         // .utility, not .background: each refresh writes the database, and a
         // .background thread holding a GRDB pool connection while a
         // user-initiated read waits on the pool semaphore (no priority
@@ -276,7 +277,12 @@ public final class PodcastsViewModel: ObservableObject {
         Task.detached(priority: .utility) {
             for podcast in stale {
                 guard let id = podcast.id else { continue }
-                try? await actions?.refresh(podcastID: id)
+                do {
+                    try await actions?.refresh(podcastID: id)
+                } catch {
+                    // The heal pass leaves no trace of the show it gave up on.
+                    log.warning("podcasts.artworkHeal.refreshFailed", ["id": id, "error": String(reflecting: error)])
+                }
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
         }
@@ -291,7 +297,7 @@ public final class PodcastsViewModel: ObservableObject {
                     guard let self else { return }
                     try Task.checkCancellation()
                     // Episode counts first: the count-based sorts read them.
-                    self.podcastEpisodeCounts = await (try? library.episodeCounts()) ?? [:]
+                    self.podcastEpisodeCounts = await self.episodeCounts(library)
                     self.subscribed = self.sortedPodcasts(podcasts)
                 }
             } catch is CancellationError {
@@ -457,7 +463,12 @@ public final class PodcastsViewModel: ObservableObject {
         guard self.currentShow?.id == podcastID, let library else { return }
         self.currentShow?.episodeSort = sort
         let order = self.currentShow?.resolvedEpisodeSort ?? .newest
-        self.episodes = await (try? library.episodes(podcastID: podcastID, order: order)) ?? self.episodes
+        do {
+            self.episodes = try await library.episodes(podcastID: podcastID, order: order)
+        } catch {
+            // The rows keep their old order, so the sort looks like it did nothing.
+            self.log.warning("podcasts.episodes.reload.failed", ["id": podcastID, "error": String(reflecting: error)])
+        }
         self.startObserveEpisodes(podcastID: podcastID, order: order, library: library)
     }
 

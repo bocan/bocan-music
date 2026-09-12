@@ -685,7 +685,19 @@ private extension NowPlayingViewModel {
     /// looks again after a short delay for art still being fetched.
     private func applyEpisodeArtwork(podcastID: Int64, guid: String, retry: Bool) async {
         let repo = EpisodeRepository(database: self.database)
-        let episode = try? await repo.fetchByGUID(podcastID: podcastID, guid: guid)
+        // Qualified: the Subsonic client exports a `PodcastEpisode` too.
+        let episode: Persistence.PodcastEpisode?
+        do {
+            episode = try await repo.fetchByGUID(podcastID: podcastID, guid: guid)
+        } catch {
+            // Now Playing falls back to the show's art, which looks like a feed
+            // that supplied no episode art rather than a failed read (#491).
+            self.log.warning("nowplaying.episodeArt.lookupFailed", [
+                "guid": guid,
+                "error": String(reflecting: error),
+            ])
+            episode = nil
+        }
         if let path = episode?.artworkPath {
             self.artwork = await ArtworkLoader.shared.image(at: path)
             return
@@ -706,7 +718,16 @@ private extension NowPlayingViewModel {
         self.nowPlayingSubsonicServerID = nil
         self.nowPlayingSubsonicSongID = nil
         let repo = PodcastRepository(database: self.database)
-        let podcast = try? await repo.fetchByFeedURLIgnoringScheme(feedURL.absoluteString)
+        // Qualified: the Subsonic client exports a `Podcast` too.
+        let podcast: Persistence.Podcast?
+        do {
+            podcast = try await repo.fetchByFeedURLIgnoringScheme(feedURL.absoluteString)
+        } catch {
+            // Without the show row there is no podcast ID and no show artwork,
+            // so Now Playing quietly loses its podcast detail (#491).
+            self.log.warning("nowplaying.podcastLookup.failed", ["error": String(reflecting: error)])
+            podcast = nil
+        }
         self.podcastID = podcast?.id
         if let path = podcast?.artworkPath {
             self.artwork = await ArtworkLoader.shared.image(at: path)

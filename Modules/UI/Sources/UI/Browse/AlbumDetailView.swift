@@ -1,3 +1,4 @@
+import Observability
 import Persistence
 import SwiftUI
 
@@ -171,19 +172,32 @@ public struct AlbumDetailView: View {
             // Resolve artist
             if let artistID = rec.albumArtistID {
                 let artistRepo = ArtistRepository(database: library.database)
-                if let name = try? await artistRepo.fetch(id: artistID).name {
+                if let name = await recoveredRead("albumDetail.artist.failed", {
+                    try await artistRepo.fetch(id: artistID).name
+                }) {
                     self.artistName = name
                 }
             }
             // Load artwork
             if let hash = rec.coverArtHash {
                 let artRepo = CoverArtRepository(database: library.database)
-                if let artRec = try? await artRepo.fetch(hash: hash) {
+                // Double optional: the read can fail, and the hash can have no
+                // row. Both mean "no artwork", so flatten the two together.
+                let artRec = await recoveredRead("albumDetail.coverArt.failed") {
+                    try await artRepo.fetch(hash: hash)
+                }.flatMap(\.self)
+                if let artRec {
                     self.artwork = await ArtworkLoader.shared.image(at: artRec.path)
                 }
             }
         } catch {
-            // Non-fatal; album fields remain empty
+            // The page renders with empty fields, which reads as an album with
+            // no metadata rather than one that could not be loaded. Same fault
+            // as the two reads above and invisible to a `try?` search (#491).
+            AppLogger.make(.ui).warning("albumDetail.load.failed", [
+                "albumID": self.albumID,
+                "error": String(reflecting: error),
+            ])
         }
     }
 }

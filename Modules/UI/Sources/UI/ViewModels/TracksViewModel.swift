@@ -334,9 +334,33 @@ public final class TracksViewModel {
 
     // MARK: - Private
 
+    /// Every artist, recovered to an empty list on a read failure. That blanks
+    /// the table's artist column rather than the table itself, which is the
+    /// right recovery, but a library that reads as having no artists at all
+    /// must not look like an empty one (#491).
+    private func allArtists() async -> [Artist] {
+        do {
+            return try await self.artistRepository.fetchAll()
+        } catch {
+            self.log.warning("tracks.artistNames.failed", ["error": String(reflecting: error)])
+            return []
+        }
+    }
+
+    /// Every album, recovered the same way as ``allArtists()`` and for the same
+    /// reason, against the table's album column.
+    private func allAlbums() async -> [Album] {
+        do {
+            return try await self.albumRepository.fetchAll()
+        } catch {
+            self.log.warning("tracks.albumNames.failed", ["error": String(reflecting: error)])
+            return []
+        }
+    }
+
     private func refreshNameLookups() async {
-        let artists = await (try? self.artistRepository.fetchAll()) ?? []
-        let albums = await (try? self.albumRepository.fetchAll()) ?? []
+        let artists = await self.allArtists()
+        let albums = await self.allAlbums()
         self.artistNames = Dictionary(
             uniqueKeysWithValues: artists.compactMap { artist in
                 artist.id.map { id in (id, artist.name) }

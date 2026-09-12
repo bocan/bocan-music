@@ -177,9 +177,17 @@ public final class TagEditorViewModel: ObservableObject {
         var allTags: [TrackTags] = []
         var tagsByID: [Int64: TrackTags] = [:]
         for id in self.trackIDs {
-            if let tags = try? await self.service.readTags(trackID: id) {
+            do {
+                let tags = try await self.service.readTags(trackID: id)
                 allTags.append(tags)
                 tagsByID[id] = tags
+            } catch {
+                // The track drops out of the editor entirely: the user selected
+                // it, and nothing says why it is not there (#491).
+                self.log.warning("tagEditor.readTags.failed", [
+                    "trackID": id,
+                    "error": String(reflecting: error),
+                ])
             }
         }
         guard !allTags.isEmpty else { return }
@@ -191,7 +199,16 @@ public final class TagEditorViewModel: ObservableObject {
         self.mergeStoredLyrics(storedLyrics, tagsByID: tagsByID)
         // Populate DB-only fields (rating, loved, excludedFromShuffle) which are
         // not stored in audio file tags and therefore absent from TrackTags.
-        let tracks = await (try? self.service.readTracks(ids: self.trackIDs)) ?? []
+        let tracks: [Track]
+        do {
+            tracks = try await self.service.readTracks(ids: self.trackIDs)
+        } catch {
+            // Rating, loved and shuffle-exclusion then show their defaults
+            // rather than the stored values, which the next save would write
+            // back over the top of (#491).
+            self.log.warning("tagEditor.readTracks.failed", ["error": String(reflecting: error)])
+            tracks = []
+        }
         var tracksByID: [Int64: Track] = [:]
         for track in tracks {
             if let id = track.id {

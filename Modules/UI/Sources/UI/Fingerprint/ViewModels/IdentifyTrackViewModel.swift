@@ -405,17 +405,42 @@ public final class IdentifyTrackViewModel: ObservableObject, Identifiable {
 
         if let artistRepo = self.artistRepo {
             if let artistID = self.track.artistID {
-                snapshot.artist = try? await artistRepo.fetch(id: artistID).name
+                snapshot.artist = await self.artistName(artistID, in: artistRepo)
             }
             if let albumArtistID = self.track.albumArtistID {
-                snapshot.albumArtist = try? await artistRepo.fetch(id: albumArtistID).name
+                snapshot.albumArtist = await self.artistName(albumArtistID, in: artistRepo)
             }
         }
         if let albumRepo = self.albumRepo, let albumID = self.track.albumID {
-            snapshot.album = try? await albumRepo.fetch(id: albumID).title
+            do {
+                snapshot.album = try await albumRepo.fetch(id: albumID).title
+            } catch {
+                self.log.warning("identify.albumLookup.failed", [
+                    "id": albumID,
+                    "error": String(reflecting: error),
+                ])
+                snapshot.album = nil
+            }
         }
 
         self.currentValues = snapshot
+    }
+
+    /// One artist name for the identify snapshot, nil when the read fails.
+    ///
+    /// The snapshot is the "current values" column shown beside the proposed
+    /// match, so a silent nil makes a tag the track already carries look empty,
+    /// and the proposed change look bigger than it is (#491).
+    private func artistName(_ artistID: Int64, in repo: ArtistRepository) async -> String? {
+        do {
+            return try await repo.fetch(id: artistID).name
+        } catch {
+            self.log.warning("identify.artistLookup.failed", [
+                "id": artistID,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
     }
 
     // MARK: - Testing support

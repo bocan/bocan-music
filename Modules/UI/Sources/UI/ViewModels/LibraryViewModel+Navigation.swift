@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 import Persistence
 
 // MARK: - LibraryViewModel + Navigation
@@ -233,7 +234,15 @@ extension LibraryViewModel {
 
     private func loadSmartFolder(_ fetch: (TrackRepository) async throws -> [Track]) async {
         let trackRepo = TrackRepository(database: database)
-        let result = await (try? fetch(trackRepo)) ?? []
+        let result: [Track]
+        do {
+            result = try await fetch(trackRepo)
+        } catch {
+            // An empty smart folder and one whose query failed look the same on
+            // screen, so the difference has to reach the log (#491).
+            self.log.warning("library.smartFolder.failed", ["error": String(reflecting: error)])
+            result = []
+        }
         self.tracks.setTracks(result)
     }
 }
