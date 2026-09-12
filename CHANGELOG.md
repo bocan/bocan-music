@@ -23,6 +23,8 @@ The main window and the Songs list no longer redraw every time a synced lyric li
 
 Song lists from a Subsonic server, in the Songs view, album and artist pages and search results, no longer rebuild themselves whenever something else in the window updates, such as a synced lyric line changing. Large remote albums and playlists stay smooth. A star or rating you set on one of those songs now shows in the list straight away, instead of waiting for the next time something else redraws the window.
 
+Changing only the cover art no longer rewrites your audio files. Unless you have chosen to embed art into the files, the picture belongs to Bòcan alone, so saving it now touches nothing on disk but Bòcan's own store. Art now saves on albums you cannot write to, such as read-only files or a network drive, and a fourteen track album no longer takes fourteen file rewrites for a change that was never in the files. Undo puts the previous picture back as before.
+
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
 
 The rest of Bòcan now does the same. Signing in to a scrobbling service, identifying a track, saving a smart playlist, Deep Dive and Phone Sync all name the real reason when something fails, instead of showing an internal code or a fragment of program text.

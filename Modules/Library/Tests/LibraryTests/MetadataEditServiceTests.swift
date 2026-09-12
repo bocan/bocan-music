@@ -161,11 +161,40 @@ struct MetadataEditServiceTests {
         #expect(album.coverArtPath != nil)
     }
 
+    /// An `EditTransaction` wired to `db`, so a test can choose the embedding
+    /// setting instead of inheriting whatever the user default holds.
+    private func makeTransaction(db: Persistence.Database) throws -> EditTransaction {
+        let ringDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("EditTransactionTests-\(UUID().uuidString)")
+        return try EditTransaction(
+            database: db,
+            trackRepo: TrackRepository(database: db),
+            artistRepo: ArtistRepository(database: db),
+            albumRepo: AlbumRepository(database: db),
+            coverArtRepo: CoverArtRepository(database: db),
+            coverArtCache: CoverArtCache.make(database: db),
+            backupRing: BackupRing(directory: ringDir),
+            rootRepo: LibraryRootRepository(database: db)
+        )
+    }
+
+    /// The file's modification time, for asserting that an edit left it alone.
+    private func modificationDate(of url: URL) throws -> Date {
+        let attrs = try FileManager.default.attributesOfItem(atPath: url.path)
+        guard let date = attrs[.modificationDate] as? Date else {
+            throw FixtureError.notFound("modification date for \(url.lastPathComponent)")
+        }
+        return date
+    }
+
     /// #469: a user saw "The operation couldn't be completed. (Library.EditError
     /// error 3.)" when adding cover art. Code 3 is `.partial`, and the per-file
     /// reason inside it was itself an opaque "MetadataError error N", so the
     /// dialog could never say what went wrong. Both enums now carry their
     /// reason through `localizedDescription`.
+    ///
+    /// Embedding is switched on here because that is the case that still writes
+    /// the file, and so still fails on a file the user cannot write (#472).
     @Test func failedArtworkSaveReportsTheFileAndReasonNotAnErrorCode() async throws {
         let db = try await makeDatabase()
         let tmp = try tempMP3()
@@ -174,13 +203,13 @@ struct MetadataEditServiceTests {
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: tmp.path) }
 
         let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
-        let svc = try MetadataEditService(database: db)
+        let tx = try makeTransaction(db: db)
         var patch = TrackTagPatch()
         patch.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
 
         do {
-            try await svc.edit(trackID: trackID, patch: patch)
-            Issue.record("editing a read-only file must fail")
+            try await tx.execute(patch: patch, trackIDs: [trackID], embedCoverArt: true)
+            Issue.record("embedding art into a read-only file must fail")
         } catch {
             let message = error.localizedDescription
             #expect(message.contains("1 file(s) failed"), "the wrapper names the count: \(message)")
@@ -188,6 +217,88 @@ struct MetadataEditServiceTests {
             #expect(message.contains(tmp.lastPathComponent), "the wrapper names the file: \(message)")
             #expect(!message.contains("error 3"), "no Foundation error code: \(message)")
         }
+    }
+
+    /// #472: with embedding off the art belongs to Bòcan's cache and the rows
+    /// only, so the audio file is never opened. It used to be rewritten for
+    /// every track, which failed outright when the user cannot write the file.
+    @Test func artOnlySaveLeavesTheFileAloneWhenEmbeddingIsOff() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: tmp.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: tmp.path) }
+
+        let (trackID, albumID) = try await insertAlbumTrack(in: db, fileURL: tmp.absoluteString)
+        let before = try modificationDate(of: tmp)
+
+        let tx = try makeTransaction(db: db)
+        var patch = TrackTagPatch()
+        patch.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
+        try await tx.execute(patch: patch, trackIDs: [trackID], embedCoverArt: false)
+
+        let track = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(track.coverArtHash != nil, "the art still reaches the track row")
+        let album = try await AlbumRepository(database: db).fetch(id: albumID)
+        #expect(album.coverArtHash == track.coverArtHash, "and the album the grid draws")
+        let after = try modificationDate(of: tmp)
+        #expect(after == before, "the audio file was never rewritten")
+    }
+
+    /// #472: a rating carries no file tag either, so it is a database-only edit.
+    @Test func ratingOnlySaveLeavesTheFileAlone() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let trackID = try await insertTrack(in: db, fileURL: tmp.absoluteString)
+        let before = try modificationDate(of: tmp)
+
+        let svc = try MetadataEditService(database: db)
+        var patch = TrackTagPatch()
+        patch.rating = 80
+        try await svc.edit(trackID: trackID, patch: patch)
+
+        let track = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(track.rating == 80)
+        let after = try modificationDate(of: tmp)
+        #expect(after == before, "the audio file was never rewritten")
+    }
+
+    /// #472: such an edit has no file tags to put back, so undo restores the
+    /// track's hash and the album's art link instead, and still leaves the
+    /// file alone.
+    @Test func undoOfAnArtOnlyEditRestoresThePreviousArtRows() async throws {
+        let db = try await makeDatabase()
+        let tmp = try tempMP3()
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let (trackID, albumID) = try await insertAlbumTrack(in: db, fileURL: tmp.absoluteString)
+        let svc = try MetadataEditService(database: db)
+
+        var first = TrackTagPatch()
+        first.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x42, count: 64))
+        try await svc.edit(trackID: trackID, patch: first)
+        let establishedTrack = try await TrackRepository(database: db).fetch(id: trackID).coverArtHash
+        let establishedAlbum = try await AlbumRepository(database: db).fetch(id: albumID).coverArtHash
+        #expect(establishedTrack != nil)
+        let before = try modificationDate(of: tmp)
+
+        var second = TrackTagPatch()
+        second.coverArt = .some(Data([0xFF, 0xD8, 0xFF, 0xE0]) + Data(repeating: 0x99, count: 64))
+        let editID = try await svc.edit(trackID: trackID, patch: second)
+        #expect(!editID.isEmpty, "the edit is undoable")
+        let replaced = try await TrackRepository(database: db).fetch(id: trackID).coverArtHash
+        #expect(replaced != establishedTrack, "the second image really landed")
+
+        try await svc.undo(editID: editID)
+
+        let track = try await TrackRepository(database: db).fetch(id: trackID)
+        #expect(track.coverArtHash == establishedTrack, "the previous hash is back")
+        let album = try await AlbumRepository(database: db).fetch(id: albumID)
+        #expect(album.coverArtHash == establishedAlbum, "and the previous album link")
+        let after = try modificationDate(of: tmp)
+        #expect(after == before, "undo wrote no tags to the file")
     }
 
     @Test func partialAlbumEditNeverClobbersExistingAlbumArt() async throws {
