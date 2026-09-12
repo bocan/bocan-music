@@ -7,29 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Settings now explains itself. Rest the pointer on a switch, a menu or a button in General, Library, Advanced, Podcasts, Phone Sync or Sources, and a short line tells you what it does or what changes if you switch it, rather than repeating the label you can already read. The podcast screens do the same: subscribing, searching, and a show's own speed, order, retention and download settings all say what they will do. So do the radio and streaming-server screens, where the refresh buttons now say what each one will fetch. In the smart-playlist editor, the limit and sort controls now explain that they work together: the sort order is what decides which tracks a limit keeps. The tag editor, the cover-art tools and track identification say what they will write before you commit to it, down to which fields a match would change. The sliders finally explain themselves too: the lyrics sync offset says which way to drag when the words run ahead of the singing, and the speed slider says the pitch stays put. The library summary and the menu bar player finish the job, and the buttons that delete something now say exactly what survives: unsubscribing from a dead show keeps its episodes and your history, and reaping storage removes the audio files but not the episodes.
-
-Writing those explanations turned up three switches that did nothing at all. Sync starred items and Sync star ratings, in the settings for a Subsonic server, now work: switch either off and the stars or ratings you set stay on this Mac instead of going to that server. Use quick scan by default is gone from Library settings, because scans on launch have always read only the files that changed, and Full Rescan in the File menu is how you re-read everything.
-
-When something you ask for cannot be done, Bòcan now says so instead of looking as though it worked. Adding tracks to a playlist, loving a track, saving a log file, choosing cover art and disconnecting a scrobbling account all report a failure now, and so do the play, skip and seek controls on your keyboard, headphones, lock screen and Control Centre.
-
-Two quieter faults are fixed with them. A podcast episode or a song sent to your phone can no longer be recorded under the wrong fingerprint if the file cannot be read all the way through, which used to make a transfer fail with nothing to explain it. And a library scan that cannot read your library now stops and tells you, rather than treating the library as empty and re-importing everything.
-
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.
 
-Adding a podcast whose directory listing gives a plain-http feed address now works when the show is also served securely, which most are. When it is not, the message says the feed is unencrypted-only instead of showing an error number. Any podcast error now shows its real reason.
-
-The main window and the Songs list no longer redraw every time a synced lyric line changes, a lyrics fetch starts or finishes, or the sync offset moves. Only the lyrics pane updates on those moments, so playing a song with synced lyrics while the full Songs list is open stays smooth.
-
-Song lists from a Subsonic server, in the Songs view, album and artist pages and search results, no longer rebuild themselves whenever something else in the window updates, such as a synced lyric line changing. Large remote albums and playlists stay smooth. A star or rating you set on one of those songs now shows in the list straight away, instead of waiting for the next time something else redraws the window.
+Adding a podcast whose directory listing gives a plain-http feed address now works when the show is also served securely, which most are. When it is not, the message says the feed is unencrypted-only instead of showing an error number. We don't support plain-http feeds from the internet, but an unencrypted home server is fine.
 
 Saving tags works again when your music lives on an external drive or a network share. Bòcan wrote the new version of a file into a scratch area on the startup disk and then moved it into place, which the system refuses to do between two different drives, so every tag save on such a library failed even though the files were perfectly writable. The new version is now prepared next to the original, on the same drive.
 
-Changing only the cover art no longer rewrites your audio files. Unless you have chosen to embed art into the files, the picture belongs to Bòcan alone, so saving it now touches nothing on disk but Bòcan's own store. Art now saves on albums you cannot write to, such as read-only files or a network drive, and a fourteen track album no longer takes fourteen file rewrites for a change that was never in the files. Undo puts the previous picture back as before.
+Changing only the cover art no longer rewrites your audio files. Unless you have chosen to embed art into the files, the picture belongs to Bòcan alone, so saving it now touches nothing on disk but Bòcan's own store. Art now saves on albums you cannot write to, such as read-only files or a network drive.
 
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
-
-The rest of Bòcan now does the same. Signing in to a scrobbling service, identifying a track, saving a smart playlist, Deep Dive and Phone Sync all name the real reason when something fails, instead of showing an internal code or a fragment of program text.
 
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
