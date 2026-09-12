@@ -52,3 +52,14 @@ public enum LibraryError: Error, Sendable, CustomStringConvertible {
         }
     }
 }
+
+// MARK: - LibraryError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(Library.LibraryError error 3.)" and tells the user nothing. The UI and App
+/// layers show `localizedDescription` in 37 places (#471).
+extension LibraryError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}

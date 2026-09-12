@@ -162,3 +162,30 @@ public enum DeepDiveError: Error, Sendable, Equatable {
     case rateLimited
     case notFound
 }
+
+// MARK: - DeepDiveError + CustomStringConvertible
+
+extension DeepDiveError: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .noIdentifier:
+            "No MusicBrainz match was found for this artist."
+        case .offline:
+            "Deep Dive needs a network connection, and nothing is cached for this artist yet."
+        case .rateLimited:
+            "MusicBrainz is rate limiting requests. Try again shortly."
+        case .notFound:
+            "No Deep Dive information was found for this artist."
+        }
+    }
+}
+
+// MARK: - DeepDiveError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(Library.DeepDiveError error 3.)" and tells the user nothing (#471).
+extension DeepDiveError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}

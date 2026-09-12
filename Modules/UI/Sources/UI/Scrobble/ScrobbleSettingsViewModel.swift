@@ -232,10 +232,11 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
         }
     }
 
+    /// `ScrobbleError` conforms to `LocalizedError` (#471), so its reason now
+    /// survives `localizedDescription`. The old special case stringified the
+    /// enum instead, which put a raw case dump such as
+    /// `notAuthenticated(provider: "lastfm")` into the Settings error field.
     private func message(for error: Error) -> String {
-        if let scrobbleError = error as? ScrobbleError {
-            return String(describing: scrobbleError)
-        }
-        return error.localizedDescription
+        error.localizedDescription
     }
 }
