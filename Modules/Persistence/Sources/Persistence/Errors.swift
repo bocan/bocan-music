@@ -51,3 +51,13 @@ public enum PersistenceError: Error, Sendable, CustomStringConvertible {
         }
     }
 }
+
+// MARK: - PersistenceError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(Persistence.PersistenceError error 3.)" and tells the user nothing (#471).
+extension PersistenceError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}

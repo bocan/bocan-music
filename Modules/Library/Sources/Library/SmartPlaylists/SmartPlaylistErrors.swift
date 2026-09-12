@@ -34,3 +34,44 @@ public enum SmartPlaylistError: Error, Sendable {
     /// removes the broken row.
     case invalidRule(reason: String)
 }
+
+// MARK: - SmartPlaylistError + CustomStringConvertible
+
+extension SmartPlaylistError: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .emptyGroup:
+            "A rule group has no rules in it."
+        case .betweenRangeReversed:
+            "A 'between' rule has its range the wrong way round."
+        case let .invalidRegex(pattern):
+            "'\(pattern)' is not a valid regular expression."
+        case let .incompatibleComparator(field, comparator):
+            "The condition '\(comparator.rawValue)' cannot be used with \(field.rawValue)."
+        case let .incompatibleValue(field, _):
+            "The value given for \(field.rawValue) is the wrong type for that field."
+        case let .notFound(id):
+            "Smart playlist \(id) was not found."
+        case let .notSmartPlaylist(id):
+            "Playlist \(id) is not a smart playlist."
+        case let .decodeFailed(reason):
+            "The saved rules could not be read: \(reason)"
+        case let .tooDeeplyNested(maxDepth):
+            "Rule groups are nested too deeply. The limit is \(maxDepth) levels."
+        case let .cannotReferenceSmartPlaylist(id):
+            "A rule cannot refer to smart playlist \(id). Only manual playlists can be used."
+        case let .invalidRule(reason):
+            "This playlist has a rule this version does not recognise: \(reason)"
+        }
+    }
+}
+
+// MARK: - SmartPlaylistError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(Library.SmartPlaylistError error 3.)" and tells the user nothing (#471).
+extension SmartPlaylistError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}
