@@ -265,6 +265,23 @@ struct DecoderFactoryTests {
         #expect(decoder is AVFoundationDecoder)
     }
 
+    @Test("a file no decoder recognises still reports the unsupported format after FFmpeg is tried (#497)")
+    func unknownFormatReportsUnsupported() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("decoder-factory-\(UUID().uuidString).bin")
+        try Data("this is not audio, it is a sentence".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        do {
+            _ = try DecoderFactory.make(for: url)
+            Issue.record("Expected unsupportedFormat to be thrown")
+        } catch let AudioEngineError.unsupportedFormat(_, thrownURL) {
+            // FFmpeg's own refusal is logged, not substituted for this: the
+            // magic bytes are what the user needs to see.
+            #expect(thrownURL == url)
+        }
+    }
+
     @Test("OGG → FFmpegDecoder")
     func oggDecodesWithFFmpeg() throws {
         let url = try fixtureURL("sine-1s-48000-stereo.ogg")
