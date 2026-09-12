@@ -222,6 +222,7 @@ struct RadioStationInfoSheet: View {
                     }
                     .buttonStyle(.borderless)
                     .controlSize(.small)
+                    .help(L10n.string("Copies this value to the clipboard."))
                 }
             }
             Text(value)

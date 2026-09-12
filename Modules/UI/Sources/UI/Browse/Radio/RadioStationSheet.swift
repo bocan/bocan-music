@@ -93,6 +93,7 @@ struct RadioStationSheet: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.isBusy || self.streamURL.trimmingCharacters(in: .whitespaces).isEmpty)
                 .accessibilityIdentifier(A11y.Radio.sheetSubmitButton)
+                .help(L10n.string("Saves the station. A playlist address is opened first, so you can pick from what it contains."))
             }
         }
     }
@@ -138,6 +139,7 @@ struct RadioStationSheet: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.isBusy)
                 .accessibilityIdentifier(A11y.Radio.sheetAddAllButton)
+                .help(L10n.string("Adds every station listed above to your stations."))
             }
         }
     }

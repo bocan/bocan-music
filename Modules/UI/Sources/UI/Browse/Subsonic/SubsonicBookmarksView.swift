@@ -89,6 +89,7 @@ public struct SubsonicBookmarksView: View {
                     Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
+                .help(L10n.string("Fetches your bookmarks from this server again."))
             }
         }
         .task(id: self.serverID) {

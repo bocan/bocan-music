@@ -75,6 +75,7 @@ public struct SpeedPickerView: View {
             .frame(width: 200)
             .accessibilityLabel(L10n.string("Speed slider"))
             .accessibilityValue(self.rateLabel)
+            .help(L10n.string("Plays faster to the right, slower to the left. The pitch stays where it is."))
             // The drag binding only commits the rate on release (onEditingChanged),
             // which VoiceOver increments never fire; set the rate directly so the
             // slider is actually adjustable with assistive tech.
@@ -95,6 +96,7 @@ public struct SpeedPickerView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .tint(abs(self.vm.playbackRate - rate) < 0.01 ? Color.accentColor : nil)
+                    .help(L10n.string("Jumps straight to this speed."))
                 }
             }
 
@@ -104,6 +106,7 @@ public struct SpeedPickerView: View {
             .buttonStyle(.plain)
             .foregroundStyle(Color.textSecondary)
             .font(.footnote)
+            .help(L10n.string("Returns to normal speed."))
         }
         .padding(16)
         .frame(width: 240)

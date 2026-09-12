@@ -162,6 +162,7 @@ struct ReleasePickerPopover: View {
         .buttonStyle(.plain)
         .accessibilityLabel(self.accessibilitySummary(for: release))
         .accessibilityAddTraits(release.id == self.selectedID ? .isSelected : [])
+        .help(L10n.string("Takes the album, year and identifiers for this match from this release."))
     }
 
     private func accessibilitySummary(for release: ReleaseOption) -> String {

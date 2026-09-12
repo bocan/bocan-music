@@ -70,6 +70,7 @@ public struct AlbumDetailView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.string("Artist: \(self.artistName)"))
+                    .help(L10n.string("Opens this artist's page."))
                 }
 
                 HStack(spacing: 8) {

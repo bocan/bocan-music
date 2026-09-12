@@ -76,6 +76,7 @@ public struct MenuBarExtraScene: View {
                     }
                 }
                 .controlSize(.small)
+                .help(L10n.string("Drag to move through the track."))
                 .accessibilityLabel(L10n.string("Playback position"))
             }
 
@@ -98,6 +99,7 @@ public struct MenuBarExtraScene: View {
                         .scaledSystemFont(size: 22, weight: .bold)
                 }
                 .buttonStyle(.plain)
+                .help(self.vm.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
                 .accessibilityLabel(self.vm.isPlaying ? L10n.string("Pause") : L10n.string("Play"))
 
                 Button {
@@ -107,6 +109,7 @@ public struct MenuBarExtraScene: View {
                         .scaledSystemFont(size: 16, weight: .semibold)
                 }
                 .buttonStyle(.plain)
+                .help(L10n.string("Next track."))
                 .accessibilityLabel(L10n.string("Next"))
             }
 
@@ -119,6 +122,7 @@ public struct MenuBarExtraScene: View {
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
             .font(.footnote)
+            .help(L10n.string("Brings the main window to the front."))
         }
         .padding(16)
         .frame(width: 200)

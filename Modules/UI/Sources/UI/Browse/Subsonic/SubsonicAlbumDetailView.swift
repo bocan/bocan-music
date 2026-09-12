@@ -307,6 +307,7 @@ public struct SubsonicAlbumDetailView: View {
         }
         .buttonStyle(.borderedProminent)
         .padding(.top, 6)
+        .help(L10n.string("Replaces the queue with this album and starts playing. Shuffle applies if it is on."))
     }
 
     private var currentServerName: String {

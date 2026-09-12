@@ -238,6 +238,7 @@ private struct CandidateRow: View {
                 L10n.string("\(self.candidate.title) by \(self.candidate.artist), confidence \(Int(self.candidate.score * 100))%")
             )
             .accessibilityHint(L10n.string("Expands to choose which fields to apply"))
+            .help(L10n.string("Shows what this match would change, field by field, before anything is written."))
 
             if self.isExpanded {
                 self.expandedContent

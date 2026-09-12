@@ -110,6 +110,7 @@ public struct BatchCoverArtSheet: View {
             if self.vm.isRunning {
                 Button(L10n.string("Cancel")) { self.vm.cancel() }
                     .accessibilityHint(L10n.string("Stops the batch fetch operation"))
+                    .help(L10n.string("Stops after the album being fetched now. Artwork already saved is kept."))
             } else if self.vm.isDone {
                 Button(L10n.string("Close")) { self.isPresented = false }
                     .keyboardShortcut(.escape, modifiers: [])
@@ -119,6 +120,7 @@ public struct BatchCoverArtSheet: View {
                     .keyboardShortcut(.return, modifiers: .command)
                     .buttonStyle(.borderedProminent)
                     .accessibilityHint(L10n.string("Begins fetching missing cover art from MusicBrainz"))
+                    .help(L10n.string("Fetches artwork for every album listed above that has none."))
             }
         }
     }

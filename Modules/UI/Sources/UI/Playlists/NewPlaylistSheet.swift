@@ -53,6 +53,7 @@ public struct NewPlaylistSheet: View {
                             Text(folder.name).tag(Optional(folder.id))
                         }
                     }
+                    .help(L10n.string("Where this playlist is filed in the sidebar. You can move it later by dragging."))
 
                     if self.pendingSelectionCount > 0 {
                         Toggle(

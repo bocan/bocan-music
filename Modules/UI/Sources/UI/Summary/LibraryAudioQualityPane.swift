@@ -97,6 +97,7 @@ struct LibraryAudioQualityPane: View {
             }
             .buttonStyle(.bordered)
             .disabled(report.provenanceUnanalysedCount == 0)
+            .help(L10n.string("Checks the lossless files waiting for it, to see whether they came from a lossy source."))
         }
         .accessibilityElement(children: .combine)
     }
@@ -141,6 +142,7 @@ struct LibraryAudioQualityPane: View {
                     self.library.cancelProvenanceAnalysis()
                 }
                 .buttonStyle(.bordered)
+                .help(L10n.string("Stops the check. Files already done keep their verdict."))
             }
         }
     }

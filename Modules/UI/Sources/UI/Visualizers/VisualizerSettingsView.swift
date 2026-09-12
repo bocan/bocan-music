@@ -50,6 +50,7 @@ public struct VisualizerSettingsView: View {
                 }
                 .pickerStyle(.menu)
                 .accessibilityIdentifier(A11y.SettingsIDs.vizPalette)
+                .help(L10n.string("The colours the visualizer draws with. It changes nothing about the sound."))
             }
 
             Section(L10n.string("Performance")) {
@@ -60,6 +61,7 @@ public struct VisualizerSettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier(A11y.SettingsIDs.vizFrameRate)
+                .help(L10n.string("How often the visualizer redraws. A lower rate is smoother on the battery."))
 
                 Toggle(L10n.string("Use simpler visualizer on battery"), isOn: self.$simplifyOnBattery)
                     .accessibilityIdentifier(A11y.SettingsIDs.vizSimplifyOnBattery)
@@ -73,6 +75,10 @@ public struct VisualizerSettingsView: View {
                     Spacer()
                     Slider(value: self.$sensitivityRaw, in: 0.1 ... 3.0, step: 0.1)
                         .frame(width: 160)
+                        .help(L10n
+                            .string(
+                                "How hard the visualizer reacts. Raise it for quiet tracks, lower it if the display is always at full."
+                            ))
                         .accessibilityLabel(L10n.string("Audio sensitivity"))
                         .accessibilityIdentifier(A11y.SettingsIDs.vizSensitivity)
                         .accessibilityValue(String(format: "%.1f×", self.sensitivityRaw))

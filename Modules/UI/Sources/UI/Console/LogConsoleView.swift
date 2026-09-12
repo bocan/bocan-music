@@ -86,8 +86,8 @@ public struct LogConsoleView: View {
             .pickerStyle(.menu)
             .fixedSize()
             .accessibilityIdentifier(A11y.LogConsole.levelPicker)
+            .help(L10n.string("Hides entries below this level. Everything is still recorded."))
         }
-        .help(L10n.string("Minimum log level to show"))
     }
 
     private var categoriesMenu: some View {

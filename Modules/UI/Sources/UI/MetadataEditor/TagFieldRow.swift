@@ -169,6 +169,7 @@ public struct StarRatingRow: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.string("\(star) stars"))
+                    .help(L10n.string("Sets the rating on every track you are editing."))
                 }
                 if self.rating != nil {
                     Button(
@@ -177,6 +178,7 @@ public struct StarRatingRow: View {
                     )
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.string("Clear rating"))
+                    .help(L10n.string("Removes the rating from every track you are editing."))
                 }
             }
             .disabled(self.enabledBinding.map { !$0.wrappedValue } ?? false)
@@ -241,6 +243,7 @@ public struct ToggleFieldRow: View {
             Toggle("", isOn: self.$value)
                 .labelsHidden()
                 .disabled(self.enabledBinding.map { !$0.wrappedValue } ?? false)
+                .help(L10n.string("The value written to this field when you save."))
         } label: {
             HStack(spacing: 4) {
                 if let eb = self.enabledBinding {

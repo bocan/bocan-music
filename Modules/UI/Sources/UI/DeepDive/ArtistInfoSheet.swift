@@ -67,6 +67,7 @@ public struct ArtistInfoSheet: View {
             .pickerStyle(.segmented)
             .padding(.horizontal)
             .padding(.top, 12)
+            .help(L10n.string("Switches between what Bòcan knows about this artist and where it came from."))
             Divider().padding(.top, 8)
 
             switch self.tab {

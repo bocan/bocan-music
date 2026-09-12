@@ -82,6 +82,7 @@ public struct LyricsView: View {
                         .buttonStyle(.bordered)
                         .controlSize(.small)
                         .accessibilityIdentifier(A11y.Lyrics.fetchButton)
+                        .help(L10n.string("Searches LRClib.net for lyrics matching this track."))
                     } else {
                         Text(localized: "Paste lyrics in the editor, or enable LRClib in Settings.")
                             .font(.caption)
@@ -198,6 +199,7 @@ private struct SyncedLineRow: View {
         .buttonStyle(.plain)
         .accessibilityLabel(self.line.text)
         .accessibilityAddTraits(self.isCurrent ? [.isSelected] : [])
+        .help(L10n.string("Jumps playback to this line."))
         .accessibilityHint(L10n.string("Seek to this line"))
     }
 }

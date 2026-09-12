@@ -50,6 +50,7 @@ struct NewSmartPlaylistSheet: View {
                     Text(folder.name).tag(Optional(folder.id))
                 }
             }
+            .help(L10n.string("Where this playlist is filed in the sidebar. You can move it later by dragging."))
 
             if let error = self.error {
                 Text(error)
@@ -73,6 +74,7 @@ struct NewSmartPlaylistSheet: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(self.name.trimmingCharacters(in: .whitespaces).isEmpty || self.isSaving)
                 .keyboardShortcut(.defaultAction)
+                .help(L10n.string("Creates the playlist and opens its rule editor, starting from a rule that matches everything."))
             }
         }
         .padding(28)

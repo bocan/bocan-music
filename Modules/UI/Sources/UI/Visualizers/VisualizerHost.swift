@@ -293,6 +293,7 @@ public struct VisualizerHost: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(Color.accentColor)
                     .accessibilityLabel(L10n.string("Revert visualizer mode"))
+                    .help(L10n.string("Goes back to the visualizer you had before Bòcan simplified it to save power."))
             }
         }
         .padding(.horizontal, 16)

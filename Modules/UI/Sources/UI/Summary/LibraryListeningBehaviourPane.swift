@@ -122,6 +122,7 @@ struct LibraryListeningBehaviourPane: View {
                 self.showRemoveConfirm = true
             }
             .buttonStyle(.bordered)
+            .help(L10n.string("Deletes the imported listens that never matched a track, after asking."))
         }
     }
 
@@ -130,6 +131,7 @@ struct LibraryListeningBehaviourPane: View {
             Task { await self.library.importListeningHistoryByPicker() }
         }
         .buttonStyle(.bordered)
+        .help(L10n.string("Adds the plays from a Last.fm data export to your listening history."))
     }
 
     private var footer: some View {

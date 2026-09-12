@@ -50,5 +50,6 @@ struct ChapterListView: View {
         .accessibilityLabel(
             L10n.string("Chapter: \(chapter.title) at \(TranscriptView.timestamp(chapter.startTime))")
         )
+        .help(L10n.string("Jumps to this chapter."))
     }
 }

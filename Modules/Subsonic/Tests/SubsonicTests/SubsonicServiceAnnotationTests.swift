@@ -44,7 +44,10 @@ private let okEnvelope = """
 
 private let testServerURL = URL(string: "https://music.test.local")!
 
-private func makeService() async throws -> (SubsonicService, UUID, RecordingStubTransport) {
+private func makeService(
+    syncStars: Bool = true,
+    syncRatings: Bool = true
+) async throws -> (SubsonicService, UUID, RecordingStubTransport) {
     let db = try await Database(location: .inMemory)
     let repo = SubsonicServerRepository(database: db)
     let store = SubsonicServerStore(repository: repo)
@@ -55,7 +58,9 @@ private func makeService() async throws -> (SubsonicService, UUID, RecordingStub
         serverURL: testServerURL,
         authKind: "tokenSalt",
         username: "alice",
-        keychainAccount: id.uuidString
+        keychainAccount: id.uuidString,
+        syncStars: syncStars,
+        syncRatings: syncRatings
     ))
     let transport = RecordingStubTransport()
     let client = SwiftSonicClient(
@@ -265,6 +270,32 @@ struct SubsonicAnnotationsTests {
         await annotations.setRating(serverID: id, songID: "s1", rating: 5)
         #expect(transport.requests.count == 1)
         #expect(transport.requests[0].query?.contains("rating=5") == true)
+    }
+
+    @Test("a server with syncStars off receives no star and no unstar (#502)")
+    func syncStarsOffSendsNothing() async throws {
+        let (service, id, transport) = try await makeService(syncStars: false)
+        transport.enqueue(json: okEnvelope)
+        let annotations = SubsonicAnnotations(service: service)
+
+        await annotations.star(serverID: id, songID: "s1")
+        await annotations.unstar(serverID: id, songID: "s1")
+
+        #expect(transport.requests.isEmpty, "the flag was stored and read by nothing before #502")
+    }
+
+    @Test("a server with syncRatings off receives no rating, but still receives stars (#502)")
+    func syncRatingsOffSendsNoRating() async throws {
+        let (service, id, transport) = try await makeService(syncRatings: false)
+        transport.enqueue(json: okEnvelope)
+        let annotations = SubsonicAnnotations(service: service)
+
+        await annotations.setRating(serverID: id, songID: "s1", rating: 4)
+        #expect(transport.requests.isEmpty)
+
+        await annotations.star(serverID: id, songID: "s1")
+        #expect(transport.requests.count == 1, "the two flags are independent")
+        #expect(transport.requests[0].path.contains("star"))
     }
 
     @Test("unknown-server error on first attempt is non-transient and does not retry")

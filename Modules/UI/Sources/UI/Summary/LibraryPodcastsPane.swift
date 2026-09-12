@@ -218,6 +218,7 @@ struct LibraryPodcastsPane: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
+                        .help(L10n.string("Stops this show refreshing and takes it out of the sidebar. Episodes and history stay."))
                     }
                 }
                 SummaryMoreRow(total: report.deadFeedCount, shown: report.deadFeeds.count)
@@ -276,6 +277,7 @@ struct LibraryPodcastsPane: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(self.isReaping)
+                .help(L10n.string("Deletes the audio files listed above from disk, after asking. Episodes and history stay."))
             }
         } header: {
             Text(localized: "Reapable Storage")
@@ -474,5 +476,6 @@ private struct PodcastShowRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityHint(L10n.string("Double-tap to open the show"))
+        .help(L10n.string("Opens this show in the main window."))
     }
 }
