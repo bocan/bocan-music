@@ -52,8 +52,13 @@ public actor ListenBrainzProvider: ScrobbleProvider {
     }
 
     public func isAuthenticated() async -> Bool {
-        let token = try? await self.credentials.listenBrainzToken()
-        return token?.isEmpty == false
+        do {
+            return try await self.credentials.listenBrainzToken()?.isEmpty == false
+        } catch {
+            // Indistinguishable from "never connected" otherwise (#496).
+            self.log.warning("scrobble.listenbrainz.keychainReadFailed", ["error": String(reflecting: error)])
+            return false
+        }
     }
 
     public func nowPlaying(_ play: PlayEvent) async throws {
@@ -136,7 +141,18 @@ public actor ListenBrainzProvider: ScrobbleProvider {
         let (data, response) = try await self.http.data(for: req)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         if status == 200 {
-            let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            let parsed: [String: Any]?
+            do {
+                parsed = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+            } catch {
+                // A 200 whose body will not parse is reported to the user as
+                // bad credentials, so they re-enter a token that was fine (#496).
+                self.log.warning("scrobble.listenbrainz.validateDecodeFailed", [
+                    "bytes": data.count,
+                    "error": String(reflecting: error),
+                ])
+                parsed = nil
+            }
             if let parsed, let valid = parsed["valid"] as? Bool, valid,
                let user = parsed["user_name"] as? String, !user.isEmpty {
                 return user

@@ -50,8 +50,13 @@ public actor RockskyProvider: ScrobbleProvider {
     // MARK: ScrobbleProvider
 
     public func isAuthenticated() async -> Bool {
-        let key = try? await self.credentials.rockskyApiKey()
-        return key?.isEmpty == false
+        do {
+            return try await self.credentials.rockskyApiKey()?.isEmpty == false
+        } catch {
+            // Indistinguishable from "never connected" otherwise (#496).
+            self.log.warning("scrobble.rocksky.keychainReadFailed", ["error": String(reflecting: error)])
+            return false
+        }
     }
 
     public func nowPlaying(_ play: PlayEvent) async throws {
