@@ -27,3 +27,10 @@ Modules/UI/Sources/UI/Browse/Podcasts/PodcastOPMLImportSheet.swift|Button(L10n.s
 Modules/UI/Sources/UI/Browse/Podcasts/PodcastOPMLImportSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.dismiss() }  # closes the sheet
 Modules/UI/Sources/UI/Browse/Podcasts/ShowNotesView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
 Modules/UI/Sources/UI/Browse/Podcasts/TranscriptView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+
+# Radio and Subsonic sheets: Close and Cancel dismiss and do nothing else.
+# One entry covers both Cancel sites in the station sheet, since the key is
+# the call site's text rather than its line (#504).
+Modules/UI/Sources/UI/Browse/Radio/RadioStationInfoSheet.swift|Button(L10n.string("Close"), action: self.onDismiss)  # closes the sheet
+Modules/UI/Sources/UI/Browse/Radio/RadioStationSheet.swift|Button(L10n.string("Cancel")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Subsonic/SubsonicInternetRadioView.swift|Button(L10n.string("Close"), action: self.onDismiss)  # closes the sheet

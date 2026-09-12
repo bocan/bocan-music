@@ -3195,6 +3195,26 @@
         }
       }
     },
+    "Adds a station from its stream address, or from a playlist address holding several." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áđđš á šţáţíóñ ƒŕóḿ íţš šţŕéáḿ áđđŕéšš, óŕ ƒŕóḿ á ƥĺáýĺíšţ áđđŕéšš ĥóĺđíñĝ šévéŕáĺ. one two three four five six"
+          }
+        }
+      }
+    },
+    "Adds every station listed above to your stations." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áđđš évéŕý šţáţíóñ ĺíšţéđ áƀóvé ţó ýóúŕ šţáţíóñš. one two three four"
+          }
+        }
+      }
+    },
     "Adds the Deep Dive tab to Get Info, and starts the one-off artist lookups described below." : {
       "localizations" : {
         "en-XA" : {
@@ -6268,6 +6288,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çóñţŕášţ Áúđíţ one two"
+          }
+        }
+      }
+    },
+    "Copies this value to the clipboard." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çóƥíéš ţĥíš váĺúé ţó ţĥé çĺíƥƀóáŕđ. one two three"
           }
         }
       }
@@ -9746,6 +9776,66 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ƒéţçĥéš ţĥé ñéxţ ţŕáçķ íñ ţĥé qúéúé ŵĥíĺé ţĥé çúŕŕéñţ óñé ƥĺáýš, šó á šĺóŵ çóññéçţíóñ çáññóţ çáúšé á ĝáƥ. one two three four five six seven"
+          }
+        }
+      }
+    },
+    "Fetches this server's artist list again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒéţçĥéš ţĥíš šéŕvéŕ'š áŕţíšţ ĺíšţ áĝáíñ. one two three"
+          }
+        }
+      }
+    },
+    "Fetches this server's playlists again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒéţçĥéš ţĥíš šéŕvéŕ'š ƥĺáýĺíšţš áĝáíñ. one two three"
+          }
+        }
+      }
+    },
+    "Fetches this server's podcast list again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒéţçĥéš ţĥíš šéŕvéŕ'š ƥóđçášţ ĺíšţ áĝáíñ. one two three"
+          }
+        }
+      }
+    },
+    "Fetches this server's station list again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒéţçĥéš ţĥíš šéŕvéŕ'š šţáţíóñ ĺíšţ áĝáíñ. one two three"
+          }
+        }
+      }
+    },
+    "Fetches your bookmarks from this server again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒéţçĥéš ýóúŕ ƀóóķḿáŕķš ƒŕóḿ ţĥíš šéŕvéŕ áĝáíñ. one two three"
+          }
+        }
+      }
+    },
+    "Fetches your starred items from this server again." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ƒéţçĥéš ýóúŕ šţáŕŕéđ íţéḿš ƒŕóḿ ţĥíš šéŕvéŕ áĝáíñ. one two three four"
           }
         }
       }
@@ -15768,6 +15858,26 @@
         }
       }
     },
+    "Opens this artist's albums and songs." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ţĥíš áŕţíšţ'š áĺƀúḿš áñđ šóñĝš. one two three"
+          }
+        }
+      }
+    },
+    "Opens this artist's page." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ţĥíš áŕţíšţ'š ƥáĝé. one two"
+          }
+        }
+      }
+    },
     "Opens this composer's songs" : {
       "localizations" : {
         "en-XA" : {
@@ -15784,6 +15894,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Óƥéñš ţĥíš ĝéñŕé'š šóñĝš one two"
+          }
+        }
+      }
+    },
+    "Opens this playlist's songs." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ţĥíš ƥĺáýĺíšţ'š šóñĝš. one two three"
           }
         }
       }
@@ -18626,6 +18746,16 @@
         }
       }
     },
+    "Replaces the queue with this album and starts playing. Shuffle applies if it is on." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ŕéƥĺáçéš ţĥé qúéúé ŵíţĥ ţĥíš áĺƀúḿ áñđ šţáŕţš ƥĺáýíñĝ. Šĥúƒƒĺé áƥƥĺíéš íƒ íţ íš óñ. one two three four five six"
+          }
+        }
+      }
+    },
     "ReplayGain" : {
       "comment" : "A tab for adjusting the ReplayGain of audio.",
       "isCommentAutoGenerated" : true,
@@ -19396,6 +19526,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šávéš á žíƥ óƒ ţĥé šéššíóñ ĺóĝ, çŕášĥ áñđ đíáĝñóšţíç ŕéƥóŕţš, áñđ véŕšíóñ íñƒó ţó áţţáçĥ ţó á ƀúĝ ŕéƥóŕţ. one two three four five six seven"
+          }
+        }
+      }
+    },
+    "Saves the station. A playlist address is opened first, so you can pick from what it contains." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šávéš ţĥé šţáţíóñ. Á ƥĺáýĺíšţ áđđŕéšš íš óƥéñéđ ƒíŕšţ, šó ýóú çáñ ƥíçķ ƒŕóḿ ŵĥáţ íţ çóñţáíñš. one two three four five six"
           }
         }
       }

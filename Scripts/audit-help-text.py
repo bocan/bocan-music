@@ -34,7 +34,10 @@ CONSTRUCT_RE = re.compile(r"(?<![\w.])(Button|Toggle|Picker|Slider|Menu)\s*[({]"
 # Entering any of these opens a "menu item" context where .help() is inert:
 # macOS renders no tooltips inside open menus, alerts, or dialogs. Menu
 # content is often built in dedicated builder functions/properties, so
-# declarations whose name mentions "menu" open the same context.
+# declarations whose name mentions "menu" open the same context. A whole
+# type can be menu content too (ArtistContextMenu, SubsonicRatingMenu): a
+# `struct` whose name *ends* in Menu opens the context for its whole body,
+# while one that merely starts with it (MenuBarExtraScene) does not (#504).
 MENU_CONTEXT_RE = re.compile(
     r"(?<![\w.])(Menu|CommandMenu|CommandGroup)\s*[({]"
     r"|\.contextMenu\s*[({]"
@@ -43,6 +46,7 @@ MENU_CONTEXT_RE = re.compile(
     r"|\.swipeActions\s*[({]"
     r"|dockMenu"
     r"|(?:func|var)\s+\w*[Mm]enu\w*"
+    r"|struct\s+\w*[Mm]enu\b"
 )
 PREVIEW_RE = re.compile(r"#Preview|_Previews\b")
 

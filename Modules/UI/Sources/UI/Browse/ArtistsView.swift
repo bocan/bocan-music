@@ -474,6 +474,7 @@ public struct ArtistsView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(artist.name)
             .accessibilityHint(L10n.string("Open artist"))
+            .help(L10n.string("Opens this artist's albums and songs."))
             .contextMenu {
                 if let id = artist.id {
                     ArtistContextMenu(id: id, name: artist.name, library: self.library)

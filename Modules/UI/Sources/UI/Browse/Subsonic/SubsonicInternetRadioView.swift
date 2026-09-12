@@ -91,6 +91,7 @@ public struct SubsonicInternetRadioView: View {
                     Label(L10n.string("Refresh"), systemImage: "arrow.clockwise")
                 }
                 .disabled(self.vm.isLoading)
+                .help(L10n.string("Fetches this server's station list again."))
             }
         }
         .task(id: self.serverID) {
@@ -231,6 +232,7 @@ private struct SubsonicInternetRadioInfoSheet: View {
                     }
                     .buttonStyle(.borderless)
                     .controlSize(.small)
+                    .help(L10n.string("Copies this value to the clipboard."))
                 }
             }
             Text(value)
