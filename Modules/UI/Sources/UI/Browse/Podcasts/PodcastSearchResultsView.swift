@@ -50,6 +50,7 @@ struct PodcastSearchResultsView: View {
                             Task { await self.vm.retrySearch() }
                         }
                         .buttonStyle(.bordered)
+                        .help(L10n.string("Runs the same search again, for when the directory was unreachable rather than empty."))
                     }
                     .padding()
 
@@ -107,6 +108,7 @@ private struct AddByURLRow: View {
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.string("Add this feed"))
         .accessibilityIdentifier(A11y.Podcasts.addByURLRow)
+        .help(L10n.string("Subscribes to this address directly, without looking it up in a directory."))
     }
 }
 
@@ -157,6 +159,7 @@ private struct PodcastSearchResultRow: View {
             [self.result.title, self.result.author].compactMap(\.self).joined(separator: ", ")
         )
         .accessibilityHint(L10n.string("Double-tap to open podcast"))
+        .help(L10n.string("Opens this show, where you can read about it and subscribe."))
     }
 
     @ViewBuilder

@@ -125,6 +125,7 @@ struct PodcastDetailView: View {
             .buttonStyle(.borderedProminent)
             .accessibilityLabel(L10n.string("Subscribe"))
             .accessibilityIdentifier(A11y.Podcasts.detailSubscribeButton)
+            .help(L10n.string("Adds this show to your library and starts checking it for new episodes."))
         }
     }
 

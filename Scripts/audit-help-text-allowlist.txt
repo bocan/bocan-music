@@ -17,3 +17,13 @@ App/DebugAudioView.swift|Slider(value: self.$positionSec, in: 0 ... max(self.dur
 # Trust, the one button with a consequence, carries help (#502).
 Modules/UI/Sources/UI/Settings/PhoneSyncPairingSheet.swift|Button(role: .cancel) {  # dismisses the sheet; label is the whole story
 Modules/UI/Sources/UI/Settings/PhoneSyncPairingSheet.swift|Button {  # the Done button; label is the whole story
+
+# Podcast sheets and the detail view: Done, Cancel and Back close what you
+# are looking at and do nothing else. Everything in these files that has a
+# consequence carries help instead (#503).
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastDetailView.swift|Button(L10n.string("Back")) { self.vm.dismissDetail() }  # closes the detail view
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastShowSettingsView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastOPMLImportSheet.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/PodcastOPMLImportSheet.swift|Button(L10n.string("Cancel"), role: .cancel) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/ShowNotesView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Browse/Podcasts/TranscriptView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet

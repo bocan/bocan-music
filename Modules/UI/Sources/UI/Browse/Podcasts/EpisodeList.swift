@@ -148,7 +148,7 @@ struct EpisodeList: View {
                 }
             }
             Divider()
-            self.downloadButton(item: item)
+            self.downloadMenuItem(item: item)
             Divider()
             if let link = item.episode.link, let url = URL(string: link) {
                 Button(L10n.string("Copy Episode Link")) {
@@ -164,7 +164,7 @@ struct EpisodeList: View {
                 NSPasteboard.general.setString(item.episode.audioURL, forType: .string)
             }
             Divider()
-            self.notesButtons(item: item, ids: ids)
+            self.notesMenuItems(item: item, ids: ids)
         } else if ids.count > 1 {
             self.bulkMenuItems(ids: ids)
         }
@@ -172,8 +172,12 @@ struct EpisodeList: View {
 
     /// Download / remove for a single episode, labelled by its current state.
     /// `removeDownload` doubles as cancel for queued or in-flight downloads.
+    ///
+    /// Named for the menu it belongs to: these items only ever render inside
+    /// `contextMenuItems`, where macOS shows no tooltip, so hover text here
+    /// would be dead code (#503).
     @ViewBuilder
-    private func downloadButton(item: EpisodeListItem) -> some View {
+    private func downloadMenuItem(item: EpisodeListItem) -> some View {
         switch item.state?.downloadState ?? .none {
         case .downloaded:
             Button(L10n.string("Remove Download")) {
@@ -219,8 +223,9 @@ struct EpisodeList: View {
         }
     }
 
+    /// Show Notes / Transcript, also context-menu-only (see `downloadMenuItem`).
     @ViewBuilder
-    private func notesButtons(item: EpisodeListItem, ids: Set<EpisodeListItem.ID>) -> some View {
+    private func notesMenuItems(item: EpisodeListItem, ids: Set<EpisodeListItem.ID>) -> some View {
         Button(L10n.string("Show Notes")) {
             self.selection = ids
             self.showingNotes = true
