@@ -85,6 +85,100 @@ struct ManifestBuilderPodcastTests {
         #expect(episode.durationMs == 3_600_000)
     }
 
+    @Test("an episode stored before the hash migration is hashed from its file (#485)")
+    func legacyEpisodeHashedFromFile() async throws {
+        let database = try await Database(location: .inMemory)
+        let tempRoot = self.makeTempRoot()
+        defer { try? FileManager.default.removeItem(at: tempRoot) }
+        let (podcastId, guid) = try await self.seedDownloadedEpisode(
+            database: database,
+            root: tempRoot,
+            bytes: Data("podcast-audio".utf8),
+            storedHash: nil
+        )
+
+        let manifest = try await ManifestBuilder(database: database, downloadRoot: tempRoot).build(
+            profile: .everything(includePodcasts: true),
+            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+        )
+
+        let expected = SHA256.hash(data: Data("podcast-audio".utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+        let episode = try #require(manifest.episodes.first)
+        #expect(episode.podcastId == podcastId)
+        #expect(episode.guid == guid)
+        #expect(episode.sha256 == expected)
+    }
+
+    @Test("an episode whose file cannot be read is left out, never advertised under a partial hash (#485)")
+    func unreadableEpisodeOmitted() async throws {
+        let database = try await Database(location: .inMemory)
+        let tempRoot = self.makeTempRoot()
+        let (podcastId, guid) = try await self.seedDownloadedEpisode(
+            database: database,
+            root: tempRoot,
+            bytes: Data("podcast-audio".utf8),
+            storedHash: nil,
+            permissions: 0o000
+        )
+        defer {
+            // Restore read access so the temporary tree can be removed.
+            let fileURL = DownloadStore(root: tempRoot).fileURL(podcastID: podcastId, guid: guid, mime: "audio/mpeg")
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
+            try? FileManager.default.removeItem(at: tempRoot)
+        }
+
+        let manifest = try await ManifestBuilder(database: database, downloadRoot: tempRoot).build(
+            profile: .everything(includePodcasts: true),
+            serverId: "srv", serverName: "Mac", generation: 1, generatedAt: Date(timeIntervalSince1970: 0)
+        )
+
+        #expect(manifest.episodes.isEmpty)
+    }
+
+    /// Inserts a show plus one downloaded episode and writes its file.
+    private func seedDownloadedEpisode(
+        database: Database,
+        root: URL,
+        bytes: Data,
+        storedHash: String?,
+        permissions: Int? = nil
+    ) async throws -> (podcastId: Int64, guid: String) {
+        let podcastId = try await PodcastRepository(database: database).insert(Podcast(
+            feedURL: "https://example.test/feed",
+            title: "Some Show",
+            addedAt: 0
+        ))
+        let guid = "https://example.test/some-show/12"
+        _ = try await EpisodeRepository(database: database).upsert(PodcastEpisode(
+            podcastID: podcastId,
+            guid: guid,
+            title: "Episode 12",
+            audioURL: "https://example.test/12.mp3",
+            audioMIME: "audio/mpeg",
+            addedAt: 0
+        ))
+        let fileURL = DownloadStore(root: root).fileURL(podcastID: podcastId, guid: guid, mime: "audio/mpeg")
+        try FileManager.default.createDirectory(
+            at: fileURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+        try bytes.write(to: fileURL)
+        if let permissions {
+            try FileManager.default.setAttributes([.posixPermissions: permissions], ofItemAtPath: fileURL.path)
+        }
+        try await EpisodeStateRepository(database: database).setDownloadState(
+            podcastID: podcastId,
+            guid: guid,
+            state: .downloaded,
+            path: fileURL.path,
+            bytes: Int64(bytes.count),
+            hash: storedHash
+        )
+        return (podcastId, guid)
+    }
+
     @Test("a show with cached artwork advertises its SHA-256; a gone file advertises nil (22-10)")
     func artworkHashAdvertised() async throws {
         let database = try await Database(location: .inMemory)

@@ -16,6 +16,10 @@ import SwiftUI
 public struct LogConsoleView: View {
     @Bindable var vm: LogConsoleViewModel
 
+    /// Set when Save Log could not write the file, so the failure is not
+    /// silent (#480). Cleared when the alert is dismissed.
+    @State private var exportError: String?
+
     private static let bottomAnchor = "log-console-bottom"
 
     public init(vm: LogConsoleViewModel) {
@@ -35,6 +39,18 @@ public struct LogConsoleView: View {
         }
         .task { self.vm.start() }
         .onDisappear { self.vm.stop() }
+        .alert(L10n.string("Couldn’t save the log"), isPresented: Binding(
+            get: { self.exportError != nil },
+            set: {
+                if !$0 {
+                    self.exportError = nil
+                }
+            }
+        )) {
+            Button(L10n.string("OK")) { self.exportError = nil }
+        } message: {
+            Text(self.exportError ?? "")
+        }
     }
 
     // MARK: - Control bar
@@ -271,7 +287,17 @@ public struct LogConsoleView: View {
             panel.begin { cont.resume(returning: $0) }
         }
         guard outcome == .OK, let url = panel.url else { return }
-        try? text.write(to: url, atomically: true, encoding: .utf8)
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            // The user picked a destination and pressed Save; a silent failure
+            // leaves them with no file and no reason (#480).
+            AppLogger.make(.ui).error("log.export.failed", [
+                "file": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            self.exportError = error.localizedDescription
+        }
     }
 
     // MARK: - Helpers

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+When something you ask for cannot be done, Bòcan now says so instead of looking as though it worked. Adding tracks to a playlist, loving a track, saving a log file, choosing cover art and disconnecting a scrobbling account all report a failure now, and so do the play, skip and seek controls on your keyboard, headphones, lock screen and Control Centre.
+
+Two quieter faults are fixed with them. A podcast episode or a song sent to your phone can no longer be recorded under the wrong fingerprint if the file cannot be read all the way through, which used to make a transfer fail with nothing to explain it. And a library scan that cannot read your library now stops and tells you, rather than treating the library as empty and re-importing everything.
+
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.
 
 Adding a podcast whose directory listing gives a plain-http feed address now works when the show is also served securely, which most are. When it is not, the message says the feed is unencrypted-only instead of showing an error number. Any podcast error now shows its real reason.

@@ -149,7 +149,7 @@ actor EditTransaction {
             // without this, saved art shows on the play bar (which reads the
             // track) but never in the list or the albums grid.
             if case let .some(.some(artData)) = patch.coverArt {
-                await self.linkAlbumArt(artData: artData, updates: updates.map(\.track))
+                try await self.linkAlbumArt(artData: artData, updates: updates.map(\.track))
             }
         }
 
@@ -181,12 +181,17 @@ actor EditTransaction {
     ///   album itself) → the user is editing the album's art: **replace** it.
     /// - Partial coverage (fixing one track of many) → fill a **missing**
     ///   album link only; never hijack deliberate album-level art.
-    private func linkAlbumArt(artData: Data, updates: [Track]) async {
+    /// Throws when the art cannot be cached: the user asked for this image, the
+    /// edit reported success, and swallowing the failure left the art nowhere
+    /// the album could show it (#481).
+    private func linkAlbumArt(artData: Data, updates: [Track]) async throws {
         let extracted = CoverArtExtractor.extract(from: [
             RawCoverArt(data: artData, mimeType: Self.mimeType(for: artData), pictureType: 3),
         ])
         // persist() is idempotent (content-hash keyed); reuse from step 7 is free.
-        guard let persisted = try? await self.coverArtCache.persist(extracted, source: "user") else { return }
+        let persisted = try await self.coverArtCache.persist(extracted, source: "user")
+        // nil means the bytes held no usable image, so there is nothing to link.
+        guard let persisted else { return }
 
         var touchedByAlbum: [Int64: Int] = [:]
         for track in updates {

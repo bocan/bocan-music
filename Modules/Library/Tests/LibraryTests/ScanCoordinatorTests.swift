@@ -37,6 +37,33 @@ private final class EventBox: @unchecked Sendable {
 struct ScanCoordinatorTests {
     // MARK: - Basic scan
 
+    @Test("a scan whose seed read fails stops and reports it, rather than treating the library as empty (#481)")
+    func scanSeedFailureStops() async throws {
+        let db = try await makeDB()
+        let coordinator = ScanCoordinator(database: db)
+        // The seed read fails the way a damaged database would.
+        try await db.write { db in
+            try db.execute(sql: "DROP TABLE tracks")
+        }
+
+        let box = EventBox()
+        try await coordinator.scan(roots: [(url: sampleLibraryURL, rootID: 1)], mode: .full) { box.append($0) }
+        let events = box.events
+
+        #expect(events.contains {
+            if case .error = $0 {
+                return true
+            }
+            return false
+        }, "a swallowed seed read leaves the scan looking successful")
+        #expect(!events.contains {
+            if case .processed = $0 {
+                return true
+            }
+            return false
+        }, "an empty seed would re-import every file and prune nothing")
+    }
+
     @Test("scan over empty root list emits started then finished")
     func scanEmptyRoots() async throws {
         let db = try await makeDB()

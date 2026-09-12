@@ -32,7 +32,9 @@ public actor PairingCoordinator {
     private let trusted: TrustedDevices
     private let ui: any PairingUIBridge
     private let serverName: @Sendable () -> String
-    private let serverId: @Sendable () async -> String
+    /// Throwing: a pairing that cannot read the server id fails instead of
+    /// handing the phone an empty one as this Mac's identity (#485).
+    private let serverId: @Sendable () async throws -> String
     private let now: @Sendable () -> Date
     private let timeout: TimeInterval
     private let log = AppLogger.make(.sync)
@@ -47,7 +49,7 @@ public actor PairingCoordinator {
         trusted: TrustedDevices,
         ui: any PairingUIBridge,
         serverName: @escaping @Sendable () -> String,
-        serverId: @escaping @Sendable () async -> String,
+        serverId: @escaping @Sendable () async throws -> String,
         timeout: TimeInterval = 120,
         now: @escaping @Sendable () -> Date = Date.init
     ) {
@@ -184,8 +186,10 @@ public actor PairingCoordinator {
             deviceName: session.deviceName,
             pairedAt: self.now().timeIntervalSince1970
         )
+        // Before trusting: a pairing that cannot name this Mac must leave no
+        // half-paired device behind (#485).
+        let serverId = try await self.serverId()
         try await self.trusted.trust(device)
-        let serverId = await self.serverId()
         let deviceName = session.deviceName
         await self.finish(.paired(deviceName: deviceName))
         self.log.debug("pairing.confirmed")

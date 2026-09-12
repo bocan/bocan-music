@@ -15,8 +15,20 @@ enum ManifestRoutes {
     ) -> [Router.Route] {
         [
             Router.Route("GET", "/v1/ping", auth: .anyTLS) { _, _ in
-                let serverId = await (try? syncMeta.serverId()) ?? ""
-                let generation = await (try? syncMeta.generation()) ?? 0
+                // A ping that cannot read the identity answers 500. Answering
+                // 200 with an empty id and generation 0 tells the phone it is
+                // talking to a different Mac that has never changed (#485).
+                let serverId: String
+                let generation: Int
+                do {
+                    serverId = try await syncMeta.serverId()
+                    generation = try await syncMeta.generation()
+                } catch {
+                    AppLogger.make(.sync).error("sync.ping.identityUnavailable", [
+                        "error": String(reflecting: error),
+                    ])
+                    return .error(.internal, message: "Server identity unavailable", status: 500)
+                }
                 let escaped = serverId
                     .replacingOccurrences(of: "\\", with: "\\\\")
                     .replacingOccurrences(of: "\"", with: "\\\"")

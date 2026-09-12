@@ -147,7 +147,14 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     }
 
     public func disconnectLastFm() async {
-        try? await self.credentials.clearLastFmSession()
+        do {
+            try await self.credentials.clearLastFmSession()
+        } catch {
+            // The credentials are still in the Keychain, so the refresh below
+            // shows the account as connected: say why (#480).
+            self.log.error("scrobble.lastfm.disconnect.failed", ["error": String(reflecting: error)])
+            self.lastFmAuthError = self.message(for: error)
+        }
         await self.refreshConnectionState()
     }
 
@@ -170,7 +177,12 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     }
 
     public func disconnectListenBrainz() async {
-        try? await self.credentials.clearListenBrainz()
+        do {
+            try await self.credentials.clearListenBrainz()
+        } catch {
+            self.log.error("scrobble.listenbrainz.disconnect.failed", ["error": String(reflecting: error)])
+            self.listenBrainzTokenError = self.message(for: error)
+        }
         await self.refreshConnectionState()
     }
 
@@ -188,7 +200,12 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
     }
 
     public func disconnectRocksky() async {
-        try? await self.credentials.clearRocksky()
+        do {
+            try await self.credentials.clearRocksky()
+        } catch {
+            self.log.error("scrobble.rocksky.disconnect.failed", ["error": String(reflecting: error)])
+            self.rockskyConnectError = self.message(for: error)
+        }
         await self.refreshConnectionState()
     }
 
