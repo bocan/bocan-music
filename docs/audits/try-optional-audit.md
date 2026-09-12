@@ -101,9 +101,13 @@ A small helper would make the (b) shape a one-liner and keep the log keys unifor
 func logged<T>(_ event: String, _ log: AppLogger, _ context: [String: Any] = [:], _ body: () async throws -> T) async -> T?
 ```
 
-## Enforcement (not built yet)
+## Enforcement (built)
 
-The same mechanism as the help-text audit: `Scripts/audit-try-optional.py` walks `Modules/*/Sources` and `App`, matches every `try?` against the pattern allowlist and the per-site allowlist, and fails on any site outside both. It starts in `--warn` mode from `make lint` with the 190 non-idiom sites listed, and flips to strict per module as that module's fix PR lands. The generator behind this report already does the matching; it needs the allowlist file split out of it.
+The same mechanism as the help-text audit. `Scripts/audit-try-optional.py` walks `Modules/*/Sources` and `App`, matches every `try?` first against six idiom patterns and then against the per-site allowlist, and fails on any site outside both. `make lint` runs it **strict**, not in `--warn` mode: the per-module fix PRs all landed before the script did, so there was never a rollout window to stage.
+
+The six patterns cover the families that carry no information the app can act on: a cancellation-only `Task.sleep`; a file-handle close; remove-if-present and directory pre-creation; a file-attribute or directory-listing read with a fallback; a documented-contract `Codable` encode or decode; a best-effort file read with a fallback. Between them they clear 118 of the 135 surviving sites.
+
+The remaining 17 sit in `Scripts/audit-try-optional-allowlist.txt`, each with a reason on its line, keyed `<relative-path>|<normalized line>` so ordinary edits do not churn the file. The script prints a note when an entry goes stale, and `--keys` emits paste-ready lines for anything currently failing. `Scripts/tests/audit-try-optional-test.sh` covers it against a fixture tree (`make test-scripts`, and CI runs it on Linux).
 
 ## Fix order
 
@@ -114,6 +118,8 @@ As the issue says, one PR per module, biggest first. Suggested cut, so each PR i
 3. Library (62), mostly repository reads in the scanner, the editor and lyrics.
 4. Playback, App, Podcasts, Scrobble, AudioEngine, SyncServer (46 between them).
 5. The audit script, strict, once the allowlist is the only thing left.
+
+**Status: done.** The 25 (c) sites landed as #480 to #485. The 165 (b) sites landed as one commit per module on `fix/459-quiet-recoveries` (#491 to #498), every fallback value preserved, each one now logging why it was needed. Two catch blocks that held only a comment turned up along the way, in SyncServer and the App layer, plus three more in UI: the same defect, invisible to a search for `try?`, which is why the 165 was a floor rather than a count. The script and its allowlist close the loop.
 
 ## Appendix: every site
 

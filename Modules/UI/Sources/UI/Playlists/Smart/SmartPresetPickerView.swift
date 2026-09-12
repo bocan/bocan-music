@@ -1,4 +1,5 @@
 import Library
+import Observability
 import Persistence
 import SwiftUI
 
@@ -58,13 +59,20 @@ struct SmartPresetPickerView: View {
                 let playlists = try await self.service.listAll()
                 var resolved: [SmartPlaylist] = []
                 for playlist in playlists where playlist.smartPresetKey != nil {
-                    if let sp = try? await self.service.resolve(id: playlist.id ?? -1) {
+                    if let sp = await recoveredRead("smartPresets.resolve.failed", {
+                        try await self.service.resolve(id: playlist.id ?? -1)
+                    }) {
                         resolved.append(sp)
                     }
                 }
                 self.presets = resolved
             } catch {
-                // Non-fatal: show empty state
+                // The picker shows its empty state, which reads as "no presets
+                // exist". Same fault as the resolve above and invisible to a
+                // `try?` search (#491).
+                AppLogger.make(.ui).warning("smartPresets.list.failed", [
+                    "error": String(reflecting: error),
+                ])
             }
             self.isLoading = false
         }

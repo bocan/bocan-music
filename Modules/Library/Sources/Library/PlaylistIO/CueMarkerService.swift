@@ -92,8 +92,19 @@ public struct CueMarkerService: Sendable {
                 continue
             }
             let canonical = audioURL.absoluteString.precomposedStringWithCanonicalMapping
-            guard let track = try? await self.trackRepo.fetchOne(fileURL: canonical),
-                  let trackID = track.id else {
+            let track: Track?
+            do {
+                track = try await self.trackRepo.fetchOne(fileURL: canonical)
+            } catch {
+                // Distinct from "not indexed" below: the cue is skipped
+                // because the read failed, not because the audio is new (#492).
+                self.log.warning("cue.markers.lookupFailed", [
+                    "audio": audioURL.lastPathComponent,
+                    "error": String(reflecting: error),
+                ])
+                continue
+            }
+            guard let trackID = track?.id else {
                 self.log.debug("cue.markers.notIndexed", ["audio": audioURL.lastPathComponent])
                 continue
             }
@@ -129,10 +140,30 @@ public struct CueMarkerService: Sendable {
     /// the common case (no markers) costs no write.
     private func clearMarkers(forAudioAt audioURL: URL) async {
         let canonical = audioURL.absoluteString.precomposedStringWithCanonicalMapping
-        guard let track = try? await self.trackRepo.fetchOne(fileURL: canonical),
-              let trackID = track.id,
-              let existing = try? await self.markerRepo.markers(forTrack: trackID),
-              !existing.isEmpty else { return }
+        let trackID: Int64?
+        do {
+            trackID = try await self.trackRepo.fetchOne(fileURL: canonical)?.id
+        } catch {
+            // The markers stay on a track whose cue no longer describes
+            // them, which is the fault this clear exists to prevent (#492).
+            self.log.warning("cue.markers.clearLookupFailed", [
+                "audio": audioURL.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return
+        }
+        guard let trackID else { return }
+        let existing: [TrackMarker]
+        do {
+            existing = try await self.markerRepo.markers(forTrack: trackID)
+        } catch {
+            self.log.warning("cue.markers.readFailed", [
+                "track": trackID,
+                "error": String(reflecting: error),
+            ])
+            return
+        }
+        guard !existing.isEmpty else { return }
         do {
             try await self.markerRepo.replaceMarkers(forTrack: trackID, with: [])
             self.log.debug("cue.markers.cleared", ["audio": audioURL.lastPathComponent])

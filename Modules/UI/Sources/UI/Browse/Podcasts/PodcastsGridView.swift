@@ -1,3 +1,4 @@
+import Observability
 import Persistence
 import SwiftUI
 
@@ -112,7 +113,13 @@ struct PodcastsGridView: View {
                     do {
                         try await self.library.podcastActions?.refresh(podcastID: id)
                     } catch {
-                        // Toast or silent log; errors are handled by the service.
+                        // The user chose Refresh and nothing changes. The
+                        // service does not surface this either, so without the
+                        // log the failure leaves no trace at all (#491).
+                        AppLogger.make(.ui).warning("podcasts.refresh.failed", [
+                            "id": id,
+                            "error": String(reflecting: error),
+                        ])
                     }
                 }
             }

@@ -279,7 +279,9 @@ public struct ArtistDetailView: View {
 
     private func openInspector(forAlbumID id: Int64) async {
         let repo = TrackRepository(database: self.library.database)
-        guard let tracks = try? await repo.fetchAll(albumID: id) else { return }
+        guard let tracks = await recoveredRead("artistDetail.openInspector.failed", {
+            try await repo.fetchAll(albumID: id)
+        }) else { return }
         await MainActor.run {
             self.library.showTagEditor(tracks: tracks, albumID: id)
         }
@@ -290,11 +292,15 @@ public struct ArtistDetailView: View {
     private func load() async {
         // Fetch albums by track artist (not album artist) so compilation appearances
         // show up — e.g. "A Day to Remember" on "Various Artists" compilation albums.
-        async let albumsFetch: [Album] = await (try? AlbumRepository(
-            database: self.library.database
-        ).fetchAll(trackArtistID: self.artistID)) ?? []
-        async let artistFetch = try? await ArtistRepository(database: self.library.database).fetch(id: self.artistID)
-        async let trackCountsFetch = try? await AlbumRepository(database: self.library.database).fetchTrackCounts()
+        async let albumsFetch: [Album] = await recoveredRead("artistDetail.albums.failed") {
+            try await AlbumRepository(database: self.library.database).fetchAll(trackArtistID: self.artistID)
+        } ?? []
+        async let artistFetch = recoveredRead("artistDetail.artist.failed") {
+            try await ArtistRepository(database: self.library.database).fetch(id: self.artistID)
+        }
+        async let trackCountsFetch = recoveredRead("artistDetail.trackCounts.failed") {
+            try await AlbumRepository(database: self.library.database).fetchTrackCounts()
+        }
         // Load tracks via the shared TracksViewModel so TracksView gets full column data,
         // context menus, drag-to-playlist, sorting, and selection for free.
         async let trackLoad: Void = self.library.tracks.load(artistID: self.artistID)

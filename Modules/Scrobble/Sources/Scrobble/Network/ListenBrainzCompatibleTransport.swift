@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 
 // MARK: - ListenBrainzCompatibleTransport
 
@@ -17,6 +18,9 @@ import Foundation
 struct ListenBrainzCompatibleTransport {
     let http: HTTPClient
     let endpoint: URL
+    /// Providers own their method-level logging, but a body this layer cannot
+    /// parse is invisible to them: the reply reaches the provider as `[:]`.
+    private let log = AppLogger.make(.scrobble)
 
     // MARK: Payload
 
@@ -84,7 +88,19 @@ struct ListenBrainzCompatibleTransport {
         let retryAfter = http?.value(forHTTPHeaderField: "Retry-After").flatMap(TimeInterval.init)
 
         if status >= 200, status < 300 {
-            return (try? JSONSerialization.jsonObject(with: data) as? [String: Any]) ?? [:]
+            do {
+                return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+            } catch {
+                // The submission counts as accepted and the empty reply hides
+                // anything the service said about it (#496).
+                self.log.warning("scrobble.transport.responseDecodeFailed", [
+                    "provider": providerID,
+                    "status": status,
+                    "bytes": data.count,
+                    "error": String(reflecting: error),
+                ])
+                return [:]
+            }
         }
         switch status {
         case 401, 403:

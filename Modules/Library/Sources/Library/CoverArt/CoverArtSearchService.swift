@@ -61,7 +61,19 @@ public actor CoverArtSearchService: CoverArtFetcher {
         var candidates: [CoverArtCandidate] = []
         for group in groups.prefix(5) {
             try Task.checkCancellation()
-            if let index = try? await self.caaClient.index(releaseGroupID: group.id) {
+            let index: CAAIndex?
+            do {
+                index = try await self.caaClient.index(releaseGroupID: group.id)
+            } catch {
+                // One group failing does not sink the search, but a run of
+                // these is why a cover search comes back empty (#492).
+                self.log.debug("coverart.caaIndex.failed", [
+                    "group": group.id,
+                    "error": String(reflecting: error),
+                ])
+                index = nil
+            }
+            if let index {
                 let frontImages = index.images.filter(\.front)
                 for img in frontImages.prefix(1) {
                     guard let thumbURL = img.thumbnailURL, let fullURL = img.imageURL else { continue }
@@ -111,6 +123,7 @@ public actor CoverArtSearchService: CoverArtFetcher {
 /// main cover art cache so it can be evicted independently.
 private actor FetchThumbnailCache {
     private let cacheDir: URL
+    private let log = AppLogger.make(.library)
 
     init() {
         self.cacheDir = FileManager.default
@@ -127,7 +140,15 @@ private actor FetchThumbnailCache {
 
     func save(data: Data, key: String) {
         let url = self.cacheDir.appendingPathComponent(key.sha256Hex + ".bin")
-        try? data.write(to: url, options: .atomic)
+        do {
+            try data.write(to: url, options: .atomic)
+        } catch {
+            // Not fatal, but every later search re-downloads this thumbnail (#492).
+            self.log.debug("coverart.thumbnailCache.writeFailed", [
+                "key": key,
+                "error": String(reflecting: error),
+            ])
+        }
     }
 }
 

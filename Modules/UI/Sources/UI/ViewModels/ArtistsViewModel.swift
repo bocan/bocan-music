@@ -76,6 +76,28 @@ public final class ArtistsViewModel: ObservableObject {
         self.scope = rawScope.flatMap(ArtistScope.init(rawValue:)) ?? .allArtists
     }
 
+    // MARK: - Recovered side lookups
+
+    /// Runs one of ``load()``'s side lookups, recovering to `fallback` when it
+    /// throws. The list then keeps its artists and loses counts, cover art or
+    /// the scope filter, which is the right recovery; what it must not do is
+    /// happen silently (#491).
+    ///
+    /// `nonisolated` so the `async let` callers still run off the main actor
+    /// rather than hopping back here and serialising the four reads.
+    private nonisolated func recovered<T: Sendable>(
+        _ event: String,
+        fallback: T,
+        _ fetch: @Sendable () async throws -> T
+    ) async -> T {
+        do {
+            return try await fetch()
+        } catch {
+            self.log.warning(event, ["error": String(reflecting: error)])
+            return fallback
+        }
+    }
+
     // MARK: - Public API
 
     /// Loads all artists, sorted by the current ``sortOrder``.
@@ -84,17 +106,25 @@ public final class ArtistsViewModel: ObservableObject {
         self.log.debug("artists.load.start", [:])
         do {
             async let artistsFetch = self.repository.fetchAll()
-            async let albumCountsFetch = self.repository.fetchAlbumCounts()
-            async let trackCountsFetch = self.repository.fetchTrackCounts()
-            async let coverPathsFetch = self.albumRepository.fetchCoverArtPathsByArtist()
-            async let albumArtistIDsFetch = self.repository.fetchAlbumArtistIDs()
+            async let albumCountsFetch = self.recovered("artists.albumCounts.failed", fallback: [:]) {
+                try await self.repository.fetchAlbumCounts()
+            }
+            async let trackCountsFetch = self.recovered("artists.trackCounts.failed", fallback: [:]) {
+                try await self.repository.fetchTrackCounts()
+            }
+            async let coverPathsFetch = self.recovered("artists.coverArtPaths.failed", fallback: [:]) {
+                try await self.albumRepository.fetchCoverArtPathsByArtist()
+            }
+            async let albumArtistIDsFetch = self.recovered("artists.albumArtistIDs.failed", fallback: []) {
+                try await self.repository.fetchAlbumArtistIDs()
+            }
             let fetched = try await artistsFetch
             // Counts and album-artist IDs first: the count-based sorts and the
             // scope filter read them.
-            self.albumCounts = await (try? albumCountsFetch) ?? [:]
-            self.trackCounts = await (try? trackCountsFetch) ?? [:]
-            self.coverArtPaths = await (try? coverPathsFetch) ?? [:]
-            self.albumArtistIDs = await (try? albumArtistIDsFetch) ?? []
+            self.albumCounts = await albumCountsFetch
+            self.trackCounts = await trackCountsFetch
+            self.coverArtPaths = await coverPathsFetch
+            self.albumArtistIDs = await albumArtistIDsFetch
             self.baseArtists = fetched
             self.artists = self.sortedArtists(self.visibleArtists(fetched))
             self.log.debug("artists.load.end", ["count": self.artists.count])

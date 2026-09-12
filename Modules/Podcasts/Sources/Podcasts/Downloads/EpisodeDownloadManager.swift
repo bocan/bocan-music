@@ -100,20 +100,34 @@ public actor EpisodeDownloadManager {
 
         let wasPaused = self.paused.remove(key) != nil
 
-        if !wasPaused,
-           let state = try? await stateRepo.fetch(podcastID: podcastID, guid: guid),
-           state.downloadState == .downloaded,
-           let path = state.downloadPath,
-           FileManager.default.fileExists(atPath: path) {
-            return
+        if !wasPaused {
+            let state = await self.storedState(podcastID: podcastID, guid: guid)
+            if let state,
+               state.downloadState == .downloaded,
+               let path = state.downloadPath,
+               FileManager.default.fileExists(atPath: path) {
+                return
+            }
         }
 
         if self.episodes[key] == nil {
-            guard let episode = try? await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid) else {
-                self.log.warning("download.enqueue.unknownEpisode", ["podcastID": podcastID, "guid": guid])
+            do {
+                guard let episode = try await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid) else {
+                    self.log.warning("download.enqueue.unknownEpisode", ["podcastID": podcastID, "guid": guid])
+                    return
+                }
+                self.episodes[key] = episode
+            } catch {
+                // Kept apart from "unknown episode" above: the row may well
+                // exist, and reporting a database fault as a missing episode
+                // sends anyone reading the log the wrong way (#495).
+                self.log.warning("download.enqueue.episodeReadFailed", [
+                    "podcastID": podcastID,
+                    "guid": guid,
+                    "error": String(reflecting: error),
+                ])
                 return
             }
-            self.episodes[key] = episode
         }
 
         self.pending.append(key)
@@ -165,11 +179,47 @@ public actor EpisodeDownloadManager {
         }
     }
 
+    // MARK: - Recovered state reads
+
+    /// The stored state row for one episode, or nil when there is none.
+    ///
+    /// A failed read also yields nil, and every caller reads that as "not
+    /// downloaded", so a database fault makes the manager fetch an episode it
+    /// may already hold. The recovery is the right one; it must not be silent
+    /// (`docs/audits/try-optional-audit.md`, class (b), #495).
+    private func storedState(podcastID: Int64, guid: String) async -> PodcastEpisodeState? {
+        do {
+            return try await self.stateRepo.fetch(podcastID: podcastID, guid: guid)
+        } catch {
+            self.log.warning("download.stateReadFailed", [
+                "podcastID": podcastID,
+                "guid": guid,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
+
+    /// Episode state rows in the given download states, empty on a failed read.
+    ///
+    /// The storage total, the clear-all sweep, the eviction budget and the
+    /// auto-delete policy are all decided from this list. An empty result reads
+    /// as "nothing is downloaded", so each of them quietly does nothing and
+    /// reports success (#495).
+    private func downloadRows(in states: [EpisodeDownloadState], op: String) async -> [PodcastEpisodeState] {
+        do {
+            return try await self.stateRepo.fetchByDownloadState(states)
+        } catch {
+            self.log.warning("download.stateQueryFailed", ["op": op, "error": String(reflecting: error)])
+            return []
+        }
+    }
+
     // MARK: - Storage management
 
     /// Total bytes of all downloaded episodes, summed from their recorded sizes.
     public func totalBytesOnDisk() async -> Int64 {
-        let rows = await (try? self.stateRepo.fetchByDownloadState([.downloaded])) ?? []
+        let rows = await self.downloadRows(in: [.downloaded], op: "totalBytesOnDisk")
         return rows.reduce(0) { $0 + ($1.downloadBytes ?? 0) }
     }
 
@@ -185,9 +235,10 @@ public actor EpisodeDownloadManager {
         self.resumeData.removeAll()
         self.episodes.removeAll()
 
-        let rows = await (try? self.stateRepo.fetchByDownloadState(
-            [.downloaded, .downloading, .queued, .failed]
-        )) ?? []
+        let rows = await self.downloadRows(
+            in: [.downloaded, .downloading, .queued, .failed],
+            op: "clearAll"
+        )
         for row in rows {
             let key = Key(podcastID: row.podcastID, guid: row.guid)
             await self.persist(key, .none, path: nil, bytes: nil)
@@ -201,7 +252,7 @@ public actor EpisodeDownloadManager {
     /// bytes are at or under `maxBytes`. Never evicts an unplayed or in-progress
     /// download (the user's queued listening). A no-op when already under budget.
     public func enforceStorageBudget(maxBytes: Int64) async {
-        let rows = await (try? self.stateRepo.fetchByDownloadState([.downloaded])) ?? []
+        let rows = await self.downloadRows(in: [.downloaded], op: "enforceStorageBudget")
         var total = rows.reduce(Int64(0)) { $0 + ($1.downloadBytes ?? 0) }
         guard total > maxBytes else { return }
 
@@ -226,7 +277,7 @@ public actor EpisodeDownloadManager {
     public func deletePlayedDownloads(olderThanDays days: Int, now: Date = Date()) async {
         guard days >= 0 else { return }
         let cutoff = now.timeIntervalSince1970 - Double(days) * 86400
-        let rows = await (try? self.stateRepo.fetchByDownloadState([.downloaded])) ?? []
+        let rows = await self.downloadRows(in: [.downloaded], op: "deletePlayedDownloads")
         for row in rows where row.playState == .played {
             if Self.evictionAge(row) <= cutoff {
                 await self.evict(row)
@@ -365,7 +416,7 @@ public actor EpisodeDownloadManager {
         self.resumeData[key] = nil
 
         let mime = self.episodes[key]?.audioMIME
-        if let state = try? await stateRepo.fetch(podcastID: podcastID, guid: guid),
+        if let state = await self.storedState(podcastID: podcastID, guid: guid),
            let path = state.downloadPath {
             self.store.deleteFile(atPath: path)
         } else {

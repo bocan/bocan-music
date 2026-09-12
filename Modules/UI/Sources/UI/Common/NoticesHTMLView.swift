@@ -1,3 +1,4 @@
+import Observability
 import SwiftUI
 import WebKit
 
@@ -18,10 +19,19 @@ public struct NoticesHTMLView: View {
     // MARK: - Private
 
     private func loadContent() {
-        guard
-            let url = Bundle.main.url(forResource: "NOTICES", withExtension: "md"),
-            let raw = try? String(contentsOf: url, encoding: .utf8) else { return }
-        self.html = NoticesRenderer.html(from: raw)
+        // Both failures here are packaging bugs, not user conditions: the file
+        // is shipped in the bundle. A blank Notices pane is the only symptom,
+        // so it has to say which of the two happened (#491).
+        guard let url = Bundle.main.url(forResource: "NOTICES", withExtension: "md") else {
+            AppLogger.make(.ui).warning("notices.resource.missing")
+            return
+        }
+        do {
+            let raw = try String(contentsOf: url, encoding: .utf8)
+            self.html = NoticesRenderer.html(from: raw)
+        } catch {
+            AppLogger.make(.ui).warning("notices.read.failed", ["error": String(reflecting: error)])
+        }
     }
 }
 

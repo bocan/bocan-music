@@ -15,7 +15,14 @@ public extension LibraryViewModel {
         let end = Telemetry.timer("ui.refreshRoots")
         defer { end() }
         guard let scanner else { return }
-        self.libraryRoots = await (try? scanner.roots()) ?? []
+        do {
+            self.libraryRoots = try await scanner.roots()
+        } catch {
+            // An empty sidebar and a library with no folders look identical, so
+            // the failure has to say so somewhere (#491).
+            self.log.warning("library.roots.failed", ["error": String(reflecting: error)])
+            self.libraryRoots = []
+        }
     }
 
     /// Opens an NSOpenPanel for the user to pick one or more folders.
@@ -281,7 +288,16 @@ public extension LibraryViewModel {
             // which never populate `tracks.rows` (those detail views self-load),
             // so the overlay covered already-populated content during the
             // routine startup rescan.
-            let trackCount = await (try? TrackRepository(database: self.database).count()) ?? 0
+            let trackCount: Int
+            do {
+                trackCount = try await TrackRepository(database: self.database).count()
+            } catch {
+                // A failed count reads as an empty library, which flips the
+                // heuristic the wrong way and covers populated content with the
+                // full-screen overlay (#491).
+                self.log.warning("scan.trackCount.failed", ["error": String(reflecting: error)])
+                trackCount = 0
+            }
             self.isInitialScan = trackCount == 0
             let stream = await scanner.scan(mode: mode)
             for await event in stream {

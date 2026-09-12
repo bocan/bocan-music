@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 
 /// The complete DSP configuration snapshot.
 ///
@@ -30,13 +31,25 @@ public struct DSPState: Sendable, Codable, Hashable {
     // MARK: - UserDefaults persistence
 
     private static let defaultsKey = "io.cloudcauldron.bocan.dspState"
+    private static let log = AppLogger.make(.audio)
 
+    /// The saved configuration, or the defaults when nothing is stored.
+    ///
+    /// A stored blob that will not decode also yields the defaults, which
+    /// silently resets the user's equaliser, crossfade and ReplayGain
+    /// settings. That is recoverable but not invisible: the decode failure is
+    /// logged so the reset has an explanation (#497).
     public static func load(from defaults: UserDefaults = .standard) -> Self {
-        guard let data = defaults.data(forKey: defaultsKey),
-              let state = try? JSONDecoder().decode(Self.self, from: data) else {
+        guard let data = defaults.data(forKey: defaultsKey) else { return Self() }
+        do {
+            return try JSONDecoder().decode(Self.self, from: data)
+        } catch {
+            self.log.warning("dsp.state.decode_failed", [
+                "bytes": data.count,
+                "error": String(reflecting: error),
+            ])
             return Self()
         }
-        return state
     }
 
     public func save(to defaults: UserDefaults = .standard) {

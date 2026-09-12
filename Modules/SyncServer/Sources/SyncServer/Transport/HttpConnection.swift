@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import Observability
 import Security
 
 /// Drives one accepted `NWConnection`: after the TLS handshake it records the
@@ -15,6 +16,7 @@ actor HttpConnection {
     private let pairingMode: @Sendable () -> Bool
     private let isTrusted: @Sendable (String) -> Bool
     private var parser = HttpRequestParser()
+    private let log = AppLogger.make(.sync)
 
     init(
         connection: NWConnection,
@@ -138,7 +140,17 @@ actor HttpConnection {
         if let stream = response.stream {
             await self.sendStreamed(response, stream: stream)
         } else {
-            try? await self.rawSend(response.serialized())
+            do {
+                try await self.rawSend(response.serialized())
+            } catch {
+                // Usually the phone closed the connection first, which is
+                // ordinary, so this is debug: enough to explain a reply the
+                // phone says it never received (#498).
+                self.log.debug("sync.http.sendFailed", [
+                    "status": response.status,
+                    "error": String(reflecting: error),
+                ])
+            }
         }
     }
 
@@ -153,8 +165,15 @@ actor HttpConnection {
                 try await self.rawSend(chunk)
             }
         } catch {
-            // The client disconnected or the file read failed; the read loop will
-            // observe the closed connection and tear down.
+            // The client disconnected or the file read failed; the read loop
+            // will observe the closed connection and tear down. Same fault as
+            // the buffered path above, and the one a `try?` search cannot see:
+            // a half-sent file otherwise leaves nothing behind (#498).
+            self.log.debug("sync.http.streamFailed", [
+                "status": response.status,
+                "length": stream.length,
+                "error": String(reflecting: error),
+            ])
         }
     }
 

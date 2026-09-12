@@ -166,7 +166,19 @@ public actor FingerprintService {
 
             // Try to enrich with full MusicBrainz data for confident matches.
             if result.score >= 0.5 {
-                if let mbRecording = try? await self.mbClient.fetchRecording(mbid: recording.id) {
+                let mbRecording: MBRecording?
+                do {
+                    mbRecording = try await self.mbClient.fetchRecording(mbid: recording.id)
+                } catch {
+                    // The candidate still appears, with the AcoustID data
+                    // alone; the missing detail has a reason now (#492).
+                    self.log.debug("identify.enrich.failed", [
+                        "mbid": recording.id,
+                        "error": String(reflecting: error),
+                    ])
+                    mbRecording = nil
+                }
+                if let mbRecording {
                     let ranked = Self.rankReleases(mbRecording.releases ?? [])
                     let best = ranked.first
                     let bestOption = best.map(Self.releaseOption(from:))

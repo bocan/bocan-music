@@ -263,10 +263,19 @@ public final class LyricsViewModel: ObservableObject {
         // Resolve any stored lyrics up front so the sheet opens with data already
         // in hand, rather than racing the async observation on first appearance.
         Task {
-            if let resolved = try? await self.service.lyricsWithSource(for: trackID),
-               self.currentTrackID == trackID {
-                self.document = resolved.0
-                self.documentSource = resolved.1
+            do {
+                let resolved = try await self.service.lyricsWithSource(for: trackID)
+                if self.currentTrackID == trackID {
+                    self.document = resolved.0
+                    self.documentSource = resolved.1
+                }
+            } catch {
+                // The editor opens empty, which reads as a track with no stored
+                // lyrics rather than lyrics that could not be read (#491).
+                self.log.warning("lyrics.editor.storedLoad.failed", [
+                    "trackID": trackID,
+                    "error": String(reflecting: error),
+                ])
             }
             self.isEditorPresented = true
         }
@@ -329,7 +338,18 @@ public final class LyricsViewModel: ObservableObject {
     private func loadOffset(trackID: Int64) {
         self.offsetLoadTask = Task { [weak self] in
             guard let self else { return }
-            let stored = await (try? self.service.userOffsetMS(for: trackID)) ?? 0
+            let stored: Int
+            do {
+                stored = try await self.service.userOffsetMS(for: trackID)
+            } catch {
+                // The slider resets to zero, silently discarding the offset the
+                // user saved for this track (#491).
+                self.log.warning("lyrics.offsetLoad.failed", [
+                    "trackID": trackID,
+                    "error": String(reflecting: error),
+                ])
+                stored = 0
+            }
             await MainActor.run {
                 guard self.currentTrackID == trackID, !Task.isCancelled else { return }
                 self.persistedOffsetMS = stored

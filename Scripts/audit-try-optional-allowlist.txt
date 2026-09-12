@@ -1,0 +1,45 @@
+# try? audit allowlist (#459). One entry per line, keyed as
+# "<relative-path>|<normalized line>", each with a trailing reason. These are
+# the class (a) sites that no idiom pattern in Scripts/audit-try-optional.py
+# covers: the failure carries nothing the app can act on, or the fallback is
+# the documented contract. Reasons are lifted from the audit's per-site
+# appendix in docs/audits/try-optional-audit.md.
+#
+# Line numbers are deliberately not part of the key, so ordinary edits do not
+# churn this file; whitespace is normalized for the same reason. The audit
+# prints a note when an entry goes stale. Keep this list short enough to read
+# in one sitting: a long allowlist is how the old rule died.
+
+# Scanner and importer paths that deliberately fail safe. In each case the
+# error and the absent value lead to the same, more conservative, action.
+Modules/Library/Sources/Library/LibraryScanner.swift|guard let track = try? await trackRepo.fetchOne(fileURL: url.absoluteString),  # conservative: an unreadable row or file is treated as changed
+Modules/Library/Sources/Library/PlaylistIO/CueMarkerService.swift|let sheet = try? CUESheetReader.parse(data: data, sourceURL: url) else { return false }  # conservative: unreadable cue reports targets missing
+Modules/Library/Sources/Library/PlaylistIO/PlaylistImportService.swift|guard let roots = try? await libraryRoots.fetchAll() else { return unreadable }  # conservative: the unreadable list is returned unchanged
+
+# Contract-defined fallbacks in Persistence.
+Modules/Persistence/Sources/Persistence/Database.swift|guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else {  # invalid user regex matches nothing, by contract
+Modules/Persistence/Sources/Persistence/Internal/BookmarkBlob.swift|_ = try? URL(  # staleness probe by contract
+
+# Podcasts: a documented retry, and a URL used only to word an error message.
+Modules/Podcasts/Sources/Podcasts/FeedParser.swift|if let stripped = Self.feedDataWithStrippedProlog(data), let retried = try? Feed(data: stripped) {  # documented retry; the original error is what gets reported
+Modules/Podcasts/Sources/Podcasts/PodcastService.swift|let feedURL = await (try? self.podcastRepo.fetch(id: podcastID)).flatMap { URL(string: $0.feedURL) }  # fallback URL for an error message
+
+# Per-cell artwork in a table: the placeholder is the recovery, and a log line
+# per visible cell would flood the console on every scroll.
+Modules/UI/Sources/UI/Browse/Subsonic/SubsonicSongTableCells.swift|guard let url = try? await provider.coverArtURL(  # per-cell art; placeholder shown, a log per cell would flood
+Modules/UI/Sources/UI/Browse/Subsonic/SubsonicSongTableCells.swift|guard let (data, _) = try? await URLSession.shared.data(from: url),  # per-cell art; placeholder shown, a log per cell would flood
+
+# Surfaces that already show the failure to the person looking at them.
+Modules/UI/Sources/UI/Settings/DiagnosticsSettingsView.swift|self.expandedContent = (try? String(contentsOf: url, encoding: .utf8))  # fallback text '(unreadable)' is shown to the user
+Modules/UI/Sources/UI/Settings/SubsonicSettingsViewModel.swift|_ = try? await self.service.ping(serverID: server.id)  # result intentionally discarded; the monitor's wakeAll reports status
+
+# Cosmetic: the notification still posts, just without its artwork.
+Modules/UI/Sources/UI/ViewModels/NowPlayingViewModel.swift|if (try? FileManager.default.copyItem(at: sourceURL, to: tempURL)) != nil,  # cosmetic: the notification posts without artwork
+Modules/UI/Sources/UI/ViewModels/NowPlayingViewModel.swift|let attachment = try? UNNotificationAttachment(identifier: "artwork", url: tempURL) {  # cosmetic: the notification posts without artwork
+
+# App layer: a fallback path, the DEBUG-only transport window, and a quit-time
+# best effort that is already bounded by its own wait.
+App/BocanApp.swift|let cachesRoot = (try? FileManager.default.url(  # caches directory lookup with a fallback path
+App/DebugAudioView.swift|Button("Play") { Task { try? await self.engine.play() } }  # debug or test tooling
+App/DebugAudioView.swift|Task { try? await self.engine.seek(to: self.positionSec) }  # debug or test tooling
+App/Lifecycle.swift|_ = try? await database.vacuum()  # documented best effort at quit, bounded by a 2 s wait

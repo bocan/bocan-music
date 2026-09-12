@@ -76,9 +76,16 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
     }
 
     func availablePlaylists() async -> [PhoneSyncPlaylist] {
-        let all = await (try? self.playlistRepository.fetchAll()) ?? []
-        return all.compactMap { playlist in
-            playlist.id.map { PhoneSyncPlaylist(id: $0, name: playlist.name) }
+        do {
+            let all = try await self.playlistRepository.fetchAll()
+            return all.compactMap { playlist in
+                playlist.id.map { PhoneSyncPlaylist(id: $0, name: playlist.name) }
+            }
+        } catch {
+            // The phone sync setup pane offers nothing to pick, which reads as
+            // a library with no playlists at all (#493).
+            self.log.warning("sync.playlists.readFailed", ["error": String(reflecting: error)])
+            return []
         }
     }
 
@@ -97,7 +104,14 @@ final class PhoneSyncController: PhoneSyncControlling, @unchecked Sendable {
     }
 
     func pairedDevices() async -> [TrustedDevice] {
-        await (try? self.server.pairedDevices()) ?? []
+        do {
+            return try await self.server.pairedDevices()
+        } catch {
+            // An empty list reads as "no phone is paired", which would send the
+            // user off to pair a device that is already trusted (#493).
+            self.log.warning("sync.pairedDevices.readFailed", ["error": String(reflecting: error)])
+            return []
+        }
     }
 
     func observeHashingProgress() async -> AsyncThrowingStream<ContentHashProgress, Error> {

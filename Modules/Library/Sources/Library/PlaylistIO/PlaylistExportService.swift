@@ -7,6 +7,8 @@ import Persistence
 public actor PlaylistExportService {
     private let database: Persistence.Database
     private let log = AppLogger.make(.library)
+    /// `makeEntry` is static, so it needs its own handle.
+    private static let log = AppLogger.make(.library)
 
     public init(database: Persistence.Database) {
         self.database = database
@@ -102,15 +104,37 @@ public actor PlaylistExportService {
             }
             return URL(fileURLWithPath: track.fileURL)
         }()
-        let artist = try? Self.lookup(table: "artists", id: track.artistID, column: "name", db: db)
-        let album = try? Self.lookup(table: "albums", id: track.albumID, column: "title", db: db)
+        // A failed lookup writes the entry without its artist or album, which
+        // reads in the exported file as a track that never had one (#492).
+        let artist: String?
+        do {
+            artist = try Self.lookup(table: "artists", id: track.artistID, column: "name", db: db)
+        } catch {
+            Self.log.warning("playlist.export.lookupFailed", [
+                "table": "artists",
+                "track": track.id ?? -1,
+                "error": String(reflecting: error),
+            ])
+            artist = nil
+        }
+        let album: String?
+        do {
+            album = try Self.lookup(table: "albums", id: track.albumID, column: "title", db: db)
+        } catch {
+            Self.log.warning("playlist.export.lookupFailed", [
+                "table": "albums",
+                "track": track.id ?? -1,
+                "error": String(reflecting: error),
+            ])
+            album = nil
+        }
         return PlaylistPayload.Entry(
             path: track.fileURL,
             absoluteURL: absolute,
             durationHint: track.duration,
             titleHint: track.title,
-            artistHint: artist ?? nil,
-            albumHint: album ?? nil
+            artistHint: artist,
+            albumHint: album
         )
     }
 

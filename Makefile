@@ -317,6 +317,7 @@ uitest:
 lint: check-swiftlint-version
 	swiftlint lint --strict --quiet
 	@python3 Scripts/audit-help-text.py --warn --summary
+	@python3 Scripts/audit-try-optional.py --summary
 
 ## format: Run SwiftFormat (modifies files)
 format: check-swiftformat-version

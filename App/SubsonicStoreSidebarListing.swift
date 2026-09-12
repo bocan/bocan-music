@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 import Subsonic
 import UI
 
@@ -63,7 +64,17 @@ struct SubsonicStoreSidebarListing: SubsonicSidebarListing {
 
     private static func decodeCapabilities(_ data: Data?) -> SubsonicCapabilities {
         guard let data else { return SubsonicCapabilities() }
-        return (try? JSONDecoder().decode(SubsonicCapabilities.self, from: data))
-            ?? SubsonicCapabilities()
+        do {
+            return try JSONDecoder().decode(SubsonicCapabilities.self, from: data)
+        } catch {
+            // Defaulting to no capabilities hides the Podcasts, Internet Radio
+            // and Bookmarks rows, so a corrupt cache is indistinguishable from
+            // a server that simply does not support them (#493).
+            AppLogger.make(.subsonic).warning("subsonic.capabilitiesCache.decodeFailed", [
+                "bytes": data.count,
+                "error": String(reflecting: error),
+            ])
+            return SubsonicCapabilities()
+        }
     }
 }

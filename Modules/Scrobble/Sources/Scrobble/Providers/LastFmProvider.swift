@@ -78,8 +78,14 @@ public actor LastFmProvider: ScrobbleProvider {
     // MARK: ScrobbleProvider
 
     public func isAuthenticated() async -> Bool {
-        let key = try? await self.credentials.lastFmSessionKey()
-        return key?.isEmpty == false
+        do {
+            return try await self.credentials.lastFmSessionKey()?.isEmpty == false
+        } catch {
+            // A Keychain failure otherwise reads exactly like a user who never
+            // connected, and Settings then invites them to connect again (#496).
+            self.log.warning("scrobble.lastfm.keychainReadFailed", ["error": String(reflecting: error)])
+            return false
+        }
     }
 
     public func nowPlaying(_ play: PlayEvent) async throws {

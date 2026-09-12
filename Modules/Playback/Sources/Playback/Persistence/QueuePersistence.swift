@@ -253,7 +253,15 @@ public actor QueuePersistence {
                         "build": Self.currentSchemaVersion,
                     ])
                     // Delete the incompatible blob so we don't hit this on every launch.
-                    try? await self.repo.remove(key: Self.settingsKeyV2)
+                    do {
+                        try await self.repo.remove(key: Self.settingsKeyV2)
+                    } catch {
+                        // It stays on disk, so the warning above repeats on
+                        // every launch with nothing explaining why (#494).
+                        self.log.warning("queue.restore.futureBlobRemoveFailed", [
+                            "error": String(reflecting: error),
+                        ])
+                    }
                     return (
                         items: [],
                         currentIndex: nil,
@@ -275,7 +283,15 @@ public actor QueuePersistence {
                     repeatMode: legacy.repeatMode,
                     shuffleState: legacy.shuffleState
                 )
-                try? await self.repo.remove(key: Self.settingsKeyV1)
+                do {
+                    try await self.repo.remove(key: Self.settingsKeyV1)
+                } catch {
+                    // The v1 blob survives, so this migration runs again on
+                    // the next launch, and the one after (#494).
+                    self.log.warning("queue.restore.legacyBlobRemoveFailed", [
+                        "error": String(reflecting: error),
+                    ])
+                }
                 return (items, legacy.currentIndex, legacy.repeatMode, legacy.shuffleState, nil)
             }
             return nil

@@ -319,7 +319,18 @@ public final class DSPViewModel {
         guard let repo = self.assignmentRepo else { return }
         Task { [weak self] in
             guard let self else { return }
-            let resolved = try? await repo.resolvePresetID(trackID: trackID, albumID: albumID)
+            let resolved: String?
+            do {
+                resolved = try await repo.resolvePresetID(trackID: trackID, albumID: albumID)
+            } catch {
+                // A failed read is indistinguishable from "this track has no
+                // scoped EQ preset", so the override silently stops applying.
+                self.log.warning("dsp.scope.resolveFailed", [
+                    "trackID": trackID,
+                    "error": String(reflecting: error),
+                ])
+                resolved = nil
+            }
             self.eqOverridePresetID = resolved
             self.hasScopedPreset = resolved != nil
             if resolved != nil {

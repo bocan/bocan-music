@@ -768,14 +768,25 @@ public actor QueuePlayer: Transport {
         }
 
         // Fetch track metadata (for NowPlaying).
-        let track = try? await trackRepo.fetch(id: item.trackID)
+        let track = await self.nowPlayingTrack(item.trackID)
         self.emitCurrentTrack(track)
 
         // ADR-087: load the track's CUE markers. Fewer than two is inert
         // (nothing to navigate, nothing to draw), normalised to empty here so
         // every consumer shares one rule. Emitted on every load so the strip
         // clears the previous track's ticks.
-        let fetched = await (try? self.markerRepo.markers(forTrack: item.trackID)) ?? []
+        let fetched: [TrackMarker]
+        do {
+            fetched = try await self.markerRepo.markers(forTrack: item.trackID)
+        } catch {
+            // The scrubber loses its chapter ticks, which reads as a track
+            // that simply has none (#494).
+            self.log.warning("queueplayer.markers.readFailed", [
+                "trackID": item.trackID,
+                "error": String(reflecting: error),
+            ])
+            fetched = []
+        }
         self.currentMarkers = fetched.count >= 2 ? fetched : []
         self.markerContinuation?.yield(self.currentMarkers)
 
@@ -1135,8 +1146,16 @@ public actor QueuePlayer: Transport {
             // currentIndex lines up with the item we're about to remove.
             let next = await self.queue.peekNextIgnoringRepeatOne()
 
-            // Disable in DB — best effort; a write failure must not stop us.
-            try? await self.trackRepo.disable(id: item.trackID)
+            // Disable in DB — best effort; a write failure must not stop us,
+            // but it does leave the missing track in the library (#494).
+            do {
+                try await self.trackRepo.disable(id: item.trackID)
+            } catch {
+                self.log.warning("queueplayer.skip.disableFailed", [
+                    "trackID": item.trackID,
+                    "error": String(reflecting: error),
+                ])
+            }
 
             // Remove from queue. PlaybackQueue.remove advances currentIndex to
             // what was physically next, matching what peekNextIgnoringRepeatOne
@@ -1185,10 +1204,17 @@ public actor QueuePlayer: Transport {
             return nextID == curID
         }()
 
-        if sameAlbum,
-           let nextAlbumID = item.albumID,
-           let album = try? await albumRepo.fetch(id: nextAlbumID) {
-            forceGapless = album.forceGapless
+        if sameAlbum, let nextAlbumID = item.albumID {
+            do {
+                forceGapless = try await self.albumRepo.fetch(id: nextAlbumID).forceGapless
+            } catch {
+                // The album's own "force gapless" flag is ignored, so an
+                // album meant to play gapless may gap (#494).
+                self.log.warning("queueplayer.gapless.albumLookupFailed", [
+                    "album": nextAlbumID,
+                    "error": String(reflecting: error),
+                ])
+            }
         } else if !sameAlbum {
             // Cross-album boundary.  Honour the user-controlled
             // `playback.crossAlbumGapless` toggle: when enabled, attempt
@@ -1351,7 +1377,7 @@ public actor QueuePlayer: Transport {
                 duration: item.duration,
                 positionProvider: { await capturedEngine.currentTime }
             )
-        } else if let track = try? await trackRepo.fetch(id: item.trackID) {
+        } else if let track = await self.nowPlayingTrack(item.trackID) {
             self.emitCurrentTrack(track)
             let capturedEngine = self.engine
             let coverPath = await self.resolveCoverArtPath(for: track)
@@ -1489,7 +1515,16 @@ public actor QueuePlayer: Transport {
             return
         }
 
-        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        // With no roots nothing can be scoped, so every file-backed item reads
+        // as missing and the whole queue greys out unexplained (#494).
+        var roots: [LibraryRoot] = []
+        do {
+            roots = try await self.rootRepo.fetchAll()
+        } catch {
+            self.log.warning("queueplayer.availability.rootsUnavailable", [
+                "error": String(reflecting: error),
+            ])
+        }
         var handles: [String: RootScopeHandle] = [:]
         defer { handles.removeAll() } // RAII releases scopes
 
@@ -1514,13 +1549,22 @@ public actor QueuePlayer: Transport {
                 return path.hasPrefix(prefix)
             }), handles[root.path] == nil {
                 var stale = false
-                if let url = try? URL(
-                    resolvingBookmarkData: root.bookmark,
-                    options: .withSecurityScope,
-                    relativeTo: nil,
-                    bookmarkDataIsStale: &stale
-                ), let handle = RootScopeHandle(url: url) {
-                    handles[root.path] = handle
+                do {
+                    let url = try URL(
+                        resolvingBookmarkData: root.bookmark,
+                        options: .withSecurityScope,
+                        relativeTo: nil,
+                        bookmarkDataIsStale: &stale
+                    )
+                    if let handle = RootScopeHandle(url: url) {
+                        handles[root.path] = handle
+                    }
+                } catch {
+                    // Files under this root then read as missing (#494).
+                    self.log.warning("queueplayer.availability.bookmarkUnresolvable", [
+                        "rootPath": root.path,
+                        "error": String(reflecting: error),
+                    ])
                 }
             }
 
@@ -1559,7 +1603,14 @@ public actor QueuePlayer: Transport {
     /// Returns `nil` when no matching root is found or when the root bookmark
     /// cannot be resolved.
     private func acquireRootScope(for fileURLString: String) async throws -> RootScopeHandle? {
-        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        // No roots means no scope, and the file open below then fails with a
+        // permission error that names the file, never this cause (#494).
+        var roots: [LibraryRoot] = []
+        do {
+            roots = try await self.rootRepo.fetchAll()
+        } catch {
+            self.log.warning("queueplayer.root.rootsUnavailable", ["error": String(reflecting: error)])
+        }
         // fileURLString is stored as url.absoluteString ("file:///path/to/file.mp3")
         // while root.path is url.path ("/path/to/folder") — compare via the path component.
         guard let filePath = URL(string: fileURLString)?.path else {
@@ -1575,13 +1626,21 @@ public actor QueuePlayer: Transport {
             return nil
         }
         var isStale = false
-        guard let rootURL = try? URL(
-            resolvingBookmarkData: root.bookmark,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) else {
-            self.log.error("queueplayer.root.bookmark_unresolvable", ["rootPath": root.path])
+        let rootURL: URL
+        do {
+            rootURL = try URL(
+                resolvingBookmarkData: root.bookmark,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+        } catch {
+            // This is the usual root cause of "that track will not play", so
+            // the reason belongs beside it (#494).
+            self.log.error("queueplayer.root.bookmark_unresolvable", [
+                "rootPath": root.path,
+                "error": String(reflecting: error),
+            ])
             return nil
         }
         guard let handle = RootScopeHandle(url: rootURL) else {
@@ -1591,11 +1650,23 @@ public actor QueuePlayer: Transport {
         if isStale, let rootID = root.id {
             // Bookmark data was valid but stale — refresh it while we hold an active scope
             // so that future launches don't need to fall back to this recovery path.
-            if let freshData = try? handle.url.bookmarkData(
-                options: .withSecurityScope,
-                includingResourceValuesForKeys: nil,
-                relativeTo: nil
-            ) {
+            let freshData: Data?
+            do {
+                freshData = try handle.url.bookmarkData(
+                    options: .withSecurityScope,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+            } catch {
+                // The stale bookmark stays, so every later launch takes this
+                // same recovery path (#494).
+                self.log.warning("queueplayer.root.bookmark_refresh_mintFailed", [
+                    "rootID": rootID,
+                    "error": String(reflecting: error),
+                ])
+                freshData = nil
+            }
+            if let freshData {
                 var updated = root
                 updated.bookmark = freshData
                 do {
@@ -1611,11 +1682,35 @@ public actor QueuePlayer: Transport {
 
     // MARK: Item building
 
+    /// The track row behind the now-playing metadata, or nil with a log line:
+    /// a failed read otherwise leaves the strip, the lock screen and the menu
+    /// bar showing nothing, as though no track were loaded (#494).
+    private func nowPlayingTrack(_ trackID: Int64) async -> Track? {
+        do {
+            return try await self.trackRepo.fetch(id: trackID)
+        } catch {
+            self.log.warning("queueplayer.nowPlaying.trackLookupFailed", [
+                "trackID": trackID,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
+
     private func buildItems(for trackIDs: [Int64]) async throws -> [QueueItem] {
         // Fetch all artist names once up front rather than per-track. For a
         // 16k-track queue this collapses ~16,000 DB round-trips into one, which
         // is the difference between a sub-second replace and a multi-second stall.
-        let artists = await (try? self.artistRepo.fetchAll()) ?? []
+        // An empty map builds the whole queue with blank artist names, which
+        // reads as a library whose tags are missing (#494).
+        var artists: [Artist] = []
+        do {
+            artists = try await self.artistRepo.fetchAll()
+        } catch {
+            self.log.warning("queueplayer.buildItems.artistsUnavailable", [
+                "error": String(reflecting: error),
+            ])
+        }
         var artistNames: [Int64: String] = [:]
         artistNames.reserveCapacity(artists.count)
         for a in artists {

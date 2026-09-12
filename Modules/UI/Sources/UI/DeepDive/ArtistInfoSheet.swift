@@ -123,8 +123,14 @@ public struct ArtistInfoSheet: View {
     }
 
     private func loadInfo() async {
-        self.artist = try? await self.library.artistRepo.fetch(id: self.artistID)
-        self.albumCount = await (try? self.library.artistRepo.fetchAlbumCounts()[self.artistID]) ?? 0
-        self.trackCount = await (try? self.library.artistRepo.fetchTrackCounts()[self.artistID]) ?? 0
+        self.artist = await recoveredRead("artistInfo.artist.failed") {
+            try await self.library.artistRepo.fetch(id: self.artistID)
+        }
+        self.albumCount = await recoveredRead("artistInfo.albumCounts.failed") {
+            try await self.library.artistRepo.fetchAlbumCounts()[self.artistID] ?? 0
+        } ?? 0
+        self.trackCount = await recoveredRead("artistInfo.trackCounts.failed") {
+            try await self.library.artistRepo.fetchTrackCounts()[self.artistID] ?? 0
+        } ?? 0
     }
 }

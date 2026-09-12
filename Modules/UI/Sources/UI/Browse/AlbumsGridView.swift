@@ -460,7 +460,9 @@ public struct AlbumsGridView: View {
         let repo = TrackRepository(database: self.library.database)
         var collected: [Track] = []
         for id in ids {
-            if let tracks = try? await repo.fetchAll(albumID: id) {
+            if let tracks = await recoveredRead("albumsGrid.openInspector.failed", {
+                try await repo.fetchAll(albumID: id)
+            }) {
                 collected.append(contentsOf: tracks)
             }
         }

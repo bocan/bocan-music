@@ -49,7 +49,19 @@ public final class SubsonicStreamResolver: SubsonicStreamResolving {
     }
 
     public func precache(serverID: UUID, songID: String) async {
-        guard let server = try? await store.fetch(id: serverID), server.precacheNext else { return }
+        let server: SubsonicServer?
+        do {
+            server = try await self.store.fetch(id: serverID)
+        } catch {
+            // Precache is skipped, which looks exactly like a server that has
+            // the option switched off (#493).
+            self.log.warning("subsonic.precache.serverReadFailed", [
+                "serverID": serverID,
+                "error": String(reflecting: error),
+            ])
+            return
+        }
+        guard let server, server.precacheNext else { return }
         do {
             _ = try await self.localFileURL(serverID: serverID, songID: songID)
             self.log.debug("subsonic.precache.ok", ["serverID": serverID, "songID": songID])

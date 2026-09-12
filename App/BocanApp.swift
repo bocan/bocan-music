@@ -464,7 +464,17 @@ struct BocanApp: App {
         ) { _ in
             guard UserDefaults.standard.bool(forKey: "playback.resumeOnWake") else { return }
             guard wasPlayingBox.value == true else { return }
-            Task { try? await engine.play() }
+            Task {
+                do {
+                    try await engine.play()
+                } catch {
+                    // The Mac wakes, playback does not resume, and the only
+                    // clue is a transport that stayed paused (#493).
+                    AppLogger.make(.app).warning("playback.resumeOnWake.failed", [
+                        "error": String(reflecting: error),
+                    ])
+                }
+            }
         }
 
         // Default-output-device change → reconfigure engine.  CoreAudio
@@ -497,21 +507,45 @@ struct BocanApp: App {
         let viewModel: ScrobbleSettingsViewModel
     }
 
+    /// Reads one launch-time setting, falling back to `fallback` when the key
+    /// has never been written or the read itself fails.
+    ///
+    /// Those two cases were indistinguishable, so a database fault silently
+    /// reverted the user's saved backup choice to the default: local backups
+    /// default to on, so a failed read could start writing backups the user had
+    /// turned off (`docs/audits/try-optional-audit.md`, class (b), #493).
+    private static func setting<T: Codable & Sendable>(
+        _ type: T.Type,
+        for key: String,
+        fallback: T,
+        from settings: SettingsRepository,
+        log: AppLogger
+    ) async -> T {
+        do {
+            return try await settings.get(type, for: key) ?? fallback
+        } catch {
+            log.warning("backup.settingRead.failed", ["key": key, "error": String(reflecting: error)])
+            return fallback
+        }
+    }
+
     /// Schedules launch-time backups (iCloud + local), each gated on its own setting.
     private static func scheduleLaunchBackup(database db: Database) {
         Task.detached { [db] in
             let settings = SettingsRepository(database: db)
             let service = BackupService(database: db)
             let log = AppLogger.make(.app)
-            if await (try? settings.get(Bool.self, for: "backup.enabled")) ?? false {
+            if await Self.setting(Bool.self, for: "backup.enabled", fallback: false, from: settings, log: log) {
                 do {
                     _ = try await service.backupToiCloudIfAvailable()
                 } catch {
                     log.error("backup.icloud.launch_failed", ["error": String(reflecting: error)])
                 }
             }
-            if await (try? settings.get(Bool.self, for: "backup.local.enabled")) ?? true {
-                let keep = await (try? settings.get(Int.self, for: "backup.local.keepCount")) ?? 5
+            if await Self.setting(Bool.self, for: "backup.local.enabled", fallback: true, from: settings, log: log) {
+                let keep = await Self.setting(
+                    Int.self, for: "backup.local.keepCount", fallback: 5, from: settings, log: log
+                )
                 do {
                     _ = try await service.backupToLocal(keepLast: keep)
                 } catch {
@@ -675,6 +709,77 @@ final class AppModel {
 
 extension BocanApp {
     // swiftlint:disable function_body_length
+    /// Finishes Subsonic hydration off the launch path (ADR-035).
+    ///
+    /// `migrateOrphans` and `startMonitoring` must run here. `reloadClients`
+    /// and `reloadSubsonicServers` are idempotent catch-alls that
+    /// `bootstrapSubsonic` also runs from `RootView.task`.
+    ///
+    /// Each step recovers on its own, so one failure cannot stop the rest, and
+    /// each now says why it failed. Before #493 all four were `try?`, and a
+    /// launch that only half worked left nothing behind to explain it.
+    private static func finishSubsonicHydration(
+        store: SubsonicServerStore,
+        service: SubsonicService,
+        monitor: SubsonicConnectionMonitor,
+        repo: SubsonicServerRepository,
+        lvm: LibraryViewModel?
+    ) async {
+        let log = AppLogger.make(.app)
+        // Prune Keychain items whose server row no longer exists, then build clients.
+        do {
+            try await store.migrateOrphans()
+        } catch {
+            log.warning("subsonic.launch.migrateOrphansFailed", ["error": String(reflecting: error)])
+        }
+        do {
+            try await service.reloadClients()
+        } catch {
+            // Without clients, every Subsonic view reports "no server with
+            // id" and nothing points at the reload as the cause (#493).
+            log.warning("subsonic.launch.reloadClientsFailed", ["error": String(reflecting: error)])
+        }
+        await lvm?.reloadSubsonicServers()
+        do {
+            // ADR-035 step 17: kick off the ping/back-off loop for every
+            // persisted server so the sidebar status dots become live as
+            // soon as the user finishes launching.
+            let servers = try await store.fetchAll()
+            for server in servers {
+                await monitor.startMonitoring(serverID: server.id)
+            }
+            // Refresh capabilities on launch so the legacy-core probe
+            // (Internet Radio / Podcasts / Bookmarks) runs and the sidebar
+            // reflects whatever the server actually supports today.
+            await withTaskGroup(of: Void.self) { group in
+                for server in servers {
+                    group.addTask {
+                        do {
+                            _ = try await service.loadCapabilities(serverID: server.id)
+                        } catch {
+                            // The sidebar keeps yesterday's capabilities, so a
+                            // newly supported row never appears (#493).
+                            log.warning("subsonic.launch.capabilitiesFailed", [
+                                "serverID": server.id,
+                                "error": String(reflecting: error),
+                            ])
+                        }
+                    }
+                }
+            }
+        } catch {
+            // No server is monitored and no capability is refreshed, so every
+            // status dot stays dark with nothing to explain it (#493).
+            log.warning("subsonic.launch.serversReadFailed", ["error": String(reflecting: error)])
+        }
+        // Spec: prune metadata-cache entries older than 7 days once on launch.
+        do {
+            try await repo.pruneStaleCache()
+        } catch {
+            log.warning("subsonic.launch.pruneStaleCacheFailed", ["error": String(reflecting: error)])
+        }
+    }
+
     /// Builds and wires the full object graph once the database is open. Runs on
     /// the main actor (the view models are main-actor isolated) but off the
     /// synchronous launch path, so it no longer blocks first paint. Lifted
@@ -863,7 +968,16 @@ extension BocanApp {
         // caused "Couldn't load songs / No server with id …" when the last
         // selected destination was a Subsonic view.
         lvm.subsonicBootstrap = { [subsonicService, weak lvm] in
-            try? await subsonicService.reloadClients()
+            do {
+                try await subsonicService.reloadClients()
+            } catch {
+                // No clients get built, so the very symptom this bootstrap
+                // exists to prevent ("no server with id") comes back, and
+                // nothing says the reload is what failed (#493).
+                AppLogger.make(.app).warning("subsonic.bootstrap.reloadClientsFailed", [
+                    "error": String(reflecting: error),
+                ])
+            }
             await lvm?.reloadSubsonicServers()
         }
         let subsonicSettingsViewModel = SubsonicSettingsViewModel(
@@ -958,29 +1072,13 @@ extension BocanApp {
         // must run here; reloadClients / reloadSubsonicServers are idempotent
         // catch-alls also run by bootstrapSubsonic via RootView.task.
         Task { [subsonicStore, subsonicService, subsonicMonitor, subsonicRepo, weak lvm] in
-            // Prune Keychain items whose server row no longer exists, then build clients.
-            try? await subsonicStore.migrateOrphans()
-            try? await subsonicService.reloadClients()
-            await lvm?.reloadSubsonicServers()
-            // ADR-035 step 17: kick off the ping/back-off loop for every
-            // persisted server so the sidebar status dots become live as
-            // soon as the user finishes launching.
-            let servers = await (try? subsonicStore.fetchAll()) ?? []
-            for server in servers {
-                await subsonicMonitor.startMonitoring(serverID: server.id)
-            }
-            // Refresh capabilities on launch so the legacy-core probe
-            // (Internet Radio / Podcasts / Bookmarks) runs and the sidebar
-            // reflects whatever the server actually supports today.
-            await withTaskGroup(of: Void.self) { group in
-                for server in servers {
-                    group.addTask {
-                        _ = try? await subsonicService.loadCapabilities(serverID: server.id)
-                    }
-                }
-            }
-            // Spec: prune metadata-cache entries older than 7 days once on launch.
-            try? await subsonicRepo.pruneStaleCache()
+            await Self.finishSubsonicHydration(
+                store: subsonicStore,
+                service: subsonicService,
+                monitor: subsonicMonitor,
+                repo: subsonicRepo,
+                lvm: lvm
+            )
         }
 
         return AppGraph(

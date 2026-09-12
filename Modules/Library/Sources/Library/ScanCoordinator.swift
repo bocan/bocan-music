@@ -145,7 +145,17 @@ actor ScanCoordinator {
         let concurrency = min(ProcessInfo.processInfo.activeProcessorCount, 4)
 
         // ADR-004 audit H7: opt-in iCloud download for placeholder files.
-        let iCloudDownload: Bool = await (try? self.settingsRepo.get(Bool.self, for: "library.icloudDownload")) ?? nil ?? false
+        // A failed read is indistinguishable from the setting being off, so
+        // iCloud placeholders are skipped with no reason given (#492).
+        var iCloudDownload = false
+        do {
+            iCloudDownload = try await self.settingsRepo.get(Bool.self, for: "library.icloudDownload") ?? false
+        } catch {
+            self.log.warning("scan.setting.readFailed", [
+                "key": "library.icloudDownload",
+                "error": String(reflecting: error),
+            ])
+        }
 
         // Feed the FileWalker stream directly into a bounded TaskGroup so
         // importing overlaps the walk and peak memory stays O(concurrency)
@@ -221,13 +231,21 @@ actor ScanCoordinator {
         if !Task.isCancelled {
             let removedURLs = await changeDetector.removedURLs()
             for urlString in removedURLs {
-                guard let track = try? await trackRepo.fetchOne(fileURL: urlString) else { continue }
-                if let id = track.id {
+                do {
+                    guard let track = try await trackRepo.fetchOne(fileURL: urlString),
+                          let id = track.id else { continue }
                     var disabled = track
                     disabled.disabled = true
-                    try? await self.trackRepo.update(disabled)
+                    try await self.trackRepo.update(disabled)
                     emit(.removed(trackID: id))
                     removed += 1
+                } catch {
+                    // The summary otherwise counts a removal that did not
+                    // happen, or misses one that should have (#492).
+                    self.log.warning("scan.removal.failed", [
+                        "url": urlString,
+                        "error": String(reflecting: error),
+                    ])
                 }
             }
         }
@@ -236,7 +254,13 @@ actor ScanCoordinator {
         // albums that regrouped from many split rows into one (#362), so stale
         // empty albums do not linger after the fix lands. Best-effort.
         if !Task.isCancelled {
-            _ = try? await self.albumRepo.pruneOrphans()
+            do {
+                _ = try await self.albumRepo.pruneOrphans()
+            } catch {
+                // Empty album rows linger in the grid; best effort, but the
+                // reason belongs in the log (#492).
+                self.log.warning("scan.pruneOrphans.failed", ["error": String(reflecting: error)])
+            }
         }
 
         // ADR-087: attach sidecar CUE sheets as in-track markers once the
@@ -356,7 +380,17 @@ actor ScanCoordinator {
                 // (and the UI reloads behind them) on every FSEvents pass,
                 // even when the pass was a metadata-only no-op.
                 if updated != ex {
-                    try? await self.trackRepo.update(updated)
+                    do {
+                        try await self.trackRepo.update(updated)
+                    } catch {
+                        // The conflict banner and the refreshed file facts are
+                        // both dropped, and the scan reports a conflict as
+                        // though the row had been written (#492).
+                        self.log.warning("scan.conflict.updateFailed", [
+                            "track": trackID,
+                            "error": String(reflecting: error),
+                        ])
+                    }
                 }
                 emit(.processed(url: url, outcome: .conflict(trackID: trackID)))
                 return .conflict(trackID)
@@ -379,11 +413,23 @@ actor ScanCoordinator {
         // arrives under a new path with no existing row, so it still gets a
         // fresh bookmark. Stale-bookmark refresh stays on the edit path
         // (MetadataEditService). See #278.
-        let bookmark = existingTrack?.fileBookmark ?? (try? url.bookmarkData(
-            options: .withSecurityScope,
-            includingResourceValuesForKeys: nil,
-            relativeTo: nil
-        ))
+        var bookmark = existingTrack?.fileBookmark
+        if bookmark == nil {
+            do {
+                bookmark = try url.bookmarkData(
+                    options: .withSecurityScope,
+                    includingResourceValuesForKeys: nil,
+                    relativeTo: nil
+                )
+            } catch {
+                // The row is imported without sandbox access, so playing it
+                // later fails on permissions with no trace of this (#492).
+                self.log.warning("scan.bookmark.mintFailed", [
+                    "url": url.lastPathComponent,
+                    "error": String(reflecting: error),
+                ])
+            }
+        }
 
         do {
             let id = try await importer.importTrack(

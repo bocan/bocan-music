@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 import Persistence
 import Playback
 import Podcasts
@@ -92,7 +93,14 @@ struct AppPodcastActions: PodcastActions {
         do {
             try await self.player.play(items: [item], startingAt: 0)
         } catch {
-            // QueuePlayer logs internally; swallowing here keeps PodcastActions non-throwing.
+            // Keeping PodcastActions non-throwing is right, but dropping the
+            // error is not: the player's own log line cannot say which episode
+            // the person pressed play on. Same fault as a `try?` and invisible
+            // to a search for one (#493).
+            AppLogger.make(.podcasts).warning("podcast.play.failed", [
+                "guid": episode.episode.guid,
+                "error": String(reflecting: error),
+            ])
         }
     }
 

@@ -195,21 +195,12 @@ public actor LyricsService {
     /// match is found on LRClib.
     public func forceFetch(for trackID: Int64, embedInFile: Bool = false) async throws -> LyricsDocument? {
         guard let fetcher else { return nil }
-        guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
+        guard let track = await self.track(trackID, op: "forceFetch") else { return nil }
 
         self.log.debug("lrclib.forceFetch.start", ["track": trackID])
 
-        let artistName: String = if let aid = track.artistID,
-                                    let artist = try? await artistRepo.fetch(id: aid) {
-            artist.name
-        } else {
-            ""
-        }
-        let albumTitle: String? = if let aid = track.albumID, let album = try? await albumRepo.fetch(id: aid) {
-            album.title
-        } else {
-            nil
-        }
+        let artistName = await self.artistName(for: track)
+        let albumTitle = await self.albumTitle(for: track)
 
         let doc = try await fetcher.get(
             artist: artistName,
@@ -250,20 +241,12 @@ public actor LyricsService {
             return sidecar
         }
 
-        guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
+        guard let track = await self.track(trackID, op: "autoFetch") else { return nil }
 
         self.log.debug("lrclib.fetch.start", ["track": trackID])
 
-        let artistName: String = if let aid = track.artistID, let artist = try? await artistRepo.fetch(id: aid) {
-            artist.name
-        } else {
-            ""
-        }
-        let albumTitle: String? = if let aid = track.albumID, let album = try? await albumRepo.fetch(id: aid) {
-            album.title
-        } else {
-            nil
-        }
+        let artistName = await self.artistName(for: track)
+        let albumTitle = await self.albumTitle(for: track)
         let doc = try await fetcher.get(
             artist: artistName,
             title: track.title ?? "",
@@ -376,7 +359,7 @@ public actor LyricsService {
         // track's own bookmark. Note `track.fileURL` is a URL *string*, not a
         // path — `URL(fileURLWithPath:)` here silently produced a garbage
         // path for years, which is why embeds never worked on this branch.
-        guard let track = try? await trackRepo.fetch(id: trackID) else { return }
+        guard let track = await self.track(trackID, op: "writeToFile") else { return }
         guard let url = Self.fileURL(from: track.fileURL) else {
             self.log.error("lyrics.fileWrite.failed", ["track": trackID, "error": "invalid fileURL"])
             throw LibraryError.invalidFileURL(track.fileURL)
@@ -420,7 +403,7 @@ public actor LyricsService {
     }
 
     private func loadSidecar(for trackID: Int64) async throws -> LyricsDocument? {
-        guard let track = try? await trackRepo.fetch(id: trackID) else { return nil }
+        guard let track = await self.track(trackID, op: "loadSidecar") else { return nil }
         guard let fileURL = Self.fileURL(from: track.fileURL) else { return nil }
         let lrcURL = fileURL.deletingPathExtension().appendingPathExtension("lrc")
 
@@ -447,18 +430,81 @@ public actor LyricsService {
     /// `path`, returning an RAII handle (nil when no root matches or the
     /// bookmark cannot be resolved — callers then attempt the raw read).
     private func acquireRootScope(for path: String) async -> RootScopeHandle? {
-        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        let roots: [LibraryRoot]
+        do {
+            roots = try await self.rootRepo.fetchAll()
+        } catch {
+            // No scope means the raw read is attempted instead, and its
+            // failure names the file rather than this cause (#492).
+            self.log.warning("lyrics.root_scope.rootsUnavailable", ["error": String(reflecting: error)])
+            return nil
+        }
         guard let root = roots.first(where: {
             let prefix = $0.path == "/" ? "/" : $0.path + "/"
             return path.hasPrefix(prefix)
         }) else { return nil }
         var isStale = false
-        guard let rootURL = try? URL(
-            resolvingBookmarkData: root.bookmark,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) else { return nil }
-        return RootScopeHandle(url: rootURL)
+        do {
+            let rootURL = try URL(
+                resolvingBookmarkData: root.bookmark,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+            return RootScopeHandle(url: rootURL)
+        } catch {
+            self.log.warning("lyrics.root_scope.bookmarkUnresolvable", [
+                "root": root.path,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
+
+    /// The track row for a lyrics operation, or nil with a log line: a failed
+    /// read otherwise reads as "this track has no lyrics" (#492).
+    private func track(_ trackID: Int64, op: String) async -> Track? {
+        do {
+            return try await self.trackRepo.fetch(id: trackID)
+        } catch {
+            self.log.warning("lyrics.trackLookup.failed", [
+                "track": trackID,
+                "op": op,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
+
+    /// The track's artist name for an LRClib query, or "" when it has none.
+    /// A failed read searches with an empty artist, which quietly returns the
+    /// wrong lyrics or none at all (#492).
+    private func artistName(for track: Track) async -> String {
+        guard let aid = track.artistID else { return "" }
+        do {
+            return try await self.artistRepo.fetch(id: aid).name
+        } catch {
+            self.log.warning("lyrics.artistLookup.failed", [
+                "track": track.id ?? -1,
+                "artist": aid,
+                "error": String(reflecting: error),
+            ])
+            return ""
+        }
+    }
+
+    /// The track's album title for an LRClib query, or nil when it has none.
+    private func albumTitle(for track: Track) async -> String? {
+        guard let aid = track.albumID else { return nil }
+        do {
+            return try await self.albumRepo.fetch(id: aid).title
+        } catch {
+            self.log.warning("lyrics.albumLookup.failed", [
+                "track": track.id ?? -1,
+                "album": aid,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
     }
 }

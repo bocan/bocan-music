@@ -31,6 +31,8 @@ public actor BackupRing {
     private let capacity: Int
     private var order: [String] = [] // editIDs, oldest first
     private let log = AppLogger.make(.library)
+    /// `loadOrder` is static, so it needs its own handle.
+    private static let log = AppLogger.make(.library)
 
     // MARK: - Init
 
@@ -104,9 +106,20 @@ public actor BackupRing {
     }
 
     private static func loadOrder(from dir: URL) -> [String] {
-        guard let items = try? FileManager.default.contentsOfDirectory(
-            at: dir, includingPropertiesForKeys: [.creationDateKey], options: []
-        ) else { return [] }
+        let items: [URL]
+        do {
+            items = try FileManager.default.contentsOfDirectory(
+                at: dir, includingPropertiesForKeys: [.creationDateKey], options: []
+            )
+        } catch {
+            // An unreadable ring reads as an empty one, and undo is then
+            // unavailable for every edit in the session, silently (#492).
+            Self.log.warning("backup_ring.load_order.failed", [
+                "dir": dir.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return []
+        }
         return items
             .filter { $0.pathExtension == "json" }
             .sorted { lhs, rhs in

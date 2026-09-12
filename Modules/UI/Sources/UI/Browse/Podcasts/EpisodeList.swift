@@ -99,7 +99,9 @@ struct EpisodeList: View {
                 )
             ) {
                 guard let item = self.selectedItem, let actions = self.vm.actions else { return [] }
-                return await (try? actions.chapters(podcastID: item.episode.podcastID, guid: item.episode.guid)) ?? []
+                return await recoveredRead("podcasts.chapters.failed") {
+                    try await actions.chapters(podcastID: item.episode.podcastID, guid: item.episode.guid)
+                } ?? []
             }
             .frame(minWidth: 500, minHeight: 300)
         }

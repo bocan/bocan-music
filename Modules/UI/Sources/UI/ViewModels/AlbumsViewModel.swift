@@ -61,15 +61,15 @@ public final class AlbumsViewModel: ObservableObject {
         self.log.debug("albums.load.start", [:])
         do {
             async let albumsTask = self.repository.fetchAll()
-            async let artistNamesTask = self.repository.fetchArtistNameMap()
-            async let trackCountsTask = self.repository.fetchTrackCounts()
+            async let artistNamesTask = self.artistNameMap(op: "load")
+            async let trackCountsTask = self.trackCountMap(op: "load")
             // Await all results before any assignment so SwiftUI coalesces the
             // three @Published writes into one render pass.  Without this,
             // `albums` lands first (year now visible) while `trackCounts` is
             // still [:], causing a flash where year shows but count is missing.
             let albums = try await albumsTask
-            let artistNames = await (try? artistNamesTask) ?? [:]
-            let trackCounts = await (try? trackCountsTask) ?? [:]
+            let artistNames = await artistNamesTask
+            let trackCounts = await trackCountsTask
             // artistNames first: sortedAlbums(.albumArtist) reads it.
             self.artistNames = artistNames
             self.trackCounts = trackCounts
@@ -86,11 +86,11 @@ public final class AlbumsViewModel: ObservableObject {
         self.isLoading = true
         do {
             async let albumsTask = self.repository.fetchAll(albumArtistID: albumArtistID)
-            async let artistNamesTask = self.repository.fetchArtistNameMap()
-            async let trackCountsTask = self.repository.fetchTrackCounts()
+            async let artistNamesTask = self.artistNameMap(op: "load(albumArtistID:)")
+            async let trackCountsTask = self.trackCountMap(op: "load(albumArtistID:)")
             let albums = try await albumsTask
-            let artistNames = await (try? artistNamesTask) ?? [:]
-            let trackCounts = await (try? trackCountsTask) ?? [:]
+            let artistNames = await artistNamesTask
+            let trackCounts = await trackCountsTask
             self.albums = albums
             self.artistNames = artistNames
             self.trackCounts = trackCounts
@@ -111,16 +111,43 @@ public final class AlbumsViewModel: ObservableObject {
         await self.loadFiltered { try await self.repository.fetchAll(composer: composer) }
     }
 
+    /// The artist-name map the grid cells need, recovered to an empty map when
+    /// the read fails: the grid then shows rows without artist names, which is
+    /// the right recovery but must not be silent (#491).
+    ///
+    /// `nonisolated` so the `async let` callers still fetch off the main actor
+    /// instead of hopping back here and serialising the three reads.
+    private nonisolated func artistNameMap(op: String) async -> [Int64: String] {
+        do {
+            return try await self.repository.fetchArtistNameMap()
+        } catch {
+            self.log.warning("albums.artistNames.failed", ["op": op, "error": String(reflecting: error)])
+            return [:]
+        }
+    }
+
+    /// The per-album track counts, recovered to an empty map on a read failure
+    /// so the grid keeps its rows and loses only the counts. See
+    /// ``artistNameMap(op:)`` for why this is `nonisolated`.
+    private nonisolated func trackCountMap(op: String) async -> [Int64: Int] {
+        do {
+            return try await self.repository.fetchTrackCounts()
+        } catch {
+            self.log.warning("albums.trackCounts.failed", ["op": op, "error": String(reflecting: error)])
+            return [:]
+        }
+    }
+
     /// Shared body for the filtered destination loads: fetch albums via `fetch`,
     /// plus the artist-name and track-count maps the cells need, then assign.
     private func loadFiltered(_ fetch: @Sendable () async throws -> [Album]) async {
         self.isLoading = true
         do {
-            async let artistNamesTask = self.repository.fetchArtistNameMap()
-            async let trackCountsTask = self.repository.fetchTrackCounts()
+            async let artistNamesTask = self.artistNameMap(op: "loadFiltered")
+            async let trackCountsTask = self.trackCountMap(op: "loadFiltered")
             let albums = try await fetch()
-            let artistNames = await (try? artistNamesTask) ?? [:]
-            let trackCounts = await (try? trackCountsTask) ?? [:]
+            let artistNames = await artistNamesTask
+            let trackCounts = await trackCountsTask
             self.artistNames = artistNames
             self.trackCounts = trackCounts
             self.albums = self.sortedAlbums(albums)

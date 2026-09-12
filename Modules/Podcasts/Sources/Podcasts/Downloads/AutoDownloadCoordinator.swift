@@ -66,7 +66,20 @@ public struct AutoDownloadCoordinator: Sendable {
             if enqueued >= self.newestN {
                 break
             }
-            let state = try? await self.stateRepo.fetch(podcastID: podcastID, guid: episode.guid)
+            let state: PodcastEpisodeState?
+            do {
+                state = try await self.stateRepo.fetch(podcastID: podcastID, guid: episode.guid)
+            } catch {
+                // A failed read is indistinguishable from "no state row", so the
+                // episode is downloaded again even when it is already on disk or
+                // already heard (#495).
+                self.log.warning("autoDownload.stateReadFailed", [
+                    "podcastID": podcastID,
+                    "guid": episode.guid,
+                    "error": String(reflecting: error),
+                ])
+                state = nil
+            }
             if let state, state.downloadState == .downloaded || state.playState == .played {
                 continue // already downloaded or already heard
             }
