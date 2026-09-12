@@ -3225,6 +3225,16 @@
         }
       }
     },
+    "Adds the plays from a Last.fm data export to your listening history." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Áđđš ţĥé ƥĺáýš ƒŕóḿ á Ĺášţ.ƒḿ đáţá éxƥóŕţ ţó ýóúŕ ĺíšţéñíñĝ ĥíšţóŕý. one two three four five"
+          }
+        }
+      }
+    },
     "Adds this show to your library and starts checking it for new episodes." : {
       "localizations" : {
         "en-XA" : {
@@ -4628,6 +4638,16 @@
         }
       }
     },
+    "Brings the main window to the front." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ɓŕíñĝš ţĥé ḿáíñ ŵíñđóŵ ţó ţĥé ƒŕóñţ. one two three"
+          }
+        }
+      }
+    },
     "Broadcast" : {
       "localizations" : {
         "en-XA" : {
@@ -5108,6 +5128,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Çĥéçķš évéŕý šĥóŵ ƒóŕ ñéŵ éƥíšóđéš áţ šţáŕţúƥ, íñšţéáđ óƒ ŵáíţíñĝ ƒóŕ ţĥé ñéxţ íñţéŕváĺ. one two three four five six"
+          }
+        }
+      }
+    },
+    "Checks the lossless files waiting for it, to see whether they came from a lossy source." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çĥéçķš ţĥé ĺóššĺéšš ƒíĺéš ŵáíţíñĝ ƒóŕ íţ, ţó šéé ŵĥéţĥéŕ ţĥéý çáḿé ƒŕóḿ á ĺóššý šóúŕçé. one two three four five six"
           }
         }
       }
@@ -7884,6 +7914,26 @@
         }
       }
     },
+    "Deletes the audio files listed above from disk, after asking. Episodes and history stay." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đéĺéţéš ţĥé áúđíó ƒíĺéš ĺíšţéđ áƀóvé ƒŕóḿ đíšķ, áƒţéŕ ášķíñĝ. Éƥíšóđéš áñđ ĥíšţóŕý šţáý. one two three four five six"
+          }
+        }
+      }
+    },
+    "Deletes the imported listens that never matched a track, after asking." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đéĺéţéš ţĥé íḿƥóŕţéđ ĺíšţéñš ţĥáţ ñévéŕ ḿáţçĥéđ á ţŕáçķ, áƒţéŕ ášķíñĝ. one two three four five"
+          }
+        }
+      }
+    },
     "Deletes this preset. If it is the one in use, the equaliser goes back to Flat." : {
       "localizations" : {
         "en-XA" : {
@@ -8614,6 +8664,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Đŕáĝ ŕíĝĥţ íƒ ţĥé ĺíñéš ĺíĝĥţ úƥ ţóó éáŕĺý, ĺéƒţ íƒ ţĥéý ĺáĝ ƀéĥíñđ ţĥé šíñĝíñĝ. one two three four five"
+          }
+        }
+      }
+    },
+    "Drag to move through the track." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đŕáĝ ţó ḿóvé ţĥŕóúĝĥ ţĥé ţŕáçķ. one two three"
           }
         }
       }
@@ -11231,6 +11291,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ĥíđé áđváñçéđ ƒíéĺđš one two"
+          }
+        }
+      }
+    },
+    "Hides entries below this level. Everything is still recorded." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ĥíđéš éñţŕíéš ƀéĺóŵ ţĥíš ĺévéĺ. Évéŕýţĥíñĝ íš šţíĺĺ ŕéçóŕđéđ. one two three four"
           }
         }
       }
@@ -14303,6 +14373,16 @@
         }
       }
     },
+    "Next track." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ñéxţ ţŕáçķ. one"
+          }
+        }
+      }
+    },
     "Next visualizer" : {
       "localizations" : {
         "en-XA" : {
@@ -16038,6 +16118,26 @@
         }
       }
     },
+    "Opens this album with the song selected." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ţĥíš áĺƀúḿ ŵíţĥ ţĥé šóñĝ šéĺéçţéđ. one two three"
+          }
+        }
+      }
+    },
+    "Opens this album." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ţĥíš áĺƀúḿ. one two"
+          }
+        }
+      }
+    },
     "Opens this artist's albums and songs" : {
       "localizations" : {
         "en-XA" : {
@@ -16094,6 +16194,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Óƥéñš ţĥíš ƥĺáýĺíšţ'š šóñĝš. one two three"
+          }
+        }
+      }
+    },
+    "Opens this show in the main window." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Óƥéñš ţĥíš šĥóŵ íñ ţĥé ḿáíñ ŵíñđóŵ. one two three"
           }
         }
       }
@@ -21019,6 +21129,16 @@
         }
       }
     },
+    "Shows only the scrobbles sent to one service." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŵš óñĺý ţĥé šçŕóƀƀĺéš šéñţ ţó óñé šéŕvíçé. one two three"
+          }
+        }
+      }
+    },
     "Shows the playback queue. Drop tracks here to add them to the end of the queue." : {
       "comment" : "A hint for the user that a track can be dragged from the library to the queue.",
       "isCommentAutoGenerated" : true,
@@ -22266,12 +22386,32 @@
         }
       }
     },
+    "Stops the check. Files already done keep their verdict." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šţóƥš ţĥé çĥéçķ. Ƒíĺéš áĺŕéáđý đóñé ķééƥ ţĥéíŕ véŕđíçţ. one two three four"
+          }
+        }
+      }
+    },
     "Stops the in-progress library scan. Files already imported are kept." : {
       "localizations" : {
         "en-XA" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šţóƥš ţĥé íñ-ƥŕóĝŕéšš ĺíƀŕáŕý šçáñ. Ƒíĺéš áĺŕéáđý íḿƥóŕţéđ áŕé ķéƥţ. one two three four five"
+          }
+        }
+      }
+    },
+    "Stops this show refreshing and takes it out of the sidebar. Episodes and history stay." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šţóƥš ţĥíš šĥóŵ ŕéƒŕéšĥíñĝ áñđ ţáķéš íţ óúţ óƒ ţĥé šíđéƀáŕ. Éƥíšóđéš áñđ ĥíšţóŕý šţáý. one two three four five six"
           }
         }
       }
@@ -22557,6 +22697,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Šŵíţçĥéš ƀéţŵééñ ĝŕóúƥš óƒ ƒíéĺđš. Éđíţš ýóú ĥávé ḿáđé áŕé ķéƥţ áš ýóú ḿóvé ƀéţŵééñ ţĥéḿ. one two three four five six"
+          }
+        }
+      }
+    },
+    "Switches between what Bòcan knows about this artist and where it came from." : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šŵíţçĥéš ƀéţŵééñ ŵĥáţ Ɓòçáñ ķñóŵš áƀóúţ ţĥíš áŕţíšţ áñđ ŵĥéŕé íţ çáḿé ƒŕóḿ. one two three four five"
           }
         }
       }

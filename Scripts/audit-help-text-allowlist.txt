@@ -71,3 +71,18 @@ Modules/UI/Sources/UI/DSP/PresetManagerView.swift|Button(L10n.string("Done")) { 
 Modules/UI/Sources/UI/DSP/PresetManagerView.swift|Button(L10n.string("OK")) { self.commitRename(preset: preset) }  # commits the name in the field beside it
 Modules/UI/Sources/UI/DSP/ReplayGainSettingsView.swift|Button(L10n.string("Dismiss")) { self.library.replayGainProgress = nil }  # clears the finished-scan message
 Modules/UI/Sources/UI/Lyrics/LyricsEditorSheet.swift|Button(L10n.string("Cancel")) {  # closes without saving
+
+# The shared empty and error states take their button's label and the
+# message above it from the caller ("Add Music Folder", "Show All Artists"),
+# so the surface already says what the button does. One entry each covers
+# every screen that uses them (#508).
+Modules/UI/Sources/UI/Common/EmptyState.swift|Button(actionLabel, action: action)  # caller supplies the label and the message above it
+Modules/UI/Sources/UI/Common/ErrorState.swift|Button(actionLabel, action: action)  # caller supplies the label and the message above it
+
+# The summary tab strip draws each tab's name under its icon, so a tooltip
+# could only repeat what is already on screen.
+Modules/UI/Sources/UI/Summary/LibrarySummaryView.swift|Button {  # the tab's name is drawn under its icon
+
+# Summary and scrobble dismissals.
+Modules/UI/Sources/UI/Scrobble/RecentScrobblesView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the sheet
+Modules/UI/Sources/UI/Summary/LibraryAudioQualityPane.swift|Button(L10n.string("Dismiss")) {  # clears the finished-analysis message
