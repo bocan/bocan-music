@@ -322,7 +322,10 @@ private struct SubsonicServerEditorView: View {
                             "Reports finished plays to this server's own listening history, as well as to any scrobbling service you use."
                         ))
                 Toggle(L10n.string("Sync starred items"), isOn: self.$vm.editor.syncStars)
+                    .help(L10n.string("Sends the stars you set here to the server. With it off, a star is not sent and is lost on quit."))
                 Toggle(L10n.string("Sync star ratings"), isOn: self.$vm.editor.syncRatings)
+                    .help(L10n
+                        .string("Sends the ratings you set here to the server. With it off, a rating is not sent and is lost on quit."))
             }
 
             if let test = self.vm.lastTestResult {

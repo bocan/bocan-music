@@ -38,7 +38,7 @@ final class SettingsCrawlTests: XCTestCase {
     static let panes: [Pane] = [
         Pane("general", "settings.general.launchAtLogin"),
         Pane("appearance", "settings.appearance.accent.blue"),
-        Pane("library", "settings.library.quickScan"),
+        Pane("library", "settings.library.embedCoverArt"),
         Pane("sources", "settings.sources.addServer", "settings.sources.addServer.empty"),
         Pane("smartPlaylists", "settings.smartPlaylists.liveUpdate"),
         Pane("podcasts", "settings.podcasts.refreshOnLaunch"),

@@ -195,7 +195,6 @@ public enum A11y {
         public static let dockProgress = "settings.general.dockProgress"
         public static let trackNotifications = "settings.general.notifications"
         public static let watchFolders = "settings.library.watchFolders"
-        public static let quickScan = "settings.library.quickScan"
         public static let embedCoverArt = "settings.library.embedCoverArt"
         public static let crossAlbumGapless = "settings.playback.crossAlbumGapless"
         public static let sleepFadeOut = "settings.playback.sleepFadeOut"

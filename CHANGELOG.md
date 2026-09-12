@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Settings now explains itself. Rest the pointer on a switch, a menu or a button in General, Library, Advanced, Podcasts, Phone Sync or Sources, and a short line tells you what it does or what changes if you switch it, rather than repeating the label you can already read.
 
+Writing those explanations turned up three switches that did nothing at all. Sync starred items and Sync star ratings, in the settings for a Subsonic server, now work: switch either off and the stars or ratings you set stay on this Mac instead of going to that server. Use quick scan by default is gone from Library settings, because scans on launch have always read only the files that changed, and Full Rescan in the File menu is how you re-read everything.
+
 When something you ask for cannot be done, Bòcan now says so instead of looking as though it worked. Adding tracks to a playlist, loving a track, saving a log file, choosing cover art and disconnecting a scrobbling account all report a failure now, and so do the play, skip and seek controls on your keyboard, headphones, lock screen and Control Centre.
 
 Two quieter faults are fixed with them. A podcast episode or a song sent to your phone can no longer be recorded under the wrong fingerprint if the file cannot be read all the way through, which used to make a transfer fail with nothing to explain it. And a library scan that cannot read your library now stops and tells you, rather than treating the library as empty and re-importing everything.

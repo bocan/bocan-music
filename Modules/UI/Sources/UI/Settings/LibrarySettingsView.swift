@@ -6,7 +6,6 @@ import SwiftUI
 public struct LibrarySettingsView: View {
     @EnvironmentObject private var vm: LibraryViewModel
     @AppStorage("library.watchForChanges") private var watchForChanges = true
-    @AppStorage("library.quickScanByDefault") private var quickScan = false
     @AppStorage("metadata.embedCoverArt") private var embedCoverArt = false
     @AppStorage(DeepDiveSetting.key) private var deepDiveEnabled = false
 
@@ -18,9 +17,11 @@ public struct LibrarySettingsView: View {
                 Toggle(L10n.string("Watch folders for new files"), isOn: self.$watchForChanges)
                     .accessibilityIdentifier(A11y.SettingsIDs.watchFolders)
                     .help(L10n.string("Imports files as soon as they appear in your library folders, without waiting for a rescan."))
-                Toggle(L10n.string("Use quick scan by default"), isOn: self.$quickScan)
-                    .accessibilityIdentifier(A11y.SettingsIDs.quickScan)
-                Text(localized: "Quick scan reads only file metadata tags without computing replay gain.")
+                // "Use quick scan by default" lived here and read nothing: the
+                // launch scan is always quick (RootView's triggerScan), and
+                // Full Rescan is an explicit File-menu command. A switch that
+                // cannot change anything is worse than no switch (#502).
+                Text(localized: "Scans on launch read only the files that changed. Use Full Rescan in the File menu to re-read everything.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
