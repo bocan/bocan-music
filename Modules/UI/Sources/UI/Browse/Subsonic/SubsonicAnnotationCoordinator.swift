@@ -3,6 +3,21 @@ import Observability
 import SwiftSonic
 import SwiftUI
 
+// MARK: - SubsonicAnnotationObserving
+
+/// A view model that owns a stored `SubsonicSongTableRow` array derived from
+/// the coordinator's overrides, and rebuilds it when one of them moves.
+///
+/// The coordinator reaches its observers directly because nothing else would:
+/// it is handed to the browse views through the SwiftUI environment, which
+/// does not subscribe to `objectWillChange`, so a star or rating change on its
+/// own re-renders no view (#475).
+@MainActor
+public protocol SubsonicAnnotationObserving: AnyObject {
+    /// Called after any write to the star or rating overrides.
+    func annotationOverridesDidChange()
+}
+
 // MARK: - SubsonicAnnotationCoordinator
 
 /// Owns the optimistic UI state for star and rating actions on Subsonic
@@ -17,19 +32,38 @@ public final class SubsonicAnnotationCoordinator: ObservableObject {
     /// Per-song optimistic starred override. `true` ⇒ starred,
     /// `false` ⇒ unstarred. Absence means "fall back to server value".
     @Published public private(set) var starOverrides: [String: Bool] = [:] {
-        didSet { self.overridesVersion &+= 1 }
+        didSet { self.notifyObservers() }
     }
 
     /// Per-song optimistic rating override (0–5). Absence means
     /// "fall back to server value".
     @Published public private(set) var ratingOverrides: [String: Int] = [:] {
-        didSet { self.overridesVersion &+= 1 }
+        didSet { self.notifyObservers() }
     }
 
-    /// Moves on every write to either override map. The views that derive
-    /// `SubsonicSongTable` rows from a song list plus these overrides fold it
-    /// into the rows version they hand the table (#455).
-    public private(set) var overridesVersion = 0
+    // MARK: - Row observers
+
+    /// Weakly-held box, so a destination's view model deregisters itself by
+    /// going away with its view and no teardown call is needed.
+    private struct WeakObserver {
+        weak var value: (any SubsonicAnnotationObserving)?
+    }
+
+    private var observers: [WeakObserver] = []
+
+    /// Registers a row-owning view model for override changes (#475).
+    /// Registering the same object twice is a no-op.
+    public func addObserver(_ observer: any SubsonicAnnotationObserving) {
+        self.observers.removeAll { $0.value == nil || $0.value === observer }
+        self.observers.append(WeakObserver(value: observer))
+    }
+
+    private func notifyObservers() {
+        self.observers.removeAll { $0.value == nil }
+        for box in self.observers {
+            box.value?.annotationOverridesDidChange()
+        }
+    }
 
     // MARK: - Internals
 

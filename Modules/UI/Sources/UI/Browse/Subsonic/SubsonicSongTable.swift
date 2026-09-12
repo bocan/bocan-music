@@ -33,6 +33,31 @@ struct SubsonicSongTableRow: Identifiable {
         "\(serverID.uuidString)::\(songID)"
     }
 
+    /// Decorates one song, resolving the star and rating against the
+    /// coordinator's optimistic overrides.
+    ///
+    /// Only the row-owning view models call this, once per change of their song
+    /// list, the overrides or the server name. No view builds rows in its
+    /// body: that put an O(n) map on every re-render, including ones caused by
+    /// unrelated state such as a synced lyric line (#475).
+    @MainActor
+    static func make(
+        song: Song,
+        serverID: UUID,
+        serverName: String,
+        annotations: SubsonicAnnotationCoordinator?
+    ) -> Self {
+        Self(
+            song: song,
+            serverID: serverID,
+            serverName: serverName,
+            starred: annotations?.isStarred(songID: song.id, serverStarred: song.starred)
+                ?? (song.starred != nil),
+            rating: annotations?.rating(songID: song.id, serverRating: song.userRating)
+                ?? (song.userRating ?? 0)
+        )
+    }
+
     var title: String {
         self.song.title
     }
@@ -72,6 +97,24 @@ struct SubsonicSongTableRow: Identifiable {
     var coverArtEntityID: String? {
         self.song.coverArt
     }
+
+    // MARK: - Content equality
+
+    /// `true` when every *displayed* value matches `other`.
+    ///
+    /// Row identity is the server plus the song ID, which is what the diffable
+    /// data source keys on and what must stay stable across a reload. The
+    /// table still needs to know when a row's rendered values moved in place,
+    /// a rating or a star above all, so it can reload that one row (#476).
+    /// Every displayed field derives from `song` plus the server pair, so
+    /// comparing those covers the whole row.
+    func hasSameContent(as other: Self) -> Bool {
+        self.song == other.song
+            && self.serverID == other.serverID
+            && self.serverName == other.serverName
+            && self.starred == other.starred
+            && self.rating == other.rating
+    }
 }
 
 // MARK: - Actions bag
@@ -100,11 +143,12 @@ struct SubsonicSongTableActions {
 struct SubsonicSongTable: NSViewRepresentable {
     let rows: [SubsonicSongTableRow]
     /// The owner's counter for `rows` (#455): `updateNSView` walks the rows
-    /// only when this moved since the last apply. Rows are derived in the
-    /// view from a song list and the annotation overrides, so the version
-    /// folds both counters; see `rowsVersion(songs:annotations:)`.
-    /// Deliberately has no default: a caller that left it out would render
-    /// its first rows and then never react to another change (#454).
+    /// only when this moved since the last apply. The rows are stored on a
+    /// view model that rebuilds them when its song list, the annotation
+    /// overrides or the server name change, and this is that model's
+    /// `rowsVersion` (#475). Deliberately has no default: a caller that left
+    /// it out would render its first rows and then never react to another
+    /// change (#454).
     let rowsVersion: Int
     let isLoading: Bool
     let hasMorePages: Bool
@@ -117,13 +161,6 @@ struct SubsonicSongTable: NSViewRepresentable {
     let actions: SubsonicSongTableActions
 
     typealias NSViewType = NSScrollView
-
-    /// The rows version for a table whose rows are derived from a song list
-    /// counter plus the annotation coordinator's override counter. Both only
-    /// ever increase, so their sum moves whenever either input changed.
-    static func rowsVersion(songs: Int, annotations: SubsonicAnnotationCoordinator?) -> Int {
-        songs &+ (annotations?.overridesVersion ?? 0)
-    }
 
     func makeCoordinator() -> SubsonicSongTableCoordinator {
         SubsonicSongTableCoordinator(parent: self)
@@ -215,8 +252,14 @@ struct SubsonicSongTable: NSViewRepresentable {
 
         case .reconfigure:
             // Same rows, new content (a star or rating moved): refresh the
-            // cell-lookup dictionary that the star and text cells read from.
+            // cell-lookup dictionary that the star and text cells read from,
+            // then reload the rows whose rendered values actually moved. The
+            // star cell repaints itself on click, but the Rating cell is plain
+            // text and used to keep the old value until it was scrolled out
+            // and back (#476).
+            let changed = Self.changedRowIDs(from: coordinator.rowsByID, to: self.rows)
             coordinator.updateRows(self.rows)
+            Self.reload(rows: changed, dataSource: dataSource)
 
         case .structural:
             coordinator.updateRows(self.rows)
@@ -243,6 +286,35 @@ struct SubsonicSongTable: NSViewRepresentable {
         // Once the snapshot reflects the current rows, move the selection onto
         // the now-playing row when it changes.
         coordinator.syncSelectionToNowPlaying(self.nowPlayingRowID)
+    }
+
+    // MARK: Reconfigure
+
+    /// IDs of the rows whose rendered values differ from the ones the
+    /// coordinator is still holding. A row the coordinator does not know is
+    /// not a content change: the structural path owns new rows.
+    static func changedRowIDs(
+        from oldRowsByID: [String: SubsonicSongTableRow],
+        to rows: [SubsonicSongTableRow]
+    ) -> [String] {
+        rows.compactMap { row in
+            guard let old = oldRowsByID[row.id], !old.hasSameContent(as: row) else { return nil }
+            return row.id
+        }
+    }
+
+    /// Reloads the given rows in place, ignoring IDs the snapshot does not
+    /// hold and duplicates. A no-op for an empty list, which is the common
+    /// case: most reconfigure passes move one row.
+    private static func reload(rows changed: [String], dataSource: SubsonicSongDiffableDataSource) {
+        guard !changed.isEmpty else { return }
+        var snapshot = dataSource.snapshot()
+        let existing = Set(snapshot.itemIdentifiers(inSection: 0))
+        var seen = Set<String>()
+        let valid = changed.filter { existing.contains($0) && seen.insert($0).inserted }
+        guard !valid.isEmpty else { return }
+        snapshot.reloadItems(valid)
+        dataSource.apply(snapshot, animatingDifferences: false)
     }
 
     // MARK: Column definitions

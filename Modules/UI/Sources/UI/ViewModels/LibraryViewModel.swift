@@ -493,8 +493,13 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.subsonicDataSource = subsonicDataSource
         self.subsonicCoverArtProvider = subsonicCoverArtProvider
         self.subsonicMetadataCache = subsonicMetadataCache
-        self.subsonicSearch = subsonicDataSource.map { SubsonicMultiSourceSearchViewModel(dataSource: $0) }
-        self.subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
+        let subsonicAnnotations = subsonicAnnotationDelivery.map { SubsonicAnnotationCoordinator(delivery: $0) }
+        self.subsonicAnnotations = subsonicAnnotations
+        // The search view model owns its table rows, so it needs the
+        // coordinator to rebuild them when a star or rating moves (#475).
+        self.subsonicSearch = subsonicDataSource.map {
+            SubsonicMultiSourceSearchViewModel(dataSource: $0, annotations: subsonicAnnotations)
+        }
         self.settingsRepo = SettingsRepository(database: database)
         let radioStations = RadioStationRepository(database: database)
         self.radioStations = radioStations

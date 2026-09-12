@@ -17,7 +17,7 @@ Adding a podcast whose directory listing gives a plain-http feed address now wor
 
 The main window and the Songs list no longer redraw every time a synced lyric line changes, a lyrics fetch starts or finishes, or the sync offset moves. Only the lyrics pane updates on those moments, so playing a song with synced lyrics while the full Songs list is open stays smooth.
 
-Song lists from a Subsonic server, in the Songs view, album and artist pages and search results, no longer re-check every row whenever something else in the window updates, such as a synced lyric line changing. Large remote albums and playlists stay smooth.
+Song lists from a Subsonic server, in the Songs view, album and artist pages and search results, no longer rebuild themselves whenever something else in the window updates, such as a synced lyric line changing. Large remote albums and playlists stay smooth. A star or rating you set on one of those songs now shows in the list straight away, instead of waiting for the next time something else redraws the window.
 
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
 

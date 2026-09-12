@@ -87,12 +87,23 @@ private actor StubBrowseDataSource: SubsonicBrowseDataSource {
         return next
     }
 
+    var artistDetail: ArtistID3?
+    var albumDetail: AlbumID3?
+
+    func seedArtistDetail(_ artist: ArtistID3) {
+        self.artistDetail = artist
+    }
+
+    func seedAlbumDetail(_ album: AlbumID3) {
+        self.albumDetail = album
+    }
+
     func getArtist(serverID: UUID, id: String) async throws -> ArtistID3 {
-        ArtistID3(id: id, name: "Stub")
+        self.artistDetail ?? ArtistID3(id: id, name: "Stub")
     }
 
     func getAlbum(serverID: UUID, id: String) async throws -> AlbumID3 {
-        AlbumID3(id: id, name: "Stub", songCount: 0, duration: 0)
+        self.albumDetail ?? AlbumID3(id: id, name: "Stub", songCount: 0, duration: 0)
     }
 
     // MARK: ADR-035 step 11 — optional destinations
@@ -296,20 +307,22 @@ struct SubsonicSongsViewModelTests {
         #expect(vm.isLoading == false)
     }
 
-    @Test("every write to songs moves songsVersion, so the table can skip unchanged updates (#455)")
-    func songsVersionMovesWithSongs() async {
+    @Test("every write to songs rebuilds the rows and moves rowsVersion (#455, #475)")
+    func rowsVersionMovesWithSongs() async {
         let stub = StubBrowseDataSource()
         // A full first page, or the view model concludes there is no more to load.
         await stub.seedRandomPages([(0 ..< 100).map { song($0) }, [song(100)]])
         let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub)
-        let fresh = vm.songsVersion
+        let fresh = vm.rowsVersion
 
         await vm.load()
-        let loaded = vm.songsVersion
+        let loaded = vm.rowsVersion
         #expect(loaded > fresh, "load() writes songs")
+        #expect(vm.rows.count == vm.songs.count, "the rows are the song list, decorated")
 
         await vm.loadMore()
-        #expect(vm.songsVersion > loaded, "loadMore() writes songs again")
+        #expect(vm.rowsVersion > loaded, "loadMore() writes songs again")
+        #expect(vm.rows.count == vm.songs.count)
     }
 
     @Test("loadMore() appends and dedupes by id")
@@ -836,5 +849,252 @@ struct SubsonicMultiSourceSearchViewModelTests {
         #expect(vm.artists.isEmpty)
         #expect(vm.query.isEmpty)
         #expect(vm.isSearching == false)
+    }
+}
+
+// MARK: - Reconfigure diff (#476)
+
+/// A rating set from the context menu lands in the rows as a same-set update,
+/// which the table answers with its `.reconfigure` branch. That branch used to
+/// refresh the cell-lookup dictionary and reload nothing, so the Rating column
+/// kept the old value until the cell was scrolled out and back. It now reloads
+/// exactly the rows whose rendered values moved.
+@Suite("Subsonic song table reconfigure diff")
+@MainActor
+struct SubsonicSongTableReconfigureTests {
+    private let serverID = UUID()
+
+    private func row(_ i: Int, starred: Bool = false, rating: Int = 0) -> SubsonicSongTableRow {
+        SubsonicSongTableRow(
+            song: song(i),
+            serverID: self.serverID,
+            serverName: "Living Room",
+            starred: starred,
+            rating: rating
+        )
+    }
+
+    private func byID(_ rows: [SubsonicSongTableRow]) -> [String: SubsonicSongTableRow] {
+        Dictionary(rows.map { ($0.id, $0) }) { _, new in new }
+    }
+
+    @Test("a rating change reloads exactly its own row")
+    func ratingChangeReloadsItsRow() {
+        let before = [self.row(1), self.row(2), self.row(3)]
+        let after = [self.row(1), self.row(2, rating: 4), self.row(3)]
+
+        let changed = SubsonicSongTable.changedRowIDs(from: self.byID(before), to: after)
+
+        #expect(changed == [after[1].id])
+    }
+
+    @Test("a star change reloads its row")
+    func starChangeReloadsItsRow() {
+        let before = [self.row(1), self.row(2)]
+        let after = [self.row(1, starred: true), self.row(2)]
+
+        let changed = SubsonicSongTable.changedRowIDs(from: self.byID(before), to: after)
+
+        #expect(changed == [after[0].id])
+    }
+
+    @Test("rows with identical content reload nothing")
+    func unchangedRowsReloadNothing() {
+        let before = [self.row(1, starred: true, rating: 3), self.row(2)]
+        let after = [self.row(1, starred: true, rating: 3), self.row(2)]
+
+        #expect(SubsonicSongTable.changedRowIDs(from: self.byID(before), to: after).isEmpty)
+    }
+
+    @Test("a row the table has not seen is left to the structural path")
+    func unknownRowIsNotAContentChange() {
+        let before = [self.row(1)]
+        let after = [self.row(1), self.row(2, rating: 5)]
+
+        #expect(SubsonicSongTable.changedRowIDs(from: self.byID(before), to: after).isEmpty)
+    }
+
+    @Test("content equality covers the values the cells render")
+    func contentEqualityCoversRenderedValues() {
+        let base = self.row(1)
+        #expect(base.hasSameContent(as: self.row(1)))
+        #expect(!base.hasSameContent(as: self.row(1, rating: 1)))
+        #expect(!base.hasSameContent(as: self.row(1, starred: true)))
+        #expect(base.id == self.row(1, rating: 5).id, "a rating never changes row identity")
+    }
+}
+
+// MARK: - Row ownership (#475)
+
+/// Annotation delivery that accepts every write and never reports a failure.
+/// The row-ownership tests care about the optimistic overrides, not delivery.
+private final class SilentAnnotationDelivery: SubsonicAnnotationDelivering, @unchecked Sendable {
+    func annotationFailures() -> AsyncStream<SubsonicAnnotationFailure> {
+        AsyncStream { _ in }
+    }
+
+    func star(serverID _: UUID, songID _: String) async {
+        // Accepted and dropped.
+    }
+
+    func unstar(serverID _: UUID, songID _: String) async {
+        // Accepted and dropped.
+    }
+
+    func setRating(serverID _: UUID, songID _: String, rating _: Int) async {
+        // Accepted and dropped.
+    }
+}
+
+/// The song tables used to map their rows in the view body, so an O(n)
+/// decoration ran on every re-render, including ones caused by unrelated
+/// state. The rows now belong to the view models, which rebuild them when the
+/// song list, the overrides or the server name change, and nothing else (#475).
+@Suite("Subsonic song table row ownership")
+@MainActor
+struct SubsonicSongRowOwnershipTests {
+    private func makeCoordinator() -> SubsonicAnnotationCoordinator {
+        SubsonicAnnotationCoordinator(delivery: SilentAnnotationDelivery())
+    }
+
+    private func settle(_ isBusy: @escaping () -> Bool) async {
+        for _ in 0 ..< 50 {
+            if !isBusy() {
+                return
+            }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+    }
+
+    @Test("the songs list owns its rows, tagged with the server they came from")
+    func songsViewModelOwnsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedRandomPages([[song(1), song(2)]])
+        let vm = SubsonicSongsViewModel(
+            serverID: serverID, dataSource: stub, serverName: "Living Room"
+        )
+
+        await vm.load()
+
+        #expect(vm.rows.map(\.song.id) == ["s1", "s2"])
+        #expect(Set(vm.rows.map(\.serverName)) == Set(["Living Room"]))
+        #expect(Set(vm.rows.map(\.serverID)) == Set([serverID]))
+    }
+
+    @Test("a star reaches the stored rows without waiting for a re-render")
+    func starRebuildsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedRandomPages([[song(1), song(2)]])
+        let coord = self.makeCoordinator()
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub, annotations: coord)
+        await vm.load()
+        let loaded = vm.rowsVersion
+        #expect(vm.rows.first?.starred == false)
+
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: serverID, currentlyStarred: false)
+        }
+
+        #expect(vm.rows.first?.starred == true)
+        #expect(vm.rows.last?.starred == false, "only the starred song changes")
+        #expect(vm.rowsVersion > loaded, "the table must be told the rows moved")
+    }
+
+    @Test("a rating reaches the stored rows")
+    func ratingRebuildsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedRandomPages([[song(1)]])
+        let coord = self.makeCoordinator()
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub, annotations: coord)
+        await vm.load()
+
+        silencingHaptics {
+            coord.setRating(songID: "s1", serverID: serverID, newRating: 4, previousRating: nil)
+        }
+
+        #expect(vm.rows.first?.rating == 4)
+    }
+
+    @Test("a server rename rebuilds the rows; the same name again does not")
+    func serverRenameRebuildsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedRandomPages([[song(1)]])
+        let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub, serverName: "Attic")
+        await vm.load()
+
+        vm.serverName = "Cellar"
+        #expect(Set(vm.rows.map(\.serverName)) == Set(["Cellar"]))
+
+        let renamed = vm.rowsVersion
+        vm.serverName = "Cellar"
+        #expect(vm.rowsVersion == renamed, "an identical name is not a change")
+    }
+
+    @Test("album detail rows come from the album's songs and follow the overrides")
+    func albumDetailOwnsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedAlbumDetail(
+            AlbumID3(id: "a1", name: "Album 1", songCount: 2, duration: 400, song: [song(1), song(2)])
+        )
+        let coord = self.makeCoordinator()
+        let vm = SubsonicAlbumDetailViewModel(
+            serverID: serverID, albumID: "a1", dataSource: stub, annotations: coord
+        )
+
+        await vm.load()
+        #expect(vm.rows.map(\.song.id) == ["s1", "s2"])
+        let loaded = vm.rowsVersion
+
+        silencingHaptics {
+            coord.setRating(songID: "s2", serverID: serverID, newRating: 5, previousRating: nil)
+        }
+        #expect(vm.rows.last?.rating == 5)
+        #expect(vm.rowsVersion > loaded)
+    }
+
+    @Test("artist detail rows come from the flattened tracks and follow the overrides")
+    func artistDetailOwnsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedArtistDetail(ArtistID3(id: "ar1", name: "Artist", album: [album(1)]))
+        await stub.seedAlbumDetail(
+            AlbumID3(id: "a1", name: "Album 1", songCount: 2, duration: 400, song: [song(1), song(2)])
+        )
+        let coord = self.makeCoordinator()
+        let vm = SubsonicArtistDetailViewModel(
+            serverID: serverID, artistID: "ar1", dataSource: stub, annotations: coord
+        )
+
+        await vm.load()
+        // The albums fan out into a detached task; the tracks land after it.
+        await self.settle { vm.rows.isEmpty }
+        #expect(vm.rows.map(\.song.id) == ["s1", "s2"])
+        let loaded = vm.rowsVersion
+
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: serverID, currentlyStarred: false)
+        }
+        #expect(vm.rows.first?.starred == true)
+        #expect(vm.rowsVersion > loaded)
+    }
+
+    @Test("search rows span servers and follow the overrides")
+    func searchOwnsRows() async {
+        let stub = StubBrowseDataSource()
+        await stub.seedSearchResult(makeSearchResult(songs: ["s1"]))
+        let coord = self.makeCoordinator()
+        let vm = SubsonicMultiSourceSearchViewModel(dataSource: stub, annotations: coord)
+
+        vm.search(query: "hi", servers: [sidebarServer("A"), sidebarServer("B")])
+        await self.settle { vm.isSearching }
+
+        #expect(Set(vm.rows.map(\.serverName)) == Set(["A", "B"]))
+        #expect(Set(vm.rows.map(\.serverID)).count == 2, "each row keeps the server it came from")
+        let found = vm.rowsVersion
+
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: vm.songs[0].serverID, currentlyStarred: false)
+        }
+        #expect(Set(vm.rows.map(\.starred)) == Set([true]), "the override is keyed by song ID, so both rows follow")
+        #expect(vm.rowsVersion > found)
     }
 }

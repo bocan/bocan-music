@@ -39,7 +39,9 @@ public struct SubsonicSongsView: View {
             wrappedValue: SubsonicSongsViewModel(
                 serverID: serverID,
                 dataSource: dataSource,
-                cache: library.subsonicMetadataCache
+                cache: library.subsonicMetadataCache,
+                annotations: library.subsonicAnnotations,
+                serverName: library.subsonicServers.first { $0.id == serverID }?.name ?? ""
             )
         )
         // Safe: `subsonicSearch` is always non-nil whenever this view is
@@ -88,6 +90,11 @@ public struct SubsonicSongsView: View {
                 await self.vm.load()
             }
         }
+        // The row owner needs the server's display name, and the sidebar list
+        // it comes from may load, or be renamed, after this view appears.
+        .onChange(of: self.currentServerName, initial: true) { _, name in
+            self.vm.serverName = name
+        }
         .loadErrorAlert(L10n.string("Couldn't load songs"), message: self.$vm.errorMessage)
     }
 
@@ -104,27 +111,9 @@ public struct SubsonicSongsView: View {
         } else if self.vm.songs.isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            let serverName = self.currentServerName
-            let rows = self.vm.songs.map { song in
-                SubsonicSongTableRow(
-                    song: song,
-                    serverID: self.serverID,
-                    serverName: serverName,
-                    starred: self.annotationCoordinator?.isStarred(
-                        songID: song.id,
-                        serverStarred: song.starred
-                    ) ?? (song.starred != nil),
-                    rating: self.annotationCoordinator?.rating(
-                        songID: song.id,
-                        serverRating: song.userRating
-                    ) ?? (song.userRating ?? 0)
-                )
-            }
             SubsonicSongTable(
-                rows: rows,
-                rowsVersion: SubsonicSongTable.rowsVersion(
-                    songs: self.vm.songsVersion, annotations: self.annotationCoordinator
-                ),
+                rows: self.vm.rows,
+                rowsVersion: self.vm.rowsVersion,
                 isLoading: self.vm.isLoading,
                 hasMorePages: self.vm.hasMorePages,
                 coverArtProvider: self.coverArtProvider,
@@ -179,30 +168,13 @@ public struct SubsonicSongsView: View {
                 ContentUnavailableView.search(text: self.library.searchQuery)
             }
         } else {
-            let rows = self.search.songs.map { hit in
-                SubsonicSongTableRow(
-                    song: hit.song,
-                    serverID: hit.serverID,
-                    serverName: hit.serverName,
-                    starred: self.annotationCoordinator?.isStarred(
-                        songID: hit.song.id,
-                        serverStarred: hit.song.starred
-                    ) ?? (hit.song.starred != nil),
-                    rating: self.annotationCoordinator?.rating(
-                        songID: hit.song.id,
-                        serverRating: hit.song.userRating
-                    ) ?? (hit.song.userRating ?? 0)
-                )
-            }
             VStack(spacing: 0) {
                 if !self.search.failedServerNames.isEmpty {
                     SubsonicSearchFailedBanner(serverNames: self.search.failedServerNames)
                 }
                 SubsonicSongTable(
-                    rows: rows,
-                    rowsVersion: SubsonicSongTable.rowsVersion(
-                        songs: self.search.songsVersion, annotations: self.annotationCoordinator
-                    ),
+                    rows: self.search.rows,
+                    rowsVersion: self.search.rowsVersion,
                     isLoading: self.search.isSearching,
                     hasMorePages: false,
                     coverArtProvider: self.coverArtProvider,
