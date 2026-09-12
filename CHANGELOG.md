@@ -21,6 +21,8 @@ Song lists from a Subsonic server, in the Songs view, album and artist pages and
 
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
 
+The rest of Bòcan now does the same. Signing in to a scrobbling service, identifying a track, saving a smart playlist, Deep Dive and Phone Sync all name the real reason when something fails, instead of showing an internal code or a fragment of program text.
+
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
 The now-playing display no longer misses a queue change that lands in the first instants after launch while nothing is playing, which could leave it on "Not playing" until the next track change.

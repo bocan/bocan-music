@@ -32,3 +32,13 @@ public enum PlaylistError: Error, Sendable, CustomStringConvertible, Equatable {
         }
     }
 }
+
+// MARK: - PlaylistError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(Library.PlaylistError error 3.)" and tells the user nothing (#471).
+extension PlaylistError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}

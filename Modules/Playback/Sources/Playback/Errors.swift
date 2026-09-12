@@ -26,3 +26,13 @@ public enum PlaybackError: Error, Sendable, CustomStringConvertible {
         }
     }
 }
+
+// MARK: - PlaybackError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(Playback.PlaybackError error 3.)" and tells the user nothing (#471).
+extension PlaybackError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}

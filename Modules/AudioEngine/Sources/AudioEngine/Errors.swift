@@ -56,3 +56,13 @@ public enum AudioEngineError: Error, Sendable, CustomStringConvertible {
         }
     }
 }
+
+// MARK: - AudioEngineError + LocalizedError
+
+/// Without this, `localizedDescription` is Foundation's fallback, which reads
+/// "(AudioEngine.AudioEngineError error 3.)" and tells the user nothing (#471).
+extension AudioEngineError: LocalizedError {
+    public var errorDescription: String? {
+        self.description
+    }
+}
