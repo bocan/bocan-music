@@ -54,6 +54,7 @@ struct LyricsOffsetControl: View {
             .accessibilityIdentifier(A11y.Lyrics.offsetSlider)
             .accessibilityValue(self.valueLabel)
             .frame(width: 220)
+            .help(L10n.string("Drag right if the lines light up too early, left if they lag behind the singing."))
 
             HStack {
                 Text(verbatim: self.valueLabel)
@@ -68,6 +69,7 @@ struct LyricsOffsetControl: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(self.vm.userOffsetMS == 0 ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
                 .disabled(self.vm.userOffsetMS == 0)
+                .help(L10n.string("Puts the timing back to the lyrics file's own."))
             }
 
             Text(localized: "Shifts highlighted line timing.\nResets when the track changes.")

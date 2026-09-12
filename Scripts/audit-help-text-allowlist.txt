@@ -62,3 +62,12 @@ Modules/UI/Sources/UI/MetadataEditor/TagEditorSheet.swift|Button(L10n.string("Ca
 Modules/UI/Sources/UI/Tools/BatchCoverArtSheet.swift|Button(L10n.string("Close")) { self.isPresented = false }  # closes the finished sheet
 Modules/UI/Sources/UI/Tools/BatchCoverArtSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes before starting
 Modules/UI/Sources/UI/Tools/DuplicateReviewSheet.swift|Button(L10n.string("Done")) { self.isPresented = false }  # closes the review
+
+# Playback surfaces: the dismiss buttons and the inline rename's OK, which
+# sits beside the text field it commits. Every control here that changes
+# what you hear or see carries help instead (#507).
+Modules/UI/Sources/UI/DSP/EQView.swift|Button(L10n.string("Cancel")) { self.showSaveSheet = false }  # closes without saving the preset
+Modules/UI/Sources/UI/DSP/PresetManagerView.swift|Button(L10n.string("Done")) { self.dismiss() }  # closes the manager
+Modules/UI/Sources/UI/DSP/PresetManagerView.swift|Button(L10n.string("OK")) { self.commitRename(preset: preset) }  # commits the name in the field beside it
+Modules/UI/Sources/UI/DSP/ReplayGainSettingsView.swift|Button(L10n.string("Dismiss")) { self.library.replayGainProgress = nil }  # clears the finished-scan message
+Modules/UI/Sources/UI/Lyrics/LyricsEditorSheet.swift|Button(L10n.string("Cancel")) {  # closes without saving
