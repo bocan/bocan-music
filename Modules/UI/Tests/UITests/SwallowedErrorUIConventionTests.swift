@@ -101,12 +101,14 @@ struct QuietRecoveryUIConventionTests {
         try String(contentsOf: self.sourceRoot.appendingPathComponent(relativePath), encoding: .utf8)
     }
 
-    @Test("the shared helper logs the error it recovers from and returns nil")
-    func recoveredReadLogs() throws {
+    /// The wrapper only supplies this module's logging category. That it logs
+    /// the error and returns nil is `Observability.logged`'s job, and is
+    /// covered directly by `LoggedTests` over there (#459).
+    @Test("the module's helper delegates to the shared recover-and-log helper")
+    func recoveredReadDelegates() throws {
         let source = try self.source("Common/RecoveredRead.swift")
         #expect(source.contains("func recoveredRead<T: Sendable>"))
-        #expect(source.contains("AppLogger.make(.ui).warning(event"))
-        #expect(source.contains("return nil"))
+        #expect(source.contains("await logged(event, AppLogger.make(.ui), fetch)"))
     }
 
     /// These files had every one of their swallowed reads replaced, so the
