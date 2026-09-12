@@ -161,9 +161,12 @@ the policy is being avoided rather than applied.
 re-run afterwards, or the en-XA coverage test fails. A bare literal compiles,
 renders in English and silently never localizes.
 
-Enforced by `Scripts/audit-help-text.py` from `make lint`. The audit behind the
-rule, with the backlog counted per area, is `docs/audits/help-text-audit.md`
-(#501).
+Enforced by `Scripts/audit-help-text.py` from `make lint`, in strict mode since
+#509: a control that ships without hover text and without an allowlist entry
+fails the build, locally and in CI. The audit has its own hermetic tests in
+`Scripts/tests/audit-help-text-test.sh`, which `make test-scripts` and the CI
+`scripts` job both run. The backlog this replaced, counted per area, is
+`docs/audits/help-text-audit.md` (#501).
 
 ## Localization
 

@@ -85,14 +85,14 @@ def statement_chain(lines: list[str], start: int) -> str:
     return "\n".join(chain)
 
 
-def site_key(path: pathlib.Path, line: str) -> str:
-    return f"{path.relative_to(ROOT)}|{' '.join(line.split())}"
+def site_key(path: pathlib.Path, line: str, root: pathlib.Path = ROOT) -> str:
+    return f"{path.relative_to(root)}|{' '.join(line.split())}"
 
 
-def load_allowlist() -> set[str]:
+def load_allowlist(allowlist_file: pathlib.Path = ALLOWLIST_FILE) -> set[str]:
     allowed = set()
-    if ALLOWLIST_FILE.exists():
-        for raw in ALLOWLIST_FILE.read_text().splitlines():
+    if allowlist_file.exists():
+        for raw in allowlist_file.read_text().splitlines():
             entry = raw.split("#", 1)[0].strip()
             if entry:
                 allowed.add(entry)
@@ -134,22 +134,34 @@ def main() -> int:
         "--summary", action="store_true",
         help="print the violation count only, not the list (what `make lint` uses)"
     )
+    parser.add_argument(
+        "--root", type=pathlib.Path, default=ROOT,
+        help="repository root to scan (the tests point this at a fixture tree)"
+    )
+    parser.add_argument(
+        "--allowlist", type=pathlib.Path, default=ALLOWLIST_FILE,
+        help="allowlist file to honour (default: Scripts/audit-help-text-allowlist.txt)"
+    )
     args = parser.parse_args()
 
-    allowed = load_allowlist()
+    root: pathlib.Path = args.root
+    allowed = load_allowlist(args.allowlist)
     used: set[str] = set()
     failures = []
     for scan_dir in SCAN_DIRS:
-        for path in sorted((ROOT / scan_dir).rglob("*.swift")):
+        scan_root = root / scan_dir
+        if not scan_root.exists():
+            continue
+        for path in sorted(scan_root.rglob("*.swift")):
             if "Tests" in path.parts:
                 continue
             for lineno, construct, line in scan_file(path):
-                key = site_key(path, line)
+                key = site_key(path, line, root)
                 if key in allowed:
                     used.add(key)
                     continue
                 failures.append(
-                    f"{path.relative_to(ROOT)}:{lineno}: {construct} without .help(): {line[:100]}"
+                    f"{path.relative_to(root)}:{lineno}: {construct} without .help(): {line[:100]}"
                 )
 
     for stale in sorted(allowed - used):

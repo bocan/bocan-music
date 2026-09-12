@@ -316,7 +316,7 @@ uitest:
 ## lint: Run SwiftLint (strict, violations only; refuses to run on an unpinned SwiftLint)
 lint: check-swiftlint-version
 	swiftlint lint --strict --quiet
-	@python3 Scripts/audit-help-text.py --warn --summary
+	@python3 Scripts/audit-help-text.py --summary
 	@python3 Scripts/audit-try-optional.py --summary
 
 ## format: Run SwiftFormat (modifies files)

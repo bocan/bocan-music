@@ -1,4 +1,14 @@
-# Help-text audit (#501), baseline
+# Help-text audit (#501), baseline and outcome
+
+> **Cleared.** The backlog below is at zero, and `make lint` runs the audit in
+> strict mode since #509, so it cannot grow again without failing a build. The
+> counts are kept as the record of what the backlog was and how it was split.
+> Of the 173: 120 gained hover text, 42 were allowlisted with a reason (37
+> entries, because one entry covers every identical call site), and 11 left the
+> count another way. Those 11 are the ones worth remembering: nine were menu
+> content the audit could not recognise, one was a nested menu with no call
+> site, and one was a switch that read nothing and was deleted (#502).
+
 
 Report only, no fixes. Every interactive control without `.help()` on
 2026-09-12 (tree at `f9c926c0`), counted by area, so the backlog has a recorded
