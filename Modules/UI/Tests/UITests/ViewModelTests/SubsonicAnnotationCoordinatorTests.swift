@@ -56,6 +56,17 @@ private final class StubAnnotationDelivery: SubsonicAnnotationDelivering, @unche
     }
 }
 
+/// Stands in for a row-owning view model: counts the rebuild calls the
+/// coordinator makes (#475).
+@MainActor
+private final class SpyAnnotationObserver: SubsonicAnnotationObserving {
+    private(set) var changes = 0
+
+    func annotationOverridesDidChange() {
+        self.changes += 1
+    }
+}
+
 // MARK: - Tests
 
 @Suite("SubsonicAnnotationCoordinator")
@@ -72,18 +83,44 @@ struct SubsonicAnnotationCoordinatorTests {
         }
     }
 
-    @Test("every override write moves overridesVersion, so derived table rows get a new version (#455)")
-    func overridesVersionMovesWithOverrides() async {
+    @Test("every override write tells the row owners to rebuild (#475)")
+    func everyOverrideWriteNotifiesObservers() async {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        let fresh = coord.overridesVersion
+        let observer = SpyAnnotationObserver()
+        coord.addObserver(observer)
+        #expect(observer.changes == 0, "registering is not a change")
 
         coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
-        let starred = coord.overridesVersion
-        #expect(starred > fresh, "a star override is a write")
+        #expect(observer.changes == 1, "a star override is a write")
 
         coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: true)
-        #expect(coord.overridesVersion > starred, "clearing it is a write too")
+        #expect(observer.changes == 2, "clearing it is a write too")
+
+        coord.setRating(songID: "s1", serverID: self.serverID, newRating: 4, previousRating: nil)
+        #expect(observer.changes == 3, "a rating override is a write")
+        await self.waitForCalls(stub, count: 3)
+    }
+
+    @Test("an observer is registered once and held weakly")
+    func observerRegistrationIsIdempotentAndWeak() async {
+        let stub = StubAnnotationDelivery()
+        let coord = SubsonicAnnotationCoordinator(delivery: stub)
+        let observer = SpyAnnotationObserver()
+        coord.addObserver(observer)
+        coord.addObserver(observer)
+
+        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        #expect(observer.changes == 1, "registering twice must not notify twice")
+
+        // A destination that goes away deregisters itself: no teardown call,
+        // and no crash on the next write.
+        do {
+            let transient = SpyAnnotationObserver()
+            coord.addObserver(transient)
+        }
+        coord.toggleStar(songID: "s2", serverID: self.serverID, currentlyStarred: false)
+        #expect(observer.changes == 2)
         await self.waitForCalls(stub, count: 2)
     }
 

@@ -12,24 +12,45 @@ import SwiftUI
 /// repeatedly calls `getRandomSongs` to surface a deep but shuffled sample of
 /// the server's library. "Refresh" reseeds the sample; "Load more" appends.
 @MainActor
-public final class SubsonicSongsViewModel: ObservableObject {
+public final class SubsonicSongsViewModel: ObservableObject, SubsonicAnnotationObserving {
     public static let pageSize = 100
 
     public let serverID: UUID
 
     @Published public private(set) var songs: [Song] = [] {
-        didSet { self.songsVersion &+= 1 }
+        didSet { self.rebuildRows() }
     }
 
-    /// Moves on every write to `songs`; `SubsonicSongTable` skips its per-row
-    /// walks while the rows version it is given holds (#455).
-    public private(set) var songsVersion = 0
+    /// Decorated rows for `SubsonicSongTable`, owned here rather than mapped
+    /// in the view's body, so the O(n) decoration runs once per change of the
+    /// song list, the annotation overrides or the server name instead of once
+    /// per re-render (#475).
+    @Published private(set) var rows: [SubsonicSongTableRow] = [] {
+        didSet { self.rowsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `rows` via `didSet`, so no path can forget it;
+    /// `SubsonicSongTable` skips its per-row walks while it holds (#455).
+    private(set) var rowsVersion = 0
+
+    /// Display name of this server, carried on every row. Set by the view,
+    /// which reads it from the sidebar server list; a rename rebuilds the rows.
+    public var serverName: String {
+        didSet {
+            guard self.serverName != oldValue else { return }
+            self.rebuildRows()
+        }
+    }
+
     @Published public private(set) var isLoading = false
     @Published public private(set) var hasMorePages = true
     @Published public var errorMessage: String?
 
     private let dataSource: any SubsonicBrowseDataSource
     private let cache: (any SubsonicMetadataCaching)?
+    /// Held strongly: the coordinator outlives this view model, and its own
+    /// reference back to here is weak.
+    private let annotations: SubsonicAnnotationCoordinator?
     private let log = AppLogger.make(.ui)
 
     private static let cacheKind = "songs.randomSample"
@@ -38,11 +59,35 @@ public final class SubsonicSongsViewModel: ObservableObject {
     public init(
         serverID: UUID,
         dataSource: any SubsonicBrowseDataSource,
-        cache: (any SubsonicMetadataCaching)? = nil
+        cache: (any SubsonicMetadataCaching)? = nil,
+        annotations: SubsonicAnnotationCoordinator? = nil,
+        serverName: String = ""
     ) {
         self.serverID = serverID
         self.dataSource = dataSource
         self.cache = cache
+        self.annotations = annotations
+        self.serverName = serverName
+        annotations?.addObserver(self)
+    }
+
+    // MARK: - Rows
+
+    /// Rebuilds every row from the current song list and overrides.
+    private func rebuildRows() {
+        let serverID = self.serverID
+        let serverName = self.serverName
+        let annotations = self.annotations
+        self.rows = self.songs.map {
+            SubsonicSongTableRow.make(
+                song: $0, serverID: serverID, serverName: serverName, annotations: annotations
+            )
+        }
+    }
+
+    /// A star or rating moved: the stored rows are now stale (#475).
+    public func annotationOverridesDidChange() {
+        self.rebuildRows()
     }
 
     /// Initial load — populates the random sample once per view lifetime.

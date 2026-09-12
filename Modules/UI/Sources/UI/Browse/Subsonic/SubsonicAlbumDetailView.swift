@@ -7,28 +7,81 @@ import SwiftUI
 
 /// Loads a single Subsonic album via `getAlbum` and exposes its songs.
 @MainActor
-public final class SubsonicAlbumDetailViewModel: ObservableObject {
+public final class SubsonicAlbumDetailViewModel: ObservableObject, SubsonicAnnotationObserving {
     public let serverID: UUID
     public let albumID: String
 
     @Published public private(set) var album: AlbumID3? {
-        didSet { self.albumVersion &+= 1 }
+        didSet { self.rebuildRows() }
     }
 
-    /// Moves on every write to `album`, whose songs feed the table;
-    /// `SubsonicSongTable` skips its per-row walks while the rows version it
-    /// is given holds (#455).
-    public private(set) var albumVersion = 0
+    /// The album's songs, in the order the server returned them.
+    public var songs: [Song] {
+        self.album?.song ?? []
+    }
+
+    /// Decorated rows for `SubsonicSongTable`, owned here rather than mapped
+    /// in the view's body, so the O(n) decoration runs once per change of the
+    /// album, the annotation overrides or the server name instead of once per
+    /// re-render (#475).
+    @Published private(set) var rows: [SubsonicSongTableRow] = [] {
+        didSet { self.rowsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `rows` via `didSet`, so no path can forget it;
+    /// `SubsonicSongTable` skips its per-row walks while it holds (#455).
+    private(set) var rowsVersion = 0
+
+    /// Display name of this server, carried on every row. Set by the view,
+    /// which reads it from the sidebar server list; a rename rebuilds the rows.
+    public var serverName: String {
+        didSet {
+            guard self.serverName != oldValue else { return }
+            self.rebuildRows()
+        }
+    }
+
     @Published public private(set) var isLoading = false
     @Published public var errorMessage: String?
 
     private let dataSource: any SubsonicBrowseDataSource
+    /// Held strongly: the coordinator outlives this view model, and its own
+    /// reference back to here is weak.
+    private let annotations: SubsonicAnnotationCoordinator?
     private let log = AppLogger.make(.ui)
 
-    public init(serverID: UUID, albumID: String, dataSource: any SubsonicBrowseDataSource) {
+    public init(
+        serverID: UUID,
+        albumID: String,
+        dataSource: any SubsonicBrowseDataSource,
+        annotations: SubsonicAnnotationCoordinator? = nil,
+        serverName: String = ""
+    ) {
         self.serverID = serverID
         self.albumID = albumID
         self.dataSource = dataSource
+        self.annotations = annotations
+        self.serverName = serverName
+        annotations?.addObserver(self)
+    }
+
+    // MARK: - Rows
+
+    /// Rebuilds every row from the album's songs and the current overrides.
+    private func rebuildRows() {
+        let serverID = self.serverID
+        let serverName = self.serverName
+        let annotations = self.annotations
+        self.rows = self.songs.map {
+            SubsonicSongTableRow.make(
+                song: $0, serverID: serverID, serverName: serverName, annotations: annotations
+            )
+        }
+    }
+
+    /// A star or rating moved: the stored rows are now stale (#475).
+    public func annotationOverridesDidChange() {
+        self.rebuildRows()
     }
 
     public func load() async {
@@ -75,7 +128,11 @@ public struct SubsonicAlbumDetailView: View {
         self.coverArtProvider = coverArtProvider
         self._vm = StateObject(
             wrappedValue: SubsonicAlbumDetailViewModel(
-                serverID: serverID, albumID: albumID, dataSource: dataSource
+                serverID: serverID,
+                albumID: albumID,
+                dataSource: dataSource,
+                annotations: library.subsonicAnnotations,
+                serverName: library.subsonicServers.first { $0.id == serverID }?.name ?? ""
             )
         )
     }
@@ -99,6 +156,11 @@ public struct SubsonicAlbumDetailView: View {
             if self.vm.album == nil {
                 await self.vm.load()
             }
+        }
+        // The row owner needs the server's display name, and the sidebar list
+        // it comes from may load, or be renamed, after this view appears.
+        .onChange(of: self.currentServerName, initial: true) { _, name in
+            self.vm.serverName = name
         }
         .loadErrorAlert(L10n.string("Couldn't load album"), message: self.$vm.errorMessage)
     }
@@ -128,10 +190,8 @@ public struct SubsonicAlbumDetailView: View {
 
     private func songsTable(_ songs: [Song]) -> some View {
         SubsonicSongTable(
-            rows: self.makeRows(songs),
-            rowsVersion: SubsonicSongTable.rowsVersion(
-                songs: self.vm.albumVersion, annotations: self.annotationCoordinator
-            ),
+            rows: self.vm.rows,
+            rowsVersion: self.vm.rowsVersion,
             isLoading: false,
             hasMorePages: false,
             coverArtProvider: self.coverArtProvider,
@@ -148,25 +208,6 @@ public struct SubsonicAlbumDetailView: View {
         guard let serverID = np.nowPlayingSubsonicServerID,
               let songID = np.nowPlayingSubsonicSongID else { return nil }
         return SubsonicSongTableRow.id(serverID: serverID, songID: songID)
-    }
-
-    private func makeRows(_ songs: [Song]) -> [SubsonicSongTableRow] {
-        let serverName = self.currentServerName
-        return songs.map { song in
-            SubsonicSongTableRow(
-                song: song,
-                serverID: self.serverID,
-                serverName: serverName,
-                starred: self.annotationCoordinator?.isStarred(
-                    songID: song.id,
-                    serverStarred: song.starred
-                ) ?? (song.starred != nil),
-                rating: self.annotationCoordinator?.rating(
-                    songID: song.id,
-                    serverRating: song.userRating
-                ) ?? (song.userRating ?? 0)
-            )
-        }
     }
 
     private func makeActions(_ songs: [Song]) -> SubsonicSongTableActions {

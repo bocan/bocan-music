@@ -33,6 +33,31 @@ struct SubsonicSongTableRow: Identifiable {
         "\(serverID.uuidString)::\(songID)"
     }
 
+    /// Decorates one song, resolving the star and rating against the
+    /// coordinator's optimistic overrides.
+    ///
+    /// Only the row-owning view models call this, once per change of their song
+    /// list, the overrides or the server name. No view builds rows in its
+    /// body: that put an O(n) map on every re-render, including ones caused by
+    /// unrelated state such as a synced lyric line (#475).
+    @MainActor
+    static func make(
+        song: Song,
+        serverID: UUID,
+        serverName: String,
+        annotations: SubsonicAnnotationCoordinator?
+    ) -> Self {
+        Self(
+            song: song,
+            serverID: serverID,
+            serverName: serverName,
+            starred: annotations?.isStarred(songID: song.id, serverStarred: song.starred)
+                ?? (song.starred != nil),
+            rating: annotations?.rating(songID: song.id, serverRating: song.userRating)
+                ?? (song.userRating ?? 0)
+        )
+    }
+
     var title: String {
         self.song.title
     }
@@ -100,11 +125,12 @@ struct SubsonicSongTableActions {
 struct SubsonicSongTable: NSViewRepresentable {
     let rows: [SubsonicSongTableRow]
     /// The owner's counter for `rows` (#455): `updateNSView` walks the rows
-    /// only when this moved since the last apply. Rows are derived in the
-    /// view from a song list and the annotation overrides, so the version
-    /// folds both counters; see `rowsVersion(songs:annotations:)`.
-    /// Deliberately has no default: a caller that left it out would render
-    /// its first rows and then never react to another change (#454).
+    /// only when this moved since the last apply. The rows are stored on a
+    /// view model that rebuilds them when its song list, the annotation
+    /// overrides or the server name change, and this is that model's
+    /// `rowsVersion` (#475). Deliberately has no default: a caller that left
+    /// it out would render its first rows and then never react to another
+    /// change (#454).
     let rowsVersion: Int
     let isLoading: Bool
     let hasMorePages: Bool
@@ -117,13 +143,6 @@ struct SubsonicSongTable: NSViewRepresentable {
     let actions: SubsonicSongTableActions
 
     typealias NSViewType = NSScrollView
-
-    /// The rows version for a table whose rows are derived from a song list
-    /// counter plus the annotation coordinator's override counter. Both only
-    /// ever increase, so their sum moves whenever either input changed.
-    static func rowsVersion(songs: Int, annotations: SubsonicAnnotationCoordinator?) -> Int {
-        songs &+ (annotations?.overridesVersion ?? 0)
-    }
 
     func makeCoordinator() -> SubsonicSongTableCoordinator {
         SubsonicSongTableCoordinator(parent: self)

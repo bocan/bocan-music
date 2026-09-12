@@ -144,8 +144,43 @@ struct SubsonicSongNowPlayingWiringTests {
         ] {
             let src = try self.source(rel)
             #expect(
-                src.contains("rowsVersion: SubsonicSongTable.rowsVersion("),
-                "\(rel) must fold its song counter and the annotation counter into the table's rows version"
+                src.contains("rowsVersion: self.vm.rowsVersion") || src.contains("rowsVersion: self.search.rowsVersion"),
+                "\(rel) must take the rows version from the view model that owns the rows"
+            )
+        }
+    }
+
+    @Test("No Subsonic view builds table rows in its body (#475)")
+    func viewsDoNotDecorateRowsInBody() throws {
+        // The album and artist files carry their view model alongside the
+        // view, so `SubsonicSongTableRow.make` legitimately appears in them;
+        // what must not appear anywhere outside the table's own file is the
+        // memberwise init a view body used to map every song through.
+        for rel in [
+            "Browse/Subsonic/SubsonicSongsView.swift",
+            "Browse/Subsonic/SubsonicAlbumDetailView.swift",
+            "Browse/Subsonic/SubsonicArtistDetailView.swift",
+        ] {
+            let src = try self.source(rel)
+            #expect(
+                !src.contains("SubsonicSongTableRow("),
+                "\(rel) must not map songs into rows: that runs on every re-render, including unrelated ones"
+            )
+            #expect(
+                src.contains("rows: self.vm.rows") || src.contains("rows: self.search.rows"),
+                "\(rel) must hand the table the rows its view model stores"
+            )
+        }
+        for rel in [
+            "Browse/Subsonic/SubsonicSongsViewModel.swift",
+            "Browse/Subsonic/SubsonicAlbumDetailView.swift",
+            "Browse/Subsonic/SubsonicArtistDetailView.swift",
+            "Browse/Subsonic/SubsonicMultiSourceSearchViewModel.swift",
+        ] {
+            let src = try self.source(rel)
+            #expect(
+                src.contains("func annotationOverridesDidChange()"),
+                "\(rel) must rebuild its stored rows when a star or rating moves"
             )
         }
     }

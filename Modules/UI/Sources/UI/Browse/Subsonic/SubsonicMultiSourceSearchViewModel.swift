@@ -49,7 +49,7 @@ public struct SubsonicArtistHit: Identifiable, Sendable {
 /// Subsonic views (Songs / Albums / Artists) consume these lists through
 /// their existing native layouts whenever the global search field has text.
 @MainActor
-public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
+public final class SubsonicMultiSourceSearchViewModel: ObservableObject, SubsonicAnnotationObserving {
     /// Per-server soft timeout. Slow servers stop blocking the aggregate.
     public static let defaultTimeout: Duration = .milliseconds(2000)
 
@@ -60,12 +60,21 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
 
     @Published public private(set) var query = ""
     @Published public private(set) var songs: [SubsonicSongHit] = [] {
-        didSet { self.songsVersion &+= 1 }
+        didSet { self.rebuildRows() }
     }
 
-    /// Moves on every write to `songs`; `SubsonicSongTable` skips its per-row
-    /// walks while the rows version it is given holds (#455).
-    public private(set) var songsVersion = 0
+    /// Decorated rows for `SubsonicSongTable`, owned here rather than mapped
+    /// in the view's body, so the O(n) decoration of a search result set (up
+    /// to 500 hits per server) runs once per change of the hits or the
+    /// annotation overrides instead of once per re-render (#475).
+    @Published private(set) var rows: [SubsonicSongTableRow] = [] {
+        didSet { self.rowsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `rows` via `didSet`, so no path can forget it;
+    /// `SubsonicSongTable` skips its per-row walks while it holds (#455).
+    private(set) var rowsVersion = 0
+
     @Published public private(set) var albums: [SubsonicAlbumHit] = []
     @Published public private(set) var artists: [SubsonicArtistHit] = []
     @Published public private(set) var isSearching = false
@@ -73,15 +82,42 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject {
 
     private let dataSource: any SubsonicBrowseDataSource
     private let timeout: Duration
+    /// Held strongly: the coordinator outlives this view model, and its own
+    /// reference back to here is weak.
+    private let annotations: SubsonicAnnotationCoordinator?
     private let log = AppLogger.make(.ui)
     private var currentTask: Task<Void, Never>?
 
     public init(
         dataSource: any SubsonicBrowseDataSource,
-        timeout: Duration = SubsonicMultiSourceSearchViewModel.defaultTimeout
+        timeout: Duration = SubsonicMultiSourceSearchViewModel.defaultTimeout,
+        annotations: SubsonicAnnotationCoordinator? = nil
     ) {
         self.dataSource = dataSource
         self.timeout = timeout
+        self.annotations = annotations
+        annotations?.addObserver(self)
+    }
+
+    // MARK: - Rows
+
+    /// Rebuilds every row from the current hits and overrides. Each hit
+    /// carries its own server, so the rows can span servers.
+    private func rebuildRows() {
+        let annotations = self.annotations
+        self.rows = self.songs.map { hit in
+            SubsonicSongTableRow.make(
+                song: hit.song,
+                serverID: hit.serverID,
+                serverName: hit.serverName,
+                annotations: annotations
+            )
+        }
+    }
+
+    /// A star or rating moved: the stored rows are now stale (#475).
+    public func annotationOverridesDidChange() {
+        self.rebuildRows()
     }
 
     /// Cancels any in-flight search and clears the aggregated lists.

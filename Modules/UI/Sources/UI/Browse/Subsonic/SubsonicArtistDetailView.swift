@@ -10,30 +10,79 @@ import SwiftUI
 /// single list. Albums are available immediately; tracks land as each
 /// `getAlbum` resolves.
 @MainActor
-public final class SubsonicArtistDetailViewModel: ObservableObject {
+public final class SubsonicArtistDetailViewModel: ObservableObject, SubsonicAnnotationObserving {
     public let serverID: UUID
     public let artistID: String
 
     @Published public private(set) var artist: ArtistID3?
     @Published public private(set) var albums: [AlbumID3] = []
     @Published public private(set) var tracks: [Song] = [] {
-        didSet { self.tracksVersion &+= 1 }
+        didSet { self.rebuildRows() }
     }
 
-    /// Moves on every write to `tracks`; `SubsonicSongTable` skips its per-row
-    /// walks while the rows version it is given holds (#455).
-    public private(set) var tracksVersion = 0
+    /// Decorated rows for `SubsonicSongTable`, owned here rather than mapped
+    /// in the view's body, so the O(n) decoration runs once per change of the
+    /// track list, the annotation overrides or the server name instead of once
+    /// per re-render (#475).
+    @Published private(set) var rows: [SubsonicSongTableRow] = [] {
+        didSet { self.rowsVersion &+= 1 }
+    }
+
+    /// Moves on every write to `rows` via `didSet`, so no path can forget it;
+    /// `SubsonicSongTable` skips its per-row walks while it holds (#455).
+    private(set) var rowsVersion = 0
+
+    /// Display name of this server, carried on every row. Set by the view,
+    /// which reads it from the sidebar server list; a rename rebuilds the rows.
+    public var serverName: String {
+        didSet {
+            guard self.serverName != oldValue else { return }
+            self.rebuildRows()
+        }
+    }
+
     @Published public private(set) var isLoading = false
     @Published public private(set) var isLoadingTracks = false
     @Published public var errorMessage: String?
 
     private let dataSource: any SubsonicBrowseDataSource
+    /// Held strongly: the coordinator outlives this view model, and its own
+    /// reference back to here is weak.
+    private let annotations: SubsonicAnnotationCoordinator?
     private let log = AppLogger.make(.ui)
 
-    public init(serverID: UUID, artistID: String, dataSource: any SubsonicBrowseDataSource) {
+    public init(
+        serverID: UUID,
+        artistID: String,
+        dataSource: any SubsonicBrowseDataSource,
+        annotations: SubsonicAnnotationCoordinator? = nil,
+        serverName: String = ""
+    ) {
         self.serverID = serverID
         self.artistID = artistID
         self.dataSource = dataSource
+        self.annotations = annotations
+        self.serverName = serverName
+        annotations?.addObserver(self)
+    }
+
+    // MARK: - Rows
+
+    /// Rebuilds every row from the current tracks and overrides.
+    private func rebuildRows() {
+        let serverID = self.serverID
+        let serverName = self.serverName
+        let annotations = self.annotations
+        self.rows = self.tracks.map {
+            SubsonicSongTableRow.make(
+                song: $0, serverID: serverID, serverName: serverName, annotations: annotations
+            )
+        }
+    }
+
+    /// A star or rating moved: the stored rows are now stale (#475).
+    public func annotationOverridesDidChange() {
+        self.rebuildRows()
     }
 
     public func load() async {
@@ -133,7 +182,11 @@ public struct SubsonicArtistDetailView: View {
         self.coverArtProvider = coverArtProvider
         self._vm = StateObject(
             wrappedValue: SubsonicArtistDetailViewModel(
-                serverID: serverID, artistID: artistID, dataSource: dataSource
+                serverID: serverID,
+                artistID: artistID,
+                dataSource: dataSource,
+                annotations: library.subsonicAnnotations,
+                serverName: library.subsonicServers.first { $0.id == serverID }?.name ?? ""
             )
         )
     }
@@ -161,6 +214,11 @@ public struct SubsonicArtistDetailView: View {
             if self.vm.artist == nil {
                 await self.vm.load()
             }
+        }
+        // The row owner needs the server's display name, and the sidebar list
+        // it comes from may load, or be renamed, after this view appears.
+        .onChange(of: self.currentServerName, initial: true) { _, name in
+            self.vm.serverName = name
         }
         .loadErrorAlert(L10n.string("Couldn't load artist"), message: self.$vm.errorMessage)
     }
@@ -308,27 +366,9 @@ public struct SubsonicArtistDetailView: View {
     @ViewBuilder
     private var songsTable: some View {
         let songs = self.vm.tracks
-        let serverName = self.currentServerName
-        let rows = songs.map { song in
-            SubsonicSongTableRow(
-                song: song,
-                serverID: self.serverID,
-                serverName: serverName,
-                starred: self.annotationCoordinator?.isStarred(
-                    songID: song.id,
-                    serverStarred: song.starred
-                ) ?? (song.starred != nil),
-                rating: self.annotationCoordinator?.rating(
-                    songID: song.id,
-                    serverRating: song.userRating
-                ) ?? (song.userRating ?? 0)
-            )
-        }
         SubsonicSongTable(
-            rows: rows,
-            rowsVersion: SubsonicSongTable.rowsVersion(
-                songs: self.vm.tracksVersion, annotations: self.annotationCoordinator
-            ),
+            rows: self.vm.rows,
+            rowsVersion: self.vm.rowsVersion,
             isLoading: self.vm.isLoadingTracks,
             hasMorePages: false,
             coverArtProvider: self.coverArtProvider,
