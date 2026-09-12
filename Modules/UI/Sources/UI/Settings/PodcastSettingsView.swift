@@ -26,8 +26,10 @@ public struct PodcastSettingsView: View {
                     Text(localized: "Manual only").tag(0)
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.podcastRefreshInterval)
+                .help(L10n.string("How often Bòcan checks your shows for new episodes while it is running."))
                 Toggle(L10n.string("Refresh on launch"), isOn: self.$refreshOnLaunch)
                     .accessibilityIdentifier(A11y.SettingsIDs.podcastRefreshOnLaunch)
+                    .help(L10n.string("Checks every show for new episodes at startup, instead of waiting for the next interval."))
             }
             Section {
                 Picker(L10n.string("Auto-download"), selection: self.$autoDownloadCount) {
@@ -37,6 +39,7 @@ public struct PodcastSettingsView: View {
                     Text(localized: "10 newest episodes").tag(10)
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.podcastAutoDownload)
+                .help(L10n.string("Applies to every show with auto-download on. That many of the newest episodes arrive as they appear."))
             } footer: {
                 Text(localized: "How many new episodes to download for shows with auto-download enabled.")
             }
@@ -47,12 +50,14 @@ public struct PodcastSettingsView: View {
                     Text(localized: "30 seconds").tag(30.0)
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.podcastSkipBack)
+                .help(L10n.string("How far the back button jumps during an episode. Music keeps its own transport."))
                 Picker(L10n.string("Skip forward"), selection: self.$skipForwardInterval) {
                     Text(localized: "15 seconds").tag(15.0)
                     Text(localized: "30 seconds").tag(30.0)
                     Text(localized: "45 seconds").tag(45.0)
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.podcastSkipForward)
+                .help(L10n.string("How far the forward button jumps during an episode, for getting past an advert or an intro."))
                 HStack {
                     Text(localized: "Default speed")
                     Spacer()
@@ -65,6 +70,7 @@ public struct PodcastSettingsView: View {
                     .frame(width: 80)
                     .accessibilityLabel(L10n.string("Default speed"))
                     .accessibilityIdentifier(A11y.SettingsIDs.podcastDefaultSpeed)
+                    .help(L10n.string("The speed a new episode starts at. You can still change speed while one is playing."))
                 }
             }
             Section(L10n.string("Search")) {
@@ -78,6 +84,7 @@ public struct PodcastSettingsView: View {
                     Text(localized: "Japan").tag("jp")
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.podcastStorefront)
+                .help(L10n.string("Which country's Apple Podcasts catalogue is searched. Change it if a show you expect does not appear."))
                 HStack {
                     Text(localized: "Podcast Index API")
                     Spacer()

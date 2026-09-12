@@ -117,6 +117,7 @@ public struct AdvancedSettingsView: View {
                     Text(localized: "Error").tag("error")
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.logLevelPicker)
+                .help(L10n.string("How much detail reaches Help > Log Console. Debug records everything; Error only failures."))
             }
 
             Section(L10n.string("Database")) {
@@ -124,6 +125,7 @@ public struct AdvancedSettingsView: View {
                     self.revealDatabase()
                 }
                 .accessibilityIdentifier(A11y.SettingsIDs.revealDatabase)
+                .help(L10n.string("Selects library.sqlite in Finder, for a manual backup or a support request."))
 
                 Button {
                     Task { await self.backupVM.rebuildFTS() }
@@ -155,6 +157,7 @@ public struct AdvancedSettingsView: View {
                     self.showResetConfirm = true
                 }
                 .foregroundStyle(.red)
+                .help(L10n.string("Returns every setting to its default. Your library, playlists and play counts are left alone."))
                 .confirmationDialog(
                     L10n.string("Reset all preferences?"),
                     isPresented: self.$showResetConfirm,

@@ -17,6 +17,7 @@ public struct LibrarySettingsView: View {
             Section(L10n.string("Scanning")) {
                 Toggle(L10n.string("Watch folders for new files"), isOn: self.$watchForChanges)
                     .accessibilityIdentifier(A11y.SettingsIDs.watchFolders)
+                    .help(L10n.string("Imports files as soon as they appear in your library folders, without waiting for a rescan."))
                 Toggle(L10n.string("Use quick scan by default"), isOn: self.$quickScan)
                     .accessibilityIdentifier(A11y.SettingsIDs.quickScan)
                 Text(localized: "Quick scan reads only file metadata tags without computing replay gain.")
@@ -42,6 +43,7 @@ public struct LibrarySettingsView: View {
             Section(L10n.string("Deep Dive")) {
                 Toggle(L10n.string("Enable Deep Dive"), isOn: self.$deepDiveEnabled)
                     .accessibilityIdentifier(A11y.SettingsIDs.deepDive)
+                    .help(L10n.string("Adds the Deep Dive tab to Get Info, and starts the one-off artist lookups described below."))
                 Text(self.deepDiveDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)

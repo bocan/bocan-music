@@ -22,11 +22,13 @@ public struct GeneralSettingsView: View {
                     .help(L10n.string("Register Bòcan as a macOS login item."))
                 Toggle(L10n.string("Restore last window mode on launch"), isOn: self.$restoresLastMode)
                     .accessibilityIdentifier(A11y.SettingsIDs.restoreWindowMode)
+                    .help(L10n.string("Reopens the Mini Player on launch if it was open when you last quit."))
             }
 
             Section(L10n.string("Menu Bar")) {
                 Toggle(L10n.string("Show Bòcan in menu bar"), isOn: self.showMenuBarExtra)
                     .accessibilityIdentifier(A11y.SettingsIDs.menuBarExtra)
+                    .help(L10n.string("Adds a menu bar icon with playback controls, so Bòcan stays reachable with its window closed."))
             }
 
             Section(L10n.string("Dock")) {
@@ -46,6 +48,7 @@ public struct GeneralSettingsView: View {
             Section(L10n.string("Notifications")) {
                 Toggle(L10n.string("Show track-change notifications"), isOn: self.$showNotifications)
                     .accessibilityIdentifier(A11y.SettingsIDs.trackNotifications)
+                    .help(L10n.string("Announces each new track. macOS asks permission the first time you switch this on."))
                     .onChange(of: self.showNotifications) { _, enabled in
                         if enabled {
                             self.requestNotificationAuth()

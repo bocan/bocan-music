@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Settings now explains itself. Rest the pointer on a switch, a menu or a button in General, Library, Advanced, Podcasts, Phone Sync or Sources, and a short line tells you what it does or what changes if you switch it, rather than repeating the label you can already read.
+
 When something you ask for cannot be done, Bòcan now says so instead of looking as though it worked. Adding tracks to a playlist, loving a track, saving a log file, choosing cover art and disconnecting a scrobbling account all report a failure now, and so do the play, skip and seek controls on your keyboard, headphones, lock screen and Control Centre.
 
 Two quieter faults are fixed with them. A podcast episode or a song sent to your phone can no longer be recorded under the wrong fingerprint if the file cannot be read all the way through, which used to make a transfer fail with nothing to explain it. And a library scan that cannot read your library now stops and tells you, rather than treating the library as empty and re-importing everything.
