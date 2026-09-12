@@ -67,6 +67,26 @@ private final class SpyAnnotationObserver: SubsonicAnnotationObserving {
     }
 }
 
+// MARK: - Haptics isolation
+
+/// Runs `body` with the process-global haptic seam silenced, and restores it.
+///
+/// `Haptics.performPattern` is one closure for the whole process.
+/// `NowPlayingViewModelTests.transportHaptics` installs a recorder into it and
+/// keeps it installed across suspension points, then asserts that no
+/// level-change haptic was performed. A star or rating written by any
+/// concurrently running test lands in that recorder and fails it, so a test
+/// that writes one for some other reason silences the seam around the call.
+/// The swap never suspends, so no other `@MainActor` test can observe it.
+/// A test that is *about* the haptic installs its own recorder instead.
+@MainActor
+func silencingHaptics<T>(_ body: () -> T) -> T {
+    let original = Haptics.performPattern
+    Haptics.performPattern = { _ in }
+    defer { Haptics.performPattern = original }
+    return body()
+}
+
 // MARK: - Tests
 
 @Suite("SubsonicAnnotationCoordinator")
@@ -91,13 +111,19 @@ struct SubsonicAnnotationCoordinatorTests {
         coord.addObserver(observer)
         #expect(observer.changes == 0, "registering is not a change")
 
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        }
         #expect(observer.changes == 1, "a star override is a write")
 
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: true)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: true)
+        }
         #expect(observer.changes == 2, "clearing it is a write too")
 
-        coord.setRating(songID: "s1", serverID: self.serverID, newRating: 4, previousRating: nil)
+        silencingHaptics {
+            coord.setRating(songID: "s1", serverID: self.serverID, newRating: 4, previousRating: nil)
+        }
         #expect(observer.changes == 3, "a rating override is a write")
         await self.waitForCalls(stub, count: 3)
     }
@@ -110,7 +136,9 @@ struct SubsonicAnnotationCoordinatorTests {
         coord.addObserver(observer)
         coord.addObserver(observer)
 
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        }
         #expect(observer.changes == 1, "registering twice must not notify twice")
 
         // A destination that goes away deregisters itself: no teardown call,
@@ -119,7 +147,9 @@ struct SubsonicAnnotationCoordinatorTests {
             let transient = SpyAnnotationObserver()
             coord.addObserver(transient)
         }
-        coord.toggleStar(songID: "s2", serverID: self.serverID, currentlyStarred: false)
+        silencingHaptics {
+            coord.toggleStar(songID: "s2", serverID: self.serverID, currentlyStarred: false)
+        }
         #expect(observer.changes == 2)
         await self.waitForCalls(stub, count: 2)
     }
@@ -129,7 +159,9 @@ struct SubsonicAnnotationCoordinatorTests {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == false)
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        }
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == true)
         await self.waitForCalls(stub, count: 1)
         #expect(stub.calls == [.star(self.serverID, "s1")])
@@ -139,7 +171,9 @@ struct SubsonicAnnotationCoordinatorTests {
     func toggleStarUnstars() async {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: true)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: true)
+        }
         #expect(coord.isStarred(songID: "s1", serverStarred: Date()) == false)
         await self.waitForCalls(stub, count: 1)
         #expect(stub.calls == [.unstar(self.serverID, "s1")])
@@ -149,7 +183,9 @@ struct SubsonicAnnotationCoordinatorTests {
     func setRatingDispatches() async {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        coord.setRating(songID: "s1", serverID: self.serverID, newRating: 9, previousRating: nil)
+        silencingHaptics {
+            coord.setRating(songID: "s1", serverID: self.serverID, newRating: 9, previousRating: nil)
+        }
         #expect(coord.rating(songID: "s1", serverRating: nil) == 5)
         await self.waitForCalls(stub, count: 1)
         #expect(stub.calls == [.setRating(self.serverID, "s1", 5)])
@@ -159,7 +195,9 @@ struct SubsonicAnnotationCoordinatorTests {
     func failureRollbackStar() async {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+        }
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == true)
         stub.emit(SubsonicAnnotationFailure(serverID: self.serverID, songID: "s1", reason: "boom"))
         for _ in 0 ..< 50 {
@@ -175,7 +213,9 @@ struct SubsonicAnnotationCoordinatorTests {
     func failureRollbackRating() async {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        coord.setRating(songID: "s1", serverID: self.serverID, newRating: 4, previousRating: 2)
+        silencingHaptics {
+            coord.setRating(songID: "s1", serverID: self.serverID, newRating: 4, previousRating: 2)
+        }
         #expect(coord.rating(songID: "s1", serverRating: 2) == 4)
         stub.emit(SubsonicAnnotationFailure(serverID: self.serverID, songID: "s1", reason: "boom"))
         for _ in 0 ..< 50 {
@@ -191,8 +231,10 @@ struct SubsonicAnnotationCoordinatorTests {
     func failureIsolatedToSong() async {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
-        coord.toggleStar(songID: "s2", serverID: self.serverID, currentlyStarred: false)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+            coord.toggleStar(songID: "s2", serverID: self.serverID, currentlyStarred: false)
+        }
         stub.emit(SubsonicAnnotationFailure(serverID: self.serverID, songID: "s1", reason: "boom"))
         for _ in 0 ..< 50 {
             if coord.isStarred(songID: "s1", serverStarred: nil) == false {
@@ -221,8 +263,10 @@ struct SubsonicAnnotationCoordinatorTests {
     func resetDropsOverrides() {
         let stub = StubAnnotationDelivery()
         let coord = SubsonicAnnotationCoordinator(delivery: stub)
-        coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
-        coord.setRating(songID: "s1", serverID: self.serverID, newRating: 3, previousRating: nil)
+        silencingHaptics {
+            coord.toggleStar(songID: "s1", serverID: self.serverID, currentlyStarred: false)
+            coord.setRating(songID: "s1", serverID: self.serverID, newRating: 3, previousRating: nil)
+        }
         coord.reset(songID: "s1")
         #expect(coord.isStarred(songID: "s1", serverStarred: nil) == false)
         #expect(coord.rating(songID: "s1", serverRating: nil) == 0)

@@ -957,21 +957,6 @@ struct SubsonicSongRowOwnershipTests {
         SubsonicAnnotationCoordinator(delivery: SilentAnnotationDelivery())
     }
 
-    /// Runs `body` with the process-global haptic seam silenced.
-    ///
-    /// A star or rating performs a level-change haptic through the one
-    /// `Haptics.performPattern` closure, and the transport-haptics test
-    /// records that closure across suspension points. These tests write
-    /// overrides for their rows, not for the haptic, so their emissions must
-    /// not land in a recorder another test is reading. The swap never
-    /// suspends, so no other @MainActor test can observe it.
-    private func silencingHaptics(_ body: () -> Void) {
-        let original = Haptics.performPattern
-        Haptics.performPattern = { _ in }
-        defer { Haptics.performPattern = original }
-        body()
-    }
-
     private func settle(_ isBusy: @escaping () -> Bool) async {
         for _ in 0 ..< 50 {
             if !isBusy() {
@@ -1006,7 +991,7 @@ struct SubsonicSongRowOwnershipTests {
         let loaded = vm.rowsVersion
         #expect(vm.rows.first?.starred == false)
 
-        self.silencingHaptics {
+        silencingHaptics {
             coord.toggleStar(songID: "s1", serverID: serverID, currentlyStarred: false)
         }
 
@@ -1023,7 +1008,7 @@ struct SubsonicSongRowOwnershipTests {
         let vm = SubsonicSongsViewModel(serverID: serverID, dataSource: stub, annotations: coord)
         await vm.load()
 
-        self.silencingHaptics {
+        silencingHaptics {
             coord.setRating(songID: "s1", serverID: serverID, newRating: 4, previousRating: nil)
         }
 
@@ -1060,7 +1045,7 @@ struct SubsonicSongRowOwnershipTests {
         #expect(vm.rows.map(\.song.id) == ["s1", "s2"])
         let loaded = vm.rowsVersion
 
-        self.silencingHaptics {
+        silencingHaptics {
             coord.setRating(songID: "s2", serverID: serverID, newRating: 5, previousRating: nil)
         }
         #expect(vm.rows.last?.rating == 5)
@@ -1085,7 +1070,7 @@ struct SubsonicSongRowOwnershipTests {
         #expect(vm.rows.map(\.song.id) == ["s1", "s2"])
         let loaded = vm.rowsVersion
 
-        self.silencingHaptics {
+        silencingHaptics {
             coord.toggleStar(songID: "s1", serverID: serverID, currentlyStarred: false)
         }
         #expect(vm.rows.first?.starred == true)
@@ -1106,7 +1091,7 @@ struct SubsonicSongRowOwnershipTests {
         #expect(Set(vm.rows.map(\.serverID)).count == 2, "each row keeps the server it came from")
         let found = vm.rowsVersion
 
-        self.silencingHaptics {
+        silencingHaptics {
             coord.toggleStar(songID: "s1", serverID: vm.songs[0].serverID, currentlyStarred: false)
         }
         #expect(Set(vm.rows.map(\.starred)) == Set([true]), "the override is keyed by song ID, so both rows follow")
