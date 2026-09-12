@@ -62,8 +62,12 @@ public struct GeneralSettingsView: View {
 
     private func requestNotificationAuth() {
         Task {
-            _ = try? await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .sound])
+            // Denied and errored are indistinguishable without this, so a
+            // failing request looks exactly like a user saying no (#491).
+            _ = await recoveredRead("notifications.authRequest.failed") {
+                try await UNUserNotificationCenter.current()
+                    .requestAuthorization(options: [.alert, .sound])
+            }
         }
     }
 }

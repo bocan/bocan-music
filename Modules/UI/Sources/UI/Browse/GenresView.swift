@@ -71,9 +71,15 @@ public struct GenresView: View {
         .task {
             let trackRepo = TrackRepository(database: self.library.database)
             let albumRepo = AlbumRepository(database: self.library.database)
-            async let genresFetch = try? trackRepo.allGenres()
-            async let countsFetch = try? trackRepo.genreTrackCounts()
-            async let cardsFetch = try? albumRepo.fetchGenreCards()
+            async let genresFetch = recoveredRead("genres.allGenres.failed") {
+                try await trackRepo.allGenres()
+            }
+            async let countsFetch = recoveredRead("genres.trackCounts.failed") {
+                try await trackRepo.genreTrackCounts()
+            }
+            async let cardsFetch = recoveredRead("genres.cards.failed") {
+                try await albumRepo.fetchGenreCards()
+            }
             let allGenres = await genresFetch ?? []
             self.trackCounts = await countsFetch ?? [:]
             self.cardData = await Dictionary(uniqueKeysWithValues: (cardsFetch ?? []).map { ($0.name, $0) })

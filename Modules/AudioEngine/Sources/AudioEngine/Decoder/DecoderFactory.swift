@@ -1,4 +1,5 @@
 import Foundation
+import Observability
 
 /// Creates the appropriate `Decoder` implementation for a given URL.
 ///
@@ -7,6 +8,8 @@ import Foundation
 public struct DecoderFactory: Sendable {
     /// AVFoundation-native codecs — no FFmpeg required.
     static let avFoundationCodecs: Set<Codec> = [.wav, .flac, .mp3, .m4a, .aiff]
+
+    private static let log = AppLogger.make(.audio)
 
     public init() {}
 
@@ -43,17 +46,25 @@ public struct DecoderFactory: Sendable {
             // file plays instead of throwing `decoderFailure` (#387).
             do {
                 return try AVFoundationDecoder(url: url)
-            } catch let error as AudioEngineError {
-                if case .accessDenied = error {
-                    throw error
+            } catch let avError as AudioEngineError {
+                if case .accessDenied = avError {
+                    throw avError
                 }
-                if case .fileNotFound = error {
-                    throw error
+                if case .fileNotFound = avError {
+                    throw avError
                 }
-                if let ffmpeg = try? FFmpegDecoder(url: url) {
-                    return ffmpeg
+                do {
+                    return try FFmpegDecoder(url: url)
+                } catch {
+                    // The caller is told why AVFoundation refused the file,
+                    // which is the more useful of the two, but FFmpeg's reason
+                    // is what says whether the fallback could ever work (#497).
+                    self.log.warning("decoder.ffmpegFallback.failed", [
+                        "url": url.lastPathComponent,
+                        "error": String(reflecting: error),
+                    ])
                 }
-                throw error
+                throw avError
             }
 
         case .ogg, .opus, .dsf, .dff, .ape, .wavpack,
@@ -63,8 +74,17 @@ public struct DecoderFactory: Sendable {
 
         case let .unknown(magic):
             // Last resort: try FFmpeg — it may recognise formats we don't.
-            if let decoder = try? FFmpegDecoder(url: url) {
-                return decoder
+            do {
+                return try FFmpegDecoder(url: url)
+            } catch {
+                // `unsupportedFormat` names the magic bytes, which is what the
+                // user needs; FFmpeg's reason says whether the file is damaged
+                // rather than merely unknown, so it goes to the log (#497).
+                self.log.warning("decoder.unknownFormat.ffmpegFailed", [
+                    "url": url.lastPathComponent,
+                    "magic": magic,
+                    "error": String(reflecting: error),
+                ])
             }
             throw AudioEngineError.unsupportedFormat(magic: magic, url: url)
         }

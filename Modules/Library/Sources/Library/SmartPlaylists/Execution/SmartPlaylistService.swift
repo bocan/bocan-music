@@ -10,6 +10,9 @@ import Persistence
 /// Criteria and limit/sort settings are persisted as JSON in the `smart_criteria`
 /// and `smart_limit_sort` columns on the `playlists` table.
 public actor SmartPlaylistService {
+    /// `decode` is static, so it needs its own handle.
+    private static let log = AppLogger.make(.library)
+
     // MARK: - Dependencies
 
     private let database: Persistence.Database
@@ -363,10 +366,17 @@ public actor SmartPlaylistService {
         }
 
         var limitSort = LimitSort()
-        if let lsJSON = playlist.smartLimitSort,
-           let lsData = lsJSON.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode(LimitSort.self, from: lsData) {
-            limitSort = decoded
+        if let lsJSON = playlist.smartLimitSort, let lsData = lsJSON.data(using: .utf8) {
+            do {
+                limitSort = try JSONDecoder().decode(LimitSort.self, from: lsData)
+            } catch {
+                // The playlist still works, but silently loses its limit and
+                // sort, which reads as the user's settings being forgotten (#492).
+                Self.log.warning("smart_playlist.limitSort.decodeFailed", [
+                    "playlist": playlist.id ?? -1,
+                    "error": String(reflecting: error),
+                ])
+            }
         }
 
         return SmartPlaylist(playlist: playlist, criteria: criteria, limitSort: limitSort)

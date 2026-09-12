@@ -121,11 +121,18 @@ public final class BatchCoverArtViewModel: ObservableObject, Identifiable {
 
     private func processAlbum(_ album: Album) async {
         guard let albumID = album.id else { return }
-        let artistName: String = if let artistID = album.albumArtistID,
-                                    let artist = try? await self.artistRepo.fetch(id: artistID) {
-            artist.name
-        } else {
-            ""
+        var artistName = ""
+        if let artistID = album.albumArtistID {
+            do {
+                artistName = try await self.artistRepo.fetch(id: artistID).name
+            } catch {
+                // The cover search then runs with an empty artist, which makes
+                // a wrong match much more likely and says nothing (#491).
+                self.log.warning("batch_cover_art.artistLookup.failed", [
+                    "id": artistID,
+                    "error": String(reflecting: error),
+                ])
+            }
         }
         do {
             let candidates = try await self.fetcher.search(artist: artistName, album: album.title)

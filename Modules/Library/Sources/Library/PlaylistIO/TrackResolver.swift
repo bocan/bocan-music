@@ -41,15 +41,13 @@ public actor TrackResolver {
         // Step 1: full file:// URL.
         if let url = entry.absoluteURL {
             let normalised = url.absoluteString.precomposedStringWithCanonicalMapping
-            if let t = try? await self.trackRepo.fetchOne(fileURL: normalised), let id = t.id {
+            if let id = await self.trackID(fileURL: normalised, step: "url") {
                 return id
             }
             // Step 2: try without percent-encoding (decoded path).
             let altURL = URL(fileURLWithPath: url.path)
             let altNorm = altURL.absoluteString.precomposedStringWithCanonicalMapping
-            if altNorm != normalised,
-               let t = try? await self.trackRepo.fetchOne(fileURL: altNorm),
-               let id = t.id {
+            if altNorm != normalised, let id = await self.trackID(fileURL: altNorm, step: "decodedPath") {
                 return id
             }
         }
@@ -57,25 +55,55 @@ public actor TrackResolver {
         // Step 3: filename match — catches re-tagged files whose path changed.
         if let url = entry.absoluteURL {
             let filename = url.lastPathComponent
-            if !filename.isEmpty,
-               let candidate = try? await self.trackRepo.findByFilename(filename),
-               let id = candidate.id {
-                return id
+            if !filename.isEmpty {
+                do {
+                    if let id = try await self.trackRepo.findByFilename(filename)?.id {
+                        return id
+                    }
+                } catch {
+                    self.log.warning("playlist.import.lookupFailed", [
+                        "step": "filename",
+                        "error": String(reflecting: error),
+                    ])
+                }
             }
         }
 
         // Step 4: fuzzy by metadata.
         if let title = entry.titleHint, !title.isEmpty {
-            if let candidate = try? await self.trackRepo.findByMetadata(
-                artist: entry.artistHint,
-                title: title,
-                duration: entry.durationHint,
-                tolerance: tolerance
-            ), let id = candidate.id {
-                return id
+            do {
+                let candidate = try await self.trackRepo.findByMetadata(
+                    artist: entry.artistHint,
+                    title: title,
+                    duration: entry.durationHint,
+                    tolerance: tolerance
+                )
+                if let id = candidate?.id {
+                    return id
+                }
+            } catch {
+                self.log.warning("playlist.import.lookupFailed", [
+                    "step": "metadata",
+                    "error": String(reflecting: error),
+                ])
             }
         }
 
         return nil
+    }
+
+    /// A lookup by file URL whose failure is logged rather than read as "not
+    /// in the library": an import report that calls a track missing when the
+    /// database errored sends the user looking for the wrong thing (#492).
+    private func trackID(fileURL: String, step: String) async -> Int64? {
+        do {
+            return try await self.trackRepo.fetchOne(fileURL: fileURL)?.id
+        } catch {
+            self.log.warning("playlist.import.lookupFailed", [
+                "step": step,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
     }
 }

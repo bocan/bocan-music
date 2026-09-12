@@ -134,8 +134,19 @@ public actor PodcastService {
         try await self.episodeRepo.upsertAll(episodes)
 
         // Apply any retention limit preserved from a prior subscription (no-op on a fresh subscribe).
-        let retention = await (try? self.podcastRepo.fetch(id: podcastID))?.retentionLimit
-        await self.applyRetention(podcastID: podcastID, keepNewest: retention)
+        do {
+            let retention = try await self.podcastRepo.fetch(id: podcastID).retentionLimit
+            await self.applyRetention(podcastID: podcastID, keepNewest: retention)
+        } catch {
+            // The row was just upserted above, so a failure here is a real
+            // database fault. Retention then goes unapplied and the show
+            // quietly keeps every episode it ever had (#495).
+            self.log.warning("podcast.retentionRead.failed", [
+                "id": podcastID,
+                "error": String(reflecting: error),
+            ])
+            await self.applyRetention(podcastID: podcastID, keepNewest: nil)
+        }
 
         // Fire artwork download as a non-blocking detached task; subscribe returns immediately.
         let art = self.artwork
@@ -160,8 +171,21 @@ public actor PodcastService {
     /// episode has no art of its own (callers fall back to the show's).
     @discardableResult
     public func cacheEpisodeArtworkIfNeeded(podcastID: Int64, guid: String) async -> String? {
-        guard let episode = try? await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid) else { return nil }
-        return await self.cacheEpisodeArtworkIfNeeded(episode: episode, podcastID: podcastID)
+        do {
+            guard let episode = try await episodeRepo.fetchByGUID(podcastID: podcastID, guid: guid) else {
+                return nil
+            }
+            return await self.cacheEpisodeArtworkIfNeeded(episode: episode, podcastID: podcastID)
+        } catch {
+            // The episode falls back to the show's artwork, which looks exactly
+            // like a feed that supplied no episode art of its own (#495).
+            self.log.warning("podcast.episodeArt.lookupFailed", [
+                "id": podcastID,
+                "guid": guid,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
     }
 
     private func cacheEpisodeArtworkIfNeeded(episode: PodcastEpisode, podcastID: Int64) async -> String? {

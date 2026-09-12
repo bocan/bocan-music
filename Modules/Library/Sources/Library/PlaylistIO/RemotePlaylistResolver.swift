@@ -79,15 +79,28 @@ public struct RemotePlaylistResolver: Sendable {
 
         let format = PlaylistFormat.sniff(data: data, fallback: url.pathExtension)
             ?? PlaylistFormat.fromExtension(url.pathExtension)
-        let payload: PlaylistPayload? = switch format {
-        case .m3u, .m3u8:
-            try? M3UReader.parse(data: data, sourceURL: nil)
+        // A parse failure is reported as "not a playlist" to the caller, which
+        // is right, but the reason is worth having when a user's URL is
+        // refused and the file looked like a playlist (#492).
+        let payload: PlaylistPayload?
+        do {
+            switch format {
+            case .m3u, .m3u8:
+                payload = try M3UReader.parse(data: data, sourceURL: nil)
 
-        case .pls:
-            try? PLSReader.parse(data: data, sourceURL: url)
+            case .pls:
+                payload = try PLSReader.parse(data: data, sourceURL: url)
 
-        default:
-            nil
+            default:
+                payload = nil
+            }
+        } catch {
+            self.log.warning("playlist.remote.parseFailed", [
+                "url": url.lastPathComponent,
+                "format": String(describing: format),
+                "error": String(reflecting: error),
+            ])
+            payload = nil
         }
         guard let payload else { return .notAPlaylist }
 

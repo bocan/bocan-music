@@ -62,10 +62,19 @@ public final class CoverArtFetchViewModel: ObservableObject {
                 await withTaskGroup(of: (String, Data?).self) { group in
                     for candidate in results.prefix(10) {
                         group.addTask {
-                            let data = try? await self.fetcher.image(
-                                for: candidate,
-                                size: .thumbnail
-                            )
+                            let data: Data?
+                            do {
+                                data = try await self.fetcher.image(for: candidate, size: .thumbnail)
+                            } catch {
+                                // One candidate loses its thumbnail and shows a
+                                // placeholder. Per candidate and expected on a
+                                // flaky provider, so debug, not warning (#491).
+                                self.log.debug("coverart.thumbnail.failed", [
+                                    "candidate": candidate.id,
+                                    "error": String(reflecting: error),
+                                ])
+                                data = nil
+                            }
                             return (candidate.id, data)
                         }
                     }

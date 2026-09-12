@@ -201,8 +201,29 @@ actor EditTransaction {
         }
 
         for (albumID, touched) in touchedByAlbum {
-            guard let album = try? await self.albumRepo.fetch(id: albumID) else { continue }
-            let total = await (try? self.trackRepo.count(albumID: albumID)) ?? Int.max
+            let album: Album
+            do {
+                album = try await self.albumRepo.fetch(id: albumID)
+            } catch {
+                // The art reaches the tracks but not the album the grid and
+                // the track list actually draw from (#492).
+                self.log.warning("edit.albumArt.albumLookupFailed", [
+                    "album": albumID,
+                    "error": String(reflecting: error),
+                ])
+                continue
+            }
+            // A failed count keeps the old meaning: assume partial coverage,
+            // so deliberate album art is never hijacked.
+            var total = Int.max
+            do {
+                total = try await self.trackRepo.count(albumID: albumID)
+            } catch {
+                self.log.warning("edit.albumArt.countFailed", [
+                    "album": albumID,
+                    "error": String(reflecting: error),
+                ])
+            }
             let coversWholeAlbum = touched >= total
             let albumHasNoArt = album.coverArtPath == nil || album.coverArtHash == nil
             guard coversWholeAlbum || albumHasNoArt else { continue }
@@ -247,13 +268,23 @@ actor EditTransaction {
         var perFileURL: URL? = nil
         if rootScope == nil, let bookmark = track.fileBookmark {
             var isStale = false
-            if let resolved = try? URL(
-                resolvingBookmarkData: bookmark,
-                options: .withSecurityScope,
-                relativeTo: nil,
-                bookmarkDataIsStale: &isStale
-            ), resolved.startAccessingSecurityScopedResource() {
-                perFileURL = resolved
+            do {
+                let resolved = try URL(
+                    resolvingBookmarkData: bookmark,
+                    options: .withSecurityScope,
+                    relativeTo: nil,
+                    bookmarkDataIsStale: &isStale
+                )
+                if resolved.startAccessingSecurityScopedResource() {
+                    perFileURL = resolved
+                }
+            } catch {
+                // Without the scope the write fails later with a permission
+                // error naming the file, never this cause (#492).
+                self.log.warning("edit.perFileScope.bookmarkUnresolvable", [
+                    "track": track.id ?? -1,
+                    "error": String(reflecting: error),
+                ])
             }
         }
 
@@ -326,34 +357,30 @@ actor EditTransaction {
         // 8a. Stamp the DB row with the file's post-write mtime/size so the
         //     next scan sees them as identical and does NOT raise a false-positive
         //     "file changed after your last edit" conflict.
-        if let attrs = try? FileManager.default.attributesOfItem(atPath: fileURL.path) {
+        do {
+            let attrs = try FileManager.default.attributesOfItem(atPath: fileURL.path)
             if let modDate = attrs[.modificationDate] as? Date {
                 updated.fileMtime = Int64(modDate.timeIntervalSince1970)
             }
             if let sz = attrs[.size] as? Int {
                 updated.fileSize = Int64(sz)
             }
+        } catch {
+            // Without this stamp the next scan sees a changed file and raises
+            // a false "changed since your last edit" conflict (#492).
+            self.log.warning("edit.mtimeStamp.failed", [
+                "file": fileURL.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
         }
 
         if patch.artist != nil || patch.albumArtist != nil || patch.album != nil {
-            // Fetch current album/albumArtist rows for fallback values (ignore errors).
-            let currentAlbum: Album? = if let id = track.albumID {
-                try? await self.albumRepo.fetch(id: id)
-            } else {
-                nil
-            }
-
-            let currentAlbumArtist: Artist? = if let id = currentAlbum?.albumArtistID {
-                try? await self.artistRepo.fetch(id: id)
-            } else {
-                nil
-            }
-
-            let currentTrackArtist: Artist? = if let id = track.artistID {
-                try? await self.artistRepo.fetch(id: id)
-            } else {
-                nil
-            }
+            // Fallback values for the edit. A failed read is not the same as
+            // "the track had no album or artist", which is how it used to
+            // read, so each one is logged (#492).
+            let currentAlbum = await self.albumOrNil(track.albumID, context: "currentAlbum")
+            let currentAlbumArtist = await self.artistOrNil(currentAlbum?.albumArtistID, context: "currentAlbumArtist")
+            let currentTrackArtist = await self.artistOrNil(track.artistID, context: "currentTrackArtist")
 
             // Resolve track-artist FK.
             let artistName: String = if let patched = patch.artist {
@@ -529,21 +556,65 @@ actor EditTransaction {
     /// Returns `nil` when no matching root exists (e.g. in-memory test DBs) or
     /// when the bookmark cannot be resolved — file I/O is then attempted with
     /// the raw URL, which works outside the sandbox.
+    /// The album row, or nil with a log line rather than silence (#492).
+    private func albumOrNil(_ id: Int64?, context: String) async -> Album? {
+        guard let id else { return nil }
+        do {
+            return try await self.albumRepo.fetch(id: id)
+        } catch {
+            self.log.warning("edit.fallbackRow.albumLookupFailed", [
+                "album": id,
+                "context": context,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
+
+    /// The artist row, or nil with a log line rather than silence (#492).
+    private func artistOrNil(_ id: Int64?, context: String) async -> Artist? {
+        guard let id else { return nil }
+        do {
+            return try await self.artistRepo.fetch(id: id)
+        } catch {
+            self.log.warning("edit.fallbackRow.artistLookupFailed", [
+                "artist": id,
+                "context": context,
+                "error": String(reflecting: error),
+            ])
+            return nil
+        }
+    }
+
     private func acquireRootScope(for fileURLString: String) async throws -> RootScopeHandle? {
-        let roots = await (try? self.rootRepo.fetchAll()) ?? []
+        let roots: [LibraryRoot]
+        do {
+            roots = try await self.rootRepo.fetchAll()
+        } catch {
+            // No scope means the raw write is attempted instead, and its
+            // failure names the file rather than this cause (#492).
+            self.log.warning("edit.root_scope.rootsUnavailable", ["error": String(reflecting: error)])
+            return nil
+        }
         guard let filePath = URL(string: fileURLString)?.path else { return nil }
         guard let root = roots.first(where: {
             let prefix = $0.path == "/" ? "/" : $0.path + "/"
             return filePath.hasPrefix(prefix)
         }) else { return nil }
         var isStale = false
-        guard let rootURL = try? URL(
-            resolvingBookmarkData: root.bookmark,
-            options: .withSecurityScope,
-            relativeTo: nil,
-            bookmarkDataIsStale: &isStale
-        ) else {
-            self.log.warning("edit.root_scope.bookmark_unresolvable", ["filePath": filePath])
+        let rootURL: URL
+        do {
+            rootURL = try URL(
+                resolvingBookmarkData: root.bookmark,
+                options: .withSecurityScope,
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            )
+        } catch {
+            self.log.warning("edit.root_scope.bookmark_unresolvable", [
+                "filePath": filePath,
+                "error": String(reflecting: error),
+            ])
             return nil
         }
         guard let handle = RootScopeHandle(url: rootURL) else {

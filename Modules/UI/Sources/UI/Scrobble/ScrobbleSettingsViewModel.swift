@@ -223,7 +223,13 @@ public final class ScrobbleSettingsViewModel: ObservableObject {
 
     public func purgeDeadLetters() async {
         let repo = self.service.queueRepository
-        try? await repo.purgeDead()
+        do {
+            try await repo.purgeDead()
+        } catch {
+            // The user pressed Purge and the dead letters are still there, with
+            // nothing to say the purge did not happen (#491).
+            self.log.warning("scrobble.dead.purge.failed", ["error": String(reflecting: error)])
+        }
     }
 
     private func message(for error: Error) -> String {

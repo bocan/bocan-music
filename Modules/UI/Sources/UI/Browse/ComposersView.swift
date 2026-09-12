@@ -71,9 +71,15 @@ public struct ComposersView: View {
         .task {
             let trackRepo = TrackRepository(database: self.library.database)
             let albumRepo = AlbumRepository(database: self.library.database)
-            async let composersFetch = try? trackRepo.allComposers()
-            async let countsFetch = try? trackRepo.composerTrackCounts()
-            async let cardsFetch = try? albumRepo.fetchComposerCards()
+            async let composersFetch = recoveredRead("composers.allComposers.failed") {
+                try await trackRepo.allComposers()
+            }
+            async let countsFetch = recoveredRead("composers.trackCounts.failed") {
+                try await trackRepo.composerTrackCounts()
+            }
+            async let cardsFetch = recoveredRead("composers.cards.failed") {
+                try await albumRepo.fetchComposerCards()
+            }
             let allComposers = await composersFetch ?? []
             self.trackCounts = await countsFetch ?? [:]
             self.cardData = await Dictionary(uniqueKeysWithValues: (cardsFetch ?? []).map { ($0.name, $0) })
