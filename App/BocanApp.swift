@@ -718,10 +718,23 @@ extension BocanApp {
         let streamCacheDir = cachesRoot
             .appendingPathComponent("io.cloudcauldron.bocan", isDirectory: true)
             .appendingPathComponent("SubsonicStreams", isDirectory: true)
-        let subsonicStreamCache: SubsonicStreamCache? = try? SubsonicStreamCache(
-            configuration: SubsonicStreamCache.Configuration(rootDirectory: streamCacheDir),
-            loader: RemoteTrackLoader(transport: URLSessionHTTPTransport())
-        )
+        // Without the cache no Subsonic track can play this session, and every
+        // attempt fails downstream with a less specific error; the reason
+        // belongs in the log (#483). The nil fallback keeps the rest of the
+        // app working.
+        let subsonicStreamCache: SubsonicStreamCache?
+        do {
+            subsonicStreamCache = try SubsonicStreamCache(
+                configuration: SubsonicStreamCache.Configuration(rootDirectory: streamCacheDir),
+                loader: RemoteTrackLoader(transport: URLSessionHTTPTransport())
+            )
+        } catch {
+            log.error("subsonic.streamCache.init_failed", [
+                "dir": streamCacheDir.path,
+                "error": String(reflecting: error),
+            ])
+            subsonicStreamCache = nil
+        }
         let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }

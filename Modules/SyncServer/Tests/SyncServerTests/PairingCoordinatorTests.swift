@@ -57,7 +57,10 @@ struct PairingCoordinatorTests {
         let clock: OSAllocatedUnfairLock<Date>
     }
 
-    private func makeHarness(timeout: TimeInterval = 120) async throws -> Harness {
+    private func makeHarness(
+        timeout: TimeInterval = 120,
+        serverId: @escaping @Sendable () async throws -> String = { "server-xyz" }
+    ) async throws -> Harness {
         let identity = try ServerIdentity(store: InMemoryIdentityStore())
         let serverFingerprint = try await identity.fingerprint().hex
         let database = try await Database(location: .inMemory)
@@ -70,7 +73,7 @@ struct PairingCoordinatorTests {
             trusted: trusted,
             ui: ui,
             serverName: { "Test Mac" },
-            serverId: { "server-xyz" },
+            serverId: serverId,
             timeout: timeout,
             now: { clock.withLock { $0 } }
         )
@@ -136,6 +139,23 @@ struct PairingCoordinatorTests {
         #expect(harness.trusted.fingerprints.contains(peer))
         #expect(await harness.coordinator.isPairingMode == false)
         #expect(harness.ui.endedResult == .paired(deviceName: "Pixel"))
+    }
+
+    @Test("pairing fails when this Mac's id cannot be read, rather than pairing under an empty one (#485)")
+    func confirmFailsWithoutServerId() async throws {
+        struct MetaUnavailable: Error {}
+        let harness = try await self.makeHarness(serverId: { throw MetaUnavailable() })
+        let peer = self.peerFingerprint("f")
+        let (response, _) = try await self.armAndStart(harness, peer: peer)
+        let code = try #require(harness.ui.shownCode)
+        let proof = PairingCode.proof(code: code, sessionId: response.sessionId)
+
+        await #expect(throws: MetaUnavailable.self) {
+            _ = try await harness.coordinator.confirm(
+                request: PairConfirm(sessionId: response.sessionId, proof: proof)
+            )
+        }
+        #expect(!harness.trusted.fingerprints.contains(peer), "no half-paired device is left behind")
     }
 
     @Test("three bad proofs lock out the session and revert pairing mode")

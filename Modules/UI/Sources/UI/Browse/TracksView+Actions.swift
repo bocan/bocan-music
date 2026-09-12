@@ -43,7 +43,19 @@ extension TracksView {
             },
             addToPlaylist: { playlistID, tracks in
                 let ids = tracks.compactMap(\.id)
-                Task { try? await lib.playlistService.addTracks(ids, to: playlistID) }
+                Task {
+                    do {
+                        try await lib.playlistService.addTracks(ids, to: playlistID)
+                    } catch {
+                        // The user chose a playlist from the menu; a silent
+                        // failure looks like the tracks were added (#480).
+                        lib.log.error("playlist.addTracks.failed", [
+                            "playlist": playlistID,
+                            "error": String(reflecting: error),
+                        ])
+                        lib.showToast(ToastMessage(text: L10n.string("Couldn’t add those tracks to the playlist.")))
+                    }
+                }
             },
             newPlaylistFromSelection: { tracks in
                 let ids = tracks.compactMap(\.id)

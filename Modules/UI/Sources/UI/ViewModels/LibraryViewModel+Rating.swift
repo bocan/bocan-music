@@ -41,7 +41,16 @@ public extension LibraryViewModel {
         let newValue = !currentlyLoved
         Task {
             let repo = Persistence.TrackRepository(database: self.database)
-            guard var track = try? await repo.fetch(id: trackID) else { return }
+            var track: Track
+            do {
+                track = try await repo.fetch(id: trackID)
+            } catch {
+                // The user pressed Love; nothing happening with no explanation
+                // is the one outcome this must not have (#480).
+                self.log.error("love.fetch.failed", ["track": trackID, "error": String(reflecting: error)])
+                self.showToast(ToastMessage(text: L10n.string("Couldn’t update Loved for that track.")))
+                return
+            }
             track.loved = newValue
             await self.applyLoved(newValue, to: [track])
         }

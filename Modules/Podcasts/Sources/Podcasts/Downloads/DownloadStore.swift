@@ -17,6 +17,8 @@ import Observability
 public struct DownloadStore: Sendable {
     private let root: URL
     private let log = AppLogger.make(.podcasts)
+    /// `contentHash(ofFileAt:)` is static, so it needs its own handle.
+    private static let log = AppLogger.make(.podcasts)
 
     /// - Parameter root: override the storage root (tests pass a temp directory).
     ///   `nil` uses the default Application Support location.
@@ -122,15 +124,30 @@ public struct DownloadStore: Sendable {
     }
 
     /// Streams the file at `url` through SHA-256 (without loading it whole into
-    /// memory) and returns the lowercase-hex digest, or `nil` if it cannot be
-    /// read. Computed once at download time and stored so Phone Sync need not
-    /// re-hash the file.
+    /// memory) and returns the lowercase-hex digest, or `nil` when the file
+    /// cannot be read. Computed once at download time and stored so Phone Sync
+    /// need not re-hash the file.
+    ///
+    /// A read error part-way through returns `nil`, never the digest of the
+    /// bytes read so far: that value is not this file's hash, and the phone
+    /// verifies the episode it fetches against it (#484).
     public static func contentHash(ofFileAt url: URL) -> String? {
-        guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        guard let handle = try? FileHandle(forReadingFrom: url) else {
+            self.log.warning("download.contentHash.openFailed", ["file": url.lastPathComponent])
+            return nil
+        }
         defer { try? handle.close() }
         var hasher = SHA256()
-        while let chunk = try? handle.read(upToCount: 1 << 20), !chunk.isEmpty {
-            hasher.update(data: chunk)
+        do {
+            while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+                hasher.update(data: chunk)
+            }
+        } catch {
+            self.log.warning("download.contentHash.readFailed", [
+                "file": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return nil
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }

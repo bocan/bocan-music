@@ -23,6 +23,37 @@ struct DownloadStoreTests {
         #expect(!a.lastPathComponent.contains("/"))
     }
 
+    @Test("contentHash is the file's SHA-256 (#484)")
+    func contentHashMatchesTheFile() throws {
+        let file = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DownloadStoreHash-\(UUID().uuidString).bin")
+        try Data("hello".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+
+        #expect(
+            DownloadStore.contentHash(ofFileAt: file)
+                == "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        )
+    }
+
+    @Test("contentHash is nil, not a partial digest, when the file cannot be read (#484)")
+    func contentHashNilWhenUnreadable() throws {
+        let missing = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DownloadStoreHash-missing-\(UUID().uuidString).bin")
+        #expect(DownloadStore.contentHash(ofFileAt: missing) == nil)
+
+        let unreadable = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DownloadStoreHash-locked-\(UUID().uuidString).bin")
+        try Data("hello".utf8).write(to: unreadable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: unreadable.path)
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: unreadable.path)
+            try? FileManager.default.removeItem(at: unreadable)
+        }
+
+        #expect(DownloadStore.contentHash(ofFileAt: unreadable) == nil)
+    }
+
     @Test("extension is derived from the MIME type, defaulting to mp3")
     func extensionFromMIME() {
         #expect(DownloadStore.fileExtension(forMIME: "audio/mpeg") == "mp3")

@@ -498,7 +498,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         self.settingsRepo = SettingsRepository(database: database)
         let radioStations = RadioStationRepository(database: database)
         self.radioStations = radioStations
-        self.metadataEditService = try? MetadataEditService(database: database)
+        // A failed init leaves the tag editor unavailable for the whole
+        // session; `self.log` is not usable this early in init (#480).
+        do {
+            self.metadataEditService = try MetadataEditService(database: database)
+        } catch {
+            AppLogger.make(.ui).error("metadataEditService.init_failed", ["error": String(reflecting: error)])
+            self.metadataEditService = nil
+        }
 
         self.fingerprintQueue = Self.makeFingerprintQueue(database: database)
 

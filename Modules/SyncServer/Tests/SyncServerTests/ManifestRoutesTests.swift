@@ -67,6 +67,33 @@ struct ManifestRoutesTests {
         #expect(manifest.tracks.count == 1)
     }
 
+    @Test("the ping route answers this Mac's id and generation")
+    func pingAnswersIdentity() async throws {
+        let database = try await Database(location: .inMemory)
+        let response = await self.makeRouter(database).dispatch(self.request("/v1/ping"), context: self.trustedContext())
+
+        #expect(response.status == 200)
+        let json = try #require(try JSONSerialization.jsonObject(with: response.body) as? [String: Any])
+        #expect(json["protocolVersion"] as? Int == 1)
+        #expect((json["serverId"] as? String)?.isEmpty == false)
+        #expect(json["generation"] as? Int == 0)
+    }
+
+    @Test("a ping that cannot read the identity answers 500, not an empty server id (#485)")
+    func pingFailsLoudlyWithoutIdentity() async throws {
+        let database = try await Database(location: .inMemory)
+        // The read fails the way a damaged database would.
+        try await database.write { db in
+            try db.execute(sql: "DROP TABLE sync_meta")
+        }
+
+        let response = await self.makeRouter(database).dispatch(self.request("/v1/ping"), context: self.trustedContext())
+
+        #expect(response.status == 500)
+        let body = String(decoding: response.body, as: UTF8.self)
+        #expect(!body.contains("\"serverId\""), "an empty id reads as a different Mac to the phone")
+    }
+
     @Test("the manifest route rejects an unpaired connection")
     func manifestRejectsUnpaired() async throws {
         let database = try await Database(location: .inMemory)

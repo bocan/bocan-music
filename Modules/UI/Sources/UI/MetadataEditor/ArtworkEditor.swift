@@ -1,5 +1,6 @@
 import AppKit
 import Library
+import Observability
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -96,8 +97,16 @@ public struct ArtworkEditor: View {
         ) { result in
             if case let .success(url) = result {
                 SecurityScope.withAccess(url) { scopedURL in
-                    if let data = try? Data(contentsOf: scopedURL) {
-                        self.vm.pendingArtData = Self.normalise(data)
+                    do {
+                        self.vm.pendingArtData = try Self.normalise(Data(contentsOf: scopedURL))
+                    } catch {
+                        // The user picked this file; silence looks like the
+                        // picker did nothing (#480).
+                        AppLogger.make(.ui).error("artwork.read.failed", [
+                            "file": scopedURL.lastPathComponent,
+                            "error": String(reflecting: error),
+                        ])
+                        self.vm.lastError = L10n.string("Couldn’t read that image file.")
                     }
                 }
             }
@@ -123,8 +132,18 @@ public struct ArtworkEditor: View {
                 let url: URL? = await withCheckedContinuation { cont in
                     _ = provider.loadObject(ofClass: URL.self) { url, _ in cont.resume(returning: url) }
                 }
-                guard let url, let data = try? Data(contentsOf: url) else { return }
-                self.vm.pendingArtData = Self.normalise(data)
+                guard let url else { return }
+                do {
+                    self.vm.pendingArtData = try Self.normalise(Data(contentsOf: url))
+                } catch {
+                    // Same for a dropped file: the drop was accepted, so the
+                    // failure has to say something (#480).
+                    AppLogger.make(.ui).error("artwork.drop.failed", [
+                        "file": url.lastPathComponent,
+                        "error": String(reflecting: error),
+                    ])
+                    self.vm.lastError = L10n.string("Couldn’t read that image file.")
+                }
             }
             return true
         }

@@ -164,7 +164,7 @@ public struct ManifestBuilder: Sendable {
         let sha256: String
         if let stored = state.contentHash {
             sha256 = stored
-        } else if let computed = Self.hashFile(fileURL) {
+        } else if let computed = self.hashFile(fileURL) {
             sha256 = computed
         } else {
             // The download is gone; without the bytes we cannot serve or hash it.
@@ -198,13 +198,27 @@ public struct ManifestBuilder: Sendable {
         return hash
     }
 
-    /// Streams a file through SHA-256 without loading it whole into memory.
-    private static func hashFile(_ url: URL) -> String? {
+    /// Streams a file through SHA-256 without loading it whole into memory,
+    /// or `nil` when it cannot be read.
+    ///
+    /// A read error part-way through returns `nil`, never the digest of the
+    /// bytes read so far: the phone verifies the file it fetches against this
+    /// value, and an episode with no hash is left out of the manifest rather
+    /// than advertised under a wrong one (#485).
+    private func hashFile(_ url: URL) -> String? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
         var hasher = SHA256()
-        while let chunk = try? handle.read(upToCount: 1 << 20), !chunk.isEmpty {
-            hasher.update(data: chunk)
+        do {
+            while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty {
+                hasher.update(data: chunk)
+            }
+        } catch {
+            self.log.warning("manifest.hashFile.readFailed", [
+                "file": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            return nil
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
     }

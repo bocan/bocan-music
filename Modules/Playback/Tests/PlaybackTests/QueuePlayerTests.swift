@@ -317,6 +317,80 @@ struct QueuePlayerTests {
 
     // MARK: - Helpers
 
+    // MARK: Remote commands (#482)
+
+    @Test("a remote transport command that fails reports a playback failure instead of dropping it (#482)")
+    func remoteCommandFailureIsReported() async throws {
+        let engine = AudioEngine()
+        let db = try await Database(location: .inMemory)
+        let player = QueuePlayer(engine: engine, database: db)
+        let repo = TrackRepository(database: db)
+        // The row points at a file that is not there, so the load fails the way
+        // a media key's play on a moved file does.
+        let ids = try await insertTestTracks(repo: repo, count: 1)
+        try await player.addToQueue(ids)
+        let items = await player.queue.items
+        await player.queue.replace(with: items, startAt: 0)
+
+        let reported = await Self.awaitFailure(from: player) {
+            await player.runRemote(.play)
+        }
+        #expect(reported, "the lock screen and the media keys have no caller to catch this")
+    }
+
+    @Test("every remote handler routes through runRemote rather than dropping its error (#482)")
+    func remoteHandlersDoNotSwallow() throws {
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent() // PlaybackTests/
+            .deletingLastPathComponent() // Tests/
+            .deletingLastPathComponent() // Modules/Playback/
+            .appendingPathComponent("Sources/Playback/QueuePlayer.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "private func bindRemoteCommands"))
+        let end = try #require(source.range(of: "// MARK: Convenience"))
+        let block = String(source[start.lowerBound ..< end.lowerBound])
+
+        #expect(!block.contains("try?"), "a dropped error leaves the key looking dead with nothing logged")
+        for call in ["runRemote(.play)", "runRemote(.togglePlayPause)", "runRemote(.next)",
+                     "runRemote(.previous)", "runRemote(.seek("] {
+            #expect(block.contains(call), "missing \(call)")
+        }
+    }
+
+    @Test("a remote command is logged under its own name")
+    func remoteCommandLabels() {
+        #expect(QueuePlayer.RemoteCommand.play.label == "play")
+        #expect(QueuePlayer.RemoteCommand.next.label == "nextTrack")
+        #expect(QueuePlayer.RemoteCommand.previous.label == "previousTrack")
+        #expect(QueuePlayer.RemoteCommand.seek(3, label: "skipBack").label == "skipBack")
+    }
+
+    /// Runs `action` and reports whether a `.failed` state reaches the player's
+    /// state stream, which is where the now-playing strip's error toast hangs.
+    private static func awaitFailure(
+        from player: QueuePlayer,
+        action: @escaping @Sendable () async -> Void
+    ) async -> Bool {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                for await state in player.state {
+                    if case .failed = state {
+                        return true
+                    }
+                }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(5))
+                return false
+            }
+            await action()
+            let reported = await group.next() ?? false
+            group.cancelAll()
+            return reported
+        }
+    }
+
     private func makeTrack(n: Int) -> Track {
         let now = Int64(Date().timeIntervalSince1970)
         return Track(
