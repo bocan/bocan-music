@@ -52,3 +52,13 @@ Modules/UI/Sources/UI/Playlists/Smart/SmartPresetPickerView.swift|Button(L10n.st
 # ever reach them (#505).
 Modules/UI/Sources/UI/Playlists/Smart/SmartPlaylistSurfacePrewarmer.swift|Picker("", selection: self.$mode) {  # off-screen warm-up probe
 Modules/UI/Sources/UI/Playlists/Smart/SmartPlaylistSurfacePrewarmer.swift|Menu(L10n.string("Preset")) {  # off-screen warm-up probe
+
+# Editing and tools: only the buttons that close a sheet without writing
+# anything. Everything in this cluster that touches a file or the library
+# carries help, because that is where the consequence matters (#506).
+Modules/UI/Sources/UI/MetadataEditor/ConflictDiffSheet.swift|Button(L10n.string("Done")) { self.isPresented = false }  # closes the diff view
+Modules/UI/Sources/UI/MetadataEditor/CoverArtFetchSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes without applying
+Modules/UI/Sources/UI/MetadataEditor/TagEditorSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes without saving
+Modules/UI/Sources/UI/Tools/BatchCoverArtSheet.swift|Button(L10n.string("Close")) { self.isPresented = false }  # closes the finished sheet
+Modules/UI/Sources/UI/Tools/BatchCoverArtSheet.swift|Button(L10n.string("Cancel")) { self.isPresented = false }  # closes before starting
+Modules/UI/Sources/UI/Tools/DuplicateReviewSheet.swift|Button(L10n.string("Done")) { self.isPresented = false }  # closes the review
