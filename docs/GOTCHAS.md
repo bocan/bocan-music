@@ -245,6 +245,30 @@ Never gate on a piped grep, whose status is grep's. And in a test file that uses
 
 **Canonical file:** Makefile targets under `make test-<module>`
 
+### Never put `allSatisfy` with a key path inside `#expect`
+
+**Problem:** a test compiles under `swift test` but the Xcode bundle fails to build with `call can throw, but it is not marked with 'try'` pointing at `$0.allSatisfy($1)` inside a macro expansion. Writing it as a closure fixes it, and then `make format` puts the key path back and the build breaks again.
+
+**Rule:** do not call a `rethrows` predicate method (`allSatisfy`, `contains(where:)`, `filter`) as the outermost expression of a `#expect`. Compare sets or hoist the result:
+
+```swift
+#expect(Set(rows.map(\.starred)) == Set([true]))
+```
+
+**Why:** the `#expect` macro decomposes the outermost boolean call into `$0.allSatisfy($1)` to build its failure message, and that rewrite loses the `rethrows` inference for a key-path argument. SwiftFormat's `preferKeyPath` rule rewrites `allSatisfy { $0.x }` into `allSatisfy(\.x)`, so a closure is not a stable workaround. `map(\.x)` is fine because it is not the outermost call.
+
+**Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/SubsonicBrowseViewModelTests.swift`
+
+### A test that stars a song can fail the transport-haptics test
+
+**Problem:** `NowPlayingViewModelTests.transportHaptics` fails in a full `make test-ui` run with "Expectation failed: !patterns.contains(.levelChange)", and passes when run alone or with a few suites.
+
+**Rule:** a test that writes a Subsonic star or rating for any reason other than testing the haptic wraps the call in `silencingHaptics { … }` (`SubsonicAnnotationCoordinatorTests.swift`). A test that is about the haptic installs its own recorder instead.
+
+**Why:** `Haptics.performPattern` is one process-global closure. `transportHaptics` installs a recorder and keeps it installed across suspension points, so a `.levelChange` performed by any concurrently running test lands in its array. The helper swaps the seam and restores it with no suspension point in between, which makes the swap invisible to other `@MainActor` tests.
+
+**Canonical file:** `Modules/UI/Sources/UI/Common/Haptics.swift`
+
 ### Diagnosing a frozen debug run
 
 **Problem:** the app is unresponsive and it is not obvious whether it crashed, hung, or is paused.
