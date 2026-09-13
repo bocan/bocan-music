@@ -9,6 +9,9 @@ import TagLibBridge
 /// Writes are **atomic at the file level**: the original is copied to a sibling
 /// temp file, tags are written to the copy, `fsync(2)` is called, then
 /// `rename(2)` replaces the original.  On any failure the original is untouched.
+/// The copy goes to the system temporary directory only when no sibling can be
+/// created, because a temp file on another volume turns that rename into a
+/// cross-volume replacement that macOS refuses at folder level (#511).
 public struct TagWriter: Sendable {
     private let log = AppLogger.make(.metadata)
 
@@ -28,21 +31,8 @@ public struct TagWriter: Sendable {
             throw MetadataError.readOnlyFile(url)
         }
 
-        // Write the temp file to the system temporary directory rather than as a
-        // sibling of the original.  A sibling would require write access to the
-        // parent directory — which the sandbox does NOT grant for files added
-        // individually via "Add Files…" (the security-scoped bookmark covers the
-        // file itself, not its parent folder).  FileManager.replaceItem handles the
-        // cross-filesystem case (e.g. /var/folders → ~/Desktop) gracefully.
-        let tmpURL = fm.temporaryDirectory
-            .appendingPathComponent(".\(UUID().uuidString).\(url.pathExtension)")
-
         // 1. Copy original → temp (preserves audio payload)
-        do {
-            try fm.copyItem(at: url, to: tmpURL)
-        } catch {
-            throw MetadataError.writeFailed(url, "Copy to temp failed: \(error.localizedDescription)")
-        }
+        let tmpURL = try self.stageCopy(of: url, fileManager: fm)
 
         do {
             // 2. Write tags to the temp file via TagLib bridge
@@ -73,7 +63,7 @@ public struct TagWriter: Sendable {
                     resultingItemURL: nil
                 )
             } catch {
-                throw MetadataError.writeFailed(url, "Replace failed: \(error.localizedDescription)")
+                throw MetadataError.writeFailed(url, Self.replaceFailureReason(url: url, error: error, fileManager: fm))
             }
         } catch {
             do {
@@ -85,6 +75,62 @@ public struct TagWriter: Sendable {
         }
 
         self.log.debug("taglib.write", ["path": url.lastPathComponent])
+    }
+
+    // MARK: - Staging
+
+    /// Copies `url` to the file the new tags are written into, and returns it.
+    ///
+    /// A sibling of the original keeps the later replacement on the same
+    /// volume, where it is a rename. Staging in the system temporary directory
+    /// makes that replacement cross-volume for every library that is not on the
+    /// boot volume, and macOS then fails it at folder level even though the
+    /// file itself is perfectly writable (#511).
+    ///
+    /// The system temporary directory stays as the fallback: for a file added
+    /// through "Add Files…" the sandbox grants the bookmark on the file and not
+    /// on its parent folder, so no sibling can be created there. The copy
+    /// itself decides which one is used, rather than a permission check that
+    /// the sandbox can answer differently from the write.
+    func stageCopy(of url: URL, fileManager fm: FileManager = .default) throws -> URL {
+        let sibling = url.deletingLastPathComponent()
+            .appendingPathComponent(".\(UUID().uuidString).\(url.pathExtension)")
+        do {
+            try fm.copyItem(at: url, to: sibling)
+            return sibling
+        } catch {
+            self.log.debug("taglib.tmp.sibling_unavailable", [
+                "file": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+        }
+        // A failed copy can still leave a partial sibling behind.
+        try? fm.removeItem(at: sibling)
+
+        let fallback = fm.temporaryDirectory
+            .appendingPathComponent(".\(UUID().uuidString).\(url.pathExtension)")
+        do {
+            try fm.copyItem(at: url, to: fallback)
+            return fallback
+        } catch {
+            throw MetadataError.writeFailed(url, "Copy to temp failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Cocoa reports a failed replacement at folder level ("couldn't be saved
+    /// in the folder …"), which reads as though the file were at fault. Name
+    /// the folder when the folder is the obstacle (#511).
+    ///
+    /// The early guard cannot make this check: a file added through "Add
+    /// Files…" has a writable file inside a folder the process cannot write,
+    /// and that write still succeeds.
+    private static func replaceFailureReason(url: URL, error: Error, fileManager fm: FileManager) -> String {
+        let folder = url.deletingLastPathComponent()
+        guard !fm.isWritableFile(atPath: folder.path(percentEncoded: false)) else {
+            return "Replace failed: \(error.localizedDescription)"
+        }
+        return "Replace failed: the folder \(folder.lastPathComponent) is not writable "
+            + "(\(error.localizedDescription))"
     }
 
     // MARK: - Private helpers

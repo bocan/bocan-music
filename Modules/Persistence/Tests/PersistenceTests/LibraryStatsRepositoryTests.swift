@@ -97,6 +97,8 @@ struct LibraryStatsRepositoryTests {
 
     // MARK: - Hygiene
 
+    /// Returns the album's row ID; most callers only need the rows seeded.
+    @discardableResult
     private func seedHygieneAlbum(
         _ db: Database,
         title: String,
@@ -113,7 +115,7 @@ struct LibraryStatsRepositoryTests {
             if let coverArtHash {
                 // cover_art_hash is a foreign key; the referenced row must
                 // exist. Callers use a distinct hash per album.
-                var art = CoverArt(hash: coverArtHash, path: "/art/\(coverArtHash).jpg")
+                let art = CoverArt(hash: coverArtHash, path: "/art/\(coverArtHash).jpg")
                 try art.insert(db)
             }
             var album = Album(title: title, albumArtistID: artist.id)

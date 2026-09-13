@@ -124,10 +124,19 @@ public actor MetadataEditService {
 
     /// Undoes the edit identified by `editID`.
     ///
-    /// Restores the original tags to the file and re-saves the DB row.
+    /// Restores the original tags to the file and re-saves the DB row. An edit
+    /// that never opened the file (cover art with embedding off) has no tags to
+    /// restore: its art rows go back instead (#472).
     public func undo(editID: String) async throws {
         guard let entry = try await self.backupRing.load(editID: editID) else {
             self.log.warning("undo.not_found", ["editID": editID])
+            return
+        }
+
+        if let restore = entry.databaseOnly {
+            await self.undoDatabaseOnly(entry: entry, restore: restore)
+            await self.backupRing.delete(editID: editID)
+            self.log.debug("undo.complete", ["editID": editID])
             return
         }
 
@@ -137,8 +146,15 @@ public actor MetadataEditService {
             )
         }
 
+        guard let snapshot = entry.originalTags else {
+            // Neither shape of backup is present, so there is nothing to put
+            // back and undo would otherwise blank the file's tags.
+            self.log.warning("undo.no_backup_payload", ["editID": editID])
+            return
+        }
+
         // Restore original tags to the file
-        let originalTags = entry.originalTags.toTrackTags()
+        let originalTags = snapshot.toTrackTags()
         try await Task.detached(priority: .userInitiated) {
             try TagWriter().write(originalTags, to: url)
         }.value
@@ -162,6 +178,43 @@ public actor MetadataEditService {
 
         await self.backupRing.delete(editID: editID)
         self.log.debug("undo.complete", ["editID": editID])
+    }
+
+    /// Undo for an edit that never touched the audio file: the track's cover
+    /// art hash and the album's art link go back to what they were, and the
+    /// file is left alone (#472).
+    private func undoDatabaseOnly(entry: BackupRing.Entry, restore: BackupRing.DatabaseOnlyRestore) async {
+        do {
+            if let track = try await self.trackRepo.fetchOne(fileURL: entry.fileURL) {
+                var reverted = track
+                reverted.coverArtHash = restore.trackCoverArtHash
+                reverted.userEdited = false
+                reverted.updatedAt = Int64(Date().timeIntervalSince1970)
+                try await self.trackRepo.update(reverted)
+            }
+        } catch {
+            // The art the user just undid stays on the row, so the track keeps
+            // showing the image they asked to take back.
+            self.log.warning("undo.databaseOnly.rowUpdateFailed", [
+                "file": entry.fileURL,
+                "error": String(reflecting: error),
+            ])
+        }
+
+        guard let albumID = restore.albumID else { return }
+        do {
+            var album = try await self.albumRepo.fetch(id: albumID)
+            album.coverArtHash = restore.albumCoverArtHash
+            album.coverArtPath = restore.albumCoverArtPath
+            try await self.albumRepo.update(album)
+        } catch {
+            // The grid and the track list draw the album's art, so leaving it
+            // linked undoes the edit only where the user cannot see it.
+            self.log.warning("undo.databaseOnly.albumUpdateFailed", [
+                "album": albumID,
+                "error": String(reflecting: error),
+            ])
+        }
     }
 
     /// Fetches the `Track` database records for `ids` (skips any not found).

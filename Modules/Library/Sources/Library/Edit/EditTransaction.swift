@@ -255,6 +255,16 @@ actor EditTransaction {
             )
         }
 
+        // A patch that changes no tag inside the audio file has nothing to
+        // write there: cover art with embedding off goes to Bòcan's cache and
+        // the rows, and the rating and shuffle flags never leave the database.
+        // Rewriting the file anyway cost a backup, a full TagLib rewrite and a
+        // watcher conflict for every track, and failed outright on a file the
+        // user cannot write (#472).
+        guard Self.needsFileWrite(patch: patch, embedCoverArt: embedCoverArt) else {
+            return try await self.applyWithoutFileWrite(track: track, patch: patch)
+        }
+
         // Start the root-folder security scope so TagReader / TagWriter can
         // access this file and create temp siblings in the same directory.
         // The scope must remain active for the entire read-write-verify cycle.
@@ -428,6 +438,62 @@ actor EditTransaction {
         }
 
         return (updated, coverArtHash)
+    }
+
+    /// Whether `patch` has anything to write into the audio file: a tag the
+    /// file carries, or cover art while the user has embedding switched on.
+    private static func needsFileWrite(patch: TrackTagPatch, embedCoverArt: Bool) -> Bool {
+        patch.touchesFileTags || (embedCoverArt && patch.coverArt != nil)
+    }
+
+    /// Applies a patch that touches no file tag: the art is cached, the row
+    /// carries the change, and the audio file is never opened (#472).
+    ///
+    /// The backup entry records the art rows rather than the file's tags, so
+    /// undo restores the previous hash and album link.
+    private func applyWithoutFileWrite(
+        track: Track,
+        patch: TrackTagPatch
+    ) async throws -> (track: Track, coverArtHash: String?) {
+        var coverArtHash: String? = track.coverArtHash
+        if let artPatch = patch.coverArt {
+            if let artData = artPatch {
+                let extracted = CoverArtExtractor.extract(from: [
+                    RawCoverArt(data: artData, mimeType: Self.mimeType(for: artData), pictureType: 3),
+                ])
+                if let persisted = try await self.coverArtCache.persist(extracted, source: "user") {
+                    coverArtHash = persisted.hash
+                }
+            } else {
+                coverArtHash = nil // cleared
+            }
+        }
+
+        try await self.backupRing.save(
+            fileURL: track.fileURL,
+            tags: nil,
+            databaseOnly: self.artRestorePoint(for: track)
+        )
+
+        var updated = patch.applying(to: track)
+        updated.userEdited = true
+        self.log.debug("edit.track.databaseOnly", ["id": track.id ?? -1])
+        return (updated, coverArtHash)
+    }
+
+    /// The cover-art rows as they stand before a database-only edit, so undo
+    /// can put them back (#472).
+    private func artRestorePoint(for track: Track) async -> BackupRing.DatabaseOnlyRestore {
+        var album: Album? = nil
+        if let albumID = track.albumID {
+            album = await self.albumOrNil(albumID, context: "artRestorePoint")
+        }
+        return BackupRing.DatabaseOnlyRestore(
+            trackCoverArtHash: track.coverArtHash,
+            albumID: track.albumID,
+            albumCoverArtHash: album?.coverArtHash,
+            albumCoverArtPath: album?.coverArtPath
+        )
     }
 
     private static func applyPatch(_ patch: TrackTagPatch, to tags: inout TrackTags) {

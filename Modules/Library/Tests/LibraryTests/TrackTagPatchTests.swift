@@ -88,4 +88,60 @@ struct TrackTagPatchTests {
         #expect(updated.year == nil)
         #expect(updated.yearText == nil)
     }
+
+    // MARK: - File-tag classification (#472)
+
+    /// The fields that never reach the audio file: cover art goes there only
+    /// when the user switches embedding on, and the other three are database
+    /// columns with no tag behind them.
+    private static let databaseOnlyFields: Set = [
+        "coverArt", "rating", "loved", "excludedFromShuffle",
+    ]
+
+    /// `touchesFileTags` is a second list of the fields `applyPatch` writes into
+    /// the file, and a new field that nobody adds to it would silently stop
+    /// being written. This pins the whole set, so adding a field fails here
+    /// until it is classified one way or the other.
+    @Test func everyPatchFieldIsClassifiedAsFileTagOrDatabaseOnly() {
+        let all = TrackTagPatch(
+            title: "t", artist: "a", albumArtist: "aa", album: "al", genre: "g",
+            composer: "c", comment: "cm", trackNumber: 1, trackTotal: 2,
+            discNumber: 1, discTotal: 2, year: 2024, bpm: 120, key: "Am",
+            isrc: "i", lyrics: "l", syncedLyrics: "sl", musicbrainzTrackID: "1",
+            musicbrainzRecordingID: "2", musicbrainzReleaseID: "3",
+            musicbrainzReleaseGroupID: "4", musicbrainzArtistID: "5",
+            musicbrainzAlbumArtistID: "6", sortArtist: "sa", sortAlbumArtist: "saa",
+            sortAlbum: "sal", coverArt: Data([0x01]), rating: 80, loved: true,
+            excludedFromShuffle: true, replaygainTrackGain: -3.5,
+            replaygainTrackPeak: 0.9, replaygainAlbumGain: -4.5, replaygainAlbumPeak: 0.8
+        )
+        let fields = Set(Mirror(reflecting: all).children.compactMap(\.label))
+        let known = Self.databaseOnlyFields.union([
+            "title", "artist", "albumArtist", "album", "genre", "composer", "comment",
+            "trackNumber", "trackTotal", "discNumber", "discTotal", "year", "bpm", "key",
+            "isrc", "lyrics", "syncedLyrics", "musicbrainzTrackID", "musicbrainzRecordingID",
+            "musicbrainzReleaseID", "musicbrainzReleaseGroupID", "musicbrainzArtistID",
+            "musicbrainzAlbumArtistID", "sortArtist", "sortAlbumArtist", "sortAlbum",
+            "replaygainTrackGain", "replaygainTrackPeak", "replaygainAlbumGain",
+            "replaygainAlbumPeak",
+        ])
+        #expect(fields == known, "a new patch field needs a decision in touchesFileTags")
+        #expect(all.touchesFileTags)
+    }
+
+    @Test func aPatchOfDatabaseOnlyFieldsTouchesNoFileTag() {
+        var patch = TrackTagPatch()
+        patch.coverArt = Data([0x01])
+        patch.rating = 80
+        patch.loved = true
+        patch.excludedFromShuffle = true
+        #expect(!patch.isEmpty)
+        #expect(!patch.touchesFileTags, "none of these live in the file")
+    }
+
+    @Test func aLyricChangeTouchesFileTags() {
+        var patch = TrackTagPatch()
+        patch.syncedLyrics = "[00:01.00]word"
+        #expect(patch.touchesFileTags)
+    }
 }

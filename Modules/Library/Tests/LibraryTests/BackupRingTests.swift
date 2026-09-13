@@ -21,8 +21,9 @@ struct BackupRingTests {
 
         let loaded = try await ring.load(editID: editID)
         #expect(loaded?.editID == editID)
-        #expect(loaded?.originalTags.title == "Hello")
-        #expect(loaded?.originalTags.artist == "World")
+        #expect(loaded?.originalTags?.title == "Hello")
+        #expect(loaded?.originalTags?.artist == "World")
+        #expect(loaded?.databaseOnly == nil, "a tag edit restores tags, not rows")
     }
 
     @Test func loadNonExistentReturnsNil() async throws {
@@ -75,7 +76,26 @@ struct BackupRingTests {
         _ = try await ring.save(fileURL: "file:///track.mp3", tags: snap2)
 
         let last = try await ring.lastEntry(forFileURL: "file:///track.mp3")
-        #expect(last?.originalTags.title == "v2")
+        #expect(last?.originalTags?.title == "v2")
+    }
+
+    /// An edit that never opened the file stores the art rows to put back
+    /// instead of a tag snapshot (#472).
+    @Test func databaseOnlyEntryCarriesTheArtRowsAndNoTags() async throws {
+        let (ring, dir) = try makeRing()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let restore = BackupRing.DatabaseOnlyRestore(
+            trackCoverArtHash: "old-track-hash",
+            albumID: 42,
+            albumCoverArtHash: "old-album-hash",
+            albumCoverArtPath: "/art/old.jpg"
+        )
+        let editID = try await ring.save(fileURL: "file:///art.flac", tags: nil, databaseOnly: restore)
+
+        let loaded = try await ring.load(editID: editID)
+        #expect(loaded?.originalTags == nil, "no tags were read, so none are stored")
+        #expect(loaded?.databaseOnly == restore)
     }
 
     // MARK: - TagsSnapshot round-trip

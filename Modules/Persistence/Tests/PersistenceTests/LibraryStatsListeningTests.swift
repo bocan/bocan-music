@@ -76,7 +76,8 @@ struct LibraryStatsListeningTests {
         #expect(LibraryStatsRepository.gini([0, 0, 0]) == nil, "nothing played means no coefficient, not zero")
         #expect(LibraryStatsRepository.gini([5, 5, 5, 5]) == 0, "perfectly even rotation")
         #expect(LibraryStatsRepository.gini([7]) == 0)
-        let brutal = try? #require(LibraryStatsRepository.gini([0, 0, 0, 4]))
+        let brutal = LibraryStatsRepository.gini([0, 0, 0, 4])
+        #expect(brutal != nil, "four tracks with plays between them give a coefficient")
         #expect(abs((brutal ?? 0) - 0.75) < 0.0001, "one track taking every play on four tracks is 0.75")
     }
 

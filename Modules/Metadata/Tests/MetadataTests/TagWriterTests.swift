@@ -355,6 +355,70 @@ struct TagWriterTests {
         #expect(after.coverArt.isEmpty, "Expected embedded art to be cleared; got \(after.coverArt.count) image(s)")
     }
 
+    // MARK: - Staging the temp file (#511)
+
+    /// Copies a fixture into a folder of its own and returns both, so a test
+    /// can say something about where the temp file lands.
+    private func tempCopyInOwnFolder(of fixture: String) throws -> (file: URL, folder: URL) {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("TagWriterStaging-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let src = try fixtureURL(named: fixture)
+        let file = folder.appendingPathComponent("track.\(src.pathExtension)")
+        try FileManager.default.copyItem(at: src, to: file)
+        return (file, folder)
+    }
+
+    /// #511: the temp file belongs beside the original. From the system
+    /// temporary directory the replacement is cross-volume for any library
+    /// that is not on the boot volume, and macOS refuses it at folder level.
+    @Test func stagedCopyLandsBesideTheOriginal() throws {
+        let (file, folder) = try tempCopyInOwnFolder(of: "sample.mp3")
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        let staged = try TagWriter().stageCopy(of: file)
+        defer { try? FileManager.default.removeItem(at: staged) }
+
+        #expect(staged.deletingLastPathComponent().path == folder.path, "same folder, so the same volume")
+        #expect(staged.lastPathComponent.hasPrefix("."), "hidden, so a scan walks past it")
+        #expect(FileManager.default.contentsEqual(atPath: file.path, andPath: staged.path))
+    }
+
+    /// #511: a file added through "Add Files…" is writable inside a folder the
+    /// process cannot write, so the system temporary directory stays as the
+    /// fallback rather than the first choice.
+    @Test func stagedCopyFallsBackToTheTemporaryDirectoryWhenNoSiblingFits() throws {
+        let (file, folder) = try tempCopyInOwnFolder(of: "sample.mp3")
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: folder.path)
+            try? FileManager.default.removeItem(at: folder)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: folder.path)
+
+        let staged = try TagWriter().stageCopy(of: file)
+        defer { try? FileManager.default.removeItem(at: staged) }
+
+        #expect(staged.deletingLastPathComponent().path != folder.path, "no sibling could be created")
+        #expect(staged.path.hasPrefix(FileManager.default.temporaryDirectory.path))
+        #expect(FileManager.default.contentsEqual(atPath: file.path, andPath: staged.path))
+    }
+
+    /// The whole write still works for a file in a folder of its own, which is
+    /// the shape every library folder has.
+    @Test func writeRoundTripsForAFileInItsOwnFolder() throws {
+        let (file, folder) = try tempCopyInOwnFolder(of: "sample.mp3")
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        var tags = try TagReader().read(from: file)
+        tags.title = "Staged Beside The Original"
+        try TagWriter().write(tags, to: file)
+
+        let reread = try TagReader().read(from: file)
+        #expect(reread.title == "Staged Beside The Original")
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+        #expect(leftovers == [file.lastPathComponent], "no temp file left behind: \(leftovers)")
+    }
+
     // MARK: - OGG
 
     @Test func writeAndReadBackTitle_ogg() throws {
