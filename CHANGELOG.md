@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
+
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.
 
 Adding a podcast whose directory listing gives a plain-http feed address now works when the show is also served securely, which most are. When it is not, the message says the feed is unencrypted-only instead of showing an error number. We don't support plain-http feeds from the internet, but an unencrypted home server is fine.
@@ -16,6 +18,25 @@ Saving tags works again when your music lives on an external drive or a network 
 Changing only the cover art no longer rewrites your audio files. Unless you have chosen to embed art into the files, the picture belongs to Bòcan alone, so saving it now touches nothing on disk but Bòcan's own store. Art now saves on albums you cannot write to, such as read-only files or a network drive.
 
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
+
+### For developers
+
+**Added**
+- a11y: give every interactive control hover text, and make the audit fail without it ([#516](https://github.com/bocan/bocan-music/pull/516))
+
+**Fixed**
+- library: say which file failed and why when a tag or cover-art save fails ([#473](https://github.com/bocan/bocan-music/pull/473))
+- podcasts: upgrade plain-http feed URLs to https and surface real error reasons ([#486](https://github.com/bocan/bocan-music/pull/486))
+- podcasts: store the feed address that answered, so a plain-http feed on the local network keeps refreshing ([#489](https://github.com/bocan/bocan-music/pull/489))
+- errors: report the failures the app was swallowing instead of appearing to succeed ([#499](https://github.com/bocan/bocan-music/pull/499))
+- log the failures these modules recovered from silently, and enforce the try? rule ([#500](https://github.com/bocan/bocan-music/pull/500))
+- errors: say what went wrong instead of showing a Foundation error code ([#512](https://github.com/bocan/bocan-music/pull/512))
+- ui: give the Subsonic song tables an owner for their rows ([#514](https://github.com/bocan/bocan-music/pull/514))
+- library: tag saves on external drives, and no rewrite for art-only edits ([#517](https://github.com/bocan/bocan-music/pull/517))
+
+**Changed**
+- ui: gate the Subsonic song table's per-row work on a rows version through the shared update plan ([#477](https://github.com/bocan/bocan-music/pull/477))
+- ui: stop the tracks view and the root observing the whole lyrics model ([#478](https://github.com/bocan/bocan-music/pull/478))
 
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
