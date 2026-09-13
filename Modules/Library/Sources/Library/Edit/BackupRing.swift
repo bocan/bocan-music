@@ -19,10 +19,42 @@ public actor BackupRing {
         public let editID: String
         /// The file URL string of the track that was edited.
         public let fileURL: String
-        /// The tags as they existed before the edit was applied.
-        public let originalTags: TagsSnapshot
+        /// The tags as they existed before the edit was applied, or `nil` when
+        /// the edit never opened the file (see `databaseOnly`).
+        public let originalTags: TagsSnapshot?
         /// When the backup was created (Unix epoch seconds).
         public let createdAt: Int64
+        /// Present when the edit changed database rows only — cover art with
+        /// embedding off, a rating, a shuffle flag. The audio file was left
+        /// alone, so undo puts these rows back instead of rewriting tags (#472).
+        public let databaseOnly: DatabaseOnlyRestore?
+    }
+
+    /// The cover-art rows as they stood before a database-only edit.
+    ///
+    /// The track is identified by the entry's `fileURL`, the same key the
+    /// tag-restoring undo path uses.
+    public struct DatabaseOnlyRestore: Sendable, Codable, Equatable {
+        /// The track row's `coverArtHash` before the edit.
+        public let trackCoverArtHash: String?
+        /// The album the track belonged to, if any.
+        public let albumID: Int64?
+        /// The album row's `coverArtHash` before the edit.
+        public let albumCoverArtHash: String?
+        /// The album row's `coverArtPath` before the edit.
+        public let albumCoverArtPath: String?
+
+        public init(
+            trackCoverArtHash: String?,
+            albumID: Int64?,
+            albumCoverArtHash: String?,
+            albumCoverArtPath: String?
+        ) {
+            self.trackCoverArtHash = trackCoverArtHash
+            self.albumID = albumID
+            self.albumCoverArtHash = albumCoverArtHash
+            self.albumCoverArtPath = albumCoverArtPath
+        }
     }
 
     // MARK: - Properties
@@ -50,14 +82,23 @@ public actor BackupRing {
     // MARK: - Public API
 
     /// Saves a backup entry and returns the `editID` for later retrieval.
+    ///
+    /// - Parameter tags: the file's tags before the edit, or `nil` when the
+    ///   edit changed database rows only.
+    /// - Parameter databaseOnly: the rows to put back for such an edit (#472).
     @discardableResult
-    public func save(fileURL: String, tags: TagsSnapshot) throws -> String {
+    public func save(
+        fileURL: String,
+        tags: TagsSnapshot?,
+        databaseOnly: DatabaseOnlyRestore? = nil
+    ) throws -> String {
         let editID = UUID().uuidString
         let entry = Entry(
             editID: editID,
             fileURL: fileURL,
             originalTags: tags,
-            createdAt: Int64(Date().timeIntervalSince1970)
+            createdAt: Int64(Date().timeIntervalSince1970),
+            databaseOnly: databaseOnly
         )
         let data = try JSONEncoder().encode(entry)
         let entryURL = self.ringDir.appendingPathComponent("\(editID).json")

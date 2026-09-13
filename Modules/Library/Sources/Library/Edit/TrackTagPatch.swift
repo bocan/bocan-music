@@ -168,6 +168,28 @@ public struct TrackTagPatch: Sendable, Codable, Hashable {
             self.replaygainAlbumGain == nil && self.replaygainAlbumPeak == nil
     }
 
+    /// `true` when the patch changes at least one tag that lives in the audio
+    /// file itself.
+    ///
+    /// Cover art is deliberately not counted: it reaches the file only when the
+    /// user switches embedding on. The rating, loved and shuffle flags never
+    /// leave the database. A patch that touches none of these needs no file
+    /// write at all, so the edit skips the backup, the TagLib rewrite and the
+    /// re-read (#472).
+    public var touchesFileTags: Bool {
+        self.title != nil || self.artist != nil || self.albumArtist != nil ||
+            self.album != nil || self.genre != nil || self.composer != nil || self.comment != nil ||
+            self.trackNumber != nil || self.trackTotal != nil || self.discNumber != nil ||
+            self.discTotal != nil || self.year != nil || self.bpm != nil || self.key != nil ||
+            self.isrc != nil || self.lyrics != nil || self.syncedLyrics != nil ||
+            self.musicbrainzTrackID != nil || self.musicbrainzRecordingID != nil ||
+            self.musicbrainzReleaseID != nil || self.musicbrainzReleaseGroupID != nil ||
+            self.musicbrainzArtistID != nil || self.musicbrainzAlbumArtistID != nil ||
+            self.sortArtist != nil || self.sortAlbumArtist != nil || self.sortAlbum != nil ||
+            self.replaygainTrackGain != nil || self.replaygainTrackPeak != nil ||
+            self.replaygainAlbumGain != nil || self.replaygainAlbumPeak != nil
+    }
+
     // MARK: - Apply to Track
 
     /// Returns a copy of `track` with all non-nil patch fields applied.
