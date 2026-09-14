@@ -88,25 +88,18 @@ make_fixture "sine-1s-44100-stereo.wv" \
 #
 # Quarter-second 5.1 files. The surround group carries a 440 Hz tone in the
 # rear pair (Ls, Rs) only, with digital silence in L, R, C and LFE, so a stereo
-# fold that drops the surrounds is audibly (and measurably) silent. The
-# front-only twin puts the same tone in L and R for the loudness comparison
-# in slice 2. Kept to 0.25 s so the ALAC stays well under 100 kB.
+# fold that drops the surrounds is audibly (and measurably) silent. Kept to
+# 0.25 s so the ALAC stays well under 100 kB.
 #
 # lavfi aevalsrc channel order for c=5.1 is FL|FR|FC|LFE|BL|BR.
 
 SURROUND_48000='aevalsrc=0|0|0|0|0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t):c=5.1:s=48000:d=0.25'
 SURROUND_44100='aevalsrc=0|0|0|0|0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t):c=5.1:s=44100:d=0.25'
-FRONT_48000='aevalsrc=0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t)|0|0|0|0:c=5.1:s=48000:d=0.25'
 
 # 5.1 ALAC in MP4, 48 kHz, tone in Ls and Rs only. AVFoundation route.
 make_fixture "surround-lsrs-48000.m4a" \
     ffmpeg -f lavfi -i "$SURROUND_48000" \
     -c:a alac "surround-lsrs-48000.m4a" -y -loglevel error
-
-# 5.1 ALAC in MP4, 48 kHz, tone in L and R only. Front-only twin for slice 2.
-make_fixture "front-lr-48000.m4a" \
-    ffmpeg -f lavfi -i "$FRONT_48000" \
-    -c:a alac "front-lr-48000.m4a" -y -loglevel error
 
 # 5.1 FLAC, 44.1 kHz, tone in Ls and Rs only. The rate differs from a 48 kHz
 # device, so this one exercises the resampling converter path.
@@ -129,6 +122,23 @@ make_fixture "surround-lsrs-48000.thd" \
 make_fixture "surround-lsrs-eac3-48000.m4a" \
     ffmpeg -f lavfi -i "$SURROUND_48000" \
     -c:a eac3 -f mp4 "surround-lsrs-eac3-48000.m4a" -y -loglevel error
+
+# One-second 5.1 twins for the loudness measurement (ADR-091 slice 2). The
+# EBU R128 meter needs one complete 400 ms block, so a quarter-second file
+# always measures exactly -70 LUFS. E-AC-3 in MP4 because AVAudioFile opens
+# it and a second of it is about 60 kB, where a second of 5.1 ALAC is 320 kB.
+# Same tone: surround pair only in one, front pair only in the other.
+
+SURROUND_1S_48000='aevalsrc=0|0|0|0|0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t):c=5.1:s=48000:d=1'
+FRONT_1S_48000='aevalsrc=0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t)|0|0|0|0:c=5.1:s=48000:d=1'
+
+make_fixture "surround-lsrs-1s-eac3-48000.m4a" \
+    ffmpeg -f lavfi -i "$SURROUND_1S_48000" \
+    -c:a eac3 -f mp4 "surround-lsrs-1s-eac3-48000.m4a" -y -loglevel error
+
+make_fixture "front-lr-1s-eac3-48000.m4a" \
+    ffmpeg -f lavfi -i "$FRONT_1S_48000" \
+    -c:a eac3 -f mp4 "front-lr-1s-eac3-48000.m4a" -y -loglevel error
 
 # ── Corrupt / edge-case fixtures ─────────────────────────────────────────────
 
