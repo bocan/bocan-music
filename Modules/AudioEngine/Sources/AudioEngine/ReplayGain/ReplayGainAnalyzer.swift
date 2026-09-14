@@ -82,11 +82,22 @@ public struct ReplayGainAnalyzer: Sendable {
     // MARK: - Private helpers
 
     private static func readSamples(from file: AVAudioFile) async throws -> ([Float], [Float]) {
-        let channelCount = Int(file.processingFormat.channelCount)
+        let sourceFormat = file.processingFormat
         let chunkFrames: AVAudioFrameCount = 65536
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: chunkFrames) else {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: sourceFormat, frameCapacity: chunkFrames) else {
             throw AudioEngineError.decoderFailure(codec: "pcm", underlying: URLError(.unknown))
         }
+
+        // More than two channels: fold every chunk to stereo at the file's own
+        // rate with the converter the engine plays through, and measure the
+        // fold (ADR-091 slice 2). Not BS.1770 multichannel weighting: that
+        // measures the bed a surround system would play, but Bòcan plays the
+        // fold, and the fold is what the listener hears at the volume the gain
+        // sets. Channel order is also per container (MP4 gives C L R Ls Rs LFE,
+        // E-AC-3 gives L C R Ls Rs LFE), so channels 0 and 1 of the raw buffer
+        // are not left and right in general.
+        let fold = sourceFormat.channelCount > 2 ? try self.stereoFold(for: sourceFormat) : nil
+        let measuredChannels = fold == nil ? Int(sourceFormat.channelCount) : 2
 
         var leftSamples: [Float] = []
         var rightSamples: [Float] = []
@@ -108,20 +119,51 @@ public struct ReplayGainAnalyzer: Sendable {
                 // measurement from whatever decoded successfully.
                 break
             }
-            let frames = Int(buffer.frameLength)
+            guard buffer.frameLength > 0 else { break }
+
+            let measured = try self.folded(buffer, through: fold)
+            let frames = Int(measured.frameLength)
             guard frames > 0 else { break }
 
-            if let ch0 = buffer.floatChannelData?[0] {
+            if let ch0 = measured.floatChannelData?[0] {
                 leftSamples.append(contentsOf: UnsafeBufferPointer(start: ch0, count: frames))
             }
-            if channelCount >= 2, let ch1 = buffer.floatChannelData?[1] {
+            if measuredChannels >= 2, let ch1 = measured.floatChannelData?[1] {
                 rightSamples.append(contentsOf: UnsafeBufferPointer(start: ch1, count: frames))
-            } else if let ch0 = buffer.floatChannelData?[0] {
+            } else if let ch0 = measured.floatChannelData?[0] {
                 // Mono: duplicate left channel into right for the stereo measurement
                 rightSamples.append(contentsOf: UnsafeBufferPointer(start: ch0, count: frames))
             }
         }
         return (leftSamples, rightSamples)
+    }
+
+    /// The converter that folds `format` to stereo at its own sample rate.
+    private static func stereoFold(for format: AVAudioFormat) throws -> FormatConverter {
+        guard let stereo = StereoLayout.format(sampleRate: format.sampleRate) else {
+            throw AudioEngineError.decoderFailure(codec: "pcm", underlying: URLError(.unknown))
+        }
+        return try FormatConverter(sourceFormat: format, targetFormat: stereo)
+    }
+
+    /// `buffer` folded through `fold`, or `buffer` itself when there is no fold.
+    ///
+    /// A fold failure is not a short file. The read loop swallows a mid-stream
+    /// decode error as end-of-file, which is fine for a damaged tail; a fold
+    /// that fails would instead silently measure only the chunks before it,
+    /// so it is logged and propagated.
+    private static func folded(_ buffer: AVAudioPCMBuffer, through fold: FormatConverter?) throws -> AVAudioPCMBuffer {
+        guard let fold else { return buffer }
+        do {
+            guard let folded = try fold.convert(buffer) else { return buffer }
+            return folded
+        } catch {
+            AppLogger.make(.audio).error("rg.fold.failed", [
+                "channels": buffer.format.channelCount,
+                "error": String(reflecting: error),
+            ])
+            throw error
+        }
     }
 
     // MARK: - Album-level aggregation

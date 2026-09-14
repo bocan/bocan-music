@@ -98,6 +98,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-088-sync-transcode.md](ADR-088-sync-transcode.md) | Phone Sync transcode presets (MP3/Opus), prepare-and-release cache, size estimates |
 | [ADR-089-immersive-mode.md](ADR-089-immersive-mode.md) | Immersive Mode: full-window now-playing overlay (artwork, queue, lyrics) over an Oscilloscope/Drift visualizer |
 | [ADR-090-duplicate-review.md](ADR-090-duplicate-review.md) | Duplicate Review done properly: hash and tag grouping, keeper ranking, trash under scope, in-place updates, search |
+| [ADR-091-multichannel-playback.md](ADR-091-multichannel-playback.md) | Multichannel and Dolby files: stereo fold with downmix, loudness from the fold, raw E-AC-3 in the scanner, channel count in the UI; no object rendering, no passthrough |
 
 ## Conventions used in every ADR
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLAC or Dolby Digital Plus, now play with every channel folded into stereo. Before, such a song at your output's own sample rate stopped with an error, and one at another rate played only the front pair with the surround channels silent. Bòcan does not render Dolby Atmos objects; it plays the mix as stereo.
+
+Songs with more than two channels now get a correct loudness value the next time they are analysed. Bòcan measured the first two channels of the file, which in most surround layouts are not the left and right pair, so a mix carried mostly in the surround channels could measure as near silence and get the wrong volume. It now measures the same stereo fold it plays. Loudness values measured before this release for such songs were wrong; analyse those songs again to replace them.
+
+Dolby Digital and Dolby Digital Plus files with no container, the raw kind that end in .ac3, .eac3 or .ec3, are now found by a library scan and play. They carry no tags, so they are named after the file and show their real length, sample rate and channel count. A song in an MP4 container whose sound the system decoder refuses is now offered to the built-in decoder before Bòcan gives up on it.
+
+The Channels row in Get Info and the track panel now names the layout, such as Stereo, 5.1 or 7.1, instead of showing a bare number. Hovering over it on a surround song says that the mix plays folded to stereo and that Dolby Atmos objects are not rendered.
+
 ## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
 
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.

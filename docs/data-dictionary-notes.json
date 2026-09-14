@@ -32,6 +32,10 @@
     "traces": "ADR-088",
     "note": "Unix seconds when a file response last delivered the artifact through EOF; NULL until then. The prepare-and-release sweep deletes bytes for stamped rows unless the keep toggle is on."
   },
+  "tracks.channel_count": {
+    "traces": "ADR-091, #513",
+    "note": "Channel count from the tag reader: TagLib, or AVFoundation for a raw Dolby file TagLib cannot parse. Read by TrackInfoPanel.swift and TagEditorSheet+InfoTabs.swift, which show it as a layout name (Mono, Stereo, 5.1, 7.1, else a count) with hover text saying a surround mix plays folded to stereo. Playback folds every source channel into stereo, so the value describes the file, not what is heard."
+  },
   "tracks.bit_depth": {
     "traces": "ADR-009:52, ADR-065:134, #405",
     "note": "Container bit depth (FLAC, WAV, AIFF, APE, WavPack, ALAC); NULL for lossy formats. Was NULL everywhere until #405; full rescan backfills."

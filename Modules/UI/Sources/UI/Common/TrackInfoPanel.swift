@@ -112,7 +112,8 @@ public struct TrackInfoPanel: View {
                         LabeledContent(L10n.string("Bitrate")) { Text(localized: "\(bitrate) kbps") }
                     }
                     if let channels = track.channelCount {
-                        LabeledContent(L10n.string("Channels")) { Text(Self.formatChannels(channels)) }
+                        LabeledContent(L10n.string("Channels")) { Text(ChannelLayoutLabel.text(for: channels)) }
+                            .help(ChannelLayoutLabel.help(for: channels))
                     }
                     // Only ever 0 or 2+: single-marker sets are inert (ADR-087).
                     if !np.markers.isEmpty {
@@ -169,19 +170,6 @@ public struct TrackInfoPanel: View {
             return L10n.string("\(Int(khz)) kHz")
         }
         return L10n.string("\(String(format: "%.1f", khz)) kHz")
-    }
-
-    private static func formatChannels(_ count: Int) -> String {
-        switch count {
-        case 1:
-            L10n.string("1 (Mono)")
-
-        case 2:
-            L10n.string("2 (Stereo)")
-
-        default:
-            "\(count)"
-        }
     }
 
     private static func formatFileSize(_ bytes: Int64) -> String {

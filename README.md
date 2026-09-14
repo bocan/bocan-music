@@ -34,7 +34,8 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 ### 📻 It plays everything
 
 - Everything AVFoundation handles natively: **FLAC, ALAC, AAC, MP3, WAV, AIFF, CAF, M4A**.
-- The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD**. No plug-ins, no extra installs.
+- The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD, Dolby Digital and Dolby Digital Plus (AC-3, E-AC-3)**. No plug-ins, no extra installs.
+- **Surround mixes play folded to stereo.** A 5.1 file in ALAC, AAC, FLAC or Dolby Digital Plus plays with every channel audible in the stereo fold. Dolby Atmos objects are not rendered; the bed plays as stereo.
 - **CUE sheets as chapter markers.** A single-file album rip keeps its track list: Previous and Next jump between cue points, the progress bar shows a tick at each boundary, and the player bar names the current cue's title and performer. Sheets attach automatically during scans, and a Markers tab in Get Info lists every cue point.
 
 ### 📚 It respects your library
