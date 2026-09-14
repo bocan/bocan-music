@@ -13,13 +13,21 @@ public struct TagReader: Sendable {
 
     // MARK: - Supported formats
 
-    /// File extensions supported by TagLib (lowercase, no leading dot).
+    /// File extensions the reader accepts (lowercase, no leading dot): what
+    /// TagLib parses, plus the raw Dolby extensions it has no type for, which
+    /// `read(from:)` serves through AVFoundation instead.
     public static let supportedExtensions: Set = [
         "mp3", "mp2", "mp1", "flac", "ogg", "opus", "m4a", "m4b", "mp4",
         "aac", "alac", "wav", "aiff", "aif", "wv", "ape",
         "mpc", "wma", "dsf", "dff", "tta", "mka",
-        "ac3", "dts", "au", "snd", "w64", "mkv", "webm",
+        "ac3", "eac3", "ec3", "dts", "au", "snd", "w64", "mkv", "webm",
     ]
+
+    /// Raw Dolby files with no container. TagLib has no AC-3 or E-AC-3 type,
+    /// so when it throws for one of these the properties come from
+    /// AVFoundation (ADR-091 slice 3). TrueHD (`thd`, `mlp`) stays out:
+    /// AVAudioFile refuses it too, so the fallback could not read it.
+    static let avFoundationFallbackExtensions: Set = ["ac3", "eac3", "ec3"]
 
     /// Returns `true` if `url`'s path extension is in `supportedExtensions`.
     public static func isSupported(_ url: URL) -> Bool {
@@ -38,7 +46,11 @@ public struct TagReader: Sendable {
         do {
             raw = try BOCTagLibBridge.readTags(fromPath: path)
         } catch {
-            throw MetadataError.unreadableFile(url, error.localizedDescription)
+            let tagLibError = MetadataError.unreadableFile(url, error.localizedDescription)
+            guard Self.avFoundationFallbackExtensions.contains(url.pathExtension.lowercased()) else {
+                throw tagLibError
+            }
+            return try self.readWithAVFoundation(from: url, tagLibError: tagLibError)
         }
 
         self.log.debug("taglib.read", ["path": url.lastPathComponent])
@@ -113,5 +125,28 @@ public struct TagReader: Sendable {
         tags.channels = raw.channels > 0 ? Int(raw.channels) : nil
         tags.bitDepth = raw.bitDepth > 0 ? Int(raw.bitDepth) : nil
         return tags
+    }
+
+    /// The one escape hatch from TagLib: a raw Dolby file's properties from
+    /// AVFoundation, named after the file. If AVFoundation refuses it too,
+    /// the caller gets TagLib's error unchanged; it is why the file was
+    /// rejected, and the reason the scan log already reports.
+    private func readWithAVFoundation(from url: URL, tagLibError: MetadataError) throws -> TrackTags {
+        let properties: AVFoundationProperties
+        do {
+            properties = try AVFoundationProperties(url: url)
+        } catch {
+            self.log.warning("taglib.read.avfoundationFallback.failed", [
+                "path": url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            throw tagLibError
+        }
+        self.log.debug("taglib.read.avfoundationFallback", [
+            "path": url.lastPathComponent,
+            "channels": properties.channels,
+            "sampleRate": properties.sampleRate,
+        ])
+        return properties.tags(for: url)
     }
 }

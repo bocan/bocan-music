@@ -37,8 +37,9 @@ extension TagEditorSheet {
 
                     if let channels = track.channelCount {
                         LabeledContent(L10n.string("Channels")) {
-                            Text(Self.formatChannels(channels))
+                            Text(ChannelLayoutLabel.text(for: channels))
                         }
+                        .help(ChannelLayoutLabel.help(for: channels))
                     }
 
                     if let lossless = track.isLossless {
@@ -223,19 +224,6 @@ extension TagEditorSheet {
             return "\(Int(khz)) kHz"
         }
         return String(format: "%.1f kHz", khz)
-    }
-
-    private static func formatChannels(_ count: Int) -> String {
-        switch count {
-        case 1:
-            "1 (Mono)"
-
-        case 2:
-            "2 (Stereo)"
-
-        default:
-            "\(count)"
-        }
     }
 
     private static func formatDate(_ epochSeconds: Int64) -> String {
