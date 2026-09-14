@@ -1,5 +1,6 @@
 // @preconcurrency: AVAudioPCMBuffer lacks Sendable; callers own the buffer exclusively.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
+import AudioToolbox
 @preconcurrency import AVFoundation
 import Foundation
 import Observability
@@ -57,7 +58,37 @@ public actor AVFoundationDecoder: Decoder {
         do {
             self.file = try AVAudioFile(forReading: url)
         } catch {
-            throw AudioEngineError.accessDenied(url, underlying: error)
+            // Every open failure used to become `accessDenied`, which
+            // `DecoderFactory` rethrows without trying FFmpeg, so the #387
+            // fallback could never fire for a format AVFoundation refuses.
+            // Only a permissions failure is an access problem; an unsupported
+            // type ('typ?'), invalid data ('dta?') or unspecified ('wht?')
+            // refusal says AVFoundation cannot decode the file, and that is
+            // what the factory offers to FFmpeg (ADR-091 slice 3).
+            if Self.isPermissionFailure(error) {
+                throw AudioEngineError.accessDenied(url, underlying: error)
+            }
+            throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: error)
+        }
+    }
+
+    /// Whether an `AVAudioFile` open error is a permissions failure rather
+    /// than a format refusal. Measured on macOS 26: a file with mode 000, or
+    /// one inside an unreadable directory, fails with `permErr` (-54) in the
+    /// avfaudio domain; AudioToolbox's own `kAudioFilePermissionsError` and
+    /// Foundation's no-permission codes are accepted for the same meaning.
+    private static func isPermissionFailure(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        switch nsError.domain {
+        case NSCocoaErrorDomain:
+            return nsError.code == NSFileReadNoPermissionError
+
+        case NSPOSIXErrorDomain:
+            return nsError.code == Int(EACCES) || nsError.code == Int(EPERM)
+
+        default:
+            // -54 is the classic `permErr`; AVAudioFile reports it in its own domain.
+            return nsError.code == -54 || nsError.code == Int(kAudioFilePermissionsError)
         }
     }
 

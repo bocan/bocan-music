@@ -21,6 +21,8 @@ Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLA
 
 Songs with more than two channels now get a correct loudness value the next time they are analysed. Bòcan measured the first two channels of the file, which in most surround layouts are not the left and right pair, so a mix carried mostly in the surround channels could measure as near silence and get the wrong volume. It now measures the same stereo fold it plays. Loudness values measured before this release for such songs were wrong; analyse those songs again to replace them.
 
+Dolby Digital and Dolby Digital Plus files with no container, the raw kind that end in .ac3, .eac3 or .ec3, are now found by a library scan and play. They carry no tags, so they are named after the file and show their real length, sample rate and channel count. A song in an MP4 container whose sound the system decoder refuses is now offered to the built-in decoder before Bòcan gives up on it.
+
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
 The now-playing display no longer misses a queue change that lands in the first instants after launch while nothing is playing, which could leave it on "Not playing" until the next track change.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # gen-audio-fixtures.sh
 #
-# Generates deterministic sine-wave test fixtures for AudioEngineTests.
+# Generates deterministic sine-wave test fixtures for AudioEngineTests,
+# MetadataTests and LibraryTests.
 # Requires ffmpeg (brew install ffmpeg) and sox (brew install sox).
 #
 # Usage:
@@ -12,8 +13,12 @@
 
 set -euo pipefail
 
-FIXTURES_DIR="$(dirname "$0")/../Modules/AudioEngine/Tests/AudioEngineTests/Fixtures"
-mkdir -p "$FIXTURES_DIR"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MODULES_DIR="$SCRIPT_DIR/../Modules"
+FIXTURES_DIR="$MODULES_DIR/AudioEngine/Tests/AudioEngineTests/Fixtures"
+METADATA_FIXTURES_DIR="$MODULES_DIR/Metadata/Tests/MetadataTests/Fixtures"
+LIBRARY_FIXTURES_DIR="$MODULES_DIR/Library/Tests/LibraryTests/Fixtures"
+mkdir -p "$FIXTURES_DIR" "$METADATA_FIXTURES_DIR" "$LIBRARY_FIXTURES_DIR"
 
 cd "$FIXTURES_DIR"
 
@@ -39,12 +44,6 @@ make_fixture "sine-1s-44100-16-stereo.wav" \
 make_fixture "sine-1s-44100-24-stereo.flac" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
     -ac 2 -ar 44100 -sample_fmt s32 -c:a flac "sine-1s-44100-24-stereo.flac" -y -loglevel error
-
-# 1 second FLAC carrying a bare KEY Vorbis comment (Picard / Mixed In Key
-# style; TagLib does not alias it to INITIALKEY). Issue #407.
-make_fixture "sine-1s-key-am.flac" \
-    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
-    -ac 2 -ar 44100 -sample_fmt s16 -c:a flac -metadata KEY=Am "sine-1s-key-am.flac" -y -loglevel error
 
 # 3 seconds, 440 Hz sine, 44100 Hz, CBR MP3 (128k)
 make_fixture "sample.mp3" \
@@ -140,6 +139,14 @@ make_fixture "front-lr-1s-eac3-48000.m4a" \
     ffmpeg -f lavfi -i "$FRONT_1S_48000" \
     -c:a eac3 -f mp4 "front-lr-1s-eac3-48000.m4a" -y -loglevel error
 
+# MP3 inside an MP4 container (ADR-091 slice 3). Sniffs as .m4a, and
+# AVAudioFile refuses it (as it does DTS and TrueHD in MP4), so it proves the
+# .m4a route falls back to FFmpeg. Opus and FLAC in MP4, the ADR's first two
+# candidates, both open in AudioToolbox on macOS 26 and so cannot serve.
+make_fixture "mp3-in-mp4.m4a" \
+    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=0.25" \
+    -ac 2 -c:a libmp3lame -f mp4 "mp3-in-mp4.m4a" -y -loglevel error
+
 # ── Corrupt / edge-case fixtures ─────────────────────────────────────────────
 
 # Corrupt MP3 — first 64 bytes of a valid MP3 then random garbage.
@@ -150,4 +157,36 @@ if [[ ! -s "corrupt.mp3" ]]; then
     dd if=/dev/urandom bs=64 count=1 >> "corrupt.mp3" 2>/dev/null
 fi
 
-echo "Done. Fixtures in $FIXTURES_DIR"
+# ── Metadata fixtures ────────────────────────────────────────────────────────
+
+cd "$METADATA_FIXTURES_DIR"
+
+# 1 second FLAC carrying a bare KEY Vorbis comment (Picard / Mixed In Key
+# style; TagLib does not alias it to INITIALKEY). Issue #407.
+make_fixture "sine-1s-key-am.flac" \
+    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
+    -ac 2 -ar 44100 -sample_fmt s16 -c:a flac -metadata KEY=Am "sine-1s-key-am.flac" -y -loglevel error
+
+# Raw Dolby files with no container and no tags (ADR-091 slice 3). TagLib
+# has no AC-3 or E-AC-3 file type, so TagReader takes their duration,
+# sample rate and channel count from AVFoundation instead.
+make_fixture "surround-lsrs-48000.ac3" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a ac3 "surround-lsrs-48000.ac3" -y -loglevel error
+
+make_fixture "surround-lsrs-48000.eac3" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a eac3 "surround-lsrs-48000.eac3" -y -loglevel error
+
+# ── Library fixtures ─────────────────────────────────────────────────────────
+
+# A folder holding one raw E-AC-3 file, for the scan test that asserts it
+# imports with its channel count (ADR-091 slice 3).
+mkdir -p "$LIBRARY_FIXTURES_DIR/dolby-library"
+cd "$LIBRARY_FIXTURES_DIR/dolby-library"
+
+make_fixture "surround-lsrs-48000.eac3" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a eac3 "surround-lsrs-48000.eac3" -y -loglevel error
+
+echo "Done. Fixtures in $FIXTURES_DIR, $METADATA_FIXTURES_DIR and $LIBRARY_FIXTURES_DIR"

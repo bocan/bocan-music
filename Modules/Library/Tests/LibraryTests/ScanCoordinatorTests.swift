@@ -23,6 +23,20 @@ private var sampleLibraryURL: URL {
     }
 }
 
+/// One raw E-AC-3 file with no container and no tags (ADR-091 slice 3).
+private var dolbyLibraryURL: URL {
+    get throws {
+        guard let url = Bundle.module.url(
+            forResource: "dolby-library",
+            withExtension: nil,
+            subdirectory: "Fixtures"
+        ) else {
+            throw LibraryError.invalidPath("Fixtures/dolby-library not found in bundle")
+        }
+        return url
+    }
+}
+
 /// Thread-safe event accumulator for use in @Sendable scan callbacks.
 private final class EventBox: @unchecked Sendable {
     var events: [ScanProgress] = []
@@ -134,6 +148,32 @@ struct ScanCoordinatorTests {
         let trackRepo = TrackRepository(database: db)
         let count = try await trackRepo.count()
         #expect(count >= 10, "Expected >= 10 tracks from sample-library, got \(count)")
+    }
+
+    /// TagLib has no E-AC-3 type, so before ADR-091 slice 3 this scan logged
+    /// `scan.tag_read_failed` and imported nothing. The tag reader now takes
+    /// the file's properties from AVFoundation and names it after the file.
+    @Test("a raw E-AC-3 file scans to one track with its channel count (ADR-091)")
+    func rawEAC3Imports() async throws {
+        let db = try await makeDB()
+        let coordinator = ScanCoordinator(database: db)
+
+        let dir = try dolbyLibraryURL
+
+        let box = EventBox()
+        await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
+        if case let .finished(summary) = box.events.last {
+            #expect(summary.errors == 0, "the raw E-AC-3 must not be a tag-read error")
+        } else {
+            Issue.record("scan emitted no finished event")
+        }
+
+        let tracks = try await TrackRepository(database: db).fetchAll()
+        #expect(tracks.count == 1, "expected one imported track, got \(tracks.count)")
+        let track = try #require(tracks.first)
+        #expect(track.channelCount == 6)
+        #expect(track.sampleRate == 48000)
+        #expect(track.title == "surround-lsrs-48000")
     }
 
     @Test("scanned tracks record the file's real size and mtime (#278)")

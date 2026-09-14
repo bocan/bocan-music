@@ -60,15 +60,17 @@ public struct DecoderFactory: Sendable {
 
     static func make(codec: Codec, url: URL) throws -> any Decoder {
         switch codec {
-        case .wav, .mp3, .m4a:
+        case .wav, .mp3:
             return try AVFoundationDecoder(url: url)
 
-        case .flac, .aiff:
+        case .flac, .aiff, .m4a:
             // AVFoundation's FLAC decoder supports up to 24-bit / 384 kHz but
             // refuses unusual high-resolution streams (e.g. 32-bit float, very
             // large block sizes), and its AIFF-C support stops at the common
             // compression types. Fall back to FFmpeg in those cases so the
-            // file plays instead of throwing `decoderFailure` (#387).
+            // file plays instead of throwing `decoderFailure` (#387). An MP4
+            // container can carry a payload AudioToolbox has no decoder for
+            // (Vorbis, DTS), so `.m4a` gets the same fallback (ADR-091).
             do {
                 return try AVFoundationDecoder(url: url)
             } catch let avError as AudioEngineError {

@@ -147,4 +147,41 @@ struct AVFoundationDecoderTests {
             _ = try AVFoundationDecoder(url: url)
         }
     }
+
+    /// Before ADR-091 slice 3 every open failure was `accessDenied`, which
+    /// `DecoderFactory` rethrows without trying FFmpeg; a format refusal must
+    /// be a `decoderFailure` so the fallback can fire.
+    @Test("a format AVFoundation refuses throws decoderFailure, not accessDenied")
+    func refusedFormatIsDecoderFailure() throws {
+        let url = try fixtureURL("mp3-in-mp4.m4a")
+        do {
+            _ = try AVFoundationDecoder(url: url)
+            Issue.record("AVFoundation opened MP3 in MP4; the fixture no longer proves a refusal")
+        } catch let AudioEngineError.decoderFailure(codec, _) {
+            #expect(codec == "AVFoundation")
+        } catch {
+            Issue.record("expected decoderFailure, got \(error)")
+        }
+    }
+
+    @Test("a file without read permission throws accessDenied")
+    func unreadableFileIsAccessDenied() throws {
+        let source = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("noperm-\(UUID().uuidString).wav")
+        try FileManager.default.copyItem(at: source, to: url)
+        // Unlinking needs the directory's permission, not the file's, so the
+        // mode never has to be restored before removal.
+        defer { try? FileManager.default.removeItem(at: url) }
+        try FileManager.default.setAttributes([.posixPermissions: 0o000], ofItemAtPath: url.path)
+
+        do {
+            _ = try AVFoundationDecoder(url: url)
+            Issue.record("a mode 000 file opened; is this running as root?")
+        } catch let AudioEngineError.accessDenied(thrownURL, _) {
+            #expect(thrownURL == url)
+        } catch {
+            Issue.record("expected accessDenied, got \(error)")
+        }
+    }
 }
