@@ -23,6 +23,8 @@ Songs with more than two channels now get a correct loudness value the next time
 
 Dolby Digital and Dolby Digital Plus files with no container, the raw kind that end in .ac3, .eac3 or .ec3, are now found by a library scan and play. They carry no tags, so they are named after the file and show their real length, sample rate and channel count. A song in an MP4 container whose sound the system decoder refuses is now offered to the built-in decoder before Bòcan gives up on it.
 
+The Channels row in Get Info and the track panel now names the layout, such as Stereo, 5.1 or 7.1, instead of showing a bare number. Hovering over it on a surround song says that the mix plays folded to stereo and that Dolby Atmos objects are not rendered.
+
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
 The now-playing display no longer misses a queue change that lands in the first instants after launch while nothing is playing, which could leave it on "Not playing" until the next track change.
