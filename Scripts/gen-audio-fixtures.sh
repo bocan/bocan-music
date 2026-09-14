@@ -3,7 +3,7 @@
 #
 # Generates deterministic sine-wave test fixtures for AudioEngineTests,
 # MetadataTests and LibraryTests.
-# Requires ffmpeg (brew install ffmpeg) and sox (brew install sox).
+# Requires ffmpeg (brew install ffmpeg) and python3 (for the DSF fixture).
 #
 # Usage:
 #   ./Scripts/gen-audio-fixtures.sh
@@ -73,10 +73,11 @@ make_fixture "sine-1s-48000-stereo.opus" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=1" \
     -ac 2 -ar 48000 -c:a libopus -b:a 128k "sine-1s-48000-stereo.opus" -y -loglevel error
 
-# NOTE: DSF (DSD Stream File) cannot be synthesised by FFmpeg — FFmpeg has no DSD encoder.
-# The DSF fixture must be obtained from a real DSD source or created by a DSD-capable tool.
-# For CI purposes, the DSF decoder test is skipped if the fixture is absent.
-# sine-1s-dsd64-stereo.dsf — NOT auto-generated.
+# Quarter second, 440 Hz sine, DSD64 stereo DSF. FFmpeg has a DSF demuxer
+# and no muxer, so this one comes from gen-dsf-fixture.py, which writes the
+# container and a first-order sigma-delta bitstream directly (#518).
+make_fixture "sine-250ms-dsd64-stereo.dsf" \
+    python3 "$SCRIPT_DIR/gen-dsf-fixture.py" "sine-250ms-dsd64-stereo.dsf" 0.25 0.5
 
 # 1 second, 440 Hz sine, 44100 Hz, WavPack
 make_fixture "sine-1s-44100-stereo.wv" \
