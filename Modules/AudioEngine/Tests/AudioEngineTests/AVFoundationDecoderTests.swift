@@ -97,6 +97,47 @@ struct AVFoundationDecoderTests {
         await decoder.close()
     }
 
+    // MARK: - Multichannel (ADR-091, #515)
+
+    /// A 5.1 file at the output's own rate, end to end through the pump.
+    /// Before ADR-091 slice 1 the pump built no converter for it and asked
+    /// `AVAudioFile` to read six channels into a stereo buffer, which fails
+    /// with `decoderFailure` (OSStatus -50) and stops the song. The pump must
+    /// now read in the file's own format, fold, and schedule with no error.
+    @Test("5.1 ALAC at the output rate folds and schedules with no error")
+    func surroundALACPumpsAtOutputRate() async throws {
+        // `@unchecked Sendable`: written once by `onError`, read after the
+        // pump has stopped.
+        final class Sink: @unchecked Sendable { var error: Error? }
+
+        let url = try fixtureURL("surround-lsrs-48000.m4a")
+        let decoder = try AVFoundationDecoder(url: url)
+        #expect(decoder.sourceFormat.channelCount == 6)
+        #expect(decoder.sourceFormat.sampleRate == 48000)
+
+        let graph = EngineGraph()
+        let output = try #require(StereoLayout.format(sampleRate: 48000))
+        let pump = try BufferPump(decoder: decoder, playerNode: graph.playerNode, outputFormat: output)
+        let sink = Sink()
+        await pump.start(onEnded: {}, onError: { sink.error = $0 })
+
+        // The fixture is a quarter second, so the pump schedules one or two
+        // buffers and reaches EOF; wait for the first rather than a fixed sleep.
+        let deadline = ContinuousClock.now + .seconds(5)
+        while ContinuousClock.now < deadline {
+            if await pump.scheduledBufferCount > 0 || sink.error != nil {
+                break
+            }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let scheduled = await pump.scheduledBufferCount
+        await pump.stop()
+        await decoder.close()
+
+        #expect(sink.error == nil, "the pump reported \(String(describing: sink.error))")
+        #expect(scheduled > 0, "the pump scheduled nothing")
+    }
+
     // MARK: - Error paths
 
     @Test("Missing file → fileNotFound")

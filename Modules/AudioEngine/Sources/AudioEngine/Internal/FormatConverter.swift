@@ -4,6 +4,8 @@ import Observability
 
 /// Converts an `AVAudioPCMBuffer` from any source format to the canonical
 /// engine format (Float32, non-interleaved, stereo, target sample rate).
+/// A source with more than two channels is folded to stereo, every source
+/// channel contributing; the fold is AVFoundation's own (ADR-091).
 ///
 /// Create one converter per source format. If the source format already matches
 /// the target, conversion is a no-op copy.
@@ -23,6 +25,12 @@ public struct FormatConverter: Sendable {
                 to: targetFormat
             )
         }
+        // A channel-count change is a remap unless `downmix` is set: the
+        // converter then copies the first target-count channels and drops the
+        // rest, so a 5.1 source with signal only in the surround pair folds to
+        // silence (#513, #515). With it set, every source channel is mixed
+        // into the target layout.
+        conv.downmix = true
         self.converter = conv
         self.outputFormat = targetFormat
     }

@@ -84,6 +84,52 @@ make_fixture "sine-1s-44100-stereo.wv" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=1" \
     -ac 2 -ar 44100 -c:a wavpack "sine-1s-44100-stereo.wv" -y -loglevel error
 
+# ── Multichannel fixtures (ADR-091) ──────────────────────────────────────────
+#
+# Quarter-second 5.1 files. The surround group carries a 440 Hz tone in the
+# rear pair (Ls, Rs) only, with digital silence in L, R, C and LFE, so a stereo
+# fold that drops the surrounds is audibly (and measurably) silent. The
+# front-only twin puts the same tone in L and R for the loudness comparison
+# in slice 2. Kept to 0.25 s so the ALAC stays well under 100 kB.
+#
+# lavfi aevalsrc channel order for c=5.1 is FL|FR|FC|LFE|BL|BR.
+
+SURROUND_48000='aevalsrc=0|0|0|0|0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t):c=5.1:s=48000:d=0.25'
+SURROUND_44100='aevalsrc=0|0|0|0|0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t):c=5.1:s=44100:d=0.25'
+FRONT_48000='aevalsrc=0.5*sin(440*2*PI*t)|0.5*sin(440*2*PI*t)|0|0|0|0:c=5.1:s=48000:d=0.25'
+
+# 5.1 ALAC in MP4, 48 kHz, tone in Ls and Rs only. AVFoundation route.
+make_fixture "surround-lsrs-48000.m4a" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a alac "surround-lsrs-48000.m4a" -y -loglevel error
+
+# 5.1 ALAC in MP4, 48 kHz, tone in L and R only. Front-only twin for slice 2.
+make_fixture "front-lr-48000.m4a" \
+    ffmpeg -f lavfi -i "$FRONT_48000" \
+    -c:a alac "front-lr-48000.m4a" -y -loglevel error
+
+# 5.1 FLAC, 44.1 kHz, tone in Ls and Rs only. The rate differs from a 48 kHz
+# device, so this one exercises the resampling converter path.
+make_fixture "surround-lsrs-44100.flac" \
+    ffmpeg -f lavfi -i "$SURROUND_44100" \
+    -c:a flac "surround-lsrs-44100.flac" -y -loglevel error
+
+# 5.1 raw E-AC-3 (Dolby Digital Plus), 48 kHz. FFmpeg route.
+make_fixture "surround-lsrs-48000.eac3" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a eac3 "surround-lsrs-48000.eac3" -y -loglevel error
+
+# 5.1 raw TrueHD, 48 kHz. AVAudioFile refuses TrueHD; FFmpeg route only.
+make_fixture "surround-lsrs-48000.thd" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a truehd -strict -2 "surround-lsrs-48000.thd" -y -loglevel error
+
+# 5.1 E-AC-3 inside MP4, 48 kHz. The default ipod muxer refuses eac3
+# ("Could not find tag for codec eac3"), so -f mp4 is required.
+make_fixture "surround-lsrs-eac3-48000.m4a" \
+    ffmpeg -f lavfi -i "$SURROUND_48000" \
+    -c:a eac3 -f mp4 "surround-lsrs-eac3-48000.m4a" -y -loglevel error
+
 # ── Corrupt / edge-case fixtures ─────────────────────────────────────────────
 
 # Corrupt MP3 — first 64 bytes of a valid MP3 then random garbage.

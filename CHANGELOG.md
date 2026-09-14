@@ -17,6 +17,8 @@ Changing only the cover art no longer rewrites your audio files. Unless you have
 
 When saving tags or cover art fails, the message now says which file failed and why, such as the file being read-only, instead of an error code.
 
+Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLAC or Dolby Digital Plus, now play with every channel folded into stereo. Before, such a song at your output's own sample rate stopped with an error, and one at another rate played only the front pair with the surround channels silent. Bòcan does not render Dolby Atmos objects; it plays the mix as stereo.
+
 ## [2.14.1](https://github.com/bocan/bocan-music/compare/v2.14.0...v2.14.1) (2026-09-08)
 
 The now-playing display no longer misses a queue change that lands in the first instants after launch while nothing is playing, which could leave it on "Not playing" until the next track change.

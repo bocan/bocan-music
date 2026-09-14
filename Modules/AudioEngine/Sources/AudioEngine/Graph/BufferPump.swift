@@ -39,15 +39,22 @@ actor BufferPump {
     private let playerNode: AVAudioPlayerNode
     private let outputFormat: AVAudioFormat
 
-    /// Format used to allocate intermediate decode buffers. Equals `outputFormat`
-    /// unless the decoder's native rate differs, in which case it equals `decoder.sourceFormat`
-    /// and `converter` resamples those buffers to `outputFormat` before scheduling.
-    private let pumpFormat: AVAudioFormat
+    /// Format used to allocate intermediate decode buffers. Always a format the
+    /// decoder can fill: equal to `decoder.sourceFormat` whenever `converter`
+    /// exists, and to `outputFormat` (which then matches the source in rate and
+    /// channel count) when it does not. Asking `AVAudioFile` to read a 5.1 file
+    /// into a stereo buffer is a read error, not a fold (#515). Internal, not
+    /// private, so `BufferPumpFormatTests` can read the decision back.
+    let pumpFormat: AVAudioFormat
 
-    /// Non-nil only when `decoder.sourceFormat.sampleRate != outputFormat.sampleRate`.
-    /// `AVFoundationDecoder` handles SRC internally via AVAudioFile, but FFmpegDecoder
-    /// does not — without this converter it would fill hardware-rate buffers with
-    /// source-rate samples, causing playback at the wrong speed and pitch.
+    /// Non-nil when `decoder.sourceFormat` differs from `outputFormat` in sample
+    /// rate or channel count. `AVFoundationDecoder` handles SRC internally via
+    /// AVAudioFile, but FFmpegDecoder does not — without this converter it would
+    /// fill hardware-rate buffers with source-rate samples, causing playback at
+    /// the wrong speed and pitch. The channel-count case belongs to the
+    /// AVFoundation route: its `sourceFormat` carries the file's own channel
+    /// count, and the converter folds it to stereo (ADR-091). FFmpegDecoder folds
+    /// inside the decoder, so its `sourceFormat` is already stereo.
     private let converter: FormatConverter?
 
     private let log = AppLogger.make(.audio)
@@ -105,13 +112,20 @@ actor BufferPump {
         // 48k device played ~8.8% past the segment end, audibly bleeding the
         // next track's opening before the end signal fired).
         self.maxFrames = maxDuration.map { AVAudioFrameCount($0 * decoder.sourceFormat.sampleRate) }
-        if decoder.sourceFormat.sampleRate != outputFormat.sampleRate {
-            self.converter = try FormatConverter(sourceFormat: decoder.sourceFormat, targetFormat: outputFormat)
-            self.pumpFormat = decoder.sourceFormat
+        let source = decoder.sourceFormat
+        if source.sampleRate != outputFormat.sampleRate || source.channelCount != outputFormat.channelCount {
+            self.converter = try FormatConverter(sourceFormat: source, targetFormat: outputFormat)
+            self.pumpFormat = source
         } else {
             self.converter = nil
             self.pumpFormat = outputFormat
         }
+    }
+
+    /// Whether this pump converts (resamples or folds) before scheduling.
+    /// Read-only diagnostic surface for `BufferPumpFormatTests`.
+    var hasConverter: Bool {
+        self.converter != nil
     }
 
     // MARK: - Lifecycle
@@ -294,8 +308,9 @@ actor BufferPump {
         try Task.checkCancellation()
     }
 
-    /// Returns `source` unchanged when no sample-rate conversion is needed;
-    /// otherwise resamples via `FormatConverter`. Returns `nil` for empty input.
+    /// Returns `source` unchanged when no conversion is needed; otherwise
+    /// resamples and/or folds to stereo via `FormatConverter`. Returns `nil`
+    /// for empty input.
     private func resampledBuffer(_ source: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
         guard let conv = self.converter else { return source }
         do {

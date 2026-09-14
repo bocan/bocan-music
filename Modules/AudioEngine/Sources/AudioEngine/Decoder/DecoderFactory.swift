@@ -18,6 +18,8 @@ public struct DecoderFactory: Sendable {
     /// - Throws: `AudioEngineError.fileNotFound` if the file doesn't exist,
     ///   `AudioEngineError.unsupportedFormat` if no decoder handles the format.
     public static func make(for url: URL) throws -> any Decoder {
+        let decoder: any Decoder
+        let sniffed: String
         // HTTP / HTTPS streams (e.g. Subsonic internet radio) go straight to
         // FFmpeg. The format sniffer reads bytes off a local file handle and
         // can't probe a network stream — FFmpeg's own probing inside
@@ -26,11 +28,34 @@ public struct DecoderFactory: Sendable {
         // like "/tmp/foo.flac") still go down the local-file branch so the
         // sniffer raises a proper "file not found" if the path is missing.
         if let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" {
-            return try FFmpegDecoder(url: url)
+            decoder = try FFmpegDecoder(url: url)
+            sniffed = "stream"
+        } else {
+            let codec = try FormatSniffer().sniff(url: url)
+            decoder = try self.make(codec: codec, url: url)
+            sniffed = String(describing: codec)
         }
-        let sniffer = FormatSniffer()
-        let codec = try sniffer.sniff(url: url)
-        return try self.make(codec: codec, url: url)
+        self.logSelected(decoder, sniffed: sniffed, url: url)
+        return decoder
+    }
+
+    /// One `decoder.selected` line per load, naming the route a file took and
+    /// what the decoder saw, so a report can tell an AVFoundation failure from
+    /// an FFmpeg one (ADR-091). Channels are the source's own: the FFmpeg
+    /// route folds to stereo inside the decoder, so its `sourceFormat` does
+    /// not say what the file carried.
+    private static func logSelected(_ decoder: any Decoder, sniffed: String, url: URL) {
+        let format = decoder.sourceFormat
+        let details = (decoder as? FFmpegDecoder)?.streamDetails
+        let layout = format.channelLayout.map { String(format: "0x%X", $0.layoutTag) } ?? "none"
+        self.log.debug("decoder.selected", [
+            "decoder": String(describing: type(of: decoder)),
+            "codec": details?.codec ?? sniffed,
+            "channels": details?.channelCount ?? Int(format.channelCount),
+            "sampleRate": format.sampleRate,
+            "layout": layout,
+            "url": url.lastPathComponent,
+        ])
     }
 
     static func make(codec: Codec, url: URL) throws -> any Decoder {
