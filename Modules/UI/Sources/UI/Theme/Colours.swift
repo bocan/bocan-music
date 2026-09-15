@@ -107,6 +107,32 @@ extension Color {
     /// stars and local rating stars render identically.
     static let starTint = ratingFill
 
+    // MARK: - Source badges (ADR-092)
+
+    // One hue per fact, so the play bar's row reads as five things rather than
+    // one stripe, and each is told apart from the accent, rating, loved and
+    // warning hues already on that surface. Each tint is drawn at full
+    // strength as a 1 pt border and at 14% as the fill behind `textPrimary`.
+    // Measured against `bgPrimary` and `bgSecondary` in both modes: every
+    // border clears the 3 : 1 non-text threshold (worst case 4.19 : 1, the
+    // green on light `bgSecondary`) and text on every fill clears 4.5 : 1
+    // (worst case 9.68 : 1). `ContrastTests` asserts all twenty numbers.
+
+    /// Codec badge. Light: #2A6BC7  Dark: #73ADFF
+    static let badgeCodec = Color(adaptiveLight: 0.160, 0.420, 0.780, dark: 0.450, 0.680, 1.000)
+
+    /// Bitrate badge. Light: #1A854D  Dark: #5CCC8C
+    static let badgeBitrate = Color(adaptiveLight: 0.100, 0.520, 0.300, dark: 0.360, 0.800, 0.550)
+
+    /// Sample-rate badge. Light: #0F808C  Dark: #4DC7D1
+    static let badgeSampleRate = Color(adaptiveLight: 0.060, 0.500, 0.550, dark: 0.300, 0.780, 0.820)
+
+    /// Bit-depth badge. Light: #7A47B8  Dark: #B894FA
+    static let badgeBitDepth = Color(adaptiveLight: 0.480, 0.280, 0.720, dark: 0.720, 0.580, 0.980)
+
+    /// Channels badge. Light: #B32E80  Dark: #F280C7
+    static let badgeChannels = Color(adaptiveLight: 0.700, 0.180, 0.500, dark: 0.950, 0.500, 0.780)
+
     // MARK: - Will-o'-the-Wisp identity (issue #333)
 
     /// Signature spectral blue-green accent ("bòcan" = ghost; the marsh-light of

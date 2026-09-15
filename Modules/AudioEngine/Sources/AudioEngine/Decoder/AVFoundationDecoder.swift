@@ -35,6 +35,55 @@ public actor AVFoundationDecoder: Decoder {
         self.file.processingFormat
     }
 
+    /// FFmpeg's short codec name for the file, from the format ID
+    /// `AVAudioFile` reports (ADR-092). Measured on macOS 26: the ID is
+    /// 'lpcm' for WAV and AIFF, 'flac', '.mp3', 'aac ', 'alac' and 'ec-3'
+    /// for E-AC-3 raw or in MP4, so it names the payload where the file
+    /// extension names only the container (#529).
+    public nonisolated var codec: String? {
+        Self.codecName(forFourCC: Self.fourCC(self.file.fileFormat.streamDescription.pointee.mFormatID))
+    }
+
+    /// The format IDs whose four-character code is not already FFmpeg's name
+    /// for the codec. 'aach' and 'aacp' are HE-AAC v1 and v2; FFmpeg calls
+    /// the whole family "aac" and carries the profile separately.
+    private static let codecNamesByFormatID: [String: String] = [
+        "lpcm": "pcm",
+        ".mp3": "mp3",
+        ".mp2": "mp2",
+        "aac ": "aac",
+        "aach": "aac",
+        "aacp": "aac",
+        "ec-3": "eac3",
+        "ac-3": "ac3",
+        "vorb": "vorbis",
+    ]
+
+    /// Maps a Core Audio four-character format ID onto FFmpeg's short codec
+    /// name, so both decoder routes speak one vocabulary. An unmapped code
+    /// becomes itself, trimmed and lowercased ('flac', 'alac', 'opus' already
+    /// match): a guess, but a codec-shaped one, never a container name.
+    /// Internal for `DecoderCodecTests`.
+    static func codecName(forFourCC code: String) -> String? {
+        if let mapped = codecNamesByFormatID[code] {
+            return mapped
+        }
+        let trimmed = code.trimmingCharacters(in: .whitespaces).lowercased()
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// The four bytes of a format ID as text. Latin-1 so no byte can fail to
+    /// decode; the mapping above trims and lowercases whatever comes out.
+    private static func fourCC(_ id: AudioFormatID) -> String {
+        let bytes = [
+            UInt8(truncatingIfNeeded: id >> 24),
+            UInt8(truncatingIfNeeded: id >> 16),
+            UInt8(truncatingIfNeeded: id >> 8),
+            UInt8(truncatingIfNeeded: id),
+        ]
+        return String(bytes: bytes, encoding: .isoLatin1) ?? ""
+    }
+
     /// Duration in seconds derived from frame count and sample rate.
     public nonisolated var duration: TimeInterval {
         let rate = self.file.processingFormat.sampleRate

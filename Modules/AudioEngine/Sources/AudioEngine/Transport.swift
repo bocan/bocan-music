@@ -39,6 +39,11 @@ public protocol Transport: Sendable {
     /// FFmpeg (network streams, exotic formats); nil otherwise. Defaulted so
     /// simple conformers need not care (ADR-078 slice 5).
     var currentStreamDetails: StreamDetails? { get async }
+
+    /// FFmpeg's short codec name for the currently audible source, on either
+    /// decoder route; nil when nothing is loaded or the decoder cannot say
+    /// (ADR-092). Defaulted for the same reason as `currentStreamDetails`.
+    var currentCodec: String? { get async }
 }
 
 /// Default so conformers without an FFmpeg decoder (tests, simple mocks)
@@ -46,6 +51,11 @@ public protocol Transport: Sendable {
 public extension Transport {
     /// By default a transport knows nothing beyond the protocol surface.
     var currentStreamDetails: StreamDetails? {
+        get async { nil }
+    }
+
+    /// By default a transport cannot name the codec it is playing.
+    var currentCodec: String? {
         get async { nil }
     }
 }

@@ -189,8 +189,17 @@ public struct NowPlayingStrip: View {
                     .accessibilityAddTraits(.updatesFrequently)
                     .accessibilityIdentifier(A11y.NowPlaying.markerLine)
             }
+
+            // Codec, bitrate, sample rate, bit depth and channels (ADR-092).
+            if let facts = self.vm.sourceFacts {
+                SourceBadgesRow(facts: facts)
+                    .padding(.top, 2)
+            }
         }
-        .frame(minWidth: 120, maxWidth: 300, alignment: .leading)
+        // Top-aligned, not centred: the badge row needs the height below the
+        // title, and the title must not drift down when there is no row.
+        .padding(.top, 6)
+        .frame(minWidth: 120, maxWidth: 300, maxHeight: .infinity, alignment: .topLeading)
         .onChange(of: self.vm.nowPlayingTrackID) { _, trackID in
             guard trackID != nil, !self.vm.title.isEmpty else { return }
             let msg = self.vm.artist.isEmpty
