@@ -40,14 +40,53 @@ struct ReplayGainAnalyzerTests {
         )
     }
 
-    /// The quarter-second ALAC is too short for a loudness block, but its true
-    /// peak is measured from every sample. In the MP4 layout channels 0 and 1
-    /// are centre and left, both silent here, so the old analyzer saw a peak
-    /// of zero; the fold carries the surround tone into both channels.
-    @Test("the true peak of a surround-only ALAC comes from the fold, not from channels 0 and 1")
+    /// In the MP4 layout channels 0 and 1 are centre and left, both silent
+    /// here, so the old analyzer saw a peak of zero; the fold carries the
+    /// surround tone into both channels. The quarter-second file is shorter
+    /// than one gating block, so its loudness comes from the whole-file
+    /// block (#526) rather than the -70 floor.
+    @Test("a surround-only quarter-second ALAC measures its peak and loudness from the fold")
     func surroundOnlyPeakComesFromFold() async throws {
         let result = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("surround-lsrs-48000.m4a"))
         #expect(result.trackPeakLinear > 0.05, "peak \(result.trackPeakLinear)")
+        #expect(result.integratedLUFS.isFinite && result.integratedLUFS > -70, "measured \(result.integratedLUFS)")
+        #expect(result.trackGainDB < 30, "gain \(result.trackGainDB) dB is the old floor turned into a boost")
+    }
+
+    /// A quarter second of DSD through FFmpeg: an FFmpeg-only format and a
+    /// short file at once (#518, #526).
+    @Test("a short DSF measures a real loudness")
+    func shortDSFMeasures() async throws {
+        let result = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("sine-250ms-dsd64-stereo.dsf"))
+        #expect(result.integratedLUFS.isFinite && result.integratedLUFS > -70, "measured \(result.integratedLUFS)")
+        #expect(result.trackGainDB < 30, "gain \(result.trackGainDB) dB")
+    }
+
+    // MARK: - One route for analysis and playback (#522)
+
+    /// The same second of surround-only E-AC-3, raw (FFmpeg route) and in
+    /// MP4 (AVFoundation route), measures the same loudness: same fold,
+    /// different decoders of the same bitstream.
+    @Test("a raw E-AC-3 measures the same loudness as the same mix in MP4")
+    func rawAndContainedEAC3MeasureAlike() async throws {
+        let raw = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("surround-lsrs-1s-48000.eac3"))
+        let contained = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("surround-lsrs-1s-eac3-48000.m4a"))
+        #expect(raw.integratedLUFS.isFinite && raw.integratedLUFS > -70, "raw measured \(raw.integratedLUFS)")
+        #expect(
+            abs(raw.integratedLUFS - contained.integratedLUFS) < 0.5,
+            "raw \(raw.integratedLUFS) vs MP4 \(contained.integratedLUFS) LUFS"
+        )
+    }
+
+    /// Formats AVFoundation cannot open used to fail analysis outright; they
+    /// now decode through the same factory as playback.
+    @Test("a format only FFmpeg decodes is analysed")
+    func ffmpegOnlyFormatIsAnalysed() async throws {
+        let result = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("sine-1s-48000-stereo.ogg"))
+        #expect(result.integratedLUFS.isFinite && result.integratedLUFS > -70, "measured \(result.integratedLUFS)")
+        // The fixture's tone is quiet (ffmpeg's sine source defaults to an
+        // eighth of full scale); the point is a real peak, not its size.
+        #expect(result.trackPeakLinear > 0.01, "peak \(result.trackPeakLinear)")
     }
 
     // MARK: - Stereo unchanged

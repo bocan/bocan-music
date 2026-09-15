@@ -82,6 +82,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) NSInteger bitrate;    // kbps
 @property (nonatomic, assign) NSInteger channels;
 @property (nonatomic, assign) NSInteger bitDepth;   // 0 = unknown
+// MP4 files only: "aac", "alac", "ac3", "eac3", "flac", "dts", "opus" or
+// "unknown"; nil for every other container. Lets the reader tell Dolby audio
+// in MP4 apart, whose sample entry carries a legacy channel count (#529).
+@property (nonatomic, copy, nullable) NSString *mp4Codec;
 
 @end
 

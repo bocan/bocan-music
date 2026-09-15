@@ -3,7 +3,7 @@
 #
 # Generates deterministic sine-wave test fixtures for AudioEngineTests,
 # MetadataTests and LibraryTests.
-# Requires ffmpeg (brew install ffmpeg) and sox (brew install sox).
+# Requires ffmpeg (brew install ffmpeg) and python3 (for the DSF fixture).
 #
 # Usage:
 #   ./Scripts/gen-audio-fixtures.sh
@@ -73,10 +73,11 @@ make_fixture "sine-1s-48000-stereo.opus" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=1" \
     -ac 2 -ar 48000 -c:a libopus -b:a 128k "sine-1s-48000-stereo.opus" -y -loglevel error
 
-# NOTE: DSF (DSD Stream File) cannot be synthesised by FFmpeg — FFmpeg has no DSD encoder.
-# The DSF fixture must be obtained from a real DSD source or created by a DSD-capable tool.
-# For CI purposes, the DSF decoder test is skipped if the fixture is absent.
-# sine-1s-dsd64-stereo.dsf — NOT auto-generated.
+# Quarter second, 440 Hz sine, DSD64 stereo DSF. FFmpeg has a DSF demuxer
+# and no muxer, so this one comes from gen-dsf-fixture.py, which writes the
+# container and a first-order sigma-delta bitstream directly (#518).
+make_fixture "sine-250ms-dsd64-stereo.dsf" \
+    python3 "$SCRIPT_DIR/gen-dsf-fixture.py" "sine-250ms-dsd64-stereo.dsf" 0.25 0.5
 
 # 1 second, 440 Hz sine, 44100 Hz, WavPack
 make_fixture "sine-1s-44100-stereo.wv" \
@@ -139,6 +140,13 @@ make_fixture "front-lr-1s-eac3-48000.m4a" \
     ffmpeg -f lavfi -i "$FRONT_1S_48000" \
     -c:a eac3 -f mp4 "front-lr-1s-eac3-48000.m4a" -y -loglevel error
 
+# The same second of surround-only E-AC-3 with no container (#522). It takes
+# the FFmpeg route where the MP4 twin takes AVFoundation, so the pair proves
+# both routes fold and measure the same mix to the same level.
+make_fixture "surround-lsrs-1s-48000.eac3" \
+    ffmpeg -f lavfi -i "$SURROUND_1S_48000" \
+    -c:a eac3 "surround-lsrs-1s-48000.eac3" -y -loglevel error
+
 # MP3 inside an MP4 container (ADR-091 slice 3). Sniffs as .m4a, and
 # AVAudioFile refuses it (as it does DTS and TrueHD in MP4), so it proves the
 # .m4a route falls back to FFmpeg. Opus and FLAC in MP4, the ADR's first two
@@ -146,6 +154,13 @@ make_fixture "front-lr-1s-eac3-48000.m4a" \
 make_fixture "mp3-in-mp4.m4a" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=0.25" \
     -ac 2 -c:a libmp3lame -f mp4 "mp3-in-mp4.m4a" -y -loglevel error
+
+# Opus inside an MP4 container (#523). On macOS 26 AVAudioFile opens it,
+# reports length 0, and fails on the first read, so it proves the
+# open-time probe in AVFoundationDecoder hands such a file to FFmpeg.
+make_fixture "opus-in-mp4.m4a" \
+    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=0.25" \
+    -ac 2 -c:a libopus -b:a 64k -f mp4 "opus-in-mp4.m4a" -y -loglevel error
 
 # ── Corrupt / edge-case fixtures ─────────────────────────────────────────────
 
@@ -177,6 +192,14 @@ make_fixture "surround-lsrs-48000.ac3" \
 make_fixture "surround-lsrs-48000.eac3" \
     ffmpeg -f lavfi -i "$SURROUND_48000" \
     -c:a eac3 "surround-lsrs-48000.eac3" -y -loglevel error
+
+# E-AC-3 in MP4 with the spec's legacy channelcount of 2 in the sample
+# entry (#529). Dolby-encoded files carry that; FFmpeg's muxer writes the
+# real count, so the entry is patched after muxing. TagLib reads the legacy
+# field; the real 5.1 layout is in the dec3 box, which AVFoundation reads.
+make_fixture "surround-lsrs-eac3-legacy2-48000.m4a" \
+    bash -c "ffmpeg -f lavfi -i '$SURROUND_48000' -c:a eac3 -f mp4 surround-lsrs-eac3-legacy2-48000.m4a -y -loglevel error \
+        && python3 '$SCRIPT_DIR/set-mp4-channelcount.py' surround-lsrs-eac3-legacy2-48000.m4a 2"
 
 # ── Library fixtures ─────────────────────────────────────────────────────────
 

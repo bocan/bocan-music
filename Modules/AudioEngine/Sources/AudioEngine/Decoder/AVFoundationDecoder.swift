@@ -70,6 +70,44 @@ public actor AVFoundationDecoder: Decoder {
             }
             throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: error)
         }
+        // A file AVAudioFile opens but cannot decode (Opus in MP4 on macOS 26
+        // opens with length 0 and fails on the first read) must be refused
+        // here, or DecoderFactory's fallback never sees it and the song stops
+        // on its first buffer (#523). Read a little and rewind. Length alone
+        // is no signal: a FLAC without a STREAMINFO sample count also reports
+        // 0 and decodes fine. Permissions were settled at open, so a read
+        // error here is a format refusal.
+        do {
+            try Self.probeRead(self.file)
+        } catch {
+            throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: error)
+        }
+    }
+
+    /// Frames the open-time probe decodes. Enough for every codec's first
+    /// packet, and a negligible cost per open.
+    private static let probeFrames: AVAudioFrameCount = 4096
+
+    /// Decodes the first frames and rewinds. An exact-EOF `noErr` (OSStatus 0),
+    /// which `AVAudioFile` throws for an empty file, is not a refusal.
+    ///
+    /// The rewind happens only after a successful read: setting `framePosition`
+    /// on a file whose read just failed raises an Objective-C exception with
+    /// the same code, which no Swift `catch` can stop (measured on Opus in
+    /// MP4). A failed read leaves the position where it was, at zero.
+    private static func probeRead(_ file: AVAudioFile) throws {
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: probeFrames) else {
+            return
+        }
+        do {
+            try file.read(into: buffer)
+        } catch {
+            if (error as NSError).code != 0 {
+                throw error
+            }
+            return
+        }
+        file.framePosition = 0
     }
 
     /// Whether an `AVAudioFile` open error is a permissions failure rather

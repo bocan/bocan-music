@@ -46,6 +46,34 @@ struct EBUR128Tests {
         #expect(result.blockCount > 0)
     }
 
+    /// Shorter than one 400 ms gating block. No block used to mean the -70
+    /// floor, which ReplayGain turned into a +52 dB gain (#526); the whole
+    /// input is now its one block, so the same tone measures the same.
+    @Test("input shorter than one gating block measures over the whole input")
+    func shorterThanOneBlock() {
+        let samples = Self.sineSamples(durationSeconds: 0.25)
+        let result = EBUR128.measure(
+            leftSamples: samples,
+            rightSamples: samples,
+            sampleRate: Self.sampleRate
+        )
+        #expect(result.integratedLUFS > -25, "measured \(result.integratedLUFS)")
+        #expect(result.integratedLUFS < -21, "measured \(result.integratedLUFS)")
+        #expect(result.blockCount == 1)
+    }
+
+    @Test("short silence still yields the −70 LUFS floor")
+    func shortSilenceFloors() {
+        let samples = [Float](repeating: 0, count: Int(Self.sampleRate * 0.25))
+        let result = EBUR128.measure(
+            leftSamples: samples,
+            rightSamples: samples,
+            sampleRate: Self.sampleRate
+        )
+        #expect(result.integratedLUFS == -70)
+        #expect(result.blockCount == 0)
+    }
+
     @Test("True peak of a 0 dBFS sine is ≥ 1.0 linear")
     func truePeakFullScale() {
         let samples = Self.sineSamples(amplitudeDBFS: 0)

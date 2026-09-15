@@ -145,14 +145,22 @@ public struct EBUR128: Sendable {
         let hopSamples = Int((sampleRate * 0.1).rounded()) // 100 ms
 
         var blockMeanSquares: [Double] = []
-        var i = 0
-        while i + blockSamples <= weightedL.count {
-            let sliceL = weightedL[i ..< i + blockSamples]
-            let sliceR = weightedR[i ..< i + blockSamples]
-            let msL = sliceL.reduce(0.0) { $0 + Double($1) * Double($1) } / Double(blockSamples)
-            let msR = sliceR.reduce(0.0) { $0 + Double($1) * Double($1) } / Double(blockSamples)
-            blockMeanSquares.append((msL + msR) / 2.0)
-            i += hopSamples
+        if weightedL.count < blockSamples {
+            // Shorter than one gating block. BS.1770 leaves that undefined,
+            // and "no block" used to read as the -70 LUFS floor, which
+            // ReplayGain turned into a +52 dB track gain for any jingle or
+            // sound effect (#526). Measure the whole input as its one block:
+            // a real level for a short file, and the same gates as any other.
+            blockMeanSquares.append(self.meanSquare(weightedL[...], weightedR[...]))
+        } else {
+            var i = 0
+            while i + blockSamples <= weightedL.count {
+                blockMeanSquares.append(self.meanSquare(
+                    weightedL[i ..< i + blockSamples],
+                    weightedR[i ..< i + blockSamples]
+                ))
+                i += hopSamples
+            }
         }
 
         // Absolute gate: −70 LUFS ≡ 10^((−70 + 0.691) / 10) mean-square
@@ -184,6 +192,14 @@ public struct EBUR128: Sendable {
     }
 
     // MARK: - Private helpers
+
+    /// The mean of the two channels' mean-square power over one block.
+    private static func meanSquare(_ left: ArraySlice<Float>, _ right: ArraySlice<Float>) -> Double {
+        let count = Double(max(left.count, 1))
+        let msL = left.reduce(0.0) { $0 + Double($1) * Double($1) } / count
+        let msR = right.reduce(0.0) { $0 + Double($1) * Double($1) } / count
+        return (msL + msR) / 2.0
+    }
 
     private static func applyKWeighting(
         left: [Float],

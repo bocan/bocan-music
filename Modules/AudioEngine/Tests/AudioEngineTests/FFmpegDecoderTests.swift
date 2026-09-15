@@ -55,6 +55,45 @@ struct FFmpegDecoderTests {
         )
     }
 
+    // MARK: - DSF (DSD64)
+
+    /// FFmpeg's DSD decoder emits PCM at one eighth of the DSD rate, so a
+    /// DSD64 file reads as 352.8 kHz. The fixture is a quarter second (#518).
+    @Test("DSF: reads frames")
+    func dsfReadsFrames() async throws {
+        let url = try fixtureURL("sine-250ms-dsd64-stereo.dsf")
+        let decoder = try FFmpegDecoder(url: url)
+        #expect(decoder.sourceFormat.channelCount == 2)
+        #expect(decoder.sourceFormat.sampleRate == 352_800)
+        let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
+        let n = try await decoder.read(into: buf)
+        #expect(n > 0)
+        await decoder.close()
+    }
+
+    @Test("DSF: reads all frames to EOF")
+    func dsfReadAllFrames() async throws {
+        let url = try fixtureURL("sine-250ms-dsd64-stereo.dsf")
+        let decoder = try FFmpegDecoder(url: url)
+        var totalFrames: AVAudioFrameCount = 0
+        let buf = try #require(AVAudioPCMBuffer(pcmFormat: decoder.sourceFormat, frameCapacity: 4096))
+        while true {
+            let n = try await decoder.read(into: buf)
+            if n == 0 {
+                break
+            }
+            totalFrames += n
+        }
+        await decoder.close()
+        // 0.25 s at 352.8 kHz is 88 200 frames; the generator pads the DSD
+        // stream to whole 4096-byte blocks, which the demuxer reads too, so
+        // allow a few percent over.
+        #expect(
+            totalFrames > 85000 && totalFrames < 93000,
+            "Expected about 88200 frames, got \(totalFrames)"
+        )
+    }
+
     // MARK: - Opus
 
     @Test("Opus: reads frames")
