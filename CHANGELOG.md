@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Double-clicking a song to play it no longer blinks its highlight off. The row you picked stayed selected, then lost its blue the instant the song started, and took anything up to a couple of seconds to get it back.
+
+Naming a new playlist happens once. After you typed a name and clicked Create, the sidebar opened the new row for editing and asked for the name again; now it keeps the one you gave it. Renaming a playlist later works as before.
+
+Adding songs to a playlist from the right-click menu now updates the number beside that playlist straight away. Dragging songs onto a playlist always did.
+
 The play bar now says what it is playing. Under the title sits a row of small coloured boxes for the format, the bitrate, the sample rate, the bit depth and the channels of the current song, and hovering over any of them explains what that fact means. Streams and podcasts show what their own source reports. Narrow the window and the row keeps the boxes that fit.
 
 Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLAC or Dolby Digital Plus, now play with every channel folded into stereo. Before, such a song at your output's own sample rate stopped with an error, and one at another rate played only the front pair with the surround channels silent. Bòcan does not render Dolby Atmos objects; it plays the mix as stereo.
