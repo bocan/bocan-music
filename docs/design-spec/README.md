@@ -99,6 +99,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-089-immersive-mode.md](ADR-089-immersive-mode.md) | Immersive Mode: full-window now-playing overlay (artwork, queue, lyrics) over an Oscilloscope/Drift visualizer |
 | [ADR-090-duplicate-review.md](ADR-090-duplicate-review.md) | Duplicate Review done properly: hash and tag grouping, keeper ranking, trash under scope, in-place updates, search |
 | [ADR-091-multichannel-playback.md](ADR-091-multichannel-playback.md) | Multichannel and Dolby files: stereo fold with downmix, loudness from the fold, raw E-AC-3 in the scanner, channel count in the UI; no object rendering, no passthrough |
+| [ADR-092-now-playing-source-badges.md](ADR-092-now-playing-source-badges.md) | Now-playing source badges: codec, bitrate, sample rate, bit depth and channels as coloured boxes under the title in the play bar, with hover text; codec from the open decoder |
 
 ## Conventions used in every ADR
 

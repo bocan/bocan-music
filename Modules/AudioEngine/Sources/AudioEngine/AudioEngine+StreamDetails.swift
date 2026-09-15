@@ -25,6 +25,14 @@ public extension AudioEngine {
         }
     }
 
+    /// FFmpeg's short codec name for the currently loaded source, from
+    /// whichever decoder is installed (ADR-092). Nil between loads and for a
+    /// decoder that cannot say. Same gapless caveat as `currentStreamDetails`:
+    /// for the last ~0.8 s of a transition this names the incoming track.
+    var currentCodec: String? {
+        get async { self.decoder?.codec }
+    }
+
     /// Whether a seek must be refused because the source is a live remote
     /// stream (no duration, http source). FFmpeg degrades such a seek into
     /// reading the stream at the server's pace, which holds the transport
