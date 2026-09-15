@@ -107,7 +107,9 @@ public struct TrackInfoPanel: View {
                     if let bitDepth = track.bitDepth {
                         LabeledContent(L10n.string("Bit Depth")) { Text(localized: "\(bitDepth)-bit") }
                     }
-                    LabeledContent(L10n.string("Sample Rate")) { Text(Self.formatSampleRate(track.sampleRate)) }
+                    if let sampleRate = track.sampleRate {
+                        LabeledContent(L10n.string("Sample Rate")) { Text(SampleRateLabel.text(for: sampleRate)) }
+                    }
                     if let bitrate = track.bitrate {
                         LabeledContent(L10n.string("Bitrate")) { Text(localized: "\(bitrate) kbps") }
                     }
@@ -161,15 +163,6 @@ public struct TrackInfoPanel: View {
             return String(format: "%d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
         }
         return String(format: "%d:%02d", s / 60, s % 60)
-    }
-
-    private static func formatSampleRate(_ hz: Int?) -> String {
-        guard let hz else { return "—" }
-        let khz = Double(hz) / 1000.0
-        if khz == khz.rounded() {
-            return L10n.string("\(Int(khz)) kHz")
-        }
-        return L10n.string("\(String(format: "%.1f", khz)) kHz")
     }
 
     private static func formatFileSize(_ bytes: Int64) -> String {

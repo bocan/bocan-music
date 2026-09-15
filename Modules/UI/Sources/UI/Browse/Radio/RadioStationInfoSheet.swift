@@ -123,7 +123,7 @@ struct RadioStationInfoSheet: View {
                 rows.append(StreamFact(
                     key: "sampleRate",
                     label: L10n.string("Sample Rate"),
-                    value: Self.sampleRateText(live.sampleRateHz)
+                    value: SampleRateLabel.text(for: live.sampleRateHz)
                 ))
             }
             if live.channelCount > 0 {
@@ -149,7 +149,7 @@ struct RadioStationInfoSheet: View {
                 rows.append(StreamFact(key: "codec", label: L10n.string("Codec"), value: codec))
             }
             if let hz = self.station.lastSampleRateHz {
-                rows.append(StreamFact(key: "sampleRate", label: L10n.string("Sample Rate"), value: Self.sampleRateText(hz)))
+                rows.append(StreamFact(key: "sampleRate", label: L10n.string("Sample Rate"), value: SampleRateLabel.text(for: hz)))
             }
             if let channels = self.station.lastChannels {
                 rows.append(StreamFact(
@@ -183,14 +183,6 @@ struct RadioStationInfoSheet: View {
     }
 
     // MARK: - Formatting
-
-    /// "44.1 kHz" / "48 kHz": whole kilohertz drop the decimal.
-    static func sampleRateText(_ hz: Int) -> String {
-        let khz: String = hz.isMultiple(of: 1000)
-            ? String(hz / 1000)
-            : String(format: "%.1f", Double(hz) / 1000)
-        return L10n.string("\(khz) kHz")
-    }
 
     static func channelsText(_ count: Int) -> String {
         switch count {

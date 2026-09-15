@@ -369,9 +369,6 @@ extension TrackTable {
 
     static func formatSampleRate(_ hz: Int) -> String {
         guard hz > 0 else { return "" }
-        let khz = Double(hz) / 1000.0
-        return khz == khz.rounded()
-            ? String(format: "%.0f kHz", khz)
-            : String(format: "%.1f kHz", khz)
+        return SampleRateLabel.text(for: hz)
     }
 }

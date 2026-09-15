@@ -21,8 +21,10 @@ extension TagEditorSheet {
                         }
                     }
 
-                    LabeledContent(L10n.string("Sample Rate")) {
-                        Text(Self.formatSampleRate(track.sampleRate))
+                    if let sampleRate = track.sampleRate {
+                        LabeledContent(L10n.string("Sample Rate")) {
+                            Text(SampleRateLabel.text(for: sampleRate))
+                        }
                     }
 
                     if let bitrate = track.bitrate {
@@ -215,15 +217,6 @@ extension TagEditorSheet {
         formatter.allowedUnits = [.useKB, .useMB, .useGB]
         formatter.countStyle = .file
         return formatter.string(fromByteCount: bytes)
-    }
-
-    private static func formatSampleRate(_ hz: Int?) -> String {
-        guard let hz else { return "—" }
-        let khz = Double(hz) / 1000.0
-        if khz == khz.rounded() {
-            return "\(Int(khz)) kHz"
-        }
-        return String(format: "%.1f kHz", khz)
     }
 
     private static func formatDate(_ epochSeconds: Int64) -> String {
