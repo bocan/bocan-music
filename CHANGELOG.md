@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The play bar now says what it is playing. Under the title sits a row of small coloured boxes for the format, the bitrate, the sample rate, the bit depth and the channels of the current song, and hovering over any of them explains what that fact means. Streams and podcasts show what their own source reports. Narrow the window and the row keeps the boxes that fit.
+
 Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLAC or Dolby Digital Plus, now play with every channel folded into stereo. Before, such a song at your output's own sample rate stopped with an error, and one at another rate played only the front pair with the surround channels silent. Bòcan does not render Dolby Atmos objects; it plays the mix as stereo.
 
 Songs with more than two channels now get a correct loudness value the next time they are analysed. Bòcan measured the first two channels of the file, which in most surround layouts are not the left and right pair, so a mix carried mostly in the surround channels could measure as near silence and get the wrong volume. It now measures the same stereo fold it plays. Loudness values measured before this release for such songs were wrong; analyse those songs again to replace them.
