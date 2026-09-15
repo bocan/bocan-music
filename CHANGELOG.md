@@ -21,6 +21,8 @@ A song in an MP4 container that the system decoder opens but cannot actually pla
 
 A song shorter than half a second, such as a jingle or a sound effect, now gets a real loudness value. Before, the loudness meter had nothing to measure in so short a file and marked it as near silence, so ReplayGain turned it up as far as its peak allowed, whatever its true level.
 
+A Dolby Digital or Dolby Digital Plus song in an MP4 now shows its real channel count, such as 5.1, in Get Info and the songs table the next time it is scanned. Many such files say "stereo" in one place and "5.1" in another, and Bòcan was reading the wrong one.
+
 ## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
 
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.

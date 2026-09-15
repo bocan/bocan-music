@@ -24,6 +24,20 @@
 #include <wavproperties.h>
 
 #include <cmath>
+
+/// TagLib's MP4 codec as the short name `BOCTags.mp4Codec` carries (#529).
+static NSString *mp4CodecName(TagLib::MP4::Properties::Codec codec) {
+    switch (codec) {
+        case TagLib::MP4::Properties::AAC:  return @"aac";
+        case TagLib::MP4::Properties::ALAC: return @"alac";
+        case TagLib::MP4::Properties::AC3:  return @"ac3";
+        case TagLib::MP4::Properties::EAC3: return @"eac3";
+        case TagLib::MP4::Properties::FLAC: return @"flac";
+        case TagLib::MP4::Properties::DTS:  return @"dts";
+        case TagLib::MP4::Properties::Opus: return @"opus";
+        default:                            return @"unknown";
+    }
+}
 #include <exception>
 
 // ---------------------------------------------------------------------------
@@ -361,6 +375,9 @@ static double r128Gain(const TagLib::PropertyMap &props, const char *key) {
         tags.sampleRate = ap->sampleRate();
         tags.bitrate    = ap->bitrate();
         tags.channels   = ap->channels();
+        if (auto *mp4 = dynamic_cast<const TagLib::MP4::Properties *>(ap)) {
+            tags.mp4Codec = mp4CodecName(mp4->codec());
+        }
         // bitDepth lives on the format-specific subclasses, not the base
         // class (issue #405). Fall back to a BITSPERSAMPLE tag, which a few
         // taggers write, only when the container gave us nothing.

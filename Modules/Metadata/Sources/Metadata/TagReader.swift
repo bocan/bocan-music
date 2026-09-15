@@ -29,6 +29,12 @@ public struct TagReader: Sendable {
     /// AVAudioFile refuses it too, so the fallback could not read it.
     static let avFoundationFallbackExtensions: Set = ["ac3", "eac3", "ec3"]
 
+    /// MP4 codecs whose sample entry carries a legacy `channelcount` the
+    /// Dolby spec sets to 2 for compatibility, with the real layout in the
+    /// `dac3` or `dec3` box. TagLib reads the legacy field; AVFoundation reads
+    /// the layout, so channels and sample rate come from it for these (#529).
+    static let dolbyMP4Codecs: Set = ["ac3", "eac3"]
+
     /// Returns `true` if `url`'s path extension is in `supportedExtensions`.
     public static func isSupported(_ url: URL) -> Bool {
         self.supportedExtensions.contains(url.pathExtension.lowercased())
@@ -124,7 +130,38 @@ public struct TagReader: Sendable {
         tags.bitrate = raw.bitrate > 0 ? Int(raw.bitrate) : nil
         tags.channels = raw.channels > 0 ? Int(raw.channels) : nil
         tags.bitDepth = raw.bitDepth > 0 ? Int(raw.bitDepth) : nil
+        if let codec = raw.mp4Codec, Self.dolbyMP4Codecs.contains(codec) {
+            self.applyDolbyLayout(to: &tags, url: url, codec: codec)
+        }
         return tags
+    }
+
+    /// Channels and sample rate for Dolby audio in MP4 from AVFoundation,
+    /// which reads the layout box rather than the legacy sample-entry field
+    /// (#529). A refusal keeps TagLib's values and is logged: a wrong channel
+    /// count is a display defect, not a reason to drop the file.
+    private func applyDolbyLayout(to tags: inout TrackTags, url: URL, codec: String) {
+        do {
+            let properties = try AVFoundationProperties(url: url)
+            if properties.channels > 0 {
+                tags.channels = properties.channels
+            }
+            if properties.sampleRate > 0 {
+                tags.sampleRate = properties.sampleRate
+            }
+            self.log.debug("taglib.read.dolbyLayout", [
+                "path": url.lastPathComponent,
+                "codec": codec,
+                "taglibChannels": tags.channels ?? 0,
+                "channels": properties.channels,
+            ])
+        } catch {
+            self.log.warning("taglib.read.dolbyLayout.failed", [
+                "path": url.lastPathComponent,
+                "codec": codec,
+                "error": String(reflecting: error),
+            ])
+        }
     }
 
     /// The one escape hatch from TagLib: a raw Dolby file's properties from

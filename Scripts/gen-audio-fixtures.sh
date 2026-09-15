@@ -193,6 +193,14 @@ make_fixture "surround-lsrs-48000.eac3" \
     ffmpeg -f lavfi -i "$SURROUND_48000" \
     -c:a eac3 "surround-lsrs-48000.eac3" -y -loglevel error
 
+# E-AC-3 in MP4 with the spec's legacy channelcount of 2 in the sample
+# entry (#529). Dolby-encoded files carry that; FFmpeg's muxer writes the
+# real count, so the entry is patched after muxing. TagLib reads the legacy
+# field; the real 5.1 layout is in the dec3 box, which AVFoundation reads.
+make_fixture "surround-lsrs-eac3-legacy2-48000.m4a" \
+    bash -c "ffmpeg -f lavfi -i '$SURROUND_48000' -c:a eac3 -f mp4 surround-lsrs-eac3-legacy2-48000.m4a -y -loglevel error \
+        && python3 '$SCRIPT_DIR/set-mp4-channelcount.py' surround-lsrs-eac3-legacy2-48000.m4a 2"
+
 # ── Library fixtures ─────────────────────────────────────────────────────────
 
 # A folder holding one raw E-AC-3 file, for the scan test that asserts it
