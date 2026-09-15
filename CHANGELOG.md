@@ -15,6 +15,14 @@ Dolby Digital and Dolby Digital Plus files with no container, the raw kind that 
 
 The Channels row in Get Info and the track panel now names the layout, such as Stereo, 5.1 or 7.1, instead of showing a bare number. Hovering over it on a surround song says that the mix plays folded to stereo and that Dolby Atmos objects are not rendered.
 
+Surround files that play through the built-in decoder, such as raw Dolby Digital Plus, TrueHD and multichannel Matroska, are now folded to stereo by the same mixer as every other file, so the same mix plays at the same loudness whichever way it was packaged. Loudness analysis now measures that same fold, and it now works for the formats the system cannot open on its own, such as Ogg Vorbis, Opus, WavPack, Monkey's Audio, DSD, Matroska and TrueHD, which could not be analysed before.
+
+A song in an MP4 container that the system decoder opens but cannot actually play, such as Opus in MP4, now plays through the built-in decoder instead of stopping with an error on its first moment.
+
+A song shorter than half a second, such as a jingle or a sound effect, now gets a real loudness value. Before, the loudness meter had nothing to measure in so short a file and marked it as near silence, so ReplayGain turned it up as far as its peak allowed, whatever its true level.
+
+A Dolby Digital or Dolby Digital Plus song in an MP4 now shows its real channel count, such as 5.1, in Get Info and the songs table the next time it is scanned. Many such files say "stereo" in one place and "5.1" in another, and Bòcan was reading the wrong one.
+
 ## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
 
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.

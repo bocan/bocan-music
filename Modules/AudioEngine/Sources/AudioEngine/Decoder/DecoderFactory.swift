@@ -41,9 +41,9 @@ public struct DecoderFactory: Sendable {
 
     /// One `decoder.selected` line per load, naming the route a file took and
     /// what the decoder saw, so a report can tell an AVFoundation failure from
-    /// an FFmpeg one (ADR-091). Channels are the source's own: the FFmpeg
-    /// route folds to stereo inside the decoder, so its `sourceFormat` does
-    /// not say what the file carried.
+    /// an FFmpeg one (ADR-091). Channels are the source's own from the stream
+    /// details, since the FFmpeg route still folds a layout it cannot name
+    /// to stereo before `sourceFormat` sees it (#522).
     private static func logSelected(_ decoder: any Decoder, sniffed: String, url: URL) {
         let format = decoder.sourceFormat
         let details = (decoder as? FFmpegDecoder)?.streamDetails

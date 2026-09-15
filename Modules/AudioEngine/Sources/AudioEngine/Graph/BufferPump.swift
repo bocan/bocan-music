@@ -51,10 +51,9 @@ actor BufferPump {
     /// rate or channel count. `AVFoundationDecoder` handles SRC internally via
     /// AVAudioFile, but FFmpegDecoder does not — without this converter it would
     /// fill hardware-rate buffers with source-rate samples, causing playback at
-    /// the wrong speed and pitch. The channel-count case belongs to the
-    /// AVFoundation route: its `sourceFormat` carries the file's own channel
-    /// count, and the converter folds it to stereo (ADR-091). FFmpegDecoder folds
-    /// inside the decoder, so its `sourceFormat` is already stereo.
+    /// the wrong speed and pitch. The channel-count case is the stereo fold:
+    /// both decoders hand over the file's own channels above two (ADR-091,
+    /// #522), and this one converter folds every route the same way.
     private let converter: FormatConverter?
 
     private let log = AppLogger.make(.audio)

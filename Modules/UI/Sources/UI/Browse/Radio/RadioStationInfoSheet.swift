@@ -123,14 +123,14 @@ struct RadioStationInfoSheet: View {
                 rows.append(StreamFact(
                     key: "sampleRate",
                     label: L10n.string("Sample Rate"),
-                    value: Self.sampleRateText(live.sampleRateHz)
+                    value: SampleRateLabel.text(for: live.sampleRateHz)
                 ))
             }
             if live.channelCount > 0 {
                 rows.append(StreamFact(
                     key: "channels",
                     label: L10n.string("Channels"),
-                    value: Self.channelsText(live.channelCount)
+                    value: ChannelLayoutLabel.text(for: live.channelCount)
                 ))
             }
             if let kbps = live.claimedBitrateKbps {
@@ -149,13 +149,13 @@ struct RadioStationInfoSheet: View {
                 rows.append(StreamFact(key: "codec", label: L10n.string("Codec"), value: codec))
             }
             if let hz = self.station.lastSampleRateHz {
-                rows.append(StreamFact(key: "sampleRate", label: L10n.string("Sample Rate"), value: Self.sampleRateText(hz)))
+                rows.append(StreamFact(key: "sampleRate", label: L10n.string("Sample Rate"), value: SampleRateLabel.text(for: hz)))
             }
             if let channels = self.station.lastChannels {
                 rows.append(StreamFact(
                     key: "channels",
                     label: L10n.string("Channels"),
-                    value: Self.channelsText(channels)
+                    value: ChannelLayoutLabel.text(for: channels)
                 ))
             }
             if let kbps = self.station.lastBitrateKbps {
@@ -180,29 +180,6 @@ struct RadioStationInfoSheet: View {
     private var stationDescription: String? {
         let value = self.station.stationDescription ?? self.liveDetails?.icyDescription
         return (value?.isEmpty ?? true) ? nil : value
-    }
-
-    // MARK: - Formatting
-
-    /// "44.1 kHz" / "48 kHz": whole kilohertz drop the decimal.
-    static func sampleRateText(_ hz: Int) -> String {
-        let khz: String = hz.isMultiple(of: 1000)
-            ? String(hz / 1000)
-            : String(format: "%.1f", Double(hz) / 1000)
-        return L10n.string("\(khz) kHz")
-    }
-
-    static func channelsText(_ count: Int) -> String {
-        switch count {
-        case 1:
-            L10n.string("Mono")
-
-        case 2:
-            L10n.string("Stereo")
-
-        default:
-            L10n.string("\(count) channels")
-        }
     }
 
     private func field(label: String, value: String, copyable: Bool) -> some View {

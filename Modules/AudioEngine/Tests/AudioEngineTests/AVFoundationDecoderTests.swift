@@ -164,6 +164,33 @@ struct AVFoundationDecoderTests {
         }
     }
 
+    /// On macOS 26 AVAudioFile opens Opus in MP4, reports length 0, and
+    /// fails on the first read. The open-time probe turns that into a
+    /// `decoderFailure` so the factory can offer the file to FFmpeg (#523).
+    @Test("a file that opens but cannot be read is refused at open")
+    func openableButUnreadableIsRefused() throws {
+        let url = try fixtureURL("opus-in-mp4.m4a")
+        do {
+            _ = try AVFoundationDecoder(url: url)
+            Issue.record("AVFoundation decoded Opus in MP4; the fixture no longer proves a read failure")
+        } catch let AudioEngineError.decoderFailure(codec, _) {
+            #expect(codec == "AVFoundation")
+        } catch {
+            Issue.record("expected decoderFailure, got \(error)")
+        }
+    }
+
+    /// The probe reads the first frames; it must rewind so playback and the
+    /// analyzer start at the beginning.
+    @Test("the open-time probe leaves the position at zero")
+    func probeRewinds() async throws {
+        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        let decoder = try AVFoundationDecoder(url: url)
+        let position = await decoder.position
+        #expect(position == 0)
+        await decoder.close()
+    }
+
     @Test("a file without read permission throws accessDenied")
     func unreadableFileIsAccessDenied() throws {
         let source = try fixtureURL("sine-1s-44100-16-stereo.wav")
