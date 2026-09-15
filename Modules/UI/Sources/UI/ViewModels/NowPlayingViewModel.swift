@@ -128,6 +128,17 @@ public final class NowPlayingViewModel {
     /// Populated by `setCurrentTrack(_:)` and used by `TrackInfoPanel`.
     public private(set) var currentTrack: Track?
 
+    /// Codec, bitrate, sample rate, bit depth and channels of what is
+    /// playing, for the strip's badges (ADR-092). Nil when nothing plays, and
+    /// when neither the track nor the decoder can say anything at all.
+    public private(set) var sourceFacts: NowPlayingSourceFacts?
+
+    /// The current item's own contribution to `sourceFacts`: the scanned
+    /// columns of a local track, nothing for a stream. Kept aside so each
+    /// refresh re-merges from it rather than accumulating the last decoder's
+    /// answers onto the next track.
+    @ObservationIgnored private var trackSourceFacts: NowPlayingSourceFacts?
+
     /// Stream URL of the playing internet radio station, nil for every other
     /// source (ADR-078 slice 5). Drives the strip's info button in radio mode.
     public private(set) var nowPlayingRadioStreamURL: String?
@@ -241,6 +252,10 @@ public final class NowPlayingViewModel {
         self.nowPlayingRadioStreamURL = nil
         self.nowPlayingRadioStationName = nil
         self.nowPlayingIsLoved = track.loved
+        // The scanned columns are what the badges have until the decoder is
+        // open; the codec only ever comes from the decoder.
+        self.trackSourceFacts = NowPlayingSourceFacts(track: track)
+        self.applySourceFacts(NowPlayingSourceFacts())
         self.title = track.title ?? L10n.string("Unknown Track")
         self.artist = ""
         self.album = ""
@@ -298,6 +313,10 @@ public final class NowPlayingViewModel {
         self.nowPlayingTrackID = nil
         self.nowPlayingAlbumID = nil
         self.nowPlayingArtistID = nil
+        // A stream has no scanned columns: every badge it shows comes from
+        // the decoder, and there is nothing to show until it is open.
+        self.trackSourceFacts = nil
+        self.sourceFacts = nil
         self.title = item.title ?? L10n.string("Unknown Track")
         self.artist = item.artistName ?? ""
         self.album = item.albumName ?? ""
@@ -356,6 +375,8 @@ public final class NowPlayingViewModel {
         self.artist = ""
         self.album = ""
         self.artwork = nil
+        self.trackSourceFacts = nil
+        self.sourceFacts = nil
     }
 
     private func startObservingSleepTimer(_ qp: QueuePlayer) {
@@ -418,6 +439,9 @@ public final class NowPlayingViewModel {
 
                 case .ready:
                     self.isPlaying = false
+                    // The decoder is installed by the time `.ready` emits, so
+                    // this is the first moment the codec can be read.
+                    await self.refreshSourceFacts()
 
                 case .loading:
                     break
@@ -883,9 +907,13 @@ private extension NowPlayingViewModel {
             for await track in qp.currentTrackChanges {
                 if let track {
                     self.setCurrentTrack(track)
+                    await self.refreshSourceFacts()
                 } else if let item = await qp.queue.currentItem {
                     await self.applyStreamItem(item)
+                    await self.refreshSourceFacts()
                 } else {
+                    // Stopping leaves the last decoder installed, so the
+                    // cleared display must not ask it anything.
                     self.clearNowPlayingDisplay()
                 }
             }
@@ -938,6 +966,32 @@ private extension NowPlayingViewModel {
                 }
             }
         }
+    }
+}
+
+// MARK: - Source facts (ADR-092)
+
+/// Same-file extension so the private engine and the seeded columns stay
+/// reachable, and the class body stays inside the `type_body_length` limit.
+private extension NowPlayingViewModel {
+    /// Re-derives `sourceFacts` from the open decoder over the current item's
+    /// own columns. Called where the engine has just taken on a source: the
+    /// current-item stream (the only signal a gapless transition gives) and
+    /// the `.ready` that follows every load.
+    ///
+    /// The engine is asked rather than cached: it is the only place that
+    /// knows which decoder is installed right now.
+    func refreshSourceFacts() async {
+        let details = await self.engine.currentStreamDetails
+        let codec = await self.engine.currentCodec
+        self.applySourceFacts(NowPlayingSourceFacts(details: details, codec: codec))
+    }
+
+    /// Merges live decoder facts over the current item's columns, and leaves
+    /// `sourceFacts` nil when the two together say nothing.
+    func applySourceFacts(_ live: NowPlayingSourceFacts) {
+        let merged = (self.trackSourceFacts ?? NowPlayingSourceFacts()).merging(live)
+        self.sourceFacts = merged.isEmpty ? nil : merged
     }
 }
 

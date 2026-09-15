@@ -350,6 +350,13 @@ public actor QueuePlayer: Transport {
         get async { await self.engine.currentStreamDetails }
     }
 
+    /// FFmpeg's short codec name for the engine's current decoder (ADR-092);
+    /// nil between loads. Local files report it too, unlike the stream
+    /// details above.
+    public var currentCodec: String? {
+        get async { await self.engine.currentCodec }
+    }
+
     /// Re-emits a live ICY title while the current item is internet radio:
     /// once to the UI stream, once to `MPNowPlayingInfoCenter` with the
     /// station name moved into the artist slot.
