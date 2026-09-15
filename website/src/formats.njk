@@ -15,6 +15,15 @@ permalink: /formats/
     <strong>FFmpeg</strong> (bundled LGPL build, no GPL codecs).
   </p>
 
+  <p>
+    A file with more than two channels, a 5.1 or 7.1 mix, plays folded to
+    stereo through the same mixer whichever engine decoded it, so the same
+    album sounds the same however it was packaged. Dolby Atmos objects are
+    not rendered: the bed plays as stereo. Loudness analysis takes the same
+    route as playback, so it measures the fold you actually hear, and it
+    covers the formats only FFmpeg can open.
+  </p>
+
   <h2 id="lossless-pcm">Lossless PCM</h2>
   <table>
     <thead>
@@ -132,7 +141,7 @@ permalink: /formats/
       <tr>
         <td>E-AC-3 / Dolby Digital Plus</td>
         <td><code>.eac3</code> <code>.ec3</code> <code>.m4a</code> <code>.mp4</code></td>
-        <td>FFmpeg (raw); AVFoundation (in MP4). Surround folds to stereo; Atmos objects are not rendered</td>
+        <td>FFmpeg (raw); AVFoundation (in MP4)</td>
       </tr>
       <tr>
         <td>DTS</td>
@@ -179,12 +188,12 @@ permalink: /formats/
       <tr>
         <td>Matroska / MKV / WebM</td>
         <td><code>.mkv</code> <code>.mka</code> <code>.webm</code></td>
-        <td>FFmpeg (audio tracks extracted automatically)</td>
+        <td>FFmpeg (audio tracks extracted automatically, whatever the codec inside, TrueHD and other multichannel tracks included)</td>
       </tr>
       <tr>
         <td>MP4 / M4A</td>
         <td><code>.mp4</code> <code>.m4a</code> <code>.m4b</code></td>
-        <td>AVFoundation</td>
+        <td>AVFoundation, falling back to FFmpeg when the system decoder refuses the payload (Opus in MP4, for one)</td>
       </tr>
     </tbody>
   </table>
@@ -200,6 +209,7 @@ permalink: /formats/
   <ul>
     <li><strong>TAK</strong>: patent-encumbered; no LGPL-safe decoder available</li>
     <li><strong>SACD ISO</strong>: raw disc images. Individual DSF/DFF tracks play fine.</li>
+    <li><strong>Raw TrueHD / MLP</strong> (<code>.thd</code>, <code>.mlp</code>): the decoder plays the codec, but a raw stream carries no tags and nothing on the Mac will report its length, so a library scan skips it. TrueHD inside a Matroska file is imported and plays.</li>
     <li><strong>RealAudio</strong> (<code>.ra</code>, <code>.rm</code>): no LGPL-safe decoder</li>
     <li><strong>Encrypted files</strong>: Apple DRM (FairPlay) and WMA DRM files cannot be decoded</li>
   </ul>

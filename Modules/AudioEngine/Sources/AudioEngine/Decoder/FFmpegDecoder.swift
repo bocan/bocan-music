@@ -88,6 +88,13 @@ public actor FFmpegDecoder: Decoder {
     /// network streams, the ICY headers.
     public nonisolated let streamDetails: StreamDetails
 
+    /// The short codec name FFmpeg opened the stream with (ADR-092). The
+    /// vocabulary the AVFoundation route is mapped onto, so a file that both
+    /// can decode reports one name.
+    public nonisolated var codec: String? {
+        self.streamDetails.codec
+    }
+
     /// ICY now-playing titles (ADR-078 slice 5), de-interleaved by FFmpeg's http
     /// protocol and surfaced from the packet-read loop. Local files never
     /// emit. Finishes when the decoder closes. The backing members are

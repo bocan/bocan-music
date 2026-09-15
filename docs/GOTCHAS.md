@@ -130,6 +130,16 @@ Diagnose live-only visualizer bugs by logging the real per-frame uniforms from t
 
 **Canonical file:** `Modules/AudioEngine/Sources/AudioEngine/Decoder/AVFoundationDecoder.swift`
 
+### The current-track change arrives before the decoder is open
+
+**Problem:** a view model that reads a live decoder fact (the codec, the stream details) when the current-track stream emits gets the previous track's answer, or nil.
+
+**Rule:** read live decoder facts on the transport's `.ready` state, which the engine emits only after it has installed the decoder. Keep the read on the current-item stream too: a gapless transition swaps the decoder inside the engine and emits no `.ready`, so `.ready` alone misses it. Both paths must recompute from the item's own columns rather than merging onto the last answer, or one track's facts leak into the next.
+
+**Why:** `QueuePlayer.loadAndPlay` emits the current track (and the CUE markers) before it calls `engine.load`, so the UI task can run while the old decoder is still installed, or after `load` has closed it and before the new one opens. `AudioEngine.load` assigns `self.decoder` and then emits `.ready`, so that state is the first moment the new codec can be read. Note also that `stop()` leaves the last decoder installed, so a cleared display must not ask the engine anything.
+
+**Canonical file:** `Modules/Playback/Sources/Playback/QueuePlayer.swift` (the emit before `engine.load`); the consumer is `Modules/UI/Sources/UI/ViewModels/NowPlayingViewModel.swift`
+
 ## Scanning, TagLib and feed parsing
 
 ### TagLib reads must use a read-only `FileStream`

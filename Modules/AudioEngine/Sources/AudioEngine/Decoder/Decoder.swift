@@ -18,6 +18,14 @@ public protocol Decoder: Sendable, AnyObject {
     /// Current read position in seconds.
     var position: TimeInterval { get async }
 
+    /// FFmpeg's short name for the codec the source is stored in ("flac",
+    /// "mp3", "eac3", "pcm"), or nil when the decoder cannot say.
+    ///
+    /// One vocabulary across both routes (ADR-092), so the same file reports
+    /// the same name whichever decoder opens it. Never the container: an
+    /// `.m4a` carries AAC, ALAC and E-AC-3 alike (#529).
+    var codec: String? { get }
+
     /// Opens `url` for reading. Throws on any I/O or format error.
     init(url: URL) throws
 
@@ -35,4 +43,14 @@ public protocol Decoder: Sendable, AnyObject {
 
     /// Release all OS resources. After this call the decoder must not be used.
     func close() async
+}
+
+/// Default so a decoder that has nothing to say about its codec (the test
+/// fakes, any future buffer-backed source) satisfies the requirement without
+/// writing anything.
+public extension Decoder {
+    /// By default a decoder cannot name its codec.
+    var codec: String? {
+        nil
+    }
 }

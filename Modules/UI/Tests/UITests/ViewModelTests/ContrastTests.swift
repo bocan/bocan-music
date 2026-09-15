@@ -4,6 +4,32 @@ import SwiftUI
 import Testing
 @testable import UI
 
+// MARK: - Source badge tints (ADR-092)
+
+/// The five badge tints, so the contrast cases enumerate rather than repeat.
+enum BadgeTintToken: String, CaseIterable {
+    case codec, bitrate, sampleRate, bitDepth, channels
+
+    var color: Color {
+        switch self {
+        case .codec:
+            .badgeCodec
+
+        case .bitrate:
+            .badgeBitrate
+
+        case .sampleRate:
+            .badgeSampleRate
+
+        case .bitDepth:
+            .badgeBitDepth
+
+        case .channels:
+            .badgeChannels
+        }
+    }
+}
+
 // MARK: - ContrastTests
 
 /// Verifies that every key semantic colour pair in Bòcan meets WCAG 2.1 AA
@@ -234,6 +260,59 @@ struct ContrastTests {
     func willowispHighlightOnBgPrimaryDark() {
         let r = self.ratio(.willowispHighlight, .bgPrimary, appearance: .darkAqua)
         #expect(r >= 3.0, "Expected >= 3.0, got \(String(format: "%.2f", r))")
+    }
+
+    // MARK: Source badge tints (ADR-092)
+
+    // The border is a non-text component (≥ 3.0) against whichever surface the
+    // play bar sits over; the label inside is normal text (≥ 4.5) on the tint
+    // composited at `SourceBadge.fillOpacity` over that same surface.
+
+    private func fillRatio(
+        _ tint: Color,
+        over background: Color,
+        appearance: NSAppearance.Name
+    ) -> Double {
+        var result = 0.0
+        NSAppearance(named: appearance)?.performAsCurrentDrawingAppearance {
+            guard let base = NSColor(background).usingColorSpace(.sRGB),
+                  let top = NSColor(tint).usingColorSpace(.sRGB),
+                  let fill = base.blended(withFraction: SourceBadge.fillOpacity, of: top) else { return }
+            result = contrastRatio(.textPrimary, Color(nsColor: fill))
+        }
+        return result
+    }
+
+    @Test("badge tint borders clear 3.0 on both backgrounds, light", arguments: BadgeTintToken.allCases)
+    func badgeTintBordersLight(tint: BadgeTintToken) {
+        let onPrimary = self.ratio(tint.color, .bgPrimary, appearance: .aqua)
+        let onSecondary = self.ratio(tint.color, .bgSecondary, appearance: .aqua)
+        #expect(onPrimary >= 3.0, "\(tint.rawValue) on bgPrimary: got \(String(format: "%.2f", onPrimary))")
+        #expect(onSecondary >= 3.0, "\(tint.rawValue) on bgSecondary: got \(String(format: "%.2f", onSecondary))")
+    }
+
+    @Test("badge tint borders clear 3.0 on both backgrounds, dark", arguments: BadgeTintToken.allCases)
+    func badgeTintBordersDark(tint: BadgeTintToken) {
+        let onPrimary = self.ratio(tint.color, .bgPrimary, appearance: .darkAqua)
+        let onSecondary = self.ratio(tint.color, .bgSecondary, appearance: .darkAqua)
+        #expect(onPrimary >= 3.0, "\(tint.rawValue) on bgPrimary: got \(String(format: "%.2f", onPrimary))")
+        #expect(onSecondary >= 3.0, "\(tint.rawValue) on bgSecondary: got \(String(format: "%.2f", onSecondary))")
+    }
+
+    @Test("textPrimary clears 4.5 on every badge fill, light", arguments: BadgeTintToken.allCases)
+    func badgeFillTextLight(tint: BadgeTintToken) {
+        let onPrimary = self.fillRatio(tint.color, over: .bgPrimary, appearance: .aqua)
+        let onSecondary = self.fillRatio(tint.color, over: .bgSecondary, appearance: .aqua)
+        #expect(onPrimary >= 4.5, "\(tint.rawValue) fill on bgPrimary: got \(String(format: "%.2f", onPrimary))")
+        #expect(onSecondary >= 4.5, "\(tint.rawValue) fill on bgSecondary: got \(String(format: "%.2f", onSecondary))")
+    }
+
+    @Test("textPrimary clears 4.5 on every badge fill, dark", arguments: BadgeTintToken.allCases)
+    func badgeFillTextDark(tint: BadgeTintToken) {
+        let onPrimary = self.fillRatio(tint.color, over: .bgPrimary, appearance: .darkAqua)
+        let onSecondary = self.fillRatio(tint.color, over: .bgSecondary, appearance: .darkAqua)
+        #expect(onPrimary >= 4.5, "\(tint.rawValue) fill on bgPrimary: got \(String(format: "%.2f", onPrimary))")
+        #expect(onSecondary >= 4.5, "\(tint.rawValue) fill on bgSecondary: got \(String(format: "%.2f", onSecondary))")
     }
 
     // MARK: Accent palette checkmarks — non-text (≥ 3.0)

@@ -22,6 +22,14 @@ final class MockTransport: Transport, @unchecked Sendable {
         self._stream
     }
 
+    /// What the open decoder would name (ADR-092). Nil unless a test sets it,
+    /// which is what a transport with no decoder reports.
+    var storedCodec: String?
+
+    var currentCodec: String? {
+        get async { self.storedCodec }
+    }
+
     var storedCurrentTime: TimeInterval = 0
     var storedDuration: TimeInterval = 0
     var loadedURL: URL?

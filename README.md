@@ -28,15 +28,16 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 
 - **True gapless playback** with nanosecond `AVAudioTime` anchoring. Classical transitions, live albums, and DJ mixes play as the artist intended, with zero silence and zero clicks.
 - **10-band graphic EQ**, bass boost, stereo expander, binaural crossfeed, and a **peak limiter**, a full DSP chain between your files and your ears.
-- **ReplayGain** applied at playback time; analyses missing tags in the background using EBU R128 loudness.
+- **ReplayGain** applied at playback time; analyses missing tags in the background using EBU R128 loudness. The analyser decodes through the same route as playback, so the FFmpeg-only formats (Ogg Vorbis, Opus, WavPack, Monkey's Audio, DSD, Matroska, TrueHD) get a value too, and a surround mix is measured from the stereo fold that actually plays.
 - **Configurable crossfade** (0–12 s), **playback speed** (0.5×–2.0×) with pitch correction, and a **sleep timer** that fades gracefully rather than cutting mid-note.
 
 ### 📻 It plays everything
 
 - Everything AVFoundation handles natively: **FLAC, ALAC, AAC, MP3, WAV, AIFF, CAF, M4A**.
-- The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD, Dolby Digital and Dolby Digital Plus (AC-3, E-AC-3)**. No plug-ins, no extra installs.
-- **Surround mixes play folded to stereo.** A 5.1 file in ALAC, AAC, FLAC or Dolby Digital Plus plays with every channel audible in the stereo fold. Dolby Atmos objects are not rendered; the bed plays as stereo.
+- The awkward ones too, via an integrated FFmpeg bridge: **Ogg Vorbis, Opus, APE (Monkey's Audio), WavPack, DSD, DTS, Dolby Digital and Dolby Digital Plus (AC-3, E-AC-3), and Matroska with whatever is inside it, TrueHD included**. No plug-ins, no extra installs. A file in an MP4 container that the system decoder opens but cannot play, such as Opus in MP4, falls back to the same bridge rather than stopping.
+- **Surround mixes play folded to stereo.** A 5.1 file in ALAC, AAC, FLAC, Dolby Digital Plus, TrueHD or Matroska plays with every channel audible in the stereo fold, through the same mixer whichever engine decoded it. Dolby Atmos objects are not rendered; the bed plays as stereo.
 - **CUE sheets as chapter markers.** A single-file album rip keeps its track list: Previous and Next jump between cue points, the progress bar shows a tick at each boundary, and the player bar names the current cue's title and performer. Sheets attach automatically during scans, and a Markers tab in Get Info lists every cue point.
+- **The play bar says what it is playing.** A row of small coloured boxes under the title gives the codec, bitrate, sample rate, bit depth and channel layout of the current song, each with hover text explaining what the fact means. The codec comes from the open decoder rather than the file extension, so an `.m4a` reads AAC, ALAC or E-AC-3 as appropriate. Streams, podcasts and radio show what their source reports; the row keeps whichever boxes fit when the window is narrow.
 
 ### 📚 It respects your library
 
