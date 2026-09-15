@@ -1,3 +1,4 @@
+@preconcurrency import AVFoundation
 import Foundation
 import Testing
 @testable import AudioEngine
@@ -347,6 +348,21 @@ struct DecoderFactoryTests {
         let ffmpeg = try #require(decoder as? FFmpegDecoder)
         #expect(ffmpeg.streamDetails.codec == "mp3")
         #expect(ffmpeg.streamDetails.channelCount == 2)
+    }
+
+    /// Opus in MP4 opens in AVFoundation and fails on the first read; the
+    /// decoder's open-time probe refuses it, so the factory hands it to
+    /// FFmpeg, which decodes it (#523).
+    @Test("an MP4 that AVFoundation opens but cannot read falls back to FFmpegDecoder")
+    func unreadableM4AFallsBackToFFmpeg() async throws {
+        let url = try fixtureURL("opus-in-mp4.m4a")
+        let decoder = try DecoderFactory.make(for: url)
+        let ffmpeg = try #require(decoder as? FFmpegDecoder)
+        #expect(ffmpeg.streamDetails.codec == "opus")
+        let buffer = try #require(AVAudioPCMBuffer(pcmFormat: ffmpeg.sourceFormat, frameCapacity: 4096))
+        let frames = try await ffmpeg.read(into: buffer)
+        #expect(frames > 0)
+        await ffmpeg.close()
     }
 
     /// FFmpeg has a DSF demuxer and no muxer, so the fixture comes from

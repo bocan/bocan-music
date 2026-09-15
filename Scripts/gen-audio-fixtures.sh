@@ -155,6 +155,13 @@ make_fixture "mp3-in-mp4.m4a" \
     ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=0.25" \
     -ac 2 -c:a libmp3lame -f mp4 "mp3-in-mp4.m4a" -y -loglevel error
 
+# Opus inside an MP4 container (#523). On macOS 26 AVAudioFile opens it,
+# reports length 0, and fails on the first read, so it proves the
+# open-time probe in AVFoundationDecoder hands such a file to FFmpeg.
+make_fixture "opus-in-mp4.m4a" \
+    ffmpeg -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=0.25" \
+    -ac 2 -c:a libopus -b:a 64k -f mp4 "opus-in-mp4.m4a" -y -loglevel error
+
 # ── Corrupt / edge-case fixtures ─────────────────────────────────────────────
 
 # Corrupt MP3 — first 64 bytes of a valid MP3 then random garbage.
