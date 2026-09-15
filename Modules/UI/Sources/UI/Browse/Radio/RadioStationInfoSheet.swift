@@ -130,7 +130,7 @@ struct RadioStationInfoSheet: View {
                 rows.append(StreamFact(
                     key: "channels",
                     label: L10n.string("Channels"),
-                    value: Self.channelsText(live.channelCount)
+                    value: ChannelLayoutLabel.text(for: live.channelCount)
                 ))
             }
             if let kbps = live.claimedBitrateKbps {
@@ -155,7 +155,7 @@ struct RadioStationInfoSheet: View {
                 rows.append(StreamFact(
                     key: "channels",
                     label: L10n.string("Channels"),
-                    value: Self.channelsText(channels)
+                    value: ChannelLayoutLabel.text(for: channels)
                 ))
             }
             if let kbps = self.station.lastBitrateKbps {
@@ -180,21 +180,6 @@ struct RadioStationInfoSheet: View {
     private var stationDescription: String? {
         let value = self.station.stationDescription ?? self.liveDetails?.icyDescription
         return (value?.isEmpty ?? true) ? nil : value
-    }
-
-    // MARK: - Formatting
-
-    static func channelsText(_ count: Int) -> String {
-        switch count {
-        case 1:
-            L10n.string("Mono")
-
-        case 2:
-            L10n.string("Stereo")
-
-        default:
-            L10n.string("\(count) channels")
-        }
     }
 
     private func field(label: String, value: String, copyable: Bool) -> some View {

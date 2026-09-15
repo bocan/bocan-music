@@ -327,19 +327,10 @@ extension TrackTable {
             return row.bitDepth > 0 ? L10n.string("\(row.bitDepth)-bit") : ""
 
         case .channelCount:
-            switch row.channelCount {
-            case 0:
-                return ""
-
-            case 1:
-                return L10n.string("Mono")
-
-            case 2:
-                return L10n.string("Stereo")
-
-            default:
-                return L10n.string("\(row.channelCount) ch")
-            }
+            // The shared label (#525): Mono, Stereo, 5.1, 7.1, else a count.
+            // No compact form: the named layouts are as short as the old
+            // "N ch", and the layouts that read "4 channels" are rare.
+            return row.channelCount > 0 ? ChannelLayoutLabel.text(for: row.channelCount) : ""
 
         case .isLossless:
             guard row.bitDepth > 0 || !row.fileFormat.isEmpty else { return "" }

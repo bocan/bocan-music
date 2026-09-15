@@ -57,4 +57,22 @@ struct ChannelLayoutLabelTests {
         #expect(source.contains("ChannelLayoutLabel.text(for: channels)"), "\(relativePath) must use the shared label")
         #expect(source.contains(".help(ChannelLayoutLabel.help(for: channels))"), "\(relativePath) must carry the hover text")
     }
+
+    /// The songs table column and the radio station sheet show a channel
+    /// count without a hover text; they use the same label and keep no
+    /// Mono/Stereo mapping of their own (#525).
+    @Test(
+        "the table column and the radio sheet use the shared label",
+        arguments: [
+            "Sources/UI/Browse/TrackTable+Helpers.swift",
+            "Sources/UI/Browse/Radio/RadioStationInfoSheet.swift",
+        ]
+    )
+    func otherSurfacesUseTheSharedLabel(relativePath: String) throws {
+        let url = self.moduleRoot.appendingPathComponent(relativePath)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("ChannelLayoutLabel.text(for:"), "\(relativePath) must use the shared label")
+        #expect(!source.contains("L10n.string(\"Mono\")"), "\(relativePath) keeps its own channel mapping")
+        #expect(!source.contains("L10n.string(\"Stereo\")"), "\(relativePath) keeps its own channel mapping")
+    }
 }

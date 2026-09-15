@@ -910,22 +910,6 @@
         }
       }
     },
-    "%lld ch" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld ch"
-          }
-        },
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld çĥ one"
-          }
-        }
-      }
-    },
     "%lld channels" : {
       "extractionState" : "manual",
       "localizations" : {
