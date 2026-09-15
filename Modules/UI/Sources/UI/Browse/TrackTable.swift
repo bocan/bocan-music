@@ -231,7 +231,7 @@ public struct TrackTable: NSViewRepresentable {
 
         case .unchanged:
             // Rows unchanged; only the highlight may have moved.
-            Self.reload(rows: plan.highlightReload, dataSource: dataSource)
+            Self.reload(rows: plan.highlightReload, coordinator: coordinator, dataSource: dataSource)
         }
         coordinator.applied = plan.applied(
             after: coordinator.applied,
@@ -301,7 +301,8 @@ public struct TrackTable: NSViewRepresentable {
     /// Reloads only the rows whose rendered content changed (or whose
     /// now-playing highlight is gained/lost) while the set of track IDs is
     /// unchanged.  `reloadItems` re-runs the cell provider for those identifiers
-    /// without disturbing the row order, selection, or scroll position.
+    /// without disturbing the row order or scroll position; the selection needs
+    /// putting back by hand (see `applyPreservingSelection`).
     private func reconfigureChangedRows(
         coordinator: TrackTableCoordinator,
         dataSource: TrackDiffableDataSource
@@ -327,12 +328,16 @@ public struct TrackTable: NSViewRepresentable {
             }
         }
         coordinator.updateRows(self.rows)
-        Self.reload(rows: changed, dataSource: dataSource)
+        Self.reload(rows: changed, coordinator: coordinator, dataSource: dataSource)
     }
 
     /// Reloads the given rows in place, ignoring IDs the snapshot does not hold
     /// and duplicates. A no-op for an empty list.
-    private static func reload(rows changed: [Int64], dataSource: TrackDiffableDataSource) {
+    private static func reload(
+        rows changed: [Int64],
+        coordinator: TrackTableCoordinator,
+        dataSource: TrackDiffableDataSource
+    ) {
         guard !changed.isEmpty else { return }
         var snapshot = dataSource.snapshot()
         let existing = Set(snapshot.itemIdentifiers(inSection: 0))
@@ -340,7 +345,11 @@ public struct TrackTable: NSViewRepresentable {
         let valid = changed.filter { existing.contains($0) && seen.insert($0).inserted }
         guard !valid.isEmpty else { return }
         snapshot.reloadItems(valid)
-        dataSource.apply(snapshot, animatingDifferences: false)
+        applyPreservingSelection(snapshot, to: dataSource, in: coordinator.tableView) { syncing in
+            // The restored selection is the same set of IDs, so republishing it
+            // would only spend a SwiftUI pass.
+            coordinator.isSyncingSelection = syncing
+        }
     }
 
     private func applyScrollIfNeeded(coordinator: TrackTableCoordinator, tableView: NSTableView) {

@@ -259,7 +259,7 @@ struct SubsonicSongTable: NSViewRepresentable {
             // and back (#476).
             let changed = Self.changedRowIDs(from: coordinator.rowsByID, to: self.rows)
             coordinator.updateRows(self.rows)
-            Self.reload(rows: changed, dataSource: dataSource)
+            Self.reload(rows: changed, dataSource: dataSource, tableView: coordinator.tableView)
 
         case .structural:
             coordinator.updateRows(self.rows)
@@ -305,8 +305,13 @@ struct SubsonicSongTable: NSViewRepresentable {
 
     /// Reloads the given rows in place, ignoring IDs the snapshot does not
     /// hold and duplicates. A no-op for an empty list, which is the common
-    /// case: most reconfigure passes move one row.
-    private static func reload(rows changed: [String], dataSource: SubsonicSongDiffableDataSource) {
+    /// case: most reconfigure passes move one row. The selection goes back on
+    /// afterwards, since an applied reload drops it.
+    private static func reload(
+        rows changed: [String],
+        dataSource: SubsonicSongDiffableDataSource,
+        tableView: NSTableView?
+    ) {
         guard !changed.isEmpty else { return }
         var snapshot = dataSource.snapshot()
         let existing = Set(snapshot.itemIdentifiers(inSection: 0))
@@ -314,7 +319,7 @@ struct SubsonicSongTable: NSViewRepresentable {
         let valid = changed.filter { existing.contains($0) && seen.insert($0).inserted }
         guard !valid.isEmpty else { return }
         snapshot.reloadItems(valid)
-        dataSource.apply(snapshot, animatingDifferences: false)
+        applyPreservingSelection(snapshot, to: dataSource, in: tableView)
     }
 
     // MARK: Column definitions
