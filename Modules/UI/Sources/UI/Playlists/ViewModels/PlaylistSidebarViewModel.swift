@@ -228,7 +228,10 @@ public final class PlaylistSidebarViewModel: ObservableObject {
                 if let parentID {
                     self.expandedFolders.insert(parentID)
                 }
-                self.renamingPlaylistID = newID
+                // No inline rename here. Every creation path goes through the
+                // new-playlist sheet, where the user has already typed the
+                // name; opening the new row for editing asked them for it a
+                // second time.
             }
             return playlist.id
         } catch {
@@ -244,7 +247,7 @@ public final class PlaylistSidebarViewModel: ObservableObject {
             if let parentID = self.newPlaylistParent {
                 self.expandedFolders.insert(parentID)
             }
-            self.renamingPlaylistID = f.id
+            // Named in the sheet, like a playlist; nothing left to ask.
             return f.id
         } catch {
             self.lastError = self.describe(error)
