@@ -40,14 +40,26 @@ struct ReplayGainAnalyzerTests {
         )
     }
 
-    /// The quarter-second ALAC is too short for a loudness block, but its true
-    /// peak is measured from every sample. In the MP4 layout channels 0 and 1
-    /// are centre and left, both silent here, so the old analyzer saw a peak
-    /// of zero; the fold carries the surround tone into both channels.
-    @Test("the true peak of a surround-only ALAC comes from the fold, not from channels 0 and 1")
+    /// In the MP4 layout channels 0 and 1 are centre and left, both silent
+    /// here, so the old analyzer saw a peak of zero; the fold carries the
+    /// surround tone into both channels. The quarter-second file is shorter
+    /// than one gating block, so its loudness comes from the whole-file
+    /// block (#526) rather than the -70 floor.
+    @Test("a surround-only quarter-second ALAC measures its peak and loudness from the fold")
     func surroundOnlyPeakComesFromFold() async throws {
         let result = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("surround-lsrs-48000.m4a"))
         #expect(result.trackPeakLinear > 0.05, "peak \(result.trackPeakLinear)")
+        #expect(result.integratedLUFS.isFinite && result.integratedLUFS > -70, "measured \(result.integratedLUFS)")
+        #expect(result.trackGainDB < 30, "gain \(result.trackGainDB) dB is the old floor turned into a boost")
+    }
+
+    /// A quarter second of DSD through FFmpeg: an FFmpeg-only format and a
+    /// short file at once (#518, #526).
+    @Test("a short DSF measures a real loudness")
+    func shortDSFMeasures() async throws {
+        let result = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("sine-250ms-dsd64-stereo.dsf"))
+        #expect(result.integratedLUFS.isFinite && result.integratedLUFS > -70, "measured \(result.integratedLUFS)")
+        #expect(result.trackGainDB < 30, "gain \(result.trackGainDB) dB")
     }
 
     // MARK: - One route for analysis and playback (#522)
