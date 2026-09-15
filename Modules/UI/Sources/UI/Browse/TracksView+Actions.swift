@@ -46,6 +46,12 @@ extension TracksView {
                 Task {
                     do {
                         try await lib.playlistService.addTracks(ids, to: playlistID)
+                        // The sidebar's counts come from its own snapshot of
+                        // the tree, so the badge next to the playlist kept the
+                        // old number until something else reloaded it. The
+                        // drag-and-drop path goes through the view model and
+                        // has always refreshed.
+                        await lib.playlistSidebar.reload()
                     } catch {
                         // The user chose a playlist from the menu; a silent
                         // failure looks like the tracks were added (#480).
