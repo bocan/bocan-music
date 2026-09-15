@@ -50,6 +50,33 @@ struct ReplayGainAnalyzerTests {
         #expect(result.trackPeakLinear > 0.05, "peak \(result.trackPeakLinear)")
     }
 
+    // MARK: - One route for analysis and playback (#522)
+
+    /// The same second of surround-only E-AC-3, raw (FFmpeg route) and in
+    /// MP4 (AVFoundation route), measures the same loudness: same fold,
+    /// different decoders of the same bitstream.
+    @Test("a raw E-AC-3 measures the same loudness as the same mix in MP4")
+    func rawAndContainedEAC3MeasureAlike() async throws {
+        let raw = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("surround-lsrs-1s-48000.eac3"))
+        let contained = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("surround-lsrs-1s-eac3-48000.m4a"))
+        #expect(raw.integratedLUFS.isFinite && raw.integratedLUFS > -70, "raw measured \(raw.integratedLUFS)")
+        #expect(
+            abs(raw.integratedLUFS - contained.integratedLUFS) < 0.5,
+            "raw \(raw.integratedLUFS) vs MP4 \(contained.integratedLUFS) LUFS"
+        )
+    }
+
+    /// Formats AVFoundation cannot open used to fail analysis outright; they
+    /// now decode through the same factory as playback.
+    @Test("a format only FFmpeg decodes is analysed")
+    func ffmpegOnlyFormatIsAnalysed() async throws {
+        let result = try await ReplayGainAnalyzer.analyze(url: self.fixtureURL("sine-1s-48000-stereo.ogg"))
+        #expect(result.integratedLUFS.isFinite && result.integratedLUFS > -70, "measured \(result.integratedLUFS)")
+        // The fixture's tone is quiet (ffmpeg's sine source defaults to an
+        // eighth of full scale); the point is a real peak, not its size.
+        #expect(result.trackPeakLinear > 0.01, "peak \(result.trackPeakLinear)")
+    }
+
     // MARK: - Stereo unchanged
 
     /// Pinned from the analyzer before the fold was added, so a stereo file

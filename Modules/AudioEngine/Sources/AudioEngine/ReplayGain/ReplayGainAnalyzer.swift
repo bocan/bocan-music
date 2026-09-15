@@ -24,8 +24,10 @@ public struct ReplayGainResult: Sendable {
 
 /// Decodes an audio file and measures its ReplayGain (EBU R128) values.
 ///
-/// Uses `AVAudioFile` for decoding; all work runs on the calling task's thread.
-/// Check `Task.isCancelled` between chunks to respect cooperative cancellation.
+/// Decodes through `DecoderFactory`, the same route playback takes, so the
+/// measurement covers every format that plays and, above two channels, the
+/// same stereo fold the engine plays (#522). All work runs on the calling
+/// task's thread; cancellation is checked between chunks.
 ///
 /// Album mode: pass multiple `ReplayGainResult` values to `albumGain(from:)` to
 /// compute the album-level gain from a set of pre-measured tracks.
@@ -41,25 +43,28 @@ public struct ReplayGainAnalyzer: Sendable {
     ///
     /// - Parameter url: A local file URL.
     /// - Returns: `ReplayGainResult` for the track.
-    /// - Throws: `AudioEngineError.decoderFailure` if the file cannot be opened.
+    /// - Throws: The `AudioEngineError` `DecoderFactory` raises when no decoder
+    ///   opens the file, or `decoderFailure` when nothing decodes from it.
     public static func analyze(url: URL) async throws -> ReplayGainResult {
         let log = AppLogger.make(.audio)
         let start = Date()
         log.debug("rg.analyze.start", ["url": url.lastPathComponent])
 
-        let file: AVAudioFile
+        let decoder = try DecoderFactory.make(for: url)
+        let leftSamples: [Float]
+        let rightSamples: [Float]
         do {
-            file = try AVAudioFile(forReading: url)
+            (leftSamples, rightSamples) = try await self.readSamples(from: decoder)
         } catch {
-            throw AudioEngineError.decoderFailure(codec: "unknown", underlying: error)
+            await decoder.close()
+            throw error
         }
-
-        let (leftSamples, rightSamples) = try await readSamples(from: file)
+        await decoder.close()
 
         guard !leftSamples.isEmpty else {
             log.warning("rg.analyze.empty", [
                 "url": url.lastPathComponent,
-                "reportedLength": file.length,
+                "reportedDuration": decoder.duration,
             ])
             throw AudioEngineError.decoderFailure(codec: "pcm", underlying: URLError(.zeroByteResource))
         }
@@ -67,7 +72,7 @@ public struct ReplayGainAnalyzer: Sendable {
         let r128 = EBUR128.measure(
             leftSamples: leftSamples,
             rightSamples: rightSamples,
-            sampleRate: file.processingFormat.sampleRate
+            sampleRate: decoder.sourceFormat.sampleRate
         )
         let result = ReplayGainResult(integratedLUFS: r128.integratedLUFS, truePeakLinear: r128.truePeakLinear)
         log.debug("rg.analyze.end", [
@@ -81,8 +86,8 @@ public struct ReplayGainAnalyzer: Sendable {
 
     // MARK: - Private helpers
 
-    private static func readSamples(from file: AVAudioFile) async throws -> ([Float], [Float]) {
-        let sourceFormat = file.processingFormat
+    private static func readSamples(from decoder: any Decoder) async throws -> ([Float], [Float]) {
+        let sourceFormat = decoder.sourceFormat
         let chunkFrames: AVAudioFrameCount = 65536
         guard let buffer = AVAudioPCMBuffer(pcmFormat: sourceFormat, frameCapacity: chunkFrames) else {
             throw AudioEngineError.decoderFailure(codec: "pcm", underlying: URLError(.unknown))
@@ -101,25 +106,30 @@ public struct ReplayGainAnalyzer: Sendable {
 
         var leftSamples: [Float] = []
         var rightSamples: [Float] = []
-        if file.length > 0 {
-            leftSamples.reserveCapacity(Int(file.length))
-            rightSamples.reserveCapacity(Int(file.length))
+        let expectedFrames = Int(decoder.duration * sourceFormat.sampleRate)
+        if expectedFrames > 0 {
+            leftSamples.reserveCapacity(expectedFrames)
+            rightSamples.reserveCapacity(expectedFrames)
         }
 
-        // Read until the decoder yields a short/zero-length buffer. We don't rely
-        // on `file.framePosition < file.length` because some containers (notably
-        // FLACs without a STREAMINFO sample count) report length 0 even though
-        // the audio decodes fine.
+        // Read until the decoder reports end of stream (zero frames). The
+        // decoders own the container quirks, such as a FLAC that reports
+        // length 0 without a STREAMINFO sample count.
         while true {
             try Task.checkCancellation()
             do {
-                try file.read(into: buffer)
+                buffer.frameLength = 0
+                guard try await decoder.read(into: buffer) > 0 else { break }
             } catch {
-                // Treat decode errors mid-stream as end-of-file so we still get a
-                // measurement from whatever decoded successfully.
+                // A decode error mid-stream ends the measurement at whatever
+                // decoded, as a damaged tail would; it is logged so a short
+                // measurement can be traced.
+                AppLogger.make(.audio).warning("rg.read.stopped", [
+                    "frames": leftSamples.count,
+                    "error": String(reflecting: error),
+                ])
                 break
             }
-            guard buffer.frameLength > 0 else { break }
 
             let measured = try self.folded(buffer, through: fold)
             let frames = Int(measured.frameLength)

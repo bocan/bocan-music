@@ -15,6 +15,8 @@ Dolby Digital and Dolby Digital Plus files with no container, the raw kind that 
 
 The Channels row in Get Info and the track panel now names the layout, such as Stereo, 5.1 or 7.1, instead of showing a bare number. Hovering over it on a surround song says that the mix plays folded to stereo and that Dolby Atmos objects are not rendered.
 
+Surround files that play through the built-in decoder, such as raw Dolby Digital Plus, TrueHD and multichannel Matroska, are now folded to stereo by the same mixer as every other file, so the same mix plays at the same loudness whichever way it was packaged. Loudness analysis now measures that same fold, and it now works for the formats the system cannot open on its own, such as Ogg Vorbis, Opus, WavPack, Monkey's Audio, DSD, Matroska and TrueHD, which could not be analysed before.
+
 ## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
 
 A podcast served over plain http from a computer on your home network now keeps refreshing after you subscribe. If one you added earlier stopped updating, add it again by its address: it picks up where it left off, with its episodes and settings.

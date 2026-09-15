@@ -140,6 +140,13 @@ make_fixture "front-lr-1s-eac3-48000.m4a" \
     ffmpeg -f lavfi -i "$FRONT_1S_48000" \
     -c:a eac3 -f mp4 "front-lr-1s-eac3-48000.m4a" -y -loglevel error
 
+# The same second of surround-only E-AC-3 with no container (#522). It takes
+# the FFmpeg route where the MP4 twin takes AVFoundation, so the pair proves
+# both routes fold and measure the same mix to the same level.
+make_fixture "surround-lsrs-1s-48000.eac3" \
+    ffmpeg -f lavfi -i "$SURROUND_1S_48000" \
+    -c:a eac3 "surround-lsrs-1s-48000.eac3" -y -loglevel error
+
 # MP3 inside an MP4 container (ADR-091 slice 3). Sniffs as .m4a, and
 # AVAudioFile refuses it (as it does DTS and TrueHD in MP4), so it proves the
 # .m4a route falls back to FFmpeg. Opus and FLAC in MP4, the ADR's first two

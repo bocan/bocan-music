@@ -98,7 +98,12 @@ public actor FFmpegDecoder: Decoder {
 
     private var _position: TimeInterval = 0
     private var residualBuffer: [Float] = []
-    private let outChannels: Int32 = 2
+
+    /// Channels the resampler emits and `sourceFormat` carries. The file's own
+    /// count when it has more than two named channels the engine can
+    /// describe (#522); otherwise two, with swresample folding to stereo as
+    /// it always did for mono, stereo and layouts it cannot name.
+    private let outChannels: Int32
 
     /// True for a remote source with no known duration (internet radio, vs.
     /// a finite Subsonic/podcast HTTP track or local file). EOF here only
@@ -123,18 +128,21 @@ public actor FFmpegDecoder: Decoder {
         let ctx = FFContext()
         self.ctx = ctx
         self.url = url
-        let (sampleRate, details) = try Self.openAndConfigure(ctx: ctx, url: url)
-        self.streamDetails = details
+        let setup = try Self.openAndConfigure(ctx: ctx, url: url)
+        self.streamDetails = setup.details
         var continuation: AsyncStream<String>.Continuation!
         self.titleUpdates = AsyncStream { continuation = $0 }
         self.titleContinuation = continuation
         self.duration = Self.detectDuration(ctx: ctx)
         self.isUnboundedRemoteStream = isHTTP && self.duration <= 0
-        // kAudioChannelLayoutTag_Stereo is a compile-time constant; init always succeeds.
-        // swiftlint:disable:next force_unwrapping
-        let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_Stereo)!
+        // A multichannel source keeps its own layout so the engine folds it
+        // through the same converter as the AVFoundation route (#522). Below
+        // three channels, or when the layout cannot be described, the
+        // resampler has already folded to stereo.
+        let layout = setup.nativeLayout ?? StereoLayout.layout
+        self.outChannels = Int32(layout.channelCount)
         self.sourceFormat = AVAudioFormat(
-            standardFormatWithSampleRate: sampleRate,
+            standardFormatWithSampleRate: setup.sampleRate,
             channelLayout: layout
         )
     }
@@ -198,10 +206,8 @@ public actor FFmpegDecoder: Decoder {
 
 private extension FFmpegDecoder {
     /// Opens the format context, finds the best audio stream, opens the codec,
-    /// and initialises the SWR resampler. Returns the stream's native sample
-    /// rate plus the `StreamDetails` snapshot captured while the codec
-    /// parameters are in hand (ADR-078 slice 5).
-    private static func openAndConfigure(ctx: FFContext, url: URL) throws -> (Double, StreamDetails) {
+    /// and initialises the SWR resampler (`FFmpegDecoder+Setup.swift`).
+    private static func openAndConfigure(ctx: FFContext, url: URL) throws -> FFmpegSourceSetup {
         // For HTTP / HTTPS URLs pass the full absolute string so FFmpeg's
         // network protocol handlers fire. Everything else (file URLs,
         // bare paths) uses the on-disk path so security-scoped bookmark
@@ -250,50 +256,20 @@ private extension FFmpegDecoder {
 
         try self.ffCheck(avcodec_parameters_to_context(codecCtx, codecParams))
         try self.ffCheck(avcodec_open2(codecCtx, codec, nil))
+        // More than two named channels keep their layout, so the engine's one
+        // converter folds them exactly as it folds an AVFoundation-decoded
+        // file (#522). Anything else folds to stereo in swresample as before.
+        let nativeLayout = Self.nativeLayout(for: codecCtx)
         // buildSWR owns its allocation until it returns successfully; only a
         // live, fully-initialised resampler reaches ctx.swrCtx. (#295)
-        ctx.swrCtx = try self.buildSWR(codecCtx: codecCtx)
+        ctx.swrCtx = try self.buildSWR(codecCtx: codecCtx, keepSourceChannels: nativeLayout != nil)
 
         let details = Self.captureDetails(formatCtx: ctx.formatCtx, codecParams: codecParams, isHTTP: isHTTP)
-        return (Double(codecCtx.pointee.sample_rate), details)
-    }
-
-    /// Allocates and configures an SWR resampler for the given codec context.
-    static func buildSWR(codecCtx: UnsafeMutablePointer<AVCodecContext>) throws -> OpaquePointer {
-        let sampleRate = Int32(codecCtx.pointee.sample_rate)
-        var outLayout = AVChannelLayout()
-        av_channel_layout_default(&outLayout, 2)
-        defer { av_channel_layout_uninit(&outLayout) }
-
-        // swr_alloc_set_opts2 can allocate and still error, so free on every
-        // throw path (#295) unless ownership is handed back to the caller.
-        var swrCtx: OpaquePointer?
-        var handedOff = false
-        defer {
-            if !handedOff {
-                swr_free(&swrCtx)
-            }
-        }
-
-        let ret = swr_alloc_set_opts2(
-            &swrCtx,
-            &outLayout,
-            AV_SAMPLE_FMT_FLTP,
-            sampleRate,
-            &codecCtx.pointee.ch_layout,
-            codecCtx.pointee.sample_fmt,
-            sampleRate,
-            0,
-            nil
+        return FFmpegSourceSetup(
+            sampleRate: Double(codecCtx.pointee.sample_rate),
+            details: details,
+            nativeLayout: nativeLayout
         )
-        try self.ffCheck(ret, codec: "FFmpeg/swr")
-        try self.ffCheck(swr_init(swrCtx), codec: "FFmpeg/swr")
-
-        guard let swr = swrCtx else {
-            throw AudioEngineError.decoderFailure(codec: "FFmpeg/swr", underlying: FFmpegInternalError.alloc)
-        }
-        handedOff = true
-        return swr
     }
 
     /// Determines stream duration from stream metadata or the container header.
@@ -310,8 +286,13 @@ private extension FFmpegDecoder {
         }
         return 0
     }
+}
 
-    /// Throws `decoderFailure` if `ret` is negative.
+// MARK: - Error bridging
+
+extension FFmpegDecoder {
+    /// Throws `decoderFailure` if `ret` is negative. Internal so the resampler
+    /// setup in `FFmpegDecoder+Setup.swift` can report through the same path.
     static func ffCheck(_ ret: Int32, codec: String = "FFmpeg") throws {
         guard ret >= 0 else {
             throw AudioEngineError.decoderFailure(codec: codec, underlying: ffError(ret))
@@ -412,18 +393,19 @@ private extension FFmpegDecoder {
     ) throws -> [Float] {
         let nbSamples = Int(frame.pointee.nb_samples)
         guard nbSamples > 0 else { return [] }
+        let channels = Int(self.outChannels)
         let outCount = nbSamples + 256
         let byteCount = outCount * MemoryLayout<Float>.size
-        let ch0 = UnsafeMutableRawPointer.allocate(byteCount: byteCount, alignment: 16)
-        let ch1 = UnsafeMutableRawPointer.allocate(byteCount: byteCount, alignment: 16)
-        defer {
-            ch0.deallocate()
-            ch1.deallocate()
+        // One planar output buffer per channel the resampler emits (#522).
+        let planes = (0 ..< channels).map { _ in
+            UnsafeMutableRawPointer.allocate(byteCount: byteCount, alignment: 16)
         }
-        var outPtrs: [UnsafeMutablePointer<UInt8>?] = [
-            ch0.assumingMemoryBound(to: UInt8.self),
-            ch1.assumingMemoryBound(to: UInt8.self),
-        ]
+        defer {
+            for plane in planes {
+                plane.deallocate()
+            }
+        }
+        var outPtrs: [UnsafeMutablePointer<UInt8>?] = planes.map { $0.assumingMemoryBound(to: UInt8.self) }
         let totalFrames: Int32 = outPtrs.withUnsafeMutableBufferPointer { ptr in
             let inData = unsafeBitCast(
                 frame.pointee.extended_data,
@@ -435,12 +417,12 @@ private extension FFmpegDecoder {
             throw AudioEngineError.decoderFailure(codec: "FFmpeg/swr", underlying: ffError(totalFrames))
         }
         let n = Int(totalFrames)
-        let f0 = ch0.assumingMemoryBound(to: Float.self)
-        let f1 = ch1.assumingMemoryBound(to: Float.self)
-        var result = [Float](repeating: 0, count: n * 2)
+        let floats = planes.map { $0.assumingMemoryBound(to: Float.self) }
+        var result = [Float](repeating: 0, count: n * channels)
         for i in 0 ..< n {
-            result[i * 2] = f0[i]
-            result[i * 2 + 1] = f1[i]
+            for c in 0 ..< channels {
+                result[i * channels + c] = floats[c][i]
+            }
         }
         return result
     }
