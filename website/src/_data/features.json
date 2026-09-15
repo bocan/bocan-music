@@ -16,6 +16,10 @@
     "body": "FLAC, ALAC, MP3, AAC, OGG, Opus, WavPack, Monkey's Audio, DSD, WMA, AC-3, E-AC-3, DTS, and more. Bit-perfect output to whatever DAC you've got plugged in. The play bar tells you which one you are hearing: a row of small coloured boxes under the title for the codec, bitrate, sample rate, bit depth and channels, each with hover text explaining the fact, and the codec read from the decoder rather than guessed from the file name. See the <a href=\"/formats/\">full formats list</a>."
   },
   {
+    "title": "Loudness that behaves.",
+    "body": "ReplayGain applied as it plays, and measured in the background with EBU R128 when a file carries no tags. The analyser goes through the same decoders as playback, so the awkward formats get a number too, and a 5.1 mix is measured from the stereo fold you actually hear rather than from whichever two channels happen to sit first in the file."
+  },
+  {
     "title": "Smart playlists with teeth.",
     "body": "Real predicates, not hand-wavy ones. \"Played fewer than three times since 2019, rated four stars or higher, not in any other smart list.\" Done."
   },
