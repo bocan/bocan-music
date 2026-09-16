@@ -397,6 +397,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     private var searchQueryCancellable: AnyCancellable?
     private var expandedFoldersCancellable: AnyCancellable?
     private var sectionExpansionCancellable: AnyCancellable?
+    private var newPlaylistSelectionCancellable: AnyCancellable?
     /// Single-row observation of the now-playing track, re-subscribed whenever
     /// the active track changes. Keeps the Songs table's Plays / Date Played
     /// columns live when a play is counted mid-playback.
@@ -577,6 +578,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
         self.observeTracksSelection()
         self.wireExpandedFoldersPersistence()
+        self.wireNewPlaylistSelection()
         self.wireSectionExpansionPersistence()
         self.wireSelectedDestinationPersistence()
         self.observeSubsonicCapabilityChanges()
@@ -674,6 +676,24 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             .sink { [weak self] _ in
                 guard let self else { return }
                 Task { await self.saveUIState() }
+            }
+    }
+
+    /// Selects a playlist the moment it is created (#535).
+    ///
+    /// The sidebar has always recorded the new id in `lastCreatedPlaylistID`
+    /// and nothing read it, so creating a playlist left the selection where it
+    /// was and the new row had to be hunted down. Its parent folder is already
+    /// expanded by the create path, so selecting the destination is enough to
+    /// bring the row into view unless the sidebar is long enough to scroll,
+    /// which its `List` has no reader for.
+    private func wireNewPlaylistSelection() {
+        self.newPlaylistSelectionCancellable = self.playlistSidebar.$lastCreatedPlaylistID
+            .dropFirst()
+            .compactMap(\.self)
+            .sink { [weak self] id in
+                guard let self else { return }
+                Task { await self.selectDestination(.playlist(id)) }
             }
     }
 
