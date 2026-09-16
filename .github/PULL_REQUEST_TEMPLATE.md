@@ -11,7 +11,7 @@ CHANGELOG.md under Unreleased (feat, fix and perf PRs).
 
 ## Slice review
 
-Every feature, fix or performance change answers the same seven questions
+Every feature, fix or performance change answers the same eight questions
 before it merges, whether a person or a coding assistant wrote it. They are
 the questions a careful reviewer would ask anyway; answering them up front
 means the reviewer reads answers instead of guessing. Short answers are fine.
@@ -35,6 +35,10 @@ and line, or a command and its output, where you can.
 6. What did you stub, simplify, or leave incomplete?
    Answer:
 7. What is the strongest argument that this is the wrong approach?
+   Answer:
+8. Gotcha drift: which entries in docs/GOTCHAS.md does this change touch, does
+   the new code follow the canonical pattern each one names, and did you see an
+   implementation nearby that does not?
    Answer:
 
 **What a user, or another module, would notice is different** (behaviour, not files):
