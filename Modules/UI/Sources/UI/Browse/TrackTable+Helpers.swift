@@ -146,6 +146,30 @@ extension TrackTable {
         }),
     ]
 
+    /// The most sort keys a chain carries (ADR-093).
+    ///
+    /// `NSTableView` accumulates the chain itself on a header click and caps
+    /// nothing, so the cap is ours. Four because a fifth key is invisible to a
+    /// reader, the header shows one arrow whatever the depth, and every key
+    /// costs a comparison per row pair across a library of tens of thousands.
+    static let maxSortKeys = 4
+
+    /// The sort chain `NSTableView` has built, constrained to what the table
+    /// will honour: no key twice, keeping the first occurrence, and no more
+    /// than `maxSortKeys` of them.
+    ///
+    /// AppKit dedupes by key on a header click, so the dedupe here is belt and
+    /// braces for that path; it earns its place once a chain is composed from
+    /// per-column tie-breakers, which can propose a key the user already chose.
+    static func constrainedChain(from descriptors: [NSSortDescriptor]) -> [NSSortDescriptor] {
+        var seen = Set<String>()
+        let deduped = descriptors.filter { descriptor in
+            guard let key = descriptor.key else { return false }
+            return seen.insert(key).inserted
+        }
+        return Array(deduped.prefix(self.maxSortKeys))
+    }
+
     /// Maps a `KeyPathComparator<TrackRow>` to the sort descriptor key string.
     static func sortKey(for comparator: KeyPathComparator<TrackRow>) -> String? {
         let ord = comparator.order
