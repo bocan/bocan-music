@@ -5,7 +5,7 @@ reproduced below as required by each project's terms.
 
 ---
 
-## FFmpeg 9.0.1
+## FFmpeg 9.0.1_1
 
 <https://ffmpeg.org>
 
@@ -22,7 +22,7 @@ The Homebrew formula used to build the bundled dylibs is
 
 ---
 
-## TagLib 2.3.1
+## TagLib 2.3.2
 
 <https://taglib.org>
 
@@ -142,9 +142,11 @@ SOFTWARE.
 
 ---
 
-## xctest-dynamic-overlay 1.13.1
+## swift-issue-reporting 2.1.0
 
-<https://github.com/pointfreeco/xctest-dynamic-overlay>
+(formerly xctest-dynamic-overlay)
+
+<https://github.com/pointfreeco/swift-issue-reporting>
 
 MIT License
 
@@ -170,7 +172,7 @@ SOFTWARE.
 
 ---
 
-## Sparkle 2.9.6
+## Sparkle 2.10.0
 
 <https://sparkle-project.org>
 
@@ -258,7 +260,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 4.5.1
+## swift-crypto 4.5.2
 
 <https://github.com/apple/swift-crypto>
 
@@ -270,7 +272,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-certificates 1.19.4
+## swift-certificates 1.20.0
 
 <https://github.com/apple/swift-certificates>
 
@@ -282,7 +284,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-asn1 1.7.1
+## swift-asn1 1.7.2
 
 <https://github.com/apple/swift-asn1>
 
@@ -306,5 +308,5 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.12.0. Dependency versions are pinned in
+*This file was generated for Bòcan 2.15.0. Dependency versions are pinned in
 the workspace `Package.resolved`.*
