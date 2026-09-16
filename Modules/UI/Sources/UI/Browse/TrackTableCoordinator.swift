@@ -187,17 +187,33 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     func handleSortDescriptorsDidChange(in tableView: NSTableView) {
         guard self.parent.sortable, !self.isSyncingSort else { return }
-        let newOrder = tableView.sortDescriptors.compactMap {
-            TrackTable.comparator(from: $0)
-        }
+        // AppKit has already prepended the clicked column, so the head is what
+        // the user just clicked and the columns clicked before it are the ones
+        // remembered here, not whatever tie-breakers the last chain carried.
+        // A click means "sort by this column". The chain behind it is derived,
+        // not accumulated, so nothing has to be remembered between clicks.
+        guard let clicked = tableView.sortDescriptors.first, clicked.key != nil else { return }
+        let newOrder = TrackSortChain.compose(clicked: clicked)
+            .compactMap { TrackTable.comparator(from: $0) }
         guard !newOrder.isEmpty else { return }
         self.parent.sortOrder = newOrder
     }
 
+    /// Writes the whole chain back, not just its head (ADR-093).
+    ///
+    /// This used to assign a one-element array built from `sortOrder.first`,
+    /// which truncated the list AppKit had accumulated. The next header click
+    /// then composed on the truncated version, so two keys was the ceiling and
+    /// a third click pushed the oldest out. What is written back must equal
+    /// what `handleSortDescriptorsDidChange` would read, or the user sees one
+    /// chain and clicks against another.
     func syncSortIfNeeded(sortOrder: [KeyPathComparator<TrackRow>]) {
         guard let tv = tableView else { return }
-        guard let first = sortOrder.first,
-              let key = TrackTable.sortKey(for: first) else {
+        let desired = sortOrder.compactMap { comparator -> NSSortDescriptor? in
+            guard let key = TrackTable.sortKey(for: comparator) else { return nil }
+            return NSSortDescriptor(key: key, ascending: comparator.order == .forward)
+        }
+        guard !desired.isEmpty else {
             // Empty sort => manual order: clear any lingering column indicator.
             guard !tv.sortDescriptors.isEmpty else { return }
             self.isSyncingSort = true
@@ -205,7 +221,6 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
             self.isSyncingSort = false
             return
         }
-        let desired = [NSSortDescriptor(key: key, ascending: first.order == .forward)]
         guard tv.sortDescriptors != desired else { return }
         self.isSyncingSort = true
         tv.sortDescriptors = desired
