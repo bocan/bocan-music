@@ -290,7 +290,23 @@ public final class TracksViewModel {
     /// `UIStateV1` values restore cleanly and existing tests stay green.
     public func setSort(column: TrackSortColumn, ascending: Bool) {
         let order: SortOrder = ascending ? .forward : .reverse
-        self.applySort([Self.comparator(for: column, order: order)])
+        self.applySort(Self.chain(for: Self.comparator(for: column, order: order)))
+    }
+
+    /// The full sort chain for a single comparator: the column itself, then
+    /// the tie-breakers behind it (ADR-093 slice 3).
+    ///
+    /// A restored sort is one column and one direction, which is the whole
+    /// truth of what the user chose, but applying it bare would leave every
+    /// tie to the sort algorithm until the next header click. Recomposing here
+    /// means a relaunch looks like the click that set it. Falls back to the
+    /// comparator alone for a column the chain cannot name.
+    static func chain(for comparator: KeyPathComparator<TrackRow>) -> [KeyPathComparator<TrackRow>] {
+        guard let key = TrackTable.sortKey(for: comparator) else { return [comparator] }
+        let descriptor = NSSortDescriptor(key: key, ascending: comparator.order == .forward)
+        let composed = TrackSortChain.compose(clicked: descriptor)
+            .compactMap { TrackTable.comparator(from: $0) }
+        return composed.isEmpty ? [comparator] : composed
     }
 
     /// Seeds a multi-column sort from an ordered `(column, ascending)` list so

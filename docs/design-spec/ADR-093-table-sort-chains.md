@@ -149,6 +149,16 @@ Slice 3, persistence:
 
 ### Slice 3: persistence
 
+Amended 2026-09-16, after composing by click was removed. A sort is now one
+column and one direction, which is exactly what `UIStateV2` already persists,
+so there is no new field and no fallback to write. What was missing is that a
+restored sort applied that column bare, leaving every tie to the sort algorithm
+until the next header click. `setSort(column:ascending:)` now recomposes the
+chain, so a relaunch looks like the click that set it, falling back to the
+column alone for anything the chain cannot name.
+
+The original plan, kept for the record:
+
 1. `UIStateV2` gains `sortChain: [PersistedSortKey]`, a list of
    `(column, ascending)` pairs, decoded with `decodeIfPresent`.
 2. When `sortChain` is absent, fall back to the legacy `sortColumn` and
