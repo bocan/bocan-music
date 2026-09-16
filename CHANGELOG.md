@@ -7,12 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Double-clicking a song to play it no longer blinks its highlight off. The row you picked stayed selected, then lost its blue the instant the song started, and took anything up to a couple of seconds to get it back.
-
-Naming a new playlist happens once. After you typed a name and clicked Create, the sidebar opened the new row for editing and asked for the name again; now it keeps the one you gave it. Renaming a playlist later works as before.
-
-Adding songs to a playlist from the right-click menu now updates the number beside that playlist straight away. Dragging songs onto a playlist always did.
-
 The play bar now says what it is playing. Under the title sits a row of small coloured boxes for the format, the bitrate, the sample rate, the bit depth and the channels of the current song, and hovering over any of them explains what that fact means. Streams and podcasts show what their own source reports. Narrow the window and the row keeps the boxes that fit.
 
 Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLAC or Dolby Digital Plus, now play with every channel folded into stereo. Before, such a song at your output's own sample rate stopped with an error, and one at another rate played only the front pair with the surround channels silent. Bòcan does not render Dolby Atmos objects; it plays the mix as stereo.
@@ -26,10 +20,6 @@ The Channels row in Get Info and the track panel now names the layout, such as S
 Surround files that play through the built-in decoder, such as raw Dolby Digital Plus, TrueHD and multichannel Matroska, are now folded to stereo by the same mixer as every other file, so the same mix plays at the same loudness whichever way it was packaged. Loudness analysis now measures that same fold, and it now works for the formats the system cannot open on its own, such as Ogg Vorbis, Opus, WavPack, Monkey's Audio, DSD, Matroska and TrueHD, which could not be analysed before.
 
 A song in an MP4 container that the system decoder opens but cannot actually play, such as Opus in MP4, now plays through the built-in decoder instead of stopping with an error on its first moment.
-
-A song shorter than half a second, such as a jingle or a sound effect, now gets a real loudness value. Before, the loudness meter had nothing to measure in so short a file and marked it as near silence, so ReplayGain turned it up as far as its peak allowed, whatever its true level.
-
-A Dolby Digital or Dolby Digital Plus song in an MP4 now shows its real channel count, such as 5.1, in Get Info and the songs table the next time it is scanned. Many such files say "stereo" in one place and "5.1" in another, and Bòcan was reading the wrong one.
 
 ## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
 

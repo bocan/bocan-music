@@ -137,11 +137,14 @@ struct SourceBadgesRowConventionTests {
         #expect(row.contains("lineWidth: self.highContrast ? 1.5 : 1"))
     }
 
-    @Test("the strip's info block is top-aligned and hosts the row")
-    func stripHostsTheRowAtTheTop() throws {
+    @Test("the strip's info block hosts the row, centred, with room for it")
+    func stripHostsTheRow() throws {
         let strip = try self.source("AppRoot/NowPlayingStrip.swift")
         #expect(strip.contains("SourceBadgesRow(facts: facts)"))
-        #expect(strip.contains("alignment: .topLeading"))
-        #expect(strip.contains(".padding(.top, 6)"))
+        // Centred in the bar, not top-aligned: the top-aligned version left
+        // the title floating with empty space under it whenever the row was
+        // short or absent.
+        #expect(strip.contains("minWidth: 160, maxWidth: 380, alignment: .leading"))
+        #expect(!strip.contains("alignment: .topLeading"))
     }
 }

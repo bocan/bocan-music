@@ -46,9 +46,9 @@ public enum Theme {
     ///
     /// 80 since ADR-092. The worst case the info block has to hold is a
     /// title, an artist and album line, a CUE marker caption and the row of
-    /// source badges: measured at 66 pt of content, which with the block's
-    /// 6 pt top padding filled the old 72 pt exactly, leaving the badges
-    /// sitting on the bar's bottom edge.
+    /// source badges: measured at 66 pt of content, which left nothing at all
+    /// in the old 72 pt bar. The block is centred in the 80, so that worst
+    /// case clears 7 pt at the top and the bottom.
     public static let nowPlayingStripHeight: CGFloat = 80
 
     // MARK: - Corner radii

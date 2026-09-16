@@ -145,3 +145,76 @@ date,commit,label,metric,value,unit,note
 2026-09-13T00:16,3c3348a5,pre-2.15.0,Library load time for the large fixture,,,no large fixture exists yet; the tracks.load and library.scan signposts exist
 2026-09-13T00:16,3c3348a5,pre-2.15.0,Hitch ratio for the standard playback scenario,,,no standard playback scenario or performance gate exists yet
 2026-09-13T00:16,3c3348a5,pre-2.15.0,Idle memory after 10 minutes of playback,,,the 10-minute playback protocol is not automated; sample a running instance by hand
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Acoustics (sources),1276,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · AudioEngine (sources),8179,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Library (sources),12442,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Metadata (sources),1180,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Observability (sources),651,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Persistence (sources),11698,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Playback (sources),4627,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Podcasts (sources),4451,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Scrobble (sources),2833,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · Subsonic (sources),1949,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · SyncServer (sources),4206,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · UI (sources),58732,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · App (sources),4381,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · all sources,116605,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Swift lines · all tests,62555,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Acoustics,41,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · AudioEngine,251,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Library,410,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Metadata,95,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Observability,88,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Persistence,333,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Playback,202,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Podcasts,169,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Scrobble,99,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Subsonic,108,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · SyncServer,134,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · UI,1157,,@Test attributes and XCTest funcs
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · all modules,3087,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Tests · Xcode bundle run,908,,artefact 2026-09-16 00:38
+2026-09-16T00:49,1109c558,pre-2.16.0,Test suite wall time · Xcode bundle,75.9,s,artefact 2026-09-16 00:38
+2026-09-16T00:49,1109c558,pre-2.16.0,Test suite wall time · SPM modules,,,swift test leaves no timing artefact; time the run itself
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Xcode bundle gate (BocanTests.xctest),96.3,%,artefact 2026-09-16 00:38
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Acoustics,79.02,%,coverage-all artefact 2026-09-12 18:38
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · AudioEngine,,,"no coverage-all artefacts (profdata: no, test binary: yes); run make coverage-all"
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Library,76.25,%,coverage-all artefact 2026-09-15 08:03
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Metadata,91.81,%,coverage-all artefact 2026-09-15 08:03
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Observability,93.14,%,coverage-all artefact 2026-09-12 12:36
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Persistence,84.24,%,coverage-all artefact 2026-09-12 23:47
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Playback,66.90,%,coverage-all artefact 2026-09-15 12:28
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Podcasts,77.83,%,coverage-all artefact 2026-09-12 10:46
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Scrobble,73.25,%,coverage-all artefact 2026-09-12 18:38
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · Subsonic,75.95,%,coverage-all artefact 2026-09-12 21:25
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · SyncServer,91.21,%,coverage-all artefact 2026-09-12 18:38
+2026-09-16T00:49,1109c558,pre-2.16.0,Coverage · UI,,,"no coverage-all artefacts (profdata: no, test binary: yes); run make coverage-all"
+2026-09-16T00:49,1109c558,pre-2.16.0,Duplication percentage,,,no duplication scanner is installed or wired; the maintainability audit (docs/design-spec/maintainability-audit/findings-ledger.md) was a manual ledger
+2026-09-16T00:49,1109c558,pre-2.16.0,Dead code · Periphery scan,1622,,"all findings, tests included"
+2026-09-16T00:49,1109c558,pre-2.16.0,Dead code · unused declarations in sources,301,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Dead code · assign-only properties in sources,302,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Dead code · redundant public modifiers in sources,997,,
+2026-09-16T00:49,1109c558,pre-2.16.0,try? in sources,149,,occurrences
+2026-09-16T00:49,1109c558,pre-2.16.0,try? with an else { log } companion,1,,log call on the else line or the next
+2026-09-16T00:49,1109c558,pre-2.16.0,try? without a companion,148,,
+2026-09-16T00:49,1109c558,pre-2.16.0,nonisolated(unsafe) in sources,45,,
+2026-09-16T00:49,1109c558,pre-2.16.0,@unchecked Sendable in sources,30,,
+2026-09-16T00:49,1109c558,pre-2.16.0,@MainActor outside the UI layer,18,,Modules/* except UI; App is UI layer
+2026-09-16T00:49,1109c558,pre-2.16.0,TODO in sources,4,,whole word
+2026-09-16T00:49,1109c558,pre-2.16.0,FIXME in sources,0,,whole word
+2026-09-16T00:49,1109c558,pre-2.16.0,XCTSkip in sources,0,,whole word
+2026-09-16T00:49,1109c558,pre-2.16.0,fatalError in sources,13,,whole word
+2026-09-16T00:49,1109c558,pre-2.16.0,XCTSkip in tests,0,,whole word
+2026-09-16T00:49,1109c558,pre-2.16.0,Task { in sources,567,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Task { outside the allowlist,567,,"Scripts/vital-signs.allowlist, 0 entries"
+2026-09-16T00:49,1109c558,pre-2.16.0,Timer.scheduledTimer in sources,1,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Timer.scheduledTimer outside the allowlist,1,,"Scripts/vital-signs.allowlist, 0 entries"
+2026-09-16T00:49,1109c558,pre-2.16.0,sql: statements,378,,lines
+2026-09-16T00:49,1109c558,pre-2.16.0,sql: lines with interpolation,9,,contain \(
+2026-09-16T00:49,1109c558,pre-2.16.0,ADRs,92,,
+2026-09-16T00:49,1109c558,pre-2.16.0,ADRs with a status field,0,,
+2026-09-16T00:49,1109c558,pre-2.16.0,Clean build time · Release,100,s,"unsigned, arm64"
+2026-09-16T00:49,1109c558,pre-2.16.0,Cold start to first window,,,the app.bootstrap signpost exists (App/BocanApp.swift) but info-level log lines are not persisted to the unified log and no launch trace is automated
+2026-09-16T00:49,1109c558,pre-2.16.0,Library load time for the large fixture,,,no large fixture exists yet; the tracks.load and library.scan signposts exist
+2026-09-16T00:49,1109c558,pre-2.16.0,Hitch ratio for the standard playback scenario,,,no standard playback scenario or performance gate exists yet
+2026-09-16T00:49,1109c558,pre-2.16.0,Idle memory after 10 minutes of playback,,,the 10-minute playback protocol is not automated; sample a running instance by hand

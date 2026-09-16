@@ -196,10 +196,19 @@ public struct NowPlayingStrip: View {
                     .padding(.top, 2)
             }
         }
-        // Top-aligned, not centred: the badge row needs the height below the
-        // title, and the title must not drift down when there is no row.
-        .padding(.top, 6)
-        .frame(minWidth: 120, maxWidth: 300, maxHeight: .infinity, alignment: .topLeading)
+        // Centred in the bar, and 160...380 rather than 120...300 (#536).
+        //
+        // Measured: everything else on the strip costs 668 pt before this
+        // block and the scrubber divide what is left, and the transport alone
+        // is 317 of it. The floor is what pays at a narrow window: at 900 pt
+        // the block is pinned to it, and 160 shows appreciably more title than
+        // 120 did. The ceiling only bites above about 1300 pt, where a long
+        // title now gets the room instead of stopping at 300. In between, at
+        // the 1100 pt default window, the block already takes close to its
+        // ideal width and neither bound moves it; a longer title still
+        // truncates there, and only a narrower transport or a minimum window
+        // width would change that.
+        .frame(minWidth: 160, maxWidth: 380, alignment: .leading)
         .onChange(of: self.vm.nowPlayingTrackID) { _, trackID in
             guard trackID != nil, !self.vm.title.isEmpty else { return }
             let msg = self.vm.artist.isEmpty
@@ -284,7 +293,11 @@ public struct NowPlayingStrip: View {
             self.scrubber
             self.volumeRow
         }
-        .frame(maxWidth: 340)
+        // 300 rather than 340. At a narrow window the scrubber is squeezed
+        // well below either figure, and asking for 340 made it worse: the
+        // 0:00 and 5:00 labels closed on the thumb until they touched it at
+        // 900 pt. Asking for less leaves the slider a legible track.
+        .frame(maxWidth: 300)
     }
 
     private var scrubber: some View {
