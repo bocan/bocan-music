@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.16.0](https://github.com/bocan/bocan-music/compare/v2.15.0...v2.16.0) (2026-09-16)
+
 The play bar now says what it is playing. Under the title sits a row of small coloured boxes for the format, the bitrate, the sample rate, the bit depth and the channels of the current song, and hovering over any of them explains what that fact means. Streams and podcasts show what their own source reports. Narrow the window and the row keeps the boxes that fit.
 
 Songs with more than two channels, such as 5.1 mixes in Apple Lossless, AAC, FLAC or Dolby Digital Plus, now play with every channel folded into stereo. Before, such a song at your output's own sample rate stopped with an error, and one at another rate played only the front pair with the surround channels silent. Bòcan does not render Dolby Atmos objects; it plays the mix as stereo.
@@ -20,6 +22,17 @@ The Channels row in Get Info and the track panel now names the layout, such as S
 Surround files that play through the built-in decoder, such as raw Dolby Digital Plus, TrueHD and multichannel Matroska, are now folded to stereo by the same mixer as every other file, so the same mix plays at the same loudness whichever way it was packaged. Loudness analysis now measures that same fold, and it now works for the formats the system cannot open on its own, such as Ogg Vorbis, Opus, WavPack, Monkey's Audio, DSD, Matroska and TrueHD, which could not be analysed before.
 
 A song in an MP4 container that the system decoder opens but cannot actually play, such as Opus in MP4, now plays through the built-in decoder instead of stopping with an error on its first moment.
+
+### For developers
+
+**Added**
+- ui: say what is playing, as source badges in the play bar ([#533](https://github.com/bocan/bocan-music/pull/533))
+- ui: go to a new playlist on create, and re-centre the play bar title ([#537](https://github.com/bocan/bocan-music/pull/537))
+
+**Fixed**
+- audio: fold multichannel files to stereo, with loudness, raw Dolby scanning and channel labels (ADR-091) ([#521](https://github.com/bocan/bocan-music/pull/521))
+- audio: one stereo fold for every route, loudness for every format, and the ADR-091 follow-ups ([#532](https://github.com/bocan/bocan-music/pull/532))
+- ui: keep the row selected, name a playlist once, and move the count ([#534](https://github.com/bocan/bocan-music/pull/534))
 
 ## [2.15.0](https://github.com/bocan/bocan-music/compare/v2.14.1...v2.15.0) (2026-09-13)
 
