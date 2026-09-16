@@ -149,10 +149,11 @@ extension TrackTable {
     /// The most sort keys a chain carries (ADR-093).
     ///
     /// `NSTableView` accumulates the chain itself on a header click and caps
-    /// nothing, so the cap is ours. Four because a fifth key is invisible to a
-    /// reader, the header shows one arrow whatever the depth, and every key
-    /// costs a comparison per row pair across a library of tens of thousands.
-    static let maxSortKeys = 4
+    /// nothing, so the cap is ours. Five is what the longest sensible chain
+    /// needs: a column, then whose it is and from what, then the disc and
+    /// track pair that must never be split. Four cut Genre and Year off after
+    /// disc, which sorts nothing a reader can see.
+    static let maxSortKeys = 5
 
     /// The sort chain `NSTableView` has built, constrained to what the table
     /// will honour: no key twice, keeping the first occurrence, and no more

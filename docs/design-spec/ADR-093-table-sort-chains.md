@@ -124,24 +124,26 @@ Slice 3, persistence:
    what".
 2. Dedupe does most of the work. Sorting by Artist yields artist → album →
    disc → track with no override, because the clicked key is dropped from the
-   chain when it appears there. The same holds for Album, Disc and Track. Only
-   four columns want something different:
+   chain when it appears there. The same holds for Album, Disc and Track, and
+   for Genre and Year, whose global chain is already what they want. Only two
+   columns need an entry:
 
    | Column | Chain |
    |---|---|
    | Title | title → artist → album |
    | Album | album → disc → track → artist |
-   | Genre | genre → artist → album → disc |
-   | Year | year → artist → album → disc |
 
-   Everything else, from Play Count to Bit Depth, takes the global chain.
-3. The chain lives in the column table: `ColSpec` gains
-   `tieBreakers: [TrackSortColumn]?`, defaulting to nil, meaning "use the
-   global". A new column therefore cannot forget to have one.
-4. Composition on a click: the user's explicit keys first, in AppKit's order,
-   then the clicked column's chain appended, then dedupe, then cap. An
-   explicit key the user chose always outranks a tie-breaker.
-5. A tie-breaker inherits ascending order regardless of the clicked column's
+   Everything else, from Genre to Bit Depth, takes the global chain, which at
+   five keys reaches track: genre → artist → album → disc → track.
+3. The chain lives in one table in `TrackSortChain`. The ADR first proposed a
+   `tieBreakers` field on `ColSpec` as well; not built, because two homes for
+   one mapping is worse than one, and its purpose, that a new column cannot be
+   forgotten, is already served by the global default.
+4. A click composes: the clicked column, then its tie-breakers, then dedupe,
+   then cap. Nothing is remembered between clicks. Composing a chain by
+   clicking several headers was built and then removed the same day; see the
+   behavioural definitions above and the Gotchas below.
+5. A tie-breaker is always ascending regardless of the clicked column's
    direction. Sorting play count descending still wants artist A to Z beneath
    it.
 
@@ -159,9 +161,25 @@ Slice 3, persistence:
 
 - **Accumulation is AppKit's.** We never build the chain ourselves; we read
   `sortDescriptors`, constrain it, and write it back unchanged in order.
-- **Cap and dedupe.** At most four keys, no key twice, first occurrence wins.
-- **Chain rule.** The applied order is: the user's clicked keys in AppKit's
-  order, then the clicked column's tie-breakers, deduped, capped.
+- **Cap and dedupe.** At most five keys, no key twice, first occurrence wins.
+- **A click means "sort by this column".** Amended twice on 2026-09-16, both
+  times from the running app. First: accumulating every click let a Title
+  click from minutes earlier outrank the album grouping of a later Artist
+  click, with one arrow on screen and no way to see or clear the chain. The
+  answer was a plain click replacing and Option adding. Then: an Option-click
+  on a header never reaches the app at all. AppKit does not call
+  `sortDescriptorsDidChange` for one, proven by a log line in that callback
+  staying silent while plain clicks logged normally. So composing a chain by
+  clicking is gone, and with it the bookkeeping that remembered which columns
+  were clicked. The chain behind a column is derived, not accumulated.
+- **Chain rule.** The applied order is the clicked column, then its
+  tie-breakers, deduped, capped.
+- **Disc and track are a pair.** A chain that offers disc offers track too.
+  Track without disc misorders a multi-disc album; disc without track sorts
+  nothing a reader can see. Behind a clicked column the pair reads disc then
+  track; where track is itself the clicked column, disc follows it and
+  separates disc one's track one from disc two's. Five keys rather than four
+  exists so Genre and Year can reach track instead of stopping at disc.
 - **Tie-breaker direction.** Always ascending, whatever the clicked column's
   direction.
 - **Round trip.** What `syncSortIfNeeded` writes back must equal what
@@ -265,6 +283,13 @@ All slices: `make format`, `make lint`, `make build`, `make test-coverage` and
   as a bug.
 - **31 columns.** Anything requiring a per-column decision must default, or
   the next column added will be the one nobody wrote a chain for.
+- **A header click cannot carry a modifier.** AppKit does not call
+  `sortDescriptorsDidChange` for an Option-click on a header, so no modifier
+  read inside that callback can work, whichever key is chosen. Two attempts
+  went in before a log line in the callback proved it never runs. If
+  multi-column sorting is ever wanted again, it needs a visible affordance:
+  the header already carries a right-click menu, which is where an "Add to
+  Sort" item would go, and unlike a modifier a menu action can be tested.
 
 ## Handoff
 

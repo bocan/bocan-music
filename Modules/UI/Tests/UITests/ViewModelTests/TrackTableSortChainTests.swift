@@ -97,7 +97,11 @@ struct TrackTableSortChainTests {
 
     /// One click, the way `updateNSView` sequences it: read what AppKit built,
     /// then write the resulting order back to the table.
-    private func clickAndSync(_ key: String, _ coordinator: TrackTableCoordinator, ascending: Bool = true) {
+    private func clickAndSync(
+        _ key: String,
+        _ coordinator: TrackTableCoordinator,
+        ascending: Bool = true
+    ) {
         guard let tableView = coordinator.tableView else { return }
         self.click(key, on: tableView, ascending: ascending)
         coordinator.handleSortDescriptorsDidChange(in: tableView)
@@ -134,51 +138,47 @@ struct TrackTableSortChainTests {
 
     // MARK: - Composing
 
-    @Test("three clicks compose three keys, newest first")
-    func threeClicksComposeThreeKeys() throws {
+    @Test("a plain click sorts by that column, whatever was clicked before")
+    func plainClickReplacesTheChain() throws {
         let box = SortBox()
         let coordinator = self.makeCoordinator(box)
         let tableView = try #require(coordinator.tableView)
 
-        self.clickAndSync("trackNumber", coordinator)
-        self.clickAndSync("albumName", coordinator)
+        // The reported bug: a Title click stayed in the chain and outranked
+        // the album grouping of a later Artist click, invisibly.
+        self.clickAndSync("title", coordinator)
         self.clickAndSync("artistName", coordinator)
 
-        #expect(self.keys(box.order) == ["artistName", "albumName", "trackNumber"])
-        #expect(
-            self.keys(tableView) == ["artistName", "albumName", "trackNumber"],
-            "the table must still hold the whole chain, not just its head"
-        )
+        #expect(self.keys(box.order) == ["artistName", "albumName", "discNumber", "trackNumber"])
+        #expect(!self.keys(box.order).contains("title"), "the earlier click must not survive a plain click")
+        #expect(self.keys(box.order) == self.keys(tableView))
     }
 
-    @Test("the chain is capped, and the oldest key is the one that goes")
+    @Test("the whole chain reaches the table, not just its head")
+    func wholeChainReachesTheTable() throws {
+        let box = SortBox()
+        let coordinator = self.makeCoordinator(box)
+        let tableView = try #require(coordinator.tableView)
+
+        self.clickAndSync("artistName", coordinator)
+
+        // The original bug: the table kept only the head, so the next click
+        // composed against a truncated list.
+        #expect(self.keys(tableView).count > 1)
+        #expect(self.keys(box.order) == self.keys(tableView))
+    }
+
+    @Test("a chain never outgrows the cap")
     func chainIsCapped() throws {
         let box = SortBox()
         let coordinator = self.makeCoordinator(box)
         let tableView = try #require(coordinator.tableView)
 
-        for key in ["playCount", "yearText", "trackNumber", "albumName", "artistName"] {
-            self.clickAndSync(key, coordinator)
-        }
+        // Genre is the longest chain: genre, artist, album, disc, track.
+        self.clickAndSync("genre", coordinator)
 
         #expect(box.order.count == TrackTable.maxSortKeys)
-        // playCount was clicked first and is the one that goes.
-        #expect(self.keys(box.order) == ["artistName", "albumName", "trackNumber", "yearText"])
-        #expect(self.keys(tableView).count == TrackTable.maxSortKeys)
-    }
-
-    @Test("clicking a column already in the chain moves it to the head")
-    func reclickMovesToHead() throws {
-        let box = SortBox()
-        let coordinator = self.makeCoordinator(box)
-        let tableView = try #require(coordinator.tableView)
-
-        self.clickAndSync("trackNumber", coordinator)
-        self.clickAndSync("albumName", coordinator)
-        self.clickAndSync("trackNumber", coordinator)
-
-        #expect(self.keys(box.order) == ["trackNumber", "albumName"])
-        #expect(self.keys(tableView).count == 2, "no key appears twice")
+        #expect(self.keys(tableView).count <= TrackTable.maxSortKeys)
     }
 
     @Test("a direction change replaces the key rather than adding one")
@@ -190,7 +190,9 @@ struct TrackTableSortChainTests {
         self.clickAndSync("albumName", coordinator, ascending: true)
         self.clickAndSync("albumName", coordinator, ascending: false)
 
-        #expect(self.keys(box.order) == ["albumName"])
+        let keys = self.keys(box.order)
+        #expect(keys.first == "albumName")
+        #expect(keys.filter { $0 == "albumName" }.count == 1, "one key, not one per direction")
         #expect(tableView.sortDescriptors.first?.ascending == false)
     }
 

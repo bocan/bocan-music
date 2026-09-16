@@ -187,9 +187,13 @@ public final class TrackTableCoordinator: NSObject, NSTableViewDelegate {
 
     func handleSortDescriptorsDidChange(in tableView: NSTableView) {
         guard self.parent.sortable, !self.isSyncingSort else { return }
-        // AppKit has already prepended the clicked column and kept the rest
-        // behind it; all this adds is the cap and the dedupe (ADR-093).
-        let newOrder = TrackTable.constrainedChain(from: tableView.sortDescriptors)
+        // AppKit has already prepended the clicked column, so the head is what
+        // the user just clicked and the columns clicked before it are the ones
+        // remembered here, not whatever tie-breakers the last chain carried.
+        // A click means "sort by this column". The chain behind it is derived,
+        // not accumulated, so nothing has to be remembered between clicks.
+        guard let clicked = tableView.sortDescriptors.first, clicked.key != nil else { return }
+        let newOrder = TrackSortChain.compose(clicked: clicked)
             .compactMap { TrackTable.comparator(from: $0) }
         guard !newOrder.isEmpty else { return }
         self.parent.sortOrder = newOrder
