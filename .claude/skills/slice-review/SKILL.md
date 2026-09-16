@@ -17,7 +17,7 @@ prediction: every answer comes from the finished diff, with evidence.
 1. Base branch is `$0` when given, otherwise `main`. Review
    `git diff <base>...HEAD` plus anything staged or unstaged. Read each changed
    file in full, not only the hunks.
-2. Answer the seven questions in the output block below, in writing. Each
+2. Answer the eight questions in the output block below, in writing. Each
    answer cites its evidence (a `file:line`, or a command and its output) or
    says "not relevant to this change" and why. If an answer needs a
    measurement, take it.
@@ -53,6 +53,10 @@ Exactly this block, every `Answer:` filled:
 6. What did you stub, simplify, or leave incomplete?
    Answer:
 7. What is the strongest argument that this is the wrong approach?
+   Answer:
+8. Gotcha drift: which entries in docs/GOTCHAS.md does this change touch, does
+   the new code follow the canonical pattern each one names, and did you see an
+   implementation nearby that does not?
    Answer:
 
 **What a user, or another module, would notice is different** (behaviour, not files):

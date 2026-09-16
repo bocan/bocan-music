@@ -39,29 +39,31 @@ echo "  - Chromaprint: ${CHROMAPRINT_VERSION}"
 echo "  - TagLib: ${TAGLIB_VERSION}"
 
 # Extract an SPM pin version from the workspace Package.resolved by identity.
-# Hard-fails when the pin is absent so a rename or removal upstream cannot
-# silently print a stale number.
+# Takes one or more identities and uses the first that resolves, so a package
+# renamed upstream can be found under either name while the toolchains
+# disagree about which one to write. Still hard-fails when none of them is
+# present, so a rename or removal cannot silently print a stale number.
 extract_spm_version() {
-    local identity="$1"
-    python3 - "$RESOLVED_PATH" "$identity" << 'PY'
+    python3 - "$RESOLVED_PATH" "$@" << 'PY'
 import json
 import sys
 
-path, identity = sys.argv[1], sys.argv[2]
-pins = json.load(open(path))["pins"]
-for pin in pins:
-    if pin["identity"] == identity:
-        print(pin["state"]["version"])
-        break
-else:
-    sys.exit(f"error: no pin with identity '{identity}' in {path}")
+path, identities = sys.argv[1], sys.argv[2:]
+pins = {pin["identity"]: pin["state"]["version"] for pin in json.load(open(path))["pins"]}
+for identity in identities:
+    if identity in pins:
+        print(pins[identity])
+        sys.exit(0)
+sys.exit(f"error: no pin in {path} with any of these identities: {', '.join(identities)}")
 PY
 }
 
 GRDB_VERSION=$(extract_spm_version "grdb.swift")
 SNAPSHOT_VERSION=$(extract_spm_version "swift-snapshot-testing")
 CUSTOM_DUMP_VERSION=$(extract_spm_version "swift-custom-dump")
-XCTEST_VERSION=$(extract_spm_version "xctest-dynamic-overlay")
+# Point-Free renamed xctest-dynamic-overlay to swift-issue-reporting. Xcode 27
+# follows the rename when it resolves; 26.6 still writes the old identity.
+ISSUE_REPORTING_VERSION=$(extract_spm_version "swift-issue-reporting" "xctest-dynamic-overlay")
 SPARKLE_VERSION=$(extract_spm_version "sparkle")
 SWIFTSONIC_VERSION=$(extract_spm_version "swiftsonic")
 FEEDKIT_VERSION=$(extract_spm_version "feedkit")
@@ -72,7 +74,7 @@ ASN1_VERSION=$(extract_spm_version "swift-asn1")
 echo "  - GRDB: ${GRDB_VERSION}"
 echo "  - swift-snapshot-testing: ${SNAPSHOT_VERSION}"
 echo "  - swift-custom-dump: ${CUSTOM_DUMP_VERSION}"
-echo "  - xctest-dynamic-overlay: ${XCTEST_VERSION}"
+echo "  - swift-issue-reporting: ${ISSUE_REPORTING_VERSION}"
 echo "  - Sparkle: ${SPARKLE_VERSION}"
 echo "  - SwiftSonic: ${SWIFTSONIC_VERSION}"
 echo "  - FeedKit: ${FEEDKIT_VERSION}"
@@ -226,9 +228,11 @@ SOFTWARE.
 
 ---
 
-## xctest-dynamic-overlay ${XCTEST_VERSION}
+## swift-issue-reporting ${ISSUE_REPORTING_VERSION}
 
-<https://github.com/pointfreeco/xctest-dynamic-overlay>
+(formerly xctest-dynamic-overlay)
+
+<https://github.com/pointfreeco/swift-issue-reporting>
 
 MIT License
 
