@@ -100,6 +100,7 @@ Cross-cutting engineering rules live in [_standards.md](_standards.md) and bind 
 | [ADR-090-duplicate-review.md](ADR-090-duplicate-review.md) | Duplicate Review done properly: hash and tag grouping, keeper ranking, trash under scope, in-place updates, search |
 | [ADR-091-multichannel-playback.md](ADR-091-multichannel-playback.md) | Multichannel and Dolby files: stereo fold with downmix, loudness from the fold, raw E-AC-3 in the scanner, channel count in the UI; no object rendering, no passthrough |
 | [ADR-092-now-playing-source-badges.md](ADR-092-now-playing-source-badges.md) | Now-playing source badges: codec, bitrate, sample rate, bit depth and channels as coloured boxes under the title in the play bar, with hover text; codec from the open decoder |
+| [ADR-093-table-sort-chains.md](ADR-093-table-sort-chains.md) | Songs-table sort chains: stop truncating AppKit's descriptor list, cap at four and dedupe, one global tie-breaker chain with four per-column overrides, and the chain persisted across launches |
 
 ## Conventions used in every ADR
 
