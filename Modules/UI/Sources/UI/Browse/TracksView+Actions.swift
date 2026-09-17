@@ -215,9 +215,7 @@ extension TracksView {
             UserDefaults.standard.set(true, forKey: Self.suppressRemoveKey)
         }
 
-        for id in ids {
-            Task { await library.removeTrack(id: id) }
-        }
+        Task { await library.removeTracks(ids: ids) }
     }
 
     /// Presents the trash-and-remove confirmation for one or more tracks. Always

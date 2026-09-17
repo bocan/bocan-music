@@ -87,10 +87,16 @@ public struct TracksView: View {
 
     public var body: some View {
         Group {
-            if self.vm.isLoading {
+            // Rows first, loading second: a refresh with rows already on screen
+            // keeps the table mounted. Swapping in the spinner threw the
+            // NSTableView away, and the replacement came back at the top of the
+            // list with nothing selected (#543).
+            if !self.vm.rows.isEmpty {
+                self.trackTable
+            } else if self.vm.isLoading {
                 LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if self.vm.rows.isEmpty {
+            } else {
                 let trimmedQuery = self.library.searchQuery.trimmingCharacters(in: .whitespaces)
                 let activeQuery = trimmedQuery.isEmpty ? self.vm.filterText : trimmedQuery
                 if !activeQuery.isEmpty {
@@ -109,8 +115,6 @@ public struct TracksView: View {
                         Task { await self.library.addFolderByPicker() }
                     }
                 }
-            } else {
-                self.trackTable
             }
         }
         .navigationTitle(self.title ?? L10n.string("Songs"))

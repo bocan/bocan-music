@@ -57,6 +57,7 @@ public extension LibraryViewModel {
     ) async -> [(Track, any Error)] {
         let trackRepo = TrackRepository(database: self.database)
         var failures: [(Track, any Error)] = []
+        var deleted: Set<Int64> = []
 
         for track in tracks {
             guard let id = track.id else { continue }
@@ -76,15 +77,18 @@ public extension LibraryViewModel {
                 }
                 row.disabled = true
                 try await trackRepo.update(row)
+                deleted.insert(id)
                 self.log.debug("library.deleteFromDisk", ["id": id])
             } catch {
                 self.log.error("library.deleteFromDisk.failed", ["id": id, "error": String(reflecting: error)])
             }
         }
 
-        // Single reload for the whole batch, preserving any active search.
+        // The deleted rows leave the table in place, once for the whole batch.
+        // A reload here refetched the library and put the table back at the
+        // top, which loses the listener's place in a long list (#543).
         await self.pruneOrphanAlbumsAndArtists()
-        await self.loadCurrentDestination()
+        self.tracks.removeRows(ids: deleted)
         return failures
     }
 
@@ -117,7 +121,7 @@ public extension LibraryViewModel {
             track.disabled = true
             try await trackRepo.update(track)
             await self.pruneOrphanAlbumsAndArtists()
-            await self.loadCurrentDestination()
+            self.tracks.removeRows(ids: [id])
             self.log.debug("library.deleteFromDisk", ["id": id])
             return .trashed
         } catch {
@@ -146,7 +150,7 @@ public extension LibraryViewModel {
             track.disabled = true
             try await trackRepo.update(track)
             await self.pruneOrphanAlbumsAndArtists()
-            await self.loadCurrentDestination()
+            self.tracks.removeRows(ids: [id])
             self.log.debug("library.permanentlyDeleteFromDisk", ["id": id])
         } catch {
             self.log.error(

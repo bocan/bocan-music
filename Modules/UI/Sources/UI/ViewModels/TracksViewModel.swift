@@ -240,19 +240,18 @@ public final class TracksViewModel {
         }
     }
 
-    /// Returns `rows` with every row whose track id appears in `newRowsByID`
-    /// swapped for the new value, or `nil` when no row matched so the caller
-    /// can leave the stored array (and its version) untouched.
-    private static func replacing(_ rows: [TrackRow], with newRowsByID: [Int64: TrackRow]) -> [TrackRow]? {
-        var rows = rows
-        var changed = false
-        for i in rows.indices {
-            if let id = rows[i].track.id, let updated = newRowsByID[id] {
-                rows[i] = updated
-                changed = true
-            }
+    /// Drops the given track ids from the list without going back to the
+    /// database. A delete used to reload the whole destination, which replaced
+    /// the array and sent the table back to the top; removing in place writes
+    /// `rows` once, so the table animates the rows away and keeps its place.
+    public func removeRows(ids: Set<Int64>) {
+        guard !ids.isEmpty else { return }
+        if let allRows = Self.removing(ids, from: self.allRows) {
+            self.allRows = allRows
         }
-        return changed ? rows : nil
+        guard let rows = Self.removing(ids, from: self.rows) else { return }
+        self.selection = self.selection.filter { $0.map { !ids.contains($0) } ?? true }
+        self.rows = rows
     }
 
     /// Sets a pre-fetched track list directly (smart folders / search results).

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Deleting a song, or removing one from the library, no longer rebuilds the whole songs list. The list keeps your place, so you can work down a long list and delete as you go instead of being thrown back to the top after every one. Removing several songs at once now happens in a single pass rather than one redraw per song, and the songs you did not touch stay selected.
+
 Sorting the songs list now sorts all the way down instead of stopping at the column you clicked. Click Artist and each artist's albums stay together with their tracks in order, rather than the songs falling wherever the import happened to leave them. Every column works this way: sort by play count and the songs sharing a count are grouped by artist and album, so a half-played album reads as an album. Your choice is remembered the next time you open Bòcan.
 
 ## [2.16.0](https://github.com/bocan/bocan-music/compare/v2.15.0...v2.16.0) (2026-09-16)
