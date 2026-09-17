@@ -9,7 +9,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ![macOS 15+](https://img.shields.io/badge/macOS-15%2B-blue)
-![Xcode 26](https://img.shields.io/badge/Xcode-26-1575F9)
+![Xcode 27](https://img.shields.io/badge/Xcode-27-1575F9)
 [![Swift 6](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)](https://swift.org)
 
 
