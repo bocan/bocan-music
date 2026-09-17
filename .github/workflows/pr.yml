@@ -85,15 +85,15 @@ jobs:
     name: Build & Test
     needs: changes
     if: needs.changes.outputs.code == 'true'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 90
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Select Xcode 26
-        run: sudo xcode-select -s /Applications/Xcode_26.6.app
+      - name: Select Xcode 27
+        run: sudo xcode-select -s /Applications/Xcode_27.0.app
 
       - name: Cache SPM packages
         uses: actions/cache@v6

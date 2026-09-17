@@ -31,7 +31,7 @@ func host(_ view: some View, size: CGSize) -> NSView {
 /// differences), so they are much closer to being CI-safe — but the reference
 /// images were recorded on a developer Mac.
 ///
-/// To turn the CI gate on (issue #320): on the pinned `macos-26` CI runner, do
+/// To turn the CI gate on (issue #320): on the pinned `xcode-27` CI runner, do
 /// one record run (`SNAPSHOT_TESTING_RECORD=all`) to regenerate the reference
 /// PNGs against the runner's renderer, commit them, then delete the
 /// `.disabled(if: …CI…)` below. Until then they stay a local-only guardrail.
