@@ -30,7 +30,7 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
-            from: "1.19.4"
+            from: "1.19.5"
         ),
     ],
     targets: [
