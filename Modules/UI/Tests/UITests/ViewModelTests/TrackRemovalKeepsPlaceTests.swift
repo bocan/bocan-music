@@ -149,6 +149,37 @@ struct TrackRemovalKeepsPlaceTests {
         #expect(stillThere.disabled == true)
     }
 
+    // MARK: - Navigation
+
+    @Test("moving to another destination empties the list first")
+    func navigationClearsTheRows() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        _ = try await repo.insert(self.makeTrack(title: "A"))
+        let library = LibraryViewModel(database: db, engine: MockTransport())
+        await library.selectDestination(.songs)
+        try #require(!library.tracks.rows.isEmpty)
+
+        await library.selectDestination(.albums)
+
+        // Otherwise the mounted table shows the songs of the place just left
+        // until the new destination lands.
+        #expect(library.tracks.rows.isEmpty)
+    }
+
+    @Test("a refresh of the same destination keeps the rows")
+    func refreshKeepsTheRows() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        _ = try await repo.insert(self.makeTrack(title: "A"))
+        let library = LibraryViewModel(database: db, engine: MockTransport())
+        await library.selectDestination(.songs)
+
+        await library.selectDestination(.songs)
+
+        #expect(self.titles(library.tracks) == ["A"])
+    }
+
     // MARK: - The view
 
     @Test("the table branch comes before the loading branch")
