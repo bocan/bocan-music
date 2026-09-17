@@ -215,7 +215,7 @@ struct TrackTableSortChainTests {
     func writeBackDoesNotReenter() throws {
         let box = SortBox()
         let coordinator = self.makeCoordinator(box)
-        let tableView = try #require(coordinator.tableView)
+        _ = try #require(coordinator.tableView)
 
         self.clickAndSync("albumName", coordinator)
         self.clickAndSync("artistName", coordinator)

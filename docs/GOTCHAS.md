@@ -327,6 +327,16 @@ Two follow-on hazards. A stale explicit-modules cache produces a precompile fail
 
 **Canonical file:** `Scripts/check-package-updates.py`
 
+### The UI suite aborts on macOS 27 inside a snapshot comparison
+
+**Problem:** `make test-ui` stops with signal 6 in a snapshot test. The log shows `-[NSConcreteValue CGRectValue]: unrecognized selector`, below `CIAreaAverage` and `perceptuallyCompare`. The abort kills the process, so no test after it runs.
+
+**Rule:** run `make test-ui SWIFT_TEST_FLAGS="--skip UISnapshotTests"` on macOS 27. Do not switch the snapshot gate on until the library is fixed.
+
+**Why:** swift-snapshot-testing gives `CIAreaAverage` its extent as a bare `CGRect`, which Swift wraps in an `NSValue`. macOS 27 Core Image reads that value with `CGRectValue`, a selector a macOS `NSValue` does not have. The documented type for the key is `CIVector`. Version 1.19.5 does not fix it, and there is no upstream report yet. CI is not affected, because the snapshot suite is disabled there.
+
+**Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotTests.swift`
+
 ### Fresh SwiftPM clones hang because of the git fsmonitor
 
 **Problem:** a build with a new derived-data path, or a Periphery scan, sits at zero CPU forever with every package already cloned.

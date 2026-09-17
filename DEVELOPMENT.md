@@ -192,7 +192,7 @@ any of these are absent.
 
 | Dimension | Decision | Rationale |
 |-----------|----------|-----------|
-| **Minimum macOS** | macOS 15 | `project.yml` sets `deploymentTarget: macOS 15.0`. Development requires Xcode 26 (and therefore a Mac running macOS 26), but the built app runs on macOS 15+. |
+| **Minimum macOS** | macOS 15 | `project.yml` sets `deploymentTarget: macOS 15.0`. Development requires Xcode 27 (and therefore a Mac running macOS 27), but the built app runs on macOS 15+. |
 | **Architecture** | arm64 only | The bundled FFmpeg dylibs and `fpcalc` come from arm64 Homebrew (`/opt/homebrew`), whose prefix is hardcoded in the `Package.swift` build flags. A universal binary would double CI build time and require rebuilding every bundled dylib as universal, for a shrinking x86_64 user base. |
 | **Intel (x86_64)** | Not supported | If Intel support is ever wanted, the arm64-only restriction in `Scripts/build-release.sh` and `.github/workflows/release.yml` must be revisited, all bundled dylibs rebuilt with `lipo`, and the hardcoded `/opt/homebrew` paths made prefix-aware. |
 
