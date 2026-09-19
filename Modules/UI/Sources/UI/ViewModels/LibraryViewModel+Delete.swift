@@ -46,7 +46,8 @@ public enum DeleteFromDiskOutcome: Sendable {
 /// Disk-deletion actions for ``LibraryViewModel``.
 public extension LibraryViewModel {
     /// Moves multiple tracks' backing files to Trash and soft-deletes their
-    /// library rows in one pass, calling `tracks.load()` exactly once at the end.
+    /// library rows in one pass, taking the rows out of the table exactly once
+    /// at the end.
     ///
     /// Returns an array of `(track, error)` pairs for any files that could not
     /// be trashed, so the caller can offer a secondary "Delete Permanently"

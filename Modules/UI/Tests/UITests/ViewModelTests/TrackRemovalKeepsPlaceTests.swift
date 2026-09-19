@@ -200,6 +200,24 @@ struct TrackRemovalKeepsPlaceTests {
         // throws the NSTableView away, and the new one starts at the top.
         #expect(table.lowerBound < loading.lowerBound)
     }
+
+    @Test("both remove-from-library paths send the selection as one batch")
+    func removeFromLibraryNeverLoopsPerTrack() throws {
+        let source = try String(
+            contentsOf: URL(filePath: #filePath)
+                .deletingLastPathComponent() // ViewModelTests/
+                .deletingLastPathComponent() // UITests/
+                .deletingLastPathComponent() // Tests/
+                .deletingLastPathComponent() // Modules/UI/
+                .appending(path: "Sources/UI/Browse/TracksView+Actions.swift"),
+            encoding: .utf8
+        )
+
+        // The "Don't ask again" path and the confirmed path: a task per track
+        // is a write to rows, and a table walk, per track.
+        #expect(!source.contains("library.removeTrack(id:"))
+        #expect(source.components(separatedBy: "library.removeTracks(ids: ids)").count == 3)
+    }
 }
 
 // MARK: - Test doubles

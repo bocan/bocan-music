@@ -186,9 +186,7 @@ extension TracksView {
 
         let suppressed = UserDefaults.standard.bool(forKey: Self.suppressRemoveKey)
         if suppressed {
-            for id in ids {
-                Task { await library.removeTrack(id: id) }
-            }
+            Task { await library.removeTracks(ids: ids) }
             return
         }
 
