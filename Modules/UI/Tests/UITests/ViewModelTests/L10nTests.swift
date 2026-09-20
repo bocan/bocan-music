@@ -201,6 +201,13 @@ struct L10nTests {
         #expect(remove.one == "Remove %lld track from library?")
     }
 
+    @Test("The removal-failure alert pluralizes")
+    func removalFailurePlural() throws {
+        let variation = try #require(self.plural("Could not remove %lld tracks from the library.", in: self.catalog()))
+        #expect(variation.one == "Could not remove %lld track from the library.")
+        #expect(variation.other == "Could not remove %lld tracks from the library.")
+    }
+
     @Test(
         "Last unconverted surfaces route copy through the localization helper (#314)",
         arguments: [

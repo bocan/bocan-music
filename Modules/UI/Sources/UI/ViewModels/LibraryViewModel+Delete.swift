@@ -46,7 +46,8 @@ public enum DeleteFromDiskOutcome: Sendable {
 /// Disk-deletion actions for ``LibraryViewModel``.
 public extension LibraryViewModel {
     /// Moves multiple tracks' backing files to Trash and soft-deletes their
-    /// library rows in one pass, calling `tracks.load()` exactly once at the end.
+    /// library rows in one pass, taking the rows out of the table exactly once
+    /// at the end.
     ///
     /// Returns an array of `(track, error)` pairs for any files that could not
     /// be trashed, so the caller can offer a secondary "Delete Permanently"
@@ -57,6 +58,8 @@ public extension LibraryViewModel {
     ) async -> [(Track, any Error)] {
         let trackRepo = TrackRepository(database: self.database)
         var failures: [(Track, any Error)] = []
+        var deleted: Set<Int64> = []
+        var notRemoved = 0
 
         for track in tracks {
             guard let id = track.id else { continue }
@@ -76,15 +79,20 @@ public extension LibraryViewModel {
                 }
                 row.disabled = true
                 try await trackRepo.update(row)
+                deleted.insert(id)
                 self.log.debug("library.deleteFromDisk", ["id": id])
             } catch {
                 self.log.error("library.deleteFromDisk.failed", ["id": id, "error": String(reflecting: error)])
+                notRemoved += 1
             }
         }
 
-        // Single reload for the whole batch, preserving any active search.
+        // The deleted rows leave the table in place, once for the whole batch.
+        // A reload here refetched the library and put the table back at the
+        // top, which loses the listener's place in a long list (#543).
         await self.pruneOrphanAlbumsAndArtists()
-        await self.loadCurrentDestination()
+        self.tracks.removeRows(ids: deleted)
+        await self.finishTrackRemoval(failed: notRemoved)
         return failures
     }
 
@@ -117,7 +125,7 @@ public extension LibraryViewModel {
             track.disabled = true
             try await trackRepo.update(track)
             await self.pruneOrphanAlbumsAndArtists()
-            await self.loadCurrentDestination()
+            self.tracks.removeRows(ids: [id])
             self.log.debug("library.deleteFromDisk", ["id": id])
             return .trashed
         } catch {
@@ -146,7 +154,7 @@ public extension LibraryViewModel {
             track.disabled = true
             try await trackRepo.update(track)
             await self.pruneOrphanAlbumsAndArtists()
-            await self.loadCurrentDestination()
+            self.tracks.removeRows(ids: [id])
             self.log.debug("library.permanentlyDeleteFromDisk", ["id": id])
         } catch {
             self.log.error(
@@ -195,6 +203,25 @@ public extension LibraryViewModel {
         await self.pruneOrphanAlbumsAndArtists()
         await self.artists.load()
         await self.loadCurrentDestination()
+    }
+
+    // MARK: - After a track removal
+
+    /// The end of a batch track removal. A track whose database write failed is
+    /// still in the list, and the listener asked for it to go, so the count
+    /// reaches them: the log alone is not an answer. Trash failures are not
+    /// counted here, because the caller offers Delete Permanently for each.
+    ///
+    /// The songs table was already edited in place, so it is not reloaded. The
+    /// album and artist listings have no such edit: the duplicates sheet removes
+    /// tracks over them, and their counts and rows only change with a reload.
+    func finishTrackRemoval(failed: Int) async {
+        if failed > 0 {
+            self.playbackErrorMessage = L10n.string("Could not remove \(failed) tracks from the library.")
+        }
+        if [.albums, .artists].contains(self.selectedDestination) {
+            await self.loadCurrentDestination()
+        }
     }
 
     // MARK: - Private helpers
