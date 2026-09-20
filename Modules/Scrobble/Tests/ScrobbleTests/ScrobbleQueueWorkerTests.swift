@@ -188,6 +188,88 @@ struct ScrobbleQueueWorkerTests {
 
     // MARK: helpers
 
+    // MARK: - Wait timers (#548)
+
+    /// A worker with no queue behind it: these tests drive `waitForKick`
+    /// directly, so nothing needs draining.
+    private func makeBareWorker() async throws -> ScrobbleQueueWorker {
+        try await ScrobbleQueueWorker(
+            provider: MockProvider(),
+            repository: ScrobbleQueueRepository(database: self.makeDB()),
+            policy: RetryPolicy(baseDelay: 0.01, maxDelay: 0.05, maxAttempts: 3, jitter: 0),
+            reachability: StaticReachability(reachable: true)
+        )
+    }
+
+    /// Records when a wait finished, so a test can tell "still suspended" from
+    /// "returned early".
+    private actor Finished {
+        private(set) var value = false
+
+        func mark() {
+            self.value = true
+        }
+    }
+
+    @Test("a kick's cancelled timer does not cut short the next wait (#548)")
+    func staleTimeoutDoesNotEndALaterWait() async throws {
+        let worker = try await self.makeBareWorker()
+
+        // First wait: a short timer, ended early by a kick. Before the fix its
+        // timer stayed alive and fired about 200 ms later.
+        let first = Finished()
+        let firstWait = Task {
+            await worker.waitForKick(timeout: .milliseconds(200))
+            await first.mark()
+        }
+        try await Task.sleep(for: .milliseconds(50))
+        await worker.kick()
+        _ = await firstWait.value
+        #expect(await first.value, "the kick ends the first wait")
+
+        // Second wait: a long timer. The first wait's stale timer, if it
+        // survived, lands inside this one and ends it early.
+        let second = Finished()
+        let secondWait = Task {
+            await worker.waitForKick(timeout: .seconds(30))
+            await second.mark()
+        }
+        defer { secondWait.cancel() }
+        try await Task.sleep(for: .milliseconds(500))
+        #expect(await !(second.value), "a backoff wait must not be cut short by an earlier timer")
+
+        // It must still be endable on purpose.
+        await worker.kick()
+        _ = await secondWait.value
+        #expect(await second.value)
+    }
+
+    @Test("a wait still ends on its own timeout")
+    func ownTimeoutStillFires() async throws {
+        let worker = try await self.makeBareWorker()
+        let finished = Finished()
+        let wait = Task {
+            await worker.waitForKick(timeout: .milliseconds(100))
+            await finished.mark()
+        }
+        _ = await wait.value
+        #expect(await finished.value, "the timer this wait started must still end it")
+    }
+
+    @Test("stop() releases a wait and leaves no timer behind")
+    func stopReleasesTheWait() async throws {
+        let worker = try await self.makeBareWorker()
+        let finished = Finished()
+        let wait = Task {
+            await worker.waitForKick(timeout: .seconds(30))
+            await finished.mark()
+        }
+        try await Task.sleep(for: .milliseconds(100))
+        await worker.stop()
+        _ = await wait.value
+        #expect(await finished.value)
+    }
+
     private func waitFor(timeout: TimeInterval, predicate: () async throws -> Bool) async throws {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
