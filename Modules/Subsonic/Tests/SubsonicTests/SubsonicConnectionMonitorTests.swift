@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Persistence
 import SwiftSonic
@@ -193,8 +192,8 @@ struct SubsonicConnectionMonitorTests {
         await monitor.stopAll()
     }
 
-    @Test("a workspace wake notification restarts the loop via wakeAll (#274)")
-    func wakeNotificationTriggersReping() async throws {
+    @Test("wakeAll restarts the loop, as the app's wake observer calls it (#274)")
+    func wakeAllTriggersReping() async throws {
         let (service, id, transport) = try await makeService()
         transport.setPerpetual(json: okEnvelope)
         let monitor = SubsonicConnectionMonitor(service: service)
@@ -202,27 +201,23 @@ struct SubsonicConnectionMonitorTests {
         await monitor.startMonitoring(serverID: id)
         let updates = await monitor.updates
 
-        // Post the wake notification repeatedly rather than guessing a single
-        // fixed delay for the loop to reach .online and the asynchronously
-        // installed wake observer to register (both of which race under load).
-        // Each post that lands triggers wakeAll(), which cancels and restarts
-        // the loop and re-emits .connecting. A 200ms cadence is slower than a
-        // stub ping, so .online settles between posts and the consumer reliably
-        // sees .online followed by a fresh .connecting (#322).
+        // The app target owns the NSWorkspace wake subscription and forwards it
+        // to wakeAll(); this module does not import AppKit. Call wakeAll()
+        // repeatedly rather than guessing a single fixed delay for the loop to
+        // reach .online (which races under load). Each call cancels and
+        // restarts the loop and re-emits .connecting. A 200ms cadence is slower
+        // than a stub ping, so .online settles between calls and the consumer
+        // reliably sees .online followed by a fresh .connecting (#322).
         let poster = Task {
             while !Task.isCancelled {
-                NSWorkspace.shared.notificationCenter.post(
-                    name: NSWorkspace.didWakeNotification,
-                    object: nil
-                )
+                await monitor.wakeAll()
                 try? await Task.sleep(nanoseconds: 200_000_000)
             }
         }
 
         // Watch the stream for: .online (loop ran) then a fresh .connecting,
         // which only happens because wakeAll() cancelled and restarted the
-        // loop. If the observer were still on NotificationCenter.default (or
-        // never wired) the post would be ignored and we would time out.
+        // loop.
         let restarted = await withTaskGroup(of: Bool.self) { group in
             group.addTask {
                 var sawOnline = false
@@ -248,7 +243,7 @@ struct SubsonicConnectionMonitorTests {
         }
         poster.cancel()
 
-        #expect(restarted, "wakeAll() should restart the monitor loop after a wake notification")
+        #expect(restarted, "wakeAll() should restart the monitor loop")
         await monitor.stopAll()
     }
 

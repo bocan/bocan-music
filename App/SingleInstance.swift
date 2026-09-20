@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Observability
+import Persistence
 
 // MARK: - SingleInstance
 
@@ -137,8 +138,6 @@ final class SingleInstance {
     }
 
     private static func lockFileURL() -> URL {
-        guard let base = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { fatalError("Application Support not found") }
-        return base.appendingPathComponent("Bocan/bocan.lock")
+        DatabaseLocation.applicationSupportDirectory.appendingPathComponent("bocan.lock")
     }
 }

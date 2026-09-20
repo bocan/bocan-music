@@ -6,7 +6,10 @@ import Observability
 /// Persists user-created EQ presets in UserDefaults.
 ///
 /// Built-in presets are never mutated; this store owns only user presets.
-/// Thread-safe: all mutations are serialised on a dedicated queue.
+/// Thread-safe: all mutations are serialised on a dedicated queue. A class
+/// with a queue rather than an actor because its API is synchronous by
+/// design: the engine actor and the main-actor `DSPViewModel` both read it
+/// without an `await`.
 public final class PresetStore: @unchecked Sendable {
     // MARK: - Dependencies
 

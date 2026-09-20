@@ -1,5 +1,6 @@
 import AppKit
 import AudioEngine
+import Observability
 import SwiftUI
 
 // MARK: - Cascade
@@ -56,7 +57,9 @@ public final class Cascade: Visualizer {
 
     // MARK: - Init
 
-    public init(palette: VisualizerPalette, reduceMotion: Bool, reduceTransparency: Bool) {
+    /// Fails (and logs) when the history bitmap cannot be allocated. The caller
+    /// falls back to another Canvas renderer, as it does for a Metal-only mode.
+    public init?(palette: VisualizerPalette, reduceMotion: Bool, reduceTransparency: Bool) {
         self.palette = palette
         self.reduceMotion = reduceMotion
         self.reduceTransparency = reduceTransparency
@@ -69,7 +72,8 @@ public final class Cascade: Visualizer {
             CGImageAlphaInfo.premultipliedFirst.rawValue |
                 CGBitmapInfo.byteOrder32Little.rawValue
         )
-        // Parameters are compile-time constants; failure here is a programmer error.
+        // Parameters are compile-time constants, so only memory pressure can
+        // fail this. A visualizer is never worth a crash.
         guard let ctx = CGContext(
             data: nil,
             width: Self.columnCount,
@@ -79,7 +83,11 @@ public final class Cascade: Visualizer {
             space: colorSpace,
             bitmapInfo: bitmapInfo.rawValue
         ) else {
-            fatalError("Cascade: CGBitmapContext allocation failed")
+            AppLogger.make(.ui).error("cascade.bitmap.alloc.failed", [
+                "width": Self.columnCount,
+                "height": Self.bandCount,
+            ])
+            return nil
         }
         self.bitmapCtx = ctx
         // Fill with opaque black so unwritten columns render as background.

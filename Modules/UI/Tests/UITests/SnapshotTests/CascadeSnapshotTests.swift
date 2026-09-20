@@ -147,11 +147,12 @@ private struct StaticCascadeCanvas: View {
 
     var body: some View {
         Canvas { context, size in
-            let cascade = Cascade(
+            // A nil Cascade leaves the canvas blank, which fails the snapshot.
+            guard let cascade = Cascade(
                 palette: self.palette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency
-            )
+            ) else { return }
             // Feed 64 scripted frames before rendering.
             for frame in 0 ..< 64 {
                 let t = Double(frame) * Cascade.columnPeriod

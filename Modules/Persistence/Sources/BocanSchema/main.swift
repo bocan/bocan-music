@@ -18,7 +18,7 @@ try? FileManager.default.removeItem(at: outputURL)
 
 do {
     _ = try await Database(location: .custom(outputURL))
-    print("migrated schema written to \(outputURL.path)")
+    FileHandle.standardOutput.write(Data("migrated schema written to \(outputURL.path)\n".utf8))
 } catch {
     FileHandle.standardError.write(Data("bocan-schema: \(error)\n".utf8))
     exit(1)
