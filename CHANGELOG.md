@@ -13,6 +13,8 @@ Sorting the songs list now sorts all the way down instead of stopping at the col
 
 The lyrics items in the Track menu now keep up with what is happening. Clear Lyrics becomes available as soon as lyrics arrive for the song that is playing, and greys out again once you clear them, instead of waiting for the next song. Fetch Lyrics greys out while a fetch is under way, so it cannot be started twice.
 
+Downloading a podcast episode now shows how far it has got. The small download mark beside an episode fills as the file arrives, and hovering over it reads out the percentage, so a long episode on a slow connection no longer just sits there saying it is downloading.
+
 When a scrobbling service is refusing submissions, Bòcan now waits the full backoff before trying again. A timer left over from an earlier wait could end the next one early, so it sometimes retried sooner than intended against a service that had asked it to slow down.
 
 Up Next now marks missing songs reliably. When a song in a restored queue can no longer be found on disk, its row is greyed out. That marking only reached whichever copy of the list happened to be listening first, so the full screen view could disagree with the main window, and after you left Up Next and came back the marking stopped arriving at all until the next restart.
