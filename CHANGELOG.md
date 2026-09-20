@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.17.0](https://github.com/bocan/bocan-music/compare/v2.16.0...v2.17.0) (2026-09-20)
+
 Deleting a song, or removing one from the library, no longer rebuilds the whole songs list. The list keeps your place, so you can work down a long list and delete as you go instead of being thrown back to the top after every one. Removing several songs at once now happens in a single pass rather than one redraw per song, and the songs you did not touch stay selected. If a song cannot be removed, Bòcan now tells you instead of leaving it in the list without a word. An artist's page also keeps up: remove the last song of an album there and the album leaves the page straight away.
 
 Sorting the songs list now sorts all the way down instead of stopping at the column you clicked. Click Artist and each artist's albums stay together with their tracks in order, rather than the songs falling wherever the import happened to leave them. Every column works this way: sort by play count and the songs sharing a count are grouped by artist and album, so a half-played album reads as an album. Your choice is remembered the next time you open Bòcan.
@@ -24,6 +26,19 @@ Phone Sync no longer treats finishing a song as a library change. Playing a song
 Songs from a Subsonic server now download with far less work for your Mac. A large lossless song starts a little sooner, and the download no longer competes with the song that is already playing.
 
 The keyboard shortcut list in Help now includes Immersive Mode. The shortcut worked all along, but the list did not mention it, so the only way to find it was the View menu.
+
+### For developers
+
+**Added**
+- ui: sort the songs table by more than one column ([#541](https://github.com/bocan/bocan-music/pull/541))
+
+**Fixed**
+- ui: keep the songs list in place when a track is deleted ([#543](https://github.com/bocan/bocan-music/pull/543))
+- the seven defects found while auditing the architecture map ([#552](https://github.com/bocan/bocan-music/pull/552))
+- e2e: the sidebar-collapse leak, and the drift the E2E run exposed ([#554](https://github.com/bocan/bocan-music/pull/554))
+
+**Changed**
+- standards: bring the code and the engineering charter into agreement ([#544](https://github.com/bocan/bocan-music/pull/544))
 
 ## [2.16.0](https://github.com/bocan/bocan-music/compare/v2.15.0...v2.16.0) (2026-09-16)
 
