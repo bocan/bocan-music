@@ -56,7 +56,11 @@ public actor SyncServer {
         )
         self.pairing = pairing
 
-        self.libraryObserver = LibraryChangeObserver(syncMeta: meta, debounce: config.changeDebounce)
+        self.libraryObserver = LibraryChangeObserver(
+            syncMeta: meta,
+            debounce: config.changeDebounce,
+            profile: { await ManifestRoutes.loadDocument(profileRepository).profile }
+        )
         let transcodeCoordinator = TranscodeCoordinator(
             database: database,
             store: TranscodeStore(root: transcodeRoot),

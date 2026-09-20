@@ -178,6 +178,16 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 ## Persistence and keychain
 
+### A whole-table observation region fans every unrelated write out to its subscribers
+
+**Problem:** work that looks unrelated runs after every finished track. Phone Sync bumped its manifest generation, and its transcode coordinator started a whole-library pass, because the end-of-play write touches `tracks` and both observed `Table("tracks")`.
+
+**Rule:** observe the columns the subscriber actually reads, not the table: `Table("tracks").select(columns)` is a `DatabaseRegionConvertible` with column granularity, and GRDB then ignores an `UPDATE` that touches nothing in the set. Two traps come with it. A subscriber must not observe a table it writes itself, or each pass re-arms the next one. And a region is only as narrow as what the fetched value depends on: library membership through a smart playlist can key on `play_count`, so a narrowed `tracks` region is correct for a sync profile of "everything" and wrong for one that selects playlists. Where both are possible, pick the region from the current setting and re-subscribe when it changes.
+
+**Why:** `Database.observe` sets `requiresWriteAccess = true` to avoid a WAL snapshot deadlock, so every re-fetch runs on the single writer connection and delivers on the main queue. A wide region therefore costs writer contention and main-actor work per write, not just a wasted callback. The end-of-play write (`play_count`, `last_played_at`, `play_duration_total`) and the content-hash backfill are the two high-rate writers to watch.
+
+**Canonical file:** `Modules/Persistence/Sources/Persistence/Repositories/SyncMetaRepository.swift`
+
 ### Credentials live in the plain login keychain with no accessibility class
 
 **Problem:** intermittent "Server Unreachable" and "No server with id" disconnects.
