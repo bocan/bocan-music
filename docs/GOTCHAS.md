@@ -203,7 +203,7 @@ Reading defaults reads the release app's preferences only.
 
 **Why:** the bundle id is shared, but sandboxing decides the container. The debug build is sandboxed and uses the container path. The release build lost its entitlements in the deep re-sign step, so it is unsandboxed and uses the normal Application Support path. The two have diverged. Fixing the re-sign would silently move every user into an empty container on update, so it needs a migration plan rather than a one-line change. Both can run at once, which makes a log reading ambiguous.
 
-**Canonical file:** `Scripts/build-release.sh`, entitlements in `Resources/Bocan.entitlements`
+**Canonical file:** `Scripts/embed-deps.sh` (the deep re-sign, with no `--entitlements`), entitlements in `Resources/Bocan.entitlements`
 
 ---
 

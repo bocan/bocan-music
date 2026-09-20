@@ -44,7 +44,7 @@ Current internal-module dependencies:
 
 Read this top-to-bottom before adding a `.package(path: ...)` line. Anything that looks like it wants an upward edge (e.g. `Playback` importing `UI`) is a sign the abstraction lives in the wrong layer; lift the shared type into one of the lower modules instead.
 
-A module never imports `AppKit` unless it has no other choice (UI module is the only one expected to).
+UI is the only module that imports `AppKit`. A lower module that wants an AppKit event (system wake, app activation) exposes a plain method and the `App` target subscribes and calls it; `SubsonicConnectionMonitor.wakeAll()` is the model. The one exception is `NowPlayingCentre` in `Playback`, because the request handler of `MPMediaItemArtwork` must return an `NSImage` on macOS. Enforced by `Scripts/audit-appkit-imports.py` from `make lint`: any other file needs an entry with a reason in `Scripts/audit-appkit-imports-allowlist.txt`.
 
 ## Naming
 
@@ -64,10 +64,10 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 ## Error handling
 
-- Each module defines a single `*Error: Error, Sendable` enum (e.g. `AudioEngineError`).
-- Errors carry context (URL, underlying error, human-readable reason) — not bare cases.
+- Each module defines one public `*Error: Error, Sendable` enum per domain area (e.g. `AudioEngineError`; `Library` has one each for scanning, playlists, editing, playlist I/O, smart playlists and deep dive). A small module has one. An internal error enum is allowed when it is wrapped into a public one before it crosses the module boundary.
+- Errors carry context (URL, underlying error, human-readable reason), not bare cases. No ad hoc `struct Foo: Error {}`: a failure becomes a case of the area's enum.
 - `try?` only for the allowlisted idioms (a cancellation-checked `Task.sleep`, `defer { try? handle.close() }`, remove-if-present, directory pre-creation, a file-attribute read with a fallback, a decode whose fallback is the documented contract). Every other error is either recovered and logged (`do { try ... } catch { log.warning("op.failed", [...]) }`) or propagated with `try`. A user action that fails reaches the user; a value written to the database or sent on the wire is never derived from a swallowed error. For a one-line recovery, `Observability.logged(_:_:context:_:)` is the sanctioned helper. Enforced by `Scripts/audit-try-optional.py` from `make lint`: a site outside the idiom patterns needs an entry with a reason in `Scripts/audit-try-optional-allowlist.txt`. See `docs/audits/try-optional-audit.md`.
-- `fatalError` is banned outside `#if DEBUG` or truly unreachable `default:` branches.
+- `fatalError` is banned outside `#if DEBUG` or truly unreachable `default:` branches. The one named exception is the body of an `@available(*, unavailable) required init(coder:)`, which the compiler already makes uncallable. A failure that can happen at run time (an allocation, a missing directory) throws, returns `nil` or falls back, and logs.
 
 ## Logging
 
@@ -102,7 +102,7 @@ A module never imports `AppKit` unless it has no other choice (UI module is the 
 
 ## Security & privacy
 
-- **Sandbox on**, hardened runtime on, library validation on.
+- **Sandbox on for the Debug build**, hardened runtime on for both builds, library validation on. The shipped release build is unsandboxed: `Scripts/embed-deps.sh` re-signs it without entitlements, and sandboxing it now would move every user into an empty container (see `docs/GOTCHAS.md`, "The debug build and the installed release app use different libraries"). File access goes through the `SecurityScope` helper in both builds.
 - Entitlements added per ADR, never upfront "just in case".
 - No analytics without explicit opt-in. MetricKit (which stays on-device) is fine.
 - Secrets never in the repo. `.env` is gitignored; CI uses GitHub Actions secrets.
