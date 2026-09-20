@@ -415,6 +415,7 @@ public extension LibraryViewModel {
             }
         }
         self.tracks.removeRows(ids: removed)
+        await self.finishTrackRemoval(failed: Set(ids).subtracting(removed).count)
     }
 
     /// Re-scans a single file to refresh its tags.

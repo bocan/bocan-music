@@ -149,6 +149,89 @@ struct TrackRemovalKeepsPlaceTests {
         #expect(stillThere.disabled == true)
     }
 
+    // MARK: - What a removal tells the rest of the app
+
+    @Test("a removal that fails reaches the listener, and the row stays")
+    func failedRemovalReachesTheListener() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        let real = try await repo.insert(self.makeTrack(title: "A"))
+        let library = LibraryViewModel(database: db, engine: MockTransport())
+        await library.tracks.load()
+
+        // 9999 has no row, so its fetch throws: the write never happens.
+        await library.removeTracks(ids: [real, 9999])
+
+        #expect(library.playbackErrorMessage != nil)
+        #expect(library.tracks.rows.isEmpty)
+    }
+
+    @Test("a removal that works says nothing")
+    func cleanRemovalIsSilent() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        let doomed = try await repo.insert(self.makeTrack(title: "A"))
+        let library = LibraryViewModel(database: db, engine: MockTransport())
+        await library.tracks.load()
+
+        await library.removeTracks(ids: [doomed])
+
+        #expect(library.playbackErrorMessage == nil)
+    }
+
+    @Test("a database failure in a disk batch reaches the listener too")
+    func failedDiskBatchReachesTheListener() async throws {
+        let db = try await self.makeDatabase()
+        let library = LibraryViewModel(database: db, engine: MockTransport())
+        var ghost = self.makeTrack(title: "Ghost")
+        ghost.id = 9999
+
+        let trashFailures = await library.deleteTracksFromDisk(tracks: [ghost], using: NoOpFileDeleter())
+
+        // Not a trash failure, so no Delete Permanently prompt covers it.
+        #expect(trashFailures.isEmpty)
+        #expect(library.playbackErrorMessage != nil)
+    }
+
+    @Test("the removal signal moves once per removal, and not for a miss")
+    func removalVersionMovesOncePerRemoval() async throws {
+        let db = try await self.makeDatabase()
+        let repo = TrackRepository(database: db)
+        let first = try await repo.insert(self.makeTrack(title: "A"))
+        let second = try await repo.insert(self.makeTrack(title: "B"))
+        let vm = self.makeVM(db: db)
+        await vm.load()
+        let version = vm.removalVersion
+
+        vm.removeRows(ids: [9999])
+        #expect(vm.removalVersion == version)
+
+        vm.removeRows(ids: [first, second])
+        #expect(vm.removalVersion == version + 1)
+    }
+
+    @Test("a removal over the albums listing reloads its counts")
+    func removalReloadsTheAlbumsListing() async throws {
+        let db = try await self.makeDatabase()
+        let albumID = try await AlbumRepository(database: db).insert(Album(title: "Album"))
+        let repo = TrackRepository(database: db)
+        var kept = self.makeTrack(title: "A")
+        kept.albumID = albumID
+        var doomed = self.makeTrack(title: "B")
+        doomed.albumID = albumID
+        _ = try await repo.insert(kept)
+        let doomedID = try await repo.insert(doomed)
+        let library = LibraryViewModel(database: db, engine: MockTransport())
+        await library.selectDestination(.albums)
+        try #require(library.albums.trackCounts[albumID] == 2)
+
+        // The duplicates sheet does this over the listing: there is no songs
+        // table to edit in place, so the count only moves with a reload.
+        await library.removeTracks(ids: [doomedID])
+
+        #expect(library.albums.trackCounts[albumID] == 1)
+    }
+
     // MARK: - Navigation
 
     @Test("moving to another destination empties the list first")
@@ -199,6 +282,29 @@ struct TrackRemovalKeepsPlaceTests {
         // Reversed, the spinner replaces the table on every refresh, AppKit
         // throws the NSTableView away, and the new one starts at the top.
         #expect(table.lowerBound < loading.lowerBound)
+    }
+
+    @Test("the artist page refreshes its album strip on a removal, and only the strip")
+    func artistPageRefreshesItsStrip() throws {
+        let source = try String(
+            contentsOf: URL(filePath: #filePath)
+                .deletingLastPathComponent() // ViewModelTests/
+                .deletingLastPathComponent() // UITests/
+                .deletingLastPathComponent() // Tests/
+                .deletingLastPathComponent() // Modules/UI/
+                .appending(path: "Sources/UI/Browse/ArtistsView.swift"),
+            encoding: .utf8
+        )
+        let trigger = try #require(source.range(of: ".onChange(of: self.library.tracks.removalVersion)"))
+        let stripLoader = try #require(source.range(of: "private func loadAlbums() async {"))
+        let nextMark = try #require(source.range(of: "// MARK: - ArtistsView", range: stripLoader.upperBound ..< source.endIndex))
+
+        // The strip is view state that nothing else reloads, so without the
+        // trigger it keeps an album whose last track is gone.
+        let handler = source[trigger.upperBound...].prefix(240)
+        #expect(handler.contains("await self.loadAlbums()"))
+        // A reload of the songs table here is the jump to the top again.
+        #expect(!source[stripLoader.upperBound ..< nextMark.lowerBound].contains("tracks.load("))
     }
 
     @Test("both remove-from-library paths send the selection as one batch")

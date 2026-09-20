@@ -29,6 +29,8 @@ public final class TracksViewModel {
     /// Moves on every write to `rows`, in-place ones included, via `didSet` so no
     /// path can forget it; `TrackTable` skips its per-row walks while it holds (#450).
     public private(set) var rowsVersion = 0
+    /// Moves once per `removeRows` that took rows out; the artist page reloads its albums on it.
+    public private(set) var removalVersion = 0
     /// `true` while a load or search is in flight.
     public private(set) var isLoading = false
     /// The currently selected track IDs.
@@ -238,9 +240,8 @@ public final class TracksViewModel {
         }
     }
 
-    /// Drops the given track ids from the list with no database round trip. A
-    /// delete used to reload the destination, which replaced the array and sent
-    /// the table to the top; one write to `rows` keeps the table's place.
+    /// Drops the given track ids in place, no database round trip: the reload a
+    /// delete used to end in replaced the array and sent the table to the top.
     public func removeRows(ids: Set<Int64>) {
         guard !ids.isEmpty else { return }
         if let allRows = Self.removing(ids, from: self.allRows) {
@@ -249,11 +250,11 @@ public final class TracksViewModel {
         guard let rows = Self.removing(ids, from: self.rows) else { return }
         self.selection = self.selection.filter { $0.map { !ids.contains($0) } ?? true }
         self.rows = rows
+        self.removalVersion &+= 1
     }
 
-    /// Empties the list before a different destination loads into it: the view
-    /// keeps the table mounted while rows exist, so a move would otherwise show
-    /// the songs of the place just left.
+    /// Empties the list before a different destination loads into it: the table
+    /// stays mounted while rows exist, so a move would show the place just left.
     public func clearRows() {
         guard !self.rows.isEmpty || !self.allRows.isEmpty else { return }
         self.allRows = []

@@ -94,6 +94,16 @@ Diagnose live-only visualizer bugs by logging the real per-frame uniforms from t
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/RecoveredRead.swift`
 
+### A track removal edits the songs table in place; nothing reloads the destination
+
+**Problem:** the songs table jumps to the top with nothing selected after a delete. Or the opposite: a list beside the table (the album strip on an artist page) keeps an album whose last track is gone.
+
+**Rule:** a removal ends in `TracksViewModel.removeRows(ids:)`, never in `loadCurrentDestination()`, and a batch is one call, not one per track. `TracksView` renders the table whenever it has rows, and the loading state only when it has none; `selectDestination` empties the rows on a real move to pay for that. Anything beside the table that depends on the track set reloads itself on `TracksViewModel.removalVersion`, and that reload must not touch the table.
+
+**Why:** a reload replaces the `rows` array, and a view that swaps the table for a spinner makes AppKit discard the `NSTableView`; the replacement starts at the top. Detail pages keep their own lists in view state (`ArtistDetailView.albums`), which no view-model reload ever reached, so they need a signal of their own. A write to `selectedDestination` that bypasses `selectDestination` also bypasses the row clear.
+
+**Canonical file:** `Modules/UI/Sources/UI/ViewModels/TracksViewModel.swift`
+
 ---
 
 ## Audio engine and playback

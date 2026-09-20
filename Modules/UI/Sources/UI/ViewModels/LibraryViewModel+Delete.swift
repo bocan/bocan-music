@@ -59,6 +59,7 @@ public extension LibraryViewModel {
         let trackRepo = TrackRepository(database: self.database)
         var failures: [(Track, any Error)] = []
         var deleted: Set<Int64> = []
+        var notRemoved = 0
 
         for track in tracks {
             guard let id = track.id else { continue }
@@ -82,6 +83,7 @@ public extension LibraryViewModel {
                 self.log.debug("library.deleteFromDisk", ["id": id])
             } catch {
                 self.log.error("library.deleteFromDisk.failed", ["id": id, "error": String(reflecting: error)])
+                notRemoved += 1
             }
         }
 
@@ -90,6 +92,7 @@ public extension LibraryViewModel {
         // top, which loses the listener's place in a long list (#543).
         await self.pruneOrphanAlbumsAndArtists()
         self.tracks.removeRows(ids: deleted)
+        await self.finishTrackRemoval(failed: notRemoved)
         return failures
     }
 
@@ -200,6 +203,25 @@ public extension LibraryViewModel {
         await self.pruneOrphanAlbumsAndArtists()
         await self.artists.load()
         await self.loadCurrentDestination()
+    }
+
+    // MARK: - After a track removal
+
+    /// The end of a batch track removal. A track whose database write failed is
+    /// still in the list, and the listener asked for it to go, so the count
+    /// reaches them: the log alone is not an answer. Trash failures are not
+    /// counted here, because the caller offers Delete Permanently for each.
+    ///
+    /// The songs table was already edited in place, so it is not reloaded. The
+    /// album and artist listings have no such edit: the duplicates sheet removes
+    /// tracks over them, and their counts and rows only change with a reload.
+    func finishTrackRemoval(failed: Int) async {
+        if failed > 0 {
+            self.playbackErrorMessage = L10n.string("Could not remove \(failed) tracks from the library.")
+        }
+        if [.albums, .artists].contains(self.selectedDestination) {
+            await self.loadCurrentDestination()
+        }
     }
 
     // MARK: - Private helpers
