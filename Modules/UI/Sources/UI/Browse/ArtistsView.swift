@@ -11,11 +11,9 @@ public struct ArtistDetailView: View {
     @State private var artist: Artist?
     @State private var albums: [Album] = []
     @State private var albumTrackCounts: [Int64: Int] = [:]
-    /// Programmatic scroll position for the album strip, used to restore its
-    /// offset on return from one of the artist's albums (#349).
+    /// Programmatic scroll position for the album strip; restores its offset on return from an album (#349).
     @State private var albumScrollPosition = ScrollPosition(edge: .top)
-    /// Live vertical offset of the album strip, snapshotted into the library
-    /// view model when opening an album so it survives this view's rebuild.
+    /// Live vertical offset of the album strip, snapshotted into the library view model so it survives a rebuild.
     @State private var liveAlbumScrollOffset: CGFloat = 0
     /// Scales the minimum album cell width proportionally to the user's text size setting.
     @ScaledMetric(relativeTo: .body) private var scaledAlbumMinWidth = Theme.albumGridMinWidth
@@ -74,6 +72,12 @@ public struct ArtistDetailView: View {
         // empty -> populated transition; the strip's own ScrollView is gated
         // behind `if !albums.isEmpty`, so an onChange there would never fire (#349).
         .onChange(of: self.albums.map(\.id)) { _, _ in self.restoreAlbumScrollOffset() }
+        // A track removal edits the songs table in place and reloads nothing, so the strip refreshes
+        // here. The offset is saved first, so that the restore above holds the strip where it is.
+        .onChange(of: self.library.tracks.removalVersion) { _, _ in
+            self.library.artistAlbumScrollOffsets[self.artistID] = Double(self.liveAlbumScrollOffset)
+            Task { await self.loadAlbums() }
+        }
     }
 
     // MARK: - Sub-views
@@ -263,9 +267,8 @@ public struct ArtistDetailView: View {
         .disabled(album.id == nil)
     }
 
-    /// Navigates to an album, snapshotting the album strip's current scroll
-    /// offset first so it can be restored when this view is rebuilt on the way
-    /// back (#349).
+    /// Navigates to an album, snapshotting the album strip's scroll offset first
+    /// so it can be restored when this view is rebuilt on the way back (#349).
     private func openAlbum(_ id: Int64) {
         self.library.artistAlbumScrollOffsets[self.artistID] = Double(self.liveAlbumScrollOffset)
         Task { await self.library.selectDestination(.album(id)) }
@@ -290,25 +293,29 @@ public struct ArtistDetailView: View {
     // MARK: - Data loading
 
     private func load() async {
-        // Fetch albums by track artist (not album artist) so compilation appearances
-        // show up — e.g. "A Day to Remember" on "Various Artists" compilation albums.
-        async let albumsFetch: [Album] = await recoveredRead("artistDetail.albums.failed") {
-            try await AlbumRepository(database: self.library.database).fetchAll(trackArtistID: self.artistID)
-        } ?? []
         async let artistFetch = recoveredRead("artistDetail.artist.failed") {
             try await ArtistRepository(database: self.library.database).fetch(id: self.artistID)
-        }
-        async let trackCountsFetch = recoveredRead("artistDetail.trackCounts.failed") {
-            try await AlbumRepository(database: self.library.database).fetchTrackCounts()
         }
         // Load tracks via the shared TracksViewModel so TracksView gets full column data,
         // context menus, drag-to-playlist, sorting, and selection for free.
         async let trackLoad: Void = self.library.tracks.load(artistID: self.artistID)
-
-        self.albums = await albumsFetch
+        await self.loadAlbums()
         self.artist = await artistFetch
-        self.albumTrackCounts = await trackCountsFetch ?? [:]
         _ = await trackLoad
+    }
+
+    /// The album strip alone: a track removal refreshes it and must not reload the songs table.
+    private func loadAlbums() async {
+        // Fetch albums by track artist (not album artist) so compilation appearances
+        // show up, e.g. "A Day to Remember" on "Various Artists" compilation albums.
+        async let albumsFetch: [Album] = await recoveredRead("artistDetail.albums.failed") {
+            try await AlbumRepository(database: self.library.database).fetchAll(trackArtistID: self.artistID)
+        } ?? []
+        async let trackCountsFetch = recoveredRead("artistDetail.trackCounts.failed") {
+            try await AlbumRepository(database: self.library.database).fetchTrackCounts()
+        }
+        self.albums = await albumsFetch
+        self.albumTrackCounts = await trackCountsFetch ?? [:]
     }
 }
 

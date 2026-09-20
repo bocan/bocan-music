@@ -1076,6 +1076,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
     ///   so the stacks are not double-pushed.
     public func selectDestination(_ destination: SidebarDestination, addToHistory: Bool = true) async {
         self.log.info("nav.select", ["destination": String(describing: destination)])
+        let isMove = destination != self.selectedDestination
 
         if addToHistory, destination != self.selectedDestination {
             // Capture the query alongside the destination (before the clear
@@ -1107,6 +1108,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             break
         }
         self.selectedDestination = destination
+        // A move gets the loading state, not the songs of the place just left:
+        // the table stays mounted while rows exist, which is what keeps a
+        // refresh in place (#543).
+        if isMove {
+            self.tracks.clearRows()
+        }
         await self.loadDestination(destination)
     }
 

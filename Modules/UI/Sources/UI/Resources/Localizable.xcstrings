@@ -6951,6 +6951,46 @@
         }
       }
     },
+    "Could not remove %lld tracks from the library." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Could not remove %lld track from the library."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Could not remove %lld tracks from the library."
+                }
+              }
+            }
+          }
+        },
+        "en-XA" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Çóúĺđ ñóţ ŕéḿóvé %lld ţŕáçķ ƒŕóḿ ţĥé ĺíƀŕáŕý. one two three"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Çóúĺđ ñóţ ŕéḿóvé %lld ţŕáçķš ƒŕóḿ ţĥé ĺíƀŕáŕý. one two three"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Could not reshuffle playlist." : {
       "localizations" : {
         "en" : {

@@ -186,9 +186,7 @@ extension TracksView {
 
         let suppressed = UserDefaults.standard.bool(forKey: Self.suppressRemoveKey)
         if suppressed {
-            for id in ids {
-                Task { await library.removeTrack(id: id) }
-            }
+            Task { await library.removeTracks(ids: ids) }
             return
         }
 
@@ -215,9 +213,7 @@ extension TracksView {
             UserDefaults.standard.set(true, forKey: Self.suppressRemoveKey)
         }
 
-        for id in ids {
-            Task { await library.removeTrack(id: id) }
-        }
+        Task { await library.removeTracks(ids: ids) }
     }
 
     /// Presents the trash-and-remove confirmation for one or more tracks. Always

@@ -29,6 +29,8 @@ public final class TracksViewModel {
     /// Moves on every write to `rows`, in-place ones included, via `didSet` so no
     /// path can forget it; `TrackTable` skips its per-row walks while it holds (#450).
     public private(set) var rowsVersion = 0
+    /// Moves once per `removeRows` that took rows out; the artist page reloads its albums on it.
+    public private(set) var removalVersion = 0
     /// `true` while a load or search is in flight.
     public private(set) var isLoading = false
     /// The currently selected track IDs.
@@ -229,9 +231,7 @@ public final class TracksViewModel {
                 albumCoverArtPath: track.albumID.flatMap { artPaths[$0] }
             )
         }
-        // Mutate local copies and assign once: `rows` has a `didSet`, so an
-        // in-place `self.rows[i] = ...` inside the loop would copy the whole
-        // array and bump `rowsVersion` once per matched row (#453).
+        // One assignment each, never per matched row (#453; see +RowEdits).
         if let allRows = Self.replacing(self.allRows, with: newRowsByID) {
             self.allRows = allRows
         }
@@ -240,19 +240,26 @@ public final class TracksViewModel {
         }
     }
 
-    /// Returns `rows` with every row whose track id appears in `newRowsByID`
-    /// swapped for the new value, or `nil` when no row matched so the caller
-    /// can leave the stored array (and its version) untouched.
-    private static func replacing(_ rows: [TrackRow], with newRowsByID: [Int64: TrackRow]) -> [TrackRow]? {
-        var rows = rows
-        var changed = false
-        for i in rows.indices {
-            if let id = rows[i].track.id, let updated = newRowsByID[id] {
-                rows[i] = updated
-                changed = true
-            }
+    /// Drops the given track ids in place, no database round trip: the reload a
+    /// delete used to end in replaced the array and sent the table to the top.
+    public func removeRows(ids: Set<Int64>) {
+        guard !ids.isEmpty else { return }
+        if let allRows = Self.removing(ids, from: self.allRows) {
+            self.allRows = allRows
         }
-        return changed ? rows : nil
+        guard let rows = Self.removing(ids, from: self.rows) else { return }
+        self.selection = self.selection.filter { $0.map { !ids.contains($0) } ?? true }
+        self.rows = rows
+        self.removalVersion &+= 1
+    }
+
+    /// Empties the list before a different destination loads into it: the table
+    /// stays mounted while rows exist, so a move would show the place just left.
+    public func clearRows() {
+        guard !self.rows.isEmpty || !self.allRows.isEmpty else { return }
+        self.allRows = []
+        self.selection = []
+        self.rows = []
     }
 
     /// Sets a pre-fetched track list directly (smart folders / search results).
