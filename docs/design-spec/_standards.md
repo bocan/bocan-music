@@ -27,20 +27,23 @@ Modules depend **only** on lower-level modules (no cycles). The dependency graph
 
 Current internal-module dependencies:
 
-| Module        | Depends on                                                                                |
-|---------------|-------------------------------------------------------------------------------------------|
-| Observability | (none)                                                                                    |
-| AudioEngine   | Observability                                                                             |
-| Metadata      | Observability                                                                             |
-| Acoustics     | Observability                                                                             |
-| Persistence   | Observability                                                                             |
-| Subsonic      | Observability, Persistence                                                                |
-| SyncServer    | Observability, Persistence, AudioEngine, Library, Metadata, Podcasts (AudioEngine edge: ADR-088 transcoding) |
-| Library       | Observability, Persistence, Metadata, Acoustics                                           |
-| Playback      | Observability, Persistence, AudioEngine                                                   |
-| Scrobble      | Observability, Persistence, Playback                                                      |
-| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics |
-| App           | UI (transitively pulls in everything else)                                                |
+| Module        | Depends on (manifest edges)                                                               | Also imports (through a declared dependency) |
+|---------------|-------------------------------------------------------------------------------------------|----------------------------------------------|
+| Observability | (none)                                                                                    |                                              |
+| AudioEngine   | Observability                                                                             |                                              |
+| Metadata      | Observability                                                                             |                                              |
+| Acoustics     | Observability                                                                             |                                              |
+| Persistence   | Observability                                                                             |                                              |
+| Subsonic      | Observability, Persistence                                                                |                                              |
+| Podcasts      | Observability, Persistence                                                                |                                              |
+| SyncServer    | Observability, Persistence, AudioEngine, Library, Metadata, Podcasts (AudioEngine edge: ADR-088 transcoding) |                           |
+| Library       | Observability, Persistence, Metadata, Acoustics                                           | GRDB (playlists, smart-playlist SQL compiler) |
+| Playback      | Observability, Persistence, AudioEngine                                                   |                                              |
+| Scrobble      | Observability, Persistence, Playback                                                      | GRDB (the scrobble queue repository)         |
+| UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics | Metadata (`LyricsDocument`, `LRCParser`, `TrackTags`), GRDB |
+| App           | UI (transitively pulls in everything else)                                                | Metadata (the E2E fixture seeder only)       |
+
+The first column lists direct manifest edges only. A module may also import a package that one of its declared dependencies owns: GRDB through `Persistence`, `Metadata` through `Library`. The version floor stays in the owning module's manifest and nowhere else, so a dependency bump has one place to change. Such an import is recorded in the second column; an import that no declared dependency owns is an error.
 
 Read this top-to-bottom before adding a `.package(path: ...)` line. Anything that looks like it wants an upward edge (e.g. `Playback` importing `UI`) is a sign the abstraction lives in the wrong layer; lift the shared type into one of the lower modules instead.
 
@@ -57,7 +60,7 @@ UI is the only module that imports `AppKit`. A lower module that wants an AppKit
 ## Concurrency
 
 - Public APIs that do async work are `async throws` and annotated `Sendable` where relevant.
-- Long-lived state is owned by `actor`s, not classes with locks.
+- Long-lived state is owned by `actor`s, not classes with locks. A lock, a serial queue or a semaphore is allowed only where a synchronous boundary forbids an actor hop: a delegate or TLS verify callback, a synchronous `@Sendable` closure, a synchronous API that an actor and the main actor both call (`PresetStore`), app termination (with a timeout), GPU frame pacing, or the log sink. The site carries a comment that gives the reason.
 - `@MainActor` everything touching SwiftUI view state.
 - No `DispatchQueue.global().async` in new code. Use `Task` or `TaskGroup`.
 - Cancellation is respected: every loop over an `AsyncSequence` or long operation checks `Task.checkCancellation()`.

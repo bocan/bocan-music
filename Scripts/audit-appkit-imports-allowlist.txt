@@ -1,6 +1,6 @@
 # AppKit import allowlist. One repo-relative path per line, each with a
 # trailing reason. UI is the only module that imports AppKit
-# (docs/design-spec/_standards.md, "Dependency directions"); a file lands here
+# (docs/design-spec/_standards.md, "Module layout"); a file lands here
 # only when an Apple API leaves no seam to move the import behind. A lower
 # module that merely wants an AppKit notification exposes a method and lets the
 # app target subscribe, as SubsonicConnectionMonitor.wakeAll() does.

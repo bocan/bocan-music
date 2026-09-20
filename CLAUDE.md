@@ -37,8 +37,10 @@ Before opening a feat, fix or perf PR, run /slice-review. Its output is the `## 
 Strict module DAG, no upward imports:
 
 ```
-Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scrobble, Subsonic, Acoustics, Podcasts, SyncServer → UI → App
+Observability → { AudioEngine, Metadata, Acoustics, Persistence } → { Subsonic, Podcasts, Library, Playback } → { Scrobble, SyncServer } → UI → App
 ```
+
+Inside a layer the modules are not all independent. `Library` depends on `Metadata` and `Acoustics`, `Playback` on `AudioEngine`, `Scrobble` on `Playback`, and `SyncServer` on `AudioEngine`, `Library`, `Metadata` and `Podcasts`. The table in `docs/design-spec/_standards.md` ("Module layout") is the source of truth for every edge.
 
 | Module | Owns |
 |--------|------|
@@ -47,7 +49,7 @@ Observability → Persistence → AudioEngine, Metadata, Library, Playback, Scro
 | `AudioEngine` | `AudioEngine` actor, `EngineGraph` (`AVAudioPlayerNode`-backed), `BufferPump`, the AVFoundation + FFmpeg decoder split (`AVFoundationDecoder`, `FFmpegDecoder`, `DecoderFactory`, `FormatSniffer`), DSP chain, `SubsonicStreamCache`. |
 | `Metadata` | TagLib read/write, cover-art extraction, LRC parsing. |
 | `Library` | Folder scanner, FSEvents watcher, conflict resolver, cover-art cache. |
-| `Playback` | `QueuePlayer` actor, queue/history/shuffle, `GaplessScheduler`, `CrossfadeScheduler`, `PlayableSource` (`.localBookmark` / `.subsonic` / `.internetRadio`), MPNowPlaying, sleep timer, queue persistence v1→v2. |
+| `Playback` | `QueuePlayer` actor, queue/history/shuffle, `GaplessScheduler`, `CrossfadeScheduler`, `PlayableSource` (`.localBookmark` / `.subsonic` / `.internetRadio` / `.podcast`), MPNowPlaying, sleep timer, queue persistence v1→v2. |
 | `Scrobble` | Last.fm / ListenBrainz / Rocksky providers + an offline-resilient `ScrobbleService` queue. |
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID, the single `MusicBrainzClient` (recording, artist, release-group; one shared 1 req/s limiter for the whole app) and `WikipediaClient`. |

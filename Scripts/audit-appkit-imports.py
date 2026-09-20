@@ -6,8 +6,7 @@ AppKit in). The `UI` module owns every AppKit surface, and the `App` target
 hosts the NSWorkspace, NSApp and dock subscriptions the lower modules need, so
 neither is scanned. A lower module that wants an AppKit notification exposes a
 plain method and lets the app target call it: `SubsonicConnectionMonitor.wakeAll()`
-is the model. The rule is docs/design-spec/_standards.md ("Dependency
-directions").
+is the model. The rule is docs/design-spec/_standards.md ("Module layout").
 
 A file that cannot avoid AppKit goes in
 Scripts/audit-appkit-imports-allowlist.txt, one repo-relative path per line
