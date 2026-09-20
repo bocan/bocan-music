@@ -108,7 +108,10 @@ public actor ArtistEnrichmentService {
                         // the pass after a run of failures. Leaving the loop
                         // re-reads the batch from just before this artist.
                         consecutiveBackoffs += 1
-                        guard consecutiveBackoffs <= self.maxBackoffs else { throw PassAborted() }
+                        guard consecutiveBackoffs <= self.maxBackoffs else {
+                            self.log.info("artist.enrich.pass.paused", ["stamped": stamped, "reason": "rate limit or network"])
+                            return stamped
+                        }
                         let wait = self.backoff * (1 << (consecutiveBackoffs - 1))
                         self.log.info("artist.enrich.backoff", ["attempt": consecutiveBackoffs, "seconds": wait.seconds])
                         try await Task.sleep(for: wait)
@@ -120,9 +123,6 @@ public actor ArtistEnrichmentService {
             }
         } catch is CancellationError {
             self.log.debug("artist.enrich.pass.cancelled", ["stamped": stamped])
-            return stamped
-        } catch is PassAborted {
-            self.log.info("artist.enrich.pass.paused", ["stamped": stamped, "reason": "rate limit or network"])
             return stamped
         } catch {
             self.log.error("artist.enrich.pass.failed", ["error": String(reflecting: error)])
@@ -141,7 +141,6 @@ public actor ArtistEnrichmentService {
     }
 
     private enum Outcome { case stamped, skipped, abort }
-    private struct PassAborted: Error {}
 
     private func enrich(id: Int64, mbid: String) async -> Outcome {
         do {
