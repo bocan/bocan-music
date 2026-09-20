@@ -13,6 +13,8 @@ Sorting the songs list now sorts all the way down instead of stopping at the col
 
 The lyrics items in the Track menu now keep up with what is happening. Clear Lyrics becomes available as soon as lyrics arrive for the song that is playing, and greys out again once you clear them, instead of waiting for the next song. Fetch Lyrics greys out while a fetch is under way, so it cannot be started twice.
 
+Up Next now marks missing songs reliably. When a song in a restored queue can no longer be found on disk, its row is greyed out. That marking only reached whichever copy of the list happened to be listening first, so the full screen view could disagree with the main window, and after you left Up Next and came back the marking stopped arriving at all until the next restart.
+
 Phone Sync no longer treats finishing a song as a library change. Playing a song used to tell your phone that the library had changed, so the phone fetched the whole list again and found nothing different, and on a Mac preparing smaller copies of your songs that also started a fresh pass over the library. Both now wait for a change the phone can actually see, such as an edit, a rating or a new song. If you sync chosen playlists rather than everything, nothing changes, because a smart playlist can be built on play counts.
 
 Songs from a Subsonic server now download with far less work for your Mac. A large lossless song starts a little sooner, and the download no longer competes with the song that is already playing.
