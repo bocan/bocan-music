@@ -236,7 +236,14 @@ public struct VisualizerHost: View {
             )
 
         case .cascade:
-            self.renderer = Cascade(
+            // Cascade fails only when its history bitmap cannot be allocated;
+            // it logs that, and the calm Spectrum Bars stand in.
+            let cascade: (any Visualizer)? = Cascade(
+                palette: self.effectivePalette,
+                reduceMotion: self.reduceMotion,
+                reduceTransparency: self.reduceTransparency
+            )
+            self.renderer = cascade ?? SpectrumBars(
                 palette: self.effectivePalette,
                 reduceMotion: self.reduceMotion,
                 reduceTransparency: self.reduceTransparency

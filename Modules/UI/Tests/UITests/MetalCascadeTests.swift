@@ -38,7 +38,7 @@ struct MetalCascadeTests {
     // MARK: - Column parity with the Canvas renderer
 
     @Test("Column bytes match the Canvas writeColumn, including the row flip", arguments: [false, true])
-    func columnParity(onset: Bool) {
+    func columnParity(onset: Bool) throws {
         var bands = [Float](repeating: 0, count: MetalCascade.bandCount)
         bands[5] = 1.0
         bands[20] = 0.5
@@ -49,7 +49,7 @@ struct MetalCascadeTests {
         MetalCascade.fillColumn(&column, analysis: analysis, ramp: self.builtRamp(.spectrum))
 
         // Canvas writes the same column into its bitmap; read it back per row.
-        let canvas = Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false)
+        let canvas = try #require(Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false))
         canvas.processFrame(analysis: analysis, time: 1.0)
         for row in 0 ..< MetalCascade.bandCount {
             #expect(column[row] == canvas.pixelAt(column: 0, row: row), "row \(row) mismatch")

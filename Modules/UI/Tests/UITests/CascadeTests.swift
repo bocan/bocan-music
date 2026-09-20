@@ -31,8 +31,8 @@ struct CascadeTests {
     // MARK: - Column write
 
     @Test("Column write: single band k=1.0 writes LUT top entry at that band's memory row")
-    func columnWriteSingleBand() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false)
+    func columnWriteSingleBand() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false))
 
         var bands = [Float](repeating: 0, count: Cascade.bandCount)
         let testBand = 5
@@ -48,8 +48,8 @@ struct CascadeTests {
     }
 
     @Test("Column write: zero-magnitude bands write the darkest LUT entry")
-    func columnWriteZeroBand() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false)
+    func columnWriteZeroBand() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false))
         cascade.processFrame(analysis: self.makeAnalysis(frameIndex: 1), time: 1.0)
 
         let darkest = cascade.lut[0]
@@ -63,8 +63,8 @@ struct CascadeTests {
     // MARK: - Ring wrap
 
     @Test("Ring wrap: after 300 frames cursor = 44 and marker column is at the expected column index")
-    func ringWrap() {
-        let cascade = Cascade(palette: .mono, reduceMotion: false, reduceTransparency: false)
+    func ringWrap() throws {
+        let cascade = try #require(Cascade(palette: .mono, reduceMotion: false, reduceTransparency: false))
 
         for i in 0 ..< 300 {
             let analysis = self.makeAnalysis(frameIndex: UInt64(i + 1))
@@ -86,8 +86,8 @@ struct CascadeTests {
     // MARK: - Frame dedup
 
     @Test("Frame dedup: same frameIndex fed 3 times writes exactly one column")
-    func frameDedupWritesOnce() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false)
+    func frameDedupWritesOnce() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false))
         let analysis = self.makeAnalysis(frameIndex: 7)
 
         cascade.processFrame(analysis: analysis, time: 1.00)
@@ -98,8 +98,8 @@ struct CascadeTests {
     }
 
     @Test("Frame dedup: three distinct frameIndexes write three columns")
-    func frameDedupThreeFrames() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false)
+    func frameDedupThreeFrames() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false))
         for i in 1 ... 3 {
             cascade.processFrame(analysis: self.makeAnalysis(frameIndex: UInt64(i)), time: Double(i) * 0.023)
         }
@@ -112,8 +112,8 @@ struct CascadeTests {
     // MARK: - Onset ticks
 
     @Test("Onset tick writes LUT[255] to top and bottom 2 memory rows of the column")
-    func onsetTick() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false)
+    func onsetTick() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: false, reduceTransparency: false))
         cascade.processFrame(analysis: self.makeAnalysis(onset: true, frameIndex: 1), time: 1.0)
 
         let full = cascade.lut[Cascade.lutSize - 1]
@@ -126,8 +126,8 @@ struct CascadeTests {
     // MARK: - reduceMotion stepped mode
 
     @Test("reduceMotion: cachedImage unchanged within the 1-second step window")
-    func reduceMotionStepped() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: true, reduceTransparency: false)
+    func reduceMotionStepped() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: true, reduceTransparency: false))
 
         cascade.processFrame(analysis: self.makeAnalysis(frameIndex: 1), time: 0.0)
         let imageAfterFirst = cascade.cachedImage
@@ -142,8 +142,8 @@ struct CascadeTests {
     }
 
     @Test("reduceMotion: cachedImage updates after 1-second step interval")
-    func reduceMotionStepAfterInterval() {
-        let cascade = Cascade(palette: .spectrum, reduceMotion: true, reduceTransparency: false)
+    func reduceMotionStepAfterInterval() throws {
+        let cascade = try #require(Cascade(palette: .spectrum, reduceMotion: true, reduceTransparency: false))
 
         cascade.processFrame(analysis: self.makeAnalysis(frameIndex: 1), time: 0.0)
         let imageAfterFirst = cascade.cachedImage
@@ -159,8 +159,8 @@ struct CascadeTests {
     // MARK: - Smoke test
 
     @Test("10 000 frames: cursor stays in bounds and no crash")
-    func performanceSmokeTest() {
-        let cascade = Cascade(palette: .thermal, reduceMotion: false, reduceTransparency: false)
+    func performanceSmokeTest() throws {
+        let cascade = try #require(Cascade(palette: .thermal, reduceMotion: false, reduceTransparency: false))
         for i in 0 ..< 10000 {
             cascade.processFrame(
                 analysis: self.makeAnalysis(frameIndex: UInt64(i + 1)),
