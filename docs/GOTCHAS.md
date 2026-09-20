@@ -239,6 +239,25 @@ Reading defaults reads the release app's preferences only.
 
 **Canonical file:** `UITests/Support/E2ESession.swift`, scene behaviour in `App/BocanApp.swift`
 
+### A third cause: one test hides the sidebar and poisons every run after it
+
+**Problem:** most of the suite fails with `sidebar row "<name>" never appeared`, while a handful of early tests pass. Running a failing test on its own still fails, hours later and after a reboot, so it reads like a code defect in the sidebar. It is not: the sidebar is present but collapsed to zero width, and a collapsed split view column publishes no rows to the accessibility tree at all.
+
+**Rule:** any run-scoped state that AppKit or the app writes into the container's shared `UserDefaults` must be reset in `E2ESeeder.prepareHomeIfRequested()`, not pinned in the argument domain. Split view frames are already handled there by prefix; add new leaks beside them. Before believing a sidebar or pane failure, read the split view's autosave key and check the collapsed flag:
+
+```
+defaults read ~/Library/Containers/io.cloudcauldron.bocan/Data/Library/Preferences/io.cloudcauldron.bocan.plist \
+  "NSSplitView Subview Frames main-AppWindow-1, SidebarNavigationSplitView"
+```
+
+The entries are `x, y, width, height, collapsed, hidden`. A first entry ending `YES, YES` is the bug, whatever the width says.
+
+**Why:** AppKit autosaves each split view's subview frames under a key named after the split view, and the menu invocation pass walks every menu item, View ▸ Hide Sidebar included. One invocation collapses the sidebar and AppKit writes it to disk, so every later launch starts collapsed, in that run and in every future run until something expands it. `-ApplePersistenceIgnoreState` does not help, because an autosave is not scene restoration. This is what makes it look like flakiness or a slow machine: the tests that ran before the menu pass pass, everything after it fails, and the failure outlives the run that caused it.
+
+Two things hid this for a while. The failure is reported by whichever helper looks the row up, so it surfaces as a sidebar-row timeout far from its cause. And `IdentifierAuditTests` looked destinations up as `staticTexts[title]`, which matched the window title rather than a sidebar row, so it reported the failure one destination late, as `Albums not found`, and had never actually audited any destination.
+
+**Canonical file:** `App/E2ESeeder.swift`, cause in `UITests/Menus/MenuInvocationTests.swift`
+
 ### Gesture at a visible anchor, never at an off-screen row
 
 **Problem:** a coordinate tap silently lands on nothing, and scrolling the target itself fails outright with "Unable to find hit point".

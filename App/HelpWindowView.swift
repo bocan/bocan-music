@@ -201,6 +201,7 @@ private struct ShortcutsSection: View {
             Shortcut(action: "Show Lyrics", key: "⌘⌥L"),
             Shortcut(action: "Show Visualizer", key: "⌘⇧V"),
             Shortcut(action: "Open Fullscreen Visualizer", key: "⌘⇧F"),
+            Shortcut(action: "Enter Immersive Mode", key: "⌘⇧I"),
             Shortcut(action: "Toggle Miniplayer", key: "⌘⌥M"),
         ]),
         ShortcutGroup(title: "Library & Playlists", shortcuts: [
