@@ -135,6 +135,7 @@ public struct MiniPlayerView: View {
                 np: self.vm.nowPlaying,
                 musicLayout: .strip,
                 palette: .standard,
+                identifiers: .miniPlayer,
                 spacing: 10,
                 secondarySize: 14,
                 primarySize: 14,
