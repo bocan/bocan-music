@@ -11,6 +11,8 @@ Deleting a song, or removing one from the library, no longer rebuilds the whole 
 
 Sorting the songs list now sorts all the way down instead of stopping at the column you clicked. Click Artist and each artist's albums stay together with their tracks in order, rather than the songs falling wherever the import happened to leave them. Every column works this way: sort by play count and the songs sharing a count are grouped by artist and album, so a half-played album reads as an album. Your choice is remembered the next time you open Bòcan.
 
+The lyrics items in the Track menu now keep up with what is happening. Clear Lyrics becomes available as soon as lyrics arrive for the song that is playing, and greys out again once you clear them, instead of waiting for the next song. Fetch Lyrics greys out while a fetch is under way, so it cannot be started twice.
+
 ## [2.16.0](https://github.com/bocan/bocan-music/compare/v2.15.0...v2.16.0) (2026-09-16)
 
 The play bar now says what it is playing. Under the title sits a row of small coloured boxes for the format, the bitrate, the sample rate, the bit depth and the channels of the current song, and hovering over any of them explains what that fact means. Streams and podcasts show what their own source reports. Narrow the window and the row keeps the boxes that fit.

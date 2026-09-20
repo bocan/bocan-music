@@ -52,7 +52,7 @@ Add the guard on the first write, not after a crackle report.
 
 **Problem:** a menu item's `.disabled` state is frozen at the value it had when the body was built, and never revalidates, not even when the menu opens.
 
-**Rule:** gate on `@AppStorage` or on `@Observable` state. Never on an `ObservableObject`'s `@Published` bridge. For radio-style gated items use checkmarked `Toggle`s, because a menu `Picker`'s option rows ignore `.disabled` entirely: the options stay clickable and only the header greys out.
+**Rule:** gate on `@AppStorage` or on `@Observable` state. Never on an `ObservableObject`'s `@Published` bridge. When the facts live on an `ObservableObject`, give it a small `@Observable` companion that mirrors only what the menu needs, with each write guarded to a real change, and gate on that: `LyricsMenuState` (`Modules/UI/Sources/UI/Lyrics/LyricsMenuState.swift`) is the model, and it costs no `UserDefaults` traffic. For radio-style gated items use checkmarked `Toggle`s, because a menu `Picker`'s option rows ignore `.disabled` entirely: the options stay clickable and only the header greys out.
 
 **Why:** a `Commands` body re-evaluates only when a declared `@AppStorage` property or `@Observable` state it reads changes. The view models are passed as plain `let` on purpose, to keep the menu bar off the high-frequency render path, so nothing else can invalidate it. There is no per-open validation pass.
 

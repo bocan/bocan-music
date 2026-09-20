@@ -145,7 +145,7 @@ extension BocanCommands {
                     self.lyricsVM.forceFetch()
                 }
                 .help("Fetch lyrics from LRClib for the current track, replacing any existing lyrics")
-                .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.isFetching)
+                .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.menuState.isFetching)
             }
 
             Button("Clear Lyrics") {
@@ -154,7 +154,7 @@ extension BocanCommands {
                 }
             }
             .help("Delete stored lyrics for the current track")
-            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || self.lyricsVM.document == nil)
+            .disabled(self.vm.nowPlaying.nowPlayingTrackID == nil || !self.lyricsVM.menuState.hasDocument)
         }
     }
 }
