@@ -10,7 +10,7 @@ Every SwiftUI view and view model. It is the only module that imports AppKit (`S
 
 - `LibraryViewModel` (in `ViewModels/`) is the spine: navigation, selection, sidebar/server state, scanning, toasts, and most user actions hang off it. `NowPlayingViewModel` drives the transport strip. View models are `@MainActor` `@Observable`/`ObservableObject`.
 - `AppRoot/` is the main window (`BocanRootView`, `Sidebar`). `Browse/` is the library content (tracks/albums/artists tables, the Subsonic browse views, queue). `Settings/` is the System-Settings-style scene. `Console/` holds `LogConsoleView`, `LogConsoleRow`, and `LogConsoleViewModel` -- the in-app log window that backfills from `LogStore` and tails live entries. `MiniPlayer/`, `Lyrics/`, `Visualizers/`, `DSP/`, `Routing/`, `Transport/` are the other surfaces. `Theme/` holds colours, typography, and reusable a11y modifiers.
-- To stay decoupled from `Subsonic`, this module declares protocols (sidebar listing, connection/capability observing, etc.) that the App layer implements. Do not `import Subsonic`/`import Scrobble`-internals here.
+- This module may `import Subsonic` (the charter's dependency table lists the edge) and does, for its value types, the browse data source and the Settings screens. For the long-lived objects the main window needs (sidebar listing, connection and capability observing, metadata caching) it declares narrow protocols that the App layer implements; prefer widening one of those to handing a view model the whole `SubsonicService`. `Podcasts` and `SyncServer` are different: never import them here, only their App-implemented seams.
 
 ## Testing this module (read before writing tests)
 

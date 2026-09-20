@@ -38,7 +38,7 @@ The mini-player and other secondary windows call `.commandsRemoved()` so SwiftUI
 
 ## Adapters: how the module DAG stays acyclic
 
-The `UI` and `Scrobble` modules must not import `Subsonic`, so they declare protocols and `App/` provides the concrete bridges:
+`Scrobble` and `Playback` must not import `Subsonic`, and `UI` reaches its long-lived Subsonic objects through narrow protocols even though it may import the module (the charter table lists the edge). Those modules declare the protocols and `App/` provides the concrete bridges:
 
 - `SubsonicStoreSidebarListing` -> `UI.SubsonicSidebarListing` (sidebar server list, visibility, delete)
 - `SubsonicMonitorConnectionObserver` -> `UI.SubsonicConnectionObserving`

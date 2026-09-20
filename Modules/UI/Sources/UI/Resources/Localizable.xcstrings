@@ -8640,6 +8640,16 @@
         }
       }
     },
+    "Downloading %lld%%" : {
+      "localizations" : {
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đóŵñĺóáđíñĝ %lld%% one two"
+          }
+        }
+      }
+    },
     "Downloading…" : {
       "localizations" : {
         "en-XA" : {

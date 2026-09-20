@@ -29,6 +29,11 @@ public actor ScrobbleQueueWorker {
     private var reachTask: Task<Void, Never>?
     private var kickCount = 0
     private var kickContinuation: CheckedContinuation<Void, Never>?
+    /// The timer for the wait currently in progress. Held so it can be
+    /// cancelled the moment that wait ends, however it ends: an uncancelled
+    /// timer outlived its own wait and fired into a later one, cutting a
+    /// backoff short (#548).
+    private var timeoutTask: Task<Void, Never>?
 
     public init(
         provider: any ScrobbleProvider,
@@ -60,6 +65,7 @@ public actor ScrobbleQueueWorker {
         self.task = nil
         self.reachTask?.cancel()
         self.reachTask = nil
+        self.cancelTimeout()
         self.kickContinuation?.resume()
         self.kickContinuation = nil
     }
@@ -248,21 +254,34 @@ public actor ScrobbleQueueWorker {
     }
 
     /// Suspend until either a `kick()` arrives or `timeout` elapses (`nil` = forever).
-    private func waitForKick(timeout: Duration?) async {
+    ///
+    /// Internal rather than private so a test can drive one wait at a time.
+    func waitForKick(timeout: Duration?) async {
         if self.kickCount > 0 {
             self.kickCount = 0
             return
         }
         await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
             self.kickContinuation = cont
-            if let timeout {
-                Task { [weak self] in
-                    try? await Task.sleep(for: timeout)
-                    await self?.timeoutKick()
+            guard let timeout else { return }
+            self.cancelTimeout()
+            self.timeoutTask = Task { [weak self] in
+                do {
+                    try await Task.sleep(for: timeout)
+                } catch {
+                    return // Cancelled: the wait this timer belonged to is over.
                 }
+                await self?.timeoutKick()
             }
         }
+        // However the wait ended, its timer is now stale.
+        self.cancelTimeout()
         self.kickCount = 0
+    }
+
+    private func cancelTimeout() {
+        self.timeoutTask?.cancel()
+        self.timeoutTask = nil
     }
 
     private func timeoutKick() {

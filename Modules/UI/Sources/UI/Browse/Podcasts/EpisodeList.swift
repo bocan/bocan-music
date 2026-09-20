@@ -41,8 +41,13 @@ struct EpisodeList: View {
             Divider()
             Table(self.filtered, selection: self.$selection) {
                 TableColumn("") { (item: EpisodeListItem) in
-                    EpisodeStatusIndicator(item: item)
-                        .frame(width: 16, alignment: .center)
+                    EpisodeStatusIndicator(
+                        item: item,
+                        downloadFraction: self.vm.downloadProgress[
+                            PodcastsViewModel.downloadKey(podcastID: item.episode.podcastID, guid: item.episode.guid)
+                        ]
+                    )
+                    .frame(width: 16, alignment: .center)
                 }
                 .width(28)
 

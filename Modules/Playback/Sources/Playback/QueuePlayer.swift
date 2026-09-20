@@ -64,12 +64,13 @@ public actor QueuePlayer: Transport {
 
     // MARK: - Unavailable items stream
 
-    /// Emits the set of queue-item IDs whose backing files are missing.
-    /// Re-emitted whenever availability is recomputed (currently after
-    /// `restoreQueue`).  UI consumers can observe this to render disabled
-    /// rows for restored items pointing at deleted/moved files.
-    public nonisolated let unavailableItemChanges: AsyncStream<Set<QueueItem.ID>>
-    private var unavailableItemContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
+    /// Per-subscriber continuations, as `PlaybackQueue.changes()` uses. The
+    /// queue view exists in the main window and the immersive window at the
+    /// same time, and two iterators of one `AsyncStream` divide the elements
+    /// between them, so one window would miss a set. Cancelling a single
+    /// shared stream, which SwiftUI does whenever the view goes away, also
+    /// ended it for every later subscriber (#545).
+    private var unavailableSubscribers: [UUID: AsyncStream<Set<QueueItem.ID>>.Continuation] = [:]
     private var _unavailableItemIDs: Set<QueueItem.ID> = []
 
     // MARK: - Schema warnings stream
@@ -186,10 +187,6 @@ public actor QueuePlayer: Transport {
         var trackIDCont: AsyncStream<(trackID: Int64, albumID: Int64?)>.Continuation?
         self.trackIDChanges = AsyncStream { trackIDCont = $0 }
         self.trackIDContinuation = trackIDCont
-
-        var unavailableContinuation: AsyncStream<Set<QueueItem.ID>>.Continuation?
-        self.unavailableItemChanges = AsyncStream { unavailableContinuation = $0 }
-        self.unavailableItemContinuation = unavailableContinuation
 
         var schemaWarnContinuation: AsyncStream<String>.Continuation?
         self.schemaWarnings = AsyncStream { schemaWarnContinuation = $0 }
@@ -1503,21 +1500,59 @@ public actor QueuePlayer: Transport {
     }
 
     /// Snapshot of queue-item IDs whose files are currently missing.
-    /// UI consumers should also subscribe to `unavailableItemChanges` to react
-    /// to updates (e.g. after a queue restore).
+    /// Prefer ``unavailableItemUpdates()``, which yields this same set first
+    /// and then keeps the caller up to date.
     public func unavailableItemIDs() -> Set<QueueItem.ID> {
         self._unavailableItemIDs
+    }
+
+    /// Emits the set of queue-item IDs whose backing files are missing: the
+    /// current set first, then again whenever availability is recomputed
+    /// (currently after `restoreQueue`). The UI observes this to render
+    /// disabled rows for restored items pointing at deleted or moved files.
+    ///
+    /// Each call returns an independent stream, so two windows can both
+    /// observe it, and one window going away leaves the other running. The
+    /// subscriber is registered before the stream is returned, so nothing
+    /// emitted after the call can be lost.
+    public func unavailableItemUpdates() -> AsyncStream<Set<QueueItem.ID>> {
+        let (stream, continuation) = AsyncStream.makeStream(of: Set<QueueItem.ID>.self)
+        let id = UUID()
+        self.unavailableSubscribers[id] = continuation
+        continuation.yield(self._unavailableItemIDs)
+        continuation.onTermination = { [weak self] _ in
+            guard let self else { return }
+            Task { await self.removeUnavailableSubscriber(id: id) }
+        }
+        return stream
+    }
+
+    private func removeUnavailableSubscriber(id: UUID) {
+        self.unavailableSubscribers.removeValue(forKey: id)
+    }
+
+    /// Internal rather than private so the fan-out can be driven directly in
+    /// tests, without staging missing files on disk.
+    func emitUnavailableItems(_ ids: Set<QueueItem.ID>) {
+        for continuation in self.unavailableSubscribers.values {
+            continuation.yield(ids)
+        }
+    }
+
+    /// Internal for tests: proves `onTermination` unregisters a subscriber.
+    var unavailableSubscriberCount: Int {
+        self.unavailableSubscribers.count
     }
 
     /// Walks `items` and marks any whose `fileURL` no longer exists on disk.
     /// Acquires the matching library-root security scope once per root so the
     /// existence check works under the macOS sandbox.  Emits the resulting set
-    /// on `unavailableItemChanges` exactly once.
+    /// to every subscriber exactly once.
     private func recomputeUnavailableItems(items: [QueueItem]) async {
         guard !items.isEmpty else {
             if !self._unavailableItemIDs.isEmpty {
                 self._unavailableItemIDs = []
-                self.unavailableItemContinuation?.yield([])
+                self.emitUnavailableItems([])
             }
             return
         }
@@ -1581,7 +1616,7 @@ public actor QueuePlayer: Transport {
         }
 
         self._unavailableItemIDs = missing
-        self.unavailableItemContinuation?.yield(missing)
+        self.emitUnavailableItems(missing)
         if !missing.isEmpty {
             self.log.warning("queueplayer.queue.unavailable", [
                 "missing": missing.count,

@@ -52,7 +52,7 @@ Add the guard on the first write, not after a crackle report.
 
 **Problem:** a menu item's `.disabled` state is frozen at the value it had when the body was built, and never revalidates, not even when the menu opens.
 
-**Rule:** gate on `@AppStorage` or on `@Observable` state. Never on an `ObservableObject`'s `@Published` bridge. For radio-style gated items use checkmarked `Toggle`s, because a menu `Picker`'s option rows ignore `.disabled` entirely: the options stay clickable and only the header greys out.
+**Rule:** gate on `@AppStorage` or on `@Observable` state. Never on an `ObservableObject`'s `@Published` bridge. When the facts live on an `ObservableObject`, give it a small `@Observable` companion that mirrors only what the menu needs, with each write guarded to a real change, and gate on that: `LyricsMenuState` (`Modules/UI/Sources/UI/Lyrics/LyricsMenuState.swift`) is the model, and it costs no `UserDefaults` traffic. For radio-style gated items use checkmarked `Toggle`s, because a menu `Picker`'s option rows ignore `.disabled` entirely: the options stay clickable and only the header greys out.
 
 **Why:** a `Commands` body re-evaluates only when a declared `@AppStorage` property or `@Observable` state it reads changes. The view models are passed as plain `let` on purpose, to keep the menu bar off the high-frequency render path, so nothing else can invalidate it. There is no per-open validation pass.
 
@@ -177,6 +177,16 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 ---
 
 ## Persistence and keychain
+
+### A whole-table observation region fans every unrelated write out to its subscribers
+
+**Problem:** work that looks unrelated runs after every finished track. Phone Sync bumped its manifest generation, and its transcode coordinator started a whole-library pass, because the end-of-play write touches `tracks` and both observed `Table("tracks")`.
+
+**Rule:** observe the columns the subscriber actually reads, not the table: `Table("tracks").select(columns)` is a `DatabaseRegionConvertible` with column granularity, and GRDB then ignores an `UPDATE` that touches nothing in the set. Two traps come with it. A subscriber must not observe a table it writes itself, or each pass re-arms the next one. And a region is only as narrow as what the fetched value depends on: library membership through a smart playlist can key on `play_count`, so a narrowed `tracks` region is correct for a sync profile of "everything" and wrong for one that selects playlists. Where both are possible, pick the region from the current setting and re-subscribe when it changes.
+
+**Why:** `Database.observe` sets `requiresWriteAccess = true` to avoid a WAL snapshot deadlock, so every re-fetch runs on the single writer connection and delivers on the main queue. A wide region therefore costs writer contention and main-actor work per write, not just a wasted callback. The end-of-play write (`play_count`, `last_played_at`, `play_duration_total`) and the content-hash backfill are the two high-rate writers to watch.
+
+**Canonical file:** `Modules/Persistence/Sources/Persistence/Repositories/SyncMetaRepository.swift`
 
 ### Credentials live in the plain login keychain with no accessibility class
 
@@ -346,6 +356,18 @@ Two follow-on hazards. A stale explicit-modules cache produces a precompile fail
 **Why:** swift-snapshot-testing gives `CIAreaAverage` its extent as a bare `CGRect`, which Swift wraps in an `NSValue`. macOS 27 Core Image reads that value with `CGRectValue`, a selector a macOS `NSValue` does not have. The documented type for the key is `CIVector`. Version 1.19.5 does not fix it, and there is no upstream report yet. CI is not affected, because the snapshot suite is disabled there.
 
 **Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotTests.swift`
+
+### The Homebrew include flag is carried by four manifests and is not currently load-bearing
+
+**Problem:** `-Xcc -I/opt/homebrew/include` appears in `AudioEngine`, `Playback`, `Scrobble` and `UI`, with comments saying every transitive `CFFmpeg` consumer needs it, while `SyncServer` imports `AudioEngine` and carries nothing. One of the two had to be wrong.
+
+**Rule:** leave it as it is. `SyncServer` needs no change, and nothing else needs the flag added. Do not remove the four copies on the strength of a local build alone: they are insurance against the pkgconf regression the `AudioEngine` comment records, and the only environment that matters for that is the CI runner, which cannot be tested from a dev Mac. If you do remove them, do it in a PR and let the full CI suite be the test.
+
+**Why:** measured on 2026-09-20 (Xcode 27, Homebrew ffmpeg 9.0.1_1, #549). A clean `swift build` of `SyncServer`, with its `.build` moved aside so every dependency was checked out afresh, succeeds. A cold `xcodebuild` of the whole app, with DerivedData deleted and the flag removed from all four manifests, also succeeds. So pkgconf's cflags do reach the module scanner again on this toolchain, and the comments' claim that a transitive consumer "needs" the flag is no longer true.
+
+To re-test: `mv Modules/<Name>/.build{,.bak}` for SwiftPM, or delete `~/Library/Developer/Xcode/DerivedData/Bocan-*` for Xcode, then build. Prefix either with `GIT_CONFIG_PARAMETERS="'core.fsmonitor=false'"` (see the entry below). A dependency-resolution failure part way through is the checkout flake, not a flag problem; re-run before reading anything into it.
+
+**Canonical file:** `Modules/AudioEngine/Package.swift`
 
 ### Fresh SwiftPM clones hang because of the git fsmonitor
 

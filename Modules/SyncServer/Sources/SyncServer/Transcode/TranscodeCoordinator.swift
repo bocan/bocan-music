@@ -109,7 +109,7 @@ public actor TranscodeCoordinator {
         self.running = true
         self.observationTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await self.syncMeta.observeLibraryChanges()
+            let stream = await self.syncMeta.observeTranscodeInputs()
             do {
                 var isInitial = true
                 for try await _ in stream {
@@ -148,8 +148,10 @@ public actor TranscodeCoordinator {
 
     /// Debounced pass scheduling: a burst of changes runs one pass. While a
     /// pass is running, a non-interrupting call defers to a follow-up pass
-    /// instead of cancelling the work in flight (the coordinator's own
-    /// ledger writes fire the same observation stream).
+    /// instead of cancelling the work in flight. Since #550 the observed
+    /// region excludes `sync_transcodes`, so the pass's own ledger writes no
+    /// longer come back round; `rerunRequested` now only covers a real change
+    /// that arrives mid-pass.
     private func schedulePass(interrupt: Bool = false) {
         guard self.running else { return }
         if self.passRunning, !interrupt {

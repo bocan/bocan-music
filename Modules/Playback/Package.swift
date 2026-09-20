@@ -25,12 +25,11 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency"),
-                // See AudioEngine/Package.swift: pkgconf's cflags don't reach
-                // Xcode's SPM clang module scanner, so any package that
-                // transitively imports CFFmpeg (via the AudioEngine product)
-                // needs this same explicit Homebrew include path, not just
-                // AudioEngine's own target -- unsafeFlags don't propagate
-                // across package boundaries.
+                // See AudioEngine/Package.swift. Carried by every package that
+                // transitively imports CFFmpeg, because unsafeFlags do not
+                // propagate across package boundaries. `SyncServer` is the
+                // exception and needs no change: it imports AudioEngine and
+                // builds clean without this, which is what #549 measured.
                 .unsafeFlags(["-Xcc", "-I/opt/homebrew/include"]),
             ],
             linkerSettings: [

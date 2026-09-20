@@ -63,7 +63,7 @@ func durationLabel(_ item: EpisodeListItem) -> String {
 /// Combined human-readable status (play state, plus download state when present)
 /// for the hover tooltip and the VoiceOver label. The icons carry no text on
 /// their own, so this is the only place their meaning is spelled out.
-func statusLabel(_ item: EpisodeListItem) -> String {
+func statusLabel(_ item: EpisodeListItem, downloadFraction: Double? = nil) -> String {
     let play: String
     switch status(item) {
     case .unplayed:
@@ -82,7 +82,12 @@ func statusLabel(_ item: EpisodeListItem) -> String {
         L10n.string("Downloaded")
 
     case .downloading:
-        L10n.string("Downloading")
+        // The percentage is live, and absent until the first tick arrives.
+        if let percent = downloadFraction.map({ Int(($0 * 100).rounded()) }) {
+            L10n.string("Downloading \(percent)%")
+        } else {
+            L10n.string("Downloading")
+        }
 
     case .queued:
         L10n.string("Download queued")
@@ -117,12 +122,16 @@ struct ProgressRing: View {
 
 struct EpisodeStatusIndicator: View {
     let item: EpisodeListItem
+    /// How far the running download has got, when one is running. Live, from
+    /// the download manager; `nil` before the first tick, or when downloads
+    /// are not wired in (#551).
+    var downloadFraction: Double?
 
     var body: some View {
         self.playIndicator
             .overlay(alignment: .bottomTrailing) { self.downloadBadge }
-            .help(statusLabel(self.item))
-            .accessibilityLabel(statusLabel(self.item))
+            .help(statusLabel(self.item, downloadFraction: self.downloadFraction))
+            .accessibilityLabel(statusLabel(self.item, downloadFraction: self.downloadFraction))
     }
 
     @ViewBuilder
@@ -153,6 +162,14 @@ struct EpisodeStatusIndicator: View {
             Image(systemName: "arrow.down.circle.fill")
                 .font(.system(size: 8))
                 .foregroundStyle(Color.accentColor)
+                .background(Circle().fill(Color(nsColor: .controlBackgroundColor)))
+                .offset(x: 3, y: 3)
+
+        case .downloading where self.downloadFraction != nil:
+            // Same ring the play indicator uses, in the badge corner: how far
+            // the download has got, rather than only that one is running.
+            ProgressRing(fraction: self.downloadFraction ?? 0)
+                .frame(width: 9, height: 9)
                 .background(Circle().fill(Color(nsColor: .controlBackgroundColor)))
                 .offset(x: 3, y: 3)
 
