@@ -1,5 +1,6 @@
 import Foundation
 import Observability
+import Persistence
 
 // MARK: - LaunchSanity
 
@@ -34,9 +35,7 @@ final class LaunchSanity {
         if let home = E2EEnvironment.home {
             return home.appendingPathComponent(".running")
         }
-        guard let base = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { fatalError("Application Support not found") }
-        return base.appendingPathComponent("Bocan/.running")
+        return DatabaseLocation.applicationSupportDirectory.appendingPathComponent(".running")
     }
 
     private init() {}

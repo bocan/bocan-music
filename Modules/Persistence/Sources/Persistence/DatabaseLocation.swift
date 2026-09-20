@@ -31,8 +31,20 @@ public enum DatabaseLocation: Sendable {
         }
     }
 
-    /// The `Application Support/Bocan` directory, created if it does not exist.
+    /// The on-disk database file inside `applicationSupportDirectory`.
     private static var applicationSupportURL: URL {
+        self.applicationSupportDirectory.appendingPathComponent("library.sqlite")
+    }
+
+    // MARK: - Public
+
+    /// The `Application Support/Bocan` directory, created if it does not exist.
+    ///
+    /// Public so the app's other launch-time files (single-instance lock,
+    /// crash sentinel) resolve the same directory as the database. If the
+    /// system reports no Application Support directory it falls back to the
+    /// conventional path under the home directory rather than trapping.
+    public static var applicationSupportDirectory: URL {
         let base = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -51,6 +63,6 @@ public enum DatabaseLocation: Sendable {
                 ["error": String(reflecting: error)]
             )
         }
-        return dir.appendingPathComponent("library.sqlite")
+        return dir
     }
 }
