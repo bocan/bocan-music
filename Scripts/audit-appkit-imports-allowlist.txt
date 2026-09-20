@@ -1,0 +1,11 @@
+# AppKit import allowlist. One repo-relative path per line, each with a
+# trailing reason. UI is the only module that imports AppKit
+# (docs/design-spec/_standards.md, "Module layout"); a file lands here
+# only when an Apple API leaves no seam to move the import behind. A lower
+# module that merely wants an AppKit notification exposes a method and lets the
+# app target subscribe, as SubsonicConnectionMonitor.wakeAll() does.
+#
+# The audit prints a note when an entry goes stale. Keep this list at one or
+# two entries.
+
+Modules/Playback/Sources/Playback/NowPlaying/NowPlayingCentre.swift  # MPMediaItemArtwork's request handler must return an NSImage on macOS

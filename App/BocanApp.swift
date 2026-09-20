@@ -409,6 +409,21 @@ struct BocanApp: App {
         }
     }
 
+    /// Re-pings every monitored Subsonic server as soon as the Mac wakes, so
+    /// the sidebar status does not wait out a backoff sleep. The Subsonic
+    /// module must not import AppKit, so the subscription lives here (#274).
+    private static func installSubsonicWakeObserver(monitor: SubsonicConnectionMonitor) {
+        // `didWakeNotification` is posted on the workspace's own notification
+        // centre, not `NotificationCenter.default`.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            Task { await monitor.wakeAll() }
+        }
+    }
+
     /// ADR-005 audit C5: observer that mirrors the `general.launchAtLogin`
     /// preference into `SMAppService` registration so flipping the toggle in
     /// Settings registers / unregisters the login item without a relaunch.
@@ -1019,6 +1034,7 @@ extension BocanApp {
 
         // ADR-004 audit H1: re-open FSEvent streams after the system wakes.
         Self.installLibraryWakeObserver(scanner: scanner)
+        Self.installSubsonicWakeObserver(monitor: subsonicMonitor)
 
         // ADR-004 audit M1: kick off the FSEvents watcher at app launch (gated on
         // the `library.watchForChanges` preference).

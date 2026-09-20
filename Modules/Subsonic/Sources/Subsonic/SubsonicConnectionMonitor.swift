@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Network
 import Observability
@@ -13,8 +12,9 @@ import Observability
 /// On success: resets to the normal 60-second polling interval.
 ///
 /// ## Wake from sleep
-/// `NSWorkspace.didWakeNotification` triggers an immediate re-ping of all
-/// servers so status is refreshed as soon as the Mac comes back online.
+/// The app target observes `NSWorkspace.didWakeNotification` and calls
+/// `wakeAll()`, so status is refreshed as soon as the Mac comes back online.
+/// This module must not import AppKit, so the subscription lives in the app.
 public actor SubsonicConnectionMonitor {
     // MARK: - Types
 
@@ -33,14 +33,6 @@ public actor SubsonicConnectionMonitor {
     private let log = AppLogger.make(.subsonic)
     private var (stream, continuation) = AsyncStream<StatusUpdate>.makeStream()
     private let pathMonitor: NWPathMonitor
-
-    /// Token for the block-based wake observer, retained so `deinit` can remove
-    /// it. Without this the observer block leaks for the monitor's lifetime and
-    /// keeps a (weak-self) reference registered with the notification centre.
-    /// `nonisolated(unsafe)`: written once from the actor-isolated installer and
-    /// read once from `deinit`, which has exclusive access — never concurrently.
-    /// See #274.
-    private nonisolated(unsafe) var wakeObserver: NSObjectProtocol?
 
     // MARK: - Init
 
@@ -63,7 +55,6 @@ public actor SubsonicConnectionMonitor {
             label: "io.cloudcauldron.bocan.monitor.path",
             qos: .utility
         ))
-        Task { await self.installWakeObserver() }
     }
 
     // MARK: - Public API
@@ -188,28 +179,5 @@ public actor SubsonicConnectionMonitor {
     private func emit(serverID: UUID, status: SubsonicConnectionStatus) {
         self.statuses[serverID] = status
         self.continuation.yield((serverID: serverID, status: status))
-    }
-
-    // MARK: - Wake observer
-
-    private func installWakeObserver() {
-        // `NSWorkspace.didWakeNotification` is posted on the workspace's own
-        // notification centre, not `NotificationCenter.default`. Register there
-        // and retain the returned token so `deinit` can tear the observer down.
-        self.wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification,
-            object: nil,
-            queue: nil
-        ) { [weak self] _ in
-            Task {
-                await self?.wakeAll()
-            }
-        }
-    }
-
-    deinit {
-        if let wakeObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
-        }
     }
 }

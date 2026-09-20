@@ -249,8 +249,7 @@ public final class SubsonicMultiSourceSearchViewModel: ObservableObject, Subsoni
                 if Task.isCancelled {
                     return nil
                 }
-                struct TimedOut: Error {}
-                return .failure(TimedOut())
+                return .failure(SubsonicBrowseError.searchTimedOut(serverID: serverID, after: timeout))
             }
             let first = await (group.next()).flatMap(\.self)
             group.cancelAll()
