@@ -23,6 +23,8 @@ Phone Sync no longer treats finishing a song as a library change. Playing a song
 
 Songs from a Subsonic server now download with far less work for your Mac. A large lossless song starts a little sooner, and the download no longer competes with the song that is already playing.
 
+The keyboard shortcut list in Help now includes Immersive Mode. The shortcut worked all along, but the list did not mention it, so the only way to find it was the View menu.
+
 ## [2.16.0](https://github.com/bocan/bocan-music/compare/v2.15.0...v2.16.0) (2026-09-16)
 
 The play bar now says what it is playing. Under the title sits a row of small coloured boxes for the format, the bitrate, the sample rate, the bit depth and the channels of the current song, and hovering over any of them explains what that fact means. Streams and podcasts show what their own source reports. Narrow the window and the row keeps the boxes that fit.

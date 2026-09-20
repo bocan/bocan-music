@@ -29,6 +29,18 @@ enum E2ESeeder {
         for key in ["lyrics.paneVisible", "visualizer.paneVisible", "ui.immersive.visible"] {
             UserDefaults.standard.removeObject(forKey: key)
         }
+        // AppKit autosaves every split view's subview frames into this same
+        // shared domain, collapsed flag included, under a key named after
+        // the split view. Hiding the sidebar once therefore left every later
+        // launch with a zero-width sidebar column that publishes no rows to
+        // the accessibility tree, in this run and in every future one, and
+        // `-ApplePersistenceIgnoreState` does not touch it because this is
+        // an autosave rather than scene restoration. The menu invocation
+        // pass walks View ▸ Hide Sidebar, so the suite poisons itself.
+        for key in UserDefaults.standard.dictionaryRepresentation().keys
+            where key.hasPrefix("NSSplitView Subview Frames ") {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
         let fm = FileManager.default
         do {
             let root = E2EEnvironment.runsRoot

@@ -105,6 +105,7 @@ struct MiniPlayerSquare: View {
                 np: self.np,
                 musicLayout: .full,
                 palette: .onVisualizer,
+                identifiers: .miniPlayer,
                 openInfoWindow: { self.openWindow(id: "track-info") },
                 spacing: 16,
                 secondarySize: 16,

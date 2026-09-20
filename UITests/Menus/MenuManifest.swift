@@ -86,9 +86,20 @@ struct MenuItemSpec: Sendable {
         )
     }
 
-    /// An Apple- or SwiftUI-owned item the app cannot remove.
-    static func sys(_ titles: String..., ignoreChildren: Bool = false) -> MenuItemSpec {
-        MenuItemSpec(titles: titles, system: true, ignoreChildren: ignoreChildren)
+    /// An Apple- or SwiftUI-owned item the app cannot remove. `conditional`
+    /// carries the reason a system item may legitimately be absent, for the
+    /// ones macOS only inserts on some machines.
+    static func sys(
+        _ titles: String...,
+        ignoreChildren: Bool = false,
+        conditional: String? = nil
+    ) -> MenuItemSpec {
+        MenuItemSpec(
+            titles: titles,
+            system: true,
+            conditional: conditional,
+            ignoreChildren: ignoreChildren
+        )
     }
 }
 
@@ -161,6 +172,10 @@ enum MenuManifest {
             .sys("Delete"),
             .sys("Select All"),
             .own("Find", key: "⌘F", binding: "focusSearch", row: "Find"),
+            // macOS 26 inserts Writing Tools ahead of AutoFill. It is absent
+            // where Apple Intelligence is unsupported, off, or out of region,
+            // so the crawl must tolerate a machine without it.
+            .sys("Writing Tools", ignoreChildren: true, conditional: "Apple Intelligence"),
             .sys("AutoFill", ignoreChildren: true),
             .sys("Start Dictation…"),
             .sys("Emoji & Symbols"),

@@ -140,6 +140,18 @@ public enum A11y {
         public static let layoutButton = "miniPlayer.layout"
         public static let pinButton = "miniPlayer.pin"
         public static let dismissButton = "miniPlayer.dismiss"
+        /// Transport controls. Every mini player layout shares one set:
+        /// only one layout is on screen at a time, so the identifiers
+        /// cannot collide and a crawl need not know which is showing.
+        public static let info = "miniPlayer.transport.info"
+        public static let previous = "miniPlayer.transport.prev"
+        public static let playPause = "miniPlayer.transport.playPause"
+        public static let next = "miniPlayer.transport.next"
+        public static let shuffle = "miniPlayer.transport.shuffle"
+        public static let repeatMode = "miniPlayer.transport.repeat"
+        public static let stopAfter = "miniPlayer.transport.stopAfterCurrent"
+        public static let skipBack = "miniPlayer.transport.skipBack"
+        public static let skipForward = "miniPlayer.transport.skipForward"
     }
 
     // MARK: - Log console window

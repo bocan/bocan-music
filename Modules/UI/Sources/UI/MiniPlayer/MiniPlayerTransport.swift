@@ -23,10 +23,11 @@ struct MiniPlayerTransport: View {
         case navigation
     }
 
-    /// Accessibility identifiers per control. The mini player passes none
-    /// (its crawl is window-level); Immersive Mode passes its own so every
-    /// control is reachable by the surface crawl (ADR-080). An empty string
-    /// is the same as no identifier.
+    /// Accessibility identifiers per control. Every surface that hosts the
+    /// transport passes a set, so each control is reachable by the surface
+    /// crawl (ADR-080). An empty string is the same as no identifier, and
+    /// the default exists only for a host that has not been given one yet;
+    /// the identifier audit fails on any control it reaches without one.
     struct Identifiers {
         var info = ""
         var previous = ""
@@ -37,6 +38,20 @@ struct MiniPlayerTransport: View {
         var stopAfter = ""
         var skipBack = ""
         var skipForward = ""
+
+        /// The mini player's four layouts. They share one set because only
+        /// one of them is on screen at a time.
+        static let miniPlayer = Self(
+            info: A11y.MiniPlayer.info,
+            previous: A11y.MiniPlayer.previous,
+            playPause: A11y.MiniPlayer.playPause,
+            next: A11y.MiniPlayer.next,
+            shuffle: A11y.MiniPlayer.shuffle,
+            repeatMode: A11y.MiniPlayer.repeatMode,
+            stopAfter: A11y.MiniPlayer.stopAfter,
+            skipBack: A11y.MiniPlayer.skipBack,
+            skipForward: A11y.MiniPlayer.skipForward
+        )
     }
 
     /// Foreground colours per layout. Active toggles always use the accent colour.

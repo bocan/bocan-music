@@ -176,13 +176,14 @@ final class IdentifierAuditTests: XCTestCase {
             "Radio", "Recently Added", "Recently Played", "Most Played",
             "Up Next",
         ]
+        // Sidebar rows are not StaticTexts: the row carries one accessibility
+        // label and identifier for the whole Label (ADR-081), so a
+        // `staticTexts[title]` lookup only ever matched "Songs", by way of the
+        // launch destination's own title elsewhere in the window. Go through
+        // the same identifier-based helper the rest of the suite uses.
+        let inv = MenuInvoker(app: app)
         for destination in destinations {
-            let row = app.staticTexts[destination].firstMatch
-            guard row.waitForExistence(timeout: 10) else {
-                XCTFail("Sidebar destination \"\(destination)\" not found")
-                continue
-            }
-            row.click()
+            inv.selectSidebar(destination)
             Thread.sleep(forTimeInterval: 0.5)
             try violations.formUnion(self.audit(window: window, surface: destination))
         }

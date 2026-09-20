@@ -40,6 +40,7 @@ struct MiniPlayerCompact: View {
             MiniPlayerTransport(
                 np: self.np,
                 musicLayout: .full,
+                identifiers: .miniPlayer,
                 openInfoWindow: { self.openWindow(id: "track-info") },
                 spacing: 12,
                 secondarySize: 14,
