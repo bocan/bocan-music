@@ -357,6 +357,18 @@ Two follow-on hazards. A stale explicit-modules cache produces a precompile fail
 
 **Canonical file:** `Modules/UI/Tests/UITests/SnapshotTests/SnapshotTests.swift`
 
+### The Homebrew include flag is carried by four manifests and is not currently load-bearing
+
+**Problem:** `-Xcc -I/opt/homebrew/include` appears in `AudioEngine`, `Playback`, `Scrobble` and `UI`, with comments saying every transitive `CFFmpeg` consumer needs it, while `SyncServer` imports `AudioEngine` and carries nothing. One of the two had to be wrong.
+
+**Rule:** leave it as it is. `SyncServer` needs no change, and nothing else needs the flag added. Do not remove the four copies on the strength of a local build alone: they are insurance against the pkgconf regression the `AudioEngine` comment records, and the only environment that matters for that is the CI runner, which cannot be tested from a dev Mac. If you do remove them, do it in a PR and let the full CI suite be the test.
+
+**Why:** measured on 2026-09-20 (Xcode 27, Homebrew ffmpeg 9.0.1_1, #549). A clean `swift build` of `SyncServer`, with its `.build` moved aside so every dependency was checked out afresh, succeeds. A cold `xcodebuild` of the whole app, with DerivedData deleted and the flag removed from all four manifests, also succeeds. So pkgconf's cflags do reach the module scanner again on this toolchain, and the comments' claim that a transitive consumer "needs" the flag is no longer true.
+
+To re-test: `mv Modules/<Name>/.build{,.bak}` for SwiftPM, or delete `~/Library/Developer/Xcode/DerivedData/Bocan-*` for Xcode, then build. Prefix either with `GIT_CONFIG_PARAMETERS="'core.fsmonitor=false'"` (see the entry below). A dependency-resolution failure part way through is the checkout flake, not a flag problem; re-run before reading anything into it.
+
+**Canonical file:** `Modules/AudioEngine/Package.swift`
+
 ### Fresh SwiftPM clones hang because of the git fsmonitor
 
 **Problem:** a build with a new derived-data path, or a Periphery scan, sits at zero CPU forever with every package already cloned.
