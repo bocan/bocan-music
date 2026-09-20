@@ -205,7 +205,7 @@ private struct QueueContentView: View {
 
     private func observeUnavailableChanges() async {
         guard let qp = vm.queuePlayer else { return }
-        for await ids in qp.unavailableItemChanges {
+        for await ids in await qp.unavailableItemUpdates() {
             self.unavailableIDs = ids
         }
     }

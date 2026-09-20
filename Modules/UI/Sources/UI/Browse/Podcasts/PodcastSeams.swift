@@ -230,6 +230,16 @@ public protocol PodcastActions: Sendable {
     /// No-op when ADR-043 downloads are not built.
     func download(podcastID: Int64, guid: String) async
     func removeDownload(podcastID: Int64, guid: String) async
+    /// Live download progress: one element per state change or throttled tick,
+    /// so the episode badge can show how far a download has got. Persisted
+    /// state still arrives through the episode observation; this carries only
+    /// the fraction, which is not stored.
+    ///
+    /// Single-consumer: it is backed by one `AsyncStream`, so a second caller
+    /// would divide the elements with the first (#545). `PodcastsViewModel`
+    /// subscribes once for the life of the app; anything else needs the
+    /// per-subscriber shape `PlaybackQueue.changes()` uses.
+    func downloadProgress() async -> AsyncStream<UIEpisodeDownloadProgress>
     /// Returns [] when the episode has no chapters URL or the fetch fails.
     func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter]
     /// Imports an OPML subscription list, subscribing reachable feeds and returning
@@ -326,5 +336,35 @@ public extension PodcastActions {
     @discardableResult
     func subscribe(feedURL: URL) async throws -> Int64 {
         try await self.subscribe(feedURL: feedURL, podcastIndexID: nil, itunesCollectionID: nil)
+    }
+
+    /// No live progress: the badge falls back to the plain downloading icon.
+    func downloadProgress() async -> AsyncStream<UIEpisodeDownloadProgress> {
+        AsyncStream { $0.finish() }
+    }
+}
+
+// MARK: - UIEpisodeDownloadProgress
+
+/// One episode download's live progress, mirrored from
+/// `Podcasts.EpisodeDownload` so UI never imports `Podcasts`. `status` is the
+/// `Persistence` vocabulary the badge already speaks.
+public struct UIEpisodeDownloadProgress: Sendable, Hashable, Identifiable {
+    public var podcastID: Int64
+    public var guid: String
+    /// 0...1, or 0 while the total size is still unknown.
+    public var fractionComplete: Double
+    public var status: EpisodeDownloadState
+
+    /// Matches ``PodcastsViewModel/downloadKey(podcastID:guid:)``.
+    public var id: String {
+        "\(self.podcastID)/\(self.guid)"
+    }
+
+    public init(podcastID: Int64, guid: String, fractionComplete: Double, status: EpisodeDownloadState) {
+        self.podcastID = podcastID
+        self.guid = guid
+        self.fractionComplete = fractionComplete
+        self.status = status
     }
 }

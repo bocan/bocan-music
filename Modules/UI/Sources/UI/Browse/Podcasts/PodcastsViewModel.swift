@@ -20,7 +20,9 @@ public final class PodcastsViewModel: ObservableObject {
     /// Kept live by `unplayedCountsTask` so a mark-played write clears the badge.
     @Published public private(set) var podcastUnplayedCounts: [Int64: Int] = [:]
     @Published public private(set) var isLoading = false
-    @Published public private(set) var currentShow: Podcast?
+    /// `internal(set)` so the downloads extension can reflect an auto-download
+    /// change on the open show.
+    @Published public internal(set) var currentShow: Podcast?
     /// Episodes for the currently open show. Populated by `loadShow(_:)`.
     @Published public private(set) var episodes: [EpisodeListItem] = []
     @Published public var addBarText = ""
@@ -62,6 +64,12 @@ public final class PodcastsViewModel: ObservableObject {
     @Published public internal(set) var nowPlayingShowPersons: [PodcastPerson] = []
     /// The playing show's `podcast:podroll` recommendations, shown atop Show Notes.
     @Published public internal(set) var nowPlayingPodroll: [PodcastPodrollItem] = []
+    /// How far each running download has got, keyed by
+    /// ``downloadKey(podcastID:guid:)``. Only downloads in flight appear: an
+    /// episode that finished, failed or was removed drops out, because its
+    /// persisted state already tells the badge what to draw. The fraction is
+    /// the one thing the database does not store (#551).
+    @Published public internal(set) var downloadProgress: [String: Double] = [:]
 
     // MARK: - Dependencies
 
@@ -80,6 +88,7 @@ public final class PodcastsViewModel: ObservableObject {
     private nonisolated(unsafe) var unplayedCountsTask: Task<Void, Never>?
     nonisolated(unsafe) var continueListeningTask: Task<Void, Never>?
     nonisolated(unsafe) var detailTask: Task<Void, Never>?
+    nonisolated(unsafe) var downloadProgressTask: Task<Void, Never>?
 
     // MARK: - Init
 
@@ -107,6 +116,7 @@ public final class PodcastsViewModel: ObservableObject {
         unplayedCountsTask?.cancel()
         continueListeningTask?.cancel()
         detailTask?.cancel()
+        downloadProgressTask?.cancel()
     }
 
     // MARK: - Transcripts
@@ -227,8 +237,12 @@ public final class PodcastsViewModel: ObservableObject {
         self.startObserveSubscribed(library: library)
         self.startObserveUnplayedCounts(library: library)
         self.startObserveContinueListening(library: library)
+        self.startObserveDownloadProgress()
         self.healMissingArtwork()
     }
+
+    // The download methods (auto-download, live progress) live in
+    // PodcastsViewModel+Downloads.swift (file_length headroom).
 
     // startObserveContinueListening / resume live in
     // PodcastsViewModel+ContinueListening.swift (file_length headroom).
@@ -431,11 +445,6 @@ public final class PodcastsViewModel: ObservableObject {
         }
     }
 
-    public func toggleAutoDownload(_ on: Bool) async {
-        guard let id = currentShow?.id else { return }
-        await self.setAutoDownload(on, podcastID: id)
-    }
-
     // MARK: - Per-show settings
 
     /// Persists the per-show playback-speed override (nil = app default). Keeps
@@ -481,19 +490,6 @@ public final class PodcastsViewModel: ObservableObject {
             }
         } catch {
             self.log.error("podcasts.setRetentionLimit.failed", ["id": podcastID, "error": String(reflecting: error)])
-        }
-    }
-
-    /// Sets auto-download for a specific show (used by the per-show settings sheet,
-    /// which may be opened from the grid where there is no `currentShow`).
-    public func setAutoDownload(_ on: Bool, podcastID: Int64) async {
-        do {
-            try await self.actions?.setAutoDownload(on, podcastID: podcastID)
-            if self.currentShow?.id == podcastID {
-                self.currentShow?.autoDownload = on
-            }
-        } catch {
-            self.log.error("podcasts.setAutoDownload.failed", ["id": podcastID, "error": String(reflecting: error)])
         }
     }
 }

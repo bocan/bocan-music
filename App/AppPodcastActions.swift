@@ -124,6 +124,28 @@ struct AppPodcastActions: PodcastActions {
         await self.downloads?.removeDownload(podcastID: podcastID, guid: guid)
     }
 
+    /// Maps the download manager's progress stream to the UI seam type. The
+    /// manager's stream has one consumer, so this is subscribed once, by
+    /// `PodcastsViewModel` (see the protocol's note).
+    func downloadProgress() async -> AsyncStream<UIEpisodeDownloadProgress> {
+        guard let downloads else { return AsyncStream { $0.finish() } }
+        let source = downloads.progress
+        return AsyncStream { continuation in
+            let pump = Task {
+                for await event in source {
+                    continuation.yield(UIEpisodeDownloadProgress(
+                        podcastID: event.podcastID,
+                        guid: event.guid,
+                        fractionComplete: event.fractionComplete,
+                        status: event.status
+                    ))
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in pump.cancel() }
+        }
+    }
+
     func chapters(podcastID: Int64, guid: String) async throws -> [UIChapter] {
         let chapters = try await self.service.chapters(podcastID: podcastID, guid: guid)
         return chapters.map {

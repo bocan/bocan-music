@@ -205,6 +205,11 @@ public actor SubsonicStreamCache {
 
     private func runDownload(key: SubsonicStreamKey, url: URL) async {
         guard let entry = self.entries[key] else { return }
+        // The cache signals ready only when the whole file is on disk, so this
+        // interval is the network part of time-to-first-audio (#547).
+        let endSpan = Telemetry.timer("subsonic.download")
+        defer { endSpan() }
+        let started = ContinuousClock.now
 
         let bytes: RemoteTrackBytes
         do {
@@ -249,11 +254,17 @@ public actor SubsonicStreamCache {
                 "songID": key.songID,
                 "bytes": entry.bytesWritten,
                 "ext": entry.fileURL.pathExtension,
+                "ms": Self.milliseconds(ContinuousClock.now - started),
             ])
             await self.evictIfNeeded()
         } catch {
             self.fail(entry: entry, with: error)
         }
+    }
+
+    private static func milliseconds(_ duration: Duration) -> Int {
+        let parts = duration.components
+        return Int(parts.seconds) * 1000 + Int(parts.attoseconds / 1_000_000_000_000_000)
     }
 
     // MARK: - Format sniffing

@@ -14,7 +14,13 @@ public final class LyricsViewModel: ObservableObject {
     // MARK: - Published state
 
     /// The resolved lyrics for the current track, or `nil` when unavailable.
-    @Published public private(set) var document: LyricsDocument?
+    @Published public private(set) var document: LyricsDocument? {
+        didSet { self.menuState.update(hasDocument: self.document != nil) }
+    }
+
+    /// `@Observable` mirror of `document != nil` and `isFetching` for the menu
+    /// bar, which cannot observe the `@Published` originals (#546).
+    public let menuState = LyricsMenuState()
 
     /// The source that produced ``document``: `"user"`, `"sidecar"`, `"embedded"`, `"lrclib"`, or `nil`.
     @Published public private(set) var documentSource: String?
@@ -42,7 +48,9 @@ public final class LyricsViewModel: ObservableObject {
     }
 
     /// `true` while an auto-fetch or force-fetch is in progress.
-    @Published public private(set) var isFetching = false
+    @Published public private(set) var isFetching = false {
+        didSet { self.menuState.update(isFetching: self.isFetching) }
+    }
 
     /// Controls whether the lyrics editor sheet is visible.
     /// Set to `true` from external callers (menu bar, context menu) to open the editor.

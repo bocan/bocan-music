@@ -10,13 +10,23 @@ import Persistence
 public actor LibraryChangeObserver {
     private let syncMeta: SyncMetaRepository
     private let debounce: Duration
+    private let profile: (@Sendable () async -> SyncProfile)?
     private let log = AppLogger.make(.sync)
     private var observationTask: Task<Void, Never>?
     private var pendingBump: Task<Void, Never>?
 
-    public init(syncMeta: SyncMetaRepository, debounce: Duration = .seconds(5)) {
+    /// - Parameter profile: reads the current sync profile, so the observed
+    ///   `tracks` region can be narrowed to the manifest's own columns when
+    ///   membership cannot depend on anything else (#550). Omit it to observe
+    ///   the whole table, which is always correct and never narrower.
+    public init(
+        syncMeta: SyncMetaRepository,
+        debounce: Duration = .seconds(5),
+        profile: (@Sendable () async -> SyncProfile)? = nil
+    ) {
         self.syncMeta = syncMeta
         self.debounce = debounce
+        self.profile = profile
     }
 
     /// Begins observing. The observation's initial emission is ignored so the
@@ -24,20 +34,52 @@ public actor LibraryChangeObserver {
     public func start() {
         self.observationTask = Task { [weak self] in
             guard let self else { return }
-            let stream = await self.syncMeta.observeLibraryChanges()
-            do {
-                var isInitial = true
-                for try await _ in stream {
-                    if isInitial {
-                        isInitial = false
-                        continue
-                    }
-                    await self.scheduleBump()
-                }
-            } catch {
-                await self.observationFailed(error)
+            // Re-subscribes when a profile change flips which `tracks` region
+            // is correct, and only then.
+            while !Task.isCancelled {
+                guard await self.observeUntilRegionChanges() else { return }
             }
         }
+    }
+
+    /// Runs one subscription. Returns `true` when it ended because the region
+    /// needs recomputing, `false` when the caller should stop.
+    private func observeUntilRegionChanges() async -> Bool {
+        let narrow = await self.canNarrowTracksRegion()
+        let stream = await self.syncMeta.observeLibraryChanges(narrowTracksToManifestColumns: narrow)
+        var regionIsStale = false
+        do {
+            var isInitial = true
+            for try await _ in stream {
+                if isInitial {
+                    isInitial = false
+                    continue
+                }
+                self.scheduleBump()
+                // The profile is in the observed set, so this is where a
+                // change to it lands; the bump above still happens for it.
+                if await self.canNarrowTracksRegion() != narrow {
+                    regionIsStale = true
+                    break
+                }
+            }
+        } catch {
+            self.observationFailed(error)
+            return false
+        }
+        return regionIsStale && !Task.isCancelled
+    }
+
+    /// `true` only when library membership cannot depend on a `tracks` column
+    /// outside the manifest's own set. A profile that selects playlists can
+    /// include a smart playlist whose criteria key on `play_count`, so only
+    /// "everything" qualifies.
+    private func canNarrowTracksRegion() async -> Bool {
+        guard let profile = self.profile else { return false }
+        if case .everything = await profile() {
+            return true
+        }
+        return false
     }
 
     public func stop() {
