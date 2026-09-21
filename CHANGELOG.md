@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.17.1](https://github.com/bocan/bocan-music/compare/v2.17.0...v2.17.1) (2026-09-21)
+
 Right-clicking a song inside an album now always brings up its menu. After you opened an album from the Albums grid, a right-click on one of its songs could do nothing at all until you had clicked a song first, which made it look random.
+
+### For developers
+
+**Fixed**
+- ui: right-click in an album opened from the grid raises its menu ([#556](https://github.com/bocan/bocan-music/pull/556))
 
 ## [2.17.0](https://github.com/bocan/bocan-music/compare/v2.16.0...v2.17.0) (2026-09-20)
 
