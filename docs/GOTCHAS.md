@@ -84,6 +84,18 @@ Diagnose live-only visualizer bugs by logging the real per-frame uniforms from t
 
 **Canonical file:** `Modules/UI/Sources/UI/Visualizers/Metal/MetalVisualizerView.swift`
 
+### A SwiftUI view torn down while focused stops right-clicks reaching AppKit tables
+
+**Problem:** right-clicking a row in a `TrackTable` raises no menu at all, on a page reached from a SwiftUI grid. It looks intermittent, because one left-click on any row cures it for that visit, and the same page reached another way never shows it.
+
+**Rule:** a `.focusable()` view that navigates away on click must give up its focus before the navigation (`focusedX = nil`, then `selectDestination`). Do not add `.focusable()` to anything that replaces the content pane on click without doing this. To diagnose, log from `ContextMenuTableView.rightMouseDown` and from a local `.rightMouseDown` monitor: if the monitor fires and hit-tests to the table cell but `rightMouseDown` never arrives, this is the cause.
+
+**Why:** a click focuses the view, and the view is removed from the hierarchy while it still holds keyboard focus. From then on SwiftUI's `AppKitWindow` consumes `rightMouseDown` before AppKit dispatches it, so `menu(for:)` is never asked. Left clicks still get through, and the first one makes the table first responder, which ends it. Found on the Albums grid, whose tiles are focusable for arrow-key navigation (ADR-006); the artist cards use a plain tap and never had it.
+
+When writing an E2E check for a context menu, wait on an item only that menu has. `Play Now` is also a menu bar item, which is always in the accessibility tree, so waiting on it passes whether or not the context menu opened.
+
+**Canonical file:** `Modules/UI/Sources/UI/Browse/AlbumsGridView.swift`, regression tests in `UITests/Surfaces/BrowseSurfaceTests.swift`
+
 ### `Podcast` and `PodcastEpisode` are ambiguous in the UI module
 
 **Problem:** an honest "ambiguous for type lookup" error, followed by a misleading one: `Value of type 'PodcastRepository' has no member 'fetchByFeedURLIgnoringScheme'`. That member does exist, and there is only one `PodcastRepository`.

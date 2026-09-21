@@ -95,6 +95,100 @@ final class BrowseSurfaceTests: XCTestCase {
         inv.waitFor("mouse-back drills out to the grid") { inv.element("albumsGrid").exists && !app.buttons["Shuffle Album"].exists }
     }
 
+    // MARK: Track context menu
+
+    /// Right-clicking a track in an album opened from the grid must raise the
+    /// track menu, with no left-click on the table first. A tile click focuses
+    /// the tile, and a grid torn down while holding focus left SwiftUI's window
+    /// consuming every right-click, so the table never saw one. The route
+    /// matters: the same page reached by Go to Album never had the fault, and
+    /// one left-click on a row cured it, which is why it looked intermittent.
+    func testTrackContextMenuOpensInsideAnAlbum() {
+        let app = self.session.launch(arguments: MenuManifest.matrixDefaults)
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 15))
+        XCTAssertTrue(app.waitForTrackRows(timeout: 60), "fixture scan never produced rows")
+        let inv = MenuInvoker(app: app)
+
+        // The Albums grid, then a tile. A plain click on the row element, not
+        // the coordinate tap `selectSidebar` uses, which does not navigate.
+        app.activate()
+        let albumsRow = app.descendants(matching: .any).matching(identifier: "sidebar.albums").firstMatch
+        albumsRow.click()
+        XCTAssertTrue(inv.element("albumsGrid").waitForExistence(timeout: 8), "never reached the Albums grid")
+        inv.element("albumsGrid.tile.1").click()
+        inv.waitFor("album detail open") { app.buttons["Shuffle Album"].exists }
+
+        var outcomes: [String] = []
+        func probe(_ phase: String) {
+            for title in [E2ESession.fixtureTitle, "E2E Tone Two", E2ESession.fixtureTitle] {
+                app.staticTexts[title].rightClick()
+                // "Re-scan File" exists only in the context menu. "Play Now"
+                // is also a menu bar item, always in the tree, so waiting on
+                // it passes whether or not the context menu came up.
+                let opened = app.menuItems["Re-scan File"].waitForExistence(timeout: 3)
+                outcomes.append("\(phase) \(title): \(opened ? "menu" : "NOTHING")")
+                if opened {
+                    app.typeKey(.escape, modifierFlags: [])
+                }
+            }
+        }
+        probe("idle")
+        app.buttons["Play Album"].firstMatch.click()
+        XCTAssertTrue(app.waitUntilPlaying(timeout: 15), "album never started playing")
+        probe("playing")
+
+        XCTAssertFalse(
+            outcomes.contains { $0.hasSuffix("NOTHING") },
+            "right-click raised no menu: \(outcomes.joined(separator: ", "))"
+        )
+    }
+
+    /// The same check for the song list on an artist's page, reached from the
+    /// Artists grid. It never had the fault (the cards take no keyboard focus),
+    /// and this keeps it that way.
+    func testTrackContextMenuOpensOnAnArtistPageFromTheGrid() {
+        self.assertTrackContextMenuOpensOnAnArtistPage(viewMode: "grid")
+    }
+
+    /// The list layout opens an artist through a button row, not a card.
+    func testTrackContextMenuOpensOnAnArtistPageFromTheList() {
+        self.assertTrackContextMenuOpensOnAnArtistPage(viewMode: "list")
+    }
+
+    private func assertTrackContextMenuOpensOnAnArtistPage(viewMode: String) {
+        // Pinned, because the layout lives in the container's shared defaults
+        // and would otherwise be whatever an earlier run left behind.
+        let app = self.session.launch(
+            arguments: MenuManifest.matrixDefaults + ["-artists.viewMode", viewMode]
+        )
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 15))
+        XCTAssertTrue(app.waitForTrackRows(timeout: 60), "fixture scan never produced rows")
+
+        app.activate()
+        app.descendants(matching: .any).matching(identifier: "sidebar.artists").firstMatch.click()
+        // A grid card is static text; a list row is a button carrying the name.
+        let artist = viewMode == "list"
+            ? app.buttons["E2E Fixtures"].firstMatch
+            : app.staticTexts["E2E Fixtures"].firstMatch
+        XCTAssertTrue(artist.waitForExistence(timeout: 8), "never reached Artists (\(viewMode))")
+        artist.click()
+        XCTAssertTrue(app.firstTrackRow.waitForExistence(timeout: 10), "artist songs never listed")
+
+        var outcomes: [String] = []
+        for title in [E2ESession.fixtureTitle, "E2E Tone Two"] {
+            app.staticTexts[title].rightClick()
+            let opened = app.menuItems["Re-scan File"].waitForExistence(timeout: 3)
+            outcomes.append("\(title): \(opened ? "menu" : "NOTHING")")
+            if opened {
+                app.typeKey(.escape, modifierFlags: [])
+            }
+        }
+        XCTAssertFalse(
+            outcomes.contains { $0.hasSuffix("NOTHING") },
+            "right-click raised no menu: \(outcomes.joined(separator: ", "))"
+        )
+    }
+
     // MARK: Helpers
 
     private func launch() -> XCUIApplication {

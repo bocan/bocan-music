@@ -348,6 +348,13 @@ public struct AlbumsGridView: View {
                     // Snapshot the current scroll offset so the grid returns to it
                     // when it's rebuilt on the way back (#349).
                     self.vm.gridScrollOffset = Double(self.liveScrollOffset)
+                    // Give keyboard focus up before the grid goes away. A click
+                    // focuses the tile, and a grid torn down while one of its
+                    // tiles still holds focus leaves SwiftUI's window consuming
+                    // every right-click, so the album's track table never sees
+                    // `rightMouseDown` and its context menu never opens, until
+                    // a left-click hands the table first responder.
+                    self.focusedAlbumID = nil
                     Task { await self.library.selectDestination(.album(id)) }
                 }
             }
