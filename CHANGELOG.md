@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Right-clicking a song inside an album now always brings up its menu. After you opened an album from the Albums grid, a right-click on one of its songs could do nothing at all until you had clicked a song first, which made it look random.
+
 ## [2.17.0](https://github.com/bocan/bocan-music/compare/v2.16.0...v2.17.0) (2026-09-20)
 
 Deleting a song, or removing one from the library, no longer rebuilds the whole songs list. The list keeps your place, so you can work down a long list and delete as you go instead of being thrown back to the top after every one. Removing several songs at once now happens in a single pass rather than one redraw per song, and the songs you did not touch stay selected. If a song cannot be removed, Bòcan now tells you instead of leaving it in the list without a word. An artist's page also keeps up: remove the last song of an album there and the album leaves the page straight away.
