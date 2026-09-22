@@ -46,7 +46,7 @@ make doctor
 | `make test-ui` | UI module: snapshot + view-model tests (snapshot tests run only here, not in `make test`) |
 | `make test-audio-engine` | AudioEngine SPM package tests (requires FFmpeg via Homebrew) |
 | `make test-e2e` | Whole-app E2E journeys (XCUITest; launches the app repeatedly, opt-in, excluded from `make test` and CI) |
-| `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (ADR-079 journeys, menu crawl, one surface, one radio journey) |
+| `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (ADR-079 journeys, menu crawl, one surface, one radio journey, and the track context menu inside an album opened from the grid) |
 | `make lint` | SwiftLint + SwiftFormat lint |
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |

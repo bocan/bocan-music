@@ -182,14 +182,17 @@ test-e2e:
 		| xcbeautify $(XCBEAUTIFY_FLAGS)
 
 # The curated <=10 minute subset for a quick pre-release sanity check: phase 28
-# journeys, the menu structural crawl, one surface, one radio journey. Deliberately
-# excludes the reconnect pair (slow, the flake watch) and hover tooltip checks
-# (quarantinable by design) -- those belong in the full `test-e2e` run.
+# journeys, the menu structural crawl, one surface, one radio journey, and the
+# track context menu inside an album opened from the grid (the 2.17.1 fault:
+# a right-click that raised nothing). Deliberately excludes the reconnect pair
+# (slow, the flake watch) and hover tooltip checks (quarantinable by design) --
+# those belong in the full `test-e2e` run.
 E2E_SMOKE_TESTS := \
 	-only-testing:BocanUITests/FoundationJourneys \
 	-only-testing:BocanUITests/MenuCrawlTests/testMenuBarMatchesManifest \
 	-only-testing:BocanUITests/ToolbarSurfaceTests/testToolbarSurface \
-	-only-testing:BocanUITests/RadioStreamJourneyTests/testAddByURLPlaysAndShowsScriptedTitle
+	-only-testing:BocanUITests/RadioStreamJourneyTests/testAddByURLPlaysAndShowsScriptedTitle \
+	-only-testing:BocanUITests/BrowseSurfaceTests/testTrackContextMenuOpensInsideAnAlbum
 
 ## test-e2e-smoke: Run a curated <=10 minute E2E subset for quick local pre-release checks
 test-e2e-smoke:
