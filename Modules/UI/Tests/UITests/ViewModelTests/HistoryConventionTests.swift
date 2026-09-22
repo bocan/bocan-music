@@ -48,4 +48,17 @@ struct HistoryConventionTests {
             #expect(!text.contains("@FocusState"), "\(file) must not hold focus state")
         }
     }
+
+    @Test("The toolbar search field and type-to-search both go through the routed accessor")
+    func searchFieldIsRouted() throws {
+        // A revert to `searchQuery` here would silently undo slice 2: the
+        // field would stop feeding History and start writing the library
+        // query from that page.
+        let root = try self.source("AppRoot/RootView.swift")
+        #expect(root.contains(".searchable(text: self.$vm.searchText"))
+        #expect(!root.contains(".searchable(text: self.$vm.searchQuery"))
+        let typeToSearch = try self.source("AppRoot/TypeToSearchMonitor.swift")
+        #expect(typeToSearch.contains("self.vm.searchText = String(char)"))
+        #expect(!typeToSearch.contains("self.vm.searchQuery = String(char)"))
+    }
 }

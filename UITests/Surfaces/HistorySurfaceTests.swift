@@ -14,12 +14,13 @@ final class HistorySurfaceTests: XCTestCase {
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
     }
 
-    static let coveredIdentifiers = ["history.table", "history.emptyState"]
+    static let coveredIdentifiers = ["history.table", "history.emptyState", "history.noResults"]
 
     /// A fresh fixture launch has no plays, so History opens on its empty
     /// state. Playing a fixture past the threshold (the tones are 60 s and a
     /// play records at 50%) adds the row live, with no reload, and the row
-    /// offers the song menu.
+    /// offers the song menu. Then the search contracts of ADR-094 slice 2,
+    /// in the same launch because a recorded play costs 30 s to make.
     func testHistoryShowsThePlayAndOffersTheSongMenu() {
         let app = self.session.launch(arguments: MenuManifest.matrixDefaults)
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 15))
@@ -57,6 +58,47 @@ final class HistorySurfaceTests: XCTestCase {
             "right-click on a history row raised no song menu"
         )
         app.typeKey(.escape, modifierFlags: [])
+
+        // Search on History filters the plays by song, and is its own.
+        let field = app.searchFields.firstMatch
+        self.type("zzzz", into: field, app: app)
+        XCTAssertTrue(
+            inv.element("history.noResults").waitForExistence(timeout: 8),
+            "a term matching no song must show the no-results state"
+        )
+        inv.pressEscape()
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "Esc clears the History query and the row returns")
+        XCTAssertEqual(self.text(of: field), "", "the field is empty after Esc")
+
+        // A library filter set on Songs is not visible on History, and is
+        // still there on the way back.
+        self.sidebarRow(app, "sidebar.songs").click()
+        XCTAssertTrue(app.waitForTrackRows(timeout: 10), "never returned to Songs")
+        self.type("Tone Two", into: field, app: app)
+        inv.waitFor("Songs narrows to one tone") { inv.visibleFixtureTitleCount() == 1 }
+
+        self.sidebarRow(app, "sidebar.history").click()
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "History lists the play regardless of the Songs filter")
+        XCTAssertEqual(self.text(of: field), "", "History opens with an empty field")
+
+        app.typeKey("[", modifierFlags: .command)
+        inv.waitFor("back on Songs, still filtered") { inv.visibleFixtureTitleCount() == 1 }
+        XCTAssertEqual(self.text(of: field), "Tone Two", "the Songs filter came back with the page")
+    }
+
+    /// Focuses the field with ⌘F, replaces its contents, and types.
+    private func type(_ text: String, into field: XCUIElement, app: XCUIApplication) {
+        app.typeKey("f", modifierFlags: .command)
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "⌘F did not focus search")
+        field.click()
+        app.typeKey("a", modifierFlags: .command)
+        app.typeText(text)
+    }
+
+    /// The field's text, empty for a placeholder.
+    private func text(of field: XCUIElement) -> String {
+        let value = field.value as? String ?? ""
+        return value == "Search" ? "" : value
     }
 
     // MARK: Helpers

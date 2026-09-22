@@ -118,6 +118,22 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     @Published public var searchQuery = ""
 
+    /// The text in the toolbar search field. On History it is that page's own
+    /// query; everywhere else it is the library query, and the two never mix
+    /// (ADR-094 slice 2). Computed over two properties that are observed on
+    /// their own, so it must not be `@Published` itself: a publisher here
+    /// would fire the library debounce a second time.
+    public var searchText: String {
+        get { self.selectedDestination == .history ? self.history.query : self.searchQuery }
+        set {
+            if self.selectedDestination == .history {
+                self.history.query = newValue
+            } else {
+                self.searchQuery = newValue
+            }
+        }
+    }
+
     /// ADR-035 step 9: expand/collapse state for top-level sidebar
     /// sections, plus per-Subsonic-server disclosure state. Mutated directly
     /// by `Sidebar` via SwiftUI bindings; persistence is driven by a
@@ -1112,6 +1128,14 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
         default:
             break
+        }
+        // History's own query never survives a navigation, in either
+        // direction (ADR-094): cleared on the way out, and again on the way
+        // in, so the page always opens with an empty field. The library
+        // query is not touched by either edge, so a filter left on Songs is
+        // still there after a visit.
+        if self.selectedDestination == .history || destination == .history {
+            self.history.clearQuery()
         }
         self.selectedDestination = destination
         // A move gets the loading state, not the songs of the place just left:

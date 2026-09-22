@@ -76,8 +76,8 @@ struct TypeToSearchConventionTests {
         )
         let helper = try self.uiSource("AppRoot/TypeToSearchMonitor.swift")
         #expect(
-            helper.contains("self.vm.searchQuery = String(char)"),
-            "the seed character must start a fresh query"
+            helper.contains("self.vm.searchText = String(char)"),
+            "the seed character must start a fresh query, through the routed accessor (ADR-094)"
         )
         #expect(
             helper.contains("self.vm.requestSearchFocus()"),

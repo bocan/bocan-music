@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-There is a new History entry under Recents in the sidebar. It lists every song you have played, one line per play, newest first, with when you played it and how much of it you heard. Bòcan has kept this record all along; this is the first time you can read it. Double-click a line to play the song again, and right-click for the usual song menu. One thing to know: removing a song from your library also removes its plays from the list.
+There is a new History entry under Recents in the sidebar. It lists every song you have played, one line per play, newest first, with when you played it and how much of it you heard. Bòcan has kept this record all along; this is the first time you can read it. Double-click a line to play the song again, and right-click for the usual song menu. Type in the search field while History is open and it filters the plays by song. That search belongs to History alone: it never carries into the rest of the library, a filter you left on Songs is still there when you come back, and History always opens with an empty field. One thing to know: removing a song from your library also removes its plays from the list.
 
 ## [2.17.1](https://github.com/bocan/bocan-music/compare/v2.17.0...v2.17.1) (2026-09-21)
 

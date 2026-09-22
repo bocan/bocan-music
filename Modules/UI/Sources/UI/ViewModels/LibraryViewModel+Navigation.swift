@@ -191,6 +191,13 @@ extension LibraryViewModel {
             Task { await self.selectDestination(parent) }
             return true
         }
+        // History filters on its own query, so Esc there clears that one and
+        // leaves the library query alone (ADR-094).
+        if current == .history {
+            guard !self.history.query.isEmpty else { return false }
+            self.history.clearQuery()
+            return true
+        }
         guard !self.searchQuery.isEmpty else { return false }
         self.searchQuery = ""
         return true

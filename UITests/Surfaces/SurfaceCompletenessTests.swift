@@ -47,10 +47,10 @@ final class SurfaceCompletenessTests: XCTestCase {
         "history.table", "history.emptyState", "history.noResults",
     ]
 
-    /// History identifiers legitimately absent from the crawl table.
-    static let historySkips: [String: String] = [
-        "history.noResults": "needs the routed search field, which is ADR-094 slice 2; that slice's test owns it",
-    ]
+    /// History identifiers legitimately absent from the crawl table. Empty
+    /// since ADR-094 slice 2 wired the search; kept so the next skip has a
+    /// place and a reason.
+    static let historySkips: [String: String] = [:]
 
     // MARK: Cross-suite uniqueness
 
