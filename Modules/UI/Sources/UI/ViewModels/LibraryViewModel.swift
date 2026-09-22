@@ -346,6 +346,8 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
 
     public let tracks: TracksViewModel
     public let albums: AlbumsViewModel
+    /// The History destination's rows and its own, independent search (ADR-094).
+    public let history: HistoryViewModel
     public let artists: ArtistsViewModel
     public let nowPlaying: NowPlayingViewModel
     public let playlistSidebar: PlaylistSidebarViewModel
@@ -527,6 +529,10 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
             albumRepository: albumRepo
         )
         self.albums = AlbumsViewModel(repository: albumRepo)
+        self.history = HistoryViewModel(
+            repository: PlayHistoryRepository(database: database),
+            trackRepository: trackRepo
+        )
         let playlistService = PlaylistService(database: database)
         self.playlistService = playlistService
         self.playlistSidebar = PlaylistSidebarViewModel(service: playlistService)

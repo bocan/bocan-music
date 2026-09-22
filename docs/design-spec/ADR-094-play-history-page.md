@@ -304,9 +304,11 @@ Persistence, `make test-persistence`, in-memory database
   a shared second.
 - Deleting a track deletes its plays (contract 3): insert a play, delete the
   track, check the play is gone. The test pins the cascade, so a later
-  change to it is a deliberate one. A second test writes a play with
-  `PRAGMA foreign_keys = OFF` and checks it lists with empty text, which is
-  the `LEFT JOIN`.
+  change to it is a deliberate one. The `LEFT JOIN` on the song tables is
+  covered by a song with no artist and no album, which lists with those
+  columns empty. A play of a missing song is not reachable from a test:
+  the wrapper's `write` runs inside a transaction, where
+  `PRAGMA foreign_keys` is a no-op, and its writer is private.
 - `matching:` finds plays of a song by title, by artist, by album, and
   returns nothing for a term with no song; a term with FTS syntax characters
   is escaped, not an error.

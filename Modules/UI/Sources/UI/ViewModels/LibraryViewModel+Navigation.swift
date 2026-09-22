@@ -43,7 +43,7 @@ extension LibraryViewModel {
         case let .composer(c):
             await self.tracks.load(composer: c)
 
-        case .playlist, .folder, .smartPlaylist, .upNext, .radio:
+        case .playlist, .folder, .smartPlaylist, .upNext, .radio, .history:
             break // each destination manages its own loading
 
         case let .search(searchQuery):

@@ -90,3 +90,7 @@ typealias TrackTableUpdatePlan = TableUpdatePlan<Int64, Track.ID>
 /// The Subsonic table keys rows by the per-server row identifier string and
 /// has no selection input.
 typealias SubsonicSongTableUpdatePlan = TableUpdatePlan<String, String>
+
+/// The History table keys rows by play id (`play_history.id`), so a song
+/// played twice is two rows, and has no selection input (ADR-094).
+typealias HistoryTableUpdatePlan = TableUpdatePlan<Int64, Int64>

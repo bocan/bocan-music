@@ -1,5 +1,13 @@
 {
   "_comment": "Curated layer for docs/data-dictionary.md, keyed by table.column. 'traces' is the ADR / issue the column serves and marks the row as reviewed; 'note' is free text. Regenerate with make data-dictionary.",
+  "play_history.duration_played": {
+    "traces": "ADR-094",
+    "note": "Seconds of the song played when the recording threshold was reached (50% or 4 minutes). Written by PlayHistoryRecorder; first read by the History page, as the Played For column."
+  },
+  "play_history.source": {
+    "traces": "ADR-094",
+    "note": "Always 'queue' today: radio, podcasts and Subsonic plays never reach the recorder's local write. Not shown on the History page for that reason; reserved for a second local source."
+  },
   "sync_transcodes.track_id": {
     "traces": "ADR-088",
     "note": "Track the artifact belongs to; cascades away with the track."

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+There is a new History entry under Recents in the sidebar. It lists every song you have played, one line per play, newest first, with when you played it and how much of it you heard. Bòcan has kept this record all along; this is the first time you can read it. Double-click a line to play the song again, and right-click for the usual song menu. One thing to know: removing a song from your library also removes its plays from the list.
+
 ## [2.17.1](https://github.com/bocan/bocan-music/compare/v2.17.0...v2.17.1) (2026-09-21)
 
 Right-clicking a song inside an album now always brings up its menu. After you opened an album from the Albums grid, a right-click on one of its songs could do nothing at all until you had clicked a song first, which made it look random.

@@ -42,6 +42,16 @@ final class SurfaceCompletenessTests: XCTestCase {
         "nowPlayingStrip.markerLine": "present only during cue-marked playback; CueMarkerJourneyTests owns it (ADR-087)",
     ]
 
+    /// A11y.History.* (ADR-094).
+    static let historyRegistry: Set = [
+        "history.table", "history.emptyState", "history.noResults",
+    ]
+
+    /// History identifiers legitimately absent from the crawl table.
+    static let historySkips: [String: String] = [
+        "history.noResults": "needs the routed search field, which is ADR-094 slice 2; that slice's test owns it",
+    ]
+
     // MARK: Cross-suite uniqueness
 
     @MainActor
@@ -52,6 +62,7 @@ final class SurfaceCompletenessTests: XCTestCase {
             + BrowseSurfaceTests.albumsCoveredIdentifiers
             + RadioSurfaceTests.coveredIdentifiers
             + PlaylistSurfaceTests.smartPlaylistCoveredIdentifiers
+            + HistorySurfaceTests.coveredIdentifiers
     }
 
     @MainActor
@@ -92,6 +103,24 @@ final class SurfaceCompletenessTests: XCTestCase {
         )
         for (_, reason) in Self.transportSkips {
             XCTAssertFalse(reason.isEmpty, "transport skip needs a reason")
+        }
+    }
+
+    @MainActor
+    func testHistorySurfaceCoversItsRegistry() {
+        let covered = Set(HistorySurfaceTests.coveredIdentifiers)
+        let skipped = Set(Self.historySkips.keys)
+        XCTAssertTrue(
+            covered.isDisjoint(with: skipped),
+            "a history identifier is both crawled and skipped"
+        )
+        XCTAssertEqual(
+            covered.union(skipped),
+            Self.historyRegistry,
+            "every history identifier must be crawled or skipped with a reason"
+        )
+        for (_, reason) in Self.historySkips {
+            XCTAssertFalse(reason.isEmpty, "history skip needs a reason")
         }
     }
 
