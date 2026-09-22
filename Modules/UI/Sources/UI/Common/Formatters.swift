@@ -53,6 +53,13 @@ public enum Formatters {
         return Self.shortDateFormatter.string(from: date)
     }
 
+    /// Formats an epoch timestamp as a short date with the time of day, for a
+    /// list where the same day appears many times (the play history).
+    public static func shortDateTime(epochSeconds: Int64) -> String {
+        let date = Date(timeIntervalSince1970: TimeInterval(epochSeconds))
+        return Self.shortDateTimeFormatter.string(from: date)
+    }
+
     // MARK: - Private
 
     /// These formatters are created once and accessed from the main actor only.
@@ -69,6 +76,13 @@ public enum Formatters {
         let f = DateFormatter()
         f.dateStyle = .medium
         f.timeStyle = .none
+        return f
+    }()
+
+    private static let shortDateTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .short
         return f
     }()
 }

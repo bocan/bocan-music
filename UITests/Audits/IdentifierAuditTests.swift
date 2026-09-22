@@ -174,7 +174,7 @@ final class IdentifierAuditTests: XCTestCase {
         let destinations = [
             "Songs", "Albums", "Artists", "Genres", "Composers", "Podcasts",
             "Radio", "Recently Added", "Recently Played", "Most Played",
-            "Up Next",
+            "History", "Up Next",
         ]
         // Sidebar rows are not StaticTexts: the row carries one accessibility
         // label and identifier for the whole Label (ADR-081), so a

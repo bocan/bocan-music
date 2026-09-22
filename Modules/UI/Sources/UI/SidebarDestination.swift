@@ -20,6 +20,8 @@ public enum SidebarDestination: Hashable, Sendable, Codable {
     case recentlyAdded
     case recentlyPlayed
     case mostPlayed
+    /// Every recorded play, one row each, newest first (ADR-094).
+    case history
 
     // MARK: - Drill-down
 

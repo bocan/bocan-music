@@ -77,6 +77,9 @@ extension SidebarDestination {
         case .mostPlayed:
             L10n.string("Most Played")
 
+        case .history:
+            L10n.string("History")
+
         case .artist:
             L10n.string("Artist")
 

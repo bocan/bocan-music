@@ -86,6 +86,9 @@ public struct ContentPane: View {
         case .recentlyAdded, .recentlyPlayed, .mostPlayed:
             SmartFolderView(vm: self.vm.tracks, library: self.vm, destination: self.vm.selectedDestination)
 
+        case .history:
+            HistoryView(vm: self.vm.history, library: self.vm)
+
         case let .artist(id):
             ArtistDetailView(artistID: id, library: self.vm)
 

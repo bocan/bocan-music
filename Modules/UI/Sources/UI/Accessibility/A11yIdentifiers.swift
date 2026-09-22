@@ -20,6 +20,7 @@ public enum A11y {
         public static let recentlyAdded = "sidebar.recentlyAdded"
         public static let recentlyPlayed = "sidebar.recentlyPlayed"
         public static let mostPlayed = "sidebar.mostPlayed"
+        public static let history = "sidebar.history"
         public static let upNext = "sidebar.upNext"
         public static let radio = "sidebar.radio"
         public static let podcasts = "sidebar.podcasts"
@@ -73,6 +74,11 @@ public enum A11y {
         public static let emptyState = "tracksTable.emptyState"
         /// The Subsonic browse song table (a second AppKit `NSTableView`).
         public static let subsonicTable = "subsonicSongsTable"
+    }
+
+    public enum History { // ADR-094: the listens table, its empty states, and the source picker
+        public static let table = "history.table", emptyState = "history.emptyState"
+        public static let noResults = "history.noResults", sourcePicker = "history.source"
     }
 
     // MARK: - Albums grid

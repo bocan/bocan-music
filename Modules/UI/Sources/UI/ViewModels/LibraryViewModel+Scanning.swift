@@ -367,6 +367,12 @@ public extension LibraryViewModel {
                     // never disturbs whatever view is on screen.
                     await self.albums.load()
                     await self.artists.load()
+                    // A song just added may be one the Last.fm import already
+                    // knew: link its past listens now, so History shows them
+                    // without a trip to Match Again (ADR-094 slice 3).
+                    if summary.inserted > 0 {
+                        await self.rematchImportedListensAfterScan()
+                    }
                     // Reload tracks for the ACTIVE destination only. Calling
                     // tracks.load() unconditionally loaded the full library into
                     // the shared tracks model even when a playlist/album/folder

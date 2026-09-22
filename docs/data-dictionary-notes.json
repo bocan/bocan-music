@@ -1,5 +1,13 @@
 {
   "_comment": "Curated layer for docs/data-dictionary.md, keyed by table.column. 'traces' is the ADR / issue the column serves and marks the row as reviewed; 'note' is free text. Regenerate with make data-dictionary.",
+  "play_history.duration_played": {
+    "traces": "ADR-094",
+    "note": "Elapsed seconds at the moment the recording rule fired (50% or 4 minutes), never updated afterwards, so it measures how long the rule took to trigger, not how much of the song was heard. Written by PlayHistoryRecorder. The History page deliberately does not show it (ADR-094): on the maintainer's library 567 of 877 rows sit at 49 to 52% of the song."
+  },
+  "play_history.source": {
+    "traces": "ADR-094",
+    "note": "Always 'queue' today: radio, podcasts and Subsonic plays never reach the recorder's local write. Not shown on the History page for that reason; reserved for a second local source."
+  },
   "sync_transcodes.track_id": {
     "traces": "ADR-088",
     "note": "Track the artifact belongs to; cascades away with the track."
