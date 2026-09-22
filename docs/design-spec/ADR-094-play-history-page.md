@@ -146,8 +146,13 @@ numbers are the reason it is a separate slice.
 Persistence:
 
 - `PlayHistoryRow`: `playID`, `trackID`, `playedAt` (epoch seconds),
-  `durationPlayed` (seconds), `title`, `artistName`, `albumName`,
-  `trackDuration`. The last four come from a `LEFT JOIN` on `tracks`, then
+  `title`, `artistName`, `albumName`, `artistID`, `albumID`, `fileURL` and
+  `isMissing`. `duration_played` is deliberately not carried: it is the
+  elapsed time at the moment the recording rule fired (50% or four
+  minutes), never updated afterwards, so it says how long the rule took to
+  trigger and nothing about how much was heard. On the maintainer's library
+  567 of 877 rows sit at 49 to 52% of the song. The song columns come
+  from a `LEFT JOIN` on `tracks`, then
   `artists` and `albums`. A left join, not an inner one, so a row whose song
   is missing lists with empty text rather than vanishing. Through the app
   that cannot happen, because of the cascade; the join is defence for a
@@ -170,10 +175,11 @@ UI:
 - `HistoryTable` and `HistoryTableCoordinator`: a third AppKit table,
   patterned on `SubsonicSongTable` (its own coordinator, its own
   `NSMenuDelegate` menu, `TableUpdatePlan<Int64, Int64>` keyed by play id).
-  Columns, in order: Played (date and time, via `Formatters.shortDate` plus a
-  time), Title, Artist, Album, Played For (the played duration against the
-  song's duration, as `3:12 of 4:05`). Sortable by Played only in this slice;
-  the natural order of a history is time.
+  Columns, in order: Played (date and time, via `Formatters.shortDateTime`),
+  Title, Artist, Album. The first draft had a Played For column from
+  `duration_played`; it was dropped once the data showed it is the time to
+  the threshold, not the listen (see the row above). Sortable by Played only
+  in this slice; the natural order of a history is time.
 - Double-click plays the song, as every table does. The context menu offers
   Play Now, Play Next, Add to Queue, Go to Album, Go to Artist, Show in
   Finder and Get Info, each acting on the song under the pointer, built from
@@ -228,19 +234,58 @@ with its own contract.
 
 ### Slice 3: imported listens
 
-Optional, and a decision the maintainer takes after slices 1 and 2 are
-in. The Last.fm import is most of the maintainer's listening record, so a
-History page that omits it will feel incomplete; but 63,967 rows is past
-the point where one snapshot is acceptable, and imported rows have artist
-and title text with an optional `track_id`, not a song.
+Decided on 2026-09-22, after slices 1 and 2: **option C**. History lists
+Bòcan's own plays plus the Last.fm listens matched to a library song, and
+nothing else. The choice was between three pages:
 
-If taken: a Source filter on the page (Local, Imported, Both; default
-Local), a `UNION ALL` on the two tables in the shape
-`LibraryStatsRepository+ListeningTime.allPlays` already uses, and a
-bounded window (the most recent 2,000, with a Load Older control) rather
-than the whole set. The FTS filter cannot apply to imported rows; they
-filter on their own text with `LIKE`. Nothing in slices 1 and 2 may assume
-this slice: no `source` column in the row, no union in the repository.
+| | Rows on the maintainer's library | What every row is |
+|---|---|---|
+| A. Local only | 877 | a song, full menu |
+| B. Everything | 64,844 | 41,338 of them text with no song and no actions |
+| C. Everything you own | 23,506 | a song, full menu |
+
+C is the only one that is both complete and actionable: nothing on the
+page is a dead row, and "when did I last play this" covers two decades for
+anything owned. The 41,338 unmatched listens stay where they were, in the
+Listening Behaviour statistics. If they are ever wanted as a list, B is C
+plus a text-only row kind.
+
+How it is built:
+
+- One row shape for both sources: `PlayHistoryRow` gains `source` and the
+  key becomes `(source, rowID)`, since the two tables' ids collide. The
+  read is a `UNION ALL` of the local branch (`LEFT JOIN tracks`) and the
+  imported branch (`JOIN tracks`, which is what "matched" means), ordered
+  by time then row id. Because every listed row is a library song, the same
+  FTS5 filter applies to both branches; no `LIKE` path was needed.
+- A Source filter in the toolbar, All / Bòcan / Last.fm, default All, and a
+  Source column. The filter restarts the observation and the window.
+- A window, not the whole set: the newest 2,000, widened a page at a time
+  as the table nears its end, on the Subsonic table's scroll pattern. One
+  observation covers the whole window, on the `play_history` and
+  `imported_listens` regions.
+- **The re-match runs after any scan that added songs.** The link from an
+  imported listen to a song is stored, not computed on read, and until
+  this slice it was refreshed only by an import or by the Match Again
+  button. Now a song added to the library lights up its past listens on
+  its own, the way a new play lights up the top of the list. The pass is
+  the existing idempotent one, run quietly from the scan's finished
+  handler when `summary.inserted > 0`.
+
+Two facts that fell out of the numbers:
+
+- Echoes (an imported listen that is the same event as a local play, same
+  song within five minutes) are already removed by the re-match pass, and
+  there were zero on the maintainer's library, so the read carries no
+  dedupe of its own.
+- Timestamps differ by design: Last.fm stamps the start of the song and
+  Bòcan stamps the moment the rule fired. Sorting by time interleaves them
+  correctly.
+
+An asymmetry worth knowing: `imported_listens.track_id` is `ON DELETE SET
+NULL`, so removing a song drops its imported listens out of History
+without deleting them, and a later re-match can bring them back; local
+plays cascade away for good (open decision 1).
 
 ## Behavioural definitions and contracts
 
@@ -304,9 +349,11 @@ Persistence, `make test-persistence`, in-memory database
   a shared second.
 - Deleting a track deletes its plays (contract 3): insert a play, delete the
   track, check the play is gone. The test pins the cascade, so a later
-  change to it is a deliberate one. A second test writes a play with
-  `PRAGMA foreign_keys = OFF` and checks it lists with empty text, which is
-  the `LEFT JOIN`.
+  change to it is a deliberate one. The `LEFT JOIN` on the song tables is
+  covered by a song with no artist and no album, which lists with those
+  columns empty. A play of a missing song is not reachable from a test:
+  the wrapper's `write` runs inside a transaction, where
+  `PRAGMA foreign_keys` is a no-op, and its writer is private.
 - `matching:` finds plays of a song by title, by artist, by album, and
   returns nothing for a term with no song; a term with FTS syntax characters
   is escaped, not an error.
@@ -417,7 +464,14 @@ Open decisions for the maintainer, in the order they block:
    (nullable `track_id`, snapshot text columns, a migration), and it should
    be decided before the page ships, because the release note has to say
    which it is.
-2. Slice 3 at all, and if so the default Source filter.
-3. Whether "Played For" should show `3:12 of 4:05` or a percentage.
+2. Decided on 2026-09-22: slice 3 taken, as option C (plays plus the
+   Last.fm listens matched to a library song), Source filter default All,
+   and the re-match run automatically after a scan that added songs. See
+   the slice.
+3. Decided on 2026-09-22: no "Played For" column. `duration_played` is
+   the elapsed time when the rule fired, so it read as "you heard half of
+   everything". Making it mean something would be a recorder change (write
+   the row at the end of the play, not at the threshold), which is outside
+   this ADR's non-goal of no new play data.
 4. Whether Recently Played should keep its 90-day window now that the full
    record is one row below it, or be left exactly as it is.

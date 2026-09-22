@@ -57,6 +57,23 @@ public extension LibraryViewModel {
         }
     }
 
+    /// The re-match a scan runs when it added songs (ADR-094 slice 3):
+    /// quiet, since nobody asked for a toast in the middle of a scan. The
+    /// pass is idempotent and cheap on a library with nothing to link.
+    func rematchImportedListensAfterScan() async {
+        do {
+            let summary = try await ListenImportRepository(database: self.database).rematch()
+            if summary.newlyMatched > 0 || summary.overlapRemoved > 0 {
+                AppLogger.make(.library).info("listens.rematch.afterScan", [
+                    "matched": summary.newlyMatched,
+                    "overlapRemoved": summary.overlapRemoved,
+                ])
+            }
+        } catch {
+            AppLogger.make(.library).error("listens.rematch.afterScan.failed", ["error": String(reflecting: error)])
+        }
+    }
+
     /// Deletes all imported history. The Listening Behaviour pane confirms
     /// before calling this; local plays are untouched.
     func removeImportedListens() async {

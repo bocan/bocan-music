@@ -12,7 +12,9 @@ struct TypeToSearchBackground: View {
 
     var body: some View {
         TypeToSearchMonitor { char in
-            self.vm.searchQuery = String(char)
+            // Through the routed accessor, so a keystroke on History seeds
+            // that page's own query (ADR-094 slice 2).
+            self.vm.searchText = String(char)
             self.vm.requestSearchFocus()
         }
         .frame(width: 0, height: 0)

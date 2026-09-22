@@ -86,6 +86,7 @@ public struct Sidebar: View {
                     self.sidebarRow(.recentlyAdded, symbol: "clock", label: L10n.string("Recently Added"))
                     self.sidebarRow(.recentlyPlayed, symbol: "clock.arrow.circlepath", label: L10n.string("Recently Played"))
                     self.sidebarRow(.mostPlayed, symbol: "chart.bar", label: L10n.string("Most Played"))
+                    self.sidebarRow(.history, symbol: "clock.badge.checkmark", label: L10n.string("History"))
                 }
             } header: {
                 SidebarSectionHeader(
@@ -230,6 +231,9 @@ public struct Sidebar: View {
 
         case .mostPlayed:
             A11y.Sidebar.mostPlayed
+
+        case .history:
+            A11y.Sidebar.history
 
         case .upNext:
             A11y.Sidebar.upNext

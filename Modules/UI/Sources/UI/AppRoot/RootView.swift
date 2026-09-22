@@ -99,7 +99,9 @@ public struct BocanRootView: View {
                 } detail: {
                     ContentPane(vm: self.vm)
                 }
-                .searchable(text: self.$vm.searchQuery, placement: .toolbar, prompt: Text(localized: "Search"))
+                // Routed: the library query everywhere, History's own query
+                // on History (ADR-094 slice 2).
+                .searchable(text: self.$vm.searchText, placement: .toolbar, prompt: Text(localized: "Search"))
                 .searchFocused(self.$searchFocused)
                 .toolbar {
                     MainToolbarItems(
