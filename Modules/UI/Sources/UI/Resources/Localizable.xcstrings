@@ -17325,22 +17325,6 @@
         }
       }
     },
-    "Played For" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Played For"
-          }
-        },
-        "en-XA" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ƥĺáýéđ Ƒóŕ one"
-          }
-        }
-      }
-    },
     "Played over started. If the abandonments cluster at the same minute, that is where the ad break is." : {
       "localizations" : {
         "en-XA" : {

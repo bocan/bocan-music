@@ -96,19 +96,9 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         case "hcol.album":
             row.albumName ?? ""
 
-        case "hcol.playedFor":
-            self.playedFor(row)
-
         default:
             ""
         }
-    }
-
-    /// "3:12 of 4:05", or just "3:12" when the song's length is unknown.
-    static func playedFor(_ row: PlayHistoryRow) -> String {
-        let played = Formatters.duration(row.durationPlayed)
-        guard let total = row.trackDuration, total > 0 else { return played }
-        return L10n.string("\(played) of \(Formatters.duration(total))")
     }
 
     // MARK: NSTableViewDelegate
@@ -134,7 +124,6 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
             r.title ?? L10n.string("Unknown"),
             r.artistName ?? "",
             r.albumName ?? "",
-            Self.playedFor(r),
             r.isMissing ? L10n.string("file missing") : "",
         ].filter { !$0.isEmpty }.joined(separator: ", ")
     }

@@ -19,9 +19,12 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
     /// The song, as recorded. Still set when the song row is gone.
     public let trackID: Int64
     /// Unix epoch seconds, from the recorder's clock at the threshold.
+    ///
+    /// `play_history.duration_played` is deliberately not carried: it is
+    /// the elapsed time at the moment the recording rule fired (50% or four
+    /// minutes), never updated afterwards, so it says how long the rule took
+    /// to trigger and nothing about how much of the song was heard.
     public let playedAt: Int64
-    /// Seconds of the song that were played when the threshold was reached.
-    public let durationPlayed: Double
     /// The song's title, or nil when its row is missing.
     public let title: String?
     public let artistName: String?
@@ -29,8 +32,6 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
     /// For Go to Artist and Go to Album; nil when the song has none, or is gone.
     public let artistID: Int64?
     public let albumID: Int64?
-    /// The song's full length in seconds, for "played for" against it.
-    public let trackDuration: Double?
     /// The song's file, as a `file://` URL string, so a reveal in Finder
     /// needs no second read. Nil when the song row is gone.
     public let fileURL: String?
@@ -47,26 +48,22 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
         playID: Int64,
         trackID: Int64,
         playedAt: Int64,
-        durationPlayed: Double,
         title: String? = nil,
         artistName: String? = nil,
         albumName: String? = nil,
         artistID: Int64? = nil,
         albumID: Int64? = nil,
-        trackDuration: Double? = nil,
         fileURL: String? = nil,
         isMissing: Bool = false
     ) {
         self.playID = playID
         self.trackID = trackID
         self.playedAt = playedAt
-        self.durationPlayed = durationPlayed
         self.title = title
         self.artistName = artistName
         self.albumName = albumName
         self.artistID = artistID
         self.albumID = albumID
-        self.trackDuration = trackDuration
         self.fileURL = fileURL
         self.isMissing = isMissing
     }

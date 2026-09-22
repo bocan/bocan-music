@@ -2,7 +2,7 @@
   "_comment": "Curated layer for docs/data-dictionary.md, keyed by table.column. 'traces' is the ADR / issue the column serves and marks the row as reviewed; 'note' is free text. Regenerate with make data-dictionary.",
   "play_history.duration_played": {
     "traces": "ADR-094",
-    "note": "Seconds of the song played when the recording threshold was reached (50% or 4 minutes). Written by PlayHistoryRecorder; first read by the History page, as the Played For column."
+    "note": "Elapsed seconds at the moment the recording rule fired (50% or 4 minutes), never updated afterwards, so it measures how long the rule took to trigger, not how much of the song was heard. Written by PlayHistoryRecorder. The History page deliberately does not show it (ADR-094): on the maintainer's library 567 of 877 rows sit at 49 to 52% of the song."
   },
   "play_history.source": {
     "traces": "ADR-094",

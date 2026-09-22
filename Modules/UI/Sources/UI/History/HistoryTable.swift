@@ -181,7 +181,6 @@ struct HistoryTable: NSViewRepresentable {
         ColDef(rawID: "title", title: L10n.string("Title"), min: 140, ideal: 240, max: 2000, sortKey: nil),
         ColDef(rawID: "artist", title: L10n.string("Artist"), min: 80, ideal: 170, max: 2000, sortKey: nil),
         ColDef(rawID: "album", title: L10n.string("Album"), min: 80, ideal: 170, max: 2000, sortKey: nil),
-        ColDef(rawID: "playedFor", title: L10n.string("Played For"), min: 90, ideal: 120, max: 160, sortKey: nil),
     ]
 
     static func columnID(_ rawID: String) -> NSUserInterfaceItemIdentifier {

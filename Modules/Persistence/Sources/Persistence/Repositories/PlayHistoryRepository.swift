@@ -63,13 +63,11 @@ public struct PlayHistoryRepository: Sendable {
         SELECT play_history.id AS playID,
                play_history.track_id AS trackID,
                play_history.played_at AS playedAt,
-               play_history.duration_played AS durationPlayed,
                tracks.title AS title,
                artists.name AS artistName,
                albums.title AS albumName,
                tracks.artist_id AS artistID,
                tracks.album_id AS albumID,
-               tracks.duration AS trackDuration,
                tracks.file_url AS fileURL,
                COALESCE(tracks.disabled, 1) AS isMissing
         FROM play_history

@@ -146,8 +146,13 @@ numbers are the reason it is a separate slice.
 Persistence:
 
 - `PlayHistoryRow`: `playID`, `trackID`, `playedAt` (epoch seconds),
-  `durationPlayed` (seconds), `title`, `artistName`, `albumName`,
-  `trackDuration`. The last four come from a `LEFT JOIN` on `tracks`, then
+  `title`, `artistName`, `albumName`, `artistID`, `albumID`, `fileURL` and
+  `isMissing`. `duration_played` is deliberately not carried: it is the
+  elapsed time at the moment the recording rule fired (50% or four
+  minutes), never updated afterwards, so it says how long the rule took to
+  trigger and nothing about how much was heard. On the maintainer's library
+  567 of 877 rows sit at 49 to 52% of the song. The song columns come
+  from a `LEFT JOIN` on `tracks`, then
   `artists` and `albums`. A left join, not an inner one, so a row whose song
   is missing lists with empty text rather than vanishing. Through the app
   that cannot happen, because of the cascade; the join is defence for a
@@ -170,10 +175,11 @@ UI:
 - `HistoryTable` and `HistoryTableCoordinator`: a third AppKit table,
   patterned on `SubsonicSongTable` (its own coordinator, its own
   `NSMenuDelegate` menu, `TableUpdatePlan<Int64, Int64>` keyed by play id).
-  Columns, in order: Played (date and time, via `Formatters.shortDate` plus a
-  time), Title, Artist, Album, Played For (the played duration against the
-  song's duration, as `3:12 of 4:05`). Sortable by Played only in this slice;
-  the natural order of a history is time.
+  Columns, in order: Played (date and time, via `Formatters.shortDateTime`),
+  Title, Artist, Album. The first draft had a Played For column from
+  `duration_played`; it was dropped once the data showed it is the time to
+  the threshold, not the listen (see the row above). Sortable by Played only
+  in this slice; the natural order of a history is time.
 - Double-click plays the song, as every table does. The context menu offers
   Play Now, Play Next, Add to Queue, Go to Album, Go to Artist, Show in
   Finder and Get Info, each acting on the song under the pointer, built from
@@ -420,6 +426,10 @@ Open decisions for the maintainer, in the order they block:
    be decided before the page ships, because the release note has to say
    which it is.
 2. Slice 3 at all, and if so the default Source filter.
-3. Whether "Played For" should show `3:12 of 4:05` or a percentage.
+3. Decided on 2026-09-22: no "Played For" column. `duration_played` is
+   the elapsed time when the rule fired, so it read as "you heard half of
+   everything". Making it mean something would be a recorder change (write
+   the row at the end of the play, not at the threshold), which is outside
+   this ADR's non-goal of no new play data.
 4. Whether Recently Played should keep its 90-day window now that the full
    record is one row below it, or be left exactly as it is.

@@ -111,7 +111,7 @@ struct PlayHistoryRepositoryTests {
         #expect(rows.map(\.playID) == [second, first])
     }
 
-    @Test("A row carries the song's title, artist, album, ids, length and file URL")
+    @Test("A row carries the song's title, artist, album, ids and file URL")
     func rowCarriesTheSongsText() async throws {
         let db = try await self.makeDatabase()
         let song = try await self.insertSong(into: db, title: "Say Anything", duration: 245)
@@ -124,8 +124,6 @@ struct PlayHistoryRepositoryTests {
         #expect(row.albumName == "Somewhere Between the Secret and the Truth")
         #expect(row.artistID == song.artistID)
         #expect(row.albumID == song.albumID)
-        #expect(row.trackDuration == 245)
-        #expect(row.durationPlayed == 130)
         #expect(row.fileURL == song.fileURL, "Show in Finder reveals from the row, with no second read")
     }
 

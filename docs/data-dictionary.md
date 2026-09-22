@@ -127,7 +127,7 @@ Record: `PendingMaintenance.swift`
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
 | `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+5) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
-| `duration_played` | REAL | PlayHistoryRecorder.swift, PlayHistoryRepository.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift | HistoryTableCoordinator.swift | ADR-094 | Seconds of the song played when the recording threshold was reached (50% or 4 minutes). Written by PlayHistoryRecorder; first read by the History page, as the Played For column. |
+| `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift |  | ADR-094 | Elapsed seconds at the moment the recording rule fired (50% or 4 minutes), never updated afterwards, so it measures how long the rule took to trigger, not how much of the song was heard. Written by PlayHistoryRecorder. The History page deliberately does not show it (ADR-094): on the maintainer's library 567 of 877 rows sit at 49 to 52% of the song. |
 | `source` | TEXT | n/a (common identifier, see notes) | n/a | ADR-094 | Always 'queue' today: radio, podcasts and Subsonic plays never reach the recorder's local write. Not shown on the History page for that reason; reserved for a second local source. |
 
 ## `playlist_tracks`
@@ -290,7 +290,7 @@ Record: `ScrobbleQueueItem.swift`
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
 | `track_id` | INTEGER | ConflictResolver.swift, ContentHashService.swift, CueMarkerService.swift, DSPAssignmentRepository.swift, DSPViewModel.swift (+61) | DockTileController.swift, DuplicateReviewSheet.swift, FieldDefinitions.swift, GaplessScheduler.swift, HistoryViewModel.swift (+11) | M001 |  |
 | `played_at` | INTEGER | LastFMExportParser.swift, ListenImportRepository.swift, PlayEvent.swift, PlayHistoryRecorder.swift, PlayHistoryRepository.swift (+5) | HistoryTable.swift, HistoryTableCoordinator.swift, LastFmProvider.swift, LibraryStatsRepository+ListeningBehaviour.swift, LibraryStatsRepository+ListeningTime.swift (+2) | M001 |  |
-| `duration_played` | REAL | PlayHistoryRecorder.swift, PlayHistoryRepository.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift | HistoryTableCoordinator.swift | M001 |  |
+| `duration_played` | REAL | PlayHistoryRecorder.swift, ScrobbleQueueRepository.swift, ScrobbleService.swift |  | M001 |  |
 | `submitted` | BOOLEAN | n/a (common identifier, see notes) | n/a | M001 |  |
 | `submission_attempts` | INTEGER | ScrobbleQueueRepository.swift, ScrobbleRepository.swift |  | M001 |  |
 | `dead` | BOOLEAN | n/a (common identifier, see notes) | n/a | M012 |  |
@@ -415,7 +415,7 @@ Record: `Track.swift`
 | column | type | written by | read by | traces to | notes |
 |---|---|---|---|---|---|
 | `id` (pk) | INTEGER | n/a (common identifier, see notes) | n/a | M001 |  |
-| `file_url` | TEXT | BackupRing.swift, CueMarkerService.swift, EditTransaction.swift, Fingerprinter.swift, LibraryScanner.swift (+16) | ArtworkEditor.swift, BatchCoverArtViewModel.swift, ContentHashService.swift, CoverArtCache.swift, DeepDiveCache.swift (+25) | M001 |  |
+| `file_url` | TEXT | BackupRing.swift, CueMarkerService.swift, EditTransaction.swift, Fingerprinter.swift, LibraryScanner.swift (+17) | ArtworkEditor.swift, BatchCoverArtViewModel.swift, ContentHashService.swift, CoverArtCache.swift, DeepDiveCache.swift (+25) | M001 |  |
 | `file_bookmark` | BLOB | MetadataEditService.swift, TrackImporter.swift | ContentHashService.swift, EditTransaction.swift, FileServing.swift, FingerprintService.swift, LibraryViewModel+Provenance.swift (+7) | M001 |  |
 | `file_size` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift, TrackRow.swift (+1) | ChangeDetector.swift, CoverArtCache.swift, DownloadStore.swift, DuplicateReviewSheet.swift, FileServing.swift (+8) | M001 |  |
 | `file_mtime` | INTEGER | EditTransaction.swift, MetadataEditService.swift, ScanCoordinator.swift, TrackImporter.swift, TrackRow.swift (+1) | LibraryScanner.swift, TagEditorSheet+InfoTabs.swift, TrackRepository+Provenance.swift, TrackTable+ColSpecs.swift | M001 |  |
