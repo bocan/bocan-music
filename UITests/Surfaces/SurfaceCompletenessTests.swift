@@ -44,7 +44,7 @@ final class SurfaceCompletenessTests: XCTestCase {
 
     /// A11y.History.* (ADR-094).
     static let historyRegistry: Set = [
-        "history.table", "history.emptyState", "history.noResults",
+        "history.table", "history.emptyState", "history.noResults", "history.source",
     ]
 
     /// History identifiers legitimately absent from the crawl table. Empty

@@ -91,6 +91,7 @@ typealias TrackTableUpdatePlan = TableUpdatePlan<Int64, Track.ID>
 /// has no selection input.
 typealias SubsonicSongTableUpdatePlan = TableUpdatePlan<String, String>
 
-/// The History table keys rows by play id (`play_history.id`), so a song
-/// played twice is two rows, and has no selection input (ADR-094).
-typealias HistoryTableUpdatePlan = TableUpdatePlan<Int64, Int64>
+/// The History table keys rows by the listen (its source plus that table's
+/// row id), so a song played twice is two rows, and has no selection input
+/// (ADR-094).
+typealias HistoryTableUpdatePlan = TableUpdatePlan<PlayHistoryRow.Key, PlayHistoryRow.Key>

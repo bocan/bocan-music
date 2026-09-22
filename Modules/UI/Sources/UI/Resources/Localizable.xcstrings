@@ -21200,6 +21200,22 @@
         }
       }
     },
+    "Show plays recorded here, listens imported from Last.fm, or both." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show plays recorded here, listens imported from Last.fm, or both."
+          }
+        },
+        "en-XA" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Šĥóŵ ƥĺáýš ŕéçóŕđéđ ĥéŕé, ĺíšţéñš íḿƥóŕţéđ ƒŕóḿ Ĺášţ.ƒḿ, óŕ ƀóţĥ. one two three four five"
+          }
+        }
+      }
+    },
     "Show progress bar on Dock icon" : {
       "localizations" : {
         "en-XA" : {

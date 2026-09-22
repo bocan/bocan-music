@@ -14,7 +14,7 @@ final class HistorySurfaceTests: XCTestCase {
         self.session = E2ESession.make(named: self.name.sanitizedTestName)
     }
 
-    static let coveredIdentifiers = ["history.table", "history.emptyState", "history.noResults"]
+    static let coveredIdentifiers = ["history.table", "history.emptyState", "history.noResults", "history.source"]
 
     /// A fresh fixture launch has no plays, so History opens on its empty
     /// state. Playing a fixture past the threshold (the tones are 60 s and a
@@ -84,6 +84,18 @@ final class HistorySurfaceTests: XCTestCase {
         app.typeKey("[", modifierFlags: .command)
         inv.waitFor("back on Songs, still filtered") { inv.visibleFixtureTitleCount() == 1 }
         XCTAssertEqual(self.text(of: field), "Tone Two", "the Songs filter came back with the page")
+
+        // The Source filter (slice 3). The fixture has no Last.fm import, so
+        // Last.fm alone is empty and All brings the play back.
+        self.sidebarRow(app, "sidebar.history").click()
+        XCTAssertTrue(inv.element("history.source").waitForExistence(timeout: 8), "the source picker is in the toolbar")
+        app.radioButtons["Last.fm"].firstMatch.click()
+        XCTAssertTrue(
+            inv.element("history.emptyState").waitForExistence(timeout: 8),
+            "no imported listens on the fixture, so Last.fm alone is empty"
+        )
+        app.radioButtons["All"].firstMatch.click()
+        XCTAssertTrue(row.waitForExistence(timeout: 8), "All lists the local play again")
     }
 
     /// Focuses the field with ⌘F, replaces its contents, and types.

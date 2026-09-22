@@ -49,6 +49,23 @@ struct HistoryConventionTests {
         }
     }
 
+    @Test("A scan that added songs re-matches the imported listens, and a scan that did not leaves them alone")
+    func scanRematchesImportedListens() throws {
+        let scanning = try self.source("ViewModels/LibraryViewModel+Scanning.swift")
+        let finished = try #require(scanning.range(of: "case let .finished(summary):"))
+        let hook = try #require(scanning.range(of: "await self.rematchImportedListensAfterScan()"))
+        #expect(finished.lowerBound < hook.lowerBound, "the re-match runs from the finished handler")
+        let between = scanning[finished.lowerBound ..< hook.lowerBound]
+        #expect(between.contains("if summary.inserted > 0 {"), "gated on the scan having added songs")
+        let listenImport = try self.source("ViewModels/LibraryViewModel+ListenImport.swift")
+        let start = try #require(listenImport.range(of: "func rematchImportedListensAfterScan() async"))
+        let rest = listenImport[start.upperBound...]
+        let end = rest.range(of: "\n    func ")?.lowerBound ?? rest.endIndex
+        let body = rest[..<end]
+        #expect(body.contains("rematch()"), "it runs the existing re-match pass")
+        #expect(!body.contains("showToast"), "the scan's re-match is quiet: no toast mid-scan")
+    }
+
     @Test("The toolbar search field and type-to-search both go through the routed accessor")
     func searchFieldIsRouted() throws {
         // A revert to `searchQuery` here would silently undo slice 2: the

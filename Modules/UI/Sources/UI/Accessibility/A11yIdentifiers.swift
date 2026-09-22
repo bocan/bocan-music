@@ -76,10 +76,9 @@ public enum A11y {
         public static let subsonicTable = "subsonicSongsTable"
     }
 
-    public enum History { // ADR-094: the plays table, keyed by play id, and its empty states
-        public static let table = "history.table"
-        public static let emptyState = "history.emptyState"
-        public static let noResults = "history.noResults"
+    public enum History { // ADR-094: the listens table, its empty states, and the source picker
+        public static let table = "history.table", emptyState = "history.emptyState"
+        public static let noResults = "history.noResults", sourcePicker = "history.source"
     }
 
     // MARK: - Albums grid

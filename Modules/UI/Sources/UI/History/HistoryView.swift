@@ -4,14 +4,16 @@ import SwiftUI
 
 // MARK: - HistoryView
 
-/// The History destination (ADR-094): every recorded play, one row each,
-/// newest first, under Recents in the sidebar.
+/// The History destination (ADR-094): every listen of a song in the library,
+/// one row each, newest first, under Recents in the sidebar. Bòcan's own
+/// plays and the Last.fm listens matched to a library song, with a Source
+/// filter in the toolbar.
 ///
 /// Rows first, loading second, so a play that arrives while the page is open
-/// keeps the table mounted (#543). Two empty states: no plays at all, and no
-/// plays matching the query.
+/// keeps the table mounted (#543). Two empty states: no listens at all, and
+/// no listens matching the query.
 public struct HistoryView: View {
-    public var vm: HistoryViewModel
+    @Bindable public var vm: HistoryViewModel
     public var library: LibraryViewModel
 
     public init(vm: HistoryViewModel, library: LibraryViewModel) {
@@ -22,7 +24,13 @@ public struct HistoryView: View {
     public var body: some View {
         Group {
             if !self.vm.rows.isEmpty {
-                HistoryTable(rows: self.vm.rows, rowsVersion: self.vm.rowsVersion, actions: self.actions)
+                HistoryTable(
+                    rows: self.vm.rows,
+                    rowsVersion: self.vm.rowsVersion,
+                    hasMore: self.vm.hasMore,
+                    isLoading: self.vm.isLoading,
+                    actions: self.actions
+                )
             } else if self.vm.isLoading || !self.vm.hasLoaded {
                 LoadingState()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -43,43 +51,55 @@ public struct HistoryView: View {
             }
         }
         .navigationTitle(L10n.string("History"))
-        // Keyed on the debounced query: a new term restarts the stream, and
-        // leaving the page cancels it.
-        .task(id: self.vm.debouncedQuery) {
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Picker(L10n.string("Source"), selection: self.$vm.sourceFilter) {
+                    Text(localized: "All").tag(PlayHistoryRepository.SourceFilter.all)
+                    Text(localized: "Bòcan").tag(PlayHistoryRepository.SourceFilter.local)
+                    Text(localized: "Last.fm").tag(PlayHistoryRepository.SourceFilter.imported)
+                }
+                .pickerStyle(.segmented)
+                .help(L10n.string("Show plays recorded here, listens imported from Last.fm, or both."))
+                .accessibilityIdentifier(A11y.History.sourcePicker)
+            }
+        }
+        // Keyed on everything the stream depends on: a new term, source or
+        // page restarts it, and leaving the page cancels it.
+        .task(id: self.vm.observationKey) {
             await self.vm.observe()
         }
     }
 
     // MARK: - Actions
 
-    /// Bridges the table's play ids to the library. Each play is resolved to
-    /// its song at action time, so the action sees current tags.
+    /// Bridges the table's row keys to the library. Each listen is resolved
+    /// to its song at action time, so the action sees current tags.
     private var actions: HistoryTableActions {
         let lib = self.library
         let vm = self.vm
-        func tracks(for playIDs: [Int64]) async -> [Track] {
+        func tracks(for keys: [PlayHistoryRow.Key]) async -> [Track] {
             var result: [Track] = []
-            for playID in playIDs {
-                if let track = await vm.track(forPlayID: playID) {
+            for key in keys {
+                if let track = await vm.track(forKey: key) {
                     result.append(track)
                 }
             }
             return result
         }
         return HistoryTableActions(
-            playNow: { playID in
+            playNow: { key in
                 Task {
                     // Just this song: a history row has no album or list
                     // around it to continue into.
-                    guard let track = await vm.track(forPlayID: playID) else { return }
+                    guard let track = await vm.track(forKey: key) else { return }
                     await lib.play(tracks: [track], startingAt: 0)
                 }
             },
-            playNext: { playIDs in
-                Task { await lib.playNext(tracks: tracks(for: playIDs)) }
+            playNext: { keys in
+                Task { await lib.playNext(tracks: tracks(for: keys)) }
             },
-            addToQueue: { playIDs in
-                Task { await lib.addToQueue(tracks: tracks(for: playIDs)) }
+            addToQueue: { keys in
+                Task { await lib.addToQueue(tracks: tracks(for: keys)) }
             },
             goToArtist: { artistID in
                 Task { await lib.selectDestination(.artist(artistID)) }
@@ -87,21 +107,22 @@ public struct HistoryView: View {
             goToAlbum: { albumID in
                 Task { await lib.selectDestination(.album(albumID)) }
             },
-            showInFinder: { playID in
+            showInFinder: { key in
                 // Synchronous, from the row, like every other list: the row
                 // carries the file URL so no read sits between the menu
                 // action and the reveal.
-                guard let fileURL = vm.row(forPlayID: playID)?.fileURL,
+                guard let fileURL = vm.row(forKey: key)?.fileURL,
                       let url = URL(string: fileURL) else { return }
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             },
-            getInfo: { playIDs in
+            getInfo: { keys in
                 Task {
-                    let found = await tracks(for: playIDs)
+                    let found = await tracks(for: keys)
                     guard !found.isEmpty else { return }
                     lib.showTagEditor(tracks: found)
                 }
-            }
+            },
+            loadMore: { vm.loadMore() }
         )
     }
 }

@@ -93,6 +93,6 @@
   },
   {
     "title": "Your listening, one line per play.",
-    "body": "<strong>History</strong>, under Recents in the sidebar, lists every song you have played, newest first, with when you played it. Bòcan kept this record from the first day; now you can read it. Double-click a line to play the song again."
+    "body": "<strong>History</strong>, under Recents in the sidebar, lists every song you have played, newest first, with when you played it. Bòcan kept this record from the first day; now you can read it, and if you have imported your Last.fm history the listens that match your library sit in the same list, back as far as your scrobbles go. Double-click a line to play the song again."
   }
 ]

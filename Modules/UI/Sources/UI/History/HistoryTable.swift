@@ -6,32 +6,40 @@ import SwiftUI
 // MARK: - Actions bag
 
 /// Closures wired from `HistoryView` into the table and its coordinator.
-/// Every one takes play ids; the view resolves a play to its song, because
-/// the song is read fresh at action time rather than carried in the row.
+/// The song actions take row keys; the view resolves a key to its song,
+/// because the song is read fresh at action time rather than carried in
+/// the row. The reveal reads the row itself, so it never waits on a read.
 struct HistoryTableActions {
-    let playNow: (Int64) -> Void
-    let playNext: ([Int64]) -> Void
-    let addToQueue: ([Int64]) -> Void
+    let playNow: (PlayHistoryRow.Key) -> Void
+    let playNext: ([PlayHistoryRow.Key]) -> Void
+    let addToQueue: ([PlayHistoryRow.Key]) -> Void
     let goToArtist: (Int64) -> Void
     let goToAlbum: (Int64) -> Void
-    let showInFinder: (Int64) -> Void
-    let getInfo: ([Int64]) -> Void
+    let showInFinder: (PlayHistoryRow.Key) -> Void
+    let getInfo: ([PlayHistoryRow.Key]) -> Void
+    /// The table is near its end: widen the window.
+    let loadMore: () -> Void
 }
 
 // MARK: - NSViewRepresentable
 
-/// The plays table (ADR-094): a third AppKit `NSTableView`, keyed by play id.
+/// The listens table (ADR-094): a third AppKit `NSTableView`, keyed by the
+/// listen (source plus that table's row id).
 ///
 /// Not `TrackTable`, and the reason is structural: that table deduplicates
 /// row ids because a diffable snapshot needs them unique, and a history is
-/// exactly a list where one song appears many times. Keying by the play makes
-/// every row unique with no workaround. Patterned on `SubsonicSongTable`.
+/// exactly a list where one song appears many times. Keying by the listen
+/// makes every row unique with no workaround. Patterned on
+/// `SubsonicSongTable`, including its scroll-driven paging.
 struct HistoryTable: NSViewRepresentable {
     let rows: [PlayHistoryRow]
     /// The view model's counter for `rows` (#450, #455). Deliberately has no
     /// default: a caller that left it out would render its first rows and
     /// then never react to another change (#454).
     let rowsVersion: Int
+    /// `true` while the window may have older rows past its end.
+    let hasMore: Bool
+    let isLoading: Bool
     let actions: HistoryTableActions
 
     typealias NSViewType = NSScrollView
@@ -67,8 +75,8 @@ struct HistoryTable: NSViewRepresentable {
         tableView.autosaveName = autosaveName
         Self.buildHeaderMenu(for: tableView, coordinator: context.coordinator)
 
-        let dataSource = HistoryDiffableDataSource(tableView: tableView) { tv, col, _, playID in
-            context.coordinator.cellView(for: col, playID: playID, in: tv) ?? NSTableCellView()
+        let dataSource = HistoryDiffableDataSource(tableView: tableView) { tv, col, _, key in
+            context.coordinator.cellView(for: col, key: key, in: tv) ?? NSTableCellView()
         }
         dataSource.coordinator = context.coordinator
         tableView.dataSource = dataSource
@@ -84,6 +92,15 @@ struct HistoryTable: NSViewRepresentable {
         scrollView.documentView = tableView
         context.coordinator.tableView = tableView
         context.coordinator.dataSource = dataSource
+
+        // Widen the window as the user nears the end of it.
+        scrollView.contentView.postsBoundsChangedNotifications = true
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(HistoryTableCoordinator.scrollViewBoundsChanged(_:)),
+            name: NSView.boundsDidChangeNotification,
+            object: scrollView.contentView
+        )
         return scrollView
     }
 
@@ -98,7 +115,7 @@ struct HistoryTable: NSViewRepresentable {
         // pick one, and the table owns its own selection.
         let plan = HistoryTableUpdatePlan.make(
             rowsVersion: self.rowsVersion,
-            ids: { self.rows.map(\.playID) },
+            ids: { self.rows.map(\.id) },
             nowPlayingID: nil,
             selection: [],
             applied: coordinator.applied
@@ -108,20 +125,21 @@ struct HistoryTable: NSViewRepresentable {
             break
 
         case .reconfigure:
-            // Same plays, new text (a title edited elsewhere): refresh the
+            // Same listens, new text (a title edited elsewhere): refresh the
             // dictionary the cells read from, then reload only what moved.
             let changed = Self.changedRowIDs(from: coordinator.rowsByID, to: self.rows)
             coordinator.updateRows(self.rows)
             Self.reload(rows: changed, dataSource: dataSource, tableView: coordinator.tableView)
 
         case .structural:
-            // A new play arrived, or the filter changed. Apply the rows in the
-            // view model's order (newest first), flipped if the header sort is
-            // ascending. The diffable apply keeps the selection on rows that
-            // survive, so a play inserting at the top moves nothing else (#543).
+            // A listen arrived, the window widened, or the filter changed.
+            // Apply the rows in the view model's order (newest first),
+            // flipped if the header sort is ascending. The diffable apply
+            // keeps the selection on rows that survive, so a play inserting
+            // at the top moves nothing else (#543).
             coordinator.updateRows(self.rows)
             let ordered = coordinator.orderedIDs()
-            var snapshot = NSDiffableDataSourceSnapshot<Int, Int64>()
+            var snapshot = NSDiffableDataSourceSnapshot<Int, PlayHistoryRow.Key>()
             snapshot.appendSections([0])
             snapshot.appendItems(ordered)
             dataSource.apply(snapshot, animatingDifferences: coordinator.hasAppliedInitialSnapshot)
@@ -133,30 +151,30 @@ struct HistoryTable: NSViewRepresentable {
 
     // MARK: Reconfigure
 
-    /// Ids of the rows whose values differ from what the coordinator holds.
+    /// Keys of the rows whose values differ from what the coordinator holds.
     /// A row the coordinator does not know is not a content change: the
     /// structural path owns new rows.
     static func changedRowIDs(
-        from oldRowsByID: [Int64: PlayHistoryRow],
+        from oldRowsByID: [PlayHistoryRow.Key: PlayHistoryRow],
         to rows: [PlayHistoryRow]
-    ) -> [Int64] {
+    ) -> [PlayHistoryRow.Key] {
         rows.compactMap { row in
-            guard let old = oldRowsByID[row.playID], old != row else { return nil }
-            return row.playID
+            guard let old = oldRowsByID[row.id], old != row else { return nil }
+            return row.id
         }
     }
 
-    /// Reloads the given rows in place, ignoring ids the snapshot does not
+    /// Reloads the given rows in place, ignoring keys the snapshot does not
     /// hold. The selection goes back on afterwards, since a reload drops it.
     private static func reload(
-        rows changed: [Int64],
+        rows changed: [PlayHistoryRow.Key],
         dataSource: HistoryDiffableDataSource,
         tableView: NSTableView?
     ) {
         guard !changed.isEmpty else { return }
         var snapshot = dataSource.snapshot()
         let existing = Set(snapshot.itemIdentifiers(inSection: 0))
-        var seen = Set<Int64>()
+        var seen = Set<PlayHistoryRow.Key>()
         let valid = changed.filter { existing.contains($0) && seen.insert($0).inserted }
         guard !valid.isEmpty else { return }
         snapshot.reloadItems(valid)
@@ -181,6 +199,7 @@ struct HistoryTable: NSViewRepresentable {
         ColDef(rawID: "title", title: L10n.string("Title"), min: 140, ideal: 240, max: 2000, sortKey: nil),
         ColDef(rawID: "artist", title: L10n.string("Artist"), min: 80, ideal: 170, max: 2000, sortKey: nil),
         ColDef(rawID: "album", title: L10n.string("Album"), min: 80, ideal: 170, max: 2000, sortKey: nil),
+        ColDef(rawID: "source", title: L10n.string("Source"), min: 60, ideal: 80, max: 120, sortKey: nil),
     ]
 
     static func columnID(_ rawID: String) -> NSUserInterfaceItemIdentifier {
@@ -228,7 +247,7 @@ struct HistoryTable: NSViewRepresentable {
 // MARK: - Diffable data source
 
 @MainActor
-final class HistoryDiffableDataSource: NSTableViewDiffableDataSource<Int, Int64> {
+final class HistoryDiffableDataSource: NSTableViewDiffableDataSource<Int, PlayHistoryRow.Key> {
     weak var coordinator: HistoryTableCoordinator?
 
     @objc func tableView(
