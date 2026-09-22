@@ -58,6 +58,10 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
         }
         let value = Self.displayValue(colID: colID, row: row)
         cell.textField?.stringValue = value
+        // A play of a song whose file has gone stays listed, greyed, the way
+        // Up Next marks a song it cannot find. Reset on reuse.
+        cell.textField?.textColor = row.isMissing ? .tertiaryLabelColor : .labelColor
+        cell.toolTip = row.isMissing ? L10n.string("The file for this song is missing.") : nil
         cell.setAccessibilityLabel(L10n.string("\(column.title): \(value)"))
         return cell
     }
@@ -131,7 +135,8 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
             r.artistName ?? "",
             r.albumName ?? "",
             Self.playedFor(r),
-        ].joined(separator: ", ")
+            r.isMissing ? L10n.string("file missing") : "",
+        ].filter { !$0.isEmpty }.joined(separator: ", ")
     }
 
     // MARK: Sort
@@ -152,7 +157,8 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
 
     @objc func doubleClickAction(_ sender: NSTableView) {
         let row = sender.clickedRow
-        guard row >= 0, let playID = self.dataSource?.itemIdentifier(forRow: row) else { return }
+        guard row >= 0, let playID = self.dataSource?.itemIdentifier(forRow: row),
+              self.rowsByID[playID]?.isMissing == false else { return }
         self.parent.actions.playNow(playID)
     }
 
@@ -168,7 +174,9 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
 
     /// The song actions, on the plays under the pointer. A right-click on a
     /// row outside the selection selects it first, as Finder and Music do.
-    /// A row whose song is gone gets no menu: there is nothing to act on.
+    /// A row whose song row is gone gets no menu: there is nothing to act on.
+    /// A row whose file is missing keeps the song actions (artist, album,
+    /// Get Info) and loses the file ones (play, queue, Show in Finder).
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         guard let tv = self.tableView, let dataSource = self.dataSource else { return }
@@ -184,14 +192,20 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
             .filter { $0.title != nil }
         guard let first = selected.first else { return }
         let ids = selected.map(\.playID)
+        let playable = selected.filter { !$0.isMissing }
         let acts = self.parent.actions
 
-        menu.addItem(ActionMenuItem(L10n.string("Play Now")) { acts.playNow(first.playID) })
-        menu.addItem(ActionMenuItem(L10n.string("Play Next")) { acts.playNext(ids) })
-        menu.addItem(ActionMenuItem(L10n.string("Add to Queue")) { acts.addToQueue(ids) })
+        if let firstPlayable = playable.first {
+            let playableIDs = playable.map(\.playID)
+            menu.addItem(ActionMenuItem(L10n.string("Play Now")) { acts.playNow(firstPlayable.playID) })
+            menu.addItem(ActionMenuItem(L10n.string("Play Next")) { acts.playNext(playableIDs) })
+            menu.addItem(ActionMenuItem(L10n.string("Add to Queue")) { acts.addToQueue(playableIDs) })
+        }
 
         if first.artistID != nil || first.albumID != nil {
-            menu.addItem(.separator())
+            if menu.items.isEmpty == false {
+                menu.addItem(.separator())
+            }
             if let artistID = first.artistID {
                 menu.addItem(ActionMenuItem(L10n.string("Go to Artist")) { acts.goToArtist(artistID) })
             }
@@ -200,8 +214,12 @@ final class HistoryTableCoordinator: NSObject, NSTableViewDelegate, NSMenuDelega
             }
         }
 
-        menu.addItem(.separator())
-        menu.addItem(ActionMenuItem(L10n.string("Show in Finder")) { acts.showInFinder(first.playID) })
+        if menu.items.isEmpty == false {
+            menu.addItem(.separator())
+        }
+        if !first.isMissing {
+            menu.addItem(ActionMenuItem(L10n.string("Show in Finder")) { acts.showInFinder(first.playID) })
+        }
         menu.addItem(ActionMenuItem(L10n.string("Get Info")) { acts.getInfo(ids) })
     }
 }

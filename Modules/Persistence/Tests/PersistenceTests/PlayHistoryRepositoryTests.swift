@@ -146,6 +146,25 @@ struct PlayHistoryRepositoryTests {
         #expect(row.albumID == nil)
     }
 
+    @Test("A play of a song whose file has gone lists as missing; a present one does not")
+    func missingFileIsFlagged() async throws {
+        let db = try await self.makeDatabase()
+        let present = try await self.insertSong(into: db, title: "Present")
+        let gone = try await self.insertSong(
+            into: db, title: "Gone", artist: "Tyler Childers", album: "Purgatory"
+        )
+        try await self.insertPlay(into: db, trackID: present.trackID, playedAt: self.now)
+        try await self.insertPlay(into: db, trackID: gone.trackID, playedAt: self.now + 1)
+        try await db.write { db in
+            try db.execute(sql: "UPDATE tracks SET disabled = 1 WHERE id = ?", arguments: [gone.trackID])
+        }
+
+        let rows = try await PlayHistoryRepository(database: db).recent()
+
+        #expect(rows.map(\.isMissing) == [true, false])
+        #expect(rows.first?.title == "Gone", "the play still lists, with its song's text")
+    }
+
     @Test("Deleting a song deletes its plays: play_history.track_id cascades (M001)")
     func removingTheSongRemovesItsPlays() async throws {
         let db = try await self.makeDatabase()

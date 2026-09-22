@@ -34,6 +34,10 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
     /// The song's file, as a `file://` URL string, so a reveal in Finder
     /// needs no second read. Nil when the song row is gone.
     public let fileURL: String?
+    /// `true` when the song's file is not where the library recorded it
+    /// (`tracks.disabled`, set by the scanner), or the song row is gone. The
+    /// play still lists, greyed, with the file actions left out of its menu.
+    public let isMissing: Bool
 
     public var id: Int64 {
         self.playID
@@ -50,7 +54,8 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
         artistID: Int64? = nil,
         albumID: Int64? = nil,
         trackDuration: Double? = nil,
-        fileURL: String? = nil
+        fileURL: String? = nil,
+        isMissing: Bool = false
     ) {
         self.playID = playID
         self.trackID = trackID
@@ -63,5 +68,6 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
         self.albumID = albumID
         self.trackDuration = trackDuration
         self.fileURL = fileURL
+        self.isMissing = isMissing
     }
 }
