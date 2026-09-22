@@ -69,7 +69,8 @@ public struct PlayHistoryRepository: Sendable {
                albums.title AS albumName,
                tracks.artist_id AS artistID,
                tracks.album_id AS albumID,
-               tracks.duration AS trackDuration
+               tracks.duration AS trackDuration,
+               tracks.file_url AS fileURL
         FROM play_history
         LEFT JOIN tracks ON tracks.id = play_history.track_id
         LEFT JOIN artists ON artists.id = tracks.artist_id

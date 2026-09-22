@@ -31,6 +31,9 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
     public let albumID: Int64?
     /// The song's full length in seconds, for "played for" against it.
     public let trackDuration: Double?
+    /// The song's file, as a `file://` URL string, so a reveal in Finder
+    /// needs no second read. Nil when the song row is gone.
+    public let fileURL: String?
 
     public var id: Int64 {
         self.playID
@@ -46,7 +49,8 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
         albumName: String? = nil,
         artistID: Int64? = nil,
         albumID: Int64? = nil,
-        trackDuration: Double? = nil
+        trackDuration: Double? = nil,
+        fileURL: String? = nil
     ) {
         self.playID = playID
         self.trackID = trackID
@@ -58,5 +62,6 @@ public struct PlayHistoryRow: Codable, Equatable, Hashable, Sendable, FetchableR
         self.artistID = artistID
         self.albumID = albumID
         self.trackDuration = trackDuration
+        self.fileURL = fileURL
     }
 }

@@ -88,11 +88,12 @@ public struct HistoryView: View {
                 Task { await lib.selectDestination(.album(albumID)) }
             },
             showInFinder: { playID in
-                Task {
-                    guard let track = await vm.track(forPlayID: playID),
-                          let url = URL(string: track.fileURL) else { return }
-                    NSWorkspace.shared.activateFileViewerSelecting([url])
-                }
+                // Synchronous, from the row, like every other list: the row
+                // carries the file URL so no read sits between the menu
+                // action and the reveal.
+                guard let fileURL = vm.row(forPlayID: playID)?.fileURL,
+                      let url = URL(string: fileURL) else { return }
+                NSWorkspace.shared.activateFileViewerSelecting([url])
             },
             getInfo: { playIDs in
                 Task {

@@ -22,6 +22,7 @@ struct PlayHistoryRepositoryTests {
         let trackID: Int64
         let artistID: Int64?
         let albumID: Int64?
+        let fileURL: String
     }
 
     /// Inserts an artist, an album and a song on both, and returns the ids.
@@ -57,7 +58,7 @@ struct PlayHistoryRepositoryTests {
             updatedAt: self.now
         )
         let trackID = try await TrackRepository(database: db).insert(track)
-        return Song(trackID: trackID, artistID: artistID, albumID: albumID)
+        return Song(trackID: trackID, artistID: artistID, albumID: albumID, fileURL: track.fileURL)
     }
 
     /// Writes a play the way `PlayHistoryRecorder` does.
@@ -110,7 +111,7 @@ struct PlayHistoryRepositoryTests {
         #expect(rows.map(\.playID) == [second, first])
     }
 
-    @Test("A row carries the song's title, artist, album, ids and length")
+    @Test("A row carries the song's title, artist, album, ids, length and file URL")
     func rowCarriesTheSongsText() async throws {
         let db = try await self.makeDatabase()
         let song = try await self.insertSong(into: db, title: "Say Anything", duration: 245)
@@ -125,6 +126,7 @@ struct PlayHistoryRepositoryTests {
         #expect(row.albumID == song.albumID)
         #expect(row.trackDuration == 245)
         #expect(row.durationPlayed == 130)
+        #expect(row.fileURL == song.fileURL, "Show in Finder reveals from the row, with no second read")
     }
 
     // MARK: - Missing joins
