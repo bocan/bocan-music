@@ -21,6 +21,28 @@ public enum Formatters {
         }
     }
 
+    /// The width a transport time label needs to show `duration(_:)` output
+    /// for content up to `longest` seconds, at caption size.
+    ///
+    ///     Formatters.timeLabelWidth(longest: 331)   // 36, fits "5:31"
+    ///     Formatters.timeLabelWidth(longest: 3723)  // 48, fits "1:02:03"
+    ///
+    /// The labels either side of the scrubber are fixed-width, so the slider
+    /// does not shift as the clock ticks. A slot sized for `m:ss` is too narrow
+    /// for `h:mm:ss`: at caption size "1:02:03" measures 38.25 pt against the
+    /// 36 pt slot, and SwiftUI wraps the last digit onto a second line rather
+    /// than overflow it (#563). "10:02:03" measures 44.67 pt, so the wide slot
+    /// carries a ten-hour audiobook too.
+    ///
+    /// Pass the longest value the label will show, not the current position:
+    /// sizing on the total keeps the slot still as playback crosses an hour.
+    /// Live sources report no duration, so their elapsed time is the longest
+    /// value and the slot widens once, an hour in.
+    public static func timeLabelWidth(longest seconds: Double) -> Double {
+        guard seconds.isFinite, seconds >= 3600 else { return 36 }
+        return 48
+    }
+
     // MARK: - Bitrate
 
     /// Formats a bitrate in kbps.
