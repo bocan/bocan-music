@@ -26,26 +26,10 @@ title: null
   </p>
 </section>
 
-<section class="screenshots-marquee" aria-label="App screenshots">
-  {%- set shots = [
-    "Screenshot%202026-05-07%20at%2020.35.08.png",
-    "Screenshot%202026-05-07%20at%2020.35.25.png",
-    "Screenshot%202026-05-07%20at%2020.35.37.png",
-    "Screenshot%202026-05-07%20at%2020.35.43.png",
-    "Screenshot%202026-05-07%20at%2020.36.00.png",
-    "Screenshot%202026-05-07%20at%2020.36.10.png",
-    "Screenshot%202026-05-07%20at%2020.36.52.png",
-    "Screenshot%202026-05-07%20at%2020.37.48.png"
-  ] -%}
-  <div class="marquee__track" aria-hidden="true">
-    {%- for shot in shots %}
-    <img class="marquee__img" src="/screenshots/{{ shot }}" alt="" loading="lazy">
-    {%- endfor %}
-    {# Duplicate for seamless loop #}
-    {%- for shot in shots %}
-    <img class="marquee__img" src="/screenshots/{{ shot }}" alt="" loading="lazy">
-    {%- endfor %}
-  </div>
+<section class="demo" aria-label="App demo">
+  {# Recorded by `make demo`; the GIF is the repo's assets/demo.gif. #}
+  <img class="demo__img" src="/assets/img/demo.gif" width="1280" height="800"
+       alt="A tour of {{ site.title }}: browsing albums, artists, podcasts and radio, searching for a song, then the lyrics pane, the visualizer, and every Settings pane.">
 </section>
 
 <section class="section section--narrow">

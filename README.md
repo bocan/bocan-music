@@ -16,7 +16,7 @@
 
 **The music player macOS deserves.** No Electron. No Catalyst. No subscription. No cloud. Just your music, played beautifully.
 
-![Bòcan Songs view](website/static/screenshots/Screenshot%202026-05-07%20at%2020.35.08.png)
+![Bòcan Demo](assets/demo.gif)
 
 ---
 

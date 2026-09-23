@@ -1,4 +1,4 @@
-.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend
+.PHONY: help bootstrap bundle-fpcalc embed-deps brew-bundle doctor check-swiftlint-version check-swiftformat-version open generate build tests test test-coverage coverage-all test-e2e test-e2e-smoke test-audio-engine test-persistence test-metadata test-library test-acoustics test-ui test-playback test-scrobble test-subsonic test-podcasts test-sync-server test-observability uitest lint format pseudolocale format-check install-hooks clean downloads audit-db data-dictionary vital-signs vital-signs-trend demo demo-gif demo-mp4
 
 # Pinned SwiftLint version. CI installs this exact release; `doctor` fails when
 # the local install differs. SwiftLint's force_unwrapping/superfluous_disable
@@ -388,3 +388,24 @@ vital-signs:
 ## vital-signs-trend: Show docs/vital-signs.csv as one column per recorded run, with the change and a sparkline (N=6 runs to show, FILTER=text)
 vital-signs-trend:
 	@Scripts/vital-signs-trend.py $(or $(N),6) $(if $(FILTER),--filter "$(FILTER)",)
+
+# The README demo (Scripts/demo/README.md). A private venv keeps PyAutoGUI
+# and PyObjC out of the system Python; it is built on first use.
+DEMO_VENV := build/demo/venv
+
+$(DEMO_VENV)/.stamp: Scripts/demo/requirements.txt
+	python3 -m venv $(DEMO_VENV)
+	$(DEMO_VENV)/bin/pip install -q -r Scripts/demo/requirements.txt
+	@touch $@
+
+## demo: Record the scripted README tour of the installed app to build/demo/demo.mov (DEMO_ARGS=--no-record to rehearse, --settings to add the Settings panes)
+demo: $(DEMO_VENV)/.stamp
+	@$(DEMO_VENV)/bin/python Scripts/demo/tour.py --out build/demo/demo.mov $(DEMO_ARGS)
+
+## demo-gif: Encode build/demo/demo.mov to build/demo/demo.gif (WIDTH=1280, FPS=15)
+demo-gif:
+	@Scripts/demo/encode.sh build/demo/demo.mov build/demo/demo.gif $(or $(WIDTH),1280) $(or $(FPS),15)
+
+## demo-mp4: Encode build/demo/demo.mov to build/demo/demo.mp4 for Facebook and friends (WIDTH=1920, FPS=30)
+demo-mp4:
+	@Scripts/demo/encode-mp4.sh build/demo/demo.mov build/demo/demo.mp4 $(or $(WIDTH),1920) $(or $(FPS),30)
