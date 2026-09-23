@@ -306,7 +306,8 @@ public struct NowPlayingStrip: View {
                 .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .monospacedDigit()
-                .frame(width: 36, alignment: .trailing)
+                .lineLimit(1)
+                .frame(width: self.timeLabelWidth, alignment: .trailing)
 
             Slider(
                 value: Binding(
@@ -368,7 +369,8 @@ public struct NowPlayingStrip: View {
                 .font(Typography.caption)
                 .foregroundStyle(Color.textSecondary)
                 .monospacedDigit()
-                .frame(width: 36, alignment: .leading)
+                .lineLimit(1)
+                .frame(width: self.timeLabelWidth, alignment: .leading)
         }
     }
 
@@ -425,5 +427,13 @@ public struct NowPlayingStrip: View {
             return drag * self.vm.duration
         }
         return self.vm.position
+    }
+
+    /// The width of both labels either side of the scrubber. Sized on the
+    /// longer of the total and the elapsed time, so an hour-long podcast gets
+    /// its wide slot from the first frame, and a live stream (which reports no
+    /// duration) widens once when its clock passes an hour (#563).
+    private var timeLabelWidth: Double {
+        Formatters.timeLabelWidth(longest: max(self.vm.duration, self.displayPosition))
     }
 }

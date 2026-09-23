@@ -108,6 +108,10 @@ struct MiniPlayerCompact: View {
             .foregroundStyle(Color.textTertiary)
             .frame(width: 80)
             .monospacedDigit()
+            // The 80 pt strip holds two h:mm:ss readings at 9 pt with room to
+            // spare; a ten-hour audiobook overruns it. Truncate rather than
+            // wrap the pair onto a second line (#563).
+            .lineLimit(1)
         }
     }
 }

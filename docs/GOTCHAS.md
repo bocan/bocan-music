@@ -116,6 +116,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Modules/UI/Sources/UI/ViewModels/TracksViewModel.swift`
 
+### A fixed-width time label sized for `m:ss` wraps its last digit at an hour
+
+**Problem:** on a podcast over an hour long, the clock beside the progress bar reads `1:02:0` with a lone `3` under it. It looks like a truncation bug; it is a line wrap.
+
+**Rule:** any fixed-width label carrying `Formatters.duration` output takes its width from `Formatters.timeLabelWidth(longest:)`, and the argument is the longest value the label can show, `max(duration, position)`, not the current position. Add `.lineLimit(1)` to every time label, including the ones with no fixed frame.
+
+**Why:** the labels either side of the scrubber are fixed-width so the slider does not shift as the clock ticks, which makes the slot a promise to fit every string the formatter can return. At caption size `1:02:03` measures 38.25 pt against the old 36 pt slot, and SwiftUI wraps rather than overflows. Sizing on the total rather than the position keeps the slot still as playback crosses the hour; a live stream reports no duration, so only its elapsed reading ever tells the slot an hour has passed. Measure with `NSFont.monospacedDigitSystemFont` before choosing a width, rather than estimating from the character count: the colons are narrower than the digits.
+
+**Canonical file:** `Modules/UI/Sources/UI/Common/Formatters.swift`
+
 ---
 
 ## Audio engine and playback
