@@ -27,7 +27,15 @@ exits with a message if Accessibility is missing.
 ```
 make demo        # records build/demo/demo.mov and prints the tour's timings
 make demo-gif    # encodes it to build/demo/demo.gif, 1280 wide at 15 fps
+make demo-mp4    # encodes it to build/demo/demo.mp4 for Facebook and friends
 ```
+
+The GIF ships in two places: `assets/demo.gif` for the README and
+`website/src/assets/img/demo.gif` for the home page. Copy a new take to
+both. The MP4 is for social sites: 1920 wide, a constant 30 fps, H.264 with
+a silent AAC track and the index at the front, which is the shape Facebook,
+X, LinkedIn and Mastodon all accept. The raw recording is nominally 120 fps
+with a variable rate and no audio stream, which some of them refuse.
 
 The tour's beats and waits are in `Tour.run()` in `tour.py`. `--pause` sets
 the default wait between beats (1.5 s), `--glide` the cursor's travel time
