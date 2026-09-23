@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.18.0](https://github.com/bocan/bocan-music/compare/v2.17.1...v2.18.0) (2026-09-23)
+
 The clock beside the progress bar now reads properly on anything over an hour. On a long podcast the last second wrapped onto a line of its own, so the time read as a broken pair of figures instead of one. Thanks for spotting that one @GitMyAccount.
 
 There is a new History view (with dedicated Search) under Recents in the sidebar. It lists every song you have played, one line per play, newest first, with when you played it. Bòcan has stored this record all along; this is the first time you can read it. Expect cheesy year-end "wrap-up" tools in the future.
@@ -14,6 +16,14 @@ There is a new History view (with dedicated Search) under Recents in the sidebar
 If you have imported your Last.fm history, the listens that match songs in your library are there too, going back as far as your scrobbles do, and a Source control in the toolbar shows plays recorded here, listens imported from Last.fm, or both.  This is a wild feature as my scrobbles go back 20 years!
 
 A play of a song whose file has since gone missing stays in the list, greyed out, with the actions that need the file left out of its menu. One thing to know: removing a song from your library also removes its plays from the list.
+
+### For developers
+
+**Added**
+- ui: History under Recents, every listen of a song you own, with its own search (ADR-094) ([#561](https://github.com/bocan/bocan-music/pull/561))
+
+**Fixed**
+- ui: the transport clock reads on one line past an hour ([#564](https://github.com/bocan/bocan-music/pull/564))
 
 ## [2.17.1](https://github.com/bocan/bocan-music/compare/v2.17.0...v2.17.1) (2026-09-21)
 
