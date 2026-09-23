@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import os
 import signal
+import sqlite3
 import subprocess
 import sys
 import time
@@ -44,6 +45,11 @@ from ApplicationServices import (
 APP_PATH = "/Applications/Bocan.app"
 APP_BINARY = f"{APP_PATH}/Contents/MacOS/Bocan"
 BUNDLE_ID = "io.cloudcauldron.bocan"
+# The release build is not sandboxed, so its library is here, not in a container.
+LIBRARY_DB = os.path.expanduser("~/Library/Application Support/Bocan/library.sqlite")
+# The queue the app restores at launch: a JSON blob in the settings table.
+# Removing the row is what the app itself does to clear its queue.
+QUEUE_KEYS = ("playback.queue.v2", "playback.queue.v1")
 
 pyautogui.FAILSAFE = True  # slam the cursor into a corner to abort
 GLIDE = pyautogui.easeInOutQuad
@@ -74,6 +80,27 @@ def quit_app(timeout: float = 15) -> None:
         time.sleep(0.2)
     if app_pid() is not None:
         raise SystemExit("Bòcan did not quit; stop it by hand and run again.")
+
+
+def clear_restored_queue() -> None:
+    """Forgets the saved queue, so the app opens on Not playing.
+
+    Only with the app quit: two writers on the library is the one thing the
+    app's own WAL discipline is built to avoid.
+    """
+    if app_pid() is not None:
+        raise SystemExit("Refusing to touch the library while Bòcan is running.")
+    if not os.path.exists(LIBRARY_DB):
+        print(f"no library at {LIBRARY_DB}; nothing to clear", flush=True)
+        return
+    connection = sqlite3.connect(LIBRARY_DB)
+    try:
+        placeholders = ",".join("?" for _ in QUEUE_KEYS)
+        removed = connection.execute(f"DELETE FROM settings WHERE key IN ({placeholders})", QUEUE_KEYS).rowcount
+        connection.commit()
+    finally:
+        connection.close()
+    print(f"cleared the restored queue ({removed} row{'s' if removed != 1 else ''})", flush=True)
 
 
 def launch_app(timeout: float = 30) -> int:
@@ -297,7 +324,9 @@ class Tour:
         self.wait()
 
         self.click(app.by_identifier("toolbar.visualizer"), "Toggle Visualizer Pane")
-        self.wait(3)
+        self.wait(2.5)
+        self.click(app.by_identifier("toolbar.visualizer"), "Toggle Visualizer Pane again")
+        self.wait(1)
         self.log("end")
 
 
@@ -332,6 +361,7 @@ def main() -> int:
     parser.add_argument("--pause", type=float, default=1.5, help="the default wait between beats")
     parser.add_argument("--glide", type=float, default=0.6, help="seconds the cursor takes to reach a target")
     parser.add_argument("--no-record", action="store_true", help="drive only, record nothing")
+    parser.add_argument("--keep-queue", action="store_true", help="keep the saved queue instead of opening on Not playing")
     args = parser.parse_args()
 
     if not AXIsProcessTrusted():
@@ -343,6 +373,8 @@ def main() -> int:
         return 2
 
     quit_app()
+    if not args.keep_queue:
+        clear_restored_queue()
     pid = launch_app()
     place_window(args.x, args.y, args.width, args.height)
     app = App(pid)

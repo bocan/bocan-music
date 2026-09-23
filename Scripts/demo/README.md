@@ -42,5 +42,9 @@ the default wait between beats (1.5 s), `--glide` the cursor's travel time
   tour waits for the banner to go before recording starts.
 - **Single instance.** Launching the app while it is running only brings it
   forward, so the tour quits it first and starts from a clean launch.
+- **The restored queue.** The app reopens on whatever was playing last time.
+  With the app quit, the tour deletes the saved queue row from the library's
+  settings table (the same thing the app does to clear its queue), so the
+  recording opens on Not playing. `--keep-queue` leaves it alone.
 - **Your library is on screen.** The recording shows whatever the real
   library shows: artwork, titles, station names. Look before publishing.
