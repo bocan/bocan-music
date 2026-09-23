@@ -19,7 +19,8 @@ if command -v gifski >/dev/null; then
     frames="$(mktemp -d)"
     trap 'rm -rf "$frames"' EXIT
     ffmpeg -loglevel error -i "$in" -vf "fps=${fps},scale=${width}:-1:flags=lanczos" "$frames/%05d.png"
-    gifski --fps "$fps" --quality 85 -o "$out" "$frames"/*.png
+    # gifski shrinks to about 800x600 unless told the width outright.
+    gifski --fps "$fps" --width "$width" --quality 85 -o "$out" "$frames"/*.png
 else
     echo "gifski is not installed (brew install gifski); using ffmpeg's palette path" >&2
     filters="fps=${fps},scale=${width}:-1:flags=lanczos"
