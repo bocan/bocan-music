@@ -1,0 +1,2 @@
+pyautogui>=0.9.54
+pyobjc-framework-ApplicationServices>=10

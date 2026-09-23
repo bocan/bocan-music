@@ -1,0 +1,70 @@
+# Demo recording
+
+A scripted tour of the installed app, recorded for the README GIF.
+
+`tour.py` quits and relaunches `/Applications/Bocan.app` (the release build,
+never an Xcode build), waits for the launch rescan to finish, places the main
+window at an exact frame, records that frame with `screencapture`, and drives
+the tour with PyAutoGUI: the cursor glides between targets at a pace a person
+would click them. Every target is found in the app's own accessibility tree by
+the same identifiers the E2E suite uses (`sidebar.albums`, `tracksTable`,
+`toolbar.lyrics`, ...), so nothing is pixel-hunted and a layout change does
+not break a beat.
+
+## Once
+
+```
+pip3 install -r Scripts/demo/requirements.txt
+brew install gifski      # optional, but the GIFs are much better for it
+```
+
+Grant the terminal that runs it **Accessibility** and **Screen Recording** in
+System Settings, Privacy & Security. macOS prompts on first use; the script
+exits with a message if Accessibility is missing.
+
+## Every time
+
+```
+make demo        # records build/demo/demo.mov and prints the tour's timings
+make demo-gif    # encodes it to build/demo/demo.gif, 1280 wide at 15 fps
+make demo-mp4    # encodes it to build/demo/demo.mp4 for Facebook and friends
+```
+
+The GIF ships in two places: `assets/demo.gif` for the README and
+`website/src/assets/img/demo.gif` for the home page. Copy a new take to
+both. The MP4 is for social sites: 1920 wide, a constant 30 fps, H.264 with
+a silent AAC track and the index at the front, which is the shape Facebook,
+X, LinkedIn and Mastodon all accept. The raw recording is nominally 120 fps
+with a variable rate and no audio stream, which some of them refuse.
+
+The tour's beats and waits are in `Tour.run()` in `tour.py`. `--pause` sets
+the default wait between beats (1.5 s), `--glide` the cursor's travel time
+(0.6 s), and `--no-record` drives without recording, for rehearsal.
+
+`make demo DEMO_ARGS=--settings` ends the tour with Settings: every pane for
+a second, top to bottom, then the window closes so the loop lands back on
+the main window. It doubles the length (about 70 s, 14 MB with ffmpeg), so
+it is off by default.
+
+## Things the tour allows for
+
+- **Type-to-search.** The first printable key pressed anywhere in the main
+  window starts a library search and is swallowed into the field. The tour
+  uses that on purpose for the search beat; do not type anywhere else.
+- **The launch rescan.** The app rescans on launch and shows a banner. The
+  tour waits for the banner to go before recording starts.
+- **Single instance.** Launching the app while it is running only brings it
+  forward, so the tour quits it first and starts from a clean launch.
+- **The restored queue.** The app reopens on whatever was playing last time.
+  With the app quit, the tour deletes the saved queue row from the library's
+  settings table (the same thing the app does to clear its queue), so the
+  recording opens on Not playing. `--keep-queue` leaves it alone.
+- **Your library is on screen.** The recording shows whatever the real
+  library shows: artwork, titles, station names. Look before publishing.
+- **The Settings window is fixed-size**, and its sidebar is taller than it
+  is. A row below the fold is missing from the accessibility tree, or
+  reports a frame outside the window, where a click would land on the main
+  window behind. The tour scrolls the sidebar until a row sits wholly inside
+  the window before it clicks, and refuses to click otherwise.
+- **Settings shows your own setup**: server names, accounts, folder paths,
+  paired phones, crash report dates. Look harder before publishing.

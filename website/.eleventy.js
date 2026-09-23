@@ -20,7 +20,6 @@ export default function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "static/CNAME": "CNAME" });
   eleventyConfig.addPassthroughCopy({ "static/.well-known": ".well-known" });
   eleventyConfig.addPassthroughCopy({ "static/robots.txt": "robots.txt" });
-  eleventyConfig.addPassthroughCopy({ "static/screenshots": "screenshots" });
   eleventyConfig.addPassthroughCopy({ "static/appcast.xml": "appcast.xml" });
   eleventyConfig.addPassthroughCopy({ "static/radio": "radio" });
   eleventyConfig.addPassthroughCopy({
