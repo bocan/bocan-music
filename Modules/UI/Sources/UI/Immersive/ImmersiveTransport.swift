@@ -79,6 +79,7 @@ struct ImmersiveTransport: View {
             .font(Typography.caption)
             .foregroundStyle(Color.textTertiary)
             .monospacedDigit()
+            .lineLimit(1)
         }
     }
 
