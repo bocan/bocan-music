@@ -395,7 +395,7 @@ $(DEMO_VENV)/.stamp: Scripts/demo/requirements.txt
 	$(DEMO_VENV)/bin/pip install -q -r Scripts/demo/requirements.txt
 	@touch $@
 
-## demo: Record the scripted README tour of the installed app to build/demo/demo.mov (DEMO_ARGS=--no-record to rehearse)
+## demo: Record the scripted README tour of the installed app to build/demo/demo.mov (DEMO_ARGS=--no-record to rehearse, --settings to add the Settings panes)
 demo: $(DEMO_VENV)/.stamp
 	@$(DEMO_VENV)/bin/python Scripts/demo/tour.py --out build/demo/demo.mov $(DEMO_ARGS)
 

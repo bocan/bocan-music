@@ -29,8 +29,11 @@ from ApplicationServices import (
     AXIsProcessTrusted,
     AXUIElementCopyAttributeValue,
     AXUIElementCreateApplication,
+    AXUIElementSetAttributeValue,
+    AXValueCreate,
     AXValueGetValue,
     kAXChildrenAttribute,
+    kAXCloseButtonAttribute,
     kAXDescriptionAttribute,
     kAXIdentifierAttribute,
     kAXPositionAttribute,
@@ -40,6 +43,7 @@ from ApplicationServices import (
     kAXValueAttribute,
     kAXValueTypeCGPoint,
     kAXValueTypeCGSize,
+    kAXWindowAttribute,
 )
 
 APP_PATH = "/Applications/Bocan.app"
@@ -171,6 +175,23 @@ def identifier(element) -> str:
     return ax_attr(element, kAXIdentifierAttribute) or ""
 
 
+def ax_move_window(window, x: float, y: float) -> None:
+    """Moves a window by its accessibility element. (Its size cannot be set
+    this way: a SwiftUI Settings window is fixed-size.)"""
+    point = AXValueCreate(kAXValueTypeCGPoint, (x, y))
+    if AXUIElementSetAttributeValue(window, kAXPositionAttribute, point) != 0:
+        raise SystemExit("Could not move the Settings window.")
+
+
+def contains(outer: Frame, inner: Frame) -> bool:
+    return (
+        inner.x >= outer.x
+        and inner.y >= outer.y
+        and inner.x + inner.w <= outer.x + outer.w
+        and inner.y + inner.h <= outer.y + outer.h
+    )
+
+
 # The AppKit song tables can hold fifteen thousand rows, each with twenty
 # cells. A search that walks into one spends its whole budget there and never
 # reaches the sidebar. Nothing the tour looks for is inside them, and the one
@@ -211,6 +232,10 @@ class App:
 
     def by_identifier(self, ident: str, timeout: float = 20):
         return self.wait_for(f'"{ident}"', lambda: ax_find(self.root, lambda e: identifier(e) == ident), timeout)
+
+    def find_identifier(self, ident: str):
+        """One look, no wait: for elements that may legitimately not exist."""
+        return ax_find(self.root, lambda e: identifier(e) == ident)
 
     def by_identifier_prefix(self, prefix: str, timeout: float = 20):
         return self.wait_for(
@@ -260,11 +285,35 @@ def describe(element) -> str:
 # MARK: - The tour
 
 
+# The Settings sidebar, top to bottom. Scrobbling only appears once a
+# scrobbler is configured, so it is skipped when absent.
+SETTINGS_PAGES = (
+    "general",
+    "appearance",
+    "library",
+    "sources",
+    "smartPlaylists",
+    "podcasts",
+    "phoneSync",
+    "playback",
+    "equaliser",
+    "effects",
+    "replayGain",
+    "lyrics",
+    "visualizer",
+    "scrobble",
+    "advanced",
+    "diagnostics",
+)
+
+
 class Tour:
-    def __init__(self, app: App, pause: float, glide: float):
+    def __init__(self, app: App, pause: float, glide: float, frame: Frame, settings: bool):
         self.app = app
         self.pause = pause
         self.glide = glide
+        self.frame = frame
+        self.settings = settings
         self.started = time.monotonic()
 
     def log(self, message: str) -> None:
@@ -327,7 +376,77 @@ class Tour:
         self.wait(2.5)
         self.click(app.by_identifier("toolbar.visualizer"), "Toggle Visualizer Pane again")
         self.wait(1)
+
+        if self.settings:
+            self.settings_tour()
         self.log("end")
+
+    def settings_tour(self) -> None:
+        """Opens Settings, shows every pane for a second, then closes it again."""
+        app = self.app
+        # The menu bar sits above the recorded frame, so the shortcut looks the
+        # same on the recording as a click on Bòcan, Settings... would.
+        pyautogui.hotkey("command", ",")
+        self.log("open Settings")
+        first = app.by_identifier("settings.sidebar.general")
+
+        # Settings opens wherever macOS puts it; centre it in the recorded frame.
+        window = ax_attr(first, kAXWindowAttribute)
+        current = ax_frame(window)
+        if window is None or current is None:
+            raise SystemExit("The Settings window has no frame.")
+        ax_move_window(
+            window,
+            self.frame.x + (self.frame.w - current.w) / 2,
+            self.frame.y + (self.frame.h - current.h) / 2,
+        )
+        self.wait(1)
+        # The sidebar column, read now: General itself scrolls away later.
+        column_x = ax_frame(first).center[0]
+
+        for page in SETTINGS_PAGES[1:]:
+            # Scrobbling is only listed once a scrobbler is configured; it is
+            # absent for good once the row after it is in view.
+            after = "advanced" if page == "scrobble" else None
+            row = self.settings_row(window, column_x, page, absent_once_visible=after)
+            if row is None:
+                self.log(f"skip settings {page} (not configured)")
+                continue
+            self.click(row, f"settings {page}")
+            self.wait(1)
+
+        self.click(ax_attr(window, kAXCloseButtonAttribute), "close Settings")
+        self.wait(1)
+
+    def settings_row(self, window, column_x: int, page: str, absent_once_visible: str | None = None):
+        """The sidebar row for `page`, scrolled into view.
+
+        The window is fixed-size and its sidebar is taller than it is. A row
+        below the fold is not in the accessibility tree at all, or reports a
+        frame below the window, where a click would land on the main window
+        behind. So the list is scrolled, a wheel step at a time over the
+        sidebar, until the row sits wholly inside the window. Returns None
+        when the row is not there once `absent_once_visible` (the row that
+        would follow it) is in view.
+        """
+        window_frame = ax_frame(window)
+        anchor = column_x, window_frame.center[1]  # over the sidebar, mid-window
+
+        def visible(name: str):
+            row = self.app.find_identifier(f"settings.sidebar.{name}")
+            frame = ax_frame(row) if row is not None else None
+            return row if frame is not None and contains(window_frame, frame) else None
+
+        for _ in range(12):
+            row = visible(page)
+            if row is not None:
+                return row
+            if absent_once_visible is not None and visible(absent_once_visible) is not None:
+                return None
+            pyautogui.moveTo(*anchor, duration=self.glide / 2, tween=GLIDE)
+            pyautogui.scroll(-5)
+            time.sleep(0.3)
+        raise SystemExit(f"The {page} row never scrolled into the Settings window.")
 
 
 # MARK: - Recording
@@ -362,6 +481,7 @@ def main() -> int:
     parser.add_argument("--glide", type=float, default=0.6, help="seconds the cursor takes to reach a target")
     parser.add_argument("--no-record", action="store_true", help="drive only, record nothing")
     parser.add_argument("--keep-queue", action="store_true", help="keep the saved queue instead of opening on Not playing")
+    parser.add_argument("--settings", action="store_true", help="end with a tour of every Settings pane")
     args = parser.parse_args()
 
     if not AXIsProcessTrusted():
@@ -385,7 +505,8 @@ def main() -> int:
 
     recorder = None if args.no_record else start_recording(args.out, args.x, args.y, args.width, args.height)
     time.sleep(1.0)  # let screencapture start before the first beat
-    tour = Tour(app, pause=args.pause, glide=args.glide)
+    frame = Frame(args.x, args.y, args.width, args.height)
+    tour = Tour(app, pause=args.pause, glide=args.glide, frame=frame, settings=args.settings)
     try:
         tour.run()
     finally:

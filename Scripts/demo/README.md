@@ -33,6 +33,11 @@ The tour's beats and waits are in `Tour.run()` in `tour.py`. `--pause` sets
 the default wait between beats (1.5 s), `--glide` the cursor's travel time
 (0.6 s), and `--no-record` drives without recording, for rehearsal.
 
+`make demo DEMO_ARGS=--settings` ends the tour with Settings: every pane for
+a second, top to bottom, then the window closes so the loop lands back on
+the main window. It doubles the length (about 70 s, 14 MB with ffmpeg), so
+it is off by default.
+
 ## Things the tour allows for
 
 - **Type-to-search.** The first printable key pressed anywhere in the main
@@ -48,3 +53,10 @@ the default wait between beats (1.5 s), `--glide` the cursor's travel time
   recording opens on Not playing. `--keep-queue` leaves it alone.
 - **Your library is on screen.** The recording shows whatever the real
   library shows: artwork, titles, station names. Look before publishing.
+- **The Settings window is fixed-size**, and its sidebar is taller than it
+  is. A row below the fold is missing from the accessibility tree, or
+  reports a frame outside the window, where a click would land on the main
+  window behind. The tour scrolls the sidebar until a row sits wholly inside
+  the window before it clicks, and refuses to click otherwise.
+- **Settings shows your own setup**: server names, accounts, folder paths,
+  paired phones, crash report dates. Look harder before publishing.
