@@ -173,6 +173,17 @@ struct FeedParserInvalidTests {
         }
     }
 
+    @Test("RSS 1.0 (RDF) feed throws notAFeed, since the format has no enclosures")
+    func rdfFeedThrowsNotAFeed() throws {
+        let data = try fixture(named: "rss-rdf.xml")
+        do {
+            _ = try parser.parse(data, sourceURL: sourceURL)
+            Issue.record("expected PodcastsError.notAFeed")
+        } catch let PodcastsError.notAFeed(url) {
+            #expect(url == sourceURL)
+        }
+    }
+
     @Test("Garbage bytes throw parseFailed error")
     func garbageBytesThrow() throws {
         let junk = Data([0x00, 0x01, 0xFF, 0xFE])

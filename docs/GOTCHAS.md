@@ -186,13 +186,13 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/Metadata/Sources/TagLibBridge/BocanTagLib.mm` (line 188 at time of writing)
 
-### FeedKit models only two tags of the Podcasting 2.0 namespace
+### We read only two Podcasting 2.0 tags from FeedKit
 
-**Problem:** `podcast:funding`, `podcast:chapters`, `podcast:person` and `podcast:podroll` are simply absent from a parsed feed.
+**Problem:** FeedKit before 10.8 left `podcast:funding`, `podcast:chapters`, `podcast:person` and `podcast:podroll` out of a parsed feed. From 10.8 it models the whole namespace, but it decodes typed attributes strictly: one unparseable value (`fee="True"`, `split="0.5"`, a non-numeric `podcast:season`) throws out of `Feed(data:)` and fails the whole feed, not only that tag.
 
-**Rule:** everything beyond `podcast:guid` and `podcast:transcript` comes from the supplementary `XMLParser` pass over the original bytes. Do not remove it until FeedKit models those tags. The supplement must match on namespace URI and accept both bindings feeds use in the wild, because publishers use either the current or the legacy one and the spec says to treat them as identical.
+**Rule:** everything beyond `podcast:guid` and `podcast:transcript` comes from the supplementary `XMLParser` pass over the original bytes. The supplement must match on namespace URI and accept both bindings feeds use in the wild, because publishers use either the current or the legacy one and the spec says to treat them as identical. Moving those reads to FeedKit's models is a change of its own: compare real subscribed feeds before and after, and never let a decode error on an optional tag fail a refresh that parsed before. Any FeedKit bump gets the same real-feed comparison (parse the same downloaded bytes with the old and new version and diff the counts).
 
-**Why:** FeedKit itself matches on prefix, so guid and transcript are URI-agnostic, which is why the gap is easy to miss.
+**Why:** FeedKit matches on prefix, so guid and transcript are URI-agnostic, which is why the URI gap is easy to miss. And FeedKit's error on one bad attribute propagates through the channel and item decoders, so a richer model means more ways for the whole parse to fail.
 
 **Canonical file:** `Modules/Podcasts/Sources/Podcasts/Parsing/PodcastNamespaceSupplement.swift`, background in `docs/design-spec/ADR-048-feedkit-upgrade.md`
 
@@ -385,6 +385,8 @@ The same applies to cyclomatic complexity, which is capped at 10. The graph buil
 **Why:** the resolve anchors on the existing resolved file and on cached repository mirrors, which do not know about new tags, so it can silently keep a version below a new floor. Stale module build plans fail to see files recently added to a dependency.
 
 Two follow-on hazards. A stale explicit-modules cache produces a precompile failure whose real error only appears in raw build output, and only deleting the whole derived-data directory clears it. Never delete derived data while Xcode has the project open, because it immediately re-resolves into it and both operations fail.
+
+When a transitive patch release still will not move (swift-issue-reporting stayed on 2.1.0 in September 2026 with 2.1.1 in both mirrors and no constraint capping it), resolve the owning module with plain `swift package resolve`, which picks the latest at once, and copy that pin's revision and version into the workspace resolved file. The Xcode resolve then keeps it, because it anchors on the file. The gitignored `Modules/*/Package.resolved` files are stale local artifacts from module test runs; delete them together with `Modules/*/.build`.
 
 **Canonical file:** `Scripts/check-package-updates.py`
 
