@@ -477,6 +477,15 @@ Commit: `fix(playback): arm a real crossfade at the boundaries the setting names
    feature list mentions it.
 4. Close #567 from the PR body (`Closes #567.`).
 
+**As built (2026-09-25).** The slider help and the caption under the
+Transitions section say what happens in plain words ("the next song fades in
+while the current one fades out", "back to back with no gap"), and the help
+says only songs stored on this Mac crossfade. The website has no feature
+card for crossfade, so one sentence joins the "Gapless" card. The README
+line also corrects the range from 12 s to 10 s, the slider's real maximum.
+The GOTCHAS entry is written, and `make generate` picks up
+`DSPCrossfadeForwardingTests.swift` for the Xcode test bundle.
+
 Commit: `docs(ui): say what crossfade does, and note the fix`.
 
 ## Behavioural definitions and contracts
