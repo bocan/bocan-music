@@ -55,6 +55,35 @@ struct CrossfadeMixGainTests {
     }
 }
 
+// MARK: - Overlap length
+
+@Suite("CrossfadeMix - overlap length")
+struct CrossfadeMixOverlapLengthTests {
+    @Test(
+        "The overlap is the setting, capped at half of either track, and nil under one second",
+        arguments: [
+            // (setting, outgoing, incoming, expected)
+            (6.0, 240.0, 200.0, 6.0 as TimeInterval?),
+            (10.0, 12.0, 300.0, 6.0),
+            (10.0, 300.0, 9.0, 4.5),
+            (2.0, 2.0, 2.0, 1.0),
+            (3.0, 1.5, 100.0, nil),
+            (0.5, 240.0, 240.0, nil),
+            (0.0, 240.0, 240.0, nil),
+        ]
+    )
+    func lengthRule(setting: TimeInterval, outgoing: TimeInterval, incoming: TimeInterval, expected: TimeInterval?) {
+        #expect(CrossfadeMix.overlapSeconds(setting: setting, outgoing: outgoing, incoming: incoming) == expected)
+    }
+
+    @Test("A duration that is not finite never crossfades")
+    func nonFinite() {
+        #expect(CrossfadeMix.overlapSeconds(setting: 6, outgoing: .nan, incoming: 200) == nil)
+        #expect(CrossfadeMix.overlapSeconds(setting: 6, outgoing: 200, incoming: .infinity) == nil)
+        #expect(CrossfadeMix.overlapSeconds(setting: .infinity, outgoing: 200, incoming: 200) == nil)
+    }
+}
+
 // MARK: - Mixing
 
 @Suite("CrossfadeMix - mixing buffers")

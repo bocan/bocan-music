@@ -73,6 +73,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     var lastGaplessTransitionAt: Date?
     /// Crossfade volume ramp task. Cancelled in `load()` and `stop()`.
     var crossfadeTask: Task<Void, Never>?
+    /// The next track of an armed crossfade, until its transition is handled
+    /// (ADR-095; logic in AudioEngine+Gapless and AudioEngine+GaplessAPI).
+    var pendingCrossfade: PendingCrossfade?
 
     /// Start offset in the source file for the current CUE segment (seconds).
     /// Zero for ordinary non-CUE tracks. Internal so `setSegment` (in the CUE
@@ -194,6 +197,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         // Stop any running pump.
         await self.pump?.stop()
         self.pump = nil
+        // A crossfade too far along to disarm above ends here: the new track
+        // replaces both of its tracks.
+        await self.dropPendingCrossfade(reason: "load")
 
         // Defensive: re-stop the player node in case the pump scheduled any
         // buffers between our initial stop() and the pump's task being cancelled.
@@ -373,8 +379,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.cancelCrossfade()
         await self.fadePlayerNode(to: 0)
         self.graph.playerNode.stop()
-        await self.pump?.stop()
+        let heard = await self.pump?.stop() ?? false
         self.pump = nil
+        await self.settleCrossfade(heard: heard, reason: "stop")
         self.graph.stop()
         self._currentTime = 0
         self._playerTimeOffset = 0
@@ -437,7 +444,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         if wasPlaying {
             self.graph.playerNode.volume = 0
         }
-        try await pump.reschedule(to: time)
+        // During a crossfade the pump seeks the track the listener hears. If
+        // that is already the incoming one and its transition is still on the
+        // way here, handle it first so the position below is on that track.
+        if try await pump.reschedule(to: time), self.pendingCrossfade != nil {
+            self.completeCrossfadeTransition()
+        }
         self._currentTime = time
         self._playerTimeOffset = 0
         if wasPlaying {

@@ -16,6 +16,25 @@ import Foundation
 /// here (each pump source has its own `FormatConverter`), so the mix is a
 /// per-channel multiply-add and never resamples.
 enum CrossfadeMix {
+    /// The shortest overlap worth mixing. A boundary whose overlap would be
+    /// shorter is gapless instead (ADR-095, "Overlap length").
+    static let minimumOverlapSeconds: TimeInterval = 1.0
+
+    /// The overlap for a boundary: `min(setting, outgoing / 2, incoming / 2)`
+    /// seconds, so neither track spends more than half its length fading.
+    /// `nil` when that is shorter than `minimumOverlapSeconds`, or when any
+    /// input is not finite (a corrupt or live-stream duration), which makes
+    /// the boundary gapless.
+    static func overlapSeconds(
+        setting: TimeInterval,
+        outgoing: TimeInterval,
+        incoming: TimeInterval
+    ) -> TimeInterval? {
+        guard setting.isFinite, outgoing.isFinite, incoming.isFinite else { return nil }
+        let length = min(setting, outgoing / 2, incoming / 2)
+        return length >= self.minimumOverlapSeconds ? length : nil
+    }
+
     /// The equal-power gain pair for overlap frame `frame` of an overlap
     /// `length` frames long: `cos` for the outgoing track, `sin` for the
     /// incoming one, so `outgoing² + incoming² == 1` on every frame.

@@ -60,11 +60,20 @@ final class PumpSource: @unchecked Sendable {
     /// last seeked.
     private(set) var outputFramesProduced: AVAudioFramePosition = 0
 
+    /// The output-rate frame the source started from: 0, or the target of
+    /// the last seek. Added to `outputFramesProduced` for an absolute position.
+    private(set) var startOutputFrame: AVAudioFramePosition = 0
+
+    /// Converted frames the pump has not yet scheduled. Empty except around a
+    /// crossfade, where the pump cuts buffers at exact frames (ADR-095).
+    let pending: PCMFrameQueue
+
     // MARK: - Init
 
     init(decoder: any Decoder, outputFormat: AVAudioFormat, maxDuration: TimeInterval? = nil) throws {
         self.decoder = decoder
         self.outputFormat = outputFormat
+        self.pending = PCMFrameQueue(format: outputFormat)
         // The budget counts decoder-native frames: the feed loop compares it
         // against framesRead BEFORE resampling. Computing it from the output
         // rate overshot a CUE boundary by the rate ratio (a 44.1k file on a
@@ -84,6 +93,23 @@ final class PumpSource: @unchecked Sendable {
     /// Whether this source converts (resamples or folds) before scheduling.
     var hasConverter: Bool {
         self.converter != nil
+    }
+
+    // MARK: - Position
+
+    /// The output-rate frame, counted from the start of the file, that the
+    /// next scheduled frame of this source will play. Frames still in
+    /// `pending` are not scheduled yet, so they do not count.
+    var scheduledPosition: AVAudioFramePosition {
+        self.startOutputFrame + self.outputFramesProduced - AVAudioFramePosition(self.pending.count)
+    }
+
+    /// The source's length in output-rate frames, from the decoder's
+    /// `duration`. An estimate for some containers (a VBR MP3 without a Xing
+    /// header), so a crossfade built on it must cope with the real end
+    /// arriving early or late (ADR-095, Gotchas).
+    var estimatedTotalOutputFrames: AVAudioFramePosition {
+        AVAudioFramePosition((self.decoder.duration * self.outputFormat.sampleRate).rounded())
     }
 
     // MARK: - Reading
@@ -125,9 +151,12 @@ final class PumpSource: @unchecked Sendable {
     // MARK: - Seeking
 
     /// Reseek the decoder to `time` and restart the running counts from there.
+    /// Frames still pending belong to the old position and are dropped.
     func seek(to time: TimeInterval) async throws {
         try await self.decoder.seek(to: time)
         self.framesRead = 0
         self.outputFramesProduced = 0
+        self.startOutputFrame = AVAudioFramePosition((time * self.outputFormat.sampleRate).rounded())
+        self.pending.removeAll()
     }
 }

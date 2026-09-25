@@ -122,6 +122,7 @@ extension AudioEngine {
         self.graph.playerNode.stop()
         await self.pump?.stop()
         self.pump = nil
+        await self.dropPendingCrossfade(reason: "failed")
         let ae = error as? AudioEngineError ?? .decoderFailure(codec: "stream", underlying: error)
         self.emit(.failed(ae))
         self.log.error("engine.playback.failed", ["error": String(reflecting: ae)])
