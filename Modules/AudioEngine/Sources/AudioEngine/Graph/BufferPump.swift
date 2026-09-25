@@ -106,6 +106,19 @@ actor BufferPump {
     /// Reset when a new overlap is armed.
     var overlapHeard = false
 
+    /// The next crossfade, armed while the last one still mixes its tail
+    /// after its transition was heard. It becomes `overlap` when that mix
+    /// ends. A short track can need its own crossfade before the one into it
+    /// is done.
+    var queuedOverlap: PumpOverlap?
+
+    /// What `stop` and `reschedule` report to the engine: whether the
+    /// incoming track of the crossfade the engine is waiting on was heard.
+    /// With a queued crossfade that is the queued one, which is not.
+    private var engineCrossfadeHeard: Bool {
+        self.queuedOverlap == nil && self.overlapHeard
+    }
+
     /// Bumped whenever the node is flushed or the pump stops. A completion
     /// from an older generation (a flushed buffer) never fires a transition.
     private(set) var generation = 0
@@ -199,7 +212,7 @@ actor BufferPump {
         self.slotContinuation = nil
         _ = await self.task?.result // drain
         self.task = nil
-        let heard = self.overlapHeard
+        let heard = self.engineCrossfadeHeard
         await self.releaseOverlapOnStop()
         return heard
     }
@@ -233,7 +246,7 @@ actor BufferPump {
         // (which also restarts the source's frame counts, segment budget included).
         self.playerNode.stop()
         self.framesScheduledSinceFlush = 0
-        let heard = self.overlapHeard
+        let heard = self.engineCrossfadeHeard
         try await self.rewindOverlapForSeek()
         try await self.current.seek(to: time)
         self.reachedEnd = false

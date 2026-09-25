@@ -79,38 +79,65 @@ extension BufferPump {
     /// effect at the next loop iteration. Replaces a crossfade that is armed
     /// but not mixing yet.
     ///
+    /// While a mix whose transition is heard still runs, the crossfade is
+    /// queued behind it (`queuedOverlap`) and armed when that mix ends: the
+    /// incoming track is then already the one the listener hears, and a
+    /// track shorter than about twice the crossfade plus the arming margin
+    /// needs its own crossfade armed before the one into it is done.
+    ///
     /// Returns `false` and arms nothing when the pump cannot take a crossfade:
     /// its feed has ended, it plays a CUE segment (the overlap start is
-    /// measured from the file's end), or a crossfade is already mixing.
+    /// measured from the file's end), or a crossfade is mixing or handed over
+    /// and its transition is not heard yet.
     func armOverlap(
         decoder: any Decoder,
         lengthSeconds: TimeInterval,
         onTransition: @Sendable @escaping () -> Void
     ) async throws -> Bool {
         guard !self.reachedEnd, self.current.maxFrames == nil else { return false }
-        let replaced = self.overlap
-        if let replaced {
-            switch replaced.phase {
+        var queueBehindMix = false
+        if let running = self.overlap {
+            switch running.phase {
             case .armed, .armedLate:
                 break
 
-            case .mixing, .handedOver:
+            case .mixing:
+                guard self.overlapHeard else { return false }
+                queueBehindMix = true
+
+            case .handedOver:
                 return false
             }
         }
         let incoming = try PumpSource(decoder: decoder, outputFormat: self.current.outputFormat)
         let lengthFrames = Int((lengthSeconds * self.current.outputFormat.sampleRate).rounded())
-        self.overlap = PumpOverlap(incoming: incoming, lengthFrames: lengthFrames, onTransition: onTransition)
-        self.overlapHeard = false
-        self.log.debug("pump.overlap.armed", ["id": self.id, "lengthFrames": lengthFrames])
+        let armed = PumpOverlap(incoming: incoming, lengthFrames: lengthFrames, onTransition: onTransition)
+        let replaced: PumpOverlap?
+        if queueBehindMix {
+            replaced = self.queuedOverlap
+            self.queuedOverlap = armed
+            self.log.debug("pump.overlap.queued", ["id": self.id, "lengthFrames": lengthFrames])
+        } else {
+            replaced = self.overlap
+            self.overlap = armed
+            self.overlapHeard = false
+            self.log.debug("pump.overlap.armed", ["id": self.id, "lengthFrames": lengthFrames])
+        }
         await replaced?.incoming.decoder.close()
         return true
     }
 
     /// Drop a crossfade that has not started mixing, and close its source.
     /// Once mixing has started it is too late: mixed buffers are already on
-    /// the node, so the crossfade completes.
+    /// the node, so the crossfade completes. A queued crossfade is the one
+    /// dropped, never the mix it waits behind.
     func disarmOverlap() async -> OverlapDisarm {
+        if let queued = self.queuedOverlap {
+            self.queuedOverlap = nil
+            self.log.debug("pump.overlap.disarmed", ["id": self.id, "queued": true])
+            await queued.incoming.decoder.close()
+            return .dropped
+        }
         guard let overlap = self.overlap else { return .nothingArmed }
         switch overlap.phase {
         case .armed, .armedLate:
@@ -290,12 +317,23 @@ extension BufferPump {
         self.current = overlap.incoming
         self.log.debug("crossfade.mix.end", ["id": self.id, "mixedFrames": mix.mixed])
         if self.overlapHeard {
-            self.overlap = nil
+            self.promoteQueuedOverlap()
             await outgoing.decoder.close()
         } else {
             overlap.phase = .handedOver(outgoing: outgoing)
             self.overlap = overlap
         }
+    }
+
+    /// A heard crossfade is over: arm the one queued behind it, if any, from
+    /// the track that is now `current`. Its boundary is found from there as
+    /// for any arm, so a boundary already passed starts late or hands over.
+    private func promoteQueuedOverlap() {
+        self.overlap = self.queuedOverlap
+        self.queuedOverlap = nil
+        guard let armed = self.overlap else { return }
+        self.overlapHeard = false
+        self.log.debug("pump.overlap.armed", ["id": self.id, "lengthFrames": armed.lengthFrames, "queued": true])
     }
 
     /// Hand over with no mix: the incoming track follows the outgoing one's
@@ -343,7 +381,8 @@ extension BufferPump {
     /// Heard: the incoming one, and the outgoing source is closed. Not heard:
     /// the outgoing one, and the crossfade goes back to armed with the
     /// incoming source rewound, so the boundary is found again from the new
-    /// position.
+    /// position. A crossfade queued behind a heard mix is armed from the
+    /// incoming track, where the seek lands.
     func rewindOverlapForSeek() async throws {
         guard var overlap = self.overlap else { return }
         if self.overlapHeard {
@@ -351,8 +390,8 @@ extension BufferPump {
             // already cleared the overlap.
             let outgoing = self.current
             self.current = overlap.incoming
-            self.overlap = nil
             self.log.debug("crossfade.mix.end", ["id": self.id, "reason": "seek"])
+            self.promoteQueuedOverlap()
             await outgoing.decoder.close()
             return
         }
@@ -375,8 +414,13 @@ extension BufferPump {
 
     /// End a crossfade because the pump stops. Close the source only this
     /// pump holds: the outgoing one once the transition is heard (the engine
-    /// has moved to the incoming decoder), else the incoming one.
+    /// has moved to the incoming decoder), else the incoming one. The
+    /// incoming source of a queued crossfade is closed too.
     func releaseOverlapOnStop() async {
+        if let queued = self.queuedOverlap {
+            self.queuedOverlap = nil
+            await queued.incoming.decoder.close()
+        }
         guard let overlap = self.overlap else { return }
         self.overlap = nil
         self.log.debug("crossfade.disarmed", ["id": self.id, "reason": "stop"])

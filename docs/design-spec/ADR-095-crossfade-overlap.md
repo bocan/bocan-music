@@ -439,6 +439,17 @@ while building:
   and `resolveNextBoundary` on a real `QueuePlayer` (made internal for
   this). The format-gate skip inside the scheduler's poll has no automated
   test: it needs a playing engine, and no Playback test plays audio.
+- **A crossfade can be armed behind a running mix** (found in the
+  maintainer's manual check with 11 s tracks). A track shorter than about
+  `2 L + 2 s` reaches its own arming window while the mix into it still
+  runs, and the pump refused that arm, so every second boundary fell back
+  to gapless. Once the running mix's transition is heard, `armOverlap` now
+  keeps the new crossfade in `BufferPump.queuedOverlap` and arms it when
+  the mix ends; a seek during the tail arms it from the new position.
+  `disarmOverlap` drops the queued one, `stop` closes it, and `stop` and
+  `reschedule` report "not heard" while one is queued, because the
+  engine's pending crossfade is then the queued one. Tests:
+  `BufferPumpQueuedOverlapTests.swift`.
 
 Commit: `fix(playback): arm a real crossfade at the boundaries the setting names`.
 
