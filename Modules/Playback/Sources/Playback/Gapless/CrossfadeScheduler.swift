@@ -35,7 +35,8 @@ public actor CrossfadeScheduler {
 
     // MARK: - State
 
-    private var config = Config()
+    /// The configuration in effect.
+    public private(set) var config = Config()
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init

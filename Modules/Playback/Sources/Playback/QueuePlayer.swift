@@ -655,6 +655,12 @@ public actor QueuePlayer: Transport {
         ])
     }
 
+    /// The crossfade configuration in effect: the last one set, or crossfade
+    /// off when none was.
+    public func crossfadeConfig() async -> CrossfadeScheduler.Config {
+        await self.crossfadeScheduler.config
+    }
+
     // MARK: Private helpers
 
     // MARK: Load + play

@@ -450,6 +450,15 @@ while building:
   `reschedule` report "not heard" while one is queued, because the
   engine's pending crossfade is then the queued one. Tests:
   `BufferPumpQueuedOverlapTests.swift`.
+- **The setting now reaches the player at launch** (found in the same
+  check, after a relaunch). `DSPViewModel` forwarded the crossfade setting
+  only when a DSP control changed, so after every launch crossfade stayed
+  off until the slider moved. This is older than this ADR (Facts did not
+  list it) and was hidden while crossfade did nothing audible. The view
+  model now forwards it at init as well. `DSPViewModel.init` takes the
+  `UserDefaults` it loads and saves through, and
+  `QueuePlayer.crossfadeConfig()` reads the setting in effect, both for
+  `DSPCrossfadeForwardingTests`.
 
 Commit: `fix(playback): arm a real crossfade at the boundaries the setting names`.
 
