@@ -50,22 +50,13 @@ public struct TranscodeStore: Sendable {
 
     // MARK: - Mutations
 
-    /// Creates the preset's directory (and the root, marked excluded from
-    /// Time Machine). Idempotent; call before each encode.
+    /// Creates the preset's directory, and marks the root as a cache: a
+    /// `CACHEDIR.TAG` and the Time Machine exclusion (#569). Idempotent; call
+    /// before each encode, which also marks a root left by an older version.
     public func prepareDirectory(preset: TranscodePreset) throws {
         let presetDir = self.root.appendingPathComponent(preset.rawValue, isDirectory: true)
         try FileManager.default.createDirectory(at: presetDir, withIntermediateDirectories: true)
-        do {
-            var rootURL = self.root
-            var values = URLResourceValues()
-            values.isExcludedFromBackup = true
-            try rootURL.setResourceValues(values)
-        } catch {
-            // Backup inclusion is harmless; keep going.
-            self.log.warning("transcode.store.backup_exclusion.failed", [
-                "error": String(reflecting: error),
-            ])
-        }
+        CacheDirectoryMarker.mark(self.root, excludeFromBackup: true, log: self.log)
     }
 
     /// Removes one artifact's bytes if present. Never throws: a release sweep
