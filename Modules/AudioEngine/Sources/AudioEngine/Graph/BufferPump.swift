@@ -35,26 +35,15 @@ actor BufferPump {
 
     // MARK: - Dependencies
 
-    private let decoder: any Decoder
+    /// The track this pump reads: decoder, converter and frame counts.
+    private let source: PumpSource
     private let playerNode: AVAudioPlayerNode
-    private let outputFormat: AVAudioFormat
 
-    /// Format used to allocate intermediate decode buffers. Always a format the
-    /// decoder can fill: equal to `decoder.sourceFormat` whenever `converter`
-    /// exists, and to `outputFormat` (which then matches the source in rate and
-    /// channel count) when it does not. Asking `AVAudioFile` to read a 5.1 file
-    /// into a stereo buffer is a read error, not a fold (#515). Internal, not
-    /// private, so `BufferPumpFormatTests` can read the decision back.
-    let pumpFormat: AVAudioFormat
-
-    /// Non-nil when `decoder.sourceFormat` differs from `outputFormat` in sample
-    /// rate or channel count. `AVFoundationDecoder` handles SRC internally via
-    /// AVAudioFile, but FFmpegDecoder does not — without this converter it would
-    /// fill hardware-rate buffers with source-rate samples, causing playback at
-    /// the wrong speed and pitch. The channel-count case is the stereo fold:
-    /// both decoders hand over the file's own channels above two (ADR-091,
-    /// #522), and this one converter folds every route the same way.
-    private let converter: FormatConverter?
+    /// The source's decode-buffer format. Internal, not private, so
+    /// `BufferPumpFormatTests` can read the converter decision back.
+    var pumpFormat: AVAudioFormat {
+        self.source.pumpFormat
+    }
 
     private let log = AppLogger.make(.audio)
 
@@ -86,45 +75,26 @@ actor BufferPump {
     /// the pump is throttling itself to playback speed.  Reported at pump.stop/eof.
     private var throttleCount = 0
 
-    /// When non-nil, the pump stops after this many decoder-native frames have
-    /// been read.  Enforces the end of an `AudioEngine.setSegment` segment
-    /// without relying on the underlying decoder reaching true EOF (kept per
-    /// ADR-087 as a primitive; no caller since the virtual-track columns went).
-    private let maxFrames: AVAudioFrameCount?
-
     // MARK: - Init
 
+    /// `maxDuration`, when set, ends the pump after that much source audio
+    /// (a CUE segment; see `PumpSource.maxFrames`).
     init(
         decoder: any Decoder,
         playerNode: AVAudioPlayerNode,
         outputFormat: AVAudioFormat,
         maxDuration: TimeInterval? = nil
     ) throws {
-        self.decoder = decoder
+        self.source = try PumpSource(decoder: decoder, outputFormat: outputFormat, maxDuration: maxDuration)
         self.playerNode = playerNode
-        self.outputFormat = outputFormat
         self.availableSlots = BufferPump.windowSize
         self.id = String(UUID().uuidString.prefix(4))
-        // The budget counts decoder-native frames: the feed loop compares it
-        // against framesRead BEFORE resampling. Computing it from the output
-        // rate overshot a CUE boundary by the rate ratio (a 44.1k file on a
-        // 48k device played ~8.8% past the segment end, audibly bleeding the
-        // next track's opening before the end signal fired).
-        self.maxFrames = maxDuration.map { AVAudioFrameCount($0 * decoder.sourceFormat.sampleRate) }
-        let source = decoder.sourceFormat
-        if source.sampleRate != outputFormat.sampleRate || source.channelCount != outputFormat.channelCount {
-            self.converter = try FormatConverter(sourceFormat: source, targetFormat: outputFormat)
-            self.pumpFormat = source
-        } else {
-            self.converter = nil
-            self.pumpFormat = outputFormat
-        }
     }
 
     /// Whether this pump converts (resamples or folds) before scheduling.
     /// Read-only diagnostic surface for `BufferPumpFormatTests`.
     var hasConverter: Bool {
-        self.converter != nil
+        self.source.hasConverter
     }
 
     // MARK: - Lifecycle
@@ -191,9 +161,10 @@ actor BufferPump {
         _ = await self.task?.result
         self.task = nil
 
-        // Flush the node's queued buffers and reset its sample time, then reseek.
+        // Flush the node's queued buffers and reset its sample time, then reseek
+        // (which also restarts the source's frame counts, segment budget included).
         self.playerNode.stop()
-        try await self.decoder.seek(to: time)
+        try await self.source.seek(to: time)
 
         // Restore the window and resume feeding from the new position.
         self.availableSlots = BufferPump.windowSize
@@ -206,9 +177,6 @@ actor BufferPump {
     // MARK: - Private pump loop
 
     private func run() async throws {
-        let frameCapacity = AVAudioFrameCount(pumpFormat.sampleRate * BufferPump.bufferDuration)
-        var framesPumped: AVAudioFrameCount = 0
-
         while !Task.isCancelled {
             if self.availableSlots <= 0 {
                 try await self.waitForSlot()
@@ -216,14 +184,17 @@ actor BufferPump {
             }
             try Task.checkCancellation()
 
-            guard let buffer = AVAudioPCMBuffer(pcmFormat: pumpFormat, frameCapacity: frameCapacity) else {
+            guard let buffer = self.source.makeReadBuffer(duration: BufferPump.bufferDuration) else {
                 self.log.error("buffer.alloc.failed", ["id": self.id])
                 break
             }
 
+            // Taken before the read, which advances the source's count.
+            let segmentRemaining = self.source.remainingSegmentFrames
+
             let framesRead: AVAudioFrameCount
             do {
-                framesRead = try await self.decoder.read(into: buffer)
+                framesRead = try await self.source.read(into: buffer)
             } catch is CancellationError {
                 // Normal teardown (load / seek / stop cancels the feed task). Not a
                 // failure: stay quiet and let the cancellation propagate.
@@ -246,13 +217,9 @@ actor BufferPump {
             }
 
             // Enforce segment boundary for CUE virtual tracks.
-            if let limit = self.maxFrames {
-                let remaining = limit - framesPumped
-                if framesRead >= remaining {
-                    try self.scheduleSegmentEnd(buffer: buffer, trimTo: remaining)
-                    break
-                }
-                framesPumped += framesRead
+            if let remaining = segmentRemaining, framesRead >= remaining {
+                try self.scheduleSegmentEnd(buffer: buffer, trimTo: remaining)
+                break
             }
 
             try self.scheduleBuffer(buffer)
@@ -307,13 +274,12 @@ actor BufferPump {
         try Task.checkCancellation()
     }
 
-    /// Returns `source` unchanged when no conversion is needed; otherwise
-    /// resamples and/or folds to stereo via `FormatConverter`. Returns `nil`
-    /// for empty input.
-    private func resampledBuffer(_ source: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
-        guard let conv = self.converter else { return source }
+    /// `buffer` in the output format via the source's converter (unchanged when
+    /// no conversion is needed). Returns `nil` for empty input. Logs a
+    /// conversion failure here, where the pump id is known, then rethrows.
+    private func resampledBuffer(_ buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
         do {
-            return try conv.convert(source)
+            return try self.source.convert(buffer)
         } catch {
             self.log.error("pump.convert.failed", ["id": self.id, "error": String(reflecting: error)])
             throw error

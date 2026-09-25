@@ -211,10 +211,18 @@ so no CHANGELOG entry yet (label the PR `skip-changelog` if it lands alone).
    exactly one pump at a time): the decoder, its `FormatConverter?`, the
    `pumpFormat`, `maxFrames`, and running counters `framesRead` (decoder
    frames) and `outputFramesProduced` (output-rate frames after conversion).
-   It exposes `readConverted(maxOutputFrames:) async throws -> AVAudioPCMBuffer?`
-   (nil at EOF).
+   It exposes `makeReadBuffer(duration:)`, `read(into:) async throws ->
+   AVAudioFrameCount` (0 at EOF), `convert(_:) throws -> AVAudioPCMBuffer?`,
+   `remainingSegmentFrames`, and `seek(to:)`, which restarts the counts.
+   (Built as separate read and convert steps rather than the single
+   `readConverted` first planned here: the pump reports the two failures
+   differently, `pump.read.failed` through `onError` and `pump.convert.failed`
+   without it, and a combined call would hide which step failed.) Both counts
+   run from the start or the last seek, as the old loop-local segment count
+   did; slice 2b adds whatever absolute position it needs.
 2. `BufferPump` keeps its public surface and log lines exactly; its feed
-   loop reads through `current: PumpSource`.
+   loop reads through a `source: PumpSource` (slice 2b makes it the mutable
+   `current`).
 3. Every existing BufferPump, EngineTransport, GapFreeSeek, FoldParity and
    RetainCycle test passes unchanged. That is the acceptance test for this
    slice.
