@@ -71,8 +71,6 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     /// Timestamp of the most recent gapless transition. Suppresses a spurious second
     /// `.ended` when the just-swapped-in pump reports EOF before its first render.
     var lastGaplessTransitionAt: Date?
-    /// Crossfade volume ramp task. Cancelled in `load()` and `stop()`.
-    var crossfadeTask: Task<Void, Never>?
     /// The next track of an armed crossfade, until its transition is handled
     /// (ADR-095; logic in AudioEngine+Gapless and AudioEngine+GaplessAPI).
     var pendingCrossfade: PendingCrossfade?
@@ -160,8 +158,6 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     // MARK: - Transport conformance
 
     public func load(_ url: URL) async throws {
-        // Cancel any in-flight crossfade before touching volume or stopping the node.
-        self.cancelCrossfade()
         // Click-suppression: ramp the player-node volume to 0 *before* stop().
         // AVAudioPlayerNode.stop() truncates whatever sample is currently in
         // flight; if that sample is mid-cycle (which it almost always is) the
@@ -376,7 +372,6 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         self.cancelReconnectStabilize()
         await self.cancelGaplessNext()
         // 10 ms fade keeps stop() from popping mid-cycle.
-        self.cancelCrossfade()
         await self.fadePlayerNode(to: 0)
         self.graph.playerNode.stop()
         let heard = await self.pump?.stop() ?? false

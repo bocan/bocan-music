@@ -29,7 +29,7 @@ public actor QueuePlayer: Transport {
 
     public nonisolated let queue: PlaybackQueue // public for UI read access
     private let gaplessScheduler: GaplessScheduler
-    private let crossfadeScheduler = CrossfadeScheduler()
+    private let crossfadeScheduler: CrossfadeScheduler
     private let historyRecorder: PlayHistoryRecorder
     private let persistence: QueuePersistence
     /// The sleep timer — available for UI observation via `LibraryViewModel`.
@@ -139,12 +139,12 @@ public actor QueuePlayer: Transport {
 
     // MARK: - Crossfade state
 
-    /// Background task that waits until fade-out should begin, then calls
-    /// `engine.beginCrossfadeOut`. Cancelled on any manual track change.
-    private var crossfadeOutTask: Task<Void, Never>?
-    /// `true` when the next gapless transition should trigger a crossfade-in.
-    /// Set during `performGaplessPrefetch` when `crossfadeAllowed` returns `true`.
-    private var crossfadePendingForNextTransition = false
+    /// The next item when the engine armed a crossfade to it (ADR-095). Its
+    /// transition skips the gapless settle window: a crossfade swaps no pump,
+    /// so there is no spurious end to swallow, and an incoming track shorter
+    /// than the window would otherwise lose its real end. Cleared by any
+    /// manual load.
+    private var crossfadeArmedItemID: QueueItem.ID?
 
     /// Periodic task that calls `historyRecorder.update(elapsed:)` while playing
     /// so that scrobbles fire at the 50 % threshold even before a track ends.
@@ -168,7 +168,9 @@ public actor QueuePlayer: Transport {
         self.queue = PlaybackQueue()
         self.historyRecorder = PlayHistoryRecorder(database: database, scrobbleSink: scrobbleSink)
         self.persistence = QueuePersistence(database: database)
-        self.gaplessScheduler = GaplessScheduler(engine: engine)
+        let crossfadeScheduler = CrossfadeScheduler()
+        self.crossfadeScheduler = crossfadeScheduler
+        self.gaplessScheduler = GaplessScheduler(engine: engine, crossfade: crossfadeScheduler)
         self.trackRepo = TrackRepository(database: database)
         self.albumRepo = AlbumRepository(database: database)
         self.artistRepo = ArtistRepository(database: database)
@@ -249,10 +251,10 @@ public actor QueuePlayer: Transport {
         // Configure gapless scheduler.
         await self.gaplessScheduler.configure(
             nextItemProvider: { [weak self] in
-                await self?.resolveNextGaplessItem()
+                await self?.resolveNextBoundary()
             },
-            performPrefetch: { [weak self] item in
-                try await self?.performGaplessPrefetch(item: item)
+            performPrefetch: { [weak self] item, transition in
+                try await self?.performGaplessPrefetch(item: item, transition: transition)
             },
             onGaplessTransition: { [weak self] item in
                 await self?.handleGaplessTransition(to: item)
@@ -641,10 +643,10 @@ public actor QueuePlayer: Transport {
 
     /// Update the crossfade configuration forwarded from `DSPViewModel`.
     ///
-    /// When `config.durationSeconds > 0`, gapless transitions at album
-    /// boundaries fade out then fade in over the configured duration.
-    /// Same-album boundaries remain sample-accurate when `config.albumGapless`
-    /// is true (the default).
+    /// When `config.durationSeconds > 0`, the next track fades in while the
+    /// current one fades out, at every boundary between two local files.
+    /// Same-album boundaries remain sample-accurate gapless when
+    /// `config.albumGapless` is true (the default).
     public func setCrossfadeConfig(_ config: CrossfadeScheduler.Config) async {
         await self.crossfadeScheduler.setConfig(config)
         self.log.debug("queueplayer.crossfade.config", [
@@ -663,8 +665,9 @@ public actor QueuePlayer: Transport {
     }
 
     private func loadAndPlay(item: QueueItem, autoPlay: Bool = true) async throws {
-        // Cancel any crossfade in progress — a manual load always starts fresh.
-        self.resetCrossfade()
+        // A manual load always starts fresh; the engine's load drops any
+        // armed crossfade.
+        self.crossfadeArmedItemID = nil
 
         // A non-gapless load means the settle window no longer applies;
         // clear it so a natural end-of-track is never accidentally swallowed.
@@ -1090,25 +1093,6 @@ public actor QueuePlayer: Transport {
     /// Returns `true` when `error` indicates the track's file is missing or
     /// its bookmark can no longer be resolved — cases where skipping and
     /// disabling the track is the right recovery rather than surfacing a failure.
-    /// Upper bound on a scheduled crossfade-out delay. No real track needs the
-    /// fade scheduled more than a day out; the clamp exists to keep a corrupt
-    /// or live-stream duration from overflowing the nanosecond `UInt64` cast.
-    static let maxCrossfadeOutDelaySeconds: TimeInterval = 24 * 60 * 60
-
-    /// Returns how long to wait before beginning the crossfade-out, clamped to
-    /// a finite value safe for `UInt64(delay * 1e9)`. An infinite duration
-    /// (e.g. a live stream) clamps to `maxCrossfadeOutDelaySeconds` so the fade
-    /// is deferred rather than fired immediately; a NaN duration collapses to
-    /// `0` via `max`; a huge-but-finite duration is capped. See #271.
-    nonisolated static func crossfadeOutDelaySeconds(
-        remaining: TimeInterval,
-        halfDuration: TimeInterval
-    ) -> TimeInterval {
-        let raw = max(0, remaining - halfDuration)
-        guard raw.isFinite else { return Self.maxCrossfadeOutDelaySeconds }
-        return min(raw, Self.maxCrossfadeOutDelaySeconds)
-    }
-
     private static func isMissingFileError(_ error: Error) -> Bool {
         if case AudioEngineError.fileNotFound = error {
             return true
@@ -1195,14 +1179,24 @@ public actor QueuePlayer: Transport {
 
     // MARK: Gapless next URL resolution
 
-    private func resolveNextGaplessItem() async -> (item: QueueItem, forceGapless: Bool)? {
+    /// The next item and how to arm its boundary, or `nil` when nothing is
+    /// armed (ADR-095, "Which boundaries crossfade"): no next item or
+    /// stop-after-current; else a crossfade when the crossfade scheduler
+    /// allows one; else the plain gapless rules. Visible to tests.
+    func resolveNextBoundary() async -> (item: QueueItem, transition: BoundaryTransition)? {
         guard await !self.queue.stopAfterCurrent else { return nil }
         guard let item = await queue.peekNext() else { return nil }
+        let currentItem = await queue.currentItem
+
+        // A crossfade needs neither the format gate nor the cross-album
+        // toggle below: both exist only for raw gapless.
+        if let seconds = await self.crossfadeScheduler.crossfadeSeconds(from: currentItem, to: item) {
+            return (item: item, transition: .crossfade(seconds: seconds))
+        }
 
         // Determine whether the next item's album has `force_gapless` set and
         // the current item belongs to the same album.
         var forceGapless = false
-        let currentItem = await queue.currentItem
         let sameAlbum: Bool = {
             guard let nextID = item.albumID, let curID = currentItem?.albumID else { return false }
             return nextID == curID
@@ -1231,16 +1225,17 @@ public actor QueuePlayer: Transport {
             forceGapless = true
         }
 
-        return (item: item, forceGapless: forceGapless)
+        return (item: item, transition: .gapless(forceGapless: forceGapless))
     }
 
-    /// Resolve the next item's URL into a security-scoped URL, call
-    /// `engine.enableGaplessNext`, and release the scope once the decoder has
-    /// opened the file.  Mirrors the scope-handling pattern in `loadAndPlay`.
+    /// Resolve the next item's URL into a security-scoped URL, arm the
+    /// boundary in the engine (`armNext`), and release the scope once the
+    /// decoder has opened the file.  Mirrors the scope-handling pattern in
+    /// `loadAndPlay`.
     ///
     /// Without this, gapless prefetch fails outside the sandbox with
     /// "Access denied" because the raw `file://` URL has no permission grant.
-    private func performGaplessPrefetch(item: QueueItem) async throws {
+    private func performGaplessPrefetch(item: QueueItem, transition: BoundaryTransition) async throws {
         // Resolve the URL the same way we would for a normal load.
         var resolvedFromPerFileBookmark = false
         var rootScope: RootScopeHandle? = nil
@@ -1286,15 +1281,8 @@ public actor QueuePlayer: Transport {
             )
         }
 
-        let capturedItem = item
-        let onTransitionCallback = self.onGaplessTransitionCaptured
-
         do {
-            try await self.engine.enableGaplessNext(url: url) {
-                Task { @Sendable in
-                    await onTransitionCallback?(capturedItem)
-                }
-            }
+            try await self.armNext(url: url, item: item, transition: transition)
         } catch {
             if resolvedFromPerFileBookmark {
                 url.stopAccessingSecurityScopedResource()
@@ -1311,39 +1299,43 @@ public actor QueuePlayer: Transport {
         // waiting for the function to return (matches the pre-RAII timing).
         withExtendedLifetime(rootScope) {}
         rootScope = nil
+    }
 
-        // Schedule a crossfade-out if the boundary calls for it.
-        // `crossfadeAllowed` checks the config duration > 0 and the album-gapless
-        // preference before returning true.
-        let currentItem = await self.queue.currentItem
-        let allowed = await self.crossfadeScheduler.crossfadeAllowed(
-            currentAlbumID: currentItem?.albumID,
-            nextAlbumID: item.albumID
-        )
-        self.crossfadePendingForNextTransition = allowed
-        if allowed {
-            let halfDuration = await self.crossfadeScheduler.halfDurationSeconds
-            let total = await self.engine.duration
-            let current = await self.engine.currentTime
-            let remaining = max(0, total - current)
-            // Start the fade-out `halfDuration` seconds before the track ends,
-            // clamped to a finite, sane upper bound: a corrupt or live-stream
-            // duration can be huge or non-finite, and `UInt64(delay * 1e9)`
-            // traps on overflow or NaN. See #271.
-            let delay = Self.crossfadeOutDelaySeconds(remaining: remaining, halfDuration: halfDuration)
-            self.crossfadeOutTask?.cancel()
-            self.crossfadeOutTask = Task { [weak self] in
-                guard !Task.isCancelled else { return }
-                if delay > 0 {
-                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-                }
-                guard !Task.isCancelled, let self else { return }
-                await self.engine.beginCrossfadeOut(durationSeconds: halfDuration)
-                self.log.debug("crossfade.out.scheduled", [
-                    "delay": delay,
-                    "halfDuration": halfDuration,
+    /// Opens `url` as the next track in the engine: a crossfade or a plain
+    /// gapless preload, as `transition` says. The engine falls back to
+    /// gapless itself when a crossfade cannot be armed (a boundary too short
+    /// for its decoders' durations, or the pump refused), and the item is
+    /// then handled as a gapless one.
+    private func armNext(url: URL, item: QueueItem, transition: BoundaryTransition) async throws {
+        let onTransitionCallback = self.onGaplessTransitionCaptured
+        let onTransition: @Sendable () -> Void = {
+            Task { @Sendable in
+                await onTransitionCallback?(item)
+            }
+        }
+        switch transition {
+        case let .crossfade(seconds):
+            let armed = try await self.engine.enableCrossfadeNext(
+                url: url,
+                overlapSeconds: seconds,
+                onTransition: onTransition
+            )
+            self.crossfadeArmedItemID = armed ? item.id : nil
+            self.log.debug("crossfade.decision", [
+                "decision": armed ? "crossfade" : "gapless",
+                "reason": armed ? "boundary" : "engineFallback",
+                "next": item.trackID,
+            ])
+        case .gapless:
+            self.crossfadeArmedItemID = nil
+            if await self.crossfadeScheduler.isEnabled {
+                self.log.debug("crossfade.decision", [
+                    "decision": "gapless",
+                    "reason": "boundary",
+                    "next": item.trackID,
                 ])
             }
+            try await self.engine.enableGaplessNext(url: url, onTransition: onTransition)
         }
     }
 
@@ -1364,7 +1356,11 @@ public actor QueuePlayer: Transport {
         // marked played on the handoff (not only on `handleTrackEnded`).
         let outgoing = await self.queue.currentItem
         _ = await self.queue.advance()
-        self.lastGaplessTransitionAt = Date()
+        // A crossfade swaps no pump, so no spurious end follows it and the
+        // settle window stays off (see `crossfadeArmedItemID`).
+        let crossfaded = self.crossfadeArmedItemID == item.id
+        self.crossfadeArmedItemID = nil
+        self.lastGaplessTransitionAt = crossfaded ? nil : Date()
 
         // Credit the outgoing play before we overwrite recorder state.
         // The handoff only fires when the previous track reached its natural end,
@@ -1395,17 +1391,7 @@ public actor QueuePlayer: Transport {
 
         await self.notifyHistoryStart(for: item)
 
-        // Begin crossfade-in if one was scheduled during prefetch.
-        if self.crossfadePendingForNextTransition {
-            self.crossfadePendingForNextTransition = false
-            self.crossfadeOutTask?.cancel()
-            self.crossfadeOutTask = nil
-            let halfDuration = await self.crossfadeScheduler.halfDurationSeconds
-            await self.engine.beginCrossfadeIn(durationSeconds: halfDuration)
-            self.log.debug("crossfade.in.started", ["halfDuration": halfDuration])
-        }
-
-        self.log.debug("queueplayer.gapless.transition", ["trackID": item.trackID])
+        self.log.debug("queueplayer.gapless.transition", ["trackID": item.trackID, "crossfade": crossfaded])
     }
 
     // MARK: Queue change subscription (for persistence)
@@ -1489,15 +1475,6 @@ public actor QueuePlayer: Transport {
     }
 
     // MARK: - Unavailable items
-
-    /// Cancel any pending crossfade-out task and clear the pending-transition flag.
-    /// Called whenever a manual track change or stop makes the in-progress
-    /// crossfade irrelevant.
-    private func resetCrossfade() {
-        self.crossfadeOutTask?.cancel()
-        self.crossfadeOutTask = nil
-        self.crossfadePendingForNextTransition = false
-    }
 
     /// Snapshot of queue-item IDs whose files are currently missing.
     /// Prefer ``unavailableItemUpdates()``, which yields this same set first

@@ -89,11 +89,11 @@ Modules/AudioEngine/Tests/AudioEngineTests/
 
 Modules/Playback/Sources/Playback/
 ├── Gapless/CrossfadeScheduler.swift  # shrinks to config + decisions (ramps deleted)
-├── Gapless/GaplessScheduler.swift    # arming window grows with the overlap
+├── Gapless/GaplessScheduler.swift    # arming window grows with the overlap; BoundaryTransition
 └── QueuePlayer.swift                 # crossfade path via enableCrossfadeNext; ramp code deleted
 
 Modules/Playback/Tests/PlaybackTests/
-├── CrossfadeDecisionTests.swift      # NEW: boundary and arming-window tables
+├── CrossfadeDecisionTests.swift      # NEW: boundary, arming-window and resolver tables
 ├── CrossfadeSchedulerTests.swift     # ramp tests removed, overlapSeconds
 └── CrossfadeDelayClampTests.swift    # DELETED with the function it tests
 
@@ -400,6 +400,45 @@ Commit: `fix(audio): mix the next track into the current one during a crossfade`
    this step leaves without callers.
 5. **History.** `handleGaplessTransition` already credits the outgoing play
    as a natural end. Keep that: a crossfaded track counts as played in full.
+
+**As built (2026-09-25).** Items 1 to 5 hold, with these changes found
+while building:
+
+- **The boundary has a type.** `BoundaryTransition` (`.crossfade(seconds:)`
+  or `.gapless(forceGapless:)`, in `GaplessScheduler.swift`) replaces the
+  `forceGapless` flag in the scheduler's `nextItemProvider` and is passed to
+  `performPrefetch`. `QueuePlayer.resolveNextBoundary` (was
+  `resolveNextGaplessItem`) applies the decision order of item 3.
+- **The scheduler reads the setting.** `GaplessScheduler.init` takes the
+  `CrossfadeScheduler`, so each poll sizes the window from
+  `overlapSeconds` before it asks for the next item. The provider, with its
+  album lookup, still runs only inside the window, and a boundary that
+  turns out gapless still waits for the preroll. `armingWindow` treats a
+  non-finite or non-positive crossfade as none and a non-finite preroll as
+  the default, so it is finite and non-negative for any input.
+- **The decision checks the overlap length too.** The pure
+  `CrossfadeScheduler.crossfadeSeconds(_:from:to:)` applies the setting, the
+  album rule, local files on both sides and the 1 s rule to the two queue
+  durations (`CrossfadeMix.overlapSeconds` and `minimumOverlapSeconds` are
+  public for this). Without the length check, a boundary too short to mix
+  would reach the engine's gapless fallback on the crossfade path, which
+  skips the format gate and the cross-album toggle. It returns the full
+  setting; the engine shortens it from the decoders' own durations.
+- **QueuePlayer's settle window is not set on a crossfade.** For the same
+  reason as the engine's (slice 2b), a crossfade swaps no pump, so there is
+  no spurious end to swallow, and a 2 to 3 s incoming track would lose its
+  real end. `crossfadeArmedItemID` (the item the engine armed a crossfade
+  to) replaces `crossfadePendingForNextTransition` and tells the transition
+  handler which kind it is. An engine fallback to gapless keeps the window.
+- **`crossfade.decision` is logged when the boundary is armed**, only while
+  crossfade is on: `crossfade` (`boundary`), or `gapless` with `boundary` or
+  `engineFallback`. `none` is not logged, because the provider runs every
+  poll inside the window.
+- **Tests.** `CrossfadeDecisionTests.swift` holds three suites: the pure
+  decision table, the `armingWindow` table with the #271 non-finite cases,
+  and `resolveNextBoundary` on a real `QueuePlayer` (made internal for
+  this). The format-gate skip inside the scheduler's poll has no automated
+  test: it needs a playing engine, and no Playback test plays audio.
 
 Commit: `fix(playback): arm a real crossfade at the boundaries the setting names`.
 
