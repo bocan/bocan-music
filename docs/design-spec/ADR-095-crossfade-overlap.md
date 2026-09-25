@@ -179,16 +179,19 @@ Pure code, no graph, no actors. Nothing calls it yet.
 
 1. `Graph/CrossfadeMix.swift`: an `enum CrossfadeMix` (a namespace, like
    `AudioTime`) with:
-   - `static func gains(atFrame frame: Int, of length: Int) -> (out: Float, in: Float)`,
-     the equal-power pair defined under Behavioural definitions.
+   - `static func gains(atFrame frame: Int, of length: Int) -> (outgoing: Float, incoming: Float)`,
+     the equal-power pair defined under Behavioural definitions. (Labels
+     changed from `out`/`in` while building slice 1: `in` is a keyword.)
    - `static func mix(outgoing: AVAudioPCMBuffer?, incoming: AVAudioPCMBuffer, into output: AVAudioPCMBuffer, startFrame: Int, length: Int)`,
      which writes `out[i] = a[i] * gOut(startFrame + i) + b[i] * gIn(startFrame + i)`
      per channel. A `nil` or short `outgoing` contributes silence for the
      missing frames. Use Accelerate (`vDSP`) for the multiply-add; build the
      gain ramps once per buffer, not per sample call.
    - Precondition-free: mismatched formats or capacities throw a new
-     `AudioEngineError.crossfadeFormatMismatch(expected:actual:)` case (add it
-     to the module's one public error enum; do not add a new error type).
+     `AudioEngineError.crossfadeBufferMismatch(reason:)` case (add it to the
+     module's one public error enum; do not add a new error type). Built as
+     `reason:` rather than `expected:actual:` formats, because a too-small
+     output buffer is not a format mismatch.
 2. `Tests/AudioEngineTests/Support/ScriptedDecoder.swift`: one shared
    `ScriptedDecoder: Decoder` that produces a constant or sine tone at a
    given amplitude for an exact frame count, reports a configurable
@@ -441,7 +444,8 @@ by `AudioEngine`.
   1000 onward (the curve continues across buffer boundaries).
 - A `nil` or short outgoing buffer yields `incoming * gIn` for the missing
   frames.
-- Mismatched formats throw `crossfadeFormatMismatch`.
+- Mismatched formats, an interleaved format and a too-small output throw
+  `crossfadeBufferMismatch`.
 
 **Unit, `CrossfadeDecisionTests` (slice 3):** a table over the six
 conditions in "Which boundaries crossfade", including the default settings
