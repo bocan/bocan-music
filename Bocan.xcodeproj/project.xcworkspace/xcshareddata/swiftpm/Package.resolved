@@ -1,13 +1,13 @@
 {
-  "originHash" : "d45b15b8b207e8c4668c629bb9e3a4194e07b03577c3edd2c75cda5047519b52",
+  "originHash" : "3196efae568ad4c1280a8b0997d73887e43485aea2d3ad633d54bf92e61b65d7",
   "pins" : [
     {
       "identity" : "feedkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nmdias/FeedKit.git",
       "state" : {
-        "revision" : "fbae69b140f6fc429cdbd3d9b06007f71f4ec1e8",
-        "version" : "10.5.0"
+        "revision" : "03e8ac25253189307b2a3b6eb53df5a42a13c0be",
+        "version" : "10.9.0"
       }
     },
     {
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-certificates.git",
       "state" : {
-        "revision" : "c8aece90ea05f9866bd392a5bf13b5cae56c0e03",
-        "version" : "1.20.0"
+        "revision" : "ff86b924ead66f853b8baf91f3c41926a8f36177",
+        "version" : "1.21.0"
       }
     },
     {
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "da9d28d69ebe3894b18376c8f2395c2f37b8448f",
-        "version" : "4.5.2"
+        "revision" : "a9d1d5ab8951ada40cafff8c8e2b551dfde4f390",
+        "version" : "5.0.0"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-issue-reporting",
       "state" : {
-        "revision" : "71c7c9a761d1ca6ed4ccb6ced040fe1c1a39e8e7",
-        "version" : "2.1.0"
+        "revision" : "75b000cea2ca6d7527a57e1b9cc0bdf21a9abe9f",
+        "version" : "2.1.1"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/pointfreeco/swift-snapshot-testing",
       "state" : {
-        "revision" : "98ba2e1a302c405dd8752e9fcacef0d5f500cac9",
-        "version" : "1.19.5"
+        "revision" : "28e5de025e3fd98991791bfbf83023ab3708da03",
+        "version" : "1.19.6"
       }
     },
     {

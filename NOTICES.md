@@ -86,7 +86,7 @@ SOFTWARE.
 
 ---
 
-## swift-snapshot-testing 1.19.4
+## swift-snapshot-testing 1.19.6
 
 <https://github.com/pointfreeco/swift-snapshot-testing>
 
@@ -142,7 +142,7 @@ SOFTWARE.
 
 ---
 
-## swift-issue-reporting 2.1.0
+## swift-issue-reporting 2.1.1
 
 (formerly xctest-dynamic-overlay)
 
@@ -230,7 +230,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.5.0
+## FeedKit 10.9.0
 
 <https://github.com/nmdias/FeedKit>
 
@@ -260,7 +260,7 @@ SOFTWARE.
 
 ---
 
-## swift-crypto 4.5.2
+## swift-crypto 5.0.0
 
 <https://github.com/apple/swift-crypto>
 
@@ -272,7 +272,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-certificates 1.20.0
+## swift-certificates 1.21.0
 
 <https://github.com/apple/swift-certificates>
 
@@ -284,7 +284,7 @@ The Apache 2.0 full text is available at:
 
 ---
 
-## swift-asn1 1.7.2
+## swift-asn1 1.7.3
 
 <https://github.com/apple/swift-asn1>
 
@@ -308,5 +308,5 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.15.0. Dependency versions are pinned in
+*This file was generated for Bòcan 2.18.0. Dependency versions are pinned in
 the workspace `Package.resolved`.*

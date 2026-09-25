@@ -27,8 +27,8 @@ public struct FeedParser: Sendable {
             // would bypass FeedFetcher's conditional GET, size cap, and User-Agent.
             feed = try Feed(data: data)
         } catch {
-            // FeedKit's format sniffer inspects only the first 128 bytes. Feeds that
-            // carry an `<?xml-stylesheet?>` PI (so browsers render them) push the
+            // FeedKit's format sniffer inspects only the first 256 bytes. Feeds that
+            // carry an `<?xml-stylesheet?>` PI (so browsers render them) can push the
             // `<rss>`/`<feed>` root past that window, yielding `unknownFeedFormat`.
             // Retry once with the XML prolog stripped so the root leads the data.
             if let stripped = Self.feedDataWithStrippedProlog(data), let retried = try? Feed(data: stripped) {
@@ -49,15 +49,17 @@ public struct FeedParser: Sendable {
             parsed = try Self.parseRSS(rss, sourceURL: sourceURL)
         case let .atom(atom):
             parsed = try Self.parseAtom(atom, sourceURL: sourceURL)
-        case .json:
+        case .json, .rdf:
+            // RSS 1.0 (RDF) has no enclosures, so it cannot carry a podcast.
+            // FeedKit before 10.9 rejected it as an unknown format; keep that outcome.
             throw PodcastsError.notAFeed(url: sourceURL)
         }
 
-        // --- podcast: namespace supplement: fill the Podcasting 2.0 tags FeedKit
-        //     10.4.0 does not model (podcast:funding, podcast:chapters,
-        //     podcast:person, podcast:podroll). Non-fatal, and the single source of
-        //     these values. Remove this block if FeedKit gains official support and
-        //     read the fields in parseRSS instead. ---
+        // --- podcast: namespace supplement: fill podcast:funding, podcast:chapters,
+        //     podcast:person and podcast:podroll. Non-fatal, and the single source of
+        //     these values. FeedKit 10.8 and later model these tags too; moving
+        //     the reads into parseRSS is a separate change that must keep the
+        //     supplement's namespace-URI matching and per-tag fault tolerance. ---
         let extra = PodcastNamespaceSupplement().extract(from: data)
         if parsed.fundingURL == nil {
             parsed.fundingURL = extra.fundingURL

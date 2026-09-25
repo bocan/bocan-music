@@ -2,14 +2,15 @@ import Foundation
 import Observability
 import Persistence
 
-/// Best-effort extraction of the Podcasting 2.0 tags FeedKit 10.4.0 does not model:
+/// Best-effort extraction of the Podcasting 2.0 tags we do not read from FeedKit:
 /// channel-level `podcast:funding`, per-item `podcast:chapters`, and `podcast:person`
 /// credits at both the channel (show) and item (episode) level.
 ///
 /// It re-reads the same bytes `FeedFetcher` returned, after FeedKit, and the
 /// result is merged into `ParsedFeed` in `FeedParser.parse`. It is intentionally
-/// small, internal, and self-contained: if a future FeedKit release models these
-/// tags, delete this file and the one merge block in `FeedParser`.
+/// small, internal, and self-contained. FeedKit 10.8 and later model these tags,
+/// so this file and the one merge block in `FeedParser` can go once a change
+/// moves the reads into `parseRSS` and proves the result against real feeds.
 ///
 /// It never throws. Any parse failure logs at debug and yields whatever partial
 /// result was accumulated, so the main FeedKit parse is never affected.
