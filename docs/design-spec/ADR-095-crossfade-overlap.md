@@ -42,7 +42,9 @@ crossfade cannot work without them:
   `AudioEngine.applyReplayGain(db:)` have no production callers, so no
   ReplayGain value is applied to playback today in any mode. That is a
   separate defect with its own issue. This ADR does not wire it, but the
-  mix design keeps a per-source gain point for it (see Gotchas).
+  mix design keeps a per-source gain point for it (see Gotchas). Done in
+  #573: each `PumpSource` carries its own gain, and the unused `GainStage`
+  node is gone.
 - **Crossfade for Subsonic, podcast and internet-radio items.** Gapless
   prefetch only works for local files (`performGaplessPrefetch` requires a
   file on disk), so crossfade inherits that scope. Streams keep today's hard
@@ -683,7 +685,8 @@ continues the overlap.
   applied per source inside the mix (each `PumpSource` gets a linear gain),
   not in the shared `GainStage`, or one track's gain applies to the other
   during the overlap. Do not add that field in this ADR (no speculative
-  fields); the ReplayGain issue adds it.
+  fields); the ReplayGain issue adds it. Done in #573 (`PumpSource.gain`,
+  `docs/GOTCHAS.md` "ReplayGain is a gain per track in the pump").
 - **Podcast speed.** The TimePitch rate is global. Podcasts are excluded
   from crossfade by scope, so a rate change never applies to a music
   overlap; keep it that way if the scope ever widens.

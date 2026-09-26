@@ -803,7 +803,7 @@ public actor QueuePlayer: Transport {
         self.currentMarkers = fetched.count >= 2 ? fetched : []
         self.markerContinuation?.yield(self.currentMarkers)
 
-        try await self.engine.load(url)
+        try await self.engine.load(url, replayGain: self.replayGain(for: item, track: track))
         // Release whichever scope was started — AVAudioFile already holds an open
         // file descriptor so the scope is no longer needed.
         if resolvedFromPerFileBookmark {
@@ -1319,11 +1319,13 @@ public actor QueuePlayer: Transport {
                 await onTransitionCallback?(item)
             }
         }
+        let replayGain = await self.replayGain(for: item, track: nil)
         switch transition {
         case let .crossfade(seconds):
             let armed = try await self.engine.enableCrossfadeNext(
                 url: url,
                 overlapSeconds: seconds,
+                replayGain: replayGain,
                 onTransition: onTransition
             )
             self.crossfadeArmedItemID = armed ? item.id : nil
@@ -1341,8 +1343,29 @@ public actor QueuePlayer: Transport {
                     "next": item.trackID,
                 ])
             }
-            try await self.engine.enableGaplessNext(url: url, onTransition: onTransition)
+            try await self.engine.enableGaplessNext(url: url, replayGain: replayGain, onTransition: onTransition)
         }
+    }
+
+    /// The ReplayGain facts for `item`, from its track row as it is now, so a
+    /// track analysed after it was queued plays at its new level (#573).
+    /// `track` is that row when the caller has already read it. Visible to
+    /// tests.
+    func replayGain(for item: QueueItem, track: Track?) async -> TrackReplayGain? {
+        guard !item.playableSource.isRemote else { return nil }
+        var row = track
+        if row == nil {
+            do {
+                row = try await self.trackRepo.fetch(id: item.trackID)
+            } catch {
+                // The track plays at its own level, not the levelled one.
+                self.log.warning("queueplayer.replayGain.trackLookupFailed", [
+                    "trackID": item.trackID,
+                    "error": String(reflecting: error),
+                ])
+            }
+        }
+        return await QueueReplayGain.facts(for: item, track: row, playOrder: self.queue.items)
     }
 
     /// Captured reference to the transition handler so `performGaplessPrefetch`

@@ -1,3 +1,5 @@
+import Accelerate
+
 // @preconcurrency: AVAudioFormat/AVAudioPCMBuffer lack Sendable; a PumpSource
 // is owned by exactly one BufferPump at a time and only touched on its executor.
 // Remove once AVFoundation adopts Sendable annotations (FB13119463).
@@ -68,11 +70,30 @@ final class PumpSource: @unchecked Sendable {
     /// crossfade, where the pump cuts buffers at exact frames (ADR-095).
     let pending: PCMFrameQueue
 
+    // MARK: - ReplayGain
+
+    /// The linear ReplayGain for this track (1 leaves it untouched). Held per
+    /// source, not on a node in the graph: during a crossfade two tracks
+    /// share one node, and each keeps its own level (ADR-095, Gotchas; #573).
+    /// A change takes effect on the next converted buffer, ramped across it
+    /// so it does not click.
+    var gain: Float
+
+    /// The gain the last converted frame ended on, where the next ramp starts.
+    private var appliedGain: Float
+
     // MARK: - Init
 
-    init(decoder: any Decoder, outputFormat: AVAudioFormat, maxDuration: TimeInterval? = nil) throws {
+    init(
+        decoder: any Decoder,
+        outputFormat: AVAudioFormat,
+        maxDuration: TimeInterval? = nil,
+        gain: Float = 1
+    ) throws {
         self.decoder = decoder
         self.outputFormat = outputFormat
+        self.gain = gain
+        self.appliedGain = gain
         self.pending = PCMFrameQueue(format: outputFormat)
         // The budget counts decoder-native frames: the feed loop compares it
         // against framesRead BEFORE resampling. Computing it from the output
@@ -133,9 +154,10 @@ final class PumpSource: @unchecked Sendable {
         return frames
     }
 
-    /// `buffer` in the canonical output format: unchanged when no conversion
-    /// is needed, otherwise resampled and/or folded to stereo. `nil` for empty
-    /// input.
+    /// `buffer` in the canonical output format, at the source's ReplayGain:
+    /// resampled and/or folded to stereo when needed, then scaled by `gain`.
+    /// `nil` for empty input. Scales in place, which is safe because every
+    /// buffer is fresh: a new read buffer, or the converter's new output.
     func convert(_ buffer: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
         let converted: AVAudioPCMBuffer? = if let converter = self.converter {
             try converter.convert(buffer)
@@ -143,9 +165,35 @@ final class PumpSource: @unchecked Sendable {
             buffer
         }
         if let converted {
+            self.applyGain(to: converted)
             self.outputFramesProduced += AVAudioFramePosition(converted.frameLength)
         }
         return converted
+    }
+
+    /// Multiply `buffer` by `gain`, ramping from the last applied gain when
+    /// it changed so the step never clicks. Unity to unity does nothing.
+    private func applyGain(to buffer: AVAudioPCMBuffer) {
+        let target = self.gain
+        let start = self.appliedGain
+        let frames = Int(buffer.frameLength)
+        guard frames > 0, let channels = buffer.floatChannelData else { return }
+        defer { self.appliedGain = target }
+        guard start != 1 || target != 1 else { return }
+
+        // The ramp ends on `target` exactly at the buffer's last frame.
+        let step = (target - start) / Float(frames)
+        let ramp: [Float]? = start == target
+            ? nil
+            : vDSP.ramp(withInitialValue: start + step, increment: step, count: frames)
+        for channel in 0 ..< Int(buffer.format.channelCount) {
+            var samples = UnsafeMutableBufferPointer(start: channels[channel], count: frames)
+            if let ramp {
+                vDSP.multiply(UnsafeBufferPointer(samples), ramp, result: &samples)
+            } else {
+                vDSP.multiply(target, UnsafeBufferPointer(samples), result: &samples)
+            }
+        }
     }
 
     // MARK: - Seeking

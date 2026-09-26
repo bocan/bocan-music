@@ -130,15 +130,22 @@ actor BufferPump {
     // MARK: - Init
 
     /// `maxDuration`, when set, ends the pump after that much source audio
-    /// (a CUE segment; see `PumpSource.maxFrames`).
+    /// (a CUE segment; see `PumpSource.maxFrames`). `gain` is the track's
+    /// linear ReplayGain (`PumpSource.gain`).
     init(
         decoder: any Decoder,
         playerNode: AVAudioPlayerNode,
         outputFormat: AVAudioFormat,
         maxDuration: TimeInterval? = nil,
+        gain: Float = 1,
         completionCallbackType: AVAudioPlayerNodeCompletionCallbackType = .dataPlayedBack
     ) throws {
-        self.current = try PumpSource(decoder: decoder, outputFormat: outputFormat, maxDuration: maxDuration)
+        self.current = try PumpSource(
+            decoder: decoder,
+            outputFormat: outputFormat,
+            maxDuration: maxDuration,
+            gain: gain
+        )
         self.playerNode = playerNode
         self.completionCallbackType = completionCallbackType
         self.availableSlots = BufferPump.windowSize
@@ -149,6 +156,33 @@ actor BufferPump {
     /// Read-only diagnostic surface for `BufferPumpFormatTests`.
     var hasConverter: Bool {
         self.current.hasConverter
+    }
+
+    // MARK: - ReplayGain
+
+    /// Set the linear ReplayGain of whichever source reads `decoder`: the
+    /// current track, the incoming one of a crossfade, or the outgoing one
+    /// it handed over from. The engine names the track by its decoder,
+    /// which stays right however far a crossfade has got (#573).
+    func setGain(_ gain: Float, forDecoder decoder: any Decoder) {
+        for source in self.sources where source.decoder === decoder {
+            source.gain = gain
+        }
+    }
+
+    /// Every source this pump holds.
+    private var sources: [PumpSource] {
+        var all = [self.current]
+        if let overlap = self.overlap {
+            all.append(overlap.incoming)
+            if case let .handedOver(outgoing) = overlap.phase {
+                all.append(outgoing)
+            }
+        }
+        if let queued = self.queuedOverlap {
+            all.append(queued.incoming)
+        }
+        return all
     }
 
     /// Output frames in one scheduled buffer (0.2 s at the output rate).

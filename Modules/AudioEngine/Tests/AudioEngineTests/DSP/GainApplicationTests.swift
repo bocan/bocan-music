@@ -77,6 +77,60 @@ struct GainApplicationTests {
         #expect(gain == 0)
     }
 
+    @Test("A track with nothing measured plays as it is: the pre-amp is not applied")
+    func missingGainIgnoresPreAmp() {
+        for mode in ReplayGainMode.allCases {
+            let gain = GainApplication.resolve(info: self.noGain, mode: mode, preAmpDB: 6, isInAlbumContext: true)
+            #expect(gain == 0, "mode \(mode)")
+        }
+    }
+
+    @Test("Album gain is guarded with the album peak, a track-gain fallback with the track peak")
+    func peakFollowsTheChosenGain() {
+        // Album peak is quiet, track peak is hot. A +6 dB album gain is safe
+        // against the album peak; the same gain as a track fallback is not.
+        let hotTrack = pow(10.0, -1.0 / 20.0)
+        let quietAlbum = pow(10.0, -12.0 / 20.0)
+        let album = TrackGainInfo(trackGainDB: 6, trackPeakLinear: hotTrack, albumGainDB: 6, albumPeakLinear: quietAlbum)
+        #expect(abs(GainApplication.resolve(info: album, mode: .album) - 6) < 0.001)
+
+        let fallback = TrackGainInfo(trackGainDB: 6, trackPeakLinear: hotTrack, albumPeakLinear: quietAlbum)
+        #expect(abs(GainApplication.resolve(info: fallback, mode: .album) - 0.5) < 0.001)
+    }
+
+    // MARK: - Linear gain (what the buffer pump multiplies by)
+
+    @Test("dB converts to a linear factor: 0 dB is 1, +20 dB is 10, -20 dB is 0.1")
+    func linearFromDB() {
+        #expect(GainApplication.linear(fromDB: 0) == 1)
+        #expect(abs(GainApplication.linear(fromDB: 20) - 10) < 0.001)
+        #expect(abs(GainApplication.linear(fromDB: -20) - 0.1) < 0.0001)
+    }
+
+    @Test("A corrupt gain is clamped to ±40 dB")
+    func linearIsClamped() {
+        #expect(abs(GainApplication.linear(fromDB: 200) - 100) < 0.01)
+        #expect(abs(GainApplication.linear(fromDB: -200) - 0.01) < 0.0001)
+    }
+
+    @Test("No ReplayGain facts, or mode .off, is unity")
+    func linearGainUnity() {
+        #expect(GainApplication.linearGain(for: nil, mode: .track, preAmpDB: 6) == 1)
+        let track = TrackReplayGain(values: self.withGains)
+        #expect(GainApplication.linearGain(for: track, mode: .off, preAmpDB: 6) == 1)
+    }
+
+    @Test("The linear gain follows the mode, the pre-amp and the album context")
+    func linearGainResolves() {
+        let inAlbum = TrackReplayGain(values: self.withGains, isInAlbumContext: true)
+        let alone = TrackReplayGain(values: self.withGains, isInAlbumContext: false)
+        let db = { (gain: Float) in 20 * log10(Double(gain)) }
+        #expect(abs(db(GainApplication.linearGain(for: alone, mode: .track, preAmpDB: 0)) - -3) < 0.001)
+        #expect(abs(db(GainApplication.linearGain(for: alone, mode: .track, preAmpDB: 1)) - -2) < 0.001)
+        #expect(abs(db(GainApplication.linearGain(for: inAlbum, mode: .auto, preAmpDB: 0)) - -5) < 0.001)
+        #expect(abs(db(GainApplication.linearGain(for: alone, mode: .auto, preAmpDB: 0)) - -3) < 0.001)
+    }
+
     @Test("peakDBFS round-trip")
     func peakDBFSRoundTrip() {
         let linear = 0.5

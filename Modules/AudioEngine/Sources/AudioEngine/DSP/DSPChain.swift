@@ -8,8 +8,11 @@ import Observability
 ///
 /// **Chain topology** (all nodes always present; each individually bypassable):
 /// ```
-/// PlayerNode → TimePitch → GainStage (RG) → EQ → BassBoost → Crossfeed → StereoExpander → Limiter → Mixer
+/// PlayerNode → TimePitch → EQ → BassBoost → Crossfeed → StereoExpander → Limiter → Mixer
 /// ```
+///
+/// ReplayGain is not a node here: it is per track, so the buffer pump applies
+/// it to each track's samples before they reach the player node (#573).
 ///
 /// `TimePitch` is always first so pitch-corrected speed changes apply before any
 /// EQ or dynamics processing.  Its `timePitchAlgorithm` is fixed to `.spectral`
@@ -27,7 +30,6 @@ public final class DSPChain: @unchecked Sendable {
 
     /// Pitch-preserving time-stretch node.  Rate is 1.0× by default.
     public let timePitch: AVAudioUnitTimePitch
-    public let gainStage: GainStage
     public let eq: EQUnit
     public let bassBoost: BassBoostUnit
     public let crossfeed: CrossfeedUnit
@@ -62,7 +64,6 @@ public final class DSPChain: @unchecked Sendable {
         // on every render cycle at unity rate. setRate(_:) un-bypasses it only
         // when the user actually requests a rate other than 1.0×.
         self.timePitch.bypass = true
-        self.gainStage = GainStage()
         self.eq = EQUnit()
         self.bassBoost = BassBoostUnit()
         self.crossfeed = CrossfeedUnit()
@@ -75,7 +76,6 @@ public final class DSPChain: @unchecked Sendable {
     /// Attach all nodes to the engine. Call once on construction.
     func attach(to engine: AVAudioEngine) {
         engine.attach(self.timePitch)
-        engine.attach(self.gainStage.node)
         engine.attach(self.eq.node)
         engine.attach(self.bassBoost.node)
         engine.attach(self.crossfeed.node)
@@ -91,10 +91,9 @@ public final class DSPChain: @unchecked Sendable {
         from playerNode: AVAudioPlayerNode,
         to mixer: AVAudioMixerNode
     ) {
-        // PlayerNode → TimePitch → GainStage → EQ → BassBoost → Crossfeed → StereoExpander → Limiter → Mixer
+        // PlayerNode → TimePitch → EQ → BassBoost → Crossfeed → StereoExpander → Limiter → Mixer
         engine.connect(playerNode, to: self.timePitch, format: format)
-        engine.connect(self.timePitch, to: self.gainStage.node, format: format)
-        engine.connect(self.gainStage.node, to: self.eq.node, format: format)
+        engine.connect(self.timePitch, to: self.eq.node, format: format)
         engine.connect(self.eq.node, to: self.bassBoost.node, format: format)
         engine.connect(self.bassBoost.node, to: self.crossfeed.node, format: format)
         engine.connect(self.crossfeed.node, to: self.stereoExpander.node, format: format)
@@ -108,7 +107,6 @@ public final class DSPChain: @unchecked Sendable {
     func disconnect(engine: AVAudioEngine, playerNode: AVAudioPlayerNode) {
         engine.disconnectNodeOutput(playerNode)
         engine.disconnectNodeOutput(self.timePitch)
-        engine.disconnectNodeOutput(self.gainStage.node)
         engine.disconnectNodeOutput(self.eq.node)
         engine.disconnectNodeOutput(self.bassBoost.node)
         engine.disconnectNodeOutput(self.crossfeed.node)
@@ -306,18 +304,12 @@ public final class DSPChain: @unchecked Sendable {
         }
     }
 
-    /// Apply ReplayGain compensation.
-    public func applyGain(db: Double) {
-        self.gainStage.setGainDB(db)
-    }
-
     /// Reset everything to safe defaults (called on engine stop / new load).
     public func reset() {
         self.eqRampTask?.cancel()
         self.eqRampTask = nil
         self.bassBoostRampTask?.cancel()
         self.bassBoostRampTask = nil
-        self.gainStage.reset()
         self.eq.reset()
         self.eq.bypass = false
         self.bassBoost.reset()

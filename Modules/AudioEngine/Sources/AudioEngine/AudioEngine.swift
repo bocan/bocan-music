@@ -75,6 +75,15 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     /// (ADR-095; logic in AudioEngine+Gapless and AudioEngine+GaplessAPI).
     var pendingCrossfade: PendingCrossfade?
 
+    // MARK: - ReplayGain state (#573; logic in AudioEngine+ReplayGain)
+
+    /// The mode and pre-amp from the last `applyDSPState`.
+    var replayGainSettings = ReplayGainSettings()
+    /// The ReplayGain facts of the track `decoder` reads.
+    var currentReplayGain: TrackReplayGain?
+    /// The ReplayGain facts of the gapless-preloaded next track.
+    var pendingNextReplayGain: TrackReplayGain?
+
     /// Start offset in the source file for the current CUE segment (seconds).
     /// Zero for ordinary non-CUE tracks. Internal so `setSegment` (in the CUE
     /// extension) can configure it.
@@ -158,6 +167,12 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     // MARK: - Transport conformance
 
     public func load(_ url: URL) async throws {
+        try await self.load(url, replayGain: nil)
+    }
+
+    /// Load `url`, played at the ReplayGain its facts and the user's mode
+    /// and pre-amp resolve to. `nil` plays it as it is.
+    public func load(_ url: URL, replayGain: TrackReplayGain?) async throws {
         // Click-suppression: ramp the player-node volume to 0 *before* stop().
         // AVAudioPlayerNode.stop() truncates whatever sample is currently in
         // flight; if that sample is mid-cycle (which it almost always is) the
@@ -204,6 +219,7 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
         do {
             let dec = try DecoderFactory.make(for: url)
             self.decoder = dec
+            self.currentReplayGain = replayGain
             self._duration = dec.duration
             self._currentTime = 0
             self._playerTimeOffset = 0
@@ -291,7 +307,8 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
             decoder: dec,
             playerNode: playerNode,
             outputFormat: outputFmt,
-            maxDuration: segmentEndTime.map { $0 - self.segmentStart }
+            maxDuration: segmentEndTime.map { $0 - self.segmentStart },
+            gain: self.replayGainLinear(for: self.currentReplayGain)
         )
         self.pump = newPump
 

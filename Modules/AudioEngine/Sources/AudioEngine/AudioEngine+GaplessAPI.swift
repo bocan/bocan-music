@@ -18,13 +18,18 @@ public extension AudioEngine {
     /// - Parameters:
     ///   - url: File URL of the next track. Must be the same sample rate and channel count
     ///          as the current track (check `sourceFormat` first via `FormatBridge`).
+    ///   - replayGain: The next track's ReplayGain facts; `nil` plays it as it is.
     ///   - onTransition: Invoked on the `AudioEngine` actor when the transition occurs.
     /// - Throws: Any decoder error (file not found, unsupported format, etc.).
-    func enableGaplessNext(url: URL, onTransition: @Sendable @escaping () -> Void) async throws {
+    func enableGaplessNext(
+        url: URL,
+        replayGain: TrackReplayGain? = nil,
+        onTransition: @Sendable @escaping () -> Void
+    ) async throws {
         // Cancel any previous pending-next setup.
         await self.cancelGaplessNext()
         let dec = try DecoderFactory.make(for: url)
-        try self.installGaplessNext(decoder: dec, url: url, onTransition: onTransition)
+        try self.installGaplessNext(decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition)
     }
 
     /// Arm a crossfade into the next track: during the last seconds of the
@@ -39,6 +44,9 @@ public extension AudioEngine {
     /// `onTransition` runs when the listener starts to hear the next track:
     /// when its first mixed frame plays, not when it is scheduled.
     ///
+    /// Each track keeps its own ReplayGain through the mix: `replayGain` is
+    /// the next track's facts, `nil` to play it as it is.
+    ///
     /// - Returns: `true` when a crossfade is armed, `false` when the boundary
     ///   fell back to gapless.
     /// - Throws: Any decoder error (file not found, unsupported format, etc.).
@@ -46,6 +54,7 @@ public extension AudioEngine {
     func enableCrossfadeNext(
         url: URL,
         overlapSeconds: TimeInterval,
+        replayGain: TrackReplayGain? = nil,
         onTransition: @Sendable @escaping () -> Void
     ) async throws -> Bool {
         await self.cancelGaplessNext()
@@ -59,7 +68,7 @@ public extension AudioEngine {
                 "reason": self.pump == nil ? "noPump" : "tooShortOrSegment",
                 "next": url.lastPathComponent,
             ])
-            try self.installGaplessNext(decoder: dec, url: url, onTransition: onTransition)
+            try self.installGaplessNext(decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition)
             return false
         }
 
@@ -67,12 +76,16 @@ public extension AudioEngine {
         let pumpID = pump.id
         // [weak self]: the pump stores this closure for the whole overlap, so
         // a strong capture would form the engine ⇄ pump cycle play() avoids.
-        let armed = try await pump.armOverlap(decoder: dec, lengthSeconds: length) { [weak self] in
+        let armed = try await pump.armOverlap(
+            decoder: dec,
+            lengthSeconds: length,
+            gain: self.replayGainLinear(for: replayGain)
+        ) { [weak self] in
             Task { await self?.handleCrossfadeTransition(token: token, firedBy: pumpID) }
         }
         guard armed else {
             self.log.debug("crossfade.disarmed", ["reason": "pumpRefused", "next": url.lastPathComponent])
-            try self.installGaplessNext(decoder: dec, url: url, onTransition: onTransition)
+            try self.installGaplessNext(decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition)
             return false
         }
         // A load or stop ran during the await and stopped that pump, which
@@ -82,7 +95,7 @@ public extension AudioEngine {
             return false
         }
         self.pendingCrossfade = PendingCrossfade(
-            token: token, decoder: dec, duration: dec.duration, transition: onTransition
+            token: token, decoder: dec, duration: dec.duration, replayGain: replayGain, transition: onTransition
         )
         self.log.debug("crossfade.armed", [
             "lengthMs": Int((length * 1000).rounded()), "next": url.lastPathComponent,
@@ -101,6 +114,7 @@ public extension AudioEngine {
         self.pendingNextPump = nil
         self.pendingNextDecoder = nil
         self.pendingNextTransition = nil
+        self.pendingNextReplayGain = nil
         await self.disarmCrossfade()
         self.log.debug("engine.gapless.cancelled")
     }
@@ -111,7 +125,12 @@ public extension AudioEngine {
 extension AudioEngine {
     /// Build the pending pump for a gapless handoff to `decoder`'s track. Its
     /// feed starts in `performGaplessTransition`, not here.
-    func installGaplessNext(decoder dec: any Decoder, url: URL, onTransition: @Sendable @escaping () -> Void) throws {
+    func installGaplessNext(
+        decoder dec: any Decoder,
+        url: URL,
+        replayGain: TrackReplayGain?,
+        onTransition: @Sendable @escaping () -> Void
+    ) throws {
         let sampleRate = self.graph.outputSampleRate
         guard let outputFmt = StereoLayout.format(sampleRate: sampleRate) else {
             throw AudioEngineError.outputDeviceUnavailable
@@ -121,10 +140,12 @@ extension AudioEngine {
         let nextPump = try BufferPump(
             decoder: dec,
             playerNode: playerNode,
-            outputFormat: outputFmt
+            outputFormat: outputFmt,
+            gain: self.replayGainLinear(for: replayGain)
         )
 
         self.pendingNextPump = nextPump
+        self.pendingNextReplayGain = replayGain
         self.pendingNextDuration = dec.duration
         self.pendingNextDecoder = dec
         self.pendingNextTransition = onTransition

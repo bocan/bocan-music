@@ -329,13 +329,15 @@ discoverable from the spec alone:
 - **DSP / EQ / Limiter chain landed in ADR-002.** The original plan
   scheduled these for ADR-013, but they were implemented up-front because
   every signal chain test fixture needed a stable insertion point. The chain
-  is `PlayerNode → TimePitch → GainStage → EQ → BassBoost → Crossfeed →
+  is `PlayerNode → TimePitch → EQ → BassBoost → Crossfeed →
   StereoExpander → Limiter → Mixer → Output`; every node is always present
   and individually bypassable. See `Modules/AudioEngine/Sources/AudioEngine/DSP/DSPChain.swift`.
+  ReplayGain is not in the chain: it is applied per track inside the buffer
+  pump, so a crossfade keeps each track at its own level (#573).
 - **Anti-pop fades.** The engine ramps `AVAudioPlayerNode.volume` over ~10 ms
   before any operation that truncates playback mid-cycle (`stop`, `pause`,
   `seek`, track-change). This is a separate gain stage from the user-volume
-  mixer and the ReplayGain `GainStage`; do not collapse them.
+  mixer and the per-track ReplayGain in the pump; do not collapse them.
 - **`make bundle-fpcalc`.** Re-link the bundled `fpcalc` and dependent
   FFmpeg dylibs whenever Homebrew bumps FFmpeg's major version (e.g.
   `libavcodec.61` → `libavcodec.62`). The script also re-signs the binaries

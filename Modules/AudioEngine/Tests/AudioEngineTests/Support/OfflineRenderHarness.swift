@@ -44,11 +44,12 @@ final class OfflineRenderHarness {
     }
 
     /// A pump on this harness's node, reporting buffers done as rendered.
-    func makePump(_ decoder: any Decoder) throws -> BufferPump {
+    func makePump(_ decoder: any Decoder, gain: Float = 1) throws -> BufferPump {
         try BufferPump(
             decoder: decoder,
             playerNode: self.node,
             outputFormat: self.format,
+            gain: gain,
             completionCallbackType: .dataRendered
         )
     }

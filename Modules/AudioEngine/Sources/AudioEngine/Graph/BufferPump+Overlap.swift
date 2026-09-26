@@ -75,9 +75,9 @@ extension BufferPump {
 
     // MARK: - Arming
 
-    /// Arm a crossfade into `decoder`'s track, `lengthSeconds` long. Takes
-    /// effect at the next loop iteration. Replaces a crossfade that is armed
-    /// but not mixing yet.
+    /// Arm a crossfade into `decoder`'s track, `lengthSeconds` long, at its
+    /// own linear ReplayGain `gain`. Takes effect at the next loop
+    /// iteration. Replaces a crossfade that is armed but not mixing yet.
     ///
     /// While a mix whose transition is heard still runs, the crossfade is
     /// queued behind it (`queuedOverlap`) and armed when that mix ends: the
@@ -92,6 +92,7 @@ extension BufferPump {
     func armOverlap(
         decoder: any Decoder,
         lengthSeconds: TimeInterval,
+        gain: Float = 1,
         onTransition: @Sendable @escaping () -> Void
     ) async throws -> Bool {
         guard !self.reachedEnd, self.current.maxFrames == nil else { return false }
@@ -109,7 +110,7 @@ extension BufferPump {
                 return false
             }
         }
-        let incoming = try PumpSource(decoder: decoder, outputFormat: self.current.outputFormat)
+        let incoming = try PumpSource(decoder: decoder, outputFormat: self.current.outputFormat, gain: gain)
         let lengthFrames = Int((lengthSeconds * self.current.outputFormat.sampleRate).rounded())
         let armed = PumpOverlap(incoming: incoming, lengthFrames: lengthFrames, onTransition: onTransition)
         let replaced: PumpOverlap?
