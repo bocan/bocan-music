@@ -62,7 +62,11 @@ crossfade cannot work without them:
   gapless handoff fires when the outgoing decoder reaches EOF, about four
   buffers before the audio stops. The crossfade path in this ADR gets an
   exact transition moment; moving plain gapless to the same mechanism is a
-  follow-up, not part of this change.
+  follow-up, not part of this change. Done in #574: a gapless boundary is
+  an overlap of length 0 in the playing pump (it starts in `armedLate` and
+  hands over at the outgoing track's end), and `enableGaplessNext` and
+  `enableCrossfadeNext` return a `NextTrackPreparation`. The separate
+  pending pump stays only for a CUE segment or when no pump is playing.
 - **New settings or schema.** The existing `crossfadeSeconds` (0 to 10 s)
   and `crossfadeAlbumGapless` keep their keys and defaults. No migration.
 
@@ -300,7 +304,19 @@ Commit: `refactor(audio): read the buffer pump through a PumpSource`.
       incoming source (the scheduler will not re-arm the same item, so the
       boundary becomes a normal load); after the transition, the outgoing
       source is dropped and playback resumes from the incoming decoder,
-      which is already `decoder`.
+      which is already `decoder`. Changed in #574: before the transition
+      the pump stops with the incoming decoder kept open
+      (`stop(keepingOpen:)`), and once the rebuilt pump plays the engine
+      rewinds it and arms the same boundary again (`AudioEngine.rearm`).
+      Reopening the file instead could fail in the sandbox, where the
+      player has already released the file's scope. The re-arm goes to the
+      rebuilt pump only, never to a separate pump, and only while the
+      engine is still on the track the boundary leads out of: a `load` or
+      a track end can run during the device change's awaits. Paused, a
+      refused or failed re-arm, or a changed track closes it, and the
+      boundary becomes a normal load. The playing decoder is rewound to
+      the heard position before the rebuild (`rewindForRebuild`), since
+      its read position is up to four buffers ahead.
 12. **Deletions.** `AudioEngine+Crossfade.swift` (both ramps and
     `cancelCrossfade()`), the `crossfadeTask` property, and the two
     `cancelCrossfade()` calls in `load` and `performStop`. (Moved to slice 3
@@ -714,5 +730,5 @@ continues the overlap.
   Canonical file form, with `Graph/BufferPump.swift` as the canonical file,
   and mirror it to the project memory.
 - **Follow-ups to file, not to build here:** ReplayGain is not applied at
-  playback (see Non-goals); crossfade for Subsonic items; moving plain
-  gapless to the exact transition moment.
+  playback (see Non-goals; done in #573); crossfade for Subsonic items;
+  moving plain gapless to the exact transition moment (done in #574).

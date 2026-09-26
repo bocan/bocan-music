@@ -29,9 +29,9 @@ struct EngineCrossfadeTests {
         let url = try self.fixtureURL()
         try await engine.load(url)
 
-        let armed = try await engine.enableCrossfadeNext(url: url, overlapSeconds: 5) {}
+        let preparation = try await engine.enableCrossfadeNext(url: url, overlapSeconds: 5) {}
 
-        #expect(!armed)
+        #expect(preparation == .separatePump)
         #expect(await engine.pendingNextPump != nil)
         #expect(await engine.pendingCrossfade == nil)
         await engine.cancelGaplessNext()
@@ -97,7 +97,13 @@ private extension AudioEngine {
         transition: @Sendable @escaping () -> Void
     ) {
         self.pendingCrossfade = PendingCrossfade(
-            token: UUID(), decoder: decoder, duration: decoder.duration, replayGain: replayGain, transition: transition
+            token: UUID(),
+            decoder: decoder,
+            duration: decoder.duration,
+            url: URL(fileURLWithPath: "/tmp/next.wav"),
+            lengthSeconds: 5,
+            replayGain: replayGain,
+            transition: transition
         )
     }
 }

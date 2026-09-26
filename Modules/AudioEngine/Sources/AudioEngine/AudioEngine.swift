@@ -71,8 +71,9 @@ public actor AudioEngine: Transport, AudioGraphInsertionPoint {
     /// Timestamp of the most recent gapless transition. Suppresses a spurious second
     /// `.ended` when the just-swapped-in pump reports EOF before its first render.
     var lastGaplessTransitionAt: Date?
-    /// The next track of an armed crossfade, until its transition is handled
-    /// (ADR-095; logic in AudioEngine+Gapless and AudioEngine+GaplessAPI).
+    /// The next track of an armed crossfade or gapless hand-over, until its
+    /// transition is handled (ADR-095, #574; logic in AudioEngine+Gapless and
+    /// AudioEngine+GaplessAPI).
     var pendingCrossfade: PendingCrossfade?
 
     // MARK: - ReplayGain state (#573; logic in AudioEngine+ReplayGain)

@@ -28,6 +28,13 @@ public actor AVFoundationDecoder: Decoder {
     private nonisolated let file: AVAudioFile
     private let log = AppLogger.make(.audio)
 
+    /// The first read failure, if any. Once set, every seek throws it
+    /// instead of setting `framePosition`, which raises an uncatchable
+    /// Objective-C exception on a file whose read has failed (GOTCHAS,
+    /// "`AVAudioFile.framePosition` raises..."). A seek can come from the
+    /// user, a device-change rewind or a crossfade re-arm.
+    private var readFailure: (any Error)?
+
     // MARK: - Public interface
 
     /// The processing format (`Float32`, non-interleaved) used by `AVAudioFile`.
@@ -197,6 +204,7 @@ public actor AVFoundationDecoder: Decoder {
             if nsError.code == 0 {
                 return 0
             }
+            self.recordReadFailure(error)
             throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: error)
         }
         // `framePosition` can, in rare EOF/seek-corner cases, fail to advance or
@@ -208,6 +216,10 @@ public actor AVFoundationDecoder: Decoder {
 
     /// Seek to the nearest sample frame for `time`.
     public func seek(to time: TimeInterval) async throws {
+        if let failure = self.readFailure {
+            self.log.warning("avfoundation.decoder.seek.refused", ["time": time])
+            throw AudioEngineError.decoderFailure(codec: "AVFoundation", underlying: failure)
+        }
         guard self.duration > 0 else { return }
         if time < 0 || time > self.duration + 0.001 {
             throw AudioEngineError.seekOutOfRange(requested: time, duration: self.duration)
@@ -215,6 +227,15 @@ public actor AVFoundationDecoder: Decoder {
         let rate = self.file.processingFormat.sampleRate
         let frame = AVAudioFramePosition(min(time * rate, Double(self.file.length - 1)))
         self.file.framePosition = max(0, frame)
+    }
+
+    /// Remember a read failure so later seeks refuse (`readFailure`). The
+    /// first failure is kept. Internal so a test can stand in for a file that
+    /// fails partway through, which no fixture does.
+    func recordReadFailure(_ error: any Error) {
+        if self.readFailure == nil {
+            self.readFailure = error
+        }
     }
 
     /// No-op for AVAudioFile — the OS handles cleanup on dealloc.

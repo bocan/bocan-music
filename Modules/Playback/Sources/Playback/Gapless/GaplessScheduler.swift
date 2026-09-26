@@ -111,7 +111,9 @@ public actor GaplessScheduler {
     /// Throws propagate back into the scheduler so `onPrefetchFailed` fires.
     var performPrefetch: (@Sendable (QueueItem, BoundaryTransition) async throws -> Void)?
 
-    /// Called when the gapless transition actually fires (old track's decoder hits EOF).
+    /// Called when the gapless transition fires: when the next track is first
+    /// heard, or, when it got a pump of its own, when the old track's decoder
+    /// hits EOF, about 0.8 s earlier (#574).
     /// Receives the queue item that has just become active.
     var onGaplessTransition: (@Sendable (QueueItem) async -> Void)?
 

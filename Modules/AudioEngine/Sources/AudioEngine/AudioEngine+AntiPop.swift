@@ -49,6 +49,31 @@ public extension AudioEngine {
         await self.deviceRouter.stopObserving()
     }
 
+    /// Put the decoder back where the listener is before a pump rebuild, so
+    /// the new pump starts there and not at the decoder's read position, up
+    /// to four buffers (~0.8 s) ahead, which it would otherwise skip. Also
+    /// restarts the position clock from there, as a seek does, since the
+    /// rebuilt node counts from its own frame 0.
+    ///
+    /// Left as it is when the engine moved to another track during the
+    /// rebuild (a heard crossfade settled), for a live stream, which cannot
+    /// seek, and for a CUE segment, which positions itself.
+    func rewindForRebuild(to position: TimeInterval, on before: (any Decoder)?) async {
+        guard let decoder = self.decoder, decoder === before,
+              self.segmentEndTime == nil, !self.isLiveStream else { return }
+        do {
+            try await decoder.seek(to: position)
+            self._currentTime = position
+            self._playerTimeOffset = 0
+        } catch {
+            // The rebuilt pump plays on from the decoder's read position.
+            self.log.warning("audio.device.rewind.failed", [
+                "position": position,
+                "error": String(reflecting: error),
+            ])
+        }
+    }
+
     /// Reconfigure the graph for a new default output device.  Runs on the
     /// engine actor — the CoreAudio listener fires on a HAL thread, so the hop
     /// onto this actor is mandatory before mutating AVFoundation state.
@@ -70,24 +95,45 @@ public extension AudioEngine {
             "wasPlaying": resumeAfter,
         ])
         await self.fadePlayerNode(to: 0)
+        // Where the listener is, read while the node still reports it. The
+        // decoder has read up to four buffers (~0.8 s) past this.
+        let heardPosition = await self.currentTime
         self.graph.playerNode.stop()
-        let heard = await self.pump?.stop() ?? false
+        // A crossfade or gapless hand-over lives in the pump, which the
+        // rebuild replaces. A heard one completes, so the resume below plays
+        // the incoming track. An unheard one keeps its decoder open and is
+        // armed again on the new pump; reopening its file could fail in the
+        // sandbox, where the player has already let go of the file's scope.
+        let unheard = self.pendingCrossfade
+        let outgoing = self.decoder
+        let heard = await self.pump?.stop(keepingOpen: unheard?.decoder) ?? false
         self.pump = nil
-        // A crossfade does not survive the rebuild: an unheard one is dropped
-        // (the boundary becomes a normal load), a heard one completes, so the
-        // resume below plays the incoming track.
-        await self.settleCrossfade(heard: heard, reason: "device")
+        var carried: PendingCrossfade?
+        if heard {
+            await self.settleCrossfade(heard: true, reason: "device")
+        } else {
+            carried = unheard
+            self.pendingCrossfade = nil
+        }
         self.graph.reset()
+        await self.rewindForRebuild(to: heardPosition, on: outgoing)
         if resumeAfter {
             // Best-effort resume; if the new device fails to open, swallow the
             // error here (the public state stream will surface .failed).
             do {
                 try await self.performPlay()
                 self.log.notice("audio.device.reconfigure.resumed", ["device": device?.name ?? "?"])
+                if let carried {
+                    await self.rearm(carried, after: outgoing)
+                }
             } catch {
                 self.log.error("audio.device.reconfigure.resume.failed", ["error": String(reflecting: error)])
+                await carried?.decoder.close()
             }
         } else {
+            // Paused: the next play builds a pump from scratch, and the
+            // boundary becomes a normal load, as before.
+            await carried?.decoder.close()
             self.log.notice("audio.device.reconfigure.end", ["device": device?.name ?? "?"])
         }
     }
