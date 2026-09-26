@@ -99,16 +99,94 @@ extension AudioEngine {
         // Clean up any stale pending state.
         let staleNext = self.pendingNextPump
         let staleDecoder = self.pendingNextDecoder
+        // A crossfade armed after the feed had already ended never started.
+        let staleCrossfadeDecoder = self.pendingCrossfade?.decoder
         self.pendingNextPump = nil
         self.pendingNextDecoder = nil
         self.pendingNextTransition = nil
+        self.pendingCrossfade = nil
         Task {
             await staleNext?.stop()
             await staleDecoder?.close()
+            await staleCrossfadeDecoder?.close()
         }
 
         self.graph.playerNode.stop()
         self.emit(.ended)
         self.log.debug("engine.playback.ended")
+    }
+}
+
+// MARK: - AudioEngine + Crossfade transition (ADR-095)
+
+/// The next track of an armed crossfade. The engine holds it from arming
+/// until the pump reports the incoming track heard; the pump reads it in the
+/// meantime. Local files only, never a CUE segment.
+struct PendingCrossfade {
+    /// Tells this crossfade's transition apart from a stale one still on its
+    /// way from an earlier arm.
+    let token: UUID
+    let decoder: any Decoder
+    let duration: TimeInterval
+    let transition: @Sendable () -> Void
+}
+
+extension AudioEngine {
+    /// The pump reports that the listener hears the incoming track. Ignored
+    /// when it belongs to an arm or a pump that has since been replaced.
+    func handleCrossfadeTransition(token: UUID, firedBy pumpID: String) {
+        guard self.pendingCrossfade?.token == token, pumpID == self.pump?.id else {
+            self.log.debug("crossfade.transition.stale", ["firedBy": pumpID, "current": self.pump?.id ?? "nil"])
+            return
+        }
+        self.completeCrossfadeTransition()
+    }
+
+    /// Make the incoming track the engine's track, at the moment its first
+    /// mixed frame is heard. What `performGaplessTransition` does, minus the
+    /// pump swap: the one pump already reads the incoming track, and it
+    /// closes the outgoing decoder itself once it lets go of it.
+    func completeCrossfadeTransition() {
+        guard let pending = self.pendingCrossfade else { return }
+        self.pendingCrossfade = nil
+        self.decoder = pending.decoder
+        self._duration = pending.duration
+        self._currentTime = 0
+        // Rebaseline so currentTime counts the incoming track from 0 without
+        // stopping the node, as the gapless transition does.
+        let playerNode = self.graph.playerNode
+        if let renderTime = playerNode.lastRenderTime,
+           let playerTime = playerNode.playerTime(forNodeTime: renderTime) {
+            self._playerTimeOffset = playerTime.sampleTime
+        } else {
+            self._playerTimeOffset = 0
+        }
+        // Force re-emit .playing for the new track's timeline. Paused (a seek
+        // or a device change settled the transition) stays paused.
+        if self._state == .playing {
+            self.lastState = nil
+            self.emit(.playing)
+        }
+        self.log.debug("crossfade.transition", ["pump": self.pump?.id ?? "nil"])
+        pending.transition()
+    }
+
+    /// After the pump stopped: complete a crossfade whose incoming track was
+    /// heard (the listener is on it now), drop one that was not.
+    func settleCrossfade(heard: Bool, reason: String) async {
+        if heard, self.pendingCrossfade != nil {
+            self.completeCrossfadeTransition()
+        } else {
+            await self.dropPendingCrossfade(reason: reason)
+        }
+    }
+
+    /// Forget an armed crossfade and close its decoder. For teardown paths
+    /// that have already stopped the pump.
+    func dropPendingCrossfade(reason: String) async {
+        guard let pending = self.pendingCrossfade else { return }
+        self.pendingCrossfade = nil
+        self.log.debug("crossfade.disarmed", ["reason": reason])
+        await pending.decoder.close()
     }
 }

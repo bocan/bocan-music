@@ -18,6 +18,9 @@ public enum AudioEngineError: Error, Sendable, CustomStringConvertible {
     case engineStartFailed(underlying: Error)
     case outputDeviceUnavailable
     case seekOutOfRange(requested: TimeInterval, duration: TimeInterval)
+    /// The crossfade mix was handed buffers it cannot combine (ADR-095): not
+    /// one shared non-interleaved Float32 format, or an output too small.
+    case crossfadeBufferMismatch(reason: String)
     case cancelled
 
     public var description: String {
@@ -50,6 +53,9 @@ public enum AudioEngineError: Error, Sendable, CustomStringConvertible {
 
         case let .seekOutOfRange(requested, duration):
             return "Seek \(String(format: "%.2f", requested))s is out of range (duration: \(String(format: "%.2f", duration))s)"
+
+        case let .crossfadeBufferMismatch(reason):
+            return "Crossfade mix refused its buffers: \(reason)"
 
         case .cancelled:
             return "Operation was cancelled"

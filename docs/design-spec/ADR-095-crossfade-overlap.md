@@ -70,26 +70,30 @@ crossfade cannot work without them:
 Modules/AudioEngine/Sources/AudioEngine/
 ├── Graph/
 │   ├── BufferPump.swift              # refactored around PumpSource; overlap mode
+│   ├── BufferPump+Overlap.swift      # NEW: the pump's overlap state machine
 │   ├── PumpSource.swift              # NEW: decoder + converter + frame accounting
+│   ├── PCMFrameQueue.swift           # NEW: converted frames awaiting a frame-exact cut
 │   └── CrossfadeMix.swift            # NEW: pure equal-power mixing of two buffers
-├── AudioEngine+GaplessAPI.swift      # + enableCrossfadeNext(url:overlap:onTransition:)
+├── AudioEngine+GaplessAPI.swift      # + enableCrossfadeNext(url:overlapSeconds:onTransition:)
 ├── AudioEngine+Gapless.swift         # overlap transition handling
-├── AudioEngine+Crossfade.swift       # DELETED (node-volume ramps)
-└── AudioEngine.swift                 # crossfadeTask and cancelCrossfade() removed
+├── AudioEngine+Crossfade.swift       # DELETED in slice 3 (node-volume ramps)
+└── AudioEngine.swift                 # crossfadeTask and cancelCrossfade() removed in slice 3
 
 Modules/AudioEngine/Tests/AudioEngineTests/
 ├── Support/ScriptedDecoder.swift     # NEW: one shared fake decoder (tone, length, EOF)
+├── Support/OfflineRenderHarness.swift # NEW: renders a pump offline through a real node
 ├── CrossfadeMixTests.swift           # NEW: pure curve and mix tests
 ├── BufferPumpOverlapTests.swift      # NEW: pump overlap, early/late EOF, seek, stop
+├── EngineCrossfadeTests.swift        # NEW: gapless fallback, transition, drop
 └── CrossfadeRenderTests.swift        # NEW: offline manual-rendering proof of overlap
 
 Modules/Playback/Sources/Playback/
 ├── Gapless/CrossfadeScheduler.swift  # shrinks to config + decisions (ramps deleted)
-├── Gapless/GaplessScheduler.swift    # arming window grows with the overlap
+├── Gapless/GaplessScheduler.swift    # arming window grows with the overlap; BoundaryTransition
 └── QueuePlayer.swift                 # crossfade path via enableCrossfadeNext; ramp code deleted
 
 Modules/Playback/Tests/PlaybackTests/
-├── CrossfadeDecisionTests.swift      # NEW: boundary and arming-window tables
+├── CrossfadeDecisionTests.swift      # NEW: boundary, arming-window and resolver tables
 ├── CrossfadeSchedulerTests.swift     # ramp tests removed, overlapSeconds
 └── CrossfadeDelayClampTests.swift    # DELETED with the function it tests
 
@@ -179,16 +183,19 @@ Pure code, no graph, no actors. Nothing calls it yet.
 
 1. `Graph/CrossfadeMix.swift`: an `enum CrossfadeMix` (a namespace, like
    `AudioTime`) with:
-   - `static func gains(atFrame frame: Int, of length: Int) -> (out: Float, in: Float)`,
-     the equal-power pair defined under Behavioural definitions.
+   - `static func gains(atFrame frame: Int, of length: Int) -> (outgoing: Float, incoming: Float)`,
+     the equal-power pair defined under Behavioural definitions. (Labels
+     changed from `out`/`in` while building slice 1: `in` is a keyword.)
    - `static func mix(outgoing: AVAudioPCMBuffer?, incoming: AVAudioPCMBuffer, into output: AVAudioPCMBuffer, startFrame: Int, length: Int)`,
      which writes `out[i] = a[i] * gOut(startFrame + i) + b[i] * gIn(startFrame + i)`
      per channel. A `nil` or short `outgoing` contributes silence for the
      missing frames. Use Accelerate (`vDSP`) for the multiply-add; build the
      gain ramps once per buffer, not per sample call.
    - Precondition-free: mismatched formats or capacities throw a new
-     `AudioEngineError.crossfadeFormatMismatch(expected:actual:)` case (add it
-     to the module's one public error enum; do not add a new error type).
+     `AudioEngineError.crossfadeBufferMismatch(reason:)` case (add it to the
+     module's one public error enum; do not add a new error type). Built as
+     `reason:` rather than `expected:actual:` formats, because a too-small
+     output buffer is not a format mismatch.
 2. `Tests/AudioEngineTests/Support/ScriptedDecoder.swift`: one shared
    `ScriptedDecoder: Decoder` that produces a constant or sine tone at a
    given amplitude for an exact frame count, reports a configurable
@@ -208,10 +215,18 @@ so no CHANGELOG entry yet (label the PR `skip-changelog` if it lands alone).
    exactly one pump at a time): the decoder, its `FormatConverter?`, the
    `pumpFormat`, `maxFrames`, and running counters `framesRead` (decoder
    frames) and `outputFramesProduced` (output-rate frames after conversion).
-   It exposes `readConverted(maxOutputFrames:) async throws -> AVAudioPCMBuffer?`
-   (nil at EOF).
+   It exposes `makeReadBuffer(duration:)`, `read(into:) async throws ->
+   AVAudioFrameCount` (0 at EOF), `convert(_:) throws -> AVAudioPCMBuffer?`,
+   `remainingSegmentFrames`, and `seek(to:)`, which restarts the counts.
+   (Built as separate read and convert steps rather than the single
+   `readConverted` first planned here: the pump reports the two failures
+   differently, `pump.read.failed` through `onError` and `pump.convert.failed`
+   without it, and a combined call would hide which step failed.) Both counts
+   run from the start or the last seek, as the old loop-local segment count
+   did; slice 2b adds whatever absolute position it needs.
 2. `BufferPump` keeps its public surface and log lines exactly; its feed
-   loop reads through `current: PumpSource`.
+   loop reads through a `source: PumpSource` (slice 2b makes it the mutable
+   `current`).
 3. Every existing BufferPump, EngineTransport, GapFreeSeek, FoldParity and
    RetainCycle test passes unchanged. That is the acceptance test for this
    slice.
@@ -286,7 +301,67 @@ Commit: `refactor(audio): read the buffer pump through a PumpSource`.
       which is already `decoder`.
 12. **Deletions.** `AudioEngine+Crossfade.swift` (both ramps and
     `cancelCrossfade()`), the `crossfadeTask` property, and the two
-    `cancelCrossfade()` calls in `load` and `performStop`.
+    `cancelCrossfade()` calls in `load` and `performStop`. (Moved to slice 3
+    while building: `QueuePlayer` still calls both ramps until slice 3
+    rewires it, so deleting them here breaks the Playback build.)
+
+**As built (2026-09-25).** Items 1 to 11 hold, with these changes found
+while building:
+
+- **Arming takes a decoder and seconds:**
+  `armOverlap(decoder:lengthSeconds:onTransition:) -> Bool`. The pump
+  builds the incoming `PumpSource` with its own output format and converts
+  seconds with its own rate, so the two sources cannot disagree. It refuses
+  (returns `false`) when its feed has ended, when it plays a CUE segment,
+  and while a crossfade is mixing. `disarmOverlap()` returns `.dropped`,
+  `.tooLate` or `.nothingArmed`: once mixing has started, mixed buffers are
+  on the node and the crossfade completes.
+- **Frame-exact cuts need a queue.** `PCMFrameQueue` holds each source's
+  converted but unscheduled frames (`PumpSource.pending`), and
+  `PumpSource.scheduledPosition` adds `startOutputFrame`, set by a seek, for
+  the absolute position. This is what cuts the last unmixed buffer on the
+  boundary frame whatever the converter returns.
+- **A late start mixes only when a mix is still worth it.** When the pump
+  first finds itself inside the window (a seek, a late arm), it mixes the
+  remaining frames if they are at least `CrossfadeMix.minimumOverlapSeconds`
+  (1 s), and otherwise hands over gapless at the outgoing track's end. An
+  outgoing track that ends before the boundary also hands over gapless.
+- **A fourth phase, "handed over".** The incoming track is `current` but
+  its transition is not heard yet. The outgoing source is kept, unread,
+  until it is, so one rule covers every seek: before the transition is
+  heard a seek is for the outgoing track and the crossfade re-arms with the
+  incoming source rewound to 0; after it, the seek is for the incoming
+  track. `reschedule` and `stop` return whether the transition was heard,
+  and the engine handles a heard transition that is still on its way before
+  it uses the seek position (`performSeek`) or settles a stop or a device
+  change (`settleCrossfade`).
+- **Stop closes only the source the pump alone holds:** the incoming one
+  before the transition is heard, the outgoing one after. The other is the
+  engine's decoder, which `stop` leaves installed, as it always has. The
+  test plan's "stop during the overlap closes both decoders" is built that
+  way. (Both decoders' `close()` only logs today, so a double close is
+  harmless, but the rule keeps it from mattering.)
+- **The completion callback type is injectable.** `BufferPump.init` takes
+  `completionCallbackType`, `.dataPlayedBack` by default. The SDK documents
+  `.dataPlayedBack` for device rendering only, and a probe on macOS 27
+  confirmed it never fires in offline rendering, so the render tests pass
+  `.dataRendered`.
+- **`enableCrossfadeNext(url:overlapSeconds:onTransition:) -> Bool`.** It
+  computes the overlap with `CrossfadeMix.overlapSeconds(setting:outgoing:incoming:)`
+  and falls back to the plain gapless preload, with the same
+  `onTransition`, when the overlap is under 1 s, for a CUE segment, or when
+  nothing is playing. `true` means a crossfade is armed.
+- **`lastGaplessTransitionAt` is not set on a crossfade.** It suppresses a
+  spurious end from a just-swapped pump; the crossfade swaps no pump, and
+  setting it would swallow the real end of an incoming track shorter than
+  about 2.3 s.
+- **The position rebaseline reads the node when the engine handles the
+  transition**, as the gapless transition does, not inside the completion
+  callback. The difference is the hop latency, a few milliseconds.
+- **Extra files:** `Graph/PCMFrameQueue.swift`, `Graph/BufferPump+Overlap.swift`
+  (the pump's overlap state machine, split out for the lint size limits),
+  `Tests/.../Support/OfflineRenderHarness.swift` and
+  `EngineCrossfadeTests.swift`.
 
 Commit: `fix(audio): mix the next track into the current one during a crossfade`.
 
@@ -321,8 +396,69 @@ Commit: `fix(audio): mix the next track into the current one during a crossfade`
    a finite value for any input and gets the same NaN and infinity cases.
    In `CrossfadeSchedulerTests.swift`, drop the ramp and `cancelFades` tests
    and move the `halfDurationSeconds` assertions to `overlapSeconds`.
+   Then make the engine deletions moved here from slice 2b, item 12, which
+   this step leaves without callers.
 5. **History.** `handleGaplessTransition` already credits the outgoing play
    as a natural end. Keep that: a crossfaded track counts as played in full.
+
+**As built (2026-09-25).** Items 1 to 5 hold, with these changes found
+while building:
+
+- **The boundary has a type.** `BoundaryTransition` (`.crossfade(seconds:)`
+  or `.gapless(forceGapless:)`, in `GaplessScheduler.swift`) replaces the
+  `forceGapless` flag in the scheduler's `nextItemProvider` and is passed to
+  `performPrefetch`. `QueuePlayer.resolveNextBoundary` (was
+  `resolveNextGaplessItem`) applies the decision order of item 3.
+- **The scheduler reads the setting.** `GaplessScheduler.init` takes the
+  `CrossfadeScheduler`, so each poll sizes the window from
+  `overlapSeconds` before it asks for the next item. The provider, with its
+  album lookup, still runs only inside the window, and a boundary that
+  turns out gapless still waits for the preroll. `armingWindow` treats a
+  non-finite or non-positive crossfade as none and a non-finite preroll as
+  the default, so it is finite and non-negative for any input.
+- **The decision checks the overlap length too.** The pure
+  `CrossfadeScheduler.crossfadeSeconds(_:from:to:)` applies the setting, the
+  album rule, local files on both sides and the 1 s rule to the two queue
+  durations (`CrossfadeMix.overlapSeconds` and `minimumOverlapSeconds` are
+  public for this). Without the length check, a boundary too short to mix
+  would reach the engine's gapless fallback on the crossfade path, which
+  skips the format gate and the cross-album toggle. It returns the full
+  setting; the engine shortens it from the decoders' own durations.
+- **QueuePlayer's settle window is not set on a crossfade.** For the same
+  reason as the engine's (slice 2b), a crossfade swaps no pump, so there is
+  no spurious end to swallow, and a 2 to 3 s incoming track would lose its
+  real end. `crossfadeArmedItemID` (the item the engine armed a crossfade
+  to) replaces `crossfadePendingForNextTransition` and tells the transition
+  handler which kind it is. An engine fallback to gapless keeps the window.
+- **`crossfade.decision` is logged when the boundary is armed**, only while
+  crossfade is on: `crossfade` (`boundary`), or `gapless` with `boundary` or
+  `engineFallback`. `none` is not logged, because the provider runs every
+  poll inside the window.
+- **Tests.** `CrossfadeDecisionTests.swift` holds three suites: the pure
+  decision table, the `armingWindow` table with the #271 non-finite cases,
+  and `resolveNextBoundary` on a real `QueuePlayer` (made internal for
+  this). The format-gate skip inside the scheduler's poll has no automated
+  test: it needs a playing engine, and no Playback test plays audio.
+- **A crossfade can be armed behind a running mix** (found in the
+  maintainer's manual check with 11 s tracks). A track shorter than about
+  `2 L + 2 s` reaches its own arming window while the mix into it still
+  runs, and the pump refused that arm, so every second boundary fell back
+  to gapless. Once the running mix's transition is heard, `armOverlap` now
+  keeps the new crossfade in `BufferPump.queuedOverlap` and arms it when
+  the mix ends; a seek during the tail arms it from the new position.
+  `disarmOverlap` drops the queued one, `stop` closes it, and `stop` and
+  `reschedule` report "not heard" while one is queued, because the
+  engine's pending crossfade is then the queued one. Tests:
+  `BufferPumpQueuedOverlapTests.swift`.
+- **The setting now reaches the player at launch** (found in the same
+  check, after a relaunch). `DSPViewModel` forwarded the crossfade setting
+  only when a DSP control changed, so after every launch crossfade stayed
+  off until the slider moved. This is older than this ADR (Facts did not
+  list it) and was hidden while crossfade did nothing audible. The view
+  model now forwards it at init as well. `DSPViewModel.init` takes the
+  `UserDefaults` it loads and saves through, and
+  `QueuePlayer.crossfadeConfig()` reads the setting in effect, both for
+  `DSPCrossfadeForwardingTests`.
 
 Commit: `fix(playback): arm a real crossfade at the boundaries the setting names`.
 
@@ -340,6 +476,15 @@ Commit: `fix(playback): arm a real crossfade at the boundaries the setting names
 3. README and the website: describe crossfade as an overlap, where the
    feature list mentions it.
 4. Close #567 from the PR body (`Closes #567.`).
+
+**As built (2026-09-25).** The slider help and the caption under the
+Transitions section say what happens in plain words ("the next song fades in
+while the current one fades out", "back to back with no gap"), and the help
+says only songs stored on this Mac crossfade. The website has no feature
+card for crossfade, so one sentence joins the "Gapless" card. The README
+line also corrects the range from 12 s to 10 s, the slider's real maximum.
+The GOTCHAS entry is written, and `make generate` picks up
+`DSPCrossfadeForwardingTests.swift` for the Xcode test bundle.
 
 Commit: `docs(ui): say what crossfade does, and note the fix`.
 
@@ -441,7 +586,8 @@ by `AudioEngine`.
   1000 onward (the curve continues across buffer boundaries).
 - A `nil` or short outgoing buffer yields `incoming * gIn` for the missing
   frames.
-- Mismatched formats throw `crossfadeFormatMismatch`.
+- Mismatched formats, an interleaved format and a too-small output throw
+  `crossfadeBufferMismatch`.
 
 **Unit, `CrossfadeDecisionTests` (slice 3):** a table over the six
 conditions in "Which boundaries crossfade", including the default settings
