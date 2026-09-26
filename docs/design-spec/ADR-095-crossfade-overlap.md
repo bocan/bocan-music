@@ -309,8 +309,12 @@ Commit: `refactor(audio): read the buffer pump through a PumpSource`.
       (`stop(keepingOpen:)`), and once the rebuilt pump plays the engine
       rewinds it and arms the same boundary again (`AudioEngine.rearm`).
       Reopening the file instead could fail in the sandbox, where the
-      player has already released the file's scope. Paused, or a failed
-      re-arm, still closes it and the boundary becomes a normal load.
+      player has already released the file's scope. The re-arm goes to the
+      rebuilt pump only, never to a separate pump, and only while the
+      engine is still on the track the boundary leads out of: a `load` or
+      a track end can run during the device change's awaits. Paused, a
+      refused or failed re-arm, or a changed track closes it, and the
+      boundary becomes a normal load.
 12. **Deletions.** `AudioEngine+Crossfade.swift` (both ramps and
     `cancelCrossfade()`), the `crossfadeTask` property, and the two
     `cancelCrossfade()` calls in `load` and `performStop`. (Moved to slice 3

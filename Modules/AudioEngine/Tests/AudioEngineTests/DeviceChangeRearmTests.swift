@@ -75,7 +75,7 @@ struct DeviceChangeRearmTests {
         let flag = Flag()
         let carried = Self.carried(incoming, lengthSeconds: 0) { flag.fired = true }
 
-        await engine.rearm(carried)
+        await engine.rearm(carried, after: engine.decoder)
 
         #expect(incoming.seekTargets == [0], "rewound: the old pump had read from it")
         let pending = try #require(await engine.pendingCrossfade)
@@ -93,12 +93,10 @@ struct DeviceChangeRearmTests {
     @Test("A carried crossfade is armed again at the same length")
     func rearmsCrossfade() async throws {
         let (engine, pump) = try await self.playingEngine()
-        // The fixture is 1 s long; say it is 20 s so a 3 s overlap fits.
-        await engine.setDurationForRearmTest(20)
         let incoming = try ScriptedDecoder(format: PCMBuffers.stereo(), frames: 44100 * 20)
         let carried = Self.carried(incoming, lengthSeconds: 3) {}
 
-        await engine.rearm(carried)
+        await engine.rearm(carried, after: engine.decoder)
 
         let pending = try #require(await engine.pendingCrossfade)
         #expect(pending.decoder === incoming)
@@ -116,11 +114,46 @@ struct DeviceChangeRearmTests {
         incoming.seekError = AudioEngineError.outputDeviceUnavailable
         let carried = Self.carried(incoming, lengthSeconds: 0) {}
 
-        await engine.rearm(carried)
+        await engine.rearm(carried, after: engine.decoder)
 
         #expect(incoming.closeCalls == 1)
         #expect(await engine.pendingCrossfade == nil)
         #expect(await engine.pendingNextPump == nil)
+    }
+
+    @Test("With no pump to take it, the boundary is closed, never given a pump of its own")
+    func refusedRearmClosesWithoutSeparatePump() async throws {
+        let engine = AudioEngine()
+        try await engine.load(self.fixtureURL())
+        let incoming = try ScriptedDecoder(format: PCMBuffers.stereo(), frames: 44100 * 7)
+        let carried = Self.carried(incoming, lengthSeconds: 0) {}
+
+        await engine.rearm(carried, after: engine.decoder)
+
+        #expect(incoming.closeCalls == 1)
+        #expect(await engine.pendingNextPump == nil, "a separate pump could outlive the track it was for")
+        #expect(await engine.pendingCrossfade == nil)
+    }
+
+    @Test("A boundary whose track was replaced by a load during the device change is closed, not armed")
+    func trackChangedDuringRebuildCloses() async throws {
+        let (engine, pump) = try await self.playingEngine()
+        let before = try #require(await engine.decoder)
+        // A load (Next, a double-click) ran while the device change awaited.
+        try await engine.load(self.fixtureURL())
+        await engine.installPumpForRearmTest(pump)
+        let incoming = try ScriptedDecoder(format: PCMBuffers.stereo(), frames: 44100 * 7)
+        let flag = Flag()
+        let carried = Self.carried(incoming, lengthSeconds: 0) { flag.fired = true }
+
+        await engine.rearm(carried, after: before)
+
+        #expect(incoming.closeCalls == 1)
+        #expect(incoming.seekTargets.isEmpty, "not touched beyond closing")
+        #expect(await engine.pendingCrossfade == nil)
+        #expect(await engine.pendingNextPump == nil)
+        #expect(!flag.fired)
+        await pump.stop()
     }
 
     // MARK: - Helpers
@@ -160,10 +193,5 @@ private extension AudioEngine {
     /// Test seam: a pump in place, as `play` leaves it, without playing.
     func installPumpForRearmTest(_ pump: BufferPump) {
         self.pump = pump
-    }
-
-    /// Test seam: the loaded track's duration.
-    func setDurationForRearmTest(_ duration: TimeInterval) {
-        self._duration = duration
     }
 }

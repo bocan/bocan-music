@@ -77,6 +77,7 @@ public extension AudioEngine {
         // armed again on the new pump; reopening its file could fail in the
         // sandbox, where the player has already let go of the file's scope.
         let unheard = self.pendingCrossfade
+        let outgoing = self.decoder
         let heard = await self.pump?.stop(keepingOpen: unheard?.decoder) ?? false
         self.pump = nil
         var carried: PendingCrossfade?
@@ -94,7 +95,7 @@ public extension AudioEngine {
                 try await self.performPlay()
                 self.log.notice("audio.device.reconfigure.resumed", ["device": device?.name ?? "?"])
                 if let carried {
-                    await self.rearm(carried)
+                    await self.rearm(carried, after: outgoing)
                 }
             } catch {
                 self.log.error("audio.device.reconfigure.resume.failed", ["error": String(reflecting: error)])
