@@ -225,8 +225,11 @@ actor BufferPump {
     /// (`releaseOverlapOnStop`). Returns whether the incoming track of the
     /// most recent crossfade had been heard, so the engine can settle a
     /// transition it has not handled yet.
+    ///
+    /// `keepingOpen` names an incoming decoder the pump must not close: the
+    /// engine takes it back to arm the same boundary on a rebuilt pump.
     @discardableResult
-    func stop() async -> Bool {
+    func stop(keepingOpen: (any Decoder)? = nil) async -> Bool {
         self.log.debug("pump.stop", [
             "id": self.id,
             "scheduled": self.scheduledCount,
@@ -247,7 +250,7 @@ actor BufferPump {
         _ = await self.task?.result // drain
         self.task = nil
         let heard = self.engineCrossfadeHeard
-        await self.releaseOverlapOnStop()
+        await self.releaseOverlapOnStop(keepingOpen: keepingOpen)
         return heard
     }
 

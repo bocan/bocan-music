@@ -17,7 +17,11 @@ import Testing
 /// Rendering is driven by the test, so it never runs ahead of the pump:
 /// before each chunk the harness waits until the pump has scheduled past it.
 /// That keeps the rendered stream exactly the concatenation of the scheduled
-/// buffers, with no underrun silence.
+/// buffers, with no underrun silence. Each chunk renders on the pump's own
+/// executor (`BufferPump.runOnExecutor`): rendering on the test's thread
+/// while the pump scheduled on its queue left, about once in ten suite runs,
+/// a whole buffer of silence mid-stream, and let a completion read the clock
+/// before the chunk that fired it was counted.
 final class OfflineRenderHarness {
     let format: AVAudioFormat
     let engine = AVAudioEngine()
@@ -72,10 +76,16 @@ final class OfflineRenderHarness {
             let available = try await self.waitForScheduled(self.rendered.count + want, pump: pump)
             let count = min(want, available - self.rendered.count)
             guard count > 0 else { return }
-            let status = try self.engine.renderOffline(AVAudioFrameCount(count), to: output)
+            let engine = self.engine
+            let clock = self.clock
+            let renderedAfter = self.rendered.count + count
+            let status = try await pump.runOnExecutor {
+                let status = try engine.renderOffline(AVAudioFrameCount(count), to: output)
+                clock.frames = renderedAfter
+                return status
+            }
             try #require(status == .success, "offline render returned \(status.rawValue)")
             try self.rendered.append(contentsOf: PCMBuffers.samples(output))
-            self.clock.frames = self.rendered.count
             done += count
         }
     }
@@ -106,6 +116,20 @@ final class OfflineRenderHarness {
     }
 }
 
+// MARK: - BufferPump + render seam
+
+extension BufferPump {
+    /// Test seam: run `body` on the pump's serial executor. The harness renders
+    /// through it so that no `scheduleBuffer` from the pump can run while
+    /// `renderOffline` is on another thread, which in manual rendering mode
+    /// could leave a scheduled buffer out of the render (silence mid-stream).
+    /// It also lets the clock be set before any completion that render fires
+    /// can reach the pump.
+    func runOnExecutor<T>(_ body: () throws -> T) rethrows -> T {
+        try body()
+    }
+}
+
 // MARK: - RenderClock
 
 /// The harness's rendered-frame count, readable from pump callbacks, plus the
@@ -122,7 +146,8 @@ final class RenderClock: @unchecked Sendable {
         set { self.lock.withLock { self.renderedFrames = newValue } }
     }
 
-    /// Rendered-frame counts at which a crossfade transition fired.
+    /// Rendered-frame counts at which a crossfade transition fired, counting
+    /// the whole chunk whose render fired it.
     var transitions: [Int] {
         self.lock.withLock { self.transitionFrames }
     }

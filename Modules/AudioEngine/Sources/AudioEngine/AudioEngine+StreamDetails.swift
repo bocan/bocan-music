@@ -39,11 +39,16 @@ public extension AudioEngine {
     /// gate for minutes and starves all playback (the ADR-078 launch hang).
     /// Podcasts carry a real duration and still seek. Logs when refusing.
     internal func refuseLiveStreamSeek(_ time: TimeInterval) -> Bool {
-        guard self._duration <= 0,
-              let scheme = self.currentURL?.scheme?.lowercased(),
-              scheme == "http" || scheme == "https" else { return false }
+        guard self.isLiveStream else { return false }
         self.log.warning("engine.seek.ignoredLiveStream", ["time": time])
         return true
+    }
+
+    /// Whether the loaded source is a live HTTP(S) stream with no length,
+    /// which cannot seek.
+    internal var isLiveStream: Bool {
+        guard self._duration <= 0, let scheme = self.currentURL?.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
     }
 
     /// Replaces the title-forwarding task for the freshly installed decoder.

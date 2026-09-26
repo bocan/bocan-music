@@ -122,15 +122,21 @@ extension AudioEngine {
 
 // MARK: - AudioEngine + Crossfade transition (ADR-095)
 
-/// The next track of an armed crossfade. The engine holds it from arming
+/// The next track of an armed crossfade, or of a gapless hand-over in the
+/// same pump (an overlap of length 0, #574). The engine holds it from arming
 /// until the pump reports the incoming track heard; the pump reads it in the
-/// meantime. Local files only, never a CUE segment.
+/// meantime. Never a CUE segment.
 struct PendingCrossfade {
     /// Tells this crossfade's transition apart from a stale one still on its
     /// way from an earlier arm.
     let token: UUID
     let decoder: any Decoder
     let duration: TimeInterval
+    /// The next track's file, for log lines.
+    let url: URL
+    /// The armed overlap: 0 for a gapless hand-over. Kept so a device change
+    /// can arm the same boundary again on the rebuilt pump.
+    let lengthSeconds: TimeInterval
     /// Becomes the engine's `currentReplayGain` at the transition.
     let replayGain: TrackReplayGain?
     let transition: @Sendable () -> Void
@@ -148,7 +154,8 @@ extension AudioEngine {
     }
 
     /// Make the incoming track the engine's track, at the moment its first
-    /// mixed frame is heard. What `performGaplessTransition` does, minus the
+    /// frame is heard (mixed, or right after the outgoing track's last one
+    /// for a gapless hand-over). What `performGaplessTransition` does, minus the
     /// pump swap: the one pump already reads the incoming track, and it
     /// closes the outgoing decoder itself once it lets go of it.
     func completeCrossfadeTransition() {
@@ -184,6 +191,63 @@ extension AudioEngine {
             self.completeCrossfadeTransition()
         } else {
             await self.dropPendingCrossfade(reason: reason)
+        }
+    }
+
+    /// Arm `carried`, the unheard boundary of a pump that a device change
+    /// replaced, on the new pump: the same crossfade length or hand-over, the
+    /// same decoder rewound to its start, the same transition. The boundary
+    /// is found again from where the rebuilt pump plays. On failure the
+    /// boundary becomes a normal load, as it did before this was kept.
+    ///
+    /// `outgoing` is the decoder the boundary leads out of. A `load` can run
+    /// while the device change awaits (it takes no transport gate); if the
+    /// engine is on another track by now, the boundary belongs to nothing
+    /// and is closed, or its transition would advance the queue from the
+    /// wrong track.
+    ///
+    /// Only the rebuilt pump takes it, never a separate pump: an end or a
+    /// load can run during the awaits here, and a separate pump installed
+    /// after that would hang off the next track instead.
+    func rearm(_ carried: PendingCrossfade, after outgoing: (any Decoder)?) async {
+        let next = carried.url.lastPathComponent
+        guard let outgoing, self.decoder === outgoing else {
+            self.log.debug("boundary.rearm.skipped", ["reason": "trackChanged", "next": next])
+            await carried.decoder.close()
+            return
+        }
+        do {
+            try await carried.decoder.seek(to: 0)
+            // The seek suspended: check the track again.
+            guard self.decoder === outgoing else {
+                self.log.debug("boundary.rearm.skipped", ["reason": "trackChanged", "next": next])
+                await carried.decoder.close()
+                return
+            }
+            let result = try await self.armInPump(
+                decoder: carried.decoder,
+                url: carried.url,
+                lengthSeconds: carried.lengthSeconds,
+                replayGain: carried.replayGain,
+                onTransition: carried.transition
+            )
+            switch result {
+            case .armed:
+                self.log.debug("boundary.rearmed", ["lengthSeconds": carried.lengthSeconds, "next": next])
+
+            case .refused:
+                // The next track loads normally when this one ends.
+                self.log.debug("boundary.rearm.skipped", ["reason": "pumpRefused", "next": next])
+                await carried.decoder.close()
+
+            case .pumpReplaced:
+                // The replaced pump closed the decoder when it stopped.
+                self.log.debug("boundary.rearm.skipped", ["reason": "pumpReplaced", "next": next])
+            }
+        } catch {
+            // The next track loads normally when this one ends.
+            self.log.warning("boundary.rearm.failed", ["next": next, "error": String(reflecting: error)])
+            await carried.decoder.close()
         }
     }
 

@@ -137,14 +137,15 @@ public actor QueuePlayer: Transport {
     /// and — in the worst case — two pumps running simultaneously.
     private var activeReplaceCount = 0
 
-    // MARK: - Crossfade state
+    // MARK: - Armed boundary state
 
-    /// The next item when the engine armed a crossfade to it (ADR-095). Its
-    /// transition skips the gapless settle window: a crossfade swaps no pump,
-    /// so there is no spurious end to swallow, and an incoming track shorter
+    /// The next item and how the engine prepared the boundary into it
+    /// (ADR-095, #574). A crossfade or gapless hand-over in the playing pump
+    /// skips the settle window at its transition: no pump is swapped, so
+    /// there is no spurious end to swallow, and an incoming track shorter
     /// than the window would otherwise lose its real end. Cleared by any
     /// manual load.
-    private var crossfadeArmedItemID: QueueItem.ID?
+    private var armedBoundary: (itemID: QueueItem.ID, preparation: NextTrackPreparation)?
 
     /// Periodic task that calls `historyRecorder.update(elapsed:)` while playing
     /// so that scrobbles fire at the 50 % threshold even before a track ends.
@@ -673,7 +674,7 @@ public actor QueuePlayer: Transport {
     private func loadAndPlay(item: QueueItem, autoPlay: Bool = true) async throws {
         // A manual load always starts fresh; the engine's load drops any
         // armed crossfade.
-        self.crossfadeArmedItemID = nil
+        self.armedBoundary = nil
 
         // A non-gapless load means the settle window no longer applies;
         // clear it so a natural end-of-track is never accidentally swallowed.
@@ -1308,10 +1309,10 @@ public actor QueuePlayer: Transport {
     }
 
     /// Opens `url` as the next track in the engine: a crossfade or a plain
-    /// gapless preload, as `transition` says. The engine falls back to
+    /// gapless boundary, as `transition` says. The engine falls back to
     /// gapless itself when a crossfade cannot be armed (a boundary too short
-    /// for its decoders' durations, or the pump refused), and the item is
-    /// then handled as a gapless one.
+    /// for its decoders' durations, or the pump refused), and says how it
+    /// prepared the boundary; `handleGaplessTransition` reads that back.
     private func armNext(url: URL, item: QueueItem, transition: BoundaryTransition) async throws {
         let onTransitionCallback = self.onGaplessTransitionCaptured
         let onTransition: @Sendable () -> Void = {
@@ -1320,22 +1321,22 @@ public actor QueuePlayer: Transport {
             }
         }
         let replayGain = await self.replayGain(for: item, track: nil)
+        self.armedBoundary = nil
+        let preparation: NextTrackPreparation
         switch transition {
         case let .crossfade(seconds):
-            let armed = try await self.engine.enableCrossfadeNext(
+            preparation = try await self.engine.enableCrossfadeNext(
                 url: url,
                 overlapSeconds: seconds,
                 replayGain: replayGain,
                 onTransition: onTransition
             )
-            self.crossfadeArmedItemID = armed ? item.id : nil
             self.log.debug("crossfade.decision", [
-                "decision": armed ? "crossfade" : "gapless",
-                "reason": armed ? "boundary" : "engineFallback",
+                "decision": preparation == .crossfade ? "crossfade" : "gapless",
+                "reason": preparation == .crossfade ? "boundary" : "engineFallback",
                 "next": item.trackID,
             ])
         case .gapless:
-            self.crossfadeArmedItemID = nil
             if await self.crossfadeScheduler.isEnabled {
                 self.log.debug("crossfade.decision", [
                     "decision": "gapless",
@@ -1343,8 +1344,11 @@ public actor QueuePlayer: Transport {
                     "next": item.trackID,
                 ])
             }
-            try await self.engine.enableGaplessNext(url: url, replayGain: replayGain, onTransition: onTransition)
+            preparation = try await self.engine.enableGaplessNext(
+                url: url, replayGain: replayGain, onTransition: onTransition
+            )
         }
+        self.armedBoundary = (itemID: item.id, preparation: preparation)
     }
 
     /// The ReplayGain facts for `item`, from its track row as it is now, so a
@@ -1385,11 +1389,12 @@ public actor QueuePlayer: Transport {
         // marked played on the handoff (not only on `handleTrackEnded`).
         let outgoing = await self.queue.currentItem
         _ = await self.queue.advance()
-        // A crossfade swaps no pump, so no spurious end follows it and the
-        // settle window stays off (see `crossfadeArmedItemID`).
-        let crossfaded = self.crossfadeArmedItemID == item.id
-        self.crossfadeArmedItemID = nil
-        self.lastGaplessTransitionAt = crossfaded ? nil : Date()
+        // A crossfade or hand-over in the playing pump swaps no pump, so no
+        // spurious end follows it and the settle window stays off (see
+        // `armedBoundary`). Only a separate pump needs the window.
+        let preparation = self.armedBoundary?.itemID == item.id ? self.armedBoundary?.preparation : nil
+        self.armedBoundary = nil
+        self.lastGaplessTransitionAt = preparation?.firesWhenHeard == true ? nil : Date()
 
         // Credit the outgoing play before we overwrite recorder state.
         // The handoff only fires when the previous track reached its natural end,
@@ -1420,7 +1425,10 @@ public actor QueuePlayer: Transport {
 
         await self.notifyHistoryStart(for: item)
 
-        self.log.debug("queueplayer.gapless.transition", ["trackID": item.trackID, "crossfade": crossfaded])
+        self.log.debug("queueplayer.gapless.transition", [
+            "trackID": item.trackID,
+            "preparation": preparation.map { String(describing: $0) } ?? "unknown",
+        ])
     }
 
     // MARK: Queue change subscription (for persistence)
