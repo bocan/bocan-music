@@ -26,11 +26,21 @@ actor CoverArtCache {
     /// Soft cap on the total on-disk cover-art cache (working art + originals).
     /// When `persist` pushes the cache past this, a least-recently-used sweep
     /// deletes the oldest art by file modification time until back under
-    /// budget. Working-art rows are also removed from the DB; because
-    /// `albums`/`tracks` reference `cover_art` with `ON DELETE SET NULL`, the
-    /// only consequence of evicting still-referenced art is that it is
-    /// re-extracted on the next scan. See #268.
+    /// budget (#268). Working-art rows are also removed from the DB, and
+    /// `albums`/`tracks` reference `cover_art` with `ON DELETE SET NULL`, so
+    /// evicted art that is still in use leaves its albums and tracks without a
+    /// cover until a scan re-reads the file it came from: a full rescan, or any
+    /// scan after the file changes (a quick scan skips unchanged files).
+    ///
+    /// Art a rescan cannot rebuild is never evicted (`unrebuildableSources`,
+    /// #570), so the sweep can end above this cap.
     private let totalBytesLimit: Int
+
+    /// `cover_art.source` values whose bytes exist only in this cache, never
+    /// in or next to an audio file: `musicbrainz` (Batch Cover Art writes it
+    /// here and nowhere else) and `user` (the editor's no-file-write path,
+    /// #472, keeps the chosen image only here). The sweep never evicts them.
+    static let unrebuildableSources: Set = ["musicbrainz", "user"]
 
     /// Re-check disk usage only after this many *new* bytes have been written.
     /// Without this throttle a full directory enumeration would run on every
@@ -143,53 +153,53 @@ actor CoverArtCache {
 
     // MARK: - Eviction
 
+    /// One file in the cache, as the sweep sees it.
+    private struct SweepEntry {
+        let url: URL
+        let size: Int
+        let mtime: Date
+        let isOriginal: Bool
+
+        /// Working art and its original are both named `<hash>.<ext>`.
+        var hash: String {
+            self.url.deletingPathExtension().lastPathComponent
+        }
+    }
+
     /// Enforces `totalBytesLimit` by deleting least-recently-used art (oldest
     /// file modification time first) until the on-disk cache is back under
     /// budget. Working-art files also have their `cover_art` DB row removed so
     /// the stored path never dangles; `originals/` files have no DB row and are
-    /// simply unlinked.
+    /// simply unlinked. Art from `unrebuildableSources`, working copy and
+    /// original alike, is skipped but still counts towards the total.
     private func sweep() async {
         let fm = FileManager.default
-        let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
-        guard let enumerator = fm.enumerator(
-            at: self.cacheRoot,
-            includingPropertiesForKeys: Array(keys),
-            options: [.skipsHiddenFiles]
-        ) else { return }
-
-        struct Entry {
-            let url: URL
-            let size: Int
-            let mtime: Date
-            let isOriginal: Bool
-        }
-
-        let originalsPath = self.cacheRoot
-            .appendingPathComponent("originals", isDirectory: true)
-            .path
-        var entries: [Entry] = []
-        var total = 0
-        while let url = enumerator.nextObject() as? URL {
-            guard let values = try? url.resourceValues(forKeys: keys),
-                  values.isRegularFile == true else { continue }
-            let size = values.fileSize ?? 0
-            entries.append(Entry(
-                url: url,
-                size: size,
-                mtime: values.contentModificationDate ?? .distantPast,
-                isOriginal: url.deletingLastPathComponent().path == originalsPath
-            ))
-            total += size
-        }
-
+        var (entries, total) = self.cacheEntries()
         guard total > self.totalBytesLimit else { return }
+
+        // If the sources cannot be read, evict nothing: over budget is better
+        // than deleting the only copy of a cover.
+        let protectedHashes: Set<String>
+        do {
+            protectedHashes = try await self.repo.hashes(withSourceIn: Self.unrebuildableSources)
+        } catch {
+            self.log.warning("cover_art.sweep.skipped", ["error": String(reflecting: error)])
+            return
+        }
 
         entries.sort { $0.mtime < $1.mtime } // least-recently-used first
         var evicted = 0
         var freed = 0
+        var protectedCount = 0
+        var protectedBytes = 0
         for entry in entries {
             if total <= self.totalBytesLimit {
                 break
+            }
+            if protectedHashes.contains(entry.hash) {
+                protectedCount += 1
+                protectedBytes += entry.size
+                continue
             }
             do {
                 try fm.removeItem(at: entry.url)
@@ -204,8 +214,7 @@ actor CoverArtCache {
             freed += entry.size
             evicted += 1
             if !entry.isOriginal {
-                // hash == filename stem (`<hash>.<ext>`).
-                let hash = entry.url.deletingPathExtension().lastPathComponent
+                let hash = entry.hash
                 do {
                     try await self.repo.delete(hash: hash)
                 } catch {
@@ -224,6 +233,40 @@ actor CoverArtCache {
             "remainingBytes": total,
             "limitBytes": self.totalBytesLimit,
         ])
+        if total > self.totalBytesLimit {
+            // Every evictable file is gone; what is left is art a rescan
+            // cannot rebuild.
+            self.log.info("cover_art.sweep.protected", ["count": protectedCount, "bytes": protectedBytes])
+        }
+    }
+
+    /// Every regular file under the cache root, with the total of their sizes.
+    private func cacheEntries() -> (entries: [SweepEntry], total: Int) {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .fileSizeKey, .contentModificationDateKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: self.cacheRoot,
+            includingPropertiesForKeys: Array(keys),
+            options: [.skipsHiddenFiles]
+        ) else { return ([], 0) }
+
+        let originalsPath = self.cacheRoot
+            .appendingPathComponent("originals", isDirectory: true)
+            .path
+        var entries: [SweepEntry] = []
+        var total = 0
+        while let url = enumerator.nextObject() as? URL {
+            guard let values = try? url.resourceValues(forKeys: keys),
+                  values.isRegularFile == true else { continue }
+            let size = values.fileSize ?? 0
+            entries.append(SweepEntry(
+                url: url,
+                size: size,
+                mtime: values.contentModificationDate ?? .distantPast,
+                isOriginal: url.deletingLastPathComponent().path == originalsPath
+            ))
+            total += size
+        }
+        return (entries, total)
     }
 
     // MARK: - Private

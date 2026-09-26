@@ -11,6 +11,8 @@ Crossfade now really crossfades. The next song fades in while the current one fa
 
 Time Machine, and backup tools that recognise cache folders, now skip the caches Bòcan can rebuild on its own, such as downloaded cover-search thumbnails, podcast show artwork and Phone Sync conversions, which makes backups smaller. Your library, your own cover art, tag backups and downloaded podcast episodes are still backed up as before.
 
+Album covers found with Batch Cover Art, and covers you chose yourself in the tag editor, are no longer deleted when the cover art folder grows past its size limit. Those covers exist only in Bòcan's own folder, so a rescan could never bring them back, and the albums were left without a cover.
+
 ## [2.18.0](https://github.com/bocan/bocan-music/compare/v2.17.1...v2.18.0) (2026-09-23)
 
 The clock beside the progress bar now reads properly on anything over an hour. On a long podcast the last second wrapped onto a line of its own, so the time read as a broken pair of figures instead of one. Thanks for spotting that one @GitMyAccount.
