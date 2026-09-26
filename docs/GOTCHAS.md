@@ -330,6 +330,16 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/VisualizerViewModelTests.swift`
 
+### Offline render tests render on the pump's executor
+
+**Problem:** an offline render test (crossfade, gapless hand-over) fails about once in ten full `make test-audio-engine` runs and passes on its own. The rendered audio holds a stretch of exact silence mid-stream, often starting on a buffer boundary, or a transition is timed a few frames before the boundary it follows.
+
+**Rule:** `OfflineRenderHarness.render` calls `renderOffline` inside `BufferPump.runOnExecutor`, and sets the render clock inside that same call. Any new harness or test that renders a pump's node offline does the same. Never call `renderOffline` from the test's own thread while a pump is feeding the node.
+
+**Why:** the pump schedules buffers on its serial executor. With `renderOffline` running on the test thread at the same moment, a buffer the pump had already counted as scheduled could miss the render, which then output silence. The completion that render fires hops to the pump, so a clock set after the render returned could be read first. On the pump's executor neither can interleave. The app is not affected: real-time rendering runs on the audio IO thread, the case the player node is built for. 30 suite runs with the fix had no failure, against 3 in 30 before it.
+
+**Canonical file:** `Modules/AudioEngine/Tests/AudioEngineTests/Support/OfflineRenderHarness.swift`
+
 ### Capture the real exit code, and do not import GRDB into a `@testable` Persistence test
 
 **Problem:** a broken test file gets committed because the gate reported success. Or a Persistence test target stops compiling with key-path ambiguity and type-checker timeouts.
