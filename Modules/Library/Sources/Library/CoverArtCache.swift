@@ -37,9 +37,20 @@ actor CoverArtCache {
     /// - art a rescan cannot rebuild at all (`unrebuildableSources`, #570),
     ///   working copy and original alike.
     ///
+    /// - working art written or refreshed within `newArtGracePeriod`. The
+    ///   caller links art only after `persist` returns, and a scan imports up
+    ///   to four files at once, so art another import has just persisted is
+    ///   not linked yet. Without this, a folder where everything older is in
+    ///   use evicted each new cover as soon as it was written.
+    ///
     /// So what the sweep evicts is art nothing shows any more, and the
     /// full-size originals of rebuildable art, which nothing reads.
     private let totalBytesLimit: Int
+
+    /// How long after it is written (or refreshed by a dedup hit) working art
+    /// is kept whatever the sweep finds: far longer than any gap between
+    /// `persist` and the caller's link.
+    private let newArtGracePeriod: TimeInterval
 
     /// `cover_art.source` values whose bytes exist only in this cache, never
     /// in or next to an audio file: `musicbrainz` (Batch Cover Art writes it
@@ -62,12 +73,14 @@ actor CoverArtCache {
         cacheRoot: URL,
         repo: CoverArtRepository,
         totalBytesLimit: Int = 1 << 30, // 1 GiB
-        sweepThresholdBytes: Int = 128 * 1024 * 1024 // 128 MiB
+        sweepThresholdBytes: Int = 128 * 1024 * 1024, // 128 MiB
+        newArtGracePeriod: TimeInterval = 300
     ) {
         self.cacheRoot = cacheRoot
         self.repo = repo
         self.totalBytesLimit = totalBytesLimit
         self.sweepThresholdBytes = sweepThresholdBytes
+        self.newArtGracePeriod = newArtGracePeriod
     }
 
     static func make(database: Database) -> CoverArtCache {
@@ -176,8 +189,9 @@ actor CoverArtCache {
     /// budget. Working-art files also have their `cover_art` DB row removed so
     /// the stored path never dangles; `originals/` files have no DB row and are
     /// simply unlinked. Art from `unrebuildableSources` (working copy and
-    /// original alike) and working art an album or track shows are skipped but
-    /// still count towards the total.
+    /// original alike), working art an album or track shows, and working art
+    /// newer than `newArtGracePeriod` are skipped but still count towards the
+    /// total.
     private func sweep() async {
         let fm = FileManager.default
         var (entries, total) = self.cacheEntries()
@@ -196,6 +210,7 @@ actor CoverArtCache {
         }
 
         entries.sort { $0.mtime < $1.mtime } // least-recently-used first
+        let linkCutoff = Date().addingTimeInterval(-self.newArtGracePeriod)
         var evicted = 0
         var freed = 0
         var protectedCount = 0
@@ -205,8 +220,10 @@ actor CoverArtCache {
                 break
             }
             // An original is kept only for unrebuildable art: nothing reads the
-            // original of an embedded or sidecar cover.
-            if unrebuildable.contains(entry.hash) || (!entry.isOriginal && inUse.contains(entry.hash)) {
+            // original of an embedded or sidecar cover. Working art is kept
+            // while in use, or while new enough that its link may be pending.
+            let keepWorking = !entry.isOriginal && (inUse.contains(entry.hash) || entry.mtime > linkCutoff)
+            if unrebuildable.contains(entry.hash) || keepWorking {
                 protectedCount += 1
                 protectedBytes += entry.size
                 continue

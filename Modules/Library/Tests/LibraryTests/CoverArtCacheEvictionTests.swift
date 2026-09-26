@@ -41,12 +41,15 @@ struct CoverArtCacheEvictionTests {
         let artBytes = 100_000
         // Budget holds two 100 KB arts; the third pushes us to 300 KB and must
         // trigger an LRU sweep back down to <= 200 KB. sweepThresholdBytes = 1
-        // makes the budget check run after every persist.
+        // makes the budget check run after every persist. The grace period
+        // for new art is off: these arts are persisted seconds apart, and the
+        // subject here is the LRU order (#576 tests the grace).
         let cache = CoverArtCache(
             cacheRoot: dir,
             repo: repo,
             totalBytesLimit: 250_000,
-            sweepThresholdBytes: 1
+            sweepThresholdBytes: 1,
+            newArtGracePeriod: 0
         )
 
         // Persist three distinct arts oldest-first, with gaps so their file
@@ -58,8 +61,8 @@ struct CoverArtCacheEvictionTests {
         let third = try #require(try await cache.persist([art(fill: 3, bytes: artBytes)], source: "embedded"))
 
         let fm = FileManager.default
-        // Oldest art evicted from disk and DB; the FK is ON DELETE SET NULL so
-        // this is safe and self-heals on the next scan.
+        // Oldest art evicted from disk and DB. No album or track uses it here;
+        // art in use is never evicted (#576).
         #expect(!fm.fileExists(atPath: first.path), "least-recently-used art should be evicted")
         let firstRow = try await repo.fetch(hash: first.hash)
         #expect(firstRow == nil, "evicted working-art DB row should be removed")

@@ -118,16 +118,64 @@ struct CoverArtSweepInUseTests {
         try await bed.albums.setCoverArt(albumID: albumOne, hash: first.hash, path: first.path)
         try await bed.albums.setCoverArt(albumID: albumTwo, hash: second.hash, path: second.path)
 
-        // A sweep runs inside `persist`, before the new art can be linked, so
-        // the third file is art the user chose (#570 keeps it). Every file is
-        // then in use or unrebuildable: 300 KB against 250 KB.
-        let third = try #require(try await bed.cache.persist([Self.art(fill: 0xC2)], source: "user"))
+        // A new cover for a third album. Its sweep runs inside `persist`,
+        // before the scan can link it, when it is the only file not in use:
+        // 300 KB against 250 KB.
+        let third = try #require(try await bed.cache.persist([Self.art(fill: 0xC2)], source: "embedded"))
+        let albumThree = try await bed.albums.insert(Album(title: "Three"))
+        try await bed.albums.setCoverArt(albumID: albumThree, hash: third.hash, path: third.path)
 
         #expect(FileManager.default.fileExists(atPath: first.path))
         #expect(FileManager.default.fileExists(atPath: second.path))
-        #expect(FileManager.default.fileExists(atPath: third.path))
+        #expect(FileManager.default.fileExists(atPath: third.path), "a new cover is not evicted before it is linked")
+        #expect(try await bed.repo.fetch(hash: third.hash) != nil)
         #expect(try await bed.albums.fetch(id: albumOne).coverArtHash == first.hash)
         #expect(try await bed.albums.fetch(id: albumTwo).coverArtHash == second.hash)
+        #expect(try await bed.albums.fetch(id: albumThree).coverArtHash == third.hash)
+    }
+
+    @Test("Art another import has persisted but not linked yet survives the next import's sweep")
+    func pendingLinkSurvivesConcurrentImport() async throws {
+        let bed = try await Self.makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.dir) }
+        let first = try await Self.agedEmbedded(bed, fill: 0xE0, age: 0)
+        let second = try await Self.agedEmbedded(bed, fill: 0xE1, age: 1000)
+        for (fill, art) in [(UInt8(0xE0), first), (UInt8(0xE1), second)] {
+            let albumID = try await bed.albums.insert(Album(title: "In Use \(fill)"))
+            try await bed.albums.setCoverArt(albumID: albumID, hash: art.hash, path: art.path)
+        }
+
+        // A scan imports up to four files at once: one import persists its
+        // cover and has not linked it yet when another import persists.
+        let pending = try #require(try await bed.cache.persist([Self.art(fill: 0xE2)], source: "embedded"))
+        let other = try #require(try await bed.cache.persist([Self.art(fill: 0xE3)], source: "embedded"))
+
+        #expect(FileManager.default.fileExists(atPath: pending.path))
+        #expect(try await bed.repo.fetch(hash: pending.hash) != nil, "the import can still link it")
+        #expect(FileManager.default.fileExists(atPath: other.path))
+    }
+
+    @Test("Once its grace period is over, art nothing uses is evicted again")
+    func graceEnds() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("cover-art-grace-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let db = try await Database(location: .inMemory)
+        let repo = CoverArtRepository(database: db)
+        let cache = CoverArtCache(
+            cacheRoot: dir, repo: repo, totalBytesLimit: 250_000, sweepThresholdBytes: 1, newArtGracePeriod: 60
+        )
+        let unused = try #require(try await cache.persist([Self.art(fill: 0xF0)], source: "embedded"))
+        // Written two minutes ago: past the 60 s grace.
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date().addingTimeInterval(-120)], ofItemAtPath: unused.path
+        )
+        _ = try await cache.persist([Self.art(fill: 0xF1)], source: "embedded")
+        _ = try await cache.persist([Self.art(fill: 0xF2)], source: "embedded")
+
+        #expect(!FileManager.default.fileExists(atPath: unused.path))
+        #expect(try await repo.fetch(hash: unused.hash) == nil)
     }
 
     @Test("The full-size original of art in use can still be evicted: nothing reads it")
