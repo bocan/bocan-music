@@ -71,12 +71,21 @@ public extension AudioEngine {
         ])
         await self.fadePlayerNode(to: 0)
         self.graph.playerNode.stop()
-        let heard = await self.pump?.stop() ?? false
+        // A crossfade or gapless hand-over lives in the pump, which the
+        // rebuild replaces. A heard one completes, so the resume below plays
+        // the incoming track. An unheard one keeps its decoder open and is
+        // armed again on the new pump; reopening its file could fail in the
+        // sandbox, where the player has already let go of the file's scope.
+        let unheard = self.pendingCrossfade
+        let heard = await self.pump?.stop(keepingOpen: unheard?.decoder) ?? false
         self.pump = nil
-        // A crossfade or gapless hand-over does not survive the rebuild: an
-        // unheard one is dropped (the boundary becomes a normal load), a heard
-        // one completes, so the resume below plays the incoming track.
-        await self.settleCrossfade(heard: heard, reason: "device")
+        var carried: PendingCrossfade?
+        if heard {
+            await self.settleCrossfade(heard: true, reason: "device")
+        } else {
+            carried = unheard
+            self.pendingCrossfade = nil
+        }
         self.graph.reset()
         if resumeAfter {
             // Best-effort resume; if the new device fails to open, swallow the
@@ -84,10 +93,17 @@ public extension AudioEngine {
             do {
                 try await self.performPlay()
                 self.log.notice("audio.device.reconfigure.resumed", ["device": device?.name ?? "?"])
+                if let carried {
+                    await self.rearm(carried)
+                }
             } catch {
                 self.log.error("audio.device.reconfigure.resume.failed", ["error": String(reflecting: error)])
+                await carried?.decoder.close()
             }
         } else {
+            // Paused: the next play builds a pump from scratch, and the
+            // boundary becomes a normal load, as before.
+            await carried?.decoder.close()
             self.log.notice("audio.device.reconfigure.end", ["device": device?.name ?? "?"])
         }
     }

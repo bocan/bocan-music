@@ -140,7 +140,12 @@ private extension AudioEngine {
     /// Test seam: the state `enableCrossfadeNext` leaves once the pump has armed.
     func installPendingCrossfadeForReplayGainTest(decoder: any Decoder, replayGain: TrackReplayGain) {
         self.pendingCrossfade = PendingCrossfade(
-            token: UUID(), decoder: decoder, duration: decoder.duration, replayGain: replayGain
+            token: UUID(),
+            decoder: decoder,
+            duration: decoder.duration,
+            url: URL(fileURLWithPath: "/tmp/next.wav"),
+            lengthSeconds: 1,
+            replayGain: replayGain
         ) {}
     }
 }

@@ -97,7 +97,13 @@ private extension AudioEngine {
         transition: @Sendable @escaping () -> Void
     ) {
         self.pendingCrossfade = PendingCrossfade(
-            token: UUID(), decoder: decoder, duration: decoder.duration, replayGain: replayGain, transition: transition
+            token: UUID(),
+            decoder: decoder,
+            duration: decoder.duration,
+            url: URL(fileURLWithPath: "/tmp/next.wav"),
+            lengthSeconds: 5,
+            replayGain: replayGain,
+            transition: transition
         )
     }
 }

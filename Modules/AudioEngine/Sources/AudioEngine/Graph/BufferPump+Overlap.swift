@@ -384,11 +384,14 @@ extension BufferPump {
     /// End a crossfade because the pump stops. Close the source only this
     /// pump holds: the outgoing one once the transition is heard (the engine
     /// has moved to the incoming decoder), else the incoming one. The
-    /// incoming source of a queued crossfade is closed too.
-    func releaseOverlapOnStop() async {
+    /// incoming source of a queued crossfade is closed too. An incoming
+    /// decoder that is `keepingOpen` stays open: the engine re-arms it.
+    func releaseOverlapOnStop(keepingOpen: (any Decoder)? = nil) async {
         if let queued = self.queuedOverlap {
             self.queuedOverlap = nil
-            await queued.incoming.decoder.close()
+            if queued.incoming.decoder !== keepingOpen {
+                await queued.incoming.decoder.close()
+            }
         }
         guard let overlap = self.overlap else { return }
         self.overlap = nil
@@ -401,7 +404,9 @@ extension BufferPump {
             if case let .handedOver(outgoing) = overlap.phase {
                 self.current = outgoing
             }
-            await overlap.incoming.decoder.close()
+            if overlap.incoming.decoder !== keepingOpen {
+                await overlap.incoming.decoder.close()
+            }
         }
     }
 

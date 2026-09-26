@@ -132,6 +132,11 @@ struct PendingCrossfade {
     let token: UUID
     let decoder: any Decoder
     let duration: TimeInterval
+    /// The next track's file, for log lines.
+    let url: URL
+    /// The armed overlap: 0 for a gapless hand-over. Kept so a device change
+    /// can arm the same boundary again on the rebuilt pump.
+    let lengthSeconds: TimeInterval
     /// Becomes the engine's `currentReplayGain` at the transition.
     let replayGain: TrackReplayGain?
     let transition: @Sendable () -> Void
@@ -186,6 +191,44 @@ extension AudioEngine {
             self.completeCrossfadeTransition()
         } else {
             await self.dropPendingCrossfade(reason: reason)
+        }
+    }
+
+    /// Arm `carried`, the unheard boundary of a pump that a device change
+    /// replaced, on the new pump: the same crossfade length or hand-over, the
+    /// same decoder rewound to its start, the same transition. The boundary
+    /// is found again from where the rebuilt pump plays. On failure the
+    /// boundary becomes a normal load, as it did before this was kept.
+    func rearm(_ carried: PendingCrossfade) async {
+        do {
+            try await carried.decoder.seek(to: 0)
+            let preparation = if carried.lengthSeconds > 0 {
+                try await self.prepareCrossfadeNext(
+                    decoder: carried.decoder,
+                    url: carried.url,
+                    overlapSeconds: carried.lengthSeconds,
+                    replayGain: carried.replayGain,
+                    onTransition: carried.transition
+                )
+            } else {
+                try await self.prepareGaplessNext(
+                    decoder: carried.decoder,
+                    url: carried.url,
+                    replayGain: carried.replayGain,
+                    onTransition: carried.transition
+                )
+            }
+            self.log.debug("boundary.rearmed", [
+                "preparation": String(describing: preparation),
+                "next": carried.url.lastPathComponent,
+            ])
+        } catch {
+            // The next track loads normally when this one ends.
+            self.log.warning("boundary.rearm.failed", [
+                "next": carried.url.lastPathComponent,
+                "error": String(reflecting: error),
+            ])
+            await carried.decoder.close()
         }
     }
 

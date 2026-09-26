@@ -36,6 +36,7 @@ final class ScriptedDecoder: Decoder, @unchecked Sendable {
     private var reads = 0
     private var closes = 0
     private var seeks: [TimeInterval] = []
+    private var failSeeksWith: (any Error)?
 
     /// - Parameters:
     ///   - format: the source format the pump sees (`sourceFormat`).
@@ -78,6 +79,12 @@ final class ScriptedDecoder: Decoder, @unchecked Sendable {
         self.lock.withLock { self.seeks }
     }
 
+    /// When set, every later seek throws this error (after it is recorded).
+    var seekError: (any Error)? {
+        get { self.lock.withLock { self.failSeeksWith } }
+        set { self.lock.withLock { self.failSeeksWith = newValue } }
+    }
+
     // MARK: - Decoder
 
     var position: TimeInterval {
@@ -103,8 +110,13 @@ final class ScriptedDecoder: Decoder, @unchecked Sendable {
     }
 
     func seek(to time: TimeInterval) async throws {
-        self.lock.withLock {
+        if let error = self.lock.withLock({ () -> (any Error)? in
             self.seeks.append(time)
+            return self.failSeeksWith
+        }) {
+            throw error
+        }
+        self.lock.withLock {
             var target = AVAudioFramePosition(time * self.sourceFormat.sampleRate)
             if let total = self.totalFrames {
                 target = min(target, total)

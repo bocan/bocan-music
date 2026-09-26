@@ -304,7 +304,13 @@ Commit: `refactor(audio): read the buffer pump through a PumpSource`.
       incoming source (the scheduler will not re-arm the same item, so the
       boundary becomes a normal load); after the transition, the outgoing
       source is dropped and playback resumes from the incoming decoder,
-      which is already `decoder`.
+      which is already `decoder`. Changed in #574: before the transition
+      the pump stops with the incoming decoder kept open
+      (`stop(keepingOpen:)`), and once the rebuilt pump plays the engine
+      rewinds it and arms the same boundary again (`AudioEngine.rearm`).
+      Reopening the file instead could fail in the sandbox, where the
+      player has already released the file's scope. Paused, or a failed
+      re-arm, still closes it and the boundary becomes a normal load.
 12. **Deletions.** `AudioEngine+Crossfade.swift` (both ramps and
     `cancelCrossfade()`), the `crossfadeTask` property, and the two
     `cancelCrossfade()` calls in `load` and `performStop`. (Moved to slice 3

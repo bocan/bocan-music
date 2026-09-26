@@ -92,34 +92,9 @@ public extension AudioEngine {
     ) async throws -> NextTrackPreparation {
         await self.cancelGaplessNext()
         let dec = try DecoderFactory.make(for: url)
-
-        guard let length = CrossfadeMix.overlapSeconds(
-            setting: overlapSeconds, outgoing: self._duration, incoming: dec.duration
-        ) else {
-            self.log.debug("crossfade.disarmed", ["reason": "tooShort", "next": url.lastPathComponent])
-            return try await self.prepareGaplessNext(
-                decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition
-            )
-        }
-
-        switch try await self.armInPump(decoder: dec, lengthSeconds: length, replayGain: replayGain, onTransition: onTransition) {
-        case .armed:
-            self.log.debug("crossfade.armed", [
-                "lengthMs": Int((length * 1000).rounded()), "next": url.lastPathComponent,
-            ])
-            return .crossfade
-
-        case .refused:
-            // The same conditions refuse a gapless hand-over, so the next
-            // track gets its own pump.
-            self.log.debug("crossfade.disarmed", ["reason": "pumpRefused", "next": url.lastPathComponent])
-            try self.installGaplessNext(decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition)
-            return .separatePump
-
-        case .pumpReplaced:
-            self.log.debug("crossfade.disarmed", ["reason": "pumpReplaced", "next": url.lastPathComponent])
-            return .cancelled
-        }
+        return try await self.prepareCrossfadeNext(
+            decoder: dec, url: url, overlapSeconds: overlapSeconds, replayGain: replayGain, onTransition: onTransition
+        )
     }
 
     /// Cancel any active gapless preload or armed crossfade without stopping
@@ -153,6 +128,47 @@ enum PumpArmResult {
 }
 
 extension AudioEngine {
+    /// A crossfade into `decoder`'s track, or gapless when the overlap would
+    /// be under a second or the pump cannot take it.
+    func prepareCrossfadeNext(
+        decoder dec: any Decoder,
+        url: URL,
+        overlapSeconds: TimeInterval,
+        replayGain: TrackReplayGain?,
+        onTransition: @Sendable @escaping () -> Void
+    ) async throws -> NextTrackPreparation {
+        guard let length = CrossfadeMix.overlapSeconds(
+            setting: overlapSeconds, outgoing: self._duration, incoming: dec.duration
+        ) else {
+            self.log.debug("crossfade.disarmed", ["reason": "tooShort", "next": url.lastPathComponent])
+            return try await self.prepareGaplessNext(
+                decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition
+            )
+        }
+
+        let result = try await self.armInPump(
+            decoder: dec, url: url, lengthSeconds: length, replayGain: replayGain, onTransition: onTransition
+        )
+        switch result {
+        case .armed:
+            self.log.debug("crossfade.armed", [
+                "lengthMs": Int((length * 1000).rounded()), "next": url.lastPathComponent,
+            ])
+            return .crossfade
+
+        case .refused:
+            // The same conditions refuse a gapless hand-over, so the next
+            // track gets its own pump.
+            self.log.debug("crossfade.disarmed", ["reason": "pumpRefused", "next": url.lastPathComponent])
+            try self.installGaplessNext(decoder: dec, url: url, replayGain: replayGain, onTransition: onTransition)
+            return .separatePump
+
+        case .pumpReplaced:
+            self.log.debug("crossfade.disarmed", ["reason": "pumpReplaced", "next": url.lastPathComponent])
+            return .cancelled
+        }
+    }
+
     /// Gapless into `decoder`'s track: a hand-over in the playing pump when it
     /// can take one, else a pump of its own.
     func prepareGaplessNext(
@@ -161,7 +177,10 @@ extension AudioEngine {
         replayGain: TrackReplayGain?,
         onTransition: @Sendable @escaping () -> Void
     ) async throws -> NextTrackPreparation {
-        switch try await self.armInPump(decoder: dec, lengthSeconds: 0, replayGain: replayGain, onTransition: onTransition) {
+        let result = try await self.armInPump(
+            decoder: dec, url: url, lengthSeconds: 0, replayGain: replayGain, onTransition: onTransition
+        )
+        switch result {
         case .armed:
             self.log.debug("gapless.handover.armed", ["next": url.lastPathComponent])
             return .handover
@@ -182,6 +201,7 @@ extension AudioEngine {
     /// `handleCrossfadeTransition` makes it the engine's track.
     func armInPump(
         decoder dec: any Decoder,
+        url: URL,
         lengthSeconds: TimeInterval,
         replayGain: TrackReplayGain?,
         onTransition: @Sendable @escaping () -> Void
@@ -206,7 +226,13 @@ extension AudioEngine {
         // closed the decoder: there is no boundary left to prepare.
         guard pumpID == self.pump?.id else { return .pumpReplaced }
         self.pendingCrossfade = PendingCrossfade(
-            token: token, decoder: dec, duration: dec.duration, replayGain: replayGain, transition: onTransition
+            token: token,
+            decoder: dec,
+            duration: dec.duration,
+            url: url,
+            lengthSeconds: lengthSeconds,
+            replayGain: replayGain,
+            transition: onTransition
         )
         return .armed
     }
