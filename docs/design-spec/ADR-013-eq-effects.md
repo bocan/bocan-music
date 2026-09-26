@@ -100,7 +100,10 @@ All nodes exist in the graph at all times; each can be bypassed without rebuildi
     - `auto`: if part of a queued album span, use album gain; otherwise track gain.
     - Pre-amp setting (±12 dB) applied on top.
     - Clipping guard: if `track_gain + pre_amp` would push peak above −0.5 dBFS (using `replaygain_track_peak`), reduce gain by the difference. Document.
-    - Value written to the `GainStage` on every track change.
+    - Value written to the `GainStage` on every track change. Superseded
+      by #573: nothing ever wrote it, and a node in the graph cannot hold
+      two levels during a crossfade (ADR-095). The gain is now applied per
+      track inside the buffer pump, and the `GainStage` node is gone.
 
 ### UI
 

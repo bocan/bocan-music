@@ -91,9 +91,13 @@ struct EngineCrossfadeTests {
 private extension AudioEngine {
     /// Test seam: the state `enableCrossfadeNext` leaves once the pump has
     /// armed, without a pump.
-    func installPendingCrossfade(decoder: any Decoder, transition: @Sendable @escaping () -> Void) {
+    func installPendingCrossfade(
+        decoder: any Decoder,
+        replayGain: TrackReplayGain? = nil,
+        transition: @Sendable @escaping () -> Void
+    ) {
         self.pendingCrossfade = PendingCrossfade(
-            token: UUID(), decoder: decoder, duration: decoder.duration, transition: transition
+            token: UUID(), decoder: decoder, duration: decoder.duration, replayGain: replayGain, transition: transition
         )
     }
 }

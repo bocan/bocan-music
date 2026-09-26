@@ -51,6 +51,8 @@ extension AudioEngine {
         // The pending decoder becomes the active decoder.
         self.decoder = self.pendingNextDecoder
         self.pendingNextDecoder = nil
+        self.currentReplayGain = self.pendingNextReplayGain
+        self.pendingNextReplayGain = nil
 
         let transition = self.pendingNextTransition
         self.pendingNextTransition = nil
@@ -104,6 +106,7 @@ extension AudioEngine {
         self.pendingNextPump = nil
         self.pendingNextDecoder = nil
         self.pendingNextTransition = nil
+        self.pendingNextReplayGain = nil
         self.pendingCrossfade = nil
         Task {
             await staleNext?.stop()
@@ -128,6 +131,8 @@ struct PendingCrossfade {
     let token: UUID
     let decoder: any Decoder
     let duration: TimeInterval
+    /// Becomes the engine's `currentReplayGain` at the transition.
+    let replayGain: TrackReplayGain?
     let transition: @Sendable () -> Void
 }
 
@@ -150,6 +155,7 @@ extension AudioEngine {
         guard let pending = self.pendingCrossfade else { return }
         self.pendingCrossfade = nil
         self.decoder = pending.decoder
+        self.currentReplayGain = pending.replayGain
         self._duration = pending.duration
         self._currentTime = 0
         // Rebaseline so currentTime counts the incoming track from 0 without
