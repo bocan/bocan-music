@@ -156,7 +156,7 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Problem:** the whole process aborts with `*** Terminating app due to uncaught exception 'com.apple.coreaudio.avfaudio', reason: 'error 1885563711'`. No Swift `catch` fires, and the crash lands in a `defer` block or a seek, not in the read that failed.
 
-**Rule:** never set `framePosition` on an `AVAudioFile` whose `read(into:)` has just thrown, and never from a `defer` that also runs on the failure path. Rewind only after a successful read. A new seek on the AVFoundation route follows the same rule.
+**Rule:** never set `framePosition` on an `AVAudioFile` whose `read(into:)` has just thrown, and never from a `defer` that also runs on the failure path. Rewind only after a successful read. A new seek on the AVFoundation route follows the same rule. Since #574, `AVFoundationDecoder` keeps its first read failure and every later `seek` throws `decoderFailure` instead of touching `framePosition`, so a user seek, a device-change rewind or a crossfade re-arm after a mid-file failure cannot abort the app; keep that guard in front of any new `framePosition` write.
 
 **Why:** `AVAudioFile` opens some files it cannot decode; Opus in MP4 on macOS 26 opens with `length == 0` and fails on the first read. `read(into:)` reports that as a Swift error, but the `framePosition` setter has no error channel and raises `NSException` with the same OSStatus, which Swift cannot catch. The open-time probe in `AVFoundationDecoder` exists to catch such files before the pump does (#523); it reads a few thousand frames and rewinds only on success.
 

@@ -87,6 +87,25 @@ struct AVFoundationDecoderTests {
         await decoder.close()
     }
 
+    @Test("After a read fails, a seek throws instead of touching framePosition, which would raise an uncatchable exception")
+    func seekAfterReadFailureRefuses() async throws {
+        let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
+        let decoder = try AVFoundationDecoder(url: url)
+        try await decoder.seek(to: 0.25)
+        // No fixture fails partway through; stand in for the failed read.
+        await decoder.recordReadFailure(NSError(domain: NSOSStatusErrorDomain, code: 1_885_563_711))
+
+        do {
+            try await decoder.seek(to: 0.5)
+            Issue.record("the seek should have been refused")
+        } catch AudioEngineError.decoderFailure {
+            // Expected.
+        }
+        let pos = await decoder.position
+        #expect(abs(pos - 0.25) < 0.01, "the position is left where it was, got \(pos)")
+        await decoder.close()
+    }
+
     @Test("WAV: seek out-of-range throws")
     func wavSeekOutOfRange() async throws {
         let url = try fixtureURL("sine-1s-44100-16-stereo.wav")
