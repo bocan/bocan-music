@@ -26,14 +26,19 @@ actor CoverArtCache {
     /// Soft cap on the total on-disk cover-art cache (working art + originals).
     /// When `persist` pushes the cache past this, a least-recently-used sweep
     /// deletes the oldest art by file modification time until back under
-    /// budget (#268). Working-art rows are also removed from the DB, and
-    /// `albums`/`tracks` reference `cover_art` with `ON DELETE SET NULL`, so
-    /// evicted art that is still in use leaves its albums and tracks without a
-    /// cover until a scan re-reads the file it came from: a full rescan, or any
-    /// scan after the file changes (a quick scan skips unchanged files).
+    /// budget (#268). Working-art rows are also removed from the DB.
     ///
-    /// Art a rescan cannot rebuild is never evicted (`unrebuildableSources`,
-    /// #570), so the sweep can end above this cap.
+    /// The sweep never evicts art that is still needed, so it can end above
+    /// this cap:
+    /// - working art an album or a track shows (#576). `albums`/`tracks`
+    ///   reference `cover_art` with `ON DELETE SET NULL`, so evicting it
+    ///   left them without a cover, and a quick scan skips unchanged files,
+    ///   so only a full rescan brought it back.
+    /// - art a rescan cannot rebuild at all (`unrebuildableSources`, #570),
+    ///   working copy and original alike.
+    ///
+    /// So what the sweep evicts is art nothing shows any more, and the
+    /// full-size originals of rebuildable art, which nothing reads.
     private let totalBytesLimit: Int
 
     /// `cover_art.source` values whose bytes exist only in this cache, never
@@ -170,18 +175,21 @@ actor CoverArtCache {
     /// file modification time first) until the on-disk cache is back under
     /// budget. Working-art files also have their `cover_art` DB row removed so
     /// the stored path never dangles; `originals/` files have no DB row and are
-    /// simply unlinked. Art from `unrebuildableSources`, working copy and
-    /// original alike, is skipped but still counts towards the total.
+    /// simply unlinked. Art from `unrebuildableSources` (working copy and
+    /// original alike) and working art an album or track shows are skipped but
+    /// still count towards the total.
     private func sweep() async {
         let fm = FileManager.default
         var (entries, total) = self.cacheEntries()
         guard total > self.totalBytesLimit else { return }
 
-        // If the sources cannot be read, evict nothing: over budget is better
-        // than deleting the only copy of a cover.
-        let protectedHashes: Set<String>
+        // If either set cannot be read, evict nothing: over budget is better
+        // than deleting a cover that is in use or the only copy of one.
+        let unrebuildable: Set<String>
+        let inUse: Set<String>
         do {
-            protectedHashes = try await self.repo.hashes(withSourceIn: Self.unrebuildableSources)
+            unrebuildable = try await self.repo.hashes(withSourceIn: Self.unrebuildableSources)
+            inUse = try await self.repo.hashesInUse()
         } catch {
             self.log.warning("cover_art.sweep.skipped", ["error": String(reflecting: error)])
             return
@@ -196,7 +204,9 @@ actor CoverArtCache {
             if total <= self.totalBytesLimit {
                 break
             }
-            if protectedHashes.contains(entry.hash) {
+            // An original is kept only for unrebuildable art: nothing reads the
+            // original of an embedded or sidecar cover.
+            if unrebuildable.contains(entry.hash) || (!entry.isOriginal && inUse.contains(entry.hash)) {
                 protectedCount += 1
                 protectedBytes += entry.size
                 continue
@@ -234,8 +244,8 @@ actor CoverArtCache {
             "limitBytes": self.totalBytesLimit,
         ])
         if total > self.totalBytesLimit {
-            // Every evictable file is gone; what is left is art a rescan
-            // cannot rebuild.
+            // Every evictable file is gone; what is left is art in use or art
+            // a rescan cannot rebuild.
             self.log.info("cover_art.sweep.protected", ["count": protectedCount, "bytes": protectedBytes])
         }
     }
@@ -249,9 +259,12 @@ actor CoverArtCache {
             options: [.skipsHiddenFiles]
         ) else { return ([], 0) }
 
-        let originalsPath = self.cacheRoot
-            .appendingPathComponent("originals", isDirectory: true)
-            .path
+        // Known by the folder's name, not by comparing full paths: the
+        // enumerator can return a path with its symlinks resolved (`/var` is
+        // `/private/var`), which then never matches `cacheRoot`, and an
+        // original taken for working art would have its hash's row deleted
+        // (#576). Working art sits in two-character hex folders, so the name
+        // cannot collide.
         var entries: [SweepEntry] = []
         var total = 0
         while let url = enumerator.nextObject() as? URL {
@@ -262,7 +275,7 @@ actor CoverArtCache {
                 url: url,
                 size: size,
                 mtime: values.contentModificationDate ?? .distantPast,
-                isOriginal: url.deletingLastPathComponent().path == originalsPath
+                isOriginal: url.deletingLastPathComponent().lastPathComponent == "originals"
             ))
             total += size
         }

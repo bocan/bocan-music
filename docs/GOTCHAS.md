@@ -216,6 +216,16 @@ Related: FSEvents fires for metadata-only changes, so rescans are gated on size 
 
 **Canonical file:** `Modules/Podcasts/Sources/Podcasts/Parsing/PodcastNamespaceSupplement.swift`, background in `docs/design-spec/ADR-048-feedkit-upgrade.md`
 
+### The cover art sweep keeps every cover something shows
+
+**Problem:** albums and tracks lose their covers in a large library (over about 1 GiB of cover art), and a quick scan does not bring them back; only a full rescan does (#576). Or, in a test, the sweep evicts the newest file and keeps an old one it should have taken.
+
+**Rule:** `CoverArtCache.sweep` evicts only working art no album or track uses (`CoverArtRepository.hashesInUse`) and never art from `unrebuildableSources` (#570); it lets the folder stay over `totalBytesLimit` when nothing else is left. Originals of rebuildable art stay evictable, because nothing reads `originals/`. Tell an original apart by its folder's name, never by comparing full paths with `cacheRoot`.
+
+**Why:** evicting a `cover_art` row sets `albums.cover_art_hash` and `tracks.cover_art_hash` to NULL (`ON DELETE SET NULL`), and `ChangeDetector.check` skips a file whose mtime and size are unchanged, so nothing re-extracts the cover. `FileManager.enumerator` can return a path with its symlinks resolved (`/var` comes back as `/private/var`), so a full-path comparison with `cacheRoot` fails; an original taken for working art would then be judged by the in-use rule, and its eviction would delete the row of the working art with the same hash.
+
+**Canonical file:** `Modules/Library/Sources/Library/CoverArtCache.swift`; the tests are `Modules/Library/Tests/LibraryTests/CoverArtSweepInUseTests.swift` and `CoverArtSweepProvenanceTests.swift`
+
 ---
 
 ## Persistence and keychain
