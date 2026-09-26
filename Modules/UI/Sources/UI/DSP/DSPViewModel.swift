@@ -79,6 +79,8 @@ public final class DSPViewModel {
     public let presetStore: PresetStore
     private let queuePlayer: QueuePlayer?
     private let assignmentRepo: DSPAssignmentRepository?
+    /// Where `state` is loaded from and saved to; a test passes its own suite.
+    private let defaults: UserDefaults
     private let log = AppLogger.make(.ui)
 
     /// Transient override — set from a scoped assignment on track load.
@@ -92,16 +94,20 @@ public final class DSPViewModel {
         engine: AudioEngine,
         presetStore: PresetStore = PresetStore(),
         queuePlayer: QueuePlayer? = nil,
-        assignmentRepo: DSPAssignmentRepository? = nil
+        assignmentRepo: DSPAssignmentRepository? = nil,
+        defaults: UserDefaults = .standard
     ) {
         self.engine = engine
         self.presetStore = presetStore
         self.queuePlayer = queuePlayer
         self.assignmentRepo = assignmentRepo
-        self.state = DSPState.load()
+        self.defaults = defaults
+        self.state = DSPState.load(from: defaults)
         self.presets = presetStore.allPresets
-        // Apply persisted state immediately.
+        // Apply persisted state immediately, the crossfade setting included:
+        // until something forwards it, the player starts with crossfade off.
         Task { await engine.applyDSPState(self.state) }
+        self.forwardCrossfadeConfig()
         // Observe track loads to resolve scoped EQ assignments.
         if let qp = queuePlayer {
             Task { @MainActor [weak self] in
@@ -291,14 +297,19 @@ public final class DSPViewModel {
     // MARK: - Private
 
     private func pushToEngine() {
-        self.state.save()
+        self.state.save(to: self.defaults)
         // Use the scoped override if active, otherwise the global preset.
         var stateToApply = self.state
         if let override = self.eqOverridePresetID {
             stateToApply.eqPresetID = override
         }
         Task { await self.engine.applyDSPState(stateToApply) }
-        // Forward crossfade config to the playback layer so the slider has effect.
+        self.forwardCrossfadeConfig()
+    }
+
+    /// Forward the crossfade setting to the playback layer, which does the
+    /// crossfading. Called at init and on every state change.
+    private func forwardCrossfadeConfig() {
         let config = CrossfadeScheduler.Config(
             durationSeconds: self.state.crossfadeSeconds,
             albumGapless: self.state.crossfadeAlbumGapless

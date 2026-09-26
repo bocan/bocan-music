@@ -14,6 +14,10 @@ import Observability
 /// and uses buffer-completion callbacks to throttle the refill rate, keeping memory
 /// usage predictable even for very long files.
 ///
+/// During a crossfade the pump reads a second source and mixes the two into
+/// the buffers it schedules (ADR-095; the logic is in `BufferPump+Overlap`).
+/// The node still sees one continuous stream.
+///
 /// All cancellation is handled via standard Swift structured concurrency — cancel
 /// the `Task` returned by `start()` to stop the pump cleanly.
 actor BufferPump {
@@ -31,32 +35,29 @@ actor BufferPump {
     /// every seek, so an oversized window directly inflates seek latency against
     /// the < 50 ms baseline). See #277.
     private static let windowSize = 4 // number of buffers in flight
-    private static let bufferDuration = 0.2 // seconds per buffer
+    static let bufferDuration = 0.2 // seconds per buffer
 
     // MARK: - Dependencies
 
-    private let decoder: any Decoder
-    private let playerNode: AVAudioPlayerNode
-    private let outputFormat: AVAudioFormat
+    /// The track this pump reads: decoder, converter and frame counts. During
+    /// a crossfade this is the outgoing track until the mix ends, then the
+    /// incoming one.
+    var current: PumpSource
+    let playerNode: AVAudioPlayerNode
 
-    /// Format used to allocate intermediate decode buffers. Always a format the
-    /// decoder can fill: equal to `decoder.sourceFormat` whenever `converter`
-    /// exists, and to `outputFormat` (which then matches the source in rate and
-    /// channel count) when it does not. Asking `AVAudioFile` to read a 5.1 file
-    /// into a stereo buffer is a read error, not a fold (#515). Internal, not
-    /// private, so `BufferPumpFormatTests` can read the decision back.
-    let pumpFormat: AVAudioFormat
+    /// When the node reports a buffer done. `.dataPlayedBack` in the app: the
+    /// crossfade transition must fire when the audio is heard. Offline
+    /// rendering never reports `.dataPlayedBack` (the SDK documents it for
+    /// device rendering only), so the render tests pass `.dataRendered`.
+    private let completionCallbackType: AVAudioPlayerNodeCompletionCallbackType
 
-    /// Non-nil when `decoder.sourceFormat` differs from `outputFormat` in sample
-    /// rate or channel count. `AVFoundationDecoder` handles SRC internally via
-    /// AVAudioFile, but FFmpegDecoder does not — without this converter it would
-    /// fill hardware-rate buffers with source-rate samples, causing playback at
-    /// the wrong speed and pitch. The channel-count case is the stereo fold:
-    /// both decoders hand over the file's own channels above two (ADR-091,
-    /// #522), and this one converter folds every route the same way.
-    private let converter: FormatConverter?
+    /// The source's decode-buffer format. Internal, not private, so
+    /// `BufferPumpFormatTests` can read the converter decision back.
+    var pumpFormat: AVAudioFormat {
+        self.current.pumpFormat
+    }
 
-    private let log = AppLogger.make(.audio)
+    let log = AppLogger.make(.audio)
 
     // MARK: - State
 
@@ -78,53 +79,81 @@ actor BufferPump {
     /// that coexist briefly during a gapless transition.
     nonisolated let id: String
 
-    /// Running count of successfully scheduled buffers (for diagnostics).
-    private var scheduledCount = 0
+    /// Running count of successfully scheduled buffers (for diagnostics). Also
+    /// the sequence number of the last scheduled buffer.
+    private(set) var scheduledCount = 0
+
+    /// Output frames scheduled since the node was last flushed by
+    /// `reschedule`, so the frame the node's own clock restarted from. Read
+    /// by the offline render tests to render only what has been scheduled.
+    private(set) var framesScheduledSinceFlush: AVAudioFramePosition = 0
 
     /// Number of times the pump blocked waiting for a free slot.
     /// At steady state this is expected — it simply means the window is full and
     /// the pump is throttling itself to playback speed.  Reported at pump.stop/eof.
     private var throttleCount = 0
 
-    /// When non-nil, the pump stops after this many decoder-native frames have
-    /// been read.  Enforces the end of an `AudioEngine.setSegment` segment
-    /// without relying on the underlying decoder reaching true EOF (kept per
-    /// ADR-087 as a primitive; no caller since the virtual-track columns went).
-    private let maxFrames: AVAudioFrameCount?
+    /// Set when the feed loop reports the end of the stream; a pump that has
+    /// ended cannot take a crossfade any more.
+    private(set) var reachedEnd = false
+
+    // MARK: - Crossfade state (ADR-095; logic in BufferPump+Overlap)
+
+    /// The armed, mixing or handed-over crossfade, if any.
+    var overlap: PumpOverlap?
+
+    /// Whether the incoming track of the most recent overlap has been heard.
+    /// Reset when a new overlap is armed.
+    var overlapHeard = false
+
+    /// The next crossfade, armed while the last one still mixes its tail
+    /// after its transition was heard. It becomes `overlap` when that mix
+    /// ends. A short track can need its own crossfade before the one into it
+    /// is done.
+    var queuedOverlap: PumpOverlap?
+
+    /// What `stop` and `reschedule` report to the engine: whether the
+    /// incoming track of the crossfade the engine is waiting on was heard.
+    /// With a queued crossfade that is the queued one, which is not.
+    private var engineCrossfadeHeard: Bool {
+        self.queuedOverlap == nil && self.overlapHeard
+    }
+
+    /// Bumped whenever the node is flushed or the pump stops. A completion
+    /// from an older generation (a flushed buffer) never fires a transition.
+    private(set) var generation = 0
+
+    /// The highest buffer sequence number the node has reported done in this
+    /// generation. Equal to `scheduledCount` when nothing is queued.
+    private(set) var lastCompletedSequence = 0
 
     // MARK: - Init
 
+    /// `maxDuration`, when set, ends the pump after that much source audio
+    /// (a CUE segment; see `PumpSource.maxFrames`).
     init(
         decoder: any Decoder,
         playerNode: AVAudioPlayerNode,
         outputFormat: AVAudioFormat,
-        maxDuration: TimeInterval? = nil
+        maxDuration: TimeInterval? = nil,
+        completionCallbackType: AVAudioPlayerNodeCompletionCallbackType = .dataPlayedBack
     ) throws {
-        self.decoder = decoder
+        self.current = try PumpSource(decoder: decoder, outputFormat: outputFormat, maxDuration: maxDuration)
         self.playerNode = playerNode
-        self.outputFormat = outputFormat
+        self.completionCallbackType = completionCallbackType
         self.availableSlots = BufferPump.windowSize
         self.id = String(UUID().uuidString.prefix(4))
-        // The budget counts decoder-native frames: the feed loop compares it
-        // against framesRead BEFORE resampling. Computing it from the output
-        // rate overshot a CUE boundary by the rate ratio (a 44.1k file on a
-        // 48k device played ~8.8% past the segment end, audibly bleeding the
-        // next track's opening before the end signal fired).
-        self.maxFrames = maxDuration.map { AVAudioFrameCount($0 * decoder.sourceFormat.sampleRate) }
-        let source = decoder.sourceFormat
-        if source.sampleRate != outputFormat.sampleRate || source.channelCount != outputFormat.channelCount {
-            self.converter = try FormatConverter(sourceFormat: source, targetFormat: outputFormat)
-            self.pumpFormat = source
-        } else {
-            self.converter = nil
-            self.pumpFormat = outputFormat
-        }
     }
 
     /// Whether this pump converts (resamples or folds) before scheduling.
     /// Read-only diagnostic surface for `BufferPumpFormatTests`.
     var hasConverter: Bool {
-        self.converter != nil
+        self.current.hasConverter
+    }
+
+    /// Output frames in one scheduled buffer (0.2 s at the output rate).
+    var outputBufferFrames: Int {
+        Int(self.current.outputFormat.sampleRate * BufferPump.bufferDuration)
     }
 
     // MARK: - Lifecycle
@@ -156,12 +185,22 @@ actor BufferPump {
     }
 
     /// Stop the pump and wait for the background task to finish.
-    func stop() async {
+    ///
+    /// An armed or running crossfade ends with it: the pump closes the source
+    /// only it holds and keeps the one the engine uses as its decoder
+    /// (`releaseOverlapOnStop`). Returns whether the incoming track of the
+    /// most recent crossfade had been heard, so the engine can settle a
+    /// transition it has not handled yet.
+    @discardableResult
+    func stop() async -> Bool {
         self.log.debug("pump.stop", [
             "id": self.id,
             "scheduled": self.scheduledCount,
             "throttled": self.throttleCount,
         ])
+        // First, before any await: completions that arrive from here on
+        // belong to a stopped pump and must not fire a transition.
+        self.startNewGeneration()
         self.task?.cancel()
         // Resume the slot continuation BEFORE awaiting the task result.
         // If the pump loop is suspended in withCheckedContinuation waiting for a
@@ -173,6 +212,9 @@ actor BufferPump {
         self.slotContinuation = nil
         _ = await self.task?.result // drain
         self.task = nil
+        let heard = self.engineCrossfadeHeard
+        await self.releaseOverlapOnStop()
+        return heard
     }
 
     /// Seek in place WITHOUT tearing the pump down: stop the current feed, flush
@@ -183,7 +225,16 @@ actor BufferPump {
     /// the reseek, so no in-flight read can schedule a stale buffer. The caller
     /// mutes/plays the node around this; the node is left stopped with the first
     /// new-position buffers queued.
-    func reschedule(to time: TimeInterval) async throws {
+    ///
+    /// During a crossfade the seek goes to the track the listener hears: the
+    /// outgoing one (and the crossfade re-arms) until the transition is heard,
+    /// the incoming one after (`rewindOverlapForSeek`). Returns whether the
+    /// incoming track of the most recent crossfade had been heard.
+    @discardableResult
+    func reschedule(to time: TimeInterval) async throws -> Bool {
+        // First, before any await: the node is about to be flushed, so no
+        // completion from here on may fire a transition.
+        self.startNewGeneration()
         // Stop the feed loop fully (resume any slot wait so a parked loop can exit).
         self.task?.cancel()
         self.slotContinuation?.resume()
@@ -191,9 +242,14 @@ actor BufferPump {
         _ = await self.task?.result
         self.task = nil
 
-        // Flush the node's queued buffers and reset its sample time, then reseek.
+        // Flush the node's queued buffers and reset its sample time, then reseek
+        // (which also restarts the source's frame counts, segment budget included).
         self.playerNode.stop()
-        try await self.decoder.seek(to: time)
+        self.framesScheduledSinceFlush = 0
+        let heard = self.engineCrossfadeHeard
+        try await self.rewindOverlapForSeek()
+        try await self.current.seek(to: time)
+        self.reachedEnd = false
 
         // Restore the window and resume feeding from the new position.
         self.availableSlots = BufferPump.windowSize
@@ -201,14 +257,12 @@ actor BufferPump {
         self.task = Task { [weak self] in
             try await self?.run()
         }
+        return heard
     }
 
     // MARK: - Private pump loop
 
     private func run() async throws {
-        let frameCapacity = AVAudioFrameCount(pumpFormat.sampleRate * BufferPump.bufferDuration)
-        var framesPumped: AVAudioFrameCount = 0
-
         while !Task.isCancelled {
             if self.availableSlots <= 0 {
                 try await self.waitForSlot()
@@ -216,47 +270,77 @@ actor BufferPump {
             }
             try Task.checkCancellation()
 
-            guard let buffer = AVAudioPCMBuffer(pcmFormat: pumpFormat, frameCapacity: frameCapacity) else {
-                self.log.error("buffer.alloc.failed", ["id": self.id])
+            let keepFeeding = if self.overlap == nil {
+                try await self.feedStep()
+            } else {
+                try await self.overlapStep()
+            }
+            if !keepFeeding {
                 break
             }
-
-            let framesRead: AVAudioFrameCount
-            do {
-                framesRead = try await self.decoder.read(into: buffer)
-            } catch is CancellationError {
-                // Normal teardown (load / seek / stop cancels the feed task). Not a
-                // failure: stay quiet and let the cancellation propagate.
-                throw CancellationError()
-            } catch {
-                self.log.error("pump.read.failed", [
-                    "id": self.id, "afterScheduled": self.scheduledCount,
-                    "error": String(reflecting: error),
-                ])
-                // Hand the failure to the engine BEFORE the task unwinds, so it can
-                // reconnect or surface `.failed` rather than the loop dying unseen.
-                self.onError?(error)
-                throw error
-            }
-
-            if framesRead == 0 {
-                self.log.debug("pump.eof", ["id": self.id, "scheduled": self.scheduledCount])
-                self.signalEnded()
-                break
-            }
-
-            // Enforce segment boundary for CUE virtual tracks.
-            if let limit = self.maxFrames {
-                let remaining = limit - framesPumped
-                if framesRead >= remaining {
-                    try self.scheduleSegmentEnd(buffer: buffer, trimTo: remaining)
-                    break
-                }
-                framesPumped += framesRead
-            }
-
-            try self.scheduleBuffer(buffer)
         }
+    }
+
+    /// One iteration of the plain feed: schedule one buffer of `current`, or
+    /// report the end. Returns `false` when the loop should stop.
+    func feedStep() async throws -> Bool {
+        // Frames left over from a crossfade go out first, in order.
+        if let carried = self.current.pending.take(self.outputBufferFrames) {
+            self.claimSlotAndSchedule(carried)
+            return true
+        }
+
+        guard let buffer = self.current.makeReadBuffer(duration: BufferPump.bufferDuration) else {
+            self.log.error("buffer.alloc.failed", ["id": self.id])
+            return false
+        }
+
+        // Taken before the read, which advances the source's count.
+        let segmentRemaining = self.current.remainingSegmentFrames
+
+        let framesRead = try await self.read(self.current, into: buffer)
+
+        if framesRead == 0 {
+            self.log.debug("pump.eof", ["id": self.id, "scheduled": self.scheduledCount])
+            self.signalEnded()
+            return false
+        }
+
+        // Enforce segment boundary for CUE virtual tracks.
+        if let remaining = segmentRemaining, framesRead >= remaining {
+            try self.scheduleSegmentEnd(buffer: buffer, trimTo: remaining)
+            return false
+        }
+
+        try self.scheduleBuffer(buffer)
+        return true
+    }
+
+    /// Fill `buffer` from `source`, reporting a failure to the engine.
+    /// Returns `0` at end-of-stream.
+    func read(_ source: PumpSource, into buffer: AVAudioPCMBuffer) async throws -> AVAudioFrameCount {
+        do {
+            return try await source.read(into: buffer)
+        } catch is CancellationError {
+            // Normal teardown (load / seek / stop cancels the feed task). Not a
+            // failure: stay quiet and let the cancellation propagate.
+            throw CancellationError()
+        } catch {
+            self.log.error("pump.read.failed", [
+                "id": self.id, "afterScheduled": self.scheduledCount,
+                "error": String(reflecting: error),
+            ])
+            // Hand the failure to the engine BEFORE the task unwinds, so it can
+            // reconnect or surface `.failed` rather than the loop dying unseen.
+            self.onError?(error)
+            throw error
+        }
+    }
+
+    /// Report a failure that ends the feed loop to the engine, the same way
+    /// a read failure is reported.
+    func reportFailure(_ error: Error) {
+        self.onError?(error)
     }
 
     /// Schedule the final partial buffer at the CUE segment boundary, then signal EOF.
@@ -275,6 +359,7 @@ actor BufferPump {
     /// `Task` hop bought nothing and only widened the window in which that second
     /// hop could be lost if the engine deallocated mid-handoff. See #262.
     private func signalEnded() {
+        self.reachedEnd = true
         self.onEnded?()
     }
 
@@ -284,15 +369,18 @@ actor BufferPump {
         self.claimSlotAndSchedule(resampled)
     }
 
-    private func claimSlotAndSchedule(_ buffer: AVAudioPCMBuffer) {
+    func claimSlotAndSchedule(_ buffer: AVAudioPCMBuffer) {
         self.availableSlots -= 1
         self.scheduledCount += 1
+        self.framesScheduledSinceFlush += AVAudioFramePosition(buffer.frameLength)
+        let sequence = self.scheduledCount
+        let generation = self.generation
         // [weak self]: the player node retains this completion handler until the
         // buffer is played back (or the node is reset). A strong capture would
         // keep a logically-stopped pump alive for the lifetime of the node. If
         // the pump is gone the slot bookkeeping is moot, so a nil self no-ops.
-        self.playerNode.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
-            Task { await self?.releaseSlot() }
+        self.playerNode.scheduleBuffer(buffer, completionCallbackType: self.completionCallbackType) { [weak self] _ in
+            Task { await self?.bufferCompleted(sequence: sequence, generation: generation) }
         }
     }
 
@@ -307,25 +395,41 @@ actor BufferPump {
         try Task.checkCancellation()
     }
 
-    /// Returns `source` unchanged when no conversion is needed; otherwise
-    /// resamples and/or folds to stereo via `FormatConverter`. Returns `nil`
-    /// for empty input.
-    private func resampledBuffer(_ source: AVAudioPCMBuffer) throws -> AVAudioPCMBuffer? {
-        guard let conv = self.converter else { return source }
+    /// `buffer` in the output format via `source`'s converter (unchanged when
+    /// no conversion is needed). Returns `nil` for empty input. Logs a
+    /// conversion failure here, where the pump id is known, then rethrows.
+    func resampledBuffer(_ buffer: AVAudioPCMBuffer, from source: PumpSource? = nil) throws -> AVAudioPCMBuffer? {
         do {
-            return try conv.convert(source)
+            return try (source ?? self.current).convert(buffer)
         } catch {
             self.log.error("pump.convert.failed", ["id": self.id, "error": String(reflecting: error)])
             throw error
         }
     }
 
-    /// Called by the completion callback when a buffer finishes playing.
+    /// Called by the completion callback when a buffer finishes playing: frees
+    /// its slot, and fires a crossfade transition that was waiting on it.
+    private func bufferCompleted(sequence: Int, generation: Int) async {
+        self.releaseSlot()
+        guard generation == self.generation else { return }
+        self.lastCompletedSequence = max(self.lastCompletedSequence, sequence)
+        if let after = self.overlap?.transitionAfter, sequence >= after {
+            await self.fireTransition()
+        }
+    }
+
     private func releaseSlot() {
         self.availableSlots += 1
         if let cont = slotContinuation {
             self.slotContinuation = nil
             cont.resume()
         }
+    }
+
+    /// Start a new completion generation: nothing scheduled so far counts as
+    /// queued any more.
+    private func startNewGeneration() {
+        self.generation += 1
+        self.lastCompletedSequence = self.scheduledCount
     }
 }

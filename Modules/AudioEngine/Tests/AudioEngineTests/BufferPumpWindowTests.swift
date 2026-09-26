@@ -3,38 +3,6 @@ import Foundation
 import Testing
 @testable import AudioEngine
 
-// MARK: - ContinuousDecoder
-
-/// A decoder that always fills the buffer and never reports end-of-stream, so
-/// the pump's in-flight window is bounded purely by `windowSize` rather than by
-/// the source running out of data.
-private final class ContinuousDecoder: Decoder, @unchecked Sendable {
-    let sourceFormat: AVAudioFormat
-    let duration: TimeInterval = 3600
-    var position: TimeInterval {
-        get async { 0 }
-    }
-
-    init(format: AVAudioFormat) {
-        self.sourceFormat = format
-    }
-
-    init(url _: URL) throws {
-        guard let fmt = StereoLayout.format(sampleRate: 44100) else {
-            throw AudioEngineError.outputDeviceUnavailable
-        }
-        self.sourceFormat = fmt
-    }
-
-    func read(into buffer: AVAudioPCMBuffer) async throws -> AVAudioFrameCount {
-        buffer.frameLength = buffer.frameCapacity // zero-filled silence is fine
-        return buffer.frameCapacity
-    }
-
-    func seek(to _: TimeInterval) async throws {}
-    func close() async {}
-}
-
 // MARK: - BufferPumpWindowTests
 
 @Suite("BufferPump in-flight window")
@@ -50,7 +18,9 @@ struct BufferPumpWindowTests {
         let graph = EngineGraph()
         let format = try #require(StereoLayout.format(sampleRate: 44100))
         let pump = try BufferPump(
-            decoder: ContinuousDecoder(format: format),
+            // Never ends, so the in-flight window is bounded purely by
+            // `windowSize` rather than by the source running out of data.
+            decoder: ScriptedDecoder(format: format, frames: nil),
             playerNode: graph.playerNode,
             outputFormat: format
         )
