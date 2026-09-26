@@ -29,7 +29,7 @@ Most Mac music players are either abandoned, Electron-wrapped, or stripped-down 
 - **True gapless playback** with nanosecond `AVAudioTime` anchoring. Classical transitions, live albums, and DJ mixes play as the artist intended, with zero silence and zero clicks.
 - **10-band graphic EQ**, bass boost, stereo expander, binaural crossfeed, and a **peak limiter**, a full DSP chain between your files and your ears.
 - **ReplayGain** applied at playback time; analyses missing tags in the background using EBU R128 loudness. The analyser decodes through the same route as playback, so the FFmpeg-only formats (Ogg Vorbis, Opus, WavPack, Monkey's Audio, DSD, Matroska, TrueHD) get a value too, and a surround mix is measured from the stereo fold that actually plays.
-- **Configurable crossfade** (0–12 s), **playback speed** (0.5×–2.0×) with pitch correction, and a **sleep timer** that fades gracefully rather than cutting mid-note.
+- **Crossfade** of up to 10 s that overlaps songs, the next one fading in while the current one fades out (albums can stay gapless), **playback speed** (0.5×–2.0×) with pitch correction, and a **sleep timer** that fades gracefully rather than cutting mid-note.
 
 ### 📻 It plays everything
 

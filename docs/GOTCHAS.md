@@ -172,6 +172,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Modules/Playback/Sources/Playback/QueuePlayer.swift` (the emit before `engine.load`); the consumer is `Modules/UI/Sources/UI/ViewModels/NowPlayingViewModel.swift`
 
+### Crossfade mixes inside the pump, never on the node
+
+**Problem:** a crossfade that fades the current track to silence and then fades the next one in from silence, so the two are never heard together (#567). Or a track change that the play bar shows about 0.8 s before the new track is audible.
+
+**Rule:** during a crossfade the buffer pump reads both tracks, mixes them with equal-power gains, and schedules only the mixed buffers on the one player node. Never schedule an incoming buffer on the node directly, and never ramp the node volume to fake an overlap. Fire the transition from the completion of the last unmixed buffer, not when the first mixed one is scheduled. `stop` and `reschedule` return whether the transition of the crossfade the engine is waiting on was heard, and the engine settles its pending crossfade from that value, so any new pump state that changes which crossfade is pending must keep that value right (a crossfade queued behind a running mix reports "not heard").
+
+**Why:** the node plays buffers in FIFO order, so an incoming buffer scheduled directly plays after the outgoing tail, not over it. A buffer is heard up to four buffers (about 0.8 s) after it is scheduled. The completion type is `.dataPlayedBack` in the app, but offline manual rendering never reports that type, so the render tests pass `.dataRendered` through `BufferPump.init`. The design, its phases and every seek, stop and device-change rule are in ADR-095.
+
+**Canonical file:** `Modules/AudioEngine/Sources/AudioEngine/Graph/BufferPump.swift` and `Graph/BufferPump+Overlap.swift`; the render proof is `Modules/AudioEngine/Tests/AudioEngineTests/CrossfadeRenderTests.swift`
+
 ## Scanning, TagLib and feed parsing
 
 ### TagLib reads must use a read-only `FileStream`

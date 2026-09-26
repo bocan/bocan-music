@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Crossfade now really crossfades. The next song fades in while the current one fades out, so for a few seconds you hear both, instead of the old fade down to silence and back up again. It also works the way you would expect when you switch it on: before, with the default settings it never happened at all, and it switched itself off every time Bòcan restarted until you moved the slider again. Songs from the same album still play without a gap while "Keep gapless within albums" is on, and crossfade applies to songs stored on your Mac, so streams and podcasts change over as before. Thanks for reporting this one @aulakhharsh1.
+
 Album covers found with Batch Cover Art, and covers you chose yourself in the tag editor, are no longer deleted when the cover art folder grows past its size limit. Those covers exist only in Bòcan's own folder, so a rescan could never bring them back, and the albums were left without a cover.
 
 ## [2.18.0](https://github.com/bocan/bocan-music/compare/v2.17.1...v2.18.0) (2026-09-23)

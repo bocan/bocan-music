@@ -3,40 +3,6 @@ import Foundation
 import Testing
 @testable import AudioEngine
 
-// MARK: - CountingDecoder
-
-/// A never-ending decoder that fills every buffer and counts its reads, so a
-/// test can measure exactly how much source audio the pump consumed before a
-/// CUE segment boundary stopped it.
-private final class CountingDecoder: Decoder, @unchecked Sendable {
-    let sourceFormat: AVAudioFormat
-    let duration: TimeInterval = 3600
-    private(set) var readCalls = 0
-    var position: TimeInterval {
-        get async { 0 }
-    }
-
-    init(format: AVAudioFormat) {
-        self.sourceFormat = format
-    }
-
-    init(url _: URL) throws {
-        guard let fmt = StereoLayout.format(sampleRate: 44100) else {
-            throw AudioEngineError.outputDeviceUnavailable
-        }
-        self.sourceFormat = fmt
-    }
-
-    func read(into buffer: AVAudioPCMBuffer) async throws -> AVAudioFrameCount {
-        self.readCalls += 1
-        buffer.frameLength = buffer.frameCapacity // zero-filled silence is fine
-        return buffer.frameCapacity
-    }
-
-    func seek(to _: TimeInterval) async throws {}
-    func close() async {}
-}
-
 // MARK: - Flag
 
 /// A lock-guarded bool the pump's completion closure can set from any thread.
@@ -73,7 +39,9 @@ struct BufferPumpSegmentTests {
         let graph = EngineGraph()
         let source = try #require(StereoLayout.format(sampleRate: 44100))
         let output = try #require(StereoLayout.format(sampleRate: 48000))
-        let decoder = CountingDecoder(format: source)
+        // Never ends and counts its reads, so the test measures exactly how
+        // much source audio the pump consumed before the segment boundary.
+        let decoder = ScriptedDecoder(format: source, frames: nil)
         let pump = try BufferPump(
             decoder: decoder,
             playerNode: graph.playerNode,

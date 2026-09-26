@@ -3,36 +3,6 @@ import Foundation
 import Testing
 @testable import AudioEngine
 
-// MARK: - ImmediateEOFDecoder
-
-/// A decoder that reports end-of-stream on its first read, so the pump reaches
-/// its EOF branch immediately without any audio hardware.
-private final class ImmediateEOFDecoder: Decoder, @unchecked Sendable {
-    let sourceFormat: AVAudioFormat
-    let duration: TimeInterval = 0
-    var position: TimeInterval {
-        get async { 0 }
-    }
-
-    init(format: AVAudioFormat) {
-        self.sourceFormat = format
-    }
-
-    init(url _: URL) throws {
-        guard let fmt = StereoLayout.format(sampleRate: 44100) else {
-            throw AudioEngineError.outputDeviceUnavailable
-        }
-        self.sourceFormat = fmt
-    }
-
-    func read(into _: AVAudioPCMBuffer) async throws -> AVAudioFrameCount {
-        0
-    }
-
-    func seek(to _: TimeInterval) async throws {}
-    func close() async {}
-}
-
 // MARK: - BufferPumpEndedTests
 
 @Suite("BufferPump end-of-stream")
@@ -56,7 +26,8 @@ struct BufferPumpEndedTests {
         let graph = EngineGraph()
         let format = try #require(StereoLayout.format(sampleRate: 44100))
         let pump = try BufferPump(
-            decoder: ImmediateEOFDecoder(format: format),
+            // Ends on its first read, so the pump reaches its EOF branch at once.
+            decoder: ScriptedDecoder(format: format, frames: 0),
             playerNode: graph.playerNode,
             outputFormat: format
         )
