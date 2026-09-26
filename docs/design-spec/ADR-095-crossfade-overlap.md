@@ -314,7 +314,9 @@ Commit: `refactor(audio): read the buffer pump through a PumpSource`.
       engine is still on the track the boundary leads out of: a `load` or
       a track end can run during the device change's awaits. Paused, a
       refused or failed re-arm, or a changed track closes it, and the
-      boundary becomes a normal load.
+      boundary becomes a normal load. The playing decoder is rewound to
+      the heard position before the rebuild (`rewindForRebuild`), since
+      its read position is up to four buffers ahead.
 12. **Deletions.** `AudioEngine+Crossfade.swift` (both ramps and
     `cancelCrossfade()`), the `crossfadeTask` property, and the two
     `cancelCrossfade()` calls in `load` and `performStop`. (Moved to slice 3

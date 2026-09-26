@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-When one song flows into the next without a gap, the play bar, Now Playing and your listening history now change over at the moment you hear the new song. Before, they moved on almost a second early, while the end of the previous song was still playing. Switching speakers or headphones in the last seconds of a song also no longer breaks the gapless join or the crossfade into the next one.
+When one song flows into the next without a gap, the play bar, Now Playing and your listening history now change over at the moment you hear the new song. Before, they moved on almost a second early, while the end of the previous song was still playing. Switching speakers or headphones no longer skips almost a second of the song, and in the last seconds of a song it no longer breaks the gapless join or the crossfade into the next one.
 
 ReplayGain now does what the setting says. Track Gain, Album Gain and Auto, and the pre-amp slider, change how loud each song plays, so a quiet folk record and a loud rock one sit at a similar level. Before, the setting was saved but nothing used it, and every song played at its own volume. During a crossfade each song keeps its own level. A song Bòcan has no ReplayGain values for plays as it is, and so do streams, podcasts and radio.
 
