@@ -4,10 +4,10 @@ import Observability
 
 // MARK: - AudioEngine + Gapless public API
 
-/// The gapless preload entry points. Split from `AudioEngine.swift` to keep
-/// that file inside the lint length limit. The state these touch stays in
-/// the actor's "Gapless state" section, and the transition itself lives in
-/// `AudioEngine+Gapless.swift` next to the pump handling.
+/// The gapless and crossfade preload entry points. Split from
+/// `AudioEngine.swift` to keep that file inside the lint length limit. The
+/// state these touch stays in the actor's "Gapless state" section, and the
+/// transitions live in `AudioEngine+Gapless.swift` next to the pump handling.
 public extension AudioEngine {
     /// Pre-schedule the next track's audio buffers onto the current player node.
     ///
@@ -22,6 +22,78 @@ public extension AudioEngine {
     /// - Throws: Any decoder error (file not found, unsupported format, etc.).
     func enableGaplessNext(url: URL, onTransition: @Sendable @escaping () -> Void) async throws {
         // Cancel any previous pending-next setup.
+        await self.cancelGaplessNext()
+        let dec = try DecoderFactory.make(for: url)
+        try self.installGaplessNext(decoder: dec, url: url, onTransition: onTransition)
+    }
+
+    /// Arm a crossfade into the next track: during the last seconds of the
+    /// current track, the next one fades in while the current one fades out,
+    /// both heard at once (ADR-095).
+    ///
+    /// The overlap is `min(overlapSeconds, current / 2, next / 2)`. When that
+    /// is shorter than one second, or the current track is a CUE segment, or
+    /// nothing is playing, the boundary falls back to the plain gapless
+    /// preload, with the same `onTransition`.
+    ///
+    /// `onTransition` runs when the listener starts to hear the next track:
+    /// when its first mixed frame plays, not when it is scheduled.
+    ///
+    /// - Returns: `true` when a crossfade is armed, `false` when the boundary
+    ///   fell back to gapless.
+    /// - Throws: Any decoder error (file not found, unsupported format, etc.).
+    @discardableResult
+    func enableCrossfadeNext(
+        url: URL,
+        overlapSeconds: TimeInterval,
+        onTransition: @Sendable @escaping () -> Void
+    ) async throws -> Bool {
+        await self.cancelGaplessNext()
+        let dec = try DecoderFactory.make(for: url)
+
+        guard let pump = self.pump, self.segmentEndTime == nil, self.segmentStart == 0,
+              let length = CrossfadeMix.overlapSeconds(
+                  setting: overlapSeconds, outgoing: self._duration, incoming: dec.duration
+              ) else {
+            self.log.debug("crossfade.disarmed", [
+                "reason": self.pump == nil ? "noPump" : "tooShortOrSegment",
+                "next": url.lastPathComponent,
+            ])
+            try self.installGaplessNext(decoder: dec, url: url, onTransition: onTransition)
+            return false
+        }
+
+        let token = UUID()
+        let pumpID = pump.id
+        // [weak self]: the pump stores this closure for the whole overlap, so
+        // a strong capture would form the engine ⇄ pump cycle play() avoids.
+        let armed = try await pump.armOverlap(decoder: dec, lengthSeconds: length) { [weak self] in
+            Task { await self?.handleCrossfadeTransition(token: token, firedBy: pumpID) }
+        }
+        guard armed else {
+            self.log.debug("crossfade.disarmed", ["reason": "pumpRefused", "next": url.lastPathComponent])
+            try self.installGaplessNext(decoder: dec, url: url, onTransition: onTransition)
+            return false
+        }
+        // A load or stop ran during the await and stopped that pump, which
+        // closed the decoder: there is no boundary left to prepare.
+        guard pumpID == self.pump?.id else {
+            self.log.debug("crossfade.disarmed", ["reason": "pumpReplaced", "next": url.lastPathComponent])
+            return false
+        }
+        self.pendingCrossfade = PendingCrossfade(
+            token: token, decoder: dec, duration: dec.duration, transition: onTransition
+        )
+        self.log.debug("crossfade.armed", [
+            "lengthMs": Int((length * 1000).rounded()), "next": url.lastPathComponent,
+        ])
+        return true
+    }
+
+    /// Cancel any active gapless preload or armed crossfade without stopping
+    /// the player. A crossfade that has started mixing is past recall: it
+    /// completes, and its transition still fires.
+    func cancelGaplessNext() async {
         await self.pendingNextPump?.stop()
         if let prev = pendingNextDecoder {
             await prev.close()
@@ -29,10 +101,17 @@ public extension AudioEngine {
         self.pendingNextPump = nil
         self.pendingNextDecoder = nil
         self.pendingNextTransition = nil
+        await self.disarmCrossfade()
+        self.log.debug("engine.gapless.cancelled")
+    }
+}
 
-        let dec = try DecoderFactory.make(for: url)
-        let nextDuration = dec.duration
+// MARK: - Internal helpers
 
+extension AudioEngine {
+    /// Build the pending pump for a gapless handoff to `decoder`'s track. Its
+    /// feed starts in `performGaplessTransition`, not here.
+    func installGaplessNext(decoder dec: any Decoder, url: URL, onTransition: @Sendable @escaping () -> Void) throws {
         let sampleRate = self.graph.outputSampleRate
         guard let outputFmt = StereoLayout.format(sampleRate: sampleRate) else {
             throw AudioEngineError.outputDeviceUnavailable
@@ -46,7 +125,7 @@ public extension AudioEngine {
         )
 
         self.pendingNextPump = nextPump
-        self.pendingNextDuration = nextDuration
+        self.pendingNextDuration = dec.duration
         self.pendingNextDecoder = dec
         self.pendingNextTransition = onTransition
 
@@ -56,15 +135,17 @@ public extension AudioEngine {
         self.log.debug("engine.gapless.prefetch", ["url": url.lastPathComponent])
     }
 
-    /// Cancel any active gapless preload without stopping the player.
-    func cancelGaplessNext() async {
-        await self.pendingNextPump?.stop()
-        if let prev = pendingNextDecoder {
-            await prev.close()
+    /// Ask the pump to drop an armed crossfade. Keeps it when the pump says
+    /// it is too late, so the coming transition is still handled.
+    func disarmCrossfade() async {
+        guard let pending = self.pendingCrossfade else { return }
+        let result = await self.pump?.disarmOverlap() ?? .nothingArmed
+        if result == .tooLate {
+            self.log.debug("crossfade.disarm.tooLate")
+            return
         }
-        self.pendingNextPump = nil
-        self.pendingNextDecoder = nil
-        self.pendingNextTransition = nil
-        self.log.debug("engine.gapless.cancelled")
+        // The await above let other work run: only drop the same arm.
+        guard self.pendingCrossfade?.token == pending.token else { return }
+        await self.dropPendingCrossfade(reason: "cancelled")
     }
 }

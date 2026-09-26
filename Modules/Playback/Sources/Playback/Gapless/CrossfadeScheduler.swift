@@ -1,29 +1,23 @@
 import AudioEngine
-@preconcurrency import AVFoundation
 import Foundation
 import Observability
 
 // MARK: - CrossfadeScheduler
 
-/// Extends the gapless scheduler with a configurable volume-ramp crossfade.
+/// Decides which track boundaries crossfade, and for how long (ADR-013,
+/// ADR-095).
 ///
-/// **Crossfade model:**
-/// When `durationSeconds > 0`, at the pre-decode handoff point the scheduler:
-/// 1. Schedules a linear fade-out on the outgoing `AVAudioPlayerNode` over
-///    `durationSeconds × 0.5` seconds.
-/// 2. Schedules the incoming track with a matching fade-in ramp of equal length.
-/// Both ramps use `AVAudioTime`-anchored scheduling on a background `Task`.
+/// The crossfade itself is mixed inside the engine's buffer pump: the next
+/// track fades in while the current one fades out, on the one player node.
+/// This actor holds the user's setting and answers, per boundary, whether it
+/// crossfades; `QueuePlayer` arms the overlap through
+/// `AudioEngine.enableCrossfadeNext`.
 ///
-/// **Note on volume jitter:** `AVAudioPlayerNode.volume` changes are thread-safe but
-/// not sample-accurate (~10 ms scheduling jitter on the render thread). This is
-/// perceptually transparent for crossfade transitions. No compensation is applied.
+/// **When `durationSeconds = 0`:** no boundary crossfades, and every boundary
+/// takes ADR-006's plain gapless path.
 ///
-/// **When `durationSeconds = 0`:** the code path is identical to ADR-006's hard
-/// handoff — no ramps, no performance difference.
-///
-/// **`crossfadeAlbumGapless = true`:** crossing album boundaries uses crossfade;
-/// tracks within the same album use the gapless path (no overlap). The boundary
-/// type is decided at schedule time by `crossfadeAllowed(currentAlbumID:nextAlbumID:)`.
+/// **`albumGapless = true`:** tracks from the same album stay gapless; only a
+/// boundary between albums crossfades.
 public actor CrossfadeScheduler {
     // MARK: - Configuration
 
@@ -41,9 +35,8 @@ public actor CrossfadeScheduler {
 
     // MARK: - State
 
-    private var config = Config()
-    private var fadeOutTask: Task<Void, Never>?
-    private var fadeInTask: Task<Void, Never>?
+    /// The configuration in effect.
+    public private(set) var config = Config()
     private let log = AppLogger.make(.playback)
 
     // MARK: - Init
@@ -61,8 +54,8 @@ public actor CrossfadeScheduler {
         ])
     }
 
-    /// Returns `true` when a crossfade should be applied at the boundary between
-    /// two consecutive tracks.
+    /// Returns `true` when the setting and the album rule allow a crossfade
+    /// between two consecutive tracks.
     ///
     /// - Parameters:
     ///   - currentAlbumID: Album ID of the outgoing track (`nil` = unknown).
@@ -71,108 +64,58 @@ public actor CrossfadeScheduler {
         currentAlbumID: Int64?,
         nextAlbumID: Int64?
     ) -> Bool {
-        guard self.config.durationSeconds > 0 else { return false }
-        if self.config.albumGapless,
+        Self.crossfadeAllowed(self.config, currentAlbumID: currentAlbumID, nextAlbumID: nextAlbumID)
+    }
+
+    /// The crossfade setting to arm at the boundary from `current` to `next`,
+    /// or `nil` when the boundary follows the plain gapless rules instead.
+    public func crossfadeSeconds(from current: QueueItem?, to next: QueueItem) -> TimeInterval? {
+        Self.crossfadeSeconds(self.config, from: current, to: next)
+    }
+
+    /// The full crossfade setting in seconds; 0 when crossfade is off. The
+    /// engine shortens it at a boundary where a track is too short for it.
+    public var overlapSeconds: TimeInterval {
+        self.config.durationSeconds
+    }
+
+    public var isEnabled: Bool {
+        self.config.durationSeconds > 0
+    }
+
+    // MARK: - Decisions
+
+    static func crossfadeAllowed(_ config: Config, currentAlbumID: Int64?, nextAlbumID: Int64?) -> Bool {
+        guard config.durationSeconds > 0 else { return false }
+        if config.albumGapless,
            let cur = currentAlbumID, let nxt = nextAlbumID, cur == nxt {
-            // Same album — use sample-accurate gapless instead.
+            // Same album: use sample-accurate gapless instead.
             return false
         }
         return true
     }
 
-    /// Apply volume fade-out to `node` over half the configured crossfade duration.
+    /// ADR-095, "Which boundaries crossfade": both items are local files, the
+    /// setting and the album rule allow it, and the two queue durations leave
+    /// an overlap of at least `CrossfadeMix.minimumOverlapSeconds`.
     ///
-    /// This is fire-and-forget: the task runs in the background and cancels itself
-    /// if a new crossfade begins before the old one finishes.
-    ///
-    /// - Parameters:
-    ///   - node:           The outgoing `AVAudioPlayerNode`.
-    ///   - halfDuration:   Duration of the fade-out ramp in seconds.
-    public func scheduleOutgoingFade(on node: AVAudioPlayerNode, halfDuration: TimeInterval) {
-        self.fadeOutTask?.cancel()
-        let steps = max(1, Int(halfDuration * 30)) // ~30 Hz volume update rate
-        let interval = halfDuration / Double(steps)
-        let log = self.log
-
-        self.fadeOutTask = Task { [steps, interval] in
-            log.debug("crossfade.fadeOut.start", ["steps": steps, "interval": interval])
-            for step in 0 ..< steps {
-                guard !Task.isCancelled else { break }
-                let t = Double(step) / Double(steps)
-                let volume = Float(1.0 - t) // linear ramp from 1 → 0
-                await MainActor.run { node.volume = volume }
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-            }
-            if !Task.isCancelled {
-                await MainActor.run { node.volume = 0 }
-            }
-            log.debug("crossfade.fadeOut.end")
+    /// Returns the full setting, not the overlap: the engine works the overlap
+    /// out again from the decoders' own durations. The length check is here
+    /// too so that a boundary too short to mix keeps the gapless rules (the
+    /// format gate and the cross-album toggle), which the crossfade path
+    /// skips.
+    static func crossfadeSeconds(_ config: Config, from current: QueueItem?, to next: QueueItem) -> TimeInterval? {
+        guard let current,
+              !current.playableSource.isRemote,
+              !next.playableSource.isRemote,
+              crossfadeAllowed(config, currentAlbumID: current.albumID, nextAlbumID: next.albumID),
+              CrossfadeMix.overlapSeconds(
+                  setting: config.durationSeconds,
+                  outgoing: current.duration,
+                  incoming: next.duration
+              ) != nil else {
+            return nil
         }
-    }
-
-    /// Apply a volume fade-in ramp to `node` over `halfDuration` seconds.
-    ///
-    /// The node's initial volume is set to 0 before the ramp so the incoming track
-    /// starts silent and fades in.
-    ///
-    /// - Parameters:
-    ///   - node:         The incoming `AVAudioPlayerNode`.
-    ///   - halfDuration: Duration of the fade-in ramp in seconds.
-    public func scheduledIncomingFade(on node: AVAudioPlayerNode, halfDuration: TimeInterval) {
-        self.fadeInTask?.cancel()
-        let steps = max(1, Int(halfDuration * 30))
-        let interval = halfDuration / Double(steps)
-        let log = self.log
-
-        self.fadeInTask = Task { [steps, interval] in
-            log.debug("crossfade.fadeIn.start", ["steps": steps])
-            // Start silent.
-            await MainActor.run { node.volume = 0 }
-            for step in 0 ..< steps {
-                guard !Task.isCancelled else { break }
-                let t = Double(step + 1) / Double(steps)
-                let volume = Float(t)
-                await MainActor.run { node.volume = volume }
-                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-            }
-            // Only settle to full volume on natural completion. If cancelled (a
-            // skip/stop mid-fade), leave the node as `cancelFades` set it instead
-            // of slamming the now-stopped incoming node back to full. Mirrors the
-            // guarded final write in `scheduleOutgoingFade`.
-            if !Task.isCancelled {
-                await MainActor.run { node.volume = 1.0 }
-            }
-            log.debug("crossfade.fadeIn.end")
-        }
-    }
-
-    /// Cancel any in-flight fade tasks and restore `node` to full volume.
-    public func cancelFades(on node: AVAudioPlayerNode) async {
-        // Capture and detach the handles up front so a concurrent
-        // scheduleOutgoing/IncomingFade can install fresh tasks while we drain.
-        let outgoing = self.fadeOutTask
-        let incoming = self.fadeInTask
-        self.fadeOutTask = nil
-        self.fadeInTask = nil
-
-        outgoing?.cancel()
-        incoming?.cancel()
-        // Drain the ramp loops so a stale in-flight `node.volume` write (a loop
-        // can be mid-`MainActor.run` when cancelled) cannot land *after* we
-        // restore full volume below. Both tasks exit promptly once cancelled.
-        await outgoing?.value
-        await incoming?.value
-
-        node.volume = 1.0
-        self.log.debug("crossfade.fades.cancelled")
-    }
-
-    /// The half-duration for this config (fade-out and fade-in are both this length).
-    public var halfDurationSeconds: TimeInterval {
-        self.config.durationSeconds * 0.5
-    }
-
-    public var isEnabled: Bool {
-        self.config.durationSeconds > 0
+        return config.durationSeconds
     }
 }

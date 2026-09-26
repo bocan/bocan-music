@@ -103,7 +103,9 @@ public struct DSPView: View {
                     )
                     .accessibilityLabel(L10n.string("Crossfade duration"))
                     .accessibilityIdentifier(A11y.SettingsIDs.crossfade)
-                    .help(L10n.string("Duration of the crossfade between tracks. 0 = sample-accurate gapless playback."))
+                    .help(L10n.string(
+                        "How long the next song fades in over the current one. Only songs stored on this Mac crossfade. 0 turns it off."
+                    ))
                     Text(self.crossfadeLabel)
                         .font(.caption.monospacedDigit())
                         .frame(width: 72, alignment: .trailing)
@@ -147,11 +149,11 @@ public struct DSPView: View {
 
     private var transitionHelp: String {
         if self.vm.state.crossfadeSeconds == 0 {
-            return L10n.string("0 s = sample-accurate gapless (Phase 5 path).")
+            return L10n.string("Crossfade is off. Songs play back to back with no gap.")
         }
         if self.vm.state.crossfadeAlbumGapless {
-            return L10n.string("Within-album boundaries use gapless; cross-album boundaries use crossfade.")
+            return L10n.string("Songs overlap when the album changes. Songs from the same album play back to back with no gap.")
         }
-        return L10n.string("Crossfade applies at every track boundary.")
+        return L10n.string("The next song fades in over the end of every song.")
     }
 }

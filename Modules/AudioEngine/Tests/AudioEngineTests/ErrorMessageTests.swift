@@ -14,6 +14,7 @@ struct ErrorMessageTests {
             .unsupportedFormat(magic: Data([0x00, 0x01]), url: url),
             .outputDeviceUnavailable,
             .seekOutOfRange(requested: 90, duration: 60),
+            .crossfadeBufferMismatch(reason: "output holds 10 frames, incoming has 20"),
             .cancelled,
         ]
         for error in cases {
