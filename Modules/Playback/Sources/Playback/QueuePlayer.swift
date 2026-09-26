@@ -257,9 +257,6 @@ public actor QueuePlayer: Transport {
             performPrefetch: { [weak self] item, transition in
                 try await self?.performGaplessPrefetch(item: item, transition: transition)
             },
-            onGaplessTransition: { [weak self] item in
-                await self?.handleGaplessTransition(to: item)
-            },
             onPrefetchFailed: { [weak self] _ in
                 // Prefetch failure is non-fatal; normal end-of-track will trigger reload.
                 Task { await self?.gaplessScheduler.reset() }
@@ -1372,8 +1369,10 @@ public actor QueuePlayer: Transport {
         return await QueueReplayGain.facts(for: item, track: row, playOrder: self.queue.items)
     }
 
-    /// Captured reference to the transition handler so `performGaplessPrefetch`
-    /// can invoke it from a `@Sendable` closure without re-capturing `self`.
+    /// Captured reference to the transition handler so `armNext` can invoke
+    /// it from a `@Sendable` closure without re-capturing `self`. This
+    /// closure, handed to the engine with the next track, is the only path a
+    /// transition takes to `handleGaplessTransition` (#575).
     private var onGaplessTransitionCaptured: (@Sendable (QueueItem) async -> Void)? {
         { [weak self] item in await self?.handleGaplessTransition(to: item) }
     }

@@ -109,13 +109,11 @@ public actor GaplessScheduler {
     /// `engine.enableGaplessNext` or `engine.enableCrossfadeNext`, and
     /// releasing scope afterwards.
     /// Throws propagate back into the scheduler so `onPrefetchFailed` fires.
+    ///
+    /// The scheduler never sees the transition itself: it reaches QueuePlayer
+    /// through the closure `armNext` hands the engine with the next track
+    /// (#575).
     var performPrefetch: (@Sendable (QueueItem, BoundaryTransition) async throws -> Void)?
-
-    /// Called when the gapless transition fires: when the next track is first
-    /// heard, or, when it got a pump of its own, when the old track's decoder
-    /// hits EOF, about 0.8 s earlier (#574).
-    /// Receives the queue item that has just become active.
-    var onGaplessTransition: (@Sendable (QueueItem) async -> Void)?
 
     /// Called when `performPrefetch` throws (for logging/metrics only; caller falls back).
     var onPrefetchFailed: (@Sendable (Error) -> Void)?
@@ -135,12 +133,10 @@ public actor GaplessScheduler {
     public func configure(
         nextItemProvider: (@Sendable () async -> (item: QueueItem, transition: BoundaryTransition)?)?,
         performPrefetch: (@Sendable (QueueItem, BoundaryTransition) async throws -> Void)?,
-        onGaplessTransition: (@Sendable (QueueItem) async -> Void)?,
         onPrefetchFailed: (@Sendable (Error) -> Void)?
     ) {
         self.nextItemProvider = nextItemProvider
         self.performPrefetch = performPrefetch
-        self.onGaplessTransition = onGaplessTransition
         self.onPrefetchFailed = onPrefetchFailed
     }
 
