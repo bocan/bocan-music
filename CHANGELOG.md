@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+ReplayGain now does what the setting says. Track Gain, Album Gain and Auto, and the pre-amp slider, change how loud each song plays, so a quiet folk record and a loud rock one sit at a similar level. Before, the setting was saved but nothing used it, and every song played at its own volume. During a crossfade each song keeps its own level. A song Bòcan has no ReplayGain values for plays as it is, and so do streams, podcasts and radio.
+
 Crossfade now really crossfades. The next song fades in while the current one fades out, so for a few seconds you hear both, instead of the old fade down to silence and back up again. It also works the way you would expect when you switch it on: before, with the default settings it never happened at all, and it switched itself off every time Bòcan restarted until you moved the slider again. Songs from the same album still play without a gap while "Keep gapless within albums" is on, and crossfade applies to songs stored on your Mac, so streams and podcasts change over as before. Thanks for reporting this one @aulakhharsh1.
 
 Time Machine, and backup tools that recognise cache folders, now skip the caches Bòcan can rebuild on its own, such as downloaded cover-search thumbnails, podcast show artwork and Phone Sync conversions, which makes backups smaller. Your library, your own cover art, tag backups and downloaded podcast episodes are still backed up as before.

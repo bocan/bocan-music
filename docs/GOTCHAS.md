@@ -182,6 +182,16 @@ When writing an E2E check for a context menu, wait on an item only that menu has
 
 **Canonical file:** `Modules/AudioEngine/Sources/AudioEngine/Graph/BufferPump.swift` and `Graph/BufferPump+Overlap.swift`; the render proof is `Modules/AudioEngine/Tests/AudioEngineTests/CrossfadeRenderTests.swift`
 
+### ReplayGain is a gain per track in the pump, never a node in the graph
+
+**Problem:** during a crossfade the incoming track plays at the outgoing track's level, or jumps to its own level partway through. Or a ReplayGain setting that saves but changes nothing, which is how the feature sat until #573: a `GainStage` node existed and nothing drove it.
+
+**Rule:** each `PumpSource` scales its own samples by its `gain`, after conversion and before any mix. The engine keeps each track's ReplayGain facts beside its decoder (`currentReplayGain`, `pendingNextReplayGain`, `PendingCrossfade.replayGain`), moves them with the decoder at every transition, and resolves them with the mode and pre-amp that `applyDSPState` passes in. A settings change is pushed to the pump by decoder identity (`BufferPump.setGain(_:forDecoder:)`). Do not add a gain node to the DSP chain for this.
+
+**Why:** a crossfade mixes two tracks into buffers for one player node (ADR-095), so anything downstream of the node applies to both at once. The pump is the last place where the tracks are still apart. Matching by decoder, not by "current" or "incoming", stays right however far a crossfade has got. A track with no stored values plays as it is, pre-amp included, and so do Subsonic, podcast and radio items.
+
+**Canonical file:** `Modules/AudioEngine/Sources/AudioEngine/AudioEngine+ReplayGain.swift` and `Graph/PumpSource.swift`; the render proof is `Modules/AudioEngine/Tests/AudioEngineTests/ReplayGainPumpTests.swift`
+
 ## Scanning, TagLib and feed parsing
 
 ### TagLib reads must use a read-only `FileStream`

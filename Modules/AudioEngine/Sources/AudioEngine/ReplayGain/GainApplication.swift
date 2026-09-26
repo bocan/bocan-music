@@ -3,7 +3,7 @@ import Foundation
 // MARK: - TrackGainInfo
 
 /// The raw ReplayGain values stored for a track (from DB or tags).
-public struct TrackGainInfo: Sendable {
+public struct TrackGainInfo: Sendable, Hashable {
     public var trackGainDB: Double?
     public var trackPeakLinear: Double?
     public var albumGainDB: Double?
@@ -22,6 +22,23 @@ public struct TrackGainInfo: Sendable {
     }
 }
 
+// MARK: - TrackReplayGain
+
+/// What the engine needs to apply ReplayGain to one track it plays: the
+/// stored values, and whether the track plays inside an album span (which
+/// `.auto` mode reads). The mode and pre-amp are not here: they come from
+/// `DSPState`, so a settings change reapplies to the tracks already loaded
+/// without the caller loading them again (#573).
+public struct TrackReplayGain: Sendable, Hashable {
+    public var values: TrackGainInfo
+    public var isInAlbumContext: Bool
+
+    public init(values: TrackGainInfo, isInAlbumContext: Bool = false) {
+        self.values = values
+        self.isInAlbumContext = isInAlbumContext
+    }
+}
+
 // MARK: - GainApplication
 
 /// Resolves which ReplayGain gain value to apply at playback time.
@@ -32,20 +49,28 @@ public struct TrackGainInfo: Sendable {
 /// - `.album`: uses `albumGainDB`; falls back to `trackGainDB` if absent.
 /// - `.auto`: uses album gain when `isInAlbumContext`, otherwise track gain.
 ///
+/// **No values:** a track with nothing measured for the chosen mode plays
+/// as it is, at 0 dB. The pre-amp is an offset on a ReplayGain value, and
+/// there is none to offset.
+///
 /// **Pre-amp**: `preAmpDB` is added on top of the resolved gain.
 ///
 /// **Clipping guard**: when `(resolved + preAmpDB)` would push the peak above
 /// −0.5 dBFS, the pre-amp contribution is reduced until the peak is safe.
-/// A log warning is emitted when the guard triggers.
 public struct GainApplication: Sendable {
     // MARK: - Constants
 
     /// Maximum output peak before the clipping guard triggers (in dBFS).
     public static let maxOutputPeakDBFS: Double = -0.5
 
+    /// The largest gain, either way, that `linear(fromDB:)` passes through.
+    /// Far outside any real ReplayGain value: it only stops a corrupt tag
+    /// from blasting or muting a track.
+    public static let gainLimitDB: Double = 40
+
     // MARK: - API
 
-    /// Compute the gain in dB to write to `GainStage`.
+    /// Compute the gain in dB the buffer pump applies to the track's audio.
     ///
     /// - Parameters:
     ///   - info:            ReplayGain values for the track.
@@ -59,53 +84,64 @@ public struct GainApplication: Sendable {
         preAmpDB: Double = 0,
         isInAlbumContext: Bool = false
     ) -> Double {
-        let baseGain: Double
+        let preferAlbum: Bool
         switch mode {
         case .off:
             return 0
 
         case .track:
-            baseGain = info.trackGainDB ?? 0
+            preferAlbum = false
 
         case .album:
-            baseGain = info.albumGainDB ?? info.trackGainDB ?? 0
+            preferAlbum = true
 
         case .auto:
-            if isInAlbumContext {
-                baseGain = info.albumGainDB ?? info.trackGainDB ?? 0
-            } else {
-                baseGain = info.trackGainDB ?? 0
-            }
+            preferAlbum = isInAlbumContext
         }
 
-        let tentative = baseGain + preAmpDB
+        // The peak goes with the gain it was measured with.
+        let albumPair = preferAlbum
+            ? info.albumGainDB.map { (gain: $0, peak: info.albumPeakLinear ?? info.trackPeakLinear) }
+            : nil
+        guard let chosen = albumPair ?? info.trackGainDB.map({ (gain: $0, peak: info.trackPeakLinear) }) else {
+            return 0
+        }
+
+        let tentative = chosen.gain + preAmpDB
 
         // Clipping guard: only applies when we have measured peak data.
         // Without peak data, assume the gain is safe (no guard).
-        let peakLinear: Double?
-        switch mode {
-        case .off:
-            return 0
-
-        case .track:
-            peakLinear = info.trackPeakLinear
-
-        case .album:
-            peakLinear = info.albumPeakLinear ?? info.trackPeakLinear
-
-        case .auto:
-            peakLinear = isInAlbumContext
-                ? (info.albumPeakLinear ?? info.trackPeakLinear)
-                : info.trackPeakLinear
-        }
-
-        guard let peakLinear, peakLinear > 0 else { return tentative }
+        guard let peakLinear = chosen.peak, peakLinear > 0 else { return tentative }
         let peakAfterGainDB = 20.0 * log10(peakLinear) + tentative
         if peakAfterGainDB > Self.maxOutputPeakDBFS {
             let reduction = peakAfterGainDB - Self.maxOutputPeakDBFS
             return tentative - reduction
         }
         return tentative
+    }
+
+    /// The linear gain the buffer pump multiplies `track`'s samples by: 1
+    /// for a track with no ReplayGain facts (a stream, a podcast, a file
+    /// opened outside the library) or when the mode is `.off`.
+    public static func linearGain(
+        for track: TrackReplayGain?,
+        mode: ReplayGainMode,
+        preAmpDB: Double
+    ) -> Float {
+        guard let track else { return 1 }
+        let db = self.resolve(
+            info: track.values,
+            mode: mode,
+            preAmpDB: preAmpDB,
+            isInAlbumContext: track.isInAlbumContext
+        )
+        return self.linear(fromDB: db)
+    }
+
+    /// `db` as a linear amplitude factor, clamped to ±`gainLimitDB`.
+    public static func linear(fromDB db: Double) -> Float {
+        let clamped = max(-self.gainLimitDB, min(self.gainLimitDB, db))
+        return Float(pow(10.0, clamped / 20.0))
     }
 
     /// Convert the peak linear value from a `ReplayGainResult` to dBFS.
