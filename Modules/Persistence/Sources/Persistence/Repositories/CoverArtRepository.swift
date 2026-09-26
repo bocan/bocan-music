@@ -71,4 +71,18 @@ public struct CoverArtRepository: Sendable {
             try CoverArt.fetchOne(db, key: hash)
         }
     }
+
+    /// The hashes of every row whose `source` is one of `sources`. One query,
+    /// for the cache sweep that must keep art a rescan cannot rebuild (#570).
+    public func hashes(withSourceIn sources: Set<String>) async throws -> Set<String> {
+        guard !sources.isEmpty else { return [] }
+        let values = sources.sorted()
+        return try await self.database.read { db in
+            try Set(String.fetchAll(
+                db,
+                sql: "SELECT hash FROM cover_art WHERE source IN (\(databaseQuestionMarks(count: values.count)))",
+                arguments: StatementArguments(values)
+            ))
+        }
+    }
 }
