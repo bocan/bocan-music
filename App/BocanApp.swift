@@ -855,6 +855,11 @@ extension BocanApp {
             ])
             subsonicStreamCache = nil
         }
+        // The bundle's Caches folder holds only rebuildable data (the stream
+        // cache, URL cache, WebKit, Sparkle): tag it for backup tools that
+        // honour CACHEDIR.TAG. No Time Machine flag: Time Machine already
+        // skips ~/Library/Caches (#569).
+        CacheDirectoryMarker.mark(streamCacheDir.deletingLastPathComponent(), excludeFromBackup: false, log: log)
         let subsonicStreamResolver: SubsonicStreamResolver? = subsonicStreamCache.map {
             SubsonicStreamResolver(cache: $0, service: subsonicService, store: subsonicStore)
         }
