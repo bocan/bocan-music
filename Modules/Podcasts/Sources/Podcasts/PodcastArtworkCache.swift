@@ -31,6 +31,10 @@ public actor PodcastArtworkCache {
         self.http = http
         self.root = root ?? Self.defaultRoot
         self.maxBytes = maxBytes
+        // Every file here is re-downloadable, so the root is marked as a cache
+        // for backup tools (#569): here for a folder left by an older version,
+        // and after each write for a new one.
+        CacheDirectoryMarker.mark(self.root, excludeFromBackup: true, log: self.log)
     }
 
     private static let defaultRoot: URL = {
@@ -71,6 +75,7 @@ public actor PodcastArtworkCache {
                 withIntermediateDirectories: true
             )
             try data.write(to: localURL)
+            CacheDirectoryMarker.mark(self.root, excludeFromBackup: true, log: self.log)
         } catch {
             self.log.warning(
                 "artwork.write.failed",
@@ -139,6 +144,7 @@ public actor PodcastArtworkCache {
                 withIntermediateDirectories: true
             )
             try data.write(to: localURL)
+            CacheDirectoryMarker.mark(self.root, excludeFromBackup: true, log: self.log)
         } catch {
             self.log.warning(
                 "artwork.episode.write.failed",

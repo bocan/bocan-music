@@ -1,5 +1,6 @@
 import AudioEngine
 import Foundation
+import Observability
 import Testing
 @testable import SyncServer
 
@@ -51,14 +52,16 @@ struct TranscodeStoreTests {
         try self.removeRoot(root)
     }
 
-    @Test("the root is excluded from Time Machine after preparation")
-    func rootIsBackupExcluded() throws {
+    @Test("the root is marked as a cache after preparation: a CACHEDIR.TAG and the Time Machine exclusion")
+    func rootIsMarkedAsCache() throws {
         let root = self.makeRoot()
         let store = TranscodeStore(root: root)
         try store.prepareDirectory(preset: .mp3256)
 
         let values = try root.resourceValues(forKeys: [.isExcludedFromBackupKey])
         #expect(values.isExcludedFromBackup == true)
+        let tag = root.appendingPathComponent(CacheDirectoryMarker.tagFileName)
+        #expect(FileManager.default.fileExists(atPath: tag.path))
 
         try self.removeRoot(root)
     }

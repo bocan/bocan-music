@@ -35,14 +35,18 @@ public actor CoverArtSearchService: CoverArtFetcher {
 
     // MARK: - Init
 
+    /// - Parameter thumbnailCacheRoot: the `CoverArtCache` folder that holds
+    ///   the thumbnail cache (tests pass a temp directory). `nil` uses
+    ///   `<AppSupport>/Bocan/CoverArtCache`.
     public init(
         mbClient: MusicBrainzClient = MusicBrainzClient(),
         caaClient: CoverArtArchiveClient = CoverArtArchiveClient(),
-        cacheDuration: TimeInterval = 86400
+        cacheDuration: TimeInterval = 86400,
+        thumbnailCacheRoot: URL? = nil
     ) {
         self.mbClient = mbClient
         self.caaClient = caaClient
-        self.diskCache = FetchThumbnailCache()
+        self.diskCache = FetchThumbnailCache(root: thumbnailCacheRoot ?? FetchThumbnailCache.defaultRoot)
         self.cacheDuration = cacheDuration
     }
 
@@ -120,17 +124,24 @@ public actor CoverArtSearchService: CoverArtFetcher {
 /// Disk cache for fetched cover art thumbnails.
 ///
 /// Stored in `<AppSupport>/Bocan/CoverArtCache/Fetch/` — separate from the
-/// main cover art cache so it can be evicted independently.
+/// main cover art cache so it can be evicted independently. `CoverArtCache/`
+/// holds nothing else and every file is re-downloadable, so it is marked as a
+/// cache for backup tools (#569). Not to be confused with `CoverArt/`, which
+/// is not a cache.
 private actor FetchThumbnailCache {
+    static let defaultRoot: URL = (
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+    ).appendingPathComponent("Bocan/CoverArtCache", isDirectory: true)
+
     private let cacheDir: URL
     private let log = AppLogger.make(.library)
 
-    init() {
-        self.cacheDir = FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask)
-            .first!
-            .appendingPathComponent("Bocan/CoverArtCache/Fetch", isDirectory: true)
+    /// - Parameter root: the `CoverArtCache` folder; thumbnails go in `Fetch/`.
+    init(root: URL) {
+        self.cacheDir = root.appendingPathComponent("Fetch", isDirectory: true)
         try? FileManager.default.createDirectory(at: self.cacheDir, withIntermediateDirectories: true)
+        CacheDirectoryMarker.mark(root, excludeFromBackup: true, log: self.log)
     }
 
     func load(key: String) -> Data? {
