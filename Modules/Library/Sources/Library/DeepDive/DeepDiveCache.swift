@@ -11,9 +11,12 @@ public actor DeepDiveCache {
     private let ttl: TimeInterval
     private let log = AppLogger.make(.library)
 
+    /// Marks an existing folder as a cache for backup tools (#569); `store`
+    /// marks a new one.
     public init(root: URL? = nil, ttl: TimeInterval = DeepDiveCache.defaultTTL) {
         self.root = root ?? Self.defaultRoot
         self.ttl = ttl
+        CacheDirectoryMarker.mark(self.root, excludeFromBackup: true, log: self.log)
     }
 
     private static var defaultRoot: URL {
@@ -34,6 +37,7 @@ public actor DeepDiveCache {
     public func store(_ value: some Encodable & Sendable, key: String) {
         do {
             try FileManager.default.createDirectory(at: self.root, withIntermediateDirectories: true)
+            CacheDirectoryMarker.mark(self.root, excludeFromBackup: true, log: self.log)
             let data = try JSONEncoder().encode(value)
             try data.write(to: self.fileURL(key), options: .atomic)
         } catch {
