@@ -22,42 +22,10 @@ import Foundation
 /// Seeks follow what the listener hears: before the transition a seek is for
 /// the outgoing track and the crossfade re-arms; after it, the seek is for the
 /// incoming track and the outgoing one is dropped.
-/// An armed or running crossfade in a `BufferPump`.
-struct PumpOverlap {
-    let incoming: PumpSource
-    /// The armed overlap length in output frames.
-    let lengthFrames: Int
-    let onTransition: @Sendable () -> Void
-    var phase: PumpOverlapPhase = .armed
-    /// Sequence number of the buffer whose completion means the incoming
-    /// track is heard. `nil` until the mix (or hand-over) starts.
-    var transitionAfter: Int?
-}
-
-/// Where a `PumpOverlap` stands.
-enum PumpOverlapPhase {
-    /// Waiting for the boundary frame.
-    case armed
-    /// Past the boundary with too little of the outgoing track left to mix
-    /// (a seek into the last second, or a late arm). The incoming track
-    /// follows the outgoing one's end with no mix, gapless.
-    case armedLate
-    /// Mixed buffers are being scheduled.
-    case mixing(PumpOverlapMix)
-    /// The incoming track is `current`, but the transition is not heard yet.
-    /// The outgoing source is kept, unread, so a seek can still go back to it.
-    case handedOver(outgoing: PumpSource)
-}
-
-/// The progress of a running mix.
-struct PumpOverlapMix {
-    /// Frames in this mix: the armed length, or less when it started late.
-    let length: Int
-    var mixed = 0
-    var outgoingSupplied = 0
-    var outgoingEnded = false
-}
-
+///
+/// A plain gapless boundary runs through here too, as an overlap of length 0
+/// that goes straight to the hand-over (#574). The state types are in
+/// `PumpOverlap.swift`.
 extension BufferPump {
     /// What `disarmOverlap` did.
     enum OverlapDisarm: Sendable, Equatable {
@@ -407,7 +375,7 @@ extension BufferPump {
             self.current = outgoing
             try await overlap.incoming.seek(to: 0)
         }
-        overlap.phase = .armed
+        overlap.phase = PumpOverlap.armedPhase(lengthFrames: overlap.lengthFrames)
         overlap.transitionAfter = nil
         self.overlap = overlap
         self.log.debug("crossfade.rearmed", ["id": self.id])

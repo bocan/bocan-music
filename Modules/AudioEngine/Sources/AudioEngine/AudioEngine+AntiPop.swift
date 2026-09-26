@@ -73,9 +73,9 @@ public extension AudioEngine {
         self.graph.playerNode.stop()
         let heard = await self.pump?.stop() ?? false
         self.pump = nil
-        // A crossfade does not survive the rebuild: an unheard one is dropped
-        // (the boundary becomes a normal load), a heard one completes, so the
-        // resume below plays the incoming track.
+        // A crossfade or gapless hand-over does not survive the rebuild: an
+        // unheard one is dropped (the boundary becomes a normal load), a heard
+        // one completes, so the resume below plays the incoming track.
         await self.settleCrossfade(heard: heard, reason: "device")
         self.graph.reset()
         if resumeAfter {

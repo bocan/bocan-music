@@ -62,7 +62,11 @@ crossfade cannot work without them:
   gapless handoff fires when the outgoing decoder reaches EOF, about four
   buffers before the audio stops. The crossfade path in this ADR gets an
   exact transition moment; moving plain gapless to the same mechanism is a
-  follow-up, not part of this change.
+  follow-up, not part of this change. Done in #574: a gapless boundary is
+  an overlap of length 0 in the playing pump (it starts in `armedLate` and
+  hands over at the outgoing track's end), and `enableGaplessNext` and
+  `enableCrossfadeNext` return a `NextTrackPreparation`. The separate
+  pending pump stays only for a CUE segment or when no pump is playing.
 - **New settings or schema.** The existing `crossfadeSeconds` (0 to 10 s)
   and `crossfadeAlbumGapless` keep their keys and defaults. No migration.
 
@@ -714,5 +718,5 @@ continues the overlap.
   Canonical file form, with `Graph/BufferPump.swift` as the canonical file,
   and mirror it to the project memory.
 - **Follow-ups to file, not to build here:** ReplayGain is not applied at
-  playback (see Non-goals); crossfade for Subsonic items; moving plain
-  gapless to the exact transition moment.
+  playback (see Non-goals; done in #573); crossfade for Subsonic items;
+  moving plain gapless to the exact transition moment (done in #574).

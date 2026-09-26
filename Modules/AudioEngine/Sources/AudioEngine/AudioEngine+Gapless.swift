@@ -122,9 +122,10 @@ extension AudioEngine {
 
 // MARK: - AudioEngine + Crossfade transition (ADR-095)
 
-/// The next track of an armed crossfade. The engine holds it from arming
+/// The next track of an armed crossfade, or of a gapless hand-over in the
+/// same pump (an overlap of length 0, #574). The engine holds it from arming
 /// until the pump reports the incoming track heard; the pump reads it in the
-/// meantime. Local files only, never a CUE segment.
+/// meantime. Never a CUE segment.
 struct PendingCrossfade {
     /// Tells this crossfade's transition apart from a stale one still on its
     /// way from an earlier arm.
@@ -148,7 +149,8 @@ extension AudioEngine {
     }
 
     /// Make the incoming track the engine's track, at the moment its first
-    /// mixed frame is heard. What `performGaplessTransition` does, minus the
+    /// frame is heard (mixed, or right after the outgoing track's last one
+    /// for a gapless hand-over). What `performGaplessTransition` does, minus the
     /// pump swap: the one pump already reads the incoming track, and it
     /// closes the outgoing decoder itself once it lets go of it.
     func completeCrossfadeTransition() {

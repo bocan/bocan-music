@@ -29,9 +29,9 @@ struct EngineCrossfadeTests {
         let url = try self.fixtureURL()
         try await engine.load(url)
 
-        let armed = try await engine.enableCrossfadeNext(url: url, overlapSeconds: 5) {}
+        let preparation = try await engine.enableCrossfadeNext(url: url, overlapSeconds: 5) {}
 
-        #expect(!armed)
+        #expect(preparation == .separatePump)
         #expect(await engine.pendingNextPump != nil)
         #expect(await engine.pendingCrossfade == nil)
         await engine.cancelGaplessNext()
