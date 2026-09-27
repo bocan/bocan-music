@@ -47,11 +47,13 @@ enum ReplayGainAlbumPass {
     }
 
     /// Recompute and store the album gain of every album in `albumIDs`.
-    /// Reads all tracks once, so an album's tracks outside the batch count.
-    /// A failed write is logged and the rest go on: that track keeps its old
-    /// album gain, which Album mode falls back from to track gain as before.
+    /// Reads all tracks once, so an album's tracks outside the batch count,
+    /// and writes only the two album columns, in one transaction. A failed
+    /// write is logged and changes nothing: every track keeps its old album
+    /// gain, and Album mode falls back to track gain where there is none.
     ///
-    /// - Returns: how many tracks got a new album gain, and how many writes failed.
+    /// - Returns: how many tracks got a new album gain, and how many were not
+    ///   written because the write failed.
     @discardableResult
     static func run(albumIDs: Set<Int64>, repo: TrackRepository) async -> (updated: Int, failed: Int) {
         guard !albumIDs.isEmpty else { return (0, 0) }
@@ -65,18 +67,14 @@ enum ReplayGainAlbumPass {
             log.error("rg.album.fetchFailed", ["albums": albumIDs.count, "error": String(reflecting: error)])
             return (0, 0)
         }
-        var written = 0
-        var failed = 0
-        for track in self.albumUpdates(tracks) {
-            do {
-                try await repo.update(track)
-                written += 1
-            } catch {
-                log.error("rg.album.updateFailed", ["trackID": track.id ?? -1, "error": String(reflecting: error)])
-                failed += 1
-            }
+        let updates = self.albumUpdates(tracks)
+        do {
+            try await repo.setAlbumReplayGain(from: updates)
+        } catch {
+            log.error("rg.album.updateFailed", ["tracks": updates.count, "error": String(reflecting: error)])
+            return (0, updates.count)
         }
-        log.info("rg.album.done", ["albums": albumIDs.count, "tracks": written, "failed": failed])
-        return (written, failed)
+        log.info("rg.album.done", ["albums": albumIDs.count, "tracks": updates.count])
+        return (updates.count, 0)
     }
 }

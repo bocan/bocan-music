@@ -361,4 +361,38 @@ struct TrackRepositoryTests {
         #expect(fresh.provenanceShelfHz == nil)
         #expect(fresh.provenanceAnalysedAt == nil)
     }
+
+    @Test("setAlbumReplayGain writes only the two album columns, so a change made since the read survives (#579)")
+    func setAlbumReplayGainTouchesOnlyAlbumColumns() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        let firstID = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/a.flac"))
+        let secondID = try await repo.insert(self.makeTrack(fileURL: "file:///tmp/b.flac"))
+
+        // The batch read both tracks, then a play and a rating landed.
+        var first = try await repo.fetch(id: firstID)
+        var second = try await repo.fetch(id: secondID)
+        var played = first
+        played.playCount = 5
+        played.rating = 80
+        try await repo.update(played)
+
+        first.replaygainAlbumGain = -7.25
+        first.replaygainAlbumPeak = 0.9
+        second.replaygainAlbumGain = -7.25
+        second.replaygainAlbumPeak = nil
+        var unsaved = self.makeTrack(fileURL: "file:///tmp/c.flac")
+        unsaved.replaygainAlbumGain = -1
+        try await repo.setAlbumReplayGain(from: [first, second, unsaved])
+
+        let storedFirst = try await repo.fetch(id: firstID)
+        #expect(storedFirst.replaygainAlbumGain == -7.25)
+        #expect(storedFirst.replaygainAlbumPeak == 0.9)
+        #expect(storedFirst.playCount == 5, "the play recorded after the read is kept")
+        #expect(storedFirst.rating == 80)
+        let storedSecond = try await repo.fetch(id: secondID)
+        #expect(storedSecond.replaygainAlbumGain == -7.25)
+        #expect(storedSecond.replaygainAlbumPeak == nil)
+        #expect(try await repo.fetchAll().count == 2, "a track without an id is skipped, not inserted")
+    }
 }
