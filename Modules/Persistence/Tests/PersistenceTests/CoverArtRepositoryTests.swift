@@ -42,6 +42,30 @@ struct CoverArtRepositoryTests {
         #expect(try await repo.hashes(withSourceIn: []).isEmpty)
     }
 
+    @Test("hashesInUse() returns the art an album or a track shows, once each, and nothing else")
+    func hashesInUse() async throws {
+        let db = try await makeDB()
+        let repo = CoverArtRepository(database: db)
+        for hash in ["albumArt", "trackArt", "both", "orphan"] {
+            _ = try await repo.save(CoverArt(hash: hash, path: "/\(hash)"))
+        }
+        let albums = AlbumRepository(database: db)
+        let albumID = try await albums.insert(Album(title: "A"))
+        try await albums.setCoverArt(albumID: albumID, hash: "albumArt", path: "/albumArt")
+        let otherAlbum = try await albums.insert(Album(title: "B"))
+        try await albums.setCoverArt(albumID: otherAlbum, hash: "both", path: "/both")
+        let now = Int64(Date().timeIntervalSince1970)
+        let tracks = TrackRepository(database: db)
+        for hash in ["trackArt", "both"] {
+            var track = Track(fileURL: "/tmp/\(hash).flac", fileFormat: "flac", duration: 1, addedAt: now, updatedAt: now)
+            track.coverArtHash = hash
+            _ = try await tracks.insert(track)
+        }
+        _ = try await albums.insert(Album(title: "No Cover"))
+
+        #expect(try await repo.hashesInUse() == ["albumArt", "trackArt", "both"])
+    }
+
     @Test("delete removes the row")
     func deleteRow() async throws {
         let db = try await makeDB()

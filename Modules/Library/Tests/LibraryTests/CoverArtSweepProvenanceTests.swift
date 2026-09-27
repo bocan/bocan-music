@@ -33,7 +33,11 @@ struct CoverArtSweepProvenanceTests {
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let db = try await Database(location: .inMemory)
         let repo = CoverArtRepository(database: db)
-        let cache = CoverArtCache(cacheRoot: dir, repo: repo, totalBytesLimit: 250_000, sweepThresholdBytes: 1)
+        // No grace for new art: the embedded arts that must be evicted here
+        // are persisted moments before the sweep (#576 tests the grace).
+        let cache = CoverArtCache(
+            cacheRoot: dir, repo: repo, totalBytesLimit: 250_000, sweepThresholdBytes: 1, newArtGracePeriod: 0
+        )
         return Bed(dir: dir, db: db, repo: repo, albums: AlbumRepository(database: db), cache: cache)
     }
 
