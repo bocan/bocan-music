@@ -149,12 +149,6 @@ public struct SleepTimerMenu: View {
                     .foregroundStyle(Color.accentColor)
             }
         }
-        // The menu button takes its accessibility label from this view, not
-        // from the `.accessibilityLabel` on the `Menu` (which macOS 27 puts in
-        // the title). Without this the label was the moon symbol's own
-        // description, "do not disturb", whether a timer ran or not.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(self.accessibilityLabel)
     }
 
     // MARK: - Helpers
