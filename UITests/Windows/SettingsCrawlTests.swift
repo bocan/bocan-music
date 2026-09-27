@@ -143,8 +143,10 @@ final class SettingsCrawlTests: XCTestCase {
         }
         if row.isHittable {
             row.click()
-        } else {
+        } else if sidebar.frame.contains(CGPoint(x: row.frame.midX, y: row.frame.midY)) {
             // click(), not tap(): a coordinate tap does nothing on macOS 27.
+            // Only inside the sidebar: a click outside the Settings window
+            // lands on the main window and brings it forward.
             row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         }
     }
@@ -165,8 +167,12 @@ final class SettingsCrawlTests: XCTestCase {
         while !row.isHittable, sent < steps {
             let selected = sidebar.outlineRows
                 .matching(NSPredicate(format: "selected == 1")).firstMatch
-            if selected.exists {
-                selected.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+            // Only when hittable: a selected row scrolled out of view has a
+            // coordinate outside the Settings window, and clicking there
+            // brought the main window forward, so the arrow keys and the
+            // rest of the crawl went to the wrong window (2026-09-27).
+            if selected.exists, selected.isHittable {
+                selected.click()
             }
             app.typeKey(key, modifierFlags: [])
             sent += 1
@@ -179,11 +185,40 @@ final class SettingsCrawlTests: XCTestCase {
     /// `selectSidebarRow` for the sidebar's own rows. A coordinate `tap()`
     /// does nothing on macOS 27, so this clicks.
     static func tap(_ element: XCUIElement) {
+        if !element.isHittable {
+            self.scrollIntoView(element)
+        }
         if element.isHittable {
             element.click()
-        } else {
+        } else if let window = self.window(containing: element),
+                  window.frame.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) {
             element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         }
+        // Otherwise the control is outside its window, and a click there
+        // would land on the main window and bring it forward (2026-09-27);
+        // the caller's wait reports the control that could not be reached.
+    }
+
+    /// Scrolls the pane holding `element` until it is hittable. A pane taller
+    /// than the Settings window (Diagnostics at the 548 pt the window can be
+    /// left at) puts its lower controls below the window's edge. Scrolls from
+    /// the pane's centre, which is always on screen, and picks the direction
+    /// from whether the control moved closer.
+    static func scrollIntoView(_ element: XCUIElement) {
+        guard let window = self.window(containing: element) else { return }
+        let pane = window.scrollViews
+            .containing(NSPredicate(format: "identifier == %@", element.identifier))
+            .firstMatch
+        guard pane.exists else { return }
+        MenuInvoker.scrollUntilHittable(element, in: pane)
+    }
+
+    /// The app window whose tree holds `element`.
+    private static func window(containing element: XCUIElement) -> XCUIElement? {
+        let window = XCUIApplication().windows
+            .containing(NSPredicate(format: "identifier == %@", element.identifier))
+            .firstMatch
+        return window.exists ? window : nil
     }
 
     private func launch() -> XCUIApplication {

@@ -81,11 +81,11 @@ final class ToolbarSurfaceTests: XCTestCase {
             },
             // Immersive Mode (ADR-089) opens a full-screen window, which would
             // take the rest of this crawl into another space; asserted
-            // present and enabled here, exercised by its own window tests.
+            // present and enabled here, entered and exited by the menu pass.
             SurfaceControl(
                 "toolbar.immersive", "Immersive Mode toggle",
                 action: .presence,
-                skip: "opens a full-screen window; ImmersiveModeTests owns the journey"
+                skip: "opens a full-screen window; MenuInvocationTests enters and exits it"
             ) { _, inv, _ in
                 inv.element("toolbar.immersive").isEnabled
             },

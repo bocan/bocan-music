@@ -330,7 +330,7 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/ToastBanner.swift`
 
-A SwiftUI `Menu` is a third case: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label is built from the label view, so an SF Symbol in it supplies the label (the sleep timer read "do not disturb" from `moon.fill` whatever its state). Put the label on the label view with `.accessibilityElement(children: .ignore)`, as `SleepTimerMenu.menuLabel` does.
+A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label comes from the SF Symbol in the label view (the sleep timer's label is "do not disturb", from `moon.fill`, whatever its state). Setting `.accessibilityLabel` on the label view as well does not change that; checked 2026-09-27. Read `label` and `title` together, as `MenuInvocationTests` does for the sleep timer. Whether VoiceOver speaks the symbol's description for such a button has not been checked.
 
 ### On macOS 27 a coordinate `tap()` does nothing; click
 
