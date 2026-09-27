@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nmdias/FeedKit.git",
       "state" : {
-        "revision" : "03e8ac25253189307b2a3b6eb53df5a42a13c0be",
-        "version" : "10.9.0"
+        "revision" : "545aba8b9357fb00ffe51483b659519d96a9d635",
+        "version" : "10.9.4"
       }
     },
     {
