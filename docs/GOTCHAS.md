@@ -452,6 +452,16 @@ When a transitive patch release still will not move (swift-issue-reporting staye
 
 **Canonical file:** `Scripts/check-package-updates.py`
 
+### The workspace resolved file must stay in git
+
+**Problem:** a commit deleted `Bocan.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`, every gate stayed green, and 2.19.0 shipped with FeedKit 10.9.4 instead of the pinned 10.9.0. The file was absent from disk and a `git add -A` staged the deletion.
+
+**Rule:** never stage a deletion of that file. If it is missing on disk, restore it from git history before building, and only after that change pins with the procedure above. `make lint` fails when the file is missing or untracked, so the branch CI catches it.
+
+**Why:** without the file, Xcode and the release build resolve every package to the newest version its range allows, and nothing warns. A dependency then moves without the review a bump needs (FeedKit bumps need a real-feed comparison).
+
+**Canonical file:** `Makefile` (`WORKSPACE_RESOLVED`)
+
 ### The UI suite aborts on macOS 27 inside a snapshot comparison
 
 **Problem:** `make test-ui` stops with signal 6 in a snapshot test. The log shows `-[NSConcreteValue CGRectValue]: unrecognized selector`, below `CIAreaAverage` and `perceptuallyCompare`. The abort kills the process, so no test after it runs.
