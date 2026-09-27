@@ -217,11 +217,17 @@ struct MenuInvoker {
         while Date() < deadline {
             let matches = self.app.descendants(matching: .any).matching(predicate)
             // The label/identifier is inherited by the row's icon Image
-            // sub-element too; take the widest match (the full-width row)
-            // and tap its centre coordinate, which selects even when the
-            // element reports not-hittable.
+            // sub-element too; take the widest match (the full-width row).
+            // Click it: on macOS 27 a coordinate `tap()` on the row selects
+            // nothing and the app stays on its launch destination, so every
+            // test that waited for the destination timed out. A row that
+            // reports not-hittable gets a coordinate click instead.
             if let row = Self.widest(of: matches) {
-                row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                if row.isHittable {
+                    row.click()
+                } else {
+                    row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+                }
                 self.settle(0.5)
                 return
             }
