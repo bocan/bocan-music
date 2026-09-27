@@ -1667,14 +1667,18 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    /// Analyse only tracks that currently have no ReplayGain data.
+    /// Analyse only tracks that currently have no ReplayGain data, and give an
+    /// album gain to every album still without one whose tracks are all
+    /// measured, which covers a library analysed before album gain was
+    /// computed (#579).
     public func computeMissingReplayGain() async {
         guard self.replayGainProgress == nil else { return } // already running
         let repo = TrackRepository(database: self.database)
         do {
             let all = try await repo.fetchAll()
             let missing = all.filter { $0.replaygainTrackGain == nil }
-            await self.runReplayGainBatch(tracks: missing, repo: repo)
+            let albumsWithoutGain = Set(all.filter { $0.replaygainAlbumGain == nil }.compactMap(\.albumID))
+            await self.runReplayGainBatch(tracks: missing, repo: repo, alsoAlbums: albumsWithoutGain)
         } catch {
             self.log.error("rg.batch.fetchFailed", ["error": String(reflecting: error)])
         }
@@ -1719,9 +1723,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         }
     }
 
-    private func runReplayGainBatch(tracks: [Track], repo: TrackRepository) async {
+    /// Measure `tracks`, then compute the album gain of their albums and of
+    /// `alsoAlbums` (#579).
+    private func runReplayGainBatch(tracks: [Track], repo: TrackRepository, alsoAlbums: Set<Int64> = []) async {
         guard !tracks.isEmpty else {
             self.replayGainProgress = ReplayGainBatchProgress(done: 0, total: 0, failed: 0)
+            await ReplayGainAlbumPass.run(albumIDs: alsoAlbums, repo: repo)
             return
         }
         self.replayGainProgress = ReplayGainBatchProgress(done: 0, total: tracks.count, failed: 0)
@@ -1732,6 +1739,7 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
         var done = 0
         var failed = 0
         var nextIndex = 0
+        var measuredAlbums = alsoAlbums
 
         await withTaskGroup(of: Result<Track, Error>.self) { group in
             // Seed the initial pool.
@@ -1746,7 +1754,12 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 switch result {
                 case let .success(updatedTrack):
                     do {
-                        try await repo.update(updatedTrack)
+                        // Only the gain columns: the row was read when the
+                        // batch started, and a play or edit since is kept.
+                        try await repo.setTrackReplayGain(from: updatedTrack)
+                        if let albumID = updatedTrack.albumID {
+                            measuredAlbums.insert(albumID)
+                        }
                     } catch {
                         self.log.error("rg.batch.updateFailed", ["error": String(reflecting: error)])
                         failed += 1
@@ -1771,6 +1784,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 }
             }
         }
+
+        // The albums whose tracks were measured get their album gain (#579).
+        await ReplayGainAlbumPass.run(albumIDs: measuredAlbums, repo: repo)
     }
 }
 

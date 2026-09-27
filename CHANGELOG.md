@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again. The analysis also no longer undoes plays, ratings or tag edits you make to songs while it runs.
+
 Albums and songs in large libraries no longer lose their covers when the cover art folder grows past its size limit. Before, a cover could vanish and only come back after a full rescan. Now only covers that nothing shows any more are cleared out, even if that leaves the folder over its limit.
 
 When one song flows into the next without a gap, the play bar, Now Playing and your listening history now change over at the moment you hear the new song. Before, they moved on almost a second early, while the end of the previous song was still playing. Switching speakers or headphones no longer skips almost a second of the song, and in the last seconds of a song it no longer breaks the gapless join or the crossfade into the next one.
