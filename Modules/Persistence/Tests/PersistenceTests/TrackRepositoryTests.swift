@@ -395,4 +395,28 @@ struct TrackRepositoryTests {
         #expect(storedSecond.replaygainAlbumPeak == nil)
         #expect(try await repo.fetchAll().count == 2, "a track without an id is skipped, not inserted")
     }
+
+    @Test("setTrackReplayGain writes only the two track columns, so a play made during the batch survives (#579)")
+    func setTrackReplayGainTouchesOnlyTrackColumns() async throws {
+        let db = try await makeDatabase()
+        let repo = TrackRepository(database: db)
+        let id = try await repo.insert(self.makeTrack())
+
+        // The batch read the track, then a play landed while it was measured.
+        var measured = try await repo.fetch(id: id)
+        var played = measured
+        played.playCount = 3
+        played.title = "Edited While Measuring"
+        try await repo.update(played)
+
+        measured.replaygainTrackGain = -5.5
+        measured.replaygainTrackPeak = 0.75
+        try await repo.setTrackReplayGain(from: measured)
+
+        let stored = try await repo.fetch(id: id)
+        #expect(stored.replaygainTrackGain == -5.5)
+        #expect(stored.replaygainTrackPeak == 0.75)
+        #expect(stored.playCount == 3, "the play recorded during the batch is kept")
+        #expect(stored.title == "Edited While Measuring")
+    }
 }

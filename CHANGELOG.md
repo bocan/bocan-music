@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again.
+ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again. The analysis also no longer undoes plays, ratings or tag edits you make to songs while it runs.
 
 Albums and songs in large libraries no longer lose their covers when the cover art folder grows past its size limit. Before, a cover could vanish and only come back after a full rescan. Now only covers that nothing shows any more are cleared out, even if that leaves the folder over its limit.
 

@@ -1754,7 +1754,9 @@ public final class LibraryViewModel: ObservableObject { // swiftlint:disable:thi
                 switch result {
                 case let .success(updatedTrack):
                     do {
-                        try await repo.update(updatedTrack)
+                        // Only the gain columns: the row was read when the
+                        // batch started, and a play or edit since is kept.
+                        try await repo.setTrackReplayGain(from: updatedTrack)
                         if let albumID = updatedTrack.albumID {
                             measuredAlbums.insert(albumID)
                         }

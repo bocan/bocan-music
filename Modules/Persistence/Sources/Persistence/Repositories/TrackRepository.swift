@@ -62,26 +62,6 @@ public struct TrackRepository: Sendable {
         self.log.debug("track.update", ["id": id])
     }
 
-    /// Writes each track's `replaygain_album_gain` and `replaygain_album_peak`,
-    /// and no other column, in one transaction (#579). A full-row `update`
-    /// from a batch read earlier would put back a stale play count or rating
-    /// written since, and a whole library of albums is thousands of rows.
-    /// Tracks without an id are skipped. All or nothing: a failure rolls back
-    /// every row.
-    public func setAlbumReplayGain(from tracks: [Track]) async throws {
-        let rows = tracks.filter { $0.id != nil }
-        guard !rows.isEmpty else { return }
-        try await self.database.write { db in
-            let statement = try db.makeStatement(sql: """
-            UPDATE tracks SET replaygain_album_gain = ?, replaygain_album_peak = ? WHERE id = ?
-            """)
-            for track in rows {
-                try statement.execute(arguments: [track.replaygainAlbumGain, track.replaygainAlbumPeak, track.id])
-            }
-        }
-        self.log.debug("track.albumReplayGain", ["count": rows.count])
-    }
-
     /// Toggles the `excluded_from_shuffle` flag for a single track.
     public func setExcludedFromShuffle(trackID: Int64, excluded: Bool) async throws {
         try await self.database.write { db in
