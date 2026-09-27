@@ -264,6 +264,7 @@ public enum A11y {
         // Effects
         public static let bassBoost = "settings.effects.bassBoost"
         public static let crossfade = "settings.effects.crossfade"
+        public static let crossfadeAlbumGapless = "settings.effects.crossfadeAlbumGapless"
         public static let crossfeed = "settings.effects.crossfeed"
         public static let stereoWidth = "settings.effects.stereoWidth"
 

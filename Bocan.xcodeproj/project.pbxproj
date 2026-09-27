@@ -40,6 +40,7 @@
 		1F1499B169550B0AA312A408 /* LibrarySidebarExpansionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41FD02C5D416F4CB4CF501D1 /* LibrarySidebarExpansionTests.swift */; };
 		20EAF287FA216BA50B2B68D7 /* LibrarySummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AF35F5C4E7F390DB43BBA28 /* LibrarySummaryTests.swift */; };
 		21602D45269E3AD34978F376 /* PodcastsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D3D757278D937F132F8EADA /* PodcastsViewModelTests.swift */; };
+		237A2A00FF529D14E1044A6C /* DSPTransitionControlConventionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A0870B7890A1E6621B6CA9 /* DSPTransitionControlConventionTests.swift */; };
 		2442A15E49DA0BC61C7B38E5 /* libdav1d.7.dylib in Resources */ = {isa = PBXBuildFile; fileRef = A7C07D1BD23764E524C5E631 /* libdav1d.7.dylib */; };
 		251364DE7069EC1D663C49E1 /* Podcasts in Frameworks */ = {isa = PBXBuildFile; productRef = D39F44552C427260901E72AF /* Podcasts */; };
 		252FE242AD6A2240FCC61959 /* FirstRunUXTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755D5AD500E590F89922716C /* FirstRunUXTests.swift */; };
@@ -530,6 +531,7 @@
 		EF3F911D33E1092BD960EF92 /* libcrypto.3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libcrypto.3.dylib; sourceTree = "<group>"; };
 		EFAFC444ACE5CDE2792AAA35 /* SubsonicRepositoryMetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubsonicRepositoryMetadataCache.swift; sourceTree = "<group>"; };
 		F401487E6DE506B5348C7F94 /* Library */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Library; path = Modules/Library; sourceTree = SOURCE_ROOT; };
+		F6A0870B7890A1E6621B6CA9 /* DSPTransitionControlConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DSPTransitionControlConventionTests.swift; sourceTree = "<group>"; };
 		F6C116952AAF9A395E0B0FB7 /* DeepDiveSettingConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepDiveSettingConventionTests.swift; sourceTree = "<group>"; };
 		F78DEA247EFFC3B760FC0CCF /* MiniPlayerTransportConventionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiniPlayerTransportConventionTests.swift; sourceTree = "<group>"; };
 		F7BCD10FC9FB02BCADD58FCB /* PhoneSyncWiringTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncWiringTests.swift; sourceTree = "<group>"; };
@@ -541,7 +543,7 @@
 		FD18A2E69E819F5845E511F3 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		FE67437858D66E54A636A323 /* PhoneSyncViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSyncViewModelTests.swift; sourceTree = "<group>"; };
 		FEA827D3E6864D7D11A6F8BE /* BocanCommands+CollectionViewMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BocanCommands+CollectionViewMenu.swift"; sourceTree = "<group>"; };
-		"TEMP_DF538D54-0D2C-4FD3-9590-BC3360CA2EFD" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_893FEBD7-8B8A-4E0E-9F33-326848B9C1CC" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -722,6 +724,7 @@
 				77E7DE0CD8E491E9AA61F4A3 /* DiagnosticsSettingsConventionTests.swift */,
 				1F71A06C5F244549DCA2D365 /* DiffableSelectionTests.swift */,
 				F94B4179774625EB29F24FA2 /* DSPCrossfadeForwardingTests.swift */,
+				F6A0870B7890A1E6621B6CA9 /* DSPTransitionControlConventionTests.swift */,
 				0F1F8836F6CA2AB271F7EF7E /* DSPViewModelTests.swift */,
 				AE1540F018AC26C2B3717C92 /* DuplicateReviewCenteringTests.swift */,
 				488EF7013DA7577BAC57223F /* DynamicTypeTests.swift */,
@@ -1056,10 +1059,10 @@
 			path = AppTests;
 			sourceTree = "<group>";
 		};
-		"TEMP_1C966AF7-ADE3-4C55-A08A-ED92D42A32F6" /* bocan-music */ = {
+		"TEMP_379161D3-0A4B-4DEA-BBE2-DF1721812FC7" /* bocan-music */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_DF538D54-0D2C-4FD3-9590-BC3360CA2EFD" /* Secrets.xcconfig */,
+				"TEMP_893FEBD7-8B8A-4E0E-9F33-326848B9C1CC" /* Secrets.xcconfig */,
 			);
 			path = "bocan-music";
 			sourceTree = "<group>";
@@ -1273,6 +1276,7 @@
 				BF95199498E8010D09BEEB86 /* CollectionDetailConventionTests.swift in Sources */,
 				5CFAFAFE675531C5E6AED98A /* ContrastTests.swift in Sources */,
 				C1FDAD47756DBA7259161688 /* DSPCrossfadeForwardingTests.swift in Sources */,
+				237A2A00FF529D14E1044A6C /* DSPTransitionControlConventionTests.swift in Sources */,
 				BC00576C8988893926D84C76 /* DSPViewModelTests.swift in Sources */,
 				097BB13F4BF81674CA466906 /* DeepDiveEnrichmentGateTests.swift in Sources */,
 				8E61066F94A7B9C2E6E9331E /* DeepDiveRetryTests.swift in Sources */,
@@ -1532,7 +1536,7 @@
 		};
 		3E79DA1DC07FE3812FB54C0A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_DF538D54-0D2C-4FD3-9590-BC3360CA2EFD" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_893FEBD7-8B8A-4E0E-9F33-326848B9C1CC" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
@@ -1668,7 +1672,7 @@
 		};
 		D3B7E2D650BF9AC5F77082BA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_DF538D54-0D2C-4FD3-9590-BC3360CA2EFD" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_893FEBD7-8B8A-4E0E-9F33-326848B9C1CC" /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = arm64;
