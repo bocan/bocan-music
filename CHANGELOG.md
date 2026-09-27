@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+VoiceOver now reads the sleep timer button as "Sleep timer: Off" or with the time remaining, instead of "do not disturb".
+
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.
 
 ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again. The analysis also no longer undoes plays, ratings or tag edits you make to songs while it runs.
