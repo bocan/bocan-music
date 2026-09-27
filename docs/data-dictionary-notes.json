@@ -184,6 +184,10 @@
     "traces": "ADR-013, #423",
     "note": "From tags when present, else the app-computed value, which TrackImporter now keeps on rescan (#423). A full rescan on 2026-08-28 wiped 13,000 computed values before the fix."
   },
+  "tracks.replaygain_album_gain": {
+    "traces": "ADR-013, #579",
+    "note": "From tags when present, else computed by ReplayGainAlbumPass after a ReplayGain batch: the power mean of the album's track loudness, written to every track of an album whose tracks all have a track gain. TrackImporter keeps it on rescan. Read at playback in Album and Auto modes (#573)."
+  },
   "tracks.content_hash": {
     "traces": "ADR-065, #423",
     "note": "Sync ETag from ContentHashService; kept on rescan while file_mtime is unchanged, cleared when the file changed (same rule as provenance)."
