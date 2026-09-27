@@ -94,6 +94,7 @@ final class MenuInvocationTests: XCTestCase {
         self.ratingAndBatchItems(app, inv)
         self.toolsItems(app, inv)
         self.fullscreenVisualizerItem(app, inv)
+        self.immersiveModeItems(inv)
 
         self.assertManifestCoverage()
     }
@@ -393,8 +394,14 @@ final class MenuInvocationTests: XCTestCase {
         self.run(["Playback", "Reset Speed to 1×"], inv)
         inv.waitFor("reset holds unity") { speed().contains("1×") }
 
-        // Sleep presets flip the strip control's label off its idle text.
-        let sleepLabel = { inv.element("nowPlayingStrip.sleepTimer").label }
+        // Sleep presets flip the strip control's text off its idle text. Read
+        // label and title together: the control is a SwiftUI Menu, and on
+        // macOS 27 its accessibility label lands in the title while the label
+        // is the moon symbol's own "do not disturb", whatever the state.
+        let sleepLabel = {
+            let control = inv.element("nowPlayingStrip.sleepTimer")
+            return "\(control.label) | \(control.title)"
+        }
         let idleSleep = sleepLabel()
         for preset in ["15 min", "30 min", "45 min", "1 hr", "1 hr 30 min", "2 hr"] {
             self.run(["Playback", "Sleep Timer", preset], inv)
@@ -630,6 +637,19 @@ final class MenuInvocationTests: XCTestCase {
             inv.closeFrontWindow()
         }
         inv.waitFor("visualizer window closed") { inv.windowCount == before }
+    }
+
+    // MARK: Immersive Mode (ADR-089; last too: it animates a space transition)
+
+    /// Enter and exit through the menu, which also covers the item's flipped
+    /// title. No other journey invokes it: the toolbar surface skips its
+    /// button for the same full-screen reason.
+    private func immersiveModeItems(_ inv: MenuInvoker) {
+        self.run(["View", "Enter Immersive Mode"], inv)
+        inv.waitFor("immersive window") { inv.element("immersive").exists }
+        inv.settle(1.5)
+        self.run(["View", "Exit Immersive Mode"], inv)
+        inv.waitFor("immersive window closed", timeout: 10) { !inv.element("immersive").exists }
     }
 
     // MARK: Coverage bookkeeping

@@ -24,9 +24,18 @@ struct MenuInvoker {
         if path.count == 2 {
             barItem.menuItems[path[1]].click()
         } else {
-            barItem.menuItems[path[1]].hover()
-            self.settle(0.3)
-            barItem.menuItems[path[2]].click()
+            // A submenu opens on hover after a delay, and not every time: a
+            // single hover then a click sometimes clicked into a closed
+            // submenu, so "Playback Speed ▸ 1×" never ran (2026-09-27).
+            // Hover again until the child can be clicked.
+            let parent = barItem.menuItems[path[1]]
+            let child = barItem.menuItems[path[2]]
+            let deadline = Date().addingTimeInterval(3)
+            repeat {
+                parent.hover()
+                self.settle(0.3)
+            } while !child.isHittable && Date() < deadline
+            child.click()
         }
         self.settle(0.2)
     }
@@ -217,17 +226,91 @@ struct MenuInvoker {
         while Date() < deadline {
             let matches = self.app.descendants(matching: .any).matching(predicate)
             // The label/identifier is inherited by the row's icon Image
-            // sub-element too; take the widest match (the full-width row)
-            // and tap its centre coordinate, which selects even when the
-            // element reports not-hittable.
+            // sub-element too; take the widest match (the full-width row).
+            // Click it: on macOS 27 a coordinate `tap()` on the row selects
+            // nothing and the app stays on its launch destination, so every
+            // test that waited for the destination timed out. A row that
+            // reports not-hittable gets a coordinate click instead.
             if let row = Self.widest(of: matches) {
-                row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                // Outline rows report not-hittable even when fully visible,
+                // so whether a row is in view is read from the sidebar's
+                // scroll view, not from isHittable.
+                let clip = self.app.scrollViews.containing(predicate).firstMatch
+                if clip.exists, !Self.isShown(row, in: clip) {
+                    self.bringSidebarRowIntoView(row, clip: clip)
+                }
+                if row.isHittable {
+                    row.click()
+                } else if !clip.exists || Self.isShown(row, in: clip) {
+                    row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+                } else {
+                    // Never click a row outside the sidebar's visible part:
+                    // the point is off the list, so the click lands on
+                    // whatever is there and the app stays where it was.
+                    XCTFail("sidebar row \"\(title)\" is out of view and could not be scrolled to")
+                }
                 self.settle(0.5)
                 return
             }
             self.settle(0.25)
         }
         XCTFail("sidebar row \"\(title)\" never appeared")
+    }
+
+    /// Brings a sidebar row below or above the visible part of the list into
+    /// view: scrolls the sidebar, and when scroll synthesis does nothing
+    /// (it no-opped on a sidebar under macOS 26.6), walks the selection with
+    /// the arrow keys, which AppKit scrolls into view. The walk selects the
+    /// destinations on the way, which is harmless: the caller is navigating.
+    private func bringSidebarRowIntoView(_ row: XCUIElement, clip: XCUIElement) {
+        Self.scroll(clip, until: { Self.isShown(row, in: clip) }, toward: row)
+        guard !Self.isShown(row, in: clip) else { return }
+        let key: XCUIKeyboardKey = row.frame.midY > clip.frame.midY ? .downArrow : .upArrow
+        // Focus the sidebar through its selected row, so the arrow keys move
+        // the sidebar's selection rather than the track table's.
+        let selected = self.app.outlines.firstMatch.outlineRows
+            .matching(NSPredicate(format: "selected == 1")).firstMatch
+        if selected.exists, Self.isShown(selected, in: clip) {
+            selected.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        }
+        var sent = 0
+        while !Self.isShown(row, in: clip), sent < 30 {
+            self.app.typeKey(key, modifierFlags: [])
+            sent += 1
+            self.settle(0.1)
+        }
+    }
+
+    /// Whether `element`'s centre lies inside `clip`, the scroll view whose
+    /// visible part holds it.
+    static func isShown(_ element: XCUIElement, in clip: XCUIElement) -> Bool {
+        clip.frame.contains(CGPoint(x: element.frame.midX, y: element.frame.midY))
+    }
+
+    /// Scrolls `container` from its centre until `element` is hittable. See
+    /// `scroll(_:until:toward:)`.
+    static func scrollUntilHittable(_ element: XCUIElement, in container: XCUIElement) {
+        self.scroll(container, until: { element.isHittable }, toward: element)
+    }
+
+    /// Scrolls `container` from its centre, which is on screen, until `done`
+    /// holds, picking the direction from whether `target` moved closer. Stops
+    /// early when scroll synthesis moves nothing.
+    static func scroll(_ container: XCUIElement, until done: () -> Bool, toward target: XCUIElement) {
+        let centre = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        var step: CGFloat = target.frame.midY > container.frame.midY ? -150 : 150
+        for _ in 0 ..< 12 where !done() {
+            let before = abs(target.frame.midY - container.frame.midY)
+            centre.scroll(byDeltaX: 0, deltaY: step)
+            RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+            let after = abs(target.frame.midY - container.frame.midY)
+            if after == before {
+                return // scrolling moves nothing here
+            }
+            if after > before {
+                step = -step
+            }
+        }
     }
 
     private static func widest(of query: XCUIElementQuery) -> XCUIElement? {

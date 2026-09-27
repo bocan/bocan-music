@@ -4,16 +4,19 @@ import SwiftUI
 
 // MARK: - ScanBanner
 
-/// A non-blocking progress banner that slides in at the top of the content area
-/// while `LibraryViewModel` is scanning, then auto-hides 3 seconds after
+/// A non-blocking progress card that floats over the bottom of the content
+/// area while `LibraryViewModel` is scanning, then auto-hides 3 seconds after
 /// the scan finishes.
 ///
-/// Mount it via `.safeAreaInset(edge: .top)` on the content pane:
+/// Mount it as an overlay, never as a safe-area inset: an inset resizes the
+/// content, so each time the banner came or went every row of the list below
+/// moved, and a double-click that straddled the auto-hide played the song
+/// under the one clicked (found by an E2E run, 2026-09-27):
 ///
 /// ```swift
 /// ContentPane(vm: vm)
-///     .safeAreaInset(edge: .top, spacing: 0) {
-///         ScanBanner(vm: vm)
+///     .overlay(alignment: .bottom) {
+///         ScanBanner(vm: vm).padding(12)
 ///     }
 /// ```
 public struct ScanBanner: View {
@@ -84,7 +87,7 @@ public struct ScanBanner: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(self.bannerBackground)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     // MARK: - Summary banner
@@ -119,7 +122,7 @@ public struct ScanBanner: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(self.bannerBackground)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     // MARK: - Enrichment banner
@@ -146,7 +149,7 @@ public struct ScanBanner: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
         .background(self.bannerBackground)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private var enrichmentHelp: String {
@@ -162,9 +165,11 @@ public struct ScanBanner: View {
 
     // MARK: - Helpers
 
+    /// A card, since it floats over the list rather than sitting above it.
     private var bannerBackground: some View {
-        Color(NSColor.windowBackgroundColor)
-            .shadow(color: .black.opacity(0.08), radius: 2, y: 2)
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Color(NSColor.windowBackgroundColor))
+            .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
     }
 
     private var scanSubtitle: String {

@@ -8,7 +8,16 @@ import Testing
 /// it must fit every string `Formatters.duration` can hand it. It did not for
 /// anything over an hour, and SwiftUI wrapped the last digit onto a second line
 /// (#563), which is what a listener saw on a long podcast.
+///
+/// `@MainActor`: measuring text loads `NSFont`, and the first use of it in the
+/// test process runs `+[NSFont initialize]`, which waits for the main queue.
+/// Off the main thread that deadlocked the whole UI suite whenever another
+/// test was creating an `NSWindow` on the main thread at that moment: the
+/// window waited for the font class to finish initialising, and the font
+/// initialiser waited for the main thread. It was the intermittent CI hang in
+/// "Test UI package".
 @Suite("Transport time labels")
+@MainActor
 struct TransportTimeLabelTests {
     /// The rendered width of `text` in what SwiftUI draws for
     /// `Typography.caption` plus `.monospacedDigit()`. The font is built per

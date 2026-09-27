@@ -26,7 +26,16 @@ enum E2ESeeder {
         // prior run's "Show Lyrics" toggle would otherwise leak into this
         // launch. Reset (not argument-domain pin: pinning shadows every
         // later read, freezing the menu's live Show/Hide labels).
-        for key in ["lyrics.paneVisible", "visualizer.paneVisible", "ui.immersive.visible"] {
+        // The playback rates and the sleep timer are the same kind of state:
+        // the menu pass steps the speed up to 2x and arms sleep timers, and a
+        // run that failed before undoing them left every later launch playing
+        // at double speed, which ended the one-minute fixtures early, with a
+        // timer already running (2026-09-27).
+        for key in [
+            "lyrics.paneVisible", "visualizer.paneVisible", "ui.immersive.visible",
+            "playback.rate", "podcast.playback.rate",
+            "playback.sleepTimer.expiresAt", "playback.sleepTimer.fadeOut",
+        ] {
             UserDefaults.standard.removeObject(forKey: key)
         }
         // AppKit autosaves every split view's subview frames into this same

@@ -118,6 +118,7 @@ public struct DSPView: View {
                     isOn: self.$vm.state.crossfadeAlbumGapless
                 )
                 .accessibilityLabel(L10n.string("Keep gapless playback within albums when crossfade is active"))
+                .accessibilityIdentifier(A11y.SettingsIDs.crossfadeAlbumGapless)
                 .help(L10n.string(
                     "When on, consecutive album tracks stay gapless; crossfade only applies at album boundaries."
                 ))
