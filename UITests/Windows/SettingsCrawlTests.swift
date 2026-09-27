@@ -144,7 +144,8 @@ final class SettingsCrawlTests: XCTestCase {
         if row.isHittable {
             row.click()
         } else {
-            row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            // click(), not tap(): a coordinate tap does nothing on macOS 27.
+            row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         }
     }
 
@@ -165,22 +166,23 @@ final class SettingsCrawlTests: XCTestCase {
             let selected = sidebar.outlineRows
                 .matching(NSPredicate(format: "selected == 1")).firstMatch
             if selected.exists {
-                selected.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+                selected.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
             }
             app.typeKey(key, modifierFlags: [])
             sent += 1
         }
     }
 
-    /// A plain click when hittable, else a centre-point coordinate tap
+    /// A plain click when hittable, else a centre-point coordinate click
     /// (macOS List rows report not-hittable even fully visible: the cell is
     /// the hit target). For in-pane controls that don't need scrolling; see
-    /// `selectSidebarRow` for the sidebar's own rows.
+    /// `selectSidebarRow` for the sidebar's own rows. A coordinate `tap()`
+    /// does nothing on macOS 27, so this clicks.
     static func tap(_ element: XCUIElement) {
         if element.isHittable {
             element.click()
         } else {
-            element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            element.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
         }
     }
 

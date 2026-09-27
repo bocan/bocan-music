@@ -330,6 +330,18 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/ToastBanner.swift`
 
+A SwiftUI `Menu` is a third case: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label is built from the label view, so an SF Symbol in it supplies the label (the sleep timer read "do not disturb" from `moon.fill` whatever its state). Put the label on the label view with `.accessibilityElement(children: .ignore)`, as `SleepTimerMenu.menuLabel` does.
+
+### On macOS 27 a coordinate `tap()` does nothing; click
+
+**Problem:** an E2E step that taps a coordinate changes nothing, and the test times out on the next wait, or passes without testing anything. `MenuInvoker.selectSidebar` left the app on its launch destination (11 failures in one run), and the visualizer steppers never moved, so the mini-player matrix passed after visiting one mode.
+
+**Rule:** use `click()`, on the element when it is hittable, else on `coordinate(withNormalizedOffset:)`. Never `XCUICoordinate.tap()` in this suite. When a loop stops on a repeated value, make sure the step that should change it did.
+
+**Why:** on macOS 27 `XCUICoordinate.tap()` delivers nothing the app acts on, while `click()` on the same point does; found on 2026-09-21 for the sidebar and confirmed across the harness on 2026-09-27 from a failed run's accessibility snapshot (mode and palette still at their first values).
+
+**Canonical file:** `UITests/Menus/MenuInvoker.swift`
+
 ### Replace fixed sleeps with bounded waits
 
 **Problem:** a test that passes locally fails on a loaded CI runner.

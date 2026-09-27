@@ -223,7 +223,7 @@ final class VisualizerLivenessTests: XCTestCase {
     /// window did (phase 33, found empirically).
     /// `.accessibilityElement(children: .ignore)` combines the row's
     /// two chevron buttons out of the AX tree (it is one adjustable
-    /// element for VoiceOver), so a coordinate tap near the row's trailing
+    /// element for VoiceOver), so a coordinate click near the row's trailing
     /// edge is what actually lands on the button — a real click hits
     /// whatever NSView renders there regardless of AX combining.
     private func stepStepperNext(_ inv: MenuInvoker, hoverTarget: XCUIElement, rowIdentifier: String) {
@@ -238,7 +238,9 @@ final class VisualizerLivenessTests: XCTestCase {
             XCTFail("stepper row \(rowIdentifier) never became hittable")
             return
         }
-        row.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).tap()
+        // click(), not tap(): on macOS 27 a coordinate tap does nothing, so
+        // the stepper never moved and each matrix saw only its first value.
+        row.coordinate(withNormalizedOffset: CGVector(dx: 0.92, dy: 0.5)).click()
         inv.settle(0.3)
     }
 
