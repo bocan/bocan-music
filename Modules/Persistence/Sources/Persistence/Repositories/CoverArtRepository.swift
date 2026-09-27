@@ -72,6 +72,19 @@ public struct CoverArtRepository: Sendable {
         }
     }
 
+    /// The hashes an album or a track shows. One query, for the cache sweep,
+    /// which must not evict a cover still in use: the eviction would clear the
+    /// links, and a quick scan does not re-read an unchanged file (#576).
+    public func hashesInUse() async throws -> Set<String> {
+        try await self.database.read { db in
+            try Set(String.fetchAll(db, sql: """
+            SELECT cover_art_hash FROM albums WHERE cover_art_hash IS NOT NULL
+            UNION
+            SELECT cover_art_hash FROM tracks WHERE cover_art_hash IS NOT NULL
+            """))
+        }
+    }
+
     /// The hashes of every row whose `source` is one of `sources`. One query,
     /// for the cache sweep that must keep art a rescan cannot rebuild (#570).
     public func hashes(withSourceIn sources: Set<String>) async throws -> Set<String> {
