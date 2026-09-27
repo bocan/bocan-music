@@ -340,6 +340,16 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/VisualizerViewModelTests.swift`
 
+### A UI test that touches AppKit is `@MainActor`
+
+**Problem:** the UI test run hangs with no output until CI's 90-minute job limit cancels it, now and then, in a step that normally takes a few minutes. A rerun passes. Locally `swift test` sits for as long as you let it.
+
+**Rule:** a test suite that calls AppKit (`NSFont`, `NSWindow`, `NSHostingView`, `NSImage`, text measurement) is `@MainActor`. `AppKitTestIsolationConventionTests` fails a test file that calls those APIs without it. To diagnose a hang, `sample` the test helper process and look at the main thread and at any thread in an Objective-C `+initialize`.
+
+**Why:** Swift Testing runs a suite without `@MainActor` on the cooperative pool. The first `NSFont` use in the process runs `+[NSFont initialize]`, which registers defaults and waits for an observer on the main queue; if a main-thread test is creating an `NSWindow` at that moment, the window waits for the font class to finish initialising, and each side waits for the other. It depends on test order and timing, so it reads as a flaky runner. Found on 2026-09-27 from a sample of a hung local run (`TransportTimeLabelTests` against `WindowFadeTests`).
+
+**Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/AppKitTestIsolationConventionTests.swift`
+
 ### Offline render tests render on the pump's executor
 
 **Problem:** an offline render test (crossfade, gapless hand-over) fails about once in ten full `make test-audio-engine` runs and passes on its own. The rendered audio holds a stretch of exact silence mid-stream, often starting on a buffer boundary, or a transition is timed a few frames before the boundary it follows.
