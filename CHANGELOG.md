@@ -7,19 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again. The analysis also no longer undoes plays, ratings or tag edits you make to songs while it runs.
+The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.
 
-Albums and songs in large libraries no longer lose their covers when the cover art folder grows past its size limit. Before, a cover could vanish and only come back after a full rescan. Now only covers that nothing shows any more are cleared out, even if that leaves the folder over its limit.
+ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again.
 
-When one song flows into the next without a gap, the play bar, Now Playing and your listening history now change over at the moment you hear the new song. Before, they moved on almost a second early, while the end of the previous song was still playing. Switching speakers or headphones no longer skips almost a second of the song, and in the last seconds of a song it no longer breaks the gapless join or the crossfade into the next one.
+When one song flows into the next without a gap, the play bar, Now Playing and your listening history now change over at the moment you hear the new song. Before, they moved on almost a second early, while the end of the previous song was still playing.
 
-ReplayGain now does what the setting says. Track Gain, Album Gain and Auto, and the pre-amp slider, change how loud each song plays, so a quiet folk record and a loud rock one sit at a similar level. Before, the setting was saved but nothing used it, and every song played at its own volume. During a crossfade each song keeps its own level. A song Bòcan has no ReplayGain values for plays as it is, and so do streams, podcasts and radio.
-
-Crossfade now really crossfades. The next song fades in while the current one fades out, so for a few seconds you hear both, instead of the old fade down to silence and back up again. It also works the way you would expect when you switch it on: before, with the default settings it never happened at all, and it switched itself off every time Bòcan restarted until you moved the slider again. Songs from the same album still play without a gap while "Keep gapless within albums" is on, and crossfade applies to songs stored on your Mac, so streams and podcasts change over as before. Thanks for reporting this one @aulakhharsh1.
+Crossfade now really crossfades. The next song fades in while the current one fades out, so for a few seconds you hear both, instead of the old fade down to silence and back up again. Songs from the same album still play without a gap while "Keep gapless within albums" is on, and crossfade applies to songs stored on your Mac, so streams and podcasts change over as before. Thanks for reporting this one @aulakhharsh1.
 
 Time Machine, and backup tools that recognise cache folders, now skip the caches Bòcan can rebuild on its own, such as downloaded cover-search thumbnails, podcast show artwork and Phone Sync conversions, which makes backups smaller. Your library, your own cover art, tag backups and downloaded podcast episodes are still backed up as before.
-
-Album covers found with Batch Cover Art, and covers you chose yourself in the tag editor, are no longer deleted when the cover art folder grows past its size limit. Those covers exist only in Bòcan's own folder, so a rescan could never bring them back, and the albums were left without a cover.
 
 ## [2.18.0](https://github.com/bocan/bocan-music/compare/v2.17.1...v2.18.0) (2026-09-23)
 

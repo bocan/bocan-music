@@ -330,6 +330,18 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 
 **Canonical file:** `Modules/UI/Sources/UI/Common/ToastBanner.swift`
 
+A SwiftUI `Menu` is a third case, and it adds `.title`: on macOS 27 the `.accessibilityLabel` set on the `Menu` lands in the menu button's title, and its label comes from the SF Symbol in the label view (the sleep timer's label is "do not disturb", from `moon.fill`, whatever its state). Setting `.accessibilityLabel` on the label view as well does not change that; checked 2026-09-27. Read `label` and `title` together, as `MenuInvocationTests` does for the sleep timer. Whether VoiceOver speaks the symbol's description for such a button has not been checked.
+
+### On macOS 27 a coordinate `tap()` does nothing; click
+
+**Problem:** an E2E step that taps a coordinate changes nothing, and the test times out on the next wait, or passes without testing anything. `MenuInvoker.selectSidebar` left the app on its launch destination (11 failures in one run), and the visualizer steppers never moved, so the mini-player matrix passed after visiting one mode.
+
+**Rule:** use `click()`, on the element when it is hittable, else on `coordinate(withNormalizedOffset:)`. Never `XCUICoordinate.tap()` in this suite. When a loop stops on a repeated value, make sure the step that should change it did.
+
+**Why:** on macOS 27 `XCUICoordinate.tap()` delivers nothing the app acts on, while `click()` on the same point does; found on 2026-09-21 for the sidebar and confirmed across the harness on 2026-09-27 from a failed run's accessibility snapshot (mode and palette still at their first values).
+
+**Canonical file:** `UITests/Menus/MenuInvoker.swift`
+
 ### Replace fixed sleeps with bounded waits
 
 **Problem:** a test that passes locally fails on a loaded CI runner.
@@ -339,6 +351,16 @@ Two things hid this for a while. The failure is reported by whichever helper loo
 **Why:** a test that waits a fixed wall-clock interval for an async main-actor timer flakes when the runner starves the task past the wait. Several suites have been hardened this way; others with real-time waits remain and are known flake candidates rather than regressions.
 
 **Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/VisualizerViewModelTests.swift`
+
+### A UI test that touches AppKit is `@MainActor`
+
+**Problem:** the UI test run hangs with no output until CI's 90-minute job limit cancels it, now and then, in a step that normally takes a few minutes. A rerun passes. Locally `swift test` sits for as long as you let it.
+
+**Rule:** a test suite that calls AppKit (`NSFont`, `NSWindow`, `NSHostingView`, `NSImage`, text measurement) is `@MainActor`. `AppKitTestIsolationConventionTests` fails a test file that calls those APIs without it. To diagnose a hang, `sample` the test helper process and look at the main thread and at any thread in an Objective-C `+initialize`.
+
+**Why:** Swift Testing runs a suite without `@MainActor` on the cooperative pool. The first `NSFont` use in the process runs `+[NSFont initialize]`, which registers defaults and waits for an observer on the main queue; if a main-thread test is creating an `NSWindow` at that moment, the window waits for the font class to finish initialising, and each side waits for the other. It depends on test order and timing, so it reads as a flaky runner. Found on 2026-09-27 from a sample of a hung local run (`TransportTimeLabelTests` against `WindowFadeTests`).
+
+**Canonical file:** `Modules/UI/Tests/UITests/ViewModelTests/AppKitTestIsolationConventionTests.swift`
 
 ### Offline render tests render on the pump's executor
 

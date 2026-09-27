@@ -42,9 +42,13 @@ public struct ContentPane: View {
                 }
             }
             .animation(.easeInOut(duration: 0.25), value: self.vm.isInitialScan)
-            .safeAreaInset(edge: .top, spacing: 0) {
+            .overlay(alignment: .bottom) {
+                // An overlay, not a safe-area inset: an inset moved every row
+                // of the list each time the banner came or went (see ScanBanner).
                 if !self.vm.isInitialScan {
                     ScanBanner(vm: self.vm)
+                        .padding(.horizontal, 12)
+                        .padding(.bottom, 12)
                 }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
