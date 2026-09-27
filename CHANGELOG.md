@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
+
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.
 
 ReplayGain analysis now works out album gain as well as track gain, so Album and Auto modes keep an album's quiet and loud songs in proportion instead of levelling each one on its own. If you analysed your library before, "Compute missing ReplayGain values" fills in the album gain from the values you already have, without measuring the songs again.
@@ -16,6 +18,23 @@ When one song flows into the next without a gap, the play bar, Now Playing and y
 Crossfade now really crossfades. The next song fades in while the current one fades out, so for a few seconds you hear both, instead of the old fade down to silence and back up again. Songs from the same album still play without a gap while "Keep gapless within albums" is on, and crossfade applies to songs stored on your Mac, so streams and podcasts change over as before. Thanks for reporting this one @aulakhharsh1.
 
 Time Machine, and backup tools that recognise cache folders, now skip the caches Bòcan can rebuild on its own, such as downloaded cover-search thumbnails, podcast show artwork and Phone Sync conversions, which makes backups smaller. Your library, your own cover art, tag backups and downloaded podcast episodes are still backed up as before.
+
+### For developers
+
+**Added**
+- app: mark rebuildable cache folders for backup tools ([#577](https://github.com/bocan/bocan-music/pull/577))
+
+**Fixed**
+- audio: crossfade overlaps the next song instead of fading through silence ([#572](https://github.com/bocan/bocan-music/pull/572))
+- library: never sweep cover art a rescan cannot rebuild ([#578](https://github.com/bocan/bocan-music/pull/578))
+- audio: apply ReplayGain at playback, per track in the buffer pump ([#580](https://github.com/bocan/bocan-music/pull/580))
+- audio: change track on a gapless boundary when the next one is heard ([#581](https://github.com/bocan/bocan-music/pull/581))
+- library: never sweep cover art an album or a track still shows ([#584](https://github.com/bocan/bocan-music/pull/584))
+- ui: compute album ReplayGain after a batch analysis ([#585](https://github.com/bocan/bocan-music/pull/585))
+- ui: green the E2E suite on macOS 27 and end the UI test deadlock ([#588](https://github.com/bocan/bocan-music/pull/588))
+
+**Changed**
+- playback: drop the gapless transition callback nothing called ([#582](https://github.com/bocan/bocan-music/pull/582))
 
 ## [2.18.0](https://github.com/bocan/bocan-music/compare/v2.17.1...v2.18.0) (2026-09-23)
 
