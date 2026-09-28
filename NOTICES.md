@@ -230,7 +230,7 @@ SOFTWARE.
 
 ---
 
-## FeedKit 10.9.0
+## FeedKit 10.9.4
 
 <https://github.com/nmdias/FeedKit>
 
@@ -308,5 +308,5 @@ This product uses the Apple iTunes Search API. Use of the Apple iTunes Search AP
 
 ---
 
-*This file was generated for Bòcan 2.18.0. Dependency versions are pinned in
+*This file was generated for Bòcan 2.19.0. Dependency versions are pinned in
 the workspace `Package.resolved`.*

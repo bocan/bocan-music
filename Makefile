@@ -33,6 +33,12 @@ XCBEAUTIFY_FLAGS ?=
 # and keeps compiler diagnostics, failures and the run summary (#458).
 SWIFT_TEST_FLAGS ?=
 
+# The workspace SPM pins. Tracked on purpose: without it every build (the
+# release build included) resolves each package to the newest version its
+# range allows. `lint` fails when it is missing or untracked, because 2.19.0
+# shipped unpinned after a commit deleted it and nothing noticed.
+WORKSPACE_RESOLVED := Bocan.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
 ## tests: Run format, lint, full test matrix — one line per stage, errors shown inline
 tests:
 	@bash Scripts/run-tests.sh
@@ -322,6 +328,8 @@ lint: check-swiftlint-version
 	@python3 Scripts/audit-help-text.py --summary
 	@python3 Scripts/audit-try-optional.py --summary
 	@python3 Scripts/audit-appkit-imports.py --summary
+	@test -f $(WORKSPACE_RESOLVED) && git ls-files --error-unmatch $(WORKSPACE_RESOLVED) >/dev/null 2>&1 \
+		|| { echo "error: $(WORKSPACE_RESOLVED) is missing or untracked; without it every build resolves unpinned (restore it from git history)"; exit 1; }
 
 ## format: Run SwiftFormat (modifies files)
 format: check-swiftformat-version

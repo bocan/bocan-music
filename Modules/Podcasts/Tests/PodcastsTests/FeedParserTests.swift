@@ -266,6 +266,67 @@ struct FeedParserStylesheetPrologTests {
     }
 }
 
+// MARK: - pubDate spellings
+
+/// FeedKit throws on a `pubDate` it cannot read, and that fails the whole feed,
+/// not one episode. 10.9.0 could not read the spellings below, so a feed that
+/// used any of them never refreshed; 10.9.4 reads them. These cases pin that
+/// floor.
+@Suite("FeedParser - pubDate spellings")
+struct FeedParserPubDateTests {
+    private func rss(pubDate: String) -> Data {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <rss version="2.0">
+          <channel>
+            <title>Date Test</title>
+            <item>
+              <title>Ep</title>
+              <enclosure url="https://example.com/a.mp3" type="audio/mpeg" length="1"/>
+              <guid>g1</guid>
+              <pubDate>\(pubDate)</pubDate>
+            </item>
+          </channel>
+        </rss>
+        """
+        return Data(xml.utf8)
+    }
+
+    private func publishedAt(_ pubDate: String) throws -> Date? {
+        try parser.parse(self.rss(pubDate: pubDate), sourceURL: sourceURL).episodes.first?.publishedAt
+    }
+
+    @Test(
+        "A zone abbreviation outside RFC 822, or no zone, still parses the feed",
+        arguments: [
+            "Mon, 01 Jan 2024 10:00:00 BST",
+            "Mon, 01 Jan 2024 10:00:00 CEST",
+            "Mon, 01 Jan 2024 10:00:00 AEST",
+            "Mon, 01 Jan 2024 10:00:00",
+        ]
+    )
+    func unusualZoneParses(pubDate: String) throws {
+        // Only the day is asserted: FeedKit reads some of these zones loosely
+        // (BST as Bangladesh time, CEST as midnight). The contract here is that
+        // the feed parses and the episode lands on the right day.
+        let date = try #require(try self.publishedAt(pubDate))
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = try #require(TimeZone(identifier: "UTC"))
+        let day = utc.dateComponents([.year, .month, .day], from: date)
+        #expect(day.year == 2024 && day.month == 1 && day.day == 1)
+    }
+
+    @Test("A missing space after the weekday comma reads the exact instant")
+    func weekdayWithoutSpace() throws {
+        #expect(try self.publishedAt("Mon,01 Jan 2024 10:00:00 GMT") == Date(timeIntervalSince1970: 1_704_103_200))
+    }
+
+    @Test("A two-digit year reads as this century, not the first")
+    func twoDigitYear() throws {
+        #expect(try self.publishedAt("Mon, 01 Jan 24 10:00:00 GMT") == Date(timeIntervalSince1970: 1_704_103_200))
+    }
+}
+
 // MARK: - itunes:type (show_type)
 
 @Suite("FeedParser - itunes:type")
