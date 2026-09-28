@@ -19,14 +19,14 @@ All everyday commands go through the top-level `Makefile`. Run `make help` for t
 | Coverage gate (CI gate, fails < 80%) | `make test-coverage` |
 | Per-module SPM tests | `make test-<module>` (one per module: `test-observability`, `test-persistence`, `test-metadata`, `test-library`, `test-acoustics`, `test-audio-engine`, `test-playback`, `test-scrobble`, `test-subsonic`, `test-podcasts`, `test-sync-server`, `test-ui`) |
 | Per-module coverage with module-level floors | `make coverage-all` |
-| Lint (strict — CI gate) | `make lint` |
+| Lint (strict, CI gate) | `make lint` |
 | Auto-format | `make format` |
 | Open in Xcode | `make open` |
 | Doctor (tool versions, env sanity) | `make doctor` |
 
 Per-module SPM tests use `swift test` under the module directory. To run a single test or suite, `cd Modules/<Name>` and use `swift test --filter <Suite>` or `--filter <Suite>/<testName>`.
 
-**The Xcode `BocanTests` target runs without a host app (`TEST_HOST = ""`), so AppKit / SwiftUI rendering is unavailable there.** Snapshot tests and anything that needs a real view tree live in the `UI` SPM package and run via `make test-ui`. `make test` will appear to "miss" them — that's by design, not a bug to chase.
+**The Xcode `BocanTests` target runs without a host app (`TEST_HOST = ""`), so AppKit / SwiftUI rendering is unavailable there.** Snapshot tests and anything that needs a real view tree live in the `UI` SPM package and run via `make test-ui`. `make test` will appear to "miss" them. That is by design, not a bug to chase.
 
 ## Slice review for PRs
 
@@ -44,7 +44,7 @@ Inside a layer the modules are not all independent. `Library` depends on `Metada
 
 | Module | Owns |
 |--------|------|
-| `Observability` | `AppLogger`, MetricKit listener, log redaction. Never `print`, never raw `os_log` — always go through `AppLogger`. |
+| `Observability` | `AppLogger`, MetricKit listener, log redaction. Never `print`, never raw `os_log`; always go through `AppLogger`. |
 | `Persistence` | GRDB 7 schema + numbered migrations under `Sources/Persistence/Migrations/`, typed repositories, FTS5 search, `ValueObservation` streams. WAL mode. |
 | `AudioEngine` | `AudioEngine` actor, `EngineGraph` (`AVAudioPlayerNode`-backed), `BufferPump`, the AVFoundation + FFmpeg decoder split (`AVFoundationDecoder`, `FFmpegDecoder`, `DecoderFactory`, `FormatSniffer`), DSP chain, `SubsonicStreamCache`. |
 | `Metadata` | TagLib read/write, cover-art extraction, LRC parsing. |
@@ -54,10 +54,10 @@ Inside a layer the modules are not all independent. `Library` depends on `Metada
 | `Subsonic` | `SubsonicService` actor wrapping the `SwiftSonic` client; capability detection (advertised + legacy-core probe); Keychain credentials. |
 | `Acoustics` | Chromaprint fingerprinting + AcoustID, the single `MusicBrainzClient` (recording, artist, release-group; one shared 1 req/s limiter for the whole app) and `WikipediaClient`. |
 | `Podcasts` | FeedKit-based RSS/Atom feed refresh, Podcast Index + iTunes search, subscriptions, episode downloads and retention, Podcasting 2.0 extras (chapters, transcripts, persons, podroll). |
-| `SyncServer` | Phone Sync (ADR-060 to ADR-070): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and, in later slices, the Bonjour-advertised mutual-TLS server that serves a manifest + files read-only to a paired phone. Separate identity/port from any ADR-034 remote control. |
+| `SyncServer` | Phone Sync (ADR-060 to ADR-070): `ServerIdentity` (self-signed P-256 login-Keychain TLS identity), `TrustedDevices` trust store, and the Bonjour-advertised mutual-TLS server (`SyncListener`, `SyncServer`) that serves a manifest + files read-only to a paired phone. Separate identity/port from any ADR-034 remote control. |
 | `UI` | All SwiftUI views, view models (`LibraryViewModel` is the spine), settings, mini player, snapshot tests. Only module that imports AppKit (one allowlisted exception: `NowPlayingCentre` in `Playback`, for `MPMediaItemArtwork`); `Scripts/audit-appkit-imports.py` enforces it from `make lint`. A lower module that wants an AppKit event exposes a method and `App` subscribes. |
 
-Cross-cutting standards live in `docs/design-spec/_standards.md` — read this if you're about to add anything substantial. Architecture decision records live alongside as `ADR-NNN-*.md`.
+Cross-cutting standards live in `docs/design-spec/_standards.md`. Read it if you're about to add anything substantial. Architecture decision records live alongside as `ADR-NNN-*.md`.
 
 ## Things easy to get wrong
 
@@ -66,13 +66,13 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - **`fpcalc` and its FFmpeg dylibs are not in git.** `make bundle-fpcalc` copies them from Homebrew into `Resources/` with paths rewritten to `@loader_path/…`. Re-run after any FFmpeg major version bump (e.g. `libavcodec.61` → `.62`); `make generate` only needs re-running if dylib filenames changed.
 - **The Xcode (Debug) build is sandboxed; the shipped release build is not.** Both carry the hardened runtime. `Resources/Bocan.entitlements` applies to Debug only; the CI release build is deliberately re-signed without entitlements by `Scripts/embed-deps.sh`, so `/Applications/Bocan.app` runs unsandboxed. Consequences: the two builds use **different libraries** (Debug: `~/Library/Containers/io.cloudcauldron.bocan/Data/Library/Application Support/Bocan/`; release: `~/Library/Application Support/Bocan/`) and different preferences, so a debug run never touches the real library, and numbers read from one say nothing about the other. Before quoting anything from "the library", `lsof -p $(pgrep -x Bocan)` and query the file the running app actually has open. Entitlements for Debug get added per-feature, not "just in case", and file access still goes through the `SecurityScope` helper (it is a no-op outside the sandbox), never raw `URL.startAccessingSecurityScopedResource()` scattered around.
 - **`AVAudioFile` snapshots a file's length at open time.** It's the wrong decoder for live streams (Subsonic internet radio, etc.). `DecoderFactory.make(for:)` routes HTTP/HTTPS URLs to `FFmpegDecoder` for this reason; new playback paths need to honour the same split.
-- **`SubsonicStreamCache` waits for the full download before signalling readiness**, by deliberate design — `AVAudioFile`'s snapshot semantics meant the previous "stream while downloading" path silently truncated tracks to whatever bytes happened to be on disk at open. Don't reintroduce mid-download signalling without also swapping the decoder for a streaming-aware one.
+- **`SubsonicStreamCache` waits for the full download before signalling readiness**, by deliberate design: `AVAudioFile`'s snapshot semantics meant the previous "stream while downloading" path silently truncated tracks to whatever bytes happened to be on disk at open. Don't reintroduce mid-download signalling without also swapping the decoder for a streaming-aware one.
 - **Capability snapshots are persisted per-Subsonic-server**, but `loadCapabilities` is only auto-invoked from the bootstrap fan-out in `BocanApp.swift` and from the Settings "Test Connection" path. Sidebar rows are gated on the persisted JSON; if a server upgrade exposes a new capability and nothing kicks a refresh, the row won't appear until the cache ages past `freshnessInterval` (24 h).
 - **`PlayableSource` is `Codable`** with a discriminator key. The `QueuePersistence` v1→v2 migration depends on this; new cases need both encode/decode arms and existing-test updates.
-- **Context7 Lookups**. With Context7 lookups, ALWAYS choose the latest version of a dependency (FeedKit, GRDB, etc.) and avoid any deprecated APIs. Where the spec deviates from this, stop and ask for clarification before proceeding. This is as important as any other spec detail, and will save us from wasted work.
-- **No upward imports**. The dependency order above is enforced — if you find yourself wanting to `import UI` from `Playback`, the abstraction is in the wrong layer.
+- **Context7 lookups.** Choose the latest version of a dependency (FeedKit, GRDB, etc.) and avoid deprecated APIs. Where a spec names an older version or API, ask before proceeding, because work built on a superseded API gets redone.
+- **No upward imports**. The dependency order above is enforced: if you find yourself wanting to `import UI` from `Playback`, the abstraction is in the wrong layer.
 - **`.claude/skills/` holds project-owned skills only.** A skill here is a workflow this repo runs (a per-change review gate, a perf-trace recipe, a release preview), written against this codebase's rules and gates. Third-party skill packs are not vendored: 306 files of generic Apple-platform reference material sat here for a month without a single invocation (#460). Reference material comes from Context7 on demand; project knowledge belongs in the `CLAUDE.md` files and `docs/`.
-- **All user-facing copy MUST be localized. No bare user-facing string literals, under any circumstances.** Every user-visible string in the `UI` module routes through the `L10n` helper (`Text(localized:)` / `L10n.string`) with a key in `Modules/UI/Sources/UI/Resources/Localizable.xcstrings`; a bare literal compiles, renders in English, and silently never localizes. The `no_bare_user_facing_literal` SwiftLint rule (module-wide, CI gate) and the `L10nTests` suite enforce this. After adding or changing catalog keys, run `make pseudolocale` (the en-XA coverage test fails otherwise). Strings displayed by the UI but owned by lower modules (preset names, status labels) keep English raw values and get a UI-side display mapping. New user-facing surfaces belong in the `UI` module where the catalog and guard cover them; do not add user-facing literals to `App/` (it has no String Catalog). Full workflow: `docs/design-spec/localization.md`.
+- **All user-facing copy is localized; no bare user-facing string literals.** Every user-visible string in the `UI` module routes through the `L10n` helper (`Text(localized:)` / `L10n.string`) with a key in `Modules/UI/Sources/UI/Resources/Localizable.xcstrings`; a bare literal compiles, renders in English, and silently never localizes. The `no_bare_user_facing_literal` SwiftLint rule (module-wide, CI gate) and the `L10nTests` suite enforce this. After adding or changing catalog keys, run `make pseudolocale` (the en-XA coverage test fails otherwise). Strings displayed by the UI but owned by lower modules (preset names, status labels) keep English raw values and get a UI-side display mapping. New user-facing surfaces belong in the `UI` module where the catalog and guard cover them; do not add user-facing literals to `App/` (it has no String Catalog). Full workflow: `docs/design-spec/localization.md`.
 - **Every interactive control carries `.help()`, or an allowlist entry saying why not.** A `Button`, `Toggle`, `Picker`, `Slider` or `Menu` gets localized hover text that says what it does or what changes if it is switched, never a restatement of its label. Controls inside menus, alerts and dialogs are exempt by rule (macOS renders no tooltip there) and the audit already skips them, along with `#Preview` bodies and test sources. A control whose label is the whole story goes in `Scripts/audit-help-text-allowlist.txt` with a reason instead; that list is meant to stay short enough to read in one sitting. The text is user-facing copy, so it obeys the localization rule above, `make pseudolocale` included. `Scripts/audit-help-text.py` enforces this from `make lint`. The rule is `docs/design-spec/_standards.md` ("Hover text") and the backlog behind it is `docs/audits/help-text-audit.md` (#501).
 
 ## Concurrency, errors, logging
@@ -82,7 +82,7 @@ Cross-cutting standards live in `docs/design-spec/_standards.md` — read this i
 - `AppLogger` facade only. Categories: `app`, `audio`, `library`, `metadata`, `persistence`, `ui`, `network`, `playback`, `podcasts`, `scrobble`, `subsonic`, `sync`. Standard pattern: `log.debug("op.start", […])` / `log.debug("op.end", ["ms": …])` / `log.error("op.failed", ["error": String(reflecting: err)])`. Keys in `Observability.sensitiveKeys` are redacted automatically.
 - No `print`, no raw `os_log`, no `fatalError` outside `#if DEBUG`, a truly-unreachable `default:`, or the body of an `@available(*, unavailable) required init(coder:)`. A failure that can happen at run time throws, returns `nil` or falls back, and logs.
 - **`try?` is allowed only for these idioms:** a `Task.sleep` whose caller re-checks cancellation (better: `try await Task.sleep` inside a throwing `Task` closure, which exits cleanly on cancellation with no `try?`); `defer { try? handle.close() }`; remove-if-present of a cache or temp file; directory pre-creation before a write that reports its own failure; a file-attribute read with a fallback value; a decode whose fallback is the documented contract. Everything else handles the error one of two ways. **Recover and log:** `do { try ... } catch { log.warning("op.failed", ["id": id, "error": String(reflecting: error)]) }`, with the context the log line needs. **Propagate:** `try` and let the caller decide; a user action that fails must reach the user (toast, alert, `lastError`), and a value that goes into the database or on the wire is never derived from a swallowed error. For a one-line recovery, `Observability.logged(_:_:context:_:)` is the sanctioned helper. `Scripts/audit-try-optional.py` enforces all of this from `make lint`: a site outside the idiom patterns needs an entry with a reason in `Scripts/audit-try-optional-allowlist.txt`. The audit behind this rule, with every site classified, is `docs/audits/try-optional-audit.md` (#459).
-- **Tests must not hit the network.** Stub via `URLProtocol` or a protocol-based HTTP client mock. Fixtures live in `Tests/Fixtures/` at repo root and are checked-in, not generated at test time.
+- **Tests must not hit the network.** Stub via `URLProtocol` or a protocol-based HTTP client mock. Fixtures live in each module's `Tests/<Name>Tests/Fixtures/` and are checked in, not generated at test time.
 
 ## Schema discipline
 
@@ -117,9 +117,9 @@ Use Conventional Commits, scope = module: `feat(audio): …`, `fix(subsonic): �
 ## When in doubt
 
 - `docs/GOTCHAS.md`: the traps, procedures and settled decisions that are true but not deducible from the code. Read it before touching SwiftUI observation, the menu bar, the audio engine's transport, TagLib reads, the keychain, the E2E suite, or the SPM pins.
-- `docs/design-spec/_standards.md` — the engineering charter, binding on all new code.
-- `docs/design-spec/ADR-NNN-*.md` — historical context for major subsystems; the ADR number often hints at why a particular boundary exists.
-- `DEVELOPMENT.md` — environment setup, FFmpeg / fpcalc details, secrets layout.
-- `CONTRIBUTING.md` — commit / PR conventions.
+- `docs/design-spec/_standards.md`: the engineering charter, binding on all new code.
+- `docs/design-spec/ADR-NNN-*.md`: historical context for major subsystems; the ADR number often hints at why a particular boundary exists.
+- `DEVELOPMENT.md`: environment setup, FFmpeg / fpcalc details, secrets layout.
+- `CONTRIBUTING.md`: commit / PR conventions.
 
 **Every project memory the agent saves is mirrored into `docs/GOTCHAS.md`.** Whenever you record a trap, a procedure or a decision to your own memory, add the same entry to `docs/GOTCHAS.md` on the current branch in the same session, in the file's Problem / Rule / Why / Canonical file form, and verify the cited path exists before writing it. Memory is private to one machine; the repository is what every session, model and checkout reads. Notes about how you and the maintainer work together (reporting style, push and PR etiquette, release ownership) are not project gotchas and stay in memory only.
