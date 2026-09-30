@@ -277,9 +277,9 @@ final class IdentifierAuditTests: XCTestCase {
 
         var violations: Set<Violation> = []
 
-        /// Opens a window via `open`, waits for the window count to grow
-        /// (titles are unreliable: the About panel's AX title is not its
-        /// scene title), audits every open window, then closes the new one.
+        // Opens a window via `open`, waits for the window count to grow
+        // (titles are unreliable: the About panel's AX title is not its
+        // scene title), audits every open window, then closes the new one.
         func openAuditClose(surface: String, open: () -> Void) throws {
             let before = app.windows.count
             open()
