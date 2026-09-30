@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# release-downloads.sh - Print GitHub Release DMG download counts.
+# release-downloads.sh - Print GitHub Release DMG download counts, with the
+# date each release was published.
 #
 # Counts are served by GitHub's public API from its own logs. Nothing on a
 # user's machine is queried or contacted; this only reports how many DMGs left
@@ -29,16 +30,18 @@ if isinstance(data, dict):
 
 rows, total = [], 0
 for release in data:
+    # published_at is an ISO 8601 UTC timestamp; a draft has none.
+    date = (release.get("published_at") or "unpublished")[:10]
     for asset in release.get("assets", []):
         if asset["name"].endswith(".dmg"):
             count = asset["download_count"]
             total += count
-            rows.append((release["tag_name"], count))
+            rows.append((release["tag_name"], date, count))
 
 print("DMG downloads for " + repo + "\n")
-for tag, count in rows:
-    print(f"  {tag:<12} {count:>6}")
-print("  " + "-" * 19)
+for tag, date, count in rows:
+    print(f"  {tag:<12} {date:<11} {count:>6}")
+print("  " + "-" * 31)
 label = "TOTAL"
-print(f"  {label:<12} {total:>6}")
+print(f"  {label:<24} {total:>6}")
 ' "$REPO"
