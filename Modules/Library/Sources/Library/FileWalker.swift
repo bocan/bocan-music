@@ -31,9 +31,8 @@ public enum FileWalker {
                 self.enumerate(
                     rootURL,
                     extensions: supportedExtensions,
-                    iCloudDownload: iCloudDownload,
-                    yield: { continuation.yield($0) }
-                )
+                    iCloudDownload: iCloudDownload
+                ) { continuation.yield($0) }
                 continuation.finish()
             }
             // `Task.detached` severs the parent's cancellation chain, so the walk

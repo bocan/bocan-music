@@ -91,7 +91,7 @@ struct ShuffleTests {
         )
         let shuffle = SmartShuffle()
         let result = shuffle.shuffled(items, seed: 42)
-        #expect(!result.contains(where: { $0.trackID == 3 || $0.trackID == 7 }))
+        #expect(!result.contains { $0.trackID == 3 || $0.trackID == 7 })
         #expect(result.count == 8)
     }
 

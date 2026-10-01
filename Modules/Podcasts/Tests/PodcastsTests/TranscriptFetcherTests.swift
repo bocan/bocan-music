@@ -30,7 +30,7 @@ struct TranscriptFetcherTests {
                 headerFields: ["Content-Type": "text/vtt"]
             )!)
         }
-        let fetcher = TranscriptFetcher(http: mock, repo: repo, now: { Date(timeIntervalSince1970: 5) })
+        let fetcher = TranscriptFetcher(http: mock, repo: repo) { Date(timeIntervalSince1970: 5) }
         let url = try #require(URL(string: "https://example.test/t.vtt"))
         let record = try await fetcher.fetchAndStore(
             podcastID: pid, guid: "ep1", transcriptURL: url, language: "en"

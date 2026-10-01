@@ -344,7 +344,7 @@ struct SmartCriteriaCompilerTests {
         let c = try SQLBuilder.compile(criteria: outer, limitSort: LimitSort())
         #expect(c.selectSQL.contains("AND"))
         #expect(c.selectSQL.contains("OR"))
-        let openCount = c.selectSQL.count(where: { $0 == "(" })
+        let openCount = c.selectSQL.count { $0 == "(" }
         #expect(openCount >= 2)
     }
 

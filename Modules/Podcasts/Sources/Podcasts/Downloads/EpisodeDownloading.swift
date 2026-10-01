@@ -142,7 +142,7 @@ final class URLSessionDownloader: NSObject, EpisodeDownloading, URLSessionDownlo
 
         func cancelProducingResumeData() async -> Data? {
             await withCheckedContinuation { continuation in
-                self.task.cancel(byProducingResumeData: { data in continuation.resume(returning: data) })
+                self.task.cancel { data in continuation.resume(returning: data) }
             }
         }
     }

@@ -253,7 +253,7 @@ private struct LoopbackFileServer {
         let downloadRoot = scratch.appendingPathComponent("downloads")
 
         let router = Router(routes: FileServing(database: database, downloadRoot: downloadRoot).routes())
-        let listener = SyncListener(identity: serverIdentity, router: router, trusted: trusted, pairingMode: { false })
+        let listener = SyncListener(identity: serverIdentity, router: router, trusted: trusted) { false }
         let port = try await listener.start()
 
         return LoopbackFileServer(

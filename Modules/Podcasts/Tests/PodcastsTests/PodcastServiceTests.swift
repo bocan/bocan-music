@@ -43,9 +43,8 @@ private func makeBed(nowDate: Date = fixedNow) async throws -> TestBed {
         fetcher: FeedFetcher(http: feedMock),
         artwork: artCache,
         downloadStore: downloadStore,
-        transcriptHTTP: transcriptMock,
-        now: { nowDate }
-    )
+        transcriptHTTP: transcriptMock
+    ) { nowDate }
     return TestBed(
         db: db,
         service: service,

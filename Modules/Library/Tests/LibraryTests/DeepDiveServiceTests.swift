@@ -117,9 +117,8 @@ private func makeBed(ttl: TimeInterval = 3600) async throws -> Bed {
         database: db,
         musicBrainz: MusicBrainzClient(userAgent: "Bocan/test ( https://bocan.app )", rateLimiter: limiter, httpClient: http),
         wikipedia: WikipediaClient(userAgent: "Bocan/test ( https://bocan.app )", rateLimiter: limiter, httpClient: http),
-        cache: DeepDiveCache(root: root, ttl: ttl),
-        now: { Date(timeIntervalSince1970: 1_720_000_000) }
-    )
+        cache: DeepDiveCache(root: root, ttl: ttl)
+    ) { Date(timeIntervalSince1970: 1_720_000_000) }
     return Bed(db: db, http: http, service: service, cacheRoot: root)
 }
 

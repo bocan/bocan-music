@@ -364,9 +364,8 @@ public actor QueuePlayer: Transport {
         let capturedEngine = self.engine
         await self.nowPlayingCentre?.updateStream(
             title: title,
-            stationName: item.title ?? "",
-            positionProvider: { await capturedEngine.currentTime }
-        )
+            stationName: item.title ?? ""
+        ) { await capturedEngine.currentTime }
     }
 
     /// Captures the current engine position to `UserDefaults` so the next launch
@@ -825,27 +824,24 @@ public actor QueuePlayer: Transport {
             await self.nowPlayingCentre?.updatePodcast(
                 title: item.title ?? "",
                 showName: item.artistName ?? "",
-                duration: item.duration,
-                positionProvider: { await capturedEngine.currentTime }
-            )
+                duration: item.duration
+            ) { await capturedEngine.currentTime }
         } else if case .internetRadio = item.playableSource {
             // Radio: no tracks row either. Seed with the station snapshot;
             // live ICY titles overwrite the title slot as they arrive (27-5).
             let capturedEngine = self.engine
             await self.nowPlayingCentre?.updateStream(
                 title: item.title ?? "",
-                stationName: item.artistName ?? "",
-                positionProvider: { await capturedEngine.currentTime }
-            )
+                stationName: item.artistName ?? ""
+            ) { await capturedEngine.currentTime }
         } else if let track {
             let capturedEngine = self.engine
             let coverPath = await self.resolveCoverArtPath(for: track)
             await self.nowPlayingCentre?.update(
                 track: track,
                 duration: item.duration,
-                coverArtPath: coverPath,
-                positionProvider: { await capturedEngine.currentTime }
-            )
+                coverArtPath: coverPath
+            ) { await capturedEngine.currentTime }
         }
 
         await self.notifyHistoryStart(for: item)
@@ -1411,9 +1407,8 @@ public actor QueuePlayer: Transport {
             await self.nowPlayingCentre?.updatePodcast(
                 title: item.title ?? "",
                 showName: item.artistName ?? "",
-                duration: item.duration,
-                positionProvider: { await capturedEngine.currentTime }
-            )
+                duration: item.duration
+            ) { await capturedEngine.currentTime }
         } else if let track = await self.nowPlayingTrack(item.trackID) {
             self.emitCurrentTrack(track)
             let capturedEngine = self.engine
@@ -1421,9 +1416,8 @@ public actor QueuePlayer: Transport {
             await self.nowPlayingCentre?.update(
                 track: track,
                 duration: item.duration,
-                coverArtPath: coverPath,
-                positionProvider: { await capturedEngine.currentTime }
-            )
+                coverArtPath: coverPath
+            ) { await capturedEngine.currentTime }
         }
 
         await self.notifyHistoryStart(for: item)

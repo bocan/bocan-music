@@ -468,9 +468,9 @@ public actor ScrobbleQueueRepository {
     public nonisolated func observeRecent(limit: Int = 50, providerID: String? = nil) -> AsyncThrowingStream<[RecentRow], Error> {
         AsyncThrowingStream { continuation in
             let task = Task { [database = self.db] in
-                let upstream = await database.observe(value: { db -> [RecentRow] in
+                let upstream = await database.observe { db -> [RecentRow] in
                     try Self.queryRecent(db: db, limit: limit, providerID: providerID)
-                })
+                }
                 do {
                     for try await value in upstream {
                         continuation.yield(value)
@@ -561,7 +561,7 @@ public actor ScrobbleQueueRepository {
     public nonisolated func observeStats(now: @Sendable @escaping () -> Date = { Date() }) -> AsyncThrowingStream<Stats, Error> {
         AsyncThrowingStream { continuation in
             let task = Task { [database = self.db] in
-                let upstream = await database.observe(value: { db -> Stats in
+                let upstream = await database.observe { db -> Stats in
                     let pending = try Int.fetchOne(db, sql: """
                     SELECT COUNT(*) FROM scrobble_queue WHERE submitted = 0 AND dead = 0
                     """) ?? 0
@@ -574,7 +574,7 @@ public actor ScrobbleQueueRepository {
                      WHERE status IN ('sent', 'sent_unconfirmed') AND submitted_at >= ?
                     """, arguments: [Int(startOfDay.timeIntervalSince1970)]) ?? 0
                     return Stats(pending: pending, dead: dead, submittedToday: submittedToday)
-                })
+                }
                 do {
                     for try await value in upstream {
                         continuation.yield(value)

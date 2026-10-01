@@ -115,9 +115,8 @@ private func makeBed(stale: Bool = true) async throws -> Bed {
         fetcher: FeedFetcher(http: feedMock),
         artwork: PodcastArtworkCache(http: MockHTTPClient(), root: artRoot),
         downloadStore: DownloadStore(root: downloadRoot),
-        transcriptHTTP: MockHTTPClient(),
-        now: { clock.now }
-    )
+        transcriptHTTP: MockHTTPClient()
+    ) { clock.now }
     _ = try await service.subscribe(feedURL: feedURL)
     counting.set()
     if stale {

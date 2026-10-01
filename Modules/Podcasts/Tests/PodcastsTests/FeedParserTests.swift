@@ -158,7 +158,7 @@ struct FeedParserAtomTests {
     func atomContentPreferredOverSummary() throws {
         let data = try fixture(named: "atom-full.xml")
         let feed = try parser.parse(data, sourceURL: sourceURL)
-        let ep1 = try #require(feed.episodes.first(where: { $0.title == "Atom Episode One" }))
+        let ep1 = try #require(feed.episodes.first { $0.title == "Atom Episode One" })
         #expect(ep1.descriptionHTML?.contains("Full HTML content") == true)
     }
 }
@@ -207,8 +207,8 @@ struct FeedParserPodcastNamespaceTests {
     func chaptersByGuid() throws {
         let data = try fixture(named: "rss-podcast-namespace.xml")
         let feed = try parser.parse(data, sourceURL: sourceURL)
-        let ep1 = try #require(feed.episodes.first(where: { $0.guid == "guid-ep1" }))
-        let ep2 = try #require(feed.episodes.first(where: { $0.guid == "guid-ep2" }))
+        let ep1 = try #require(feed.episodes.first { $0.guid == "guid-ep1" })
+        let ep2 = try #require(feed.episodes.first { $0.guid == "guid-ep2" })
         #expect(ep1.chaptersURL == URL(string: "https://example.com/ep1-chapters.json"))
         #expect(ep2.chaptersURL == URL(string: "https://example.com/ep2-chapters.json"))
     }
@@ -217,7 +217,7 @@ struct FeedParserPodcastNamespaceTests {
     func chaptersGuidFallback() throws {
         let data = try fixture(named: "rss-podcast-namespace.xml")
         let feed = try parser.parse(data, sourceURL: sourceURL)
-        let ep3 = try #require(feed.episodes.first(where: { $0.guid == "https://example.com/ep3.mp3" }))
+        let ep3 = try #require(feed.episodes.first { $0.guid == "https://example.com/ep3.mp3" })
         #expect(ep3.chaptersURL == URL(string: "https://example.com/ep3-chapters.json"))
     }
 

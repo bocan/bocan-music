@@ -41,9 +41,8 @@ struct PodcastSearchServiceTests {
         let service = PodcastSearchService(
             podcastIndex: PodcastIndexClient(
                 credentials: PodcastIndexCredentials(apiKey: "k", apiSecret: "s"),
-                http: mock,
-                now: { Date(timeIntervalSince1970: 1_717_200_000) }
-            ),
+                http: mock
+            ) { Date(timeIntervalSince1970: 1_717_200_000) },
             itunes: ITunesSearchClient(http: mock)
         )
 
@@ -83,9 +82,8 @@ struct PodcastSearchServiceTests {
         let service = PodcastSearchService(
             podcastIndex: PodcastIndexClient(
                 credentials: PodcastIndexCredentials(apiKey: "k", apiSecret: "s"),
-                http: mock,
-                now: { Date(timeIntervalSince1970: 1_717_200_000) }
-            ),
+                http: mock
+            ) { Date(timeIntervalSince1970: 1_717_200_000) },
             itunes: ITunesSearchClient(http: mock)
         )
 
@@ -118,9 +116,8 @@ struct PodcastSearchServiceTests {
         let service = PodcastSearchService(
             podcastIndex: PodcastIndexClient(
                 credentials: PodcastIndexCredentials(apiKey: "k", apiSecret: "s"),
-                http: mock,
-                now: { Date(timeIntervalSince1970: 1_717_200_000) }
-            ),
+                http: mock
+            ) { Date(timeIntervalSince1970: 1_717_200_000) },
             itunes: ITunesSearchClient(http: mock)
         )
 
@@ -184,9 +181,8 @@ struct PodcastSearchServiceTests {
         let service = PodcastSearchService(
             podcastIndex: PodcastIndexClient(
                 credentials: PodcastIndexCredentials(apiKey: "k", apiSecret: "s"),
-                http: mock,
-                now: { Date() }
-            ),
+                http: mock
+            ) { Date() },
             itunes: ITunesSearchClient(http: mock)
         )
 
@@ -206,9 +202,8 @@ struct PodcastSearchServiceTests {
         let service = PodcastSearchService(
             podcastIndex: PodcastIndexClient(
                 credentials: PodcastIndexCredentials(apiKey: "k", apiSecret: "s"),
-                http: mock,
-                now: { Date() }
-            ),
+                http: mock
+            ) { Date() },
             itunes: ITunesSearchClient(http: mock)
         )
 

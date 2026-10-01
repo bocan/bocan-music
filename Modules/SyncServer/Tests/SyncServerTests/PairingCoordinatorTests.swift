@@ -74,9 +74,8 @@ struct PairingCoordinatorTests {
             ui: ui,
             serverName: { "Test Mac" },
             serverId: serverId,
-            timeout: timeout,
-            now: { clock.withLock { $0 } }
-        )
+            timeout: timeout
+        ) { clock.withLock { $0 } }
         return Harness(coordinator: coordinator, ui: ui, trusted: trusted, serverFingerprint: serverFingerprint, clock: clock)
     }
 
@@ -144,7 +143,7 @@ struct PairingCoordinatorTests {
     @Test("pairing fails when this Mac's id cannot be read, rather than pairing under an empty one (#485)")
     func confirmFailsWithoutServerId() async throws {
         struct MetaUnavailable: Error {}
-        let harness = try await self.makeHarness(serverId: { throw MetaUnavailable() })
+        let harness = try await self.makeHarness { throw MetaUnavailable() }
         let peer = self.peerFingerprint("f")
         let (response, _) = try await self.armAndStart(harness, peer: peer)
         let code = try #require(harness.ui.shownCode)

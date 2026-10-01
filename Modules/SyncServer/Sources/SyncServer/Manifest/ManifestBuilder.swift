@@ -133,9 +133,8 @@ public struct ManifestBuilder: Sendable {
         for podcast in try await self.podcastRepository.fetchAllSubscribed() {
             guard let podcastId = podcast.id, let states = statesByPodcast[podcastId] else { continue }
             let contentByGUID = try await Dictionary(
-                self.episodeRepository.fetchForPodcast(podcastID: podcastId).map { ($0.guid, $0) },
-                uniquingKeysWith: { first, _ in first }
-            )
+                self.episodeRepository.fetchForPodcast(podcastID: podcastId).map { ($0.guid, $0) }
+            ) { first, _ in first }
             // `hasChapters` promises that `/v1/chapters` has a document to
             // serve, so it follows the cache, not the feed's chapters URL (#608).
             let withChapters = try await self.chaptersRepository.guidsWithCurrentChapters(podcastID: podcastId)

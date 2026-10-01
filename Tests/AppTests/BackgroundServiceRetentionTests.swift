@@ -20,7 +20,7 @@ struct BackgroundServiceRetentionTests {
         let started = source.matches(of: /await (\w+)\.start\(\)/).map { String($0.1) }
         #expect(!started.isEmpty)
         let graph = try #require(source.range(of: "struct AppGraph {"))
-        let graphBody = source[graph.upperBound...].prefix(while: { _ in true })
+        let graphBody = source[graph.upperBound...].prefix { _ in true }
         for name in started {
             let type = name.prefix(1).uppercased() + name.dropFirst()
             let retained = graphBody.contains(": \(type)") || graphBody

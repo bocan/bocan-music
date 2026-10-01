@@ -51,16 +51,14 @@ public actor SyncServer {
             identity: identity,
             trusted: trusted,
             ui: ui,
-            serverName: serverName,
-            serverId: { try await meta.serverId() }
-        )
+            serverName: serverName
+        ) { try await meta.serverId() }
         self.pairing = pairing
 
         self.libraryObserver = LibraryChangeObserver(
             syncMeta: meta,
-            debounce: config.changeDebounce,
-            profile: { await ManifestRoutes.loadDocument(profileRepository).profile }
-        )
+            debounce: config.changeDebounce
+        ) { await ManifestRoutes.loadDocument(profileRepository).profile }
         let transcodeCoordinator = TranscodeCoordinator(
             database: database,
             store: TranscodeStore(root: transcodeRoot),

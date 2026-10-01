@@ -103,7 +103,7 @@ public actor PlaybackQueue {
         // Only items removed *before* the current position shift the index leftward;
         // removals after it leave the current track exactly where it is.
         let removedBeforeCurrent = oldCurrentIndex.map { ci in
-            self.items[..<ci].lazy.count(where: { ids.contains($0.id) })
+            self.items[..<ci].lazy.count { ids.contains($0.id) }
         } ?? 0
 
         let originalCount = self.items.count

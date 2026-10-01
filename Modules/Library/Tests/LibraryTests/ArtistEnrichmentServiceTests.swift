@@ -52,9 +52,8 @@ struct ArtistEnrichmentServiceTests {
         )
         return ArtistEnrichmentService(
             artists: ArtistRepository(database: db), client: client, batchSize: 2,
-            pacing: .zero, backoff: .milliseconds(1), maxBackoffs: 3,
-            now: { Date(timeIntervalSince1970: 1_720_000_000) }
-        )
+            pacing: .zero, backoff: .milliseconds(1), maxBackoffs: 3
+        ) { Date(timeIntervalSince1970: 1_720_000_000) }
     }
 
     @Test("a pass fills disambiguation, a missing sort name, and stamps fetched_at once")

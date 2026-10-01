@@ -232,12 +232,12 @@ struct TranscodeCoordinatorResilienceTests {
         encoder.setFailing([bad])
 
         await coordinator.runPass()
-        #expect(encoder.attemptedTrackIDs.count(where: { $0 == bad }) == 1)
+        #expect(encoder.attemptedTrackIDs.count { $0 == bad }== 1)
         #expect(try await ledger.allValid(preset: "opus_128").map(\.trackID) == [good])
 
         await coordinator.runPass()
         #expect(
-            encoder.attemptedTrackIDs.count(where: { $0 == bad }) == 1,
+            encoder.attemptedTrackIDs.count { $0 == bad }== 1,
             "the memo skips the known-bad file"
         )
 
@@ -247,7 +247,7 @@ struct TranscodeCoordinatorResilienceTests {
         track.contentHash = "h-fixed"
         _ = try await tracks.upsert(track)
         await coordinator.runPass()
-        #expect(encoder.attemptedTrackIDs.count(where: { $0 == bad }) == 2)
+        #expect(encoder.attemptedTrackIDs.count { $0 == bad }== 2)
         #expect(try await ledger.allValid(preset: "opus_128").count == 2)
 
         try self.removeIfPresent(root)

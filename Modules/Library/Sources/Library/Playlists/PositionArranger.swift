@@ -141,7 +141,7 @@ public enum PositionArranger {
         guard !source.isEmpty, !items.isEmpty else { return items }
         let orderedSource = source.sorted()
         let pulled = orderedSource.compactMap { $0 < items.count ? items[$0] : nil }
-        let removalsBefore = orderedSource.count(where: { $0 < destination })
+        let removalsBefore = orderedSource.count { $0 < destination }
         var remaining = items
         for index in orderedSource.reversed() where index < remaining.count {
             remaining.remove(at: index)

@@ -279,12 +279,12 @@ struct QueuePlayerTests {
 
         // B must be disabled in the database.
         let allTracks = try await repo.fetchAllIncludingDisabled()
-        let trackB = allTracks.first(where: { $0.id == idB })
+        let trackB = allTracks.first { $0.id == idB }
         #expect(trackB?.disabled == true, "Track B must be disabled after file-not-found")
 
         // B must be removed from the queue.
         let queueItems = await player.queue.items
-        #expect(!queueItems.contains(where: { $0.trackID == idB }), "Track B must be removed from queue")
+        #expect(!queueItems.contains { $0.trackID == idB }, "Track B must be removed from queue")
     }
 
     @Test("handleTrackEnded skips multiple consecutive missing-file tracks and ends cleanly")
@@ -311,8 +311,8 @@ struct QueuePlayerTests {
         #expect(disabledIDs.contains(idC), "Track C must be disabled")
 
         let queueItems = await player.queue.items
-        #expect(!queueItems.contains(where: { $0.trackID == idB }), "Track B must be removed from queue")
-        #expect(!queueItems.contains(where: { $0.trackID == idC }), "Track C must be removed from queue")
+        #expect(!queueItems.contains { $0.trackID == idB }, "Track B must be removed from queue")
+        #expect(!queueItems.contains { $0.trackID == idC }, "Track C must be removed from queue")
     }
 
     // MARK: - Helpers

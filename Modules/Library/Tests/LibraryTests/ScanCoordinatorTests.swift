@@ -207,12 +207,12 @@ struct ScanCoordinatorTests {
 
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
-        let processed = box.events.count(where: {
+        let processed = box.events.count {
             if case .processed = $0 {
                 return true
             }
             return false
-        })
+        }
 
         #expect(processed >= 10)
     }
@@ -227,12 +227,12 @@ struct ScanCoordinatorTests {
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
         let events = box.events
 
-        let inserted = events.count(where: {
+        let inserted = events.count {
             if case .processed(_, outcome: .inserted) = $0 {
                 return true
             }
             return false
-        })
+        }
 
         guard case let .finished(summary) = events.last else {
             Issue.record("Last event was not .finished")
@@ -255,12 +255,12 @@ struct ScanCoordinatorTests {
         // Second: quick scan — everything should be skipped
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .quick) { box.append($0) }
-        let skipped = box.events.count(where: {
+        let skipped = box.events.count {
             if case .processed(_, outcome: .skippedUnchanged) = $0 {
                 return true
             }
             return false
-        })
+        }
         #expect(skipped > 0)
     }
 
@@ -339,18 +339,18 @@ struct ScanCoordinatorTests {
 
         let box = EventBox()
         await coordinator.scan(roots: [(url: dir, rootID: 1)], mode: .full) { box.append($0) }
-        let errors = box.events.count(where: {
+        let errors = box.events.count {
             if case .error = $0 {
                 return true
             }
             return false
-        })
-        let inserted = box.events.count(where: {
+        }
+        let inserted = box.events.count {
             if case .processed(_, outcome: .inserted) = $0 {
                 return true
             }
             return false
-        })
+        }
 
         // Scan must complete (no hang); at least the valid EdgeCase files are processed
         #expect(inserted >= 1, "Expected at least one successful import from EdgeCases")

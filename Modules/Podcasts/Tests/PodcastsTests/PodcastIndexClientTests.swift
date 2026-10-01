@@ -54,9 +54,8 @@ struct PodcastIndexClientTests {
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         let results = try await client.search(term: "swift")
 
@@ -98,9 +97,8 @@ struct PodcastIndexClientTests {
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         let feedURL = try #require(URL(string: "https://www.swiftbysundell.com/feed/podcast/"))
         let result = try await client.podcast(byFeedURL: feedURL)
@@ -127,9 +125,8 @@ struct PodcastIndexClientTests {
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         do {
             _ = try await client.search(term: "test")
@@ -160,9 +157,8 @@ struct PodcastIndexClientTests {
 
         let client = PodcastIndexClient(
             credentials: Self.credentials,
-            http: mock,
-            now: { Self.fixedNow }
-        )
+            http: mock
+        ) { Self.fixedNow }
 
         _ = try? await client.search(term: "test")
 

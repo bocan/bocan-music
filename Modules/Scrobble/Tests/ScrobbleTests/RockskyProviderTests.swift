@@ -108,9 +108,8 @@ struct RockskyProviderTests {
             let provider = RockskyProvider(
                 config: self.config,
                 http: URLSession.stubbed,
-                credentials: StubRockskyCreds(apiKey: "key"),
-                now: { now }
-            )
+                credentials: StubRockskyCreds(apiKey: "key")
+            ) { now }
             try await provider.nowPlaying(self.makeEvent())
             try await provider.nowPlaying(self.makeEvent())
             #expect(StubProtocol.capturedRequests.count == 1)

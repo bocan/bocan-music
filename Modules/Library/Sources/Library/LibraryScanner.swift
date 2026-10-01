@@ -331,7 +331,7 @@ public actor LibraryScanner {
                 "error": String(reflecting: error),
             ])
         }
-        let bookmark = roots.first(where: { $0.path == path })?.bookmark
+        let bookmark = roots.first { $0.path == path }?.bookmark
         let url = self.watchableURL(for: path)
         await watcher.watch(url, bookmark: bookmark)
         self.log.debug("fsevents.root_added", ["path": path])

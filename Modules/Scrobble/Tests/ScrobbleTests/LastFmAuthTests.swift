@@ -30,9 +30,8 @@ struct LastFmAuthTests {
                 provider: provider,
                 credentials: creds,
                 pollInterval: .milliseconds(1),
-                timeout: .seconds(5),
-                openURL: { url in Task { await opened.record(url) } }
-            )
+                timeout: .seconds(5)
+            ) { url in Task { await opened.record(url) } }
 
             let result = try await auth.connect()
             #expect(result.username == "alice")
@@ -70,9 +69,8 @@ struct LastFmAuthTests {
                 provider: provider,
                 credentials: creds,
                 pollInterval: .milliseconds(1),
-                timeout: .seconds(5),
-                openURL: { url in Task { await opened.record(url) } }
-            )
+                timeout: .seconds(5)
+            ) { url in Task { await opened.record(url) } }
             _ = try await auth.connect()
 
             // Browser-facing URL must contain the token (required for Last.fm auth flow).
@@ -110,9 +108,8 @@ struct LastFmAuthTests {
                 provider: provider,
                 credentials: creds,
                 pollInterval: .milliseconds(5),
-                timeout: .milliseconds(40),
-                openURL: { _ in }
-            )
+                timeout: .milliseconds(40)
+            ) { _ in }
 
             await #expect(throws: ScrobbleError.self) {
                 _ = try await auth.connect()

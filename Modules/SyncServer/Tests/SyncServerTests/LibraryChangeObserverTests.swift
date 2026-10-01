@@ -96,9 +96,8 @@ struct LibraryChangeObserverTests {
 
         let observer = LibraryChangeObserver(
             syncMeta: syncMeta,
-            debounce: .milliseconds(50),
-            profile: { .everything(includePodcasts: true) }
-        )
+            debounce: .milliseconds(50)
+        ) { .everything(includePodcasts: true) }
         await observer.start()
         defer { Task { await observer.stop() } }
         try await Task.sleep(for: .milliseconds(200))
@@ -124,9 +123,8 @@ struct LibraryChangeObserverTests {
 
         let observer = LibraryChangeObserver(
             syncMeta: syncMeta,
-            debounce: .milliseconds(50),
-            profile: { .selected(playlistIds: [1], includePodcasts: false) }
-        )
+            debounce: .milliseconds(50)
+        ) { .selected(playlistIds: [1], includePodcasts: false) }
         await observer.start()
         defer { Task { await observer.stop() } }
         try await Task.sleep(for: .milliseconds(200))
@@ -147,9 +145,8 @@ struct LibraryChangeObserverTests {
         let selected = SendableBox(false)
         let observer = LibraryChangeObserver(
             syncMeta: syncMeta,
-            debounce: .milliseconds(50),
-            profile: { selected.value ? .selected(playlistIds: [1], includePodcasts: false) : .everything(includePodcasts: true) }
-        )
+            debounce: .milliseconds(50)
+        ) { selected.value ? .selected(playlistIds: [1], includePodcasts: false) : .everything(includePodcasts: true) }
         await observer.start()
         defer { Task { await observer.stop() } }
         try await Task.sleep(for: .milliseconds(200))

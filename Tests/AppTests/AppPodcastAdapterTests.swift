@@ -67,9 +67,8 @@ private func makeBed() async throws -> Bed {
         fetcher: FeedFetcher(http: http),
         artwork: PodcastArtworkCache(http: http, root: tmp.appendingPathComponent("art")),
         downloadStore: DownloadStore(root: tmp.appendingPathComponent("dl")),
-        transcriptHTTP: http,
-        now: { Date(timeIntervalSince1970: 1_720_000_000) }
-    )
+        transcriptHTTP: http
+    ) { Date(timeIntervalSince1970: 1_720_000_000) }
     let player = QueuePlayer(engine: AudioEngine(), database: db)
     return Bed(db: db, service: service, http: http, player: player)
 }

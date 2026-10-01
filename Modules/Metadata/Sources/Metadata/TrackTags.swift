@@ -175,6 +175,6 @@ public extension TrackTags {
         if let primary = lowered.first(where: { self.primaryReleaseTypes.contains($0) }) {
             return primary
         }
-        return lowered.first(where: { self.secondaryReleaseTypes.contains($0) })
+        return lowered.first { self.secondaryReleaseTypes.contains($0) }
     }
 }

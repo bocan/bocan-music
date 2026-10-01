@@ -35,7 +35,7 @@ public struct MBRecording: Decodable, Sendable {
 
     /// Most prominent genre tag by vote count, if any.  Title-cased since MB tags are lowercase.
     public var topGenre: String? {
-        self.tags?.max(by: { $0.count < $1.count })?.name.titleCased
+        self.tags?.max { $0.count < $1.count }?.name.titleCased
     }
 }
 

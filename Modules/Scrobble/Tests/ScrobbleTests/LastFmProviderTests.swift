@@ -93,9 +93,8 @@ struct LastFmProviderTests {
             let provider = LastFmProvider(
                 config: self.config,
                 http: URLSession.stubbed,
-                credentials: StubLastFmCreds(session: "sk"),
-                now: { now }
-            )
+                credentials: StubLastFmCreds(session: "sk")
+            ) { now }
             try await provider.nowPlaying(self.makeEvent())
             try await provider.nowPlaying(self.makeEvent())
             #expect(StubProtocol.capturedRequests.count == 1)

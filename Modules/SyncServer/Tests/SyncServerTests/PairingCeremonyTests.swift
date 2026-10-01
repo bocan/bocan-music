@@ -50,9 +50,8 @@ struct PairingCeremonyTests {
         let listener = SyncListener(
             identity: serverIdentity,
             router: router,
-            trusted: trusted.fingerprints,
-            pairingMode: { coordinator.pairingMode.isOn }
-        )
+            trusted: trusted.fingerprints
+        ) { coordinator.pairingMode.isOn }
         let port = try await listener.start()
         defer { Task { await listener.stop() } }
 

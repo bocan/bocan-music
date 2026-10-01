@@ -300,7 +300,7 @@ public struct FeedParser: Sendable {
         let artworkURL: URL? = atom.logo.flatMap { URL(string: $0) }
 
         let link = atom.links?
-            .first(where: { $0.attributes?.rel == "alternate" || $0.attributes?.rel == nil })?
+            .first { $0.attributes?.rel == "alternate" || $0.attributes?.rel == nil }?
             .attributes?.href
             .flatMap { URL(string: $0) }
 
@@ -366,7 +366,7 @@ public struct FeedParser: Sendable {
             chaptersURL: nil,
             transcriptURL: nil,
             link: entry.links?
-                .first(where: { $0.attributes?.rel == "alternate" })?
+                .first { $0.attributes?.rel == "alternate" }?
                 .attributes?.href
                 .flatMap { URL(string: $0) },
             explicit: false
