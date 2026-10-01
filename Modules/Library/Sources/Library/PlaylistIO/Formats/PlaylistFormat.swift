@@ -7,7 +7,6 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     case pls
     case xspf
     case cue
-    case itunesXML
 
     /// File extension used when writing a payload in this format.
     public var preferredExtension: String {
@@ -17,7 +16,6 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
         case .pls: "pls"
         case .xspf: "xspf"
         case .cue: "cue"
-        case .itunesXML: "xml"
         }
     }
 
@@ -30,7 +28,7 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     public var isExportable: Bool {
         switch self {
         case .m3u, .m3u8, .pls, .xspf: true
-        case .cue, .itunesXML: false
+        case .cue: false
         }
     }
 
@@ -42,7 +40,6 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
         case "pls": .pls
         case "xspf": .xspf
         case "cue": .cue
-        case "xml": .itunesXML
         default: nil
         }
     }
@@ -61,9 +58,6 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
         }
         if trimmed.contains("xspf.org/ns/0") || trimmed.contains("<playlist") && trimmed.contains("xspf") {
             return .xspf
-        }
-        if trimmed.contains("<!DOCTYPE plist") {
-            return .itunesXML
         }
         // CUE: typically begins with REM, PERFORMER, TITLE, FILE, or CATALOG.
         if trimmed.hasPrefix("REM ") || trimmed.hasPrefix("PERFORMER ") ||

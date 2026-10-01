@@ -83,6 +83,7 @@ Modules/UI/Sources/UI/PlaylistIO/
    - Reader returns `[CUESheetTrack]`; importer creates virtual tracks in the DB.
 
 7. **`ITunesLibraryReader`** — parses the `Library.xml` plist format:
+   - **Not built, and removed (#609).** Only the parser was written; no import path ever used it. The parser, the `itunesXML` format case and the "Import iTunes Library…" menu item in step 11 are dropped. A later migration feature gets its own ADR.
    - Top-level dict with `Tracks` dict (id → track dict) and `Playlists` array.
    - Maps track fields: Name, Artist, Album, Genre, Total Time (ms), Location (file:// URL), Rating (0-100 stepped by 20), Loved (bool), Play Count, Skip Count, Play Date UTC, Date Added.
    - Playlist entries reference Track IDs.
@@ -192,7 +193,7 @@ None new.
 
 - [x] Import an M3U8 written by VLC → matching tracks resolved, unresolved list correct.
 - [x] Export a playlist, edit in a text editor, re-import — same contents.
-- [ ] iTunes Library.xml import brings in playlists and (optionally) play stats.
+- [ ] iTunes Library.xml import brings in playlists and (optionally) play stats. (Dropped, #609: not built.)
 - [ ] CUE sheet lets me play individual tracks from a single-file rip.
 - [x] Relative export survives moving the root.
 - [x] 80%+ coverage on parsers/writers/resolver.
