@@ -4,9 +4,9 @@ Every ADR assumes these. Re-read once, then obey without being asked.
 
 ## Language & Platform
 
-- **Swift 6.0+** with `-strict-concurrency=complete`. No `@preconcurrency` escape hatches except at clearly-marked third-party boundaries, with a TODO and a justification.
+- **Swift 6.2+** (every package declares `swift-tools-version: 6.2`) with `-strict-concurrency=complete`. No `@preconcurrency` escape hatches except at clearly-marked third-party boundaries, with a TODO and a justification.
 - **macOS 15+ deployment target** (Sequoia). Nothing older.
-- **Xcode 16+**.
+- **Xcode 27** (what CI selects; it needs a Mac running macOS 27).
 - **SwiftUI** primary; reach for `NSViewRepresentable`/`NSHostingController` only when SwiftUI genuinely cannot deliver. Document every drop-down to AppKit with a one-line comment explaining why.
 - **SPM only**. No CocoaPods, no Carthage, no manually-vendored xcframeworks unless they are the only option (e.g. FFmpeg binary artifacts).
 
@@ -41,7 +41,7 @@ Current internal-module dependencies:
 | Playback      | Observability, Persistence, AudioEngine                                                   |                                              |
 | Scrobble      | Observability, Persistence, Playback                                                      | GRDB (the scrobble queue repository)         |
 | UI            | Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics | Metadata (`LyricsDocument`, `LRCParser`, `TrackTags`), GRDB |
-| App           | UI (transitively pulls in everything else)                                                | Metadata (the E2E fixture seeder only)       |
+| App           | UI, Observability, Persistence, AudioEngine, Library, Playback, Scrobble, Subsonic, Acoustics, Podcasts, SyncServer (all declared in `project.yml`; UI does not pull in Podcasts or SyncServer) | Metadata (the E2E fixture seeder only)       |
 
 The first column lists direct manifest edges only. A module may also import a package that one of its declared dependencies owns: GRDB through `Persistence`, `Metadata` through `Library`. The version floor stays in the owning module's manifest and nowhere else, so a dependency bump has one place to change. Such an import is recorded in the second column; an import that no declared dependency owns is an error.
 
@@ -83,7 +83,7 @@ UI is the only module that imports `AppKit`. A lower module that wants an AppKit
 ## Testing
 
 - **Swift Testing** (`import Testing`, `@Test`, `#expect`, `#require`) for unit + integration tests. `XCTest` only where a framework forces it (e.g. XCUITest).
-- **80% line coverage minimum** per module, enforced in CI.
+- **80% line coverage minimum.** CI enforces it on the Xcode test bundle (`make test-coverage`). The per-module gate is `make coverage-all`, with a default floor of 70% and 20% for `UI`; it is a local command and no workflow runs it.
 - Every public function has at least one `@Test`.
 - Every bug fix begins with a failing regression test.
 - UI: **swift-snapshot-testing** for every view, in light and dark mode, at representative sizes.
@@ -105,7 +105,7 @@ UI is the only module that imports `AppKit`. A lower module that wants an AppKit
 
 ## Security & privacy
 
-- **Sandbox on for the Debug build**, hardened runtime on for both builds, library validation on. The shipped release build is unsandboxed: `Scripts/embed-deps.sh` re-signs it without entitlements, and sandboxing it now would move every user into an empty container (see `docs/GOTCHAS.md`, "The debug build and the installed release app use different libraries"). File access goes through the `SecurityScope` helper in both builds.
+- **Sandbox on for the Debug build**; hardened runtime and library validation on for the release build only (`project.yml` turns the hardened runtime off for Debug so that it can load the Homebrew-signed dylibs). The shipped release build is unsandboxed: `Scripts/embed-deps.sh` re-signs it without entitlements, and sandboxing it now would move every user into an empty container (see `docs/GOTCHAS.md`, "The debug build and the installed release app use different libraries"). File access goes through the `SecurityScope` helper in both builds.
 - Entitlements added per ADR, never upfront "just in case".
 - No analytics without explicit opt-in. MetricKit (which stays on-device) is fine.
 - Secrets never in the repo. `.env` is gitignored; CI uses GitHub Actions secrets.

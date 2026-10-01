@@ -47,12 +47,12 @@ make doctor
 | `make test-audio-engine` | AudioEngine SPM package tests (requires FFmpeg via Homebrew) |
 | `make test-e2e` | Whole-app E2E journeys (XCUITest; launches the app repeatedly, opt-in, excluded from `make test` and CI) |
 | `make test-e2e-smoke` | Curated <=10 minute E2E subset for a quick local pre-release check (ADR-079 journeys, menu crawl, one surface, one radio journey, and the track context menu inside an album opened from the grid) |
-| `make lint` | SwiftLint + SwiftFormat lint |
+| `make lint` | SwiftLint (strict), the help-text, `try?` and AppKit-import audits, and the check that the workspace `Package.resolved` is tracked. It does not run SwiftFormat; that is `make format-check` |
 | `make format` | Auto-format all Swift files |
 | `make format-check` | SwiftFormat lint mode (used in CI) |
 | `make pseudolocale` | Regenerate the en-XA pseudolocale in the UI String Catalog |
 | `make release-preview` | Show the version the next release would get and the `CHANGELOG.md` section it would write. Nothing is changed. Release notes are not added by a command: each `feat`, `fix` or `perf` PR writes its own under `## [Unreleased]` (see "Releasing" below) |
-| `make audit-db` | Data-level schema audit against the real library (a `.backup` copy, never the live file; `DB=/path/to/library.sqlite` to override). `Scripts/audit-db-schema.py` reports columns that are 100% NULL, stuck at their DDL default, or over 90% NULL; `Scripts/audit-db-xref.py` reports columns no Swift source outside migrations and tests references. See issue #414 for why this exists |
+| `make audit-db` | Data-level schema audit against a library database (a `.backup` copy, never the live file). The default is the Debug build's library in the sandbox container; pass `DB=/path/to/library.sqlite` for another one, such as the release library in `~/Library/Application Support/Bocan/`. `Scripts/audit-db-schema.py` reports columns that are 100% NULL, stuck at their DDL default, or over 90% NULL; `Scripts/audit-db-xref.py` reports columns no Swift source outside migrations and tests references. See issue #414 for why this exists |
 | `make data-dictionary` | Regenerate `docs/data-dictionary.md` from a freshly migrated schema (`swift run bocan-schema` in `Modules/Persistence`), merging the curated `docs/data-dictionary-notes.json`; `DB=/path/to/library.sqlite` documents a real library instead. Edit the notes file, never the generated tables |
 | `make clean` | Remove build artefacts |
 | `make open` | Open in Xcode |
@@ -90,11 +90,18 @@ Modules/<Name>/
 | `SyncServer` | Phone Sync: TLS identity, trust store, Bonjour-advertised sync server |
 | `UI` | SwiftUI views, `LibraryViewModel`, `NowPlayingViewModel`, settings, mini player |
 
-Dependency order (bottom → top; the middle tier all sits side by side):
+Dependency order (bottom → top):
 ```
-Observability → Persistence → AudioEngine, Metadata, Library, Playback,
-Scrobble, Subsonic, Acoustics, Podcasts, SyncServer → UI → App
+Observability → { AudioEngine, Metadata, Acoustics, Persistence }
+              → { Subsonic, Podcasts, Library, Playback }
+              → { Scrobble, SyncServer } → UI → App
 ```
+
+The modules inside a tier are not all independent: `Library` depends on
+`Metadata` and `Acoustics`, `Playback` on `AudioEngine`, `Scrobble` on
+`Playback`, and `SyncServer` on `AudioEngine`, `Library`, `Metadata` and
+`Podcasts`. The table in `docs/design-spec/_standards.md` ("Module layout")
+lists every edge.
 
 ### Test split: Xcode vs SPM
 
@@ -175,6 +182,11 @@ Never commit these to the repo.
 | `APPLE_ID` | Apple ID email for notarization |
 | `APPLE_TEAM_ID` | 10-character Team ID |
 | `APP_SPECIFIC_PASSWORD` | App-specific password for notarytool |
+| `DEVELOPER_ID_IDENTITY` | Name of the Developer ID signing identity that `codesign` uses |
+| `SPARKLE_ED_PRIVATE_KEY` | EdDSA private key that signs the Sparkle update entry |
+| `HOMEBREW_TAP_TOKEN` | Token that lets the workflow tell the Homebrew tap about a new release |
+| `RELEASE_TOKEN` | PAT for the `prepare` job (see "Releasing" above) |
+| `ACOUSTID_API_KEY`, `BOCAN_LASTFM_API_KEY`, `BOCAN_LASTFM_SHARED_SECRET`, `PODCAST_INDEX_API_KEY`, `PODCAST_INDEX_API_SECRET` | The service keys built into the release app (the same keys as in "Local developer API keys" below) |
 
 ## Local developer API keys
 
@@ -330,8 +342,8 @@ discoverable from the spec alone:
   scheduled these for ADR-013, but they were implemented up-front because
   every signal chain test fixture needed a stable insertion point. The chain
   is `PlayerNode → TimePitch → EQ → BassBoost → Crossfeed →
-  StereoExpander → Limiter → Mixer → Output`; every node is always present
-  and individually bypassable. See `Modules/AudioEngine/Sources/AudioEngine/DSP/DSPChain.swift`.
+  StereoExpander → Limiter → Mixer → Output`; every node is always present,
+  and each one can be bypassed except the limiter, which never is. See `Modules/AudioEngine/Sources/AudioEngine/DSP/DSPChain.swift`.
   ReplayGain is not in the chain: it is applied per track inside the buffer
   pump, so a crossfade keeps each track at its own level (#573).
 - **Anti-pop fades.** The engine ramps `AVAudioPlayerNode.volume` over ~10 ms

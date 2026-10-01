@@ -15,7 +15,7 @@ The realtime audio path. The public seam other modules consume is the `Transport
 
 ## Things easy to get wrong
 
-- **FFmpeg is linked from Homebrew via pkg-config, not vendored.** `make test-audio-engine` provides the environment; a raw `swift test`/`swift build` inside `Modules/AudioEngine` may fail to locate FFmpeg without `PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig`. The C system-module is declared in `Package.swift` with `pkgConfig`/`.brew(["ffmpeg"])`.
+- **FFmpeg is linked from Homebrew via pkg-config, not vendored.** `make test-audio-engine` is a plain `swift test` and sets no environment; CI exports `PKG_CONFIG_PATH=/opt/homebrew/opt/ffmpeg/lib/pkgconfig` itself. If a local `swift test`/`swift build` inside `Modules/AudioEngine` fails to locate FFmpeg, set the same variable. The C system-module is declared in `Package.swift` with `pkgConfig`/`.brew(["ffmpeg"])`.
 - **`AVAudioFile` snapshots a file's length at open time**, so it truncates live streams. `DecoderFactory.make(for:)` routes HTTP/HTTPS to `FFmpegDecoder` for exactly this reason; any new playback path must honour the same split.
 - **`SubsonicStreamCache` waits for the full download before signalling readiness**, by design. The old "play while downloading" path silently truncated tracks because of the `AVAudioFile` snapshot. Do not reintroduce mid-download signalling without also swapping to a streaming-aware decoder.
 - **FFmpeg C calls need RAII discipline.** Allocation can succeed and a later call still fail; free on every throw path (the `FFContext` cleanup contract and the `buildSWR` free-on-throw `defer` pattern). All FFmpeg free functions are NULL-safe.
