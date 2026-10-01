@@ -16,27 +16,57 @@ public enum SleepTimerPreset: Sendable, Equatable, CaseIterable, Codable {
 
     public var displayName: String {
         switch self {
-        case .off: "Off"
-        case .minutes15: "15 min"
-        case .minutes30: "30 min"
-        case .minutes45: "45 min"
-        case .minutes60: "1 hr"
-        case .minutes90: "1 hr 30 min"
-        case .minutes120: "2 hr"
-        case let .custom(m): "\(m) min"
+        case .off:
+            "Off"
+
+        case .minutes15:
+            "15 min"
+
+        case .minutes30:
+            "30 min"
+
+        case .minutes45:
+            "45 min"
+
+        case .minutes60:
+            "1 hr"
+
+        case .minutes90:
+            "1 hr 30 min"
+
+        case .minutes120:
+            "2 hr"
+
+        case let .custom(m):
+            "\(m) min"
         }
     }
 
     public var minutes: Int? {
         switch self {
-        case .off: nil
-        case .minutes15: 15
-        case .minutes30: 30
-        case .minutes45: 45
-        case .minutes60: 60
-        case .minutes90: 90
-        case .minutes120: 120
-        case let .custom(m): m
+        case .off:
+            nil
+
+        case .minutes15:
+            15
+
+        case .minutes30:
+            30
+
+        case .minutes45:
+            45
+
+        case .minutes60:
+            60
+
+        case .minutes90:
+            90
+
+        case .minutes120:
+            120
+
+        case let .custom(m):
+            m
         }
     }
 

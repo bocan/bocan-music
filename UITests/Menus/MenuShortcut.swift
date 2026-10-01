@@ -47,14 +47,29 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
             out += "⌘"
         }
         switch self.key {
-        case let .char(c): out += String(c).uppercased()
-        case .space: out += "Space"
-        case .returnKey: out += "↩"
-        case .delete: out += "⌫"
-        case .upArrow: out += "↑"
-        case .downArrow: out += "↓"
-        case .leftArrow: out += "←"
-        case .rightArrow: out += "→"
+        case let .char(c):
+            out += String(c).uppercased()
+
+        case .space:
+            out += "Space"
+
+        case .returnKey:
+            out += "↩"
+
+        case .delete:
+            out += "⌫"
+
+        case .upArrow:
+            out += "↑"
+
+        case .downArrow:
+            out += "↓"
+
+        case .leftArrow:
+            out += "←"
+
+        case .rightArrow:
+            out += "→"
         }
         return out
     }
@@ -67,11 +82,20 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
         var rest = Substring(display)
         loop: while let first = rest.first {
             switch first {
-            case "⌘": modifiers.insert(.command)
-            case "⇧": modifiers.insert(.shift)
-            case "⌥": modifiers.insert(.option)
-            case "⌃": modifiers.insert(.control)
-            default: break loop
+            case "⌘":
+                modifiers.insert(.command)
+
+            case "⇧":
+                modifiers.insert(.shift)
+
+            case "⌥":
+                modifiers.insert(.option)
+
+            case "⌃":
+                modifiers.insert(.control)
+
+            default:
+                break loop
             }
             rest = rest.dropFirst()
         }
@@ -81,13 +105,27 @@ struct MenuShortcut: Hashable, CustomStringConvertible {
 
     private static func key(fromDisplayToken token: String) -> Key? {
         switch token {
-        case "Space", "␣": return .space
-        case "↩", "⏎": return .returnKey
-        case "⌫": return .delete
-        case "↑": return .upArrow
-        case "↓": return .downArrow
-        case "←": return .leftArrow
-        case "→": return .rightArrow
+        case "Space", "␣":
+            return .space
+
+        case "↩", "⏎":
+            return .returnKey
+
+        case "⌫":
+            return .delete
+
+        case "↑":
+            return .upArrow
+
+        case "↓":
+            return .downArrow
+
+        case "←":
+            return .leftArrow
+
+        case "→":
+            return .rightArrow
+
         default:
             guard token.count == 1, let c = token.first else { return nil }
             return .char(Character(String(c).lowercased()))

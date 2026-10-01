@@ -39,19 +39,37 @@ extension Value: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let tag = try container.decode(Tag.self, forKey: .tag)
         switch tag {
-        case .text: self = try .text(container.decode(String.self, forKey: .text))
-        case .int: self = try .int(container.decode(Int64.self, forKey: .int))
-        case .double: self = try .double(container.decode(Double.self, forKey: .double))
-        case .bool: self = try .bool(container.decode(Bool.self, forKey: .bool))
-        case .date: self = try .date(container.decode(Date.self, forKey: .date))
-        case .duration: self = try .duration(container.decode(TimeInterval.self, forKey: .duration))
+        case .text:
+            self = try .text(container.decode(String.self, forKey: .text))
+
+        case .int:
+            self = try .int(container.decode(Int64.self, forKey: .int))
+
+        case .double:
+            self = try .double(container.decode(Double.self, forKey: .double))
+
+        case .bool:
+            self = try .bool(container.decode(Bool.self, forKey: .bool))
+
+        case .date:
+            self = try .date(container.decode(Date.self, forKey: .date))
+
+        case .duration:
+            self = try .duration(container.decode(TimeInterval.self, forKey: .duration))
+
         case .range:
             let low = try container.decode(Value.self, forKey: .low)
             let high = try container.decode(Value.self, forKey: .high)
             self = .range(low, high)
-        case .playlistRef: self = try .playlistRef(container.decode(Int64.self, forKey: .playlistRef))
-        case .enumeration: self = try .enumeration(container.decode(String.self, forKey: .enumeration))
-        case .null: self = .null
+
+        case .playlistRef:
+            self = try .playlistRef(container.decode(Int64.self, forKey: .playlistRef))
+
+        case .enumeration:
+            self = try .enumeration(container.decode(String.self, forKey: .enumeration))
+
+        case .null:
+            self = .null
         }
     }
 

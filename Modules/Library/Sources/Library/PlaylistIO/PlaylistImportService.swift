@@ -186,10 +186,17 @@ public actor PlaylistImportService {
             PlaylistFormat.fromExtension(url.pathExtension) ?? .m3u
         let payload: PlaylistPayload
         switch format {
-        case .m3u, .m3u8: payload = try M3UReader.parse(data: data, sourceURL: url)
-        case .pls: payload = try PLSReader.parse(data: data, sourceURL: url)
-        case .xspf: payload = try XSPFReader.parse(data: data, sourceURL: url)
-        case .cue: return try await self.importCUESheet(data: data, url: url, parentID: parentID)
+        case .m3u, .m3u8:
+            payload = try M3UReader.parse(data: data, sourceURL: url)
+
+        case .pls:
+            payload = try PLSReader.parse(data: data, sourceURL: url)
+
+        case .xspf:
+            payload = try XSPFReader.parse(data: data, sourceURL: url)
+
+        case .cue:
+            return try await self.importCUESheet(data: data, url: url, parentID: parentID)
         }
         return try await self.importPayload(payload, parentID: parentID)
     }

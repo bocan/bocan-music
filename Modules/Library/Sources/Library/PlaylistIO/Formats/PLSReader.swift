@@ -43,9 +43,14 @@ public enum PLSReader {
             let value = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
             if let (kind, idx) = Self.parseKey(key) {
                 switch kind {
-                case .file: files[idx] = value
-                case .title: titles[idx] = value
-                case .length: lengths[idx] = TimeInterval(value).flatMap { $0 > 0 ? $0 : nil } ?? 0
+                case .file:
+                    files[idx] = value
+
+                case .title:
+                    titles[idx] = value
+
+                case .length:
+                    lengths[idx] = TimeInterval(value).flatMap { $0 > 0 ? $0 : nil } ?? 0
                 }
             }
         }

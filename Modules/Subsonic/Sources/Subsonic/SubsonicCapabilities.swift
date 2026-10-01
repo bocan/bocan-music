@@ -118,15 +118,32 @@ public struct SubsonicCapabilities: Sendable, Codable, Hashable {
     /// Used in the "capability lie" gotcha handler.
     public mutating func markUnsupported(_ feature: String) {
         switch feature {
-        case "podcasts": self.supportsPodcasts = false
-        case "internetRadio": self.supportsInternetRadio = false
-        case "bookmarks": self.supportsBookmarks = false
-        case "jukebox": self.supportsJukebox = false
-        case "shares": self.supportsShares = false
-        case "songLyrics": self.supportsLyricsBySongId = false
-        case "apiKeyAuthentication": self.supportsApiKey = false
-        case "randomSongsByGenre": self.supportsRandomSongsByGenre = false
-        default: break
+        case "podcasts":
+            self.supportsPodcasts = false
+
+        case "internetRadio":
+            self.supportsInternetRadio = false
+
+        case "bookmarks":
+            self.supportsBookmarks = false
+
+        case "jukebox":
+            self.supportsJukebox = false
+
+        case "shares":
+            self.supportsShares = false
+
+        case "songLyrics":
+            self.supportsLyricsBySongId = false
+
+        case "apiKeyAuthentication":
+            self.supportsApiKey = false
+
+        case "randomSongsByGenre":
+            self.supportsRandomSongsByGenre = false
+
+        default:
+            break
         }
     }
 

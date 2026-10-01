@@ -75,73 +75,195 @@ public enum Field: Sendable, Codable, Hashable, CaseIterable {
 public extension Field {
     init(rawValue: String) {
         switch rawValue {
-        case "title": self = .title
-        case "artist": self = .artist
-        case "albumArtist": self = .albumArtist
-        case "album": self = .album
-        case "genre": self = .genre
-        case "composer": self = .composer
-        case "comment": self = .comment
-        case "year": self = .year
-        case "trackNumber": self = .trackNumber
-        case "discNumber": self = .discNumber
-        case "playCount": self = .playCount
-        case "skipCount": self = .skipCount
-        case "rating": self = .rating
-        case "bpm": self = .bpm
-        case "bitrate": self = .bitrate
-        case "sampleRate": self = .sampleRate
-        case "bitDepth": self = .bitDepth
-        case "duration": self = .duration
-        case "addedAt": self = .addedAt
-        case "lastPlayedAt": self = .lastPlayedAt
-        case "loved": self = .loved
-        case "excludedFromShuffle": self = .excludedFromShuffle
-        case "isLossless": self = .isLossless
-        case "hasCoverArt": self = .hasCoverArt
-        case "hasLyrics": self = .hasLyrics
-        case "hasMusicBrainzReleaseID": self = .hasMusicBrainzReleaseID
-        case "fileFormat": self = .fileFormat
-        case "inPlaylist": self = .inPlaylist
-        case "notInPlaylist": self = .notInPlaylist
-        case "pathUnder": self = .pathUnder
-        default: self = .unknown(rawValue)
+        case "title":
+            self = .title
+
+        case "artist":
+            self = .artist
+
+        case "albumArtist":
+            self = .albumArtist
+
+        case "album":
+            self = .album
+
+        case "genre":
+            self = .genre
+
+        case "composer":
+            self = .composer
+
+        case "comment":
+            self = .comment
+
+        case "year":
+            self = .year
+
+        case "trackNumber":
+            self = .trackNumber
+
+        case "discNumber":
+            self = .discNumber
+
+        case "playCount":
+            self = .playCount
+
+        case "skipCount":
+            self = .skipCount
+
+        case "rating":
+            self = .rating
+
+        case "bpm":
+            self = .bpm
+
+        case "bitrate":
+            self = .bitrate
+
+        case "sampleRate":
+            self = .sampleRate
+
+        case "bitDepth":
+            self = .bitDepth
+
+        case "duration":
+            self = .duration
+
+        case "addedAt":
+            self = .addedAt
+
+        case "lastPlayedAt":
+            self = .lastPlayedAt
+
+        case "loved":
+            self = .loved
+
+        case "excludedFromShuffle":
+            self = .excludedFromShuffle
+
+        case "isLossless":
+            self = .isLossless
+
+        case "hasCoverArt":
+            self = .hasCoverArt
+
+        case "hasLyrics":
+            self = .hasLyrics
+
+        case "hasMusicBrainzReleaseID":
+            self = .hasMusicBrainzReleaseID
+
+        case "fileFormat":
+            self = .fileFormat
+
+        case "inPlaylist":
+            self = .inPlaylist
+
+        case "notInPlaylist":
+            self = .notInPlaylist
+
+        case "pathUnder":
+            self = .pathUnder
+
+        default:
+            self = .unknown(rawValue)
         }
     }
 
     var rawValue: String {
         switch self {
-        case .title: "title"
-        case .artist: "artist"
-        case .albumArtist: "albumArtist"
-        case .album: "album"
-        case .genre: "genre"
-        case .composer: "composer"
-        case .comment: "comment"
-        case .year: "year"
-        case .trackNumber: "trackNumber"
-        case .discNumber: "discNumber"
-        case .playCount: "playCount"
-        case .skipCount: "skipCount"
-        case .rating: "rating"
-        case .bpm: "bpm"
-        case .bitrate: "bitrate"
-        case .sampleRate: "sampleRate"
-        case .bitDepth: "bitDepth"
-        case .duration: "duration"
-        case .addedAt: "addedAt"
-        case .lastPlayedAt: "lastPlayedAt"
-        case .loved: "loved"
-        case .excludedFromShuffle: "excludedFromShuffle"
-        case .isLossless: "isLossless"
-        case .hasCoverArt: "hasCoverArt"
-        case .hasLyrics: "hasLyrics"
-        case .hasMusicBrainzReleaseID: "hasMusicBrainzReleaseID"
-        case .fileFormat: "fileFormat"
-        case .inPlaylist: "inPlaylist"
-        case .notInPlaylist: "notInPlaylist"
-        case .pathUnder: "pathUnder"
-        case let .unknown(raw): raw
+        case .title:
+            "title"
+
+        case .artist:
+            "artist"
+
+        case .albumArtist:
+            "albumArtist"
+
+        case .album:
+            "album"
+
+        case .genre:
+            "genre"
+
+        case .composer:
+            "composer"
+
+        case .comment:
+            "comment"
+
+        case .year:
+            "year"
+
+        case .trackNumber:
+            "trackNumber"
+
+        case .discNumber:
+            "discNumber"
+
+        case .playCount:
+            "playCount"
+
+        case .skipCount:
+            "skipCount"
+
+        case .rating:
+            "rating"
+
+        case .bpm:
+            "bpm"
+
+        case .bitrate:
+            "bitrate"
+
+        case .sampleRate:
+            "sampleRate"
+
+        case .bitDepth:
+            "bitDepth"
+
+        case .duration:
+            "duration"
+
+        case .addedAt:
+            "addedAt"
+
+        case .lastPlayedAt:
+            "lastPlayedAt"
+
+        case .loved:
+            "loved"
+
+        case .excludedFromShuffle:
+            "excludedFromShuffle"
+
+        case .isLossless:
+            "isLossless"
+
+        case .hasCoverArt:
+            "hasCoverArt"
+
+        case .hasLyrics:
+            "hasLyrics"
+
+        case .hasMusicBrainzReleaseID:
+            "hasMusicBrainzReleaseID"
+
+        case .fileFormat:
+            "fileFormat"
+
+        case .inPlaylist:
+            "inPlaylist"
+
+        case .notInPlaylist:
+            "notInPlaylist"
+
+        case .pathUnder:
+            "pathUnder"
+
+        case let .unknown(raw):
+            raw
         }
     }
 }

@@ -320,9 +320,14 @@ struct SubsonicServerModelTests {
             #expect(bitrate.storedValue == stored)
             let recovered = SubsonicBitrate(storedValue: stored)
             switch (bitrate, recovered) {
-            case (.original, .original): break
-            case let (.kbps(a), .kbps(b)): #expect(a == b)
-            default: Issue.record("Round-trip mismatch for \(stored)")
+            case (.original, .original):
+                break
+
+            case let (.kbps(a), .kbps(b)):
+                #expect(a == b)
+
+            default:
+                Issue.record("Round-trip mismatch for \(stored)")
             }
         }
     }

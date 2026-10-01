@@ -141,15 +141,32 @@ final class IdentifierAuditTests: XCTestCase {
 
     private static func typeName(_ type: XCUIElement.ElementType) -> String {
         switch type {
-        case .button: "button"
-        case .checkBox: "checkBox"
-        case .popUpButton: "popUpButton"
-        case .slider: "slider"
-        case .menuButton: "menuButton"
-        case .textField: "textField"
-        case .switch: "switch"
-        case .radioButton: "radioButton"
-        default: "type#\(type.rawValue)"
+        case .button:
+            "button"
+
+        case .checkBox:
+            "checkBox"
+
+        case .popUpButton:
+            "popUpButton"
+
+        case .slider:
+            "slider"
+
+        case .menuButton:
+            "menuButton"
+
+        case .textField:
+            "textField"
+
+        case .switch:
+            "switch"
+
+        case .radioButton:
+            "radioButton"
+
+        default:
+            "type#\(type.rawValue)"
         }
     }
 

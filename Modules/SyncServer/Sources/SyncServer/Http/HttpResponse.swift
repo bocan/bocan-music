@@ -96,22 +96,53 @@ struct HttpResponse {
 
     private static func reasonPhrase(_ status: Int) -> String {
         switch status {
-        case 200: "OK"
-        case 204: "No Content"
-        case 206: "Partial Content"
-        case 400: "Bad Request"
-        case 403: "Forbidden"
-        case 404: "Not Found"
-        case 405: "Method Not Allowed"
-        case 411: "Length Required"
-        case 412: "Precondition Failed"
-        case 413: "Payload Too Large"
-        case 416: "Range Not Satisfiable"
-        case 429: "Too Many Requests"
-        case 431: "Request Header Fields Too Large"
-        case 500: "Internal Server Error"
-        case 503: "Service Unavailable"
-        default: "Status \(status)"
+        case 200:
+            "OK"
+
+        case 204:
+            "No Content"
+
+        case 206:
+            "Partial Content"
+
+        case 400:
+            "Bad Request"
+
+        case 403:
+            "Forbidden"
+
+        case 404:
+            "Not Found"
+
+        case 405:
+            "Method Not Allowed"
+
+        case 411:
+            "Length Required"
+
+        case 412:
+            "Precondition Failed"
+
+        case 413:
+            "Payload Too Large"
+
+        case 416:
+            "Range Not Satisfiable"
+
+        case 429:
+            "Too Many Requests"
+
+        case 431:
+            "Request Header Fields Too Large"
+
+        case 500:
+            "Internal Server Error"
+
+        case 503:
+            "Service Unavailable"
+
+        default:
+            "Status \(status)"
         }
     }
 }

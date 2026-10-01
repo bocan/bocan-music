@@ -90,7 +90,8 @@ public enum Validator {
         // Bool fields require bool comparators.
         if case .bool = def.dataType {
             switch rule.comparator {
-            case .isTrue, .isFalse: break
+            case .isTrue, .isFalse:
+                break
 
             default:
                 throw SmartPlaylistError.incompatibleComparator(field: rule.field, comparator: rule.comparator)
@@ -101,11 +102,20 @@ public enum Validator {
     /// Returns `true` when `low` is strictly greater than `high` for ordered types.
     private static func isDescending(_ low: Value, _ high: Value) -> Bool {
         switch (low, high) {
-        case let (.int(a), .int(b)): a > b
-        case let (.double(a), .double(b)): a > b
-        case let (.duration(a), .duration(b)): a > b
-        case let (.date(a), .date(b)): a > b
-        default: false
+        case let (.int(a), .int(b)):
+            a > b
+
+        case let (.double(a), .double(b)):
+            a > b
+
+        case let (.duration(a), .duration(b)):
+            a > b
+
+        case let (.date(a), .date(b)):
+            a > b
+
+        default:
+            false
         }
     }
 }

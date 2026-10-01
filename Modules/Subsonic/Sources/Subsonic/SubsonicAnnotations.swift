@@ -11,16 +11,22 @@ private enum AnnotationAction {
 
     var serverID: UUID {
         switch self {
-        case let .star(s, _), let .unstar(s, _), let .setRating(s, _, _): s
+        case let .star(s, _), let .unstar(s, _), let .setRating(s, _, _):
+            s
         }
     }
 
     /// Log-only name for the action kind.
     var name: String {
         switch self {
-        case .star: "star"
-        case .unstar: "unstar"
-        case .setRating: "setRating"
+        case .star:
+            "star"
+
+        case .unstar:
+            "unstar"
+
+        case .setRating:
+            "setRating"
         }
     }
 }
@@ -154,7 +160,8 @@ public actor SubsonicAnnotations {
             } else {
                 // Extract song ID for the event.
                 let songID: String = switch action {
-                case let .star(_, s), let .unstar(_, s), let .setRating(_, s, _): s
+                case let .star(_, s), let .unstar(_, s), let .setRating(_, s, _):
+                    s
                 }
                 self.log.error(
                     "subsonic.annotation.exhausted",

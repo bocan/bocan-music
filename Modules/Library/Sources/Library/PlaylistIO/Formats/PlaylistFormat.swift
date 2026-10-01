@@ -11,11 +11,20 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     /// File extension used when writing a payload in this format.
     public var preferredExtension: String {
         switch self {
-        case .m3u: "m3u"
-        case .m3u8: "m3u8"
-        case .pls: "pls"
-        case .xspf: "xspf"
-        case .cue: "cue"
+        case .m3u:
+            "m3u"
+
+        case .m3u8:
+            "m3u8"
+
+        case .pls:
+            "pls"
+
+        case .xspf:
+            "xspf"
+
+        case .cue:
+            "cue"
         }
     }
 
@@ -27,20 +36,34 @@ public enum PlaylistFormat: String, Sendable, CaseIterable {
     /// Whether this format is producible by `PlaylistExportService`.
     public var isExportable: Bool {
         switch self {
-        case .m3u, .m3u8, .pls, .xspf: true
-        case .cue: false
+        case .m3u, .m3u8, .pls, .xspf:
+            true
+
+        case .cue:
+            false
         }
     }
 
     /// Best-effort detection from a file extension.
     public static func fromExtension(_ ext: String) -> PlaylistFormat? {
         switch ext.lowercased() {
-        case "m3u": .m3u
-        case "m3u8": .m3u8
-        case "pls": .pls
-        case "xspf": .xspf
-        case "cue": .cue
-        default: nil
+        case "m3u":
+            .m3u
+
+        case "m3u8":
+            .m3u8
+
+        case "pls":
+            .pls
+
+        case "xspf":
+            .xspf
+
+        case "cue":
+            .cue
+
+        default:
+            nil
         }
     }
 

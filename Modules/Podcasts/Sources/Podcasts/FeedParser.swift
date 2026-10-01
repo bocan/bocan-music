@@ -378,9 +378,14 @@ public struct FeedParser: Sendable {
     private static func sortedNewestFirst(_ episodes: [ParsedEpisode]) -> [ParsedEpisode] {
         episodes.sorted { lhs, rhs in
             switch (lhs.publishedAt, rhs.publishedAt) {
-            case let (a?, b?): a > b
-            case (nil, _): false
-            case (_, nil): true
+            case let (a?, b?):
+                a > b
+
+            case (nil, _):
+                false
+
+            case (_, nil):
+                true
             }
         }
     }
@@ -422,12 +427,23 @@ public struct FeedParser: Sendable {
 
     private static func transcriptRank(_ type: String?) -> Int {
         switch type?.lowercased() {
-        case "text/vtt": 0
-        case "application/x-subrip", "application/srt", "text/srt": 1
-        case "text/html": 2
-        case "text/plain": 3
-        case "application/json": 4
-        default: 5
+        case "text/vtt":
+            0
+
+        case "application/x-subrip", "application/srt", "text/srt":
+            1
+
+        case "text/html":
+            2
+
+        case "text/plain":
+            3
+
+        case "application/json":
+            4
+
+        default:
+            5
         }
     }
 

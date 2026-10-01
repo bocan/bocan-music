@@ -110,16 +110,22 @@ public extension LyricsDocument {
     /// Returns `true` when the document contains at least one non-empty line / non-empty text.
     var isEmpty: Bool {
         switch self {
-        case let .unsynced(text): text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case let .synced(lines, _): lines.isEmpty
+        case let .unsynced(text):
+            text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        case let .synced(lines, _):
+            lines.isEmpty
         }
     }
 
     /// The effective offset in milliseconds (positive = lyrics lead the audio).
     var offsetMS: Int {
         switch self {
-        case .unsynced: 0
-        case let .synced(_, offset): offset
+        case .unsynced:
+            0
+
+        case let .synced(_, offset):
+            offset
         }
     }
 

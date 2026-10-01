@@ -93,11 +93,14 @@ private final class XSPFParserDelegate: NSObject, XMLParserDelegate {
                     self.currentTrack.location = value
                 }
 
-            case "title": self.currentTrack.title = value
+            case "title":
+                self.currentTrack.title = value
 
-            case "creator": self.currentTrack.creator = value
+            case "creator":
+                self.currentTrack.creator = value
 
-            case "album": self.currentTrack.album = value
+            case "album":
+                self.currentTrack.album = value
 
             case "duration":
                 if let ms = Int(value), ms > 0 {
@@ -108,7 +111,8 @@ private final class XSPFParserDelegate: NSObject, XMLParserDelegate {
                 self.tracks.append(self.currentTrack)
                 self.inTrack = false
 
-            default: break
+            default:
+                break
             }
         } else {
             if name == "title", self.inPlaylistTitle {

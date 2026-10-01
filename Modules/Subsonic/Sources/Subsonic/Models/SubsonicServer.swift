@@ -22,8 +22,11 @@ public enum SubsonicBitrate: Sendable, Codable, Hashable {
     /// Serialised string used in the database `max_bitrate` column.
     public var storedValue: String {
         switch self {
-        case .original: "original"
-        case let .kbps(n): String(n)
+        case .original:
+            "original"
+
+        case let .kbps(n):
+            String(n)
         }
     }
 
@@ -41,8 +44,11 @@ public enum SubsonicBitrate: Sendable, Codable, Hashable {
     /// Value to pass as `maxBitRate` to `SwiftSonicClient.streamURL`.
     public var intValue: Int? {
         switch self {
-        case .original: nil
-        case let .kbps(n): n
+        case .original:
+            nil
+
+        case let .kbps(n):
+            n
         }
     }
 }

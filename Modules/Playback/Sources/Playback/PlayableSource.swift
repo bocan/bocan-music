@@ -55,8 +55,11 @@ public enum PlayableSource: Sendable, Hashable, Codable {
     /// `true` when the source must be streamed from a remote server.
     public var isRemote: Bool {
         switch self {
-        case .localBookmark: false
-        case .subsonic, .internetRadio, .podcast: true
+        case .localBookmark:
+            false
+
+        case .subsonic, .internetRadio, .podcast:
+            true
         }
     }
 
@@ -66,8 +69,11 @@ public enum PlayableSource: Sendable, Hashable, Codable {
     /// are not live streams.
     public var isLiveStream: Bool {
         switch self {
-        case .localBookmark, .subsonic, .podcast: false
-        case .internetRadio: true
+        case .localBookmark, .subsonic, .podcast:
+            false
+
+        case .internetRadio:
+            true
         }
     }
 

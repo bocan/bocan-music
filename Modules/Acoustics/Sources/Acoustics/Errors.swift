@@ -4,14 +4,29 @@ import Foundation
 public enum AcousticsError: Error, Sendable, Equatable {
     public static func == (lhs: AcousticsError, rhs: AcousticsError) -> Bool {
         switch (lhs, rhs) {
-        case let (.fpcalcFailed(lc, ls), .fpcalcFailed(rc, rs)): lc == rc && ls == rs
-        case (.networkError, .networkError): true
-        case (.rateLimitExceeded, .rateLimitExceeded): true
-        case (.noResults, .noResults): true
-        case let (.invalidResponse(l), .invalidResponse(r)): l == r
-        case (.tagWritebackFailed, .tagWritebackFailed): true
-        case let (.invalidInput(l), .invalidInput(r)): l == r
-        default: false
+        case let (.fpcalcFailed(lc, ls), .fpcalcFailed(rc, rs)):
+            lc == rc && ls == rs
+
+        case (.networkError, .networkError):
+            true
+
+        case (.rateLimitExceeded, .rateLimitExceeded):
+            true
+
+        case (.noResults, .noResults):
+            true
+
+        case let (.invalidResponse(l), .invalidResponse(r)):
+            l == r
+
+        case (.tagWritebackFailed, .tagWritebackFailed):
+            true
+
+        case let (.invalidInput(l), .invalidInput(r)):
+            l == r
+
+        default:
+            false
         }
     }
 

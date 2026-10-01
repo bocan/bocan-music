@@ -102,71 +102,189 @@ public enum Comparator: Sendable, Codable, Hashable, CaseIterable {
 public extension Comparator {
     init(rawValue: String) {
         switch rawValue {
-        case "is": self = .is
-        case "isNot": self = .isNot
-        case "contains": self = .contains
-        case "doesNotContain": self = .doesNotContain
-        case "startsWith": self = .startsWith
-        case "endsWith": self = .endsWith
-        case "matchesRegex": self = .matchesRegex
-        case "isEmpty": self = .isEmpty
-        case "isNotEmpty": self = .isNotEmpty
-        case "equalTo": self = .equalTo
-        case "notEqualTo": self = .notEqualTo
-        case "lessThan": self = .lessThan
-        case "greaterThan": self = .greaterThan
-        case "lessThanOrEqual": self = .lessThanOrEqual
-        case "greaterThanOrEqual": self = .greaterThanOrEqual
-        case "between": self = .between
-        case "isNull": self = .isNull
-        case "isNotNull": self = .isNotNull
-        case "inLastDays": self = .inLastDays
-        case "inLastMonths": self = .inLastMonths
-        case "inLastYears": self = .inLastYears
-        case "beforeDate": self = .beforeDate
-        case "afterDate": self = .afterDate
-        case "onDate": self = .onDate
-        case "isTrue": self = .isTrue
-        case "isFalse": self = .isFalse
-        case "memberOf": self = .memberOf
-        case "notMemberOf": self = .notMemberOf
-        case "pathUnder": self = .pathUnder
-        default: self = .unknown(rawValue)
+        case "is":
+            self = .is
+
+        case "isNot":
+            self = .isNot
+
+        case "contains":
+            self = .contains
+
+        case "doesNotContain":
+            self = .doesNotContain
+
+        case "startsWith":
+            self = .startsWith
+
+        case "endsWith":
+            self = .endsWith
+
+        case "matchesRegex":
+            self = .matchesRegex
+
+        case "isEmpty":
+            self = .isEmpty
+
+        case "isNotEmpty":
+            self = .isNotEmpty
+
+        case "equalTo":
+            self = .equalTo
+
+        case "notEqualTo":
+            self = .notEqualTo
+
+        case "lessThan":
+            self = .lessThan
+
+        case "greaterThan":
+            self = .greaterThan
+
+        case "lessThanOrEqual":
+            self = .lessThanOrEqual
+
+        case "greaterThanOrEqual":
+            self = .greaterThanOrEqual
+
+        case "between":
+            self = .between
+
+        case "isNull":
+            self = .isNull
+
+        case "isNotNull":
+            self = .isNotNull
+
+        case "inLastDays":
+            self = .inLastDays
+
+        case "inLastMonths":
+            self = .inLastMonths
+
+        case "inLastYears":
+            self = .inLastYears
+
+        case "beforeDate":
+            self = .beforeDate
+
+        case "afterDate":
+            self = .afterDate
+
+        case "onDate":
+            self = .onDate
+
+        case "isTrue":
+            self = .isTrue
+
+        case "isFalse":
+            self = .isFalse
+
+        case "memberOf":
+            self = .memberOf
+
+        case "notMemberOf":
+            self = .notMemberOf
+
+        case "pathUnder":
+            self = .pathUnder
+
+        default:
+            self = .unknown(rawValue)
         }
     }
 
     var rawValue: String {
         switch self {
-        case .is: "is"
-        case .isNot: "isNot"
-        case .contains: "contains"
-        case .doesNotContain: "doesNotContain"
-        case .startsWith: "startsWith"
-        case .endsWith: "endsWith"
-        case .matchesRegex: "matchesRegex"
-        case .isEmpty: "isEmpty"
-        case .isNotEmpty: "isNotEmpty"
-        case .equalTo: "equalTo"
-        case .notEqualTo: "notEqualTo"
-        case .lessThan: "lessThan"
-        case .greaterThan: "greaterThan"
-        case .lessThanOrEqual: "lessThanOrEqual"
-        case .greaterThanOrEqual: "greaterThanOrEqual"
-        case .between: "between"
-        case .isNull: "isNull"
-        case .isNotNull: "isNotNull"
-        case .inLastDays: "inLastDays"
-        case .inLastMonths: "inLastMonths"
-        case .inLastYears: "inLastYears"
-        case .beforeDate: "beforeDate"
-        case .afterDate: "afterDate"
-        case .onDate: "onDate"
-        case .isTrue: "isTrue"
-        case .isFalse: "isFalse"
-        case .memberOf: "memberOf"
-        case .notMemberOf: "notMemberOf"
-        case .pathUnder: "pathUnder"
-        case let .unknown(raw): raw
+        case .is:
+            "is"
+
+        case .isNot:
+            "isNot"
+
+        case .contains:
+            "contains"
+
+        case .doesNotContain:
+            "doesNotContain"
+
+        case .startsWith:
+            "startsWith"
+
+        case .endsWith:
+            "endsWith"
+
+        case .matchesRegex:
+            "matchesRegex"
+
+        case .isEmpty:
+            "isEmpty"
+
+        case .isNotEmpty:
+            "isNotEmpty"
+
+        case .equalTo:
+            "equalTo"
+
+        case .notEqualTo:
+            "notEqualTo"
+
+        case .lessThan:
+            "lessThan"
+
+        case .greaterThan:
+            "greaterThan"
+
+        case .lessThanOrEqual:
+            "lessThanOrEqual"
+
+        case .greaterThanOrEqual:
+            "greaterThanOrEqual"
+
+        case .between:
+            "between"
+
+        case .isNull:
+            "isNull"
+
+        case .isNotNull:
+            "isNotNull"
+
+        case .inLastDays:
+            "inLastDays"
+
+        case .inLastMonths:
+            "inLastMonths"
+
+        case .inLastYears:
+            "inLastYears"
+
+        case .beforeDate:
+            "beforeDate"
+
+        case .afterDate:
+            "afterDate"
+
+        case .onDate:
+            "onDate"
+
+        case .isTrue:
+            "isTrue"
+
+        case .isFalse:
+            "isFalse"
+
+        case .memberOf:
+            "memberOf"
+
+        case .notMemberOf:
+            "notMemberOf"
+
+        case .pathUnder:
+            "pathUnder"
+
+        case let .unknown(raw):
+            raw
         }
     }
 }

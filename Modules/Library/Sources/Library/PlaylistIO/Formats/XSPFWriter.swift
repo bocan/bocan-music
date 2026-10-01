@@ -59,12 +59,23 @@ public enum XSPFWriter {
         out.reserveCapacity(s.count)
         for c in s {
             switch c {
-            case "&": out.append("&amp;")
-            case "<": out.append("&lt;")
-            case ">": out.append("&gt;")
-            case "\"": out.append("&quot;")
-            case "'": out.append("&apos;")
-            default: out.append(c)
+            case "&":
+                out.append("&amp;")
+
+            case "<":
+                out.append("&lt;")
+
+            case ">":
+                out.append("&gt;")
+
+            case "\"":
+                out.append("&quot;")
+
+            case "'":
+                out.append("&apos;")
+
+            default:
+                out.append(c)
             }
         }
         return out

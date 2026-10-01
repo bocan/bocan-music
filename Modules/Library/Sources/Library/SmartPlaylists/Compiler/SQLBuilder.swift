@@ -305,18 +305,41 @@ public enum SQLBuilder {
     /// join set. `random` is handled by the caller and never routed here.
     private static func orderColumn(for key: SortKey) -> SQLColumnRef {
         switch key {
-        case .title: SQLColumnRef(expression: "tracks.title")
-        case .artist: FieldDefinitions.definition(for: .artist).columnRef
-        case .album: FieldDefinitions.definition(for: .album).columnRef
-        case .year: SQLColumnRef(expression: "tracks.year")
-        case .trackNumber: SQLColumnRef(expression: "tracks.track_number")
-        case .addedAt: SQLColumnRef(expression: "tracks.added_at")
-        case .lastPlayedAt: SQLColumnRef(expression: "tracks.last_played_at")
-        case .playCount: SQLColumnRef(expression: "tracks.play_count")
-        case .rating: SQLColumnRef(expression: "tracks.rating")
-        case .duration: SQLColumnRef(expression: "tracks.duration")
-        case .bpm: SQLColumnRef(expression: "tracks.bpm")
-        case .random: SQLColumnRef(expression: "tracks.added_at") // unreachable; guarded by caller
+        case .title:
+            SQLColumnRef(expression: "tracks.title")
+
+        case .artist:
+            FieldDefinitions.definition(for: .artist).columnRef
+
+        case .album:
+            FieldDefinitions.definition(for: .album).columnRef
+
+        case .year:
+            SQLColumnRef(expression: "tracks.year")
+
+        case .trackNumber:
+            SQLColumnRef(expression: "tracks.track_number")
+
+        case .addedAt:
+            SQLColumnRef(expression: "tracks.added_at")
+
+        case .lastPlayedAt:
+            SQLColumnRef(expression: "tracks.last_played_at")
+
+        case .playCount:
+            SQLColumnRef(expression: "tracks.play_count")
+
+        case .rating:
+            SQLColumnRef(expression: "tracks.rating")
+
+        case .duration:
+            SQLColumnRef(expression: "tracks.duration")
+
+        case .bpm:
+            SQLColumnRef(expression: "tracks.bpm")
+
+        case .random:
+            SQLColumnRef(expression: "tracks.added_at") // unreachable; guarded by caller
         }
     }
 
@@ -324,20 +347,36 @@ public enum SQLBuilder {
 
     private static func numericArg(_ rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
         switch rule.value {
-        case let .int(v): return v
-        case let .double(v): return v
-        case let .duration(v): return v
-        default: throw self.valueError(rule)
+        case let .int(v):
+            return v
+
+        case let .double(v):
+            return v
+
+        case let .duration(v):
+            return v
+
+        default:
+            throw self.valueError(rule)
         }
     }
 
     private static func scalarArg(_ v: Value, rule: SmartCriterion.Rule) throws -> DatabaseValueConvertible? {
         switch v {
-        case let .int(x): return x
-        case let .double(x): return x
-        case let .duration(x): return x
-        case let .date(x): return Int64(x.timeIntervalSince1970)
-        default: throw self.valueError(rule)
+        case let .int(x):
+            return x
+
+        case let .double(x):
+            return x
+
+        case let .duration(x):
+            return x
+
+        case let .date(x):
+            return Int64(x.timeIntervalSince1970)
+
+        default:
+            throw self.valueError(rule)
         }
     }
 

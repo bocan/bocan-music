@@ -22,11 +22,20 @@ public enum SubsonicError: Error, Sendable {
     /// `true` if the error is transient and the caller may retry.
     public var isTransient: Bool {
         switch self {
-        case let .transport(e): e.isTransient
-        case .keychain: false
-        case .invalidServerRecord: false
-        case .unknownServer: false
-        case .apiError: false
+        case let .transport(e):
+            e.isTransient
+
+        case .keychain:
+            false
+
+        case .invalidServerRecord:
+            false
+
+        case .unknownServer:
+            false
+
+        case .apiError:
+            false
         }
     }
 
@@ -44,9 +53,14 @@ public enum SubsonicError: Error, Sendable {
     /// `true` if the error indicates an authentication failure.
     public var isAuthenticationFailure: Bool {
         switch self {
-        case let .transport(e): e.isAuthenticationFailure
-        case let .apiError(code, _): code == 40 || code == 41
-        default: false
+        case let .transport(e):
+            e.isAuthenticationFailure
+
+        case let .apiError(code, _):
+            code == 40 || code == 41
+
+        default:
+            false
         }
     }
 }
@@ -56,11 +70,20 @@ public enum SubsonicError: Error, Sendable {
 extension SubsonicError: LocalizedError {
     public var errorDescription: String? {
         switch self {
-        case let .transport(e): e.localizedDescription
-        case let .keychain(status, op): "Keychain \(op) failed (OSStatus \(status))"
-        case let .invalidServerRecord(msg): "Invalid server record: \(msg)"
-        case let .unknownServer(id): "No server with id \(id)"
-        case let .apiError(code, msg): "API error \(code): \(msg)"
+        case let .transport(e):
+            e.localizedDescription
+
+        case let .keychain(status, op):
+            "Keychain \(op) failed (OSStatus \(status))"
+
+        case let .invalidServerRecord(msg):
+            "Invalid server record: \(msg)"
+
+        case let .unknownServer(id):
+            "No server with id \(id)"
+
+        case let .apiError(code, msg):
+            "API error \(code): \(msg)"
         }
     }
 }

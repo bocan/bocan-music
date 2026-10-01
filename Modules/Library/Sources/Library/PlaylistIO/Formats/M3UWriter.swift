@@ -52,10 +52,17 @@ public enum M3UWriter {
 
     static func displayString(for entry: PlaylistPayload.Entry) -> String {
         switch (entry.artistHint, entry.titleHint) {
-        case let (artist?, title?): "\(artist) - \(title)"
-        case let (_, title?): title
-        case let (artist?, _): artist
-        case (nil, nil): ""
+        case let (artist?, title?):
+            "\(artist) - \(title)"
+
+        case let (_, title?):
+            title
+
+        case let (artist?, _):
+            artist
+
+        case (nil, nil):
+            ""
         }
     }
 

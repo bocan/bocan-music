@@ -59,9 +59,14 @@ actor ScanCoordinator {
 
         let result = await self.importOne(url: url, mode: .full) { _ in }
         switch result {
-        case .inserted: inserted += 1
-        case .updated: updated += 1
-        default: errors += 1
+        case .inserted:
+            inserted += 1
+
+        case .updated:
+            updated += 1
+
+        default:
+            errors += 1
         }
 
         let elapsed = ContinuousClock.now - start
@@ -219,11 +224,20 @@ actor ScanCoordinator {
 
         for result in results {
             switch result {
-            case .inserted: inserted += 1
-            case .updated: updated += 1
-            case .skipped: skipped += 1
-            case .conflict: skipped += 1
-            case .error: errors += 1
+            case .inserted:
+                inserted += 1
+
+            case .updated:
+                updated += 1
+
+            case .skipped:
+                skipped += 1
+
+            case .conflict:
+                skipped += 1
+
+            case .error:
+                errors += 1
             }
         }
 

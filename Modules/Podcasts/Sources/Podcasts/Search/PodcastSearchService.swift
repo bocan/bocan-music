@@ -58,7 +58,8 @@ public actor PodcastSearchService {
         // Capture feeds; log warnings for individual source failures.
         let piFeeds: [PodcastSearchResult]
         switch piResult {
-        case let .success(feeds): piFeeds = feeds
+        case let .success(feeds):
+            piFeeds = feeds
 
         case let .failure(err):
             piFeeds = []
@@ -67,7 +68,8 @@ public actor PodcastSearchService {
 
         let itFeeds: [PodcastSearchResult]
         switch itResult {
-        case let .success(feeds): itFeeds = feeds
+        case let .success(feeds):
+            itFeeds = feeds
 
         case let .failure(err):
             itFeeds = []

@@ -18,9 +18,14 @@ public enum LyricsSourcePriority: String, Sendable, CaseIterable, Codable {
     /// Human-readable display name.
     public var displayName: String {
         switch self {
-        case .preferEmbedded: "Prefer embedded tags"
-        case .preferSynced: "Prefer synced (sidecar .lrc)"
-        case .preferUser: "Prefer my edits"
+        case .preferEmbedded:
+            "Prefer embedded tags"
+
+        case .preferSynced:
+            "Prefer synced (sidecar .lrc)"
+
+        case .preferUser:
+            "Prefer my edits"
         }
     }
 }

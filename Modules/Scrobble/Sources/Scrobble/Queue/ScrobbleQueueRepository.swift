@@ -58,12 +58,23 @@ public actor ScrobbleQueueRepository {
             /// Human-readable label shown in the UI.
             public var displayLabel: String {
                 switch self {
-                case .pending: "Queued"
-                case .retry: "Retrying"
-                case .sent: "Sent"
-                case .sentUnconfirmed: "Sent (unconfirmed)"
-                case .failed: "Failed"
-                case .ignored: "Ignored"
+                case .pending:
+                    "Queued"
+
+                case .retry:
+                    "Retrying"
+
+                case .sent:
+                    "Sent"
+
+                case .sentUnconfirmed:
+                    "Sent (unconfirmed)"
+
+                case .failed:
+                    "Failed"
+
+                case .ignored:
+                    "Ignored"
                 }
             }
 
