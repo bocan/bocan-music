@@ -32,9 +32,12 @@ least once in fixture mode with a postcondition check.
    The manifest's shortcut strings are asserted directly against parsed
    source (no generated fixture needed): `KeyBindings.swift`, the
    `.keyboardShortcut(...)` declarations in `BocanCommands*.swift`, the
-   help book's shortcut table row by row, and every shortcut token in the
-   help book's prose, so the manifest, the bindings, the menus, and the
+   help text's shortcut table row by row, and every shortcut token in the
+   help text's prose, so the manifest, the bindings, the menus, and the
    shipped docs (ADR-078 fix) can never drift apart silently again.
+   (Until 2026-10 the help text checked was the Apple Help Book's HTML. That
+   book was removed because nothing opened it; the test now reads the in-app
+   Help window's sources, `Modules/UI/Sources/UI/Help/`.)
 3. **Structural crawl.** Walk `app.menuBars` recursively; fail on any menu
    item present but absent from the manifest, or vice versa. This is what
    catches "a menu item quietly vanished" a month before a human notices.
