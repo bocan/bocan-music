@@ -79,10 +79,24 @@ struct ManifestBuilderPodcastTests {
         #expect(episode.relPath == "Podcasts/\(podcastId)/\(fileURL.lastPathComponent)")
         #expect(episode.size == 55_000_000)
         #expect(episode.sha256 == episodeHash) // the stored download hash, not re-hashed
-        #expect(episode.hasChapters)
+        // A chapters URL alone is not enough: nothing is cached to serve (#608).
+        #expect(!episode.hasChapters)
         #expect(episode.playState == "inProgress")
         #expect(episode.playPositionMs == 1_200_000)
         #expect(episode.durationMs == 3_600_000)
+
+        // Once the document is cached, the manifest advertises it.
+        try await ChaptersRepository(database: database).upsert(PodcastChapters(
+            podcastID: podcastId,
+            guid: guid,
+            content: #"{"chapters":[{"startTime":0,"title":"Intro"}]}"#,
+            sourceURL: "https://example.test/12/chapters.json"
+        ))
+        let cached = try await builder.build(
+            profile: .everything(includePodcasts: true),
+            serverId: "srv", serverName: "Mac", generation: 2, generatedAt: Date(timeIntervalSince1970: 0)
+        )
+        #expect(try #require(cached.episodes.first).hasChapters)
     }
 
     @Test("an episode stored before the hash migration is hashed from its file (#485)")

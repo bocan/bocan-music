@@ -876,6 +876,7 @@ extension BocanApp {
             episodeRepo: episodeRepo,
             stateRepo: stateRepo,
             transcriptRepo: TranscriptRepository(database: db),
+            chaptersRepo: ChaptersRepository(database: db),
             artwork: PodcastArtworkCache()
         )
         let podcastResolver = AppPodcastResolver(service: podcastService)
@@ -977,6 +978,12 @@ extension BocanApp {
             }
         }
         Task.detached(priority: .background) { [episodeRepo, stateRepo, podcastDownloads, db] in
+            // #608: a finished download warms the chapters cache, so Phone
+            // Sync has the episode's chapters to serve without it being
+            // opened here first.
+            await podcastDownloads.setDownloadedObserver { podcastID, guid in
+                await podcastService.cacheChapters(podcastID: podcastID, guid: guid)
+            }
             await podcastService.setNewEpisodesObserver { podcastID, newGUIDs in
                 let newestN = UserDefaults.standard.object(forKey: "podcasts.autoDownloadCount") as? Int ?? 3
                 let coordinator = AutoDownloadCoordinator(

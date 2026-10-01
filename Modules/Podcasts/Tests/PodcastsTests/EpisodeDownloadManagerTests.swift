@@ -205,6 +205,13 @@ private actor ProgressCollector {
     }
 }
 
+private actor DownloadedCollector {
+    private(set) var seen: [String] = []
+    func add(podcastID: Int64, guid: String) {
+        self.seen.append("\(podcastID)/\(guid)")
+    }
+}
+
 // MARK: - Tests
 
 @Suite("EpisodeDownloadManager", .serialized)
@@ -240,6 +247,30 @@ struct EpisodeDownloadManagerTests {
         #expect(FileManager.default.fileExists(atPath: path))
         #expect(finalState.downloadBytes == 4096)
         #expect(bed.store.exists(podcastID: bed.podcastID, guid: "g1", mime: "audio/mpeg"))
+    }
+
+    @Test("the downloaded observer is told once the file has landed, not on a failure")
+    func downloadedObserverFires() async throws {
+        let bed = try await makeBed()
+        defer { try? FileManager.default.removeItem(at: bed.storeRoot) }
+        try await insertEpisode(bed, guid: "ok")
+        try await insertEpisode(bed, guid: "bad")
+        let collector = DownloadedCollector()
+        await bed.manager.setDownloadedObserver { podcastID, guid in
+            await collector.add(podcastID: podcastID, guid: guid)
+        }
+
+        await bed.manager.download(podcastID: bed.podcastID, guid: "bad")
+        try #require(bed.fake.control(forGUIDFragment: "bad")).onFinished(.failure(URLError(.timedOut)))
+        #expect(await eventually { await self.state(bed, "bad")?.downloadState == .failed })
+
+        await bed.manager.download(podcastID: bed.podcastID, guid: "ok")
+        try #require(bed.fake.control(forGUIDFragment: "ok")).onFinished(.success(makeTempFile(bytes: 128)))
+        #expect(await eventually { await !collector.seen.isEmpty })
+
+        #expect(await collector.seen == ["\(bed.podcastID)/ok"])
+        // The state row was already `.downloaded` when the observer ran.
+        #expect(await self.state(bed, "ok")?.downloadState == .downloaded)
     }
 
     @Test("progress emits monotonically increasing fractions ending at 1.0")

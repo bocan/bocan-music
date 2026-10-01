@@ -27,6 +27,8 @@ Tracks shorter than 30 seconds are no longer sent to Last.fm, ListenBrainz and t
 
 The hover text on the lyrics pane close button now shows the correct shortcut, Option-Command-L. The Love button on the play bar no longer shows a shortcut in its hover text, because that shortcut loves the selected tracks and not the track that is playing.
 
+Podcast chapters now reach your phone with Phone Sync, for episodes you have downloaded on the Mac. Chapters for those episodes also stay available on the Mac when you are offline.
+
 ## [2.19.0](https://github.com/bocan/bocan-music/compare/v2.18.0...v2.19.0) (2026-09-27)
 
 The library scan banner now floats at the bottom of the window instead of pushing the song list down, so the list no longer jumps when the banner goes away. Before, a double-click at that moment could play the song below the one you meant.

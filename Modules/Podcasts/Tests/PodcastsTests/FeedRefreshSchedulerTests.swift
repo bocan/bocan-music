@@ -111,6 +111,7 @@ private func makeBed(stale: Bool = true) async throws -> Bed {
         episodeRepo: EpisodeRepository(database: db),
         stateRepo: EpisodeStateRepository(database: db),
         transcriptRepo: TranscriptRepository(database: db),
+        chaptersRepo: ChaptersRepository(database: db),
         fetcher: FeedFetcher(http: feedMock),
         artwork: PodcastArtworkCache(http: MockHTTPClient(), root: artRoot),
         downloadStore: DownloadStore(root: downloadRoot),
